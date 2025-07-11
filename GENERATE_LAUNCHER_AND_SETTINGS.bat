@@ -4,14 +4,15 @@
 @ECHO OFF
 
 @REM define local variables
-SET settings_path=code\non-user_settings.ini
+SET non_user_settings_path=code\non-user_settings.ini
 SET icon_path=code\icon.ico
 SET settings_icon_path=code\settings_icon.ico
-SET shortcut_exe_path=code\do_not_change\ 
+SET shortcut_exe_path=code\do_not_change 
 SET start_program_path=code\do_not_change &@REM without "\" at end
+SET user_settings_path=code &@REM without "\" at end
 
 @REM import settings:
-FOR /F "tokens=1,2 delims==" %%a IN (%settings_path%) DO (
+FOR /F "tokens=1,2 delims==" %%a IN (%non_user_settings_path%) DO (
 	IF %%a==program_name (SET program_name=%%b)
 )
 
@@ -27,9 +28,14 @@ IF "%start_program_path%"=="" ( @REM somehow the /W: option does not need a clos
 	CALL shortcut_by_OptimumX.exe /F:"%program_name%.lnk" /A:C /T:"cmd.exe" /P:"/K start_program.bat" /I:"%~dp0%icon_path%" /W:"%~dp0%start_program_path%"
 )
 @REM also create a shortcut for the settings.yaml file for the same reasons
-CALL shortcut_by_OptimumX.exe /F:"%program_name%_settings.lnk" /A:C /T:"cmd.exe" /P:"/C START settings.yaml" /I:"%~dp0%settings_icon_path%" /W:"%~dp0
+IF "%user_settings_path%"=="" ( 
+	CALL shortcut_by_OptimumX.exe /F:"%program_name%_settings.lnk" /A:C /T:"cmd.exe" /P:"/C START settings.yaml" /I:"%~dp0%settings_icon_path%" /W:"%~dp0
+) ELSE (
+	CALL shortcut_by_OptimumX.exe /F:"%program_name%_settings.lnk" /A:C /T:"cmd.exe" /P:"/C START settings.yaml" /I:"%~dp0%settings_icon_path%" /W:"%~dp0%user_settings_path%"
+)
 
 @REM move shortcut results back to where this file was called
+ECHO:
 MOVE "%program_name%.lnk" "%~dp0"
 MOVE "%program_name%_settings.lnk" "%~dp0"
 

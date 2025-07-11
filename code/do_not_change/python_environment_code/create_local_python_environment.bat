@@ -7,10 +7,10 @@
 CD "%~dp0"
 
 @REM define local variables
-SET settings_path=..\..\non-user_settings.ini
+SET non_user_settings_path=..\..\non-user_settings.ini
 
 @REM import settings:
-FOR /F "tokens=1,2 delims==" %%a IN (%settings_path%) DO (
+FOR /F "tokens=1,2 delims==" %%a IN (%non_user_settings_path%) DO (
 	IF %%a==python_version (SET python_version=%%b)
 )
 
