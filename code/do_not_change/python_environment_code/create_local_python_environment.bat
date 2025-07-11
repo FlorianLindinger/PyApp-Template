@@ -38,9 +38,12 @@ if not exist "python_env\Scripts\activate.bat" (
 	ECHO:
 	ECHO: Failed during installation of python environment (see above^)
 	ECHO: Could it be that python version %python_version% is not installed in Windows?
-	ECHO: Install (https://www.python.org/downloads/windows/^) and restart
-	@RD /S /Q python_env &@REM CAREFULL. DELETES EVERYTHING IN THAT FOLDER
+	ECHO: Install (from https://www.python.org/downloads/windows/^) and try again
 	ECHO:
+	if exist python_env (
+		@RD /S /Q python_env &@REM CAREFULL. DELETES EVERYTHING IN THAT FOLDER
+		ECHO:
+	)
 	ECHO: Failed (see above^): Press any key to exit
 	PAUSE>NUL 
 	EXIT
@@ -49,10 +52,12 @@ if not exist "python_env\Scripts\activate.bat" (
 @REM activate environment:
 call python_env\Scripts\activate.bat
 
-@REM install packages
+@REM install packages or create empty requirements.txt file
 if exist requirements.txt (
 	pip install -r requirements.txt
-) 
+)  ELSE (
+	pip freeze > requirements.txt
+)
 
 @REM print environment location:
 ECHO:
