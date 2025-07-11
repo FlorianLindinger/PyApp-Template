@@ -1,3 +1,19 @@
-code/other_code/python_environment_code/python_env
+###########################
+### general gitignores: ###
+###########################
+# do not sync the local python environment:
+python_env
+# do not sync python cache:
 __pycache__
-*.lnk
+# do not sync the local shortcut to start the program that has absolute device specific paths:
+/*.lnk
+###########################
+
+
+###########################
+## specific gitignores: ###
+###########################
+
+
+
+###########################

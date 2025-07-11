@@ -42,7 +42,7 @@ IF %ERRORLEVEL% EQU -1 (
 @REM exit if not called by other script with any argument:
 IF "%~1"=="" (
 	ECHO:
-	ECHO: Press any key to exit
+	ECHO: python code finished Successfully. Press any key to exit
 	PAUSE >NUL 
 	ECHO:
 )
@@ -75,7 +75,7 @@ IF %restart_main_code_on_crash% EQU 0 ( @REM  run after_python_crash_code.py (ag
 	)
 )	ELSE (  @REM run main_code.py again
 	ECHO:
-	ECHO: Running main python code again:
+	ECHO: Running main python code again after it crashed:
 	ECHO:
 	@ECHO ON
 	python main_code.py "crashed"
