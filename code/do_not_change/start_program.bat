@@ -42,7 +42,7 @@ IF %ERRORLEVEL% EQU -1 (
 @REM exit if not called by other script with any argument:
 IF "%~1"=="" (
 	ECHO:
-	ECHO: python code finished Successfully. Press any key to exit
+	ECHO: python code finished successfully. Press any key to exit
 	PAUSE >NUL 
 	ECHO:
 )

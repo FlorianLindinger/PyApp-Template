@@ -6,8 +6,9 @@
 @REM define local variables
 SET settings_path=code\non-user_settings.ini
 SET icon_path=code\icon.ico
-SET shortcut_exe_path=code\do_not_change
-SET start_program_path=code\do_not_change
+SET settings_icon_path=code\settings_icon.ico
+SET shortcut_exe_path=code\do_not_change\ 
+SET start_program_path=code\do_not_change &@REM without "\" at end
 
 @REM import settings:
 FOR /F "tokens=1,2 delims==" %%a IN (%settings_path%) DO (
@@ -20,14 +21,21 @@ CD %shortcut_exe_path%
 @REM shortcut_by_OptimumX.exe (original Shortcut.exe from OptimiumX: https://www.optimumx.com/downloads.html#Shortcut) is an exe that allows to modify a shortcut
 @REM get help with "generate_shortcut.exe /?"
 @REM The following line generates a shortcut with specific "target","start in" which is needed for the abiltiy to add to taskbar. These shortcuts need absolute paths which don't transfer correctly via GIT. GIT can have relative shortcut path which then would not allow even for the starting shortcut to be moved out of the folder. Moreover manually generated default shortcuts also can't be added to the taskbar. The icon is also added at this opportunity.:
-call shortcut_by_OptimumX.exe /F:"%program_name%.lnk" /A:C /T:"cmd.exe" /P:"/k start_program.bat" /I:"%~dp0%icon_path%" /W:"%~dp0%start_program_path%"
+IF "%start_program_path%"=="" ( @REM somehow the /W: option does not need a closing " if only "%~dp0 is chosen (maybe becasue of escape character \ at end of %~dp0).
+	CALL shortcut_by_OptimumX.exe /F:"%program_name%.lnk" /A:C /T:"cmd.exe" /P:"/K start_program.bat" /I:"%~dp0%icon_path%" /W:"%~dp0
+) ELSE (
+	CALL shortcut_by_OptimumX.exe /F:"%program_name%.lnk" /A:C /T:"cmd.exe" /P:"/K start_program.bat" /I:"%~dp0%icon_path%" /W:"%~dp0%start_program_path%"
+)
+@REM also create a shortcut for the settings.yaml file for the same reasons
+CALL shortcut_by_OptimumX.exe /F:"%program_name%_settings.lnk" /A:C /T:"cmd.exe" /P:"/C START settings.yaml" /I:"%~dp0%settings_icon_path%" /W:"%~dp0
 
-@REM Move shortcut result back to where this file was called
-move "%program_name%.lnk" "%~dp0"
+@REM move shortcut results back to where this file was called
+MOVE "%program_name%.lnk" "%~dp0"
+MOVE "%program_name%_settings.lnk" "%~dp0"
 
 @REM print info:
 ECHO:
-ECHO: "%program_name%" should be now in "%~dp0"
+ECHO: "%program_name%" and "%program_name%_settings" should be now in "%~dp0"
 ECHO:
 
 @REM exit if not called by other script with any argument:
