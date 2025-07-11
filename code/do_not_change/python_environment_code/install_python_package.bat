@@ -3,6 +3,9 @@
 @REM turn off printing of commands:
 @ECHO OFF
 
+@REM move to folder of this file (needed for relative path shortcuts)
+CD "%~dp0"
+
 @REM create python environment if not existing:
 if not exist python_env\Scripts\activate.bat (
 	call activate_or_create_environment.bat "nopause"

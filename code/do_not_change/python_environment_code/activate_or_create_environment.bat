@@ -3,6 +3,9 @@
 @REM turn off printing of commands:
 @ECHO OFF
 
+@REM move to folder of this file (needed for relative path shortcuts)
+CD "%~dp0"
+
 @REM create python environment if not existing:
 IF NOT EXIST python_env\Scripts\activate.bat (	
 	ECHO Creating local python environment for first execution
@@ -14,9 +17,10 @@ IF NOT EXIST python_env\Scripts\activate.bat (
 @REM activate python environment:
 CALL python_env\Scripts\activate.bat 
 
-@REM pause if not called by other script with any argument:
+@REM exit if not called by other script with any argument:
 IF "%~1"=="" (
 	ECHO:
-	PAUSE
+	ECHO: Press any key to exit
+	PAUSE >NUL 
 	ECHO:
 )

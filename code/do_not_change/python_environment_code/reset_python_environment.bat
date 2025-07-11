@@ -3,11 +3,15 @@
 @REM turn off printing of commands:
 @ECHO OFF
 
+@REM move to folder of this file (needed for relative path shortcuts)
+CD "%~dp0"
+
 @REM delete old environment if existing:
 if exist python_env\Scripts\activate.bat (
 	@RD /S /Q python_env &@REM CAREFULL. DELETES EVERYTHING IN THAT FOLDER
 	if not exist python_env\Scripts\activate.bat (
 		ECHO: Successfully deleted the old python environment
+		ECHO:
 	) else (
 		ECHO:
 		ECHO: Error: Failed to deleted the old python environment
@@ -21,9 +25,10 @@ if exist python_env\Scripts\activate.bat (
 @REM create new environment:
 call "create_local_python_environment.bat" "nopause"
 
-@REM pause if not called by other script with any argument:
+@REM exit if not called by other script with any argument:
 IF "%~1"=="" (
 	ECHO:
-	PAUSE
+	ECHO: Press any key to exit
+	PAUSE >NUL 
 	ECHO:
 )

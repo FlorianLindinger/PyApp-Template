@@ -3,6 +3,9 @@
 @REM turn off printing of commands:
 @ECHO OFF
 
+@REM move to folder of this file (needed for relative path shortcuts)
+CD "%~dp0"
+
 @REM activate environment:
 CALL "activate_or_create_environment.bat" "nopause"
 
@@ -15,11 +18,12 @@ IF exist requirements.txt (
 pip freeze > requirements.txt
 
 @REM print
-ECHO: Generated requirements.txt in current folder
+ECHO: Generated requirements.txt in "%~dp0"
 
-@REM pause if not called by other script with any argument:
+@REM exit if not called by other script with any argument:
 IF "%~1"=="" (
 	ECHO:
-	PAUSE
+	ECHO: Press any key to exit
+	PAUSE >NUL 
 	ECHO:
 )
