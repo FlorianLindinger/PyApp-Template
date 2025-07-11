@@ -8,11 +8,6 @@ allow for local package installs somehow via req.txt
 
 add readme in code\   explain what everything is and that it has to keep its name
 
-add settings shortcut with icon.
-added fallback icons from windows with check that they exist
-
 check if i want different terminal colors
 
 check if i can add stoppping of closing terminal
-
-open yaml in default editor
