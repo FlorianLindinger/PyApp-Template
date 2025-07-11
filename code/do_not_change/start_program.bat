@@ -3,18 +3,27 @@
 @REM turn off printing of commands:
 @ECHO OFF
 
-@REM import settings in non-user_settings.ini:
-FOR /F "tokens=1,2 delims==" %%a IN ('findstr "^" "non-user_settings.ini"') DO (set "%%a=%%b")
+@REM define local variables
+SET python_env_code_path=python_environment_code
+SET python_code_path=..\
+SET settings_path=..\non-user_settings.ini
+
+@REM import settings:
+FOR /F "tokens=1,2 delims==" %%a IN (%settings_path%) DO (
+	IF %%a==terminal_name (SET terminal_name=%%b)
+	IF %%a==restart_main_code_on_crash (SET restart_main_code_on_crash=%%b)
+)
 
 @REM change terminal title:
 TITLE %terminal_name%
 
 @REM activate or create & activate python environment:
-CD python_environment_code &@REM moving to local folder of called file needed because of relative paths in code
+CD %python_env_code_path% &@REM moving to local folder of called file needed because of relative paths in code
 call activate_or_create_environment.bat "nopause"
+CD "%~dp0" &@REM moving back to start directory
 
 @REM go to directory where the python codes are (in order to have them running where they are located):
-CD ..\..\
+CD %python_code_path%
 
 @REM run main python code:
 python main_code.py
@@ -30,10 +39,11 @@ IF %ERRORLEVEL% EQU -1 (
 	EXIT
 )
 
-@REM pause if not called by other script with any argument:
+@REM exit if not called by other script with any argument:
 IF "%~1"=="" (
 	ECHO:
-	PAUSE
+	ECHO: Press any key to exit
+	PAUSE >NUL 
 	ECHO:
 )
 

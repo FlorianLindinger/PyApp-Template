@@ -1,0 +1,7 @@
+add how to copy this folder
+
+How to add option to not start terminal 
+
+add option for yaml install?. 
+
+allow for local package installs somehow via req.txt

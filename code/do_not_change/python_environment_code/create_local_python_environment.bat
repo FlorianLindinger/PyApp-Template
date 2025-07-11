@@ -3,11 +3,19 @@
 @REM turn off printing of commands:
 @ECHO OFF
 
-@REM import settings in ..\non-user_settings.ini like python_version:
-FOR /F "tokens=1,2 delims==" %%a IN ('findstr "^" "..\non-user_settings.ini"') DO (set "%%a=%%b")
+@REM move to folder of this file (needed for relative path shortcuts)
+CD "%~dp0"
+
+@REM define local variables
+SET settings_path=..\..\non-user_settings.ini
+
+@REM import settings:
+FOR /F "tokens=1,2 delims==" %%a IN (%settings_path%) DO (
+	IF %%a==python_version (SET python_version=%%b)
+)
 
 @REM check if any python is installed:
-python --version 2>NUL
+python --version >NUL
 if errorlevel 1 (
 	ECHO: Error: Install python version %python_version% in windows (https://www.python.org/downloads/windows/^) and restart
 	ECHO:
@@ -51,9 +59,10 @@ ECHO:
 ECHO Created python%python_version% environment in "%~dp0python_env"  &:: %~dp0 gives the local path of the file instead of the caller
 ECHO:
 
-@REM pause if not called by other script with any argument:
+@REM exit if not called by other script with any argument:
 IF "%~1"=="" (
 	ECHO:
-	PAUSE
+	ECHO: Press any key to exit
+	PAUSE >NUL 
 	ECHO:
 )

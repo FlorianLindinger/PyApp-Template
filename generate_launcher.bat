@@ -1,14 +1,39 @@
+@REM "@REM" indicates the start of a comment (use "&@REM" for comments after a code line, unless the line starts a nested sequence like a line with IF/ELSE/FOR/..., e.g., "IF A==B ( @REM comment")
+
+@REM turn off printing of commands:
+@ECHO OFF
+
+@REM define local variables
+SET settings_path=code\non-user_settings.ini
+SET icon_path=code\icon.ico
+SET shortcut_exe_path=code\do_not_change
+SET start_program_path=code\do_not_change
+
+@REM import settings:
+FOR /F "tokens=1,2 delims==" %%a IN (%settings_path%) DO (
+	IF %%a==program_name (SET program_name=%%b)
+)
+
+@REM move to folder of shortcut_exe
+CD %shortcut_exe_path%
+
 @REM shortcut_by_OptimumX.exe (original Shortcut.exe from OptimiumX: https://www.optimumx.com/downloads.html#Shortcut) is an exe that allows to modify a shortcut
 @REM get help with "generate_shortcut.exe /?"
-
-@REM move to folder with needed code
-CD code/other_code
-
-@REM import settings in non-user_settings.ini:
-FOR /F "tokens=1,2 delims==" %%a IN ('findstr "^" "non-user_settings.ini"') DO (set "%%a=%%b")
-
 @REM The following line generates a shortcut with specific "target","start in" which is needed for the abiltiy to add to taskbar. These shortcuts need absolute paths which don't transfer correctly via GIT. GIT can have relative shortcut path which then would not allow even for the starting shortcut to be moved out of the folder. Moreover manually generated default shortcuts also can't be added to the taskbar. The icon is also added at this opportunity.:
-call shortcut_by_OptimumX.exe /F:"%program_name%.lnk" /A:C /T:"cmd.exe" /P:"/k start.bat" /I:"%~dp0code/other_code/icon.ico" /W:"%~dp0code/other_code"
+call shortcut_by_OptimumX.exe /F:"%program_name%.lnk" /A:C /T:"cmd.exe" /P:"/k start_program.bat" /I:"%~dp0%icon_path%" /W:"%~dp0%start_program_path%"
 
 @REM Move shortcut result back to where this file was called
-move "%program_name%.lnk" "..\.."
+move "%program_name%.lnk" "%~dp0"
+
+@REM print info:
+ECHO:
+ECHO: "%program_name%" should be now in "%~dp0"
+ECHO:
+
+@REM exit if not called by other script with any argument:
+IF "%~1"=="" (
+	ECHO:
+	ECHO: Press any key to exit
+	PAUSE >NUL 
+	ECHO:
+)
