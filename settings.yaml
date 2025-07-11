@@ -1,0 +1,51 @@
+# SETTINGS FILE (SEE ON BOTTOM HOW TO USE AND IMPORT IN PYTHON)
+# LEAVE A SPACE AFTER THE ":" (e.g. name: value)
+####################################################################
+####################################################################
+
+####################################################################
+# important settings:
+####################################################################
+
+example 1: a string
+example 2: "a string"
+example 3: 1
+example 4: 1.2
+example 5: true
+example 6:
+
+####################################################################
+# less important settings:
+####################################################################
+
+
+
+
+####################################################################
+####################################################################
+# how to define variables and import them in python:
+####################################################################
+
+# --- in settings.yaml: ---
+#example 1: a string
+#example 2: "a string"
+#example 3: 1
+#example 4: 1.2
+#example 5: true
+#example 6:
+
+# --- in code.py: ---
+#import yaml # install as pyyaml
+#with open("settings.yaml","r") as file:
+#    s = yaml.safe_load(file)
+#s["example 1"] # == "a string"
+#s["example 2"] # == "a string"
+#s["example 3"] # == 1
+#s["example 4"] # == 1.2
+#s["example 5"] # == True
+#s["example 6"] # == None
+
+####################################################################
+
+
+
