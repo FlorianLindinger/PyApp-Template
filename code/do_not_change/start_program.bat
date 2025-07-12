@@ -7,20 +7,24 @@
 SET python_env_code_path=python_environment_code
 SET python_code_path=..\
 SET settings_path=..\non-user_settings.ini
+SET icon_path=..\icon.ico
 
 @REM import settings:
 FOR /F "tokens=1,2 delims==" %%a IN (%settings_path%) DO (
-	IF %%a==terminal_name (SET terminal_name=%%b)
+	IF %%a==program_name (SET program_name=%%b)
 	IF %%a==restart_main_code_on_crash (SET restart_main_code_on_crash=%%b)
 	IF %%a==terminal_bg_color (SET terminal_bg_color=%%b)
 	IF %%a==terminal_text_color (SET terminal_text_color=%%b)
 )
 
 @REM change terminal title:
-TITLE %terminal_name%
+TITLE %program_name%
 
-@REM change terminal colors
+@REM change terminal colors:
 COLOR %terminal_bg_color%%terminal_text_color%
+
+@REM change terminal icon:
+change_icon "%program_name%" "%icon_path%"
 
 @REM activate or create & activate python environment:
 CD %python_env_code_path% &@REM moving to local folder of called file needed because of relative paths in code
