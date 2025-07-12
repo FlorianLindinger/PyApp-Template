@@ -6,6 +6,7 @@
 # can be accessed here with s["name"])
 ###########################################################################
 import yaml  # install as pyyaml                            # nopep8
-with open("settings.yaml") as file:					        # nopep8
+with open("settings.yaml") as file:				    	    # nopep8
     s = yaml.safe_load(file)  # get values with s["name"]	# nopep8
 ###########################################################################
+

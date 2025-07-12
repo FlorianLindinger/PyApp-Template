@@ -61,7 +61,7 @@ if exist requirements.txt (
 
 @REM print environment location:
 ECHO:
-ECHO Created python%python_version% environment in "%~dp0python_env"  &:: %~dp0 gives the local path of the file instead of the caller
+ECHO Created python%python_version% environment in "%~dp0python_env" if everything worked &@REM %~dp0 gives the local path of the file instead of the caller
 ECHO:
 
 @REM exit if not called by other script with any argument:
