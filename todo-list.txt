@@ -9,3 +9,5 @@ allow for local package installs somehow via req.txt
 add readme in code\   explain what everything is and that it has to keep its name
 
 check if i can add stoppping of closing terminal
+
+make pyqt5 interface available and easy to use with example. (threading?)
