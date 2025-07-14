@@ -12,4 +12,5 @@ check if i can add stoppping of closing terminal
 
 make pyqt5 interface available and easy to use with example. (threading?)
 
-auto fork option?
+auto fork option? hm maybe just actually copy via a batch file (new folder and copy (dont overwrite at all), and delete .git)
+But fork allows for contributing changes back to original template. Git remplate does not but allows for own forking
