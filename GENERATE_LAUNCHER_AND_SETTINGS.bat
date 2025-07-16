@@ -4,12 +4,13 @@
 @ECHO OFF
 
 @REM define local variables
-SET non_user_settings_path=code\non-user_settings.ini
-SET icon_path=code\icon.ico
-SET settings_icon_path=code\settings_icon.ico
-SET shortcut_exe_path=code\do_not_change 
-SET start_program_path=code\do_not_change &@REM without "\" at end
-SET user_settings_path=code &@REM without "\" at end
+SET non_user_settings_path=..\non-user_settings.ini
+SET icon_path=..\icon.ico
+SET settings_icon_path=..\settings_icon.ico
+SET shortcut_exe_path=..\do_not_change 
+SET start_program_path=..\do_not_change &@REM without "\" at end
+SET user_settings_path=.. &@REM without "\" at end
+SET shortcut_destination_path=..\..\
 
 @REM import settings:
 FOR /F "tokens=1,2 delims==" %%a IN (%non_user_settings_path%) DO (
@@ -34,14 +35,14 @@ IF "%user_settings_path%"=="" (
 	CALL shortcut_by_OptimumX.exe /F:"%program_name%_settings.lnk" /A:C /T:"cmd.exe" /P:"/C START settings.yaml" /I:"%~dp0%settings_icon_path%" /W:"%~dp0%user_settings_path%"
 )
 
-@REM move shortcut results back to where this file was called
+@REM move shortcut results back to destination 
 ECHO:
-MOVE "%program_name%.lnk" "%~dp0"
-MOVE "%program_name%_settings.lnk" "%~dp0"
+MOVE "%program_name%.lnk" "%~dp0%shortcut_destination_path%"
+MOVE "%program_name%_settings.lnk" "%~dp0%shortcut_destination_path%"
 
 @REM print info:
 ECHO:
-ECHO: "%program_name%" and "%program_name%_settings" should be now in "%~dp0"
+ECHO: "%program_name%" and "%program_name%_settings" should be now in "%~dp0%shortcut_destination_path%"
 ECHO:
 
 @REM exit if not called by other script with any argument:
@@ -49,5 +50,4 @@ IF "%~1"=="" (
 	ECHO:
 	ECHO: Press any key to exit
 	PAUSE >NUL 
-	ECHO:
 )
