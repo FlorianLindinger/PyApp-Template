@@ -6,11 +6,12 @@
 @REM move to folder of this file (needed for relative path shortcuts)
 CD /D "%~dp0"
 
-@REM define local variables:
+@REM define local variables (do not have spaces before or after the = and at the end of the line):
 SET non_user_settings_path=..\..\non-user_settings.ini
 SET default_packages_file_path=..\..\default_python_packages.txt
 @REM CAREFUL WITH python_environment_path!
-SET python_environment_path=..\..\python_environment &@REM BE VERY CAREFUL WITH THIS PATH: This folder might be deleted if the environment is reset. So do not write something like just ..\..\ which would delete any folder happening to be at that position. Even if you knwo what is at that path, mistakes with relative paths can happen.
+@REM BE VERY CAREFUL WITH THIS PATH: This folder might be deleted if the environment is reset. So do not write something like just ..\..\ which would delete any folder happening to be at that position. Even if you knwo what is at that path, mistakes with relative paths can happen:
+SET python_environment_path=..\..\python_environment
 @REM CAREFUL WITH python_environment_path!
 
 @REM import settings:
@@ -31,9 +32,9 @@ if errorlevel 1 (
 @REM create virtual python environment:
 python -m pip install virtualenv
 if "%python_version%"=="" (
-	python -m virtualenv %python_environment_path%
+	python -m virtualenv "%python_environment_path%"
 ) else (
-	python -m virtualenv --python=python%python_version% %python_environment_path%
+	python -m virtualenv --python=python%python_version% "%python_environment_path%"
 )
 
 @REM check if environment creation failed:
@@ -44,8 +45,8 @@ if not exist "%python_environment_path%\Scripts\activate.bat" (
 	ECHO: Could it be that python version %python_version% is not installed in Windows?
 	ECHO: Install (from https://www.python.org/downloads/windows/^) and try again
 	ECHO:
-	if exist %python_environment_path% (
-		RD /S /Q %python_environment_path% &@REM CAREFULL. DELETES EVERYTHING IN THAT FOLDER
+	if exist "%python_environment_path%" (
+		RD /S /Q "%python_environment_path%" &@REM CAREFULL. DELETES EVERYTHING IN THAT FOLDER
 		ECHO:
 	)
 	ECHO: Failed (see above^): Press any key to exit
@@ -54,7 +55,7 @@ if not exist "%python_environment_path%\Scripts\activate.bat" (
 )
 
 @REM activate environment:
-call %python_environment_path%\Scripts\activate.bat
+call "%python_environment_path%\Scripts\activate.bat"
 
 @REM install packages or create empty requirements.txt file
 if exist %default_packages_file_path% (
@@ -73,5 +74,4 @@ IF "%~1"=="" (
 	ECHO:
 	ECHO: Press any key to exit
 	PAUSE >NUL 
-	ECHO:
 )
