@@ -6,7 +6,7 @@
 @REM move to folder of this file (needed for relative path shortcuts)
 CD /D "%~dp0"
 
-@REM define local variables:
+@REM define local variables (do not have spaces before or after the = and at the end of the line):
 SET default_packages_file_path=..\..\default_python_packages.txt
 
 @REM activate environment:
@@ -15,6 +15,7 @@ CALL "activate_or_create_environment.bat" "nopause"
 @REM print warning if requirements.txt already exists:
 IF exist %default_packages_file_path% (
     ECHO "%~dp0%default_packages_file_path%" already exists and will be overwritten
+	ECHO:
 )
 
 @REM generate requirements.txt:
@@ -27,6 +28,5 @@ ECHO: Generated "%~dp0%default_packages_file_path%"
 IF "%~1"=="" (
 	ECHO:
 	ECHO: Press any key to exit
-	PAUSE >NUL 
-	ECHO:
+	PAUSE >NUL
 )
