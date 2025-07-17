@@ -1,8 +1,6 @@
 ###########################
 ### general gitignores: ###
 ###########################
-# do not sync the local python environment:
-python_env
 # do not sync python cache:
 __pycache__
 # do not sync the local shortcut to start the program that has absolute device specific paths:
