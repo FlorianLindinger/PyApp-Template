@@ -6,11 +6,11 @@
 @REM move to folder of this file (needed for relative path shortcuts)
 CD /D "%~dp0"
 
-@REM define local variables:
-SET python_environment_path=..\..\python_environment 
+@REM define local variables (do not have spaces before or after the = and at the end of the line):
+SET python_environment_path=..\..\python_environment
 
 @REM create python environment if not existing:
-if not exist %python_environment_path%\Scripts\activate.bat (
+if not exist "%python_environment_path%\Scripts\activate.bat" (
 	call activate_or_create_environment.bat "nopause"
 )
 
@@ -20,7 +20,7 @@ ECHO: Write 'pip install {package name}' to install a package in the local envir
 ECHO:
 
 @REM start console with environment:
-START /B /LOW /WAIT call %python_environment_path%\Scripts\activate.bat
+START /B /LOW /WAIT call "%python_environment_path%\Scripts\activate.bat"
 
 @REM print warning because this code should not be reached:
 ECHO:
