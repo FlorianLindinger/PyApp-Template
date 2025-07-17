@@ -3,7 +3,10 @@
 @REM turn off printing of commands:
 @ECHO OFF
 
-@REM define local variables
+@REM move to folder of this file (needed for relative path shortcuts)
+CD /D "%~dp0" &@REM /D is needed to change drive if necessary
+
+@REM define local variables:
 SET non_user_settings_path=..\non-user_settings.ini
 SET icon_path=..\icon.ico
 SET settings_icon_path=..\settings_icon.ico
@@ -14,6 +17,8 @@ SET shortcut_destination_path=..\..\
 FOR /F "tokens=1,2 delims==" %%a IN (%non_user_settings_path%) DO (
 	IF %%a==program_name (SET program_name=%%b)
 )
+
+ECHO %~dp0
 
 @REM shortcut_by_OptimumX.exe (original Shortcut.exe from OptimiumX: https://www.optimumx.com/downloads.html#Shortcut)
 @REM is an exe that allows to modify/create a shortcut without admin rights
