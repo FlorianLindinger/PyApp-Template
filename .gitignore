@@ -5,6 +5,8 @@
 __pycache__
 # do not sync the local shortcut to start the program that has absolute device specific paths:
 /*.lnk
+# sync the shortcut to the program that generates the local shortcuts:
+!GENERATE_LAUNCHER_AND_SETTINGS.lnk
 ###########################
 
 
