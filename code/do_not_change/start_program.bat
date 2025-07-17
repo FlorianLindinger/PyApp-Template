@@ -27,12 +27,12 @@ COLOR %terminal_bg_color%%terminal_text_color%
 change_icon "%program_name%" "%icon_path%"
 
 @REM activate or create & activate python environment:
-CD %python_env_code_path% &@REM moving to local folder of called file needed because of relative paths in code
+CD /D %python_env_code_path% &@REM moving to local folder of called file needed because of relative paths in code
 call activate_or_create_environment.bat "nopause"
-CD "%~dp0" &@REM moving back to start directory
+CD /D "%~dp0" &@REM moving back to start directory
 
 @REM go to directory where the python codes are (in order to have them running where they are located):
-CD %python_code_path%
+CD /D %python_code_path%
 
 @REM run main python code:
 python main_code.py
