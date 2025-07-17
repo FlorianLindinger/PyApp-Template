@@ -1,5 +1,5 @@
 ######################################################################################################################################################
-# Add code here that runs with the start of the program.
+# Add code at the bottom that runs with the start of the program.
 ######################################################################################################################################################
 # Import the user defined variables (given in settings.yaml)
 # with the code lines below (e.g. "name: variable" in settings.yaml
