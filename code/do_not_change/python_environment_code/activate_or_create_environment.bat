@@ -12,6 +12,7 @@ SET python_environment_path=..\..\python_environment
 @REM create python environment if not existing:
 IF NOT EXIST "%python_environment_path%\Scripts\activate.bat" (	
 	ECHO Creating local python environment for first execution
+	ECHO:
 	@ECHO ON
 	CALL create_local_python_environment.bat "nopause"
 	@ECHO OFF	

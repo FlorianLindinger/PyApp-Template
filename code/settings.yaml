@@ -41,19 +41,19 @@ example 10: 1+5e1
 # s = {key: float(val) if (isinstance(val, str) and bool(re.match(f"^{float_regex}$",val))) else val for key, val in s.items()}  #convert to float # nopep8                                
 # s = {key: float(val.split("*" )[0])*float(val.split("*" )[1]) if is_match(val,"*" ) else val for key, val in s.items()}        #convert to float # nopep8   
 # s = {key: float(val.split(r"/")[0])/float(val.split(r"/")[1]) if is_match(val,r"/") else val for key, val in s.items()}        #convert to float # nopep8   
-# s = {key: float(val.split("+ ")[0])+float(val.split("+" )[1]) if is_match(val,"+" ) else val for key, val in s.items()}        #convert to float # nopep8   
-# s = {key: float(val.split("- ")[0])-float(val.split("-" )[1]) if is_match(val,"-" ) else val for key, val in s.items()}        #convert to float # nopep8   
+# s = {key: float(val.split("+" )[0])+float(val.split("+" )[1]) if is_match(val,"+" ) else val for key, val in s.items()}        #convert to float # nopep8   
+# s = {key: float(val.split("-" )[0])-float(val.split("-" )[1]) if is_match(val,"-" ) else val for key, val in s.items()}        #convert to float # nopep8   
 
-s["example 1"] == "a string"
-s["example 2"] == "a string"
-s["example 3"] == 1
-s["example 4"] == 1.2
-s["example 5"] == True
-s["example 6"] == True
-s["example 7"] == None
-s["example 8"] == 1000.0
-s["example 9"] == 0.28
-s["example 10"] == 51.0
+# s["example 1"] == "a string"
+# s["example 2"] == "a string"
+# s["example 3"] == 1
+# s["example 4"] == 1.2
+# s["example 5"] == True
+# s["example 6"] == True
+# s["example 7"] == None
+# s["example 8"] == 1000.0
+# s["example 9"] == 0.28
+# s["example 10"] == 51.0
 
 ####################################################################
 ####################################################################
