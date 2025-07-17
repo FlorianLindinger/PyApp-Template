@@ -15,7 +15,7 @@ is_match=lambda x,symbol: (isinstance(x, str) and bool(re.match(f"^{float_regex}
 s = {key: float(val) if (isinstance(val, str) and bool(re.match(f"^{float_regex}$",val))) else val for key, val in s.items()}  #convert to float # nopep8                                
 s = {key: float(val.split("*" )[0])*float(val.split("*" )[1]) if is_match(val,"*" ) else val for key, val in s.items()}        #convert to float # nopep8   
 s = {key: float(val.split(r"/")[0])/float(val.split(r"/")[1]) if is_match(val,r"/") else val for key, val in s.items()}        #convert to float # nopep8   
-s = {key: float(val.split("+ ")[0])+float(val.split("+" )[1]) if is_match(val,"+" ) else val for key, val in s.items()}        #convert to float # nopep8   
-s = {key: float(val.split("- ")[0])-float(val.split("-" )[1]) if is_match(val,"-" ) else val for key, val in s.items()}        #convert to float # nopep8   
+s = {key: float(val.split("+" )[0])+float(val.split("+" )[1]) if is_match(val,"+" ) else val for key, val in s.items()}        #convert to float # nopep8   
+s = {key: float(val.split("-" )[0])-float(val.split("-" )[1]) if is_match(val,"-" ) else val for key, val in s.items()}        #convert to float # nopep8   
 ######################################################################################################################################################
 
