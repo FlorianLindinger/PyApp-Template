@@ -8,8 +8,8 @@ CD /D "%~dp0" &@REM /D is needed to change drive if necessary
 
 @REM define local variables:
 SET non_user_settings_path=..\non-user_settings.ini
-SET icon_path=..\icon.ico
-SET settings_icon_path=..\settings_icon.ico
+SET icon_path=..\icons\icon.ico
+SET settings_icon_path=..\icons\settings_icon.ico
 SET user_settings_path=.. &@REM without "\" at end
 SET shortcut_destination_path=..\..\
 
