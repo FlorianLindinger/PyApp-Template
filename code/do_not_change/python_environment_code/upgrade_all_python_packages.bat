@@ -10,7 +10,7 @@ CD /D "%~dp0"
 CALL "activate_or_create_environment.bat" "nopause"
 
 @REM upgrade pip
-pip install --upgrade pip
+python -m pip install --upgrade pip
 
 @REM upgrade all packages as far as conflicts allow
 pip freeze > tmp.txt
@@ -20,6 +20,6 @@ DEL tmp.txt
 @REM exit if not called by other script with any argument:
 IF "%~1"=="" (
 	ECHO:
-	ECHO: All packages upgraded if not errors above. Press any key to exit
+	ECHO: All packages upgraded if no errors above. Press any key to exit
 	PAUSE >NUL 
 )

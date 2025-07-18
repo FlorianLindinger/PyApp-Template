@@ -1,5 +1,5 @@
 ####################################################################################
-# SETTINGS FILE (in the yaml format: leave a spece after the ":" (e.g. name: value))
+# SETTINGS FILE (in the yaml format: leave a spece after the ":" (e.g. name: value). Put values that start with "!" in quotation marks)
 ####################################################################################
  
 ####################################################################################
