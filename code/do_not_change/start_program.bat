@@ -3,9 +3,9 @@
 @REM turn off printing of commands:
 @ECHO OFF
 
-@REM define local variables
+@REM define local variables (do not have spaces before or after the "="" and at the end of the line; do not add comments to the lines; use "\" to separate folder levels; do not put "\" at the end of paths):
 SET python_env_code_path=python_environment_code
-SET python_code_path=..\
+SET python_code_path=..
 SET settings_path=..\non-user_settings.ini
 SET icon_path=..\icons\icon.ico
 
@@ -28,7 +28,7 @@ change_icon "%program_name%" "%icon_path%"
 
 @REM activate or create & activate python environment:
 CD /D %python_env_code_path% &@REM moving to local folder of called file needed because of relative paths in code
-call activate_or_create_environment.bat "nopause"
+CALL activate_or_create_environment.bat "nopause"
 CD /D "%~dp0" &@REM moving back to start directory
 
 @REM go to directory where the python codes are (in order to have them running where they are located):
