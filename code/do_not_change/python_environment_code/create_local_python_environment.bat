@@ -6,7 +6,7 @@
 @REM move to folder of this file (needed for relative path shortcuts)
 CD /D "%~dp0"
 
-@REM define local variables (do not have spaces before or after the = and at the end of the line):
+@REM define local variables (do not have spaces before or after the "="" and at the end of the line; do not add comments to the lines; use "\" to separate folder levels; do not put "\" at the end of paths):
 SET non_user_settings_path=..\..\non-user_settings.ini
 SET default_packages_file_path=..\..\python_environment_code\default_python_packages.txt
 @REM CAREFUL WITH python_environment_path!
