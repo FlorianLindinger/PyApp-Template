@@ -14,6 +14,9 @@ if not exist "%python_environment_path%\Scripts\activate.bat" (
 	call activate_or_create_environment.bat "nopause"
 )
 
+@REM upgrade pip
+pip install --upgrade pip
+
 @REM print how to install:
 ECHO:
 ECHO: Write 'pip install {package name}' to install a package in the local environment:

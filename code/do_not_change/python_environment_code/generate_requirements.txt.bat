@@ -18,6 +18,9 @@ IF exist %default_packages_file_path% (
 	ECHO:
 )
 
+@REM upgrade pip
+pip install --upgrade pip
+
 @REM generate requirements.txt:
 pip freeze > %default_packages_file_path%
 

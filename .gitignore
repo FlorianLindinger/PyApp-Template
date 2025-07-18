@@ -7,6 +7,8 @@ __pycache__
 /*.lnk
 # sync the shortcut to the program that generates the local shortcuts:
 !GENERATE_LAUNCHER_AND_SETTINGS.lnk
+# do not sync temporary pip package file
+tmp.txt
 ###########################
 
 
@@ -17,3 +19,4 @@ __pycache__
 
 
 ###########################
+
