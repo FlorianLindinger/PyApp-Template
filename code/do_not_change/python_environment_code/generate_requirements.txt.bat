@@ -7,7 +7,7 @@
 CD /D "%~dp0"
 
 @REM define local variables (do not have spaces before or after the = and at the end of the line):
-SET default_packages_file_path=..\..\default_python_packages.txt
+SET default_packages_file_path=..\..\python_environment_code\default_python_packages.txt
 
 @REM activate environment:
 CALL "activate_or_create_environment.bat" "nopause"
