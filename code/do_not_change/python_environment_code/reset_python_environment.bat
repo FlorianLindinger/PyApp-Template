@@ -13,12 +13,12 @@ SET python_environment_path=..\..\python_environment
 @REM CAREFUL WITH python_environment_path!
 
 @REM delete old environment if existing:
-if exist "%python_environment_path%\Scripts\activate.bat" (
+IF EXIST "%python_environment_path%\Scripts\activate.bat" (
 	RD /S /Q "%python_environment_path%" &@REM CAREFULL. DELETES EVERYTHING IN THAT FOLDER
-	if not exist "%python_environment_path%\Scripts\activate.bat" (
+	IF NOT EXIST "%python_environment_path%\Scripts\activate.bat" (
 		ECHO: Successfully deleted the old python environment
 		ECHO:
-	) else (
+	) ELSE (
 		ECHO:
 		ECHO: Error: Failed to deleted the old python environment
 		ECHO:
@@ -29,7 +29,7 @@ if exist "%python_environment_path%\Scripts\activate.bat" (
 )
 
 @REM create new environment:
-call "create_local_python_environment.bat" "nopause"
+CALL "create_local_python_environment.bat" "nopause"
 
 @REM exit if not called by other script with any argument:
 IF "%~1"=="" (

@@ -30,7 +30,7 @@ if errorlevel 1 (
 )
 
 @REM create virtual python environment:
-python -m pip install virtualenv
+python -m pip install --upgrade virtualenv
 if "%python_version%"=="" (
 	python -m virtualenv "%python_environment_path%"
 ) else (
@@ -56,6 +56,9 @@ if not exist "%python_environment_path%\Scripts\activate.bat" (
 
 @REM activate environment:
 call "%python_environment_path%\Scripts\activate.bat"
+
+@REM upgrade pip
+pip install --upgrade pip
 
 @REM install packages or create empty requirements.txt file
 if exist %default_packages_file_path% (
