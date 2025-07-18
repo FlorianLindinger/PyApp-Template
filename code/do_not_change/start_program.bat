@@ -13,14 +13,15 @@ SET icon_path=..\icons\icon.ico
 FOR /F "tokens=1,2 delims==" %%a IN (%settings_path%) DO (
 	IF %%a==program_name (SET program_name=%%b)
 	IF %%a==restart_main_code_on_crash (SET restart_main_code_on_crash=%%b)
-	IF %%a==terminal_bg_color (SET terminal_bg_color=%%b)
-	IF %%a==terminal_text_color (SET terminal_text_color=%%b)
 )
 
 @REM change terminal title:
 TITLE %program_name%
 
-@REM change terminal colors:
+@REM change terminal colors (for starting lines):
+@REM ; terminal colors (leave empty for windows default. Options: 0=Black,8=Gray,1=Blue,9=LightBlue,2=Green,A=LightGreen,3=Aqua,B=LightAqua,4=Red,C=LightRed,5=Purple,D=LightPurple,6=Yellow,E=LightYellow,7=White,F=BrightWhite):
+SET terminal_bg_color=9
+SET terminal_text_color=F
 COLOR %terminal_bg_color%%terminal_text_color%
 
 @REM change terminal icon:
