@@ -7,7 +7,7 @@
 SET python_env_code_path=python_environment_code
 SET python_code_path=..\
 SET settings_path=..\non-user_settings.ini
-SET icon_path=..\icon.ico
+SET icon_path=..\icons\icon.ico
 
 @REM import settings:
 FOR /F "tokens=1,2 delims==" %%a IN (%settings_path%) DO (

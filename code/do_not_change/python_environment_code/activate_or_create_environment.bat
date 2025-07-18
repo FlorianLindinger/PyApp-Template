@@ -7,7 +7,7 @@
 CD /D "%~dp0"
 
 @REM define local variables (do not have spaces before or after the = and at the end of the line):
-SET python_environment_path=..\..\python_environment
+SET python_environment_path=..\..\python_environment_code\python_environment
 
 @REM create python environment if not existing:
 IF NOT EXIST "%python_environment_path%\Scripts\activate.bat" (	
