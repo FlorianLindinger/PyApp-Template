@@ -17,7 +17,7 @@ But fork allows for contributing changes back to original template. Git remplate
 
 add to notes that you can delete after_python_crash_code.py
 
-add shortcut for auto install from .py file :https://stackoverflow.com/questions/46419607/how-to-automatically-install-required-packages-from-a-python-script-as-necessary
+add shortcut for auto install from .py file (but that works with excluding local imports?) :https://stackoverflow.com/questions/46419607/how-to-automatically-install-required-packages-from-a-python-script-as-necessary
 import importlib.metadata, subprocess, sys
 required  = {'PyQt5','PyQtWebEngine'}
 installed = {pkg.metadata['Name'] for pkg in importlib.metadata.distributions()}
@@ -31,3 +31,4 @@ chekc option to not have terminal and log to file
 have option for a*b^c,a*b^c
 
 add some kind of detection that code crashes immediately and that it does not spam repeatedly. or some minimum delay
+
