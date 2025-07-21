@@ -11,7 +11,7 @@
 import yaml  # install as pyyaml                                      
 import re                                                             
 with open("settings.yaml") as file: s = yaml.safe_load(file)  # get values with s["name"]	          
-# Fix what yaml can't interpret: Converts scientific notaion (as exepted in python) and math operation (+-*/) of 2 float convertables (including scientific notaion) to float:
+# Fix what yaml can't interpret: Converts scientific notaion (as exepted in python) and math operation (+-*/^) of 2 float convertables (including scientific notaion) to float:
 float_regex = r"\s*[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?\s*"  # identifies strings that python recognises as float convertable 
 def is_match(x, symbol): return (isinstance(x, str) and bool(re.match(f"^{float_regex}[{symbol}]{float_regex}$", x)))  # test if string & if math operation between 2 float convertables 
 s = {key: float(val) if (isinstance(val, str) and bool(re.match(f"^{float_regex}$", val))) else val for key, val in s.items()} 
