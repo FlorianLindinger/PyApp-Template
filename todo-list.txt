@@ -29,3 +29,5 @@ if missing:
 chekc option to not have terminal and log to file
 
 have option for a*b^c,a*b^c
+
+add some kind of detection that code crashes immediately and that it does not spam repeatedly. or some minimum delay
