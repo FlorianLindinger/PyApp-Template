@@ -52,3 +52,7 @@ add comment if or when "" needed or allowed. code expects none
 add incremental printing to log file.
 
 add option to log to file aswell while terminal?
+
+add shortcut for no-terminal mode 
+
+add shortcut for auto gen import for .py files (do not add yaml extra if not used)
