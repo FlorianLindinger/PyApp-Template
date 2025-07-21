@@ -3,6 +3,9 @@
 @REM turn off printing of commands:
 @ECHO OFF
 
+@REM move to folder of this file (needed for relative path shortcuts)
+CD /D "%~dp0"
+
 @REM define local variables (do not have spaces before or after the "="" and at the end of the line; do not add comments to the lines; use "\" to separate folder levels; do not put "\" at the end of paths):
 SET python_env_code_path=python_environment_code
 SET python_code_path=..
@@ -54,7 +57,7 @@ IF %ERRORLEVEL% EQU -1 (
 	EXIT
 )
 
-@REM exit if not called by other script with any argument:
+@REM print final message and pause if not called by other script with any argument:
 IF "%~1"=="" (
 	ECHO:
 	IF "%python_crashed%"=="1" (
@@ -67,6 +70,17 @@ IF "%~1"=="" (
 		ECHO: ########################################################
 	)
 	PAUSE >NUL 
+) ELSE (
+	IF "%python_crashed%"=="1" (
+		ECHO: ##########################
+		ECHO: Python crashed (see above^)
+		ECHO: ##########################
+	) ELSE (
+		ECHO: #################################
+		ECHO: Python code finished successfully
+		ECHO: #################################
+	)
+	EXIT
 )
 
 @REM exit before function definition would be called irroniously:

@@ -32,3 +32,23 @@ have option for a*b^c,a*b^c
 
 add some kind of detection that code crashes immediately and that it does not spam repeatedly. or some minimum delay
 
+is there any use in piping the error of the start batch file?
+
+add option to not have any prints from batch files
+
+remove unnecessary echos if python return -1
+
+add better text:
+ECHO: ##########################
+	ECHO: Python crashed (see above^)
+	ECHO: ##########################
+at least once? in the beginnign?
+
+make unicode log output
+
+fix in batch file "=""
+add comment if or when "" needed or allowed. code expects none
+
+add incremental printing to log file.
+
+add option to log to file aswell while terminal?
