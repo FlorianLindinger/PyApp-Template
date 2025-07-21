@@ -16,7 +16,7 @@ float_regex = r"\s*[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?\s*"  # identifies s
 def is_match(x, symbol): return (isinstance(x, str) and bool(re.match(f"^{float_regex}[{symbol}]{float_regex}$", x)))  # test if string & if math operation between 2 float convertables 
 s = {key: float(val) if (isinstance(val, str) and bool(re.match(f"^{float_regex}$", val))) else val for key, val in s.items()} 
 s = {key: float(val.split(r"/")[0])/float(val.split(r"/")[1]) if is_match(val, r"/") else val for key, val in s.items()}     #type:ignore
-s = {key: float(val.split("^")[0])**float(val.split("^")[1]) if is_match(val, "^") else val for key, val in s.items()}       #type:ignore
+s = {key: float(val.split("^")[0])**float(val.split("^")[1]) if is_match(val, r"\^") else val for key, val in s.items()}     #type:ignore
 s = {key: float(val.split("*")[0])*float(val.split("*")[1]) if is_match(val, "*") else val for key, val in s.items()}        #type:ignore
 s = {key: float(val.split("+")[0])+float(val.split("+")[1]) if is_match(val, "+") else val for key, val in s.items()}        #type:ignore
 s = {key: float(val.split("-")[0])-float(val.split("-")[1]) if is_match(val, "-") else val for key, val in s.items()}        #type:ignore
