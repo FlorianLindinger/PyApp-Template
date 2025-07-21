@@ -16,3 +16,16 @@ auto fork option? hm maybe just actually copy via a batch file (new folder and c
 But fork allows for contributing changes back to original template. Git remplate does not but allows for own forking
 
 add to notes that you can delete after_python_crash_code.py
+
+add shortcut for auto install from .py file :https://stackoverflow.com/questions/46419607/how-to-automatically-install-required-packages-from-a-python-script-as-necessary
+import importlib.metadata, subprocess, sys
+required  = {'PyQt5','PyQtWebEngine'}
+installed = {pkg.metadata['Name'] for pkg in importlib.metadata.distributions()}
+missing   = required - installed
+if missing:
+    subprocess.check_call([sys.executable, '-m', 'pip', 'install', '--upgrade', 'pip'])
+    subprocess.check_call([sys.executable, '-m', 'pip', 'install', *missing])
+	
+chekc option to not have terminal and log to file
+
+have option for a*b^c,a*b^c
