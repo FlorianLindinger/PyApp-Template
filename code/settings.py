@@ -13,6 +13,7 @@
 # a*b^c
 # a/b^c
 
+# import needed packages
 import re
 import yaml  # install as pyyaml
 
@@ -50,8 +51,10 @@ s = {key: float(val.split(r"/")[0]) / float(val.split(r"/")[1]) if  # type:ignor
 s = {key: float(val.split("^")[0]) ** float(val.split("^")[1]) if  # type:ignore
      is_match(val, r"\^") else val for key, val in s.items()}
 s = {key: float(val.split("*")[0]) * float(val.split("*")[1].split("^")[0]) **  # type:ignore
-     float(val.split("*")[1].split("^")[1]) if is_match2(val, "*", r"\^")       # type:ignore
+     float(val.split("*")[1].split("^")[1]) if  # type:ignore
+     is_match2(val, "*", r"\^")
      else val for key, val in s.items()}
 s = {key: float(val.split(r"/")[0]) / float(val.split(r"/")[1].split("^")[0]) **  # type:ignore
-     float(val.split(r"/")[1].split("^")[1]) if is_match2(val, r"/", r"\^")       # type:ignore
+     float(val.split(r"/")[1].split("^")[1]) if  # type:ignore
+     is_match2(val, r"/", r"\^")
      else val for key, val in s.items()}
