@@ -21,5 +21,5 @@ if "%file_length%"=="0" (
 ) 
 
 @REM close program
-EXIT
+EXIT /B
 

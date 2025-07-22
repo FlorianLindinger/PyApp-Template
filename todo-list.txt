@@ -45,8 +45,10 @@ test if error of batch fowrk for log
 
 make "nopause" required instead of any? for all files
 
-add shortcuts for environemnt batches
-
 add error log piping to all shortcuts and wherever possible
 
 need activate env for pipreqs? for correct package version for python version?
+
+rename make_absolute_path_if_relative and use where needed -> normalize_to_abs_path
+
+create terminate_running_program_name if running and delete afterwards? for no-terminal mode
