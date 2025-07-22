@@ -61,3 +61,8 @@ add to gitignore the logs. all ones
 rename logs
 
 move stuff from pyOcean to here
+
+test if CALL :handle_python_crash >> %log_path% 2>&1 works recuresively
+
+
+test if error of batch fowrk for log
