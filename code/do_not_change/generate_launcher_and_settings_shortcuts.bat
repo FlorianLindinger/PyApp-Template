@@ -41,8 +41,9 @@ MOVE "%program_name%_settings.lnk" "%~dp0%shortcut_destination_path%"
 MOVE "%program_name% (with log & no terminal).lnk" "%~dp0%shortcut_destination_path%"
 
 @REM print info:
+CALL :make_absolute_path_if_relative "%~dp0%shortcut_destination_path%"
 ECHO:
-ECHO: "%program_name%","%program_name% (with log & no terminal)" & "%program_name%_settings" should be now in "%~dp0%shortcut_destination_path%" if there were no errors
+ECHO: "%program_name%","%program_name% (with log & no terminal)" ^& "%program_name%_settings" should be now in "%OUT%" if there were no errors
 ECHO:
 
 @REM exit if not called by other script with any argument:
@@ -51,3 +52,15 @@ IF "%~1"=="" (
 	ECHO: Press any key to exit
 	PAUSE >NUL 
 )
+
+@REM exit before function definition would be called irroniously:
+EXIT /B
+
+@REM ###################################################################
+@REM function definitions:
+@REM ###################################################################
+
+@REM function that makes path to absolute if not already
+:make_absolute_path_if_relative
+	SET OUT=%~f1
+	EXIT /B

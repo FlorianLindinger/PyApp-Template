@@ -54,7 +54,7 @@ IF %ERRORLEVEL% EQU 1 (
 )
 @REM Does not pause if python returns an errorlevel -1 with sys.exit(-1) in python:
 IF %ERRORLEVEL% EQU -1 (
-	EXIT
+	EXIT /B
 )
 
 @REM print final message and pause if not called by other script with any argument:
@@ -80,11 +80,11 @@ IF "%~1"=="" (
 		ECHO: Python code finished successfully
 		ECHO: #################################
 	)
-	EXIT
+	EXIT /B
 )
 
 @REM exit before function definition would be called irroniously:
-EXIT 
+EXIT /B
 
 @REM ###################################################################
 @REM function definitions:
