@@ -45,10 +45,12 @@ test if error of batch fowrk for log
 
 make "nopause" required instead of any? for all files
 
-add error log piping to all shortcuts and wherever possible
+add error log piping to all shortcuts and wherever possible. and code that deletes an empty error file at end of all codes. where to put file? is there a way to put it where it was called? i guess it would not exist either way if not called by shortcuts
 
 need activate env for pipreqs? for correct package version for python version?
 
 rename make_absolute_path_if_relative and use where needed -> normalize_to_abs_path
 
 create terminate_running_program_name if running and delete afterwards? for no-terminal mode
+
+generate link to settings.py if no yaml found. explain that somewhere
