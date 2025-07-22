@@ -61,3 +61,5 @@ make "nopause" required instead of any?
 add shortcuts for environemnt batches
 
 add error log piping to all shortcuts and wherever possible
+
+need activate env for pipreqs? for correct package version for python version?
