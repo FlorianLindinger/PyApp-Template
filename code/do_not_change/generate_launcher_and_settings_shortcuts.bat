@@ -32,15 +32,17 @@ IF "%user_settings_path%"=="" ( @REM shortcut.exe somehow does not need a closin
 ) ELSE (
 	CALL shortcut_by_OptimumX.exe /F:"%program_name%_settings.lnk" /A:C /T:"cmd.exe" /P:"/C START settings.yaml" /I:"%~dp0%settings_icon_path%" /W:"%~dp0%user_settings_path%"
 )
+CALL shortcut_by_OptimumX.exe /F:"%program_name% (with log & no terminal).lnk" /A:C /T:"cmd.exe" /P:"/C helper_start_program_with_log_file_and_no_terminl.bat" /I:"%~dp0%icon_path%" /W:"%~dp0
 
 @REM move shortcut results back to destination 
 ECHO:
 MOVE "%program_name%.lnk" "%~dp0%shortcut_destination_path%"
 MOVE "%program_name%_settings.lnk" "%~dp0%shortcut_destination_path%"
+MOVE "%program_name% (with log & no terminal).lnk" "%~dp0%shortcut_destination_path%"
 
 @REM print info:
 ECHO:
-ECHO: "%program_name%" and "%program_name%_settings" should be now in "%~dp0%shortcut_destination_path%" if there were no errors
+ECHO: "%program_name%","%program_name% (with log & no terminal)" & "%program_name%_settings" should be now in "%~dp0%shortcut_destination_path%" if there were no errors
 ECHO:
 
 @REM exit if not called by other script with any argument:
