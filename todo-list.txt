@@ -1,8 +1,7 @@
 add how to copy this folder
 
-How to add option to not start terminal 
-
-add option for yaml install?. 
+add option for yaml install?
+auto install yaml? for new generation? 
 
 allow for local package installs somehow via req.txt
 
@@ -49,10 +48,16 @@ make unicode log output
 fix in batch file "=""
 add comment if or when "" needed or allowed. code expects none
 
-add incremental printing to log file.
+add incremental printing to lo
+g file.
 
 add option to log to file aswell while terminal?
 
 add shortcut for no-terminal mode 
 
 add shortcut for auto gen import for .py files (do not add yaml extra if not used)
+
+add to gitignore the logs. all ones
+rename logs
+
+move stuff from pyOcean to here
