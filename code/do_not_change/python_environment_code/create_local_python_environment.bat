@@ -21,7 +21,7 @@ FOR /F "tokens=1,2 delims==" %%a IN (%non_user_settings_path%) DO (
 
 @REM check if any python is installed:
 python --version >NUL
-if errorlevel 1 (
+IF errorlevel 1 (
 	ECHO: Error: Install python version %python_version% in windows (https://www.python.org/downloads/windows/^) and restart
 	ECHO:
 	ECHO: Failed (see above^): Press any key to exit
@@ -34,21 +34,21 @@ python -m pip install --upgrade pip
 
 @REM create virtual python environment:
 python -m pip install --upgrade virtualenv
-if "%python_version%"=="" (
+IF "%python_version%"=="" (
 	python -m virtualenv "%python_environment_path%"
-) else (
+) ELSE (
 	python -m virtualenv --python=python%python_version% "%python_environment_path%"
 )
 
 @REM check if environment creation failed:
-if not exist "%python_environment_path%\Scripts\activate.bat" (
+IF NOT EXIST "%python_environment_path%\Scripts\activate.bat" (
 	ECHO:
 	ECHO:
 	ECHO: Failed during installation of python environment (see above^)
 	ECHO: Could it be that python version %python_version% is not installed in Windows?
 	ECHO: Install (from https://www.python.org/downloads/windows/^) and try again
 	ECHO:
-	if exist "%python_environment_path%" (
+	IF EXIST "%python_environment_path%" (
 		RD /S /Q "%python_environment_path%" &@REM CAREFULL. DELETES EVERYTHING IN THAT FOLDER
 		ECHO:
 	)
@@ -58,13 +58,31 @@ if not exist "%python_environment_path%\Scripts\activate.bat" (
 )
 
 @REM activate environment:
-call "%python_environment_path%\Scripts\activate.bat"
+CALL "%python_environment_path%\Scripts\activate.bat"
 
-@REM install packages or create empty requirements.txt file
-if exist %default_packages_file_path% (
-	pip install -r %default_packages_file_path%
-)  ELSE (
-	pip freeze > %default_packages_file_path%
+@REM install packages from file (either default one or one given via argument when calling this batch file or generate empty packages-list-file)
+IF NOT "%~1"=="nopause" (
+	IF NOT "%~1"=="" (
+		IF EXIST %~1 (
+			pip install -r %~1
+		) ELSE (
+			ECHO: Error: %~1 does not exist. Press any key to exit
+			PAUSE >NUL 
+			EXIT
+		)
+	) ELSE (
+		IF EXIST "%default_packages_file_path%" (
+			pip install -r "%default_packages_file_path%"
+		) ELSE (
+			TYPE NUL > "%default_packages_file_path%"
+		)
+	)
+) ELSE (
+	IF EXIST "%default_packages_file_path%" (
+		pip install -r "%default_packages_file_path%"
+	) ELSE (
+		TYPE NUL > "%default_packages_file_path%"
+	)
 )
 
 @REM print environment location:
@@ -72,9 +90,9 @@ ECHO:
 ECHO Created python%python_version% environment in "%~dp0%python_environment_path%" if everything worked &@REM %~dp0 gives the local path of the file instead of the caller
 ECHO:
 
-@REM exit if not called by other script with any argument:
-IF "%~1"=="" (
-	ECHO:
-	ECHO: Press any key to exit
-	PAUSE >NUL 
-)
+@REM exit if not called by other script with "nopause" argument:
+IF "%~1"=="nopause" ( EXIT /B )
+IF "%~2"=="nopause" ( EXIT /B )
+ECHO:
+ECHO: Press any key to exit
+PAUSE >NUL 

@@ -48,11 +48,16 @@ add incremental printing to log file.
 
 add option to log to file aswell while terminal?
 
-
 add shortcut for auto gen import for .py files (do not add yaml extra if not used)
-
 
 test if CALL :handle_python_crash >> %log_path% 2>&1 works recuresively
 
-
 test if error of batch fowrk for log
+
+reset_python_environment add arguemnt for requiremnts.txt file
+
+make "nopause" required instead of any?
+
+add shortcuts for environemnt batches
+
+add error log piping to all shortcuts and wherever possible
