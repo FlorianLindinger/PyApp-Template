@@ -6,7 +6,7 @@
 @REM move to folder of this file (needed for relative path shortcuts)
 CD /D "%~dp0" &@REM /D is needed to change drive if necessary
 
-@REM define local variables (do not have spaces before or after the "="" and at the end of the line; do not add comments to the lines; use "\" to separate folder levels; do not put "\" at the end of paths):
+@REM define local variables (do not have spaces before or after the "=" and at the end of the line; do not add comments to the lines; use "\" to separate folder levels; do not put "\" at the end of paths):
 SET non_user_settings_path=..\non-user_settings.ini
 SET icon_path=..\icons\icon.ico
 SET settings_icon_path=..\icons\settings_icon.ico

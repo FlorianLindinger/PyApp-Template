@@ -25,17 +25,14 @@ if missing:
     subprocess.check_call([sys.executable, '-m', 'pip', 'install', '--upgrade', 'pip'])
     subprocess.check_call([sys.executable, '-m', 'pip', 'install', *missing])
 	
-chekc option to not have terminal and log to file
-
 have option for a*b^c,a*b^c
 
 add some kind of detection that code crashes immediately and that it does not spam repeatedly. or some minimum delay
 
-is there any use in piping the error of the start batch file?
+is there any use in piping the error of the start batch file for non no-terminal mode
 
-add option to not have any prints from batch files
-
-remove unnecessary echos if python return -1
+add option to not have any prints from batch files?
+remove unnecessary echos if python return -1 ?
 
 add better text:
 ECHO: ##########################
@@ -45,22 +42,15 @@ at least once? in the beginnign?
 
 make unicode log output
 
-fix in batch file "=""
 add comment if or when "" needed or allowed. code expects none
 
-add incremental printing to lo
-g file.
+add incremental printing to log file.
 
 add option to log to file aswell while terminal?
 
-add shortcut for no-terminal mode 
 
 add shortcut for auto gen import for .py files (do not add yaml extra if not used)
 
-add to gitignore the logs. all ones
-rename logs
-
-move stuff from pyOcean to here
 
 test if CALL :handle_python_crash >> %log_path% 2>&1 works recuresively
 
