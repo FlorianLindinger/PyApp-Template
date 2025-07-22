@@ -29,11 +29,11 @@ IF EXIST "%python_environment_path%\Scripts\activate.bat" (
 )
 
 @REM create new environment:
-CALL "create_local_python_environment.bat" "nopause"
+CALL "create_local_python_environment.bat" %~1 %~2
 
-@REM exit if not called by other script with any argument:
-IF "%~1"=="" (
-	ECHO:
-	ECHO: Press any key to exit
-	PAUSE >NUL 
-)
+@REM exit if not called by other script with "nopause" argument:
+IF "%~1"=="nopause" ( EXIT /B )
+IF "%~2"=="nopause" ( EXIT /B )
+ECHO:
+ECHO: Press any key to exit
+PAUSE >NUL 
