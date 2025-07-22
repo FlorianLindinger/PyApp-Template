@@ -9,6 +9,10 @@ __pycache__
 !GENERATE_LAUNCHER_AND_SETTINGS.lnk
 # do not sync temporary pip package file
 tmp.txt
+# do not sync the log output
+/log.txt
+# do not sync the start log output
+/log_start_errors.txt
 ###########################
 
 
