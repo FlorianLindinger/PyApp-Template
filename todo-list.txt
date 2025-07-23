@@ -56,3 +56,5 @@ create terminate_running_program_name if running and delete afterwards? for no-t
 generate link to settings.py if no yaml found. explain that somewhere
 
 move settings.py to do_not_change? link possible? but helper file is allowed to be change actually??? make folder to package such that it can be imported with subfolder path? probably just keep since can be changed and not critical
+
+update yaml fiel to new tamplate
