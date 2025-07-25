@@ -12,14 +12,14 @@ SET python_env_code_path=..\..\
 @REM upgrade pip
 python -m pip install --upgrade pip
 
+@REM activate (or create & activate) python environment:
+CALL activate_or_create_environment.bat nopause
+
 @REM install globally a package to find required packages in python files
 pip install pipreqs
 
-@REM activate (or create & activate) python environment:
-CALL "activate_or_create_environment.bat" "nopause"
-
 @REM move to folder of python files
-CD /D %~python_env_code_path%
+CD /D %python_env_code_path%
 
 @REM install needed packages
 pipreqs . --force --savepath tmp.txt

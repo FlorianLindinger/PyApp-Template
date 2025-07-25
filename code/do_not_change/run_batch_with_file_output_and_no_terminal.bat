@@ -18,7 +18,7 @@ IF "%~2"=="" (
 )
 
 @REM call batch file without terminal and send outputs (including errors) to log_path
-CALL run_batch_with_no_terminal.bat run_batch_with_file_output.bat "%~batch_file_path%" "%~log_path%" "%~3"
+CALL run_batch_with_no_terminal.bat run_batch_with_file_output.bat "%batch_file_path%" "%log_path%" "%~3"
 
 @REM close program
 EXIT /B

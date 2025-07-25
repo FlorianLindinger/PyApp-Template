@@ -8,6 +8,8 @@ create terminate_running_program_name if running and delete afterwards? for no-t
 
 auto install powershell needed?
 
+no error to log file for error in start_program?
+
 
 ##############################
 For readme
@@ -62,14 +64,14 @@ template for all
 	@REM move to folder of this file (needed for relative path shortcuts)
 	@REM current_file_path varaible needed as workaround for nieche windows bug where this file gets called with quotation marks:
 	SET current_file_path=%~dp0
-	CD /D "%~current_file_path%"
+	CD /D "%current_file_path%"
 
 	@REM define local variables (do not have spaces before or after the "=" or at the end of the variable value (unless wanted in value). Add inline comments therefore without a space before "&@REM".
 	@REM Use "\" to separate folder levels and omit "\" at the end of paths):
 	SET settings_path=..\non-user_settings.ini
 
 	@REM import settings from settings_path (e.g., for importing parameter "example" add the line within the last round brackets below "IF %%a==example (SET example=%%b)"):
-	FOR /F "tokens=1,2 delims==" %%a IN (%~settings_path%) DO (
+	FOR /F "tokens=1,2 delims==" %%a IN (%settings_path%) DO (
 	)
 
 	@REM ######################
@@ -129,3 +131,15 @@ make pyqt5 interface available and easy to use with example. (threading?)
 check if i can add stoppping of closing terminal
 
 allow for non online package installs somehow via req.txt
+
+
+handle: ERROR: Could not open requirements file: [Errno 2] No such file or directory: 'tmp.txt'
+
+see where i get errorlevel and if it translateds to parent batch. print different message if errior
+
+auto install from py not working
+
+installinog and resetting not working correctly
+
+do i need python -m pip or not. 
+do I need to update pip or python -m

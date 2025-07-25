@@ -13,17 +13,20 @@ SET default_python_packages_txt_path=..\..\python_environment_code
 @REM upgrade pip
 python -m pip install --upgrade pip
 
+@REM activate (or create & activate) python environment:
+CALL activate_or_create_environment.bat nopause
+
 @REM install globally a package to find required packages in python files
 pip install pipreqs
 
 @REM replace default_python_packages file with needed packages
-pipreqs "%~python_code_path%" --force --savepath tmp.txt --ignore "%~default_python_packages_txt_path%\python_environment"
+pipreqs "%python_code_path%" --force --savepath tmp.txt --ignore "%default_python_packages_txt_path%\python_environment"
 
 @REM reset python environment with only required packages
 CALL reset_python_environment.bat tmp.txt nopause
 
 @REM remove temporary file that lists needed packages
-DEL tmp.txt 
+@REM DEL tmp.txt 
 
 @REM exit if not called by other script with any argument:
 IF "%~1"=="" (
