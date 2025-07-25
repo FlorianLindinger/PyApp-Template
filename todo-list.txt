@@ -1,90 +1,131 @@
-add how to copy this folder
+############################################################
+important
+############################################################
 
-add option for yaml install?
-auto install yaml? for new generation? 
+need activate env for pipreqs? for correct package version for python version?
 
-allow for local package installs somehow via req.txt
+create terminate_running_program_name if running and delete afterwards? for no-terminal mode
 
-add readme in code\ folder   explain what everything is and that it has to keep its name
+auto install powershell needed?
 
-check if i can add stoppping of closing terminal
 
-make pyqt5 interface available and easy to use with example. (threading?)
+##############################
+For readme
+##############################
 
-auto fork option? hm maybe just actually copy via a batch file (new folder and copy (dont overwrite at all), and delete .git)
-But fork allows for contributing changes back to original template. Git remplate does not but allows for own forking
+ explain what everything is and that it has to keep its name
+ explain that you could just use poython for settings
+ add to notes that you can delete after_python_crash_code.py
+ explain fork.... options
+explain all advantages/features
+explain that it only saves to log file at end
 
-add to notes that you can delete after_python_crash_code.py
 
-have option for a*b^c,a*b^c
+##############################
+For all batch files:
+##############################
 
-add some kind of detection that code crashes immediately and that it does not spam repeatedly. or some minimum delay
+check if current_file_path needed and replace ~dp0
 
-is there any use in piping the error of the start batch file for non no-terminal mode
+make checks if files exist where no error would appear anywhere and leave window open with a warning if no existing
 
-add option to not have any prints from batch files?
-remove unnecessary echos if python return -1 ?
+check if no spaces at SET end
+
+add to all:
+
+
+check if needed and update to new comments
+	@REM function that makes path to absolute if not already. Access as %OUTPUT% (also gets rid of unresolved ".." in path):
+	:make_absolute_path_if_relative
+		SET OUTPUT=%~f1
+		EXIT /B
+
+template for all
++ test if works for empty settings import :
+	
+	@REM ###################################
+	@REM --- Code Description & Comments ---
+	@REM ###################################
+
+	@REM "@REM" indicates the start of a comment (use "&@REM" for comments at the end of a code line, unless the line starts a nested sequence like a line with IF/ELSE/FOR/..., e.g., "IF A==B ( @REM comment")
+
+	@REM #########################
+	@REM --- Setup & Variables ---
+	@REM #########################
+
+	@REM turn off printing of commands:
+	@ECHO OFF
+
+	@REM make this code local so no variables of a potential calling program are changed:
+	SETLOCAL
+
+	@REM move to folder of this file (needed for relative path shortcuts)
+	@REM current_file_path varaible needed as workaround for nieche windows bug where this file gets called with quotation marks:
+	SET current_file_path=%~dp0
+	CD /D "%~current_file_path%"
+
+	@REM define local variables (do not have spaces before or after the "=" or at the end of the variable value (unless wanted in value). Add inline comments therefore without a space before "&@REM".
+	@REM Use "\" to separate folder levels and omit "\" at the end of paths):
+	SET settings_path=..\non-user_settings.ini
+
+	@REM import settings from settings_path (e.g., for importing parameter "example" add the line within the last round brackets below "IF %%a==example (SET example=%%b)"):
+	FOR /F "tokens=1,2 delims==" %%a IN (%~settings_path%) DO (
+	)
+
+	@REM ######################
+	@REM --- Code Execution ---
+	@REM ######################
+
+
+
+
+
+
+
+	@REM ####################
+	@REM --- Closing-Code ---
+	@REM ####################
+
+	@REM pause if not called by other script with "nopause" as last argument:
+	FOR %%a IN (%*) DO SET last_argument=%%a
+	IF NOT "%last_argument%"=="nopause" (
+		ECHO: Press any key to exit
+		PAUSE >NUL 
+	)
+
+	@REM Exit program without closing a potential calling program
+	EXIT /B 
+
+	@REM ############################
+	@REM --- Function Definitions ---
+	@REM ############################
+
+
+
+
+
+############################################################
+optional
+############################################################
+
+generate link to settings.py instead if no yaml file and if .py file exists. explain this
+
+add incremental printing to log file. check if printing to terminal also possible then
+check if option to save line whenever appears in terminal as a log works
 
 add better text:
-ECHO: ##########################
+	ECHO: ##########################
 	ECHO: Python crashed (see above^)
 	ECHO: ##########################
 at least once? in the beginnign?
 
-make unicode log output
+add some kind of detection that code crashes immediately and that it does not spam repeatedly. or some minimum delay
 
-add comment if or when "" needed or allowed. code expects none
+auto fork option? hm maybe just actually copy via a batch file (new folder and copy (dont overwrite at all), and delete .git, shortcuts ..., dont copy basically stuff in gitignore)
+But fork allows for contributing changes back to original template. Git remplate does not but allows for own forking
 
-add incremental printing to log file.
+make pyqt5 interface available and easy to use with example. (threading?)
 
-add option to log to file aswell while terminal?
+check if i can add stoppping of closing terminal
 
-test if error of batch fowrk for log
-
-make "nopause" required instead of any? for all files
-
-add error log piping to all shortcuts and wherever possible. and code that deletes an empty error file at end of all codes. where to put file? is there a way to put it where it was called? i guess it would not exist either way if not called by shortcuts
-
-need activate env for pipreqs? for correct package version for python version?
-
-rename make_absolute_path_if_relative and use where needed -> normalize_to_abs_path
-
-create terminate_running_program_name if running and delete afterwards? for no-terminal mode
-
-generate link to settings.py if no yaml found. explain that somewhere
-
-move settings.py to do_not_change? link possible? but helper file is allowed to be change actually??? make folder to package such that it can be imported with subfolder path? probably just keep since can be changed and not critical
-
-update yaml fiel to new tamplate
-
-change generattor to not make start in folder anymore?
-
-auto install powershell?
-
-error catching and deleting file not working at momem for non-terminal becasue it blocks itself->need hidden suprocess to print stuff inside. or give batch file the path of its errors that it should delete itself if no errors. can that not just be handled from inside batch file from start?
-
-prevent called batch files from overwrititing varibales
--> add SETLOCAL to start of all batches
-
-check if files exists for start_batch without terminal
-
-add to all:
-		@REM pause if not called by other script with "nopause" argument:
-		IF NOT "%~1"=="nopause" (
-			ECHO: Press any key to exit
-			PAUSE >NUL 
-		)
-
-		@REM Exit program without closing a potential calling program
-		EXIT /B 
-
-add pause if nopauise tp all files
-
-@REM function that makes path to absolute if not already
-:make_absolute_path_if_relative
-	SET OUTPUT=%~f1
-	EXIT /B
-
-	add ~ everywhere where "" are
-
-make checks if files exist where no error would appear anywhere and leave window open with a warning if no existing
+allow for non online package installs somehow via req.txt

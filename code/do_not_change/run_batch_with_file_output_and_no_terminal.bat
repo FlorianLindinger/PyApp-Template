@@ -9,7 +9,7 @@ CD /D "%~dp0"
 @REM make this code local so no variables of a potential calling program are changed:
 SETLOCAL
 
-@REM define local variables (do not have spaces before or after the "=" and at the end of the line; do not add comments to the lines; use "\" to separate folder levels; do not put "\" at the end of paths):
+@REM define local variables (do not have spaces before or after the "=" and at the end of the line; do not add comments to the lines; use "\" to separate folder levels omit "\" at the end of paths):
 SET batch_file_path=%~1
 IF "%~2"=="" (
 	SET log_path=log.txt
