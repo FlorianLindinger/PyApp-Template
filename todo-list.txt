@@ -58,3 +58,35 @@ generate link to settings.py if no yaml found. explain that somewhere
 move settings.py to do_not_change? link possible? but helper file is allowed to be change actually??? make folder to package such that it can be imported with subfolder path? probably just keep since can be changed and not critical
 
 update yaml fiel to new tamplate
+
+change generattor to not make start in folder anymore?
+
+auto install powershell?
+
+error catching and deleting file not working at momem for non-terminal becasue it blocks itself->need hidden suprocess to print stuff inside. or give batch file the path of its errors that it should delete itself if no errors. can that not just be handled from inside batch file from start?
+
+prevent called batch files from overwrititing varibales
+-> add SETLOCAL to start of all batches
+
+check if files exists for start_batch without terminal
+
+add to all:
+		@REM pause if not called by other script with "nopause" argument:
+		IF NOT "%~1"=="nopause" (
+			ECHO: Press any key to exit
+			PAUSE >NUL 
+		)
+
+		@REM Exit program without closing a potential calling program
+		EXIT /B 
+
+add pause if nopauise tp all files
+
+@REM function that makes path to absolute if not already
+:make_absolute_path_if_relative
+	SET OUTPUT=%~f1
+	EXIT /B
+
+	add ~ everywhere where "" are
+
+make checks if files exist where no error would appear anywhere and leave window open with a warning if no existing

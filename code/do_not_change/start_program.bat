@@ -4,7 +4,11 @@
 @ECHO OFF
 
 @REM move to folder of this file (needed for relative path shortcuts)
-CD /D "%~dp0"
+SET current_file_path=%~dp0 &@REM workaround for nieche windows bug where this file gets called with quotation marks
+CD /D "%current_file_path%"
+
+@REM make this code local so no variables of a potential calling program are changed:
+SETLOCAL
 
 @REM define local variables (do not have spaces before or after the "=" and at the end of the line; do not add comments to the lines; use "\" to separate folder levels; do not put "\" at the end of paths):
 SET python_env_code_path=python_environment_code
@@ -31,20 +35,15 @@ COLOR %terminal_bg_color%%terminal_text_color%
 change_icon "%program_name%" "%icon_path%"
 
 @REM activate or create & activate python environment:
-CD /D %python_env_code_path% &@REM moving to local folder of called file needed because of relative paths in code
-CALL activate_or_create_environment.bat "nopause"
-CD /D "%~dp0" &@REM moving back to start directory
+CD /D "%python_env_code_path%" &@REM moving to local folder of called file needed because of relative paths in code
+CALL activate_or_create_environment.bat nopause
+CD /D "%current_file_path%" &@REM moving back to start directory
 
 @REM go to directory where the python codes are (in order to have them running where they are located):
-CD /D %python_code_path%
+CD /D "%python_code_path%"
 
 @REM run main python code:
 python main_code.py
-ECHO:
-ECHO: ############################
-ECHO: End of python code execution
-ECHO: ############################
-ECHO:
 
 @REM %ERRORLEVEL% is what the last python execution gives out in sys.exit(errorlevel). 
 @REM Errorlevel 1 (default for python crash) will run main_code.py or after_python_crash_code.py (depending on parameter restart_main_code_on_crash in non-user_settings.ini). Errorlevel -1 will exit the terminal. Any other value will pause the terminal until user presses a button (unless this script is called with any argument):
@@ -57,34 +56,27 @@ IF %ERRORLEVEL% EQU -1 (
 	EXIT /B
 )
 
-@REM print final message and pause if not called by other script with any argument:
-IF "%~1"=="" (
-	ECHO:
-	IF "%python_crashed%"=="1" (
-		ECHO: #################################################
-		ECHO: Python crashed (see above^). Press any key to exit
-		ECHO: #################################################
-	) ELSE (
-		ECHO: ########################################################
-		ECHO: Python code finished successfully. Press any key to exit
-		ECHO: ########################################################
-	)
-	PAUSE >NUL 
+@REM print final message:
+ECHO:
+IF "%python_crashed%"=="1" (
+	ECHO: ##########################
+	ECHO: Python crashed (see above^)
+	ECHO: ##########################
 ) ELSE (
-	IF "%python_crashed%"=="1" (
-		ECHO: ##########################
-		ECHO: Python crashed (see above^)
-		ECHO: ##########################
-	) ELSE (
-		ECHO: #################################
-		ECHO: Python code finished successfully
-		ECHO: #################################
-	)
-	EXIT /B
+	ECHO: #################################
+	ECHO: Python code finished successfully
+	ECHO: #################################
+)
+ECHO:
+
+@REM pause if not called by other script with "nopause" argument:
+IF NOT "%~1"=="nopause" (
+	ECHO: Press any key to exit
+	PAUSE >NUL 
 )
 
-@REM exit before function definition would be called irroniously:
-EXIT /B
+@REM exit program without closing a potential calling program
+EXIT /B 
 
 @REM ###################################################################
 @REM function definitions:
@@ -104,9 +96,7 @@ IF %restart_main_code_on_crash% EQU 0 ( @REM  run after_python_crash_code.py (ag
 		ECHO: Running python code intended for after crashes:
 		ECHO: ###############################################
 		ECHO:
-		@ECHO ON
 		python after_python_crash_code.py
-		@ECHO OFF
 		ECHO:
 	@REM exit function if after_python_crash_code does not exist
 	) ELSE (
@@ -118,16 +108,9 @@ IF %restart_main_code_on_crash% EQU 0 ( @REM  run after_python_crash_code.py (ag
 	ECHO: Running main python code again after it crashed:
 	ECHO: ################################################
 	ECHO:
-	@ECHO ON
 	python main_code.py "crashed" &@REM "crashed" indicated to the python code that it is a repeat call after a crash and can be checked for with len(sys.argv)==2
-	@ECHO OFF
 	ECHO:
 )
-ECHO:
-ECHO: ############################
-ECHO: End of python code execution
-ECHO: ############################
-ECHO:
 IF %ERRORLEVEL% EQU 1 ( @REM could be infinitely recursive
 	CALL :handle_python_crash
 )
