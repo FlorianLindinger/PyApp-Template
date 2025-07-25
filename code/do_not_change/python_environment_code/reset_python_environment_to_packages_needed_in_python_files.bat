@@ -17,7 +17,7 @@ python -m pip install --upgrade pip
 pip install pipreqs
 
 @REM replace default_python_packages file with needed packages
-pipreqs "%python_code_path%" --force --savepath tmp.txt --ignore "%default_python_packages_txt_path%\python_environment"
+pipreqs "%~python_code_path%" --force --savepath tmp.txt --ignore "%~default_python_packages_txt_path%\python_environment"
 
 @REM reset python environment with only required packages
 CALL reset_python_environment.bat tmp.txt nopause

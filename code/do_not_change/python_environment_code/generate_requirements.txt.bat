@@ -13,8 +13,8 @@ SET default_packages_file_path=..\..\python_environment_code\default_python_pack
 CALL "activate_or_create_environment.bat" "nopause"
 
 @REM print warning if requirements.txt already exists:
-IF exist %default_packages_file_path% (
-    ECHO "%~dp0%default_packages_file_path%" already exists and will be overwritten
+IF exist %~default_packages_file_path% (
+    ECHO "%~dp0%~default_packages_file_path%" already exists and will be overwritten
 	ECHO:
 )
 
@@ -22,10 +22,10 @@ IF exist %default_packages_file_path% (
 python -m pip install --upgrade pip
 
 @REM generate requirements.txt:
-pip freeze > %default_packages_file_path%
+pip freeze > %~default_packages_file_path%
 
 @REM print
-ECHO: Generated "%~dp0%default_packages_file_path%"
+ECHO: Generated "%~dp0%~default_packages_file_path%"
 
 @REM exit if not called by other script with any argument:
 IF "%~1"=="" (
