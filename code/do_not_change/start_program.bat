@@ -4,7 +4,8 @@
 @ECHO OFF
 
 @REM move to folder of this file (needed for relative path shortcuts)
-SET current_file_path=%~dp0 &@REM workaround for nieche windows bug where this file gets called with quotation marks
+@REM current_file_path varaible needed as workaround for nieche windows bug where this file gets called with quotation marks:
+SET current_file_path=%~dp0
 CD /D "%~current_file_path%"
 
 @REM make this code local so no variables of a potential calling program are changed:
