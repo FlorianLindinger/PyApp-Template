@@ -9,23 +9,23 @@ CD /D "%~dp0"
 @REM define local variables (do not have spaces before or after the "=" and at the end of the line; do not add comments to the lines; use "\" to separate folder levels; do not put "\" at the end of paths):
 SET default_packages_file_path=..\..\python_environment_code\default_python_packages.txt
 
-@REM activate environment:
-CALL "activate_or_create_environment.bat" "nopause"
-
-@REM print warning if requirements.txt already exists:
-IF exist %~default_packages_file_path% (
-    ECHO "%~dp0%~default_packages_file_path%" already exists and will be overwritten
-	ECHO:
-)
-
 @REM upgrade pip
 python -m pip install --upgrade pip
 
+@REM activate environment:
+CALL activate_or_create_environment.bat nopause
+
+@REM print warning if requirements.txt already exists:
+IF exist "%default_packages_file_path%" (
+    ECHO "%~dp0%default_packages_file_path%" already exists and will be overwritten
+	ECHO:
+)
+
 @REM generate requirements.txt:
-pip freeze > %~default_packages_file_path%
+python -m pip freeze > "%default_packages_file_path%"
 
 @REM print
-ECHO: Generated "%~dp0%~default_packages_file_path%"
+ECHO: Generated "%~dp0%default_packages_file_path%"
 
 @REM exit if not called by other script with any argument:
 IF "%~1"=="" (
