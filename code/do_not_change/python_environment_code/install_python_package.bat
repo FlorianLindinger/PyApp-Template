@@ -10,7 +10,7 @@ CD /D "%~dp0"
 SET python_environment_path=..\..\python_environment_code\python_environment
 
 @REM create python environment if not existing:
-if not exist "%~python_environment_path%\Scripts\activate.bat" (
+if not exist "%python_environment_path%\Scripts\activate.bat" (
 	call activate_or_create_environment.bat "nopause"
 )
 
@@ -23,7 +23,7 @@ ECHO: Write 'pip install {package name}' to install a package in the local envir
 ECHO:
 
 @REM start console with environment:
-START /B /LOW /WAIT call "%~python_environment_path%\Scripts\activate.bat"
+START /B /LOW /WAIT call "%python_environment_path%\Scripts\activate.bat"
 
 @REM print warning because this code should not be reached:
 ECHO:
