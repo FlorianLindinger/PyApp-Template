@@ -14,15 +14,15 @@ SET batch_file_path=%~1
 
 @REM run batch file without terminal
 IF NOT "%~4"=="" (
-	powershell -Command "Start-Process '%batch_file_path%' -ArgumentList '%~2', '%~3', '%~4' -WindowStyle Hidden"
+	powershell -Command "Start-Process '%~batch_file_path%' -ArgumentList '%~2', '%~3', '%~4' -WindowStyle Hidden"
 ) ELSE (
 	IF NOT "%~3"=="" (
-		powershell -Command "Start-Process '%batch_file_path%' -ArgumentList '%~2', '%~3' -WindowStyle Hidden"
+		powershell -Command "Start-Process '%~batch_file_path%' -ArgumentList '%~2', '%~3' -WindowStyle Hidden"
 	) ELSE ( 
 		IF NOT "%~2"=="" (
-			powershell -Command "Start-Process '%batch_file_path%' -ArgumentList '%~2' -WindowStyle Hidden"
+			powershell -Command "Start-Process '%~batch_file_path%' -ArgumentList '%~2' -WindowStyle Hidden"
 		) ELSE (
-			powershell -Command "Start-Process '%batch_file_path%' -WindowStyle Hidden"
+			powershell -Command "Start-Process '%~batch_file_path%' -WindowStyle Hidden"
 		)	
 	)
 )

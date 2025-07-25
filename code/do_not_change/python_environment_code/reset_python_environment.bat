@@ -13,9 +13,9 @@ SET python_environment_path=..\..\python_environment_code\python_environment
 @REM CAREFUL WITH python_environment_path!
 
 @REM delete old environment if existing:
-IF EXIST "%python_environment_path%\Scripts\activate.bat" (
-	RD /S /Q "%python_environment_path%" &@REM CAREFULL. DELETES EVERYTHING IN THAT FOLDER
-	IF NOT EXIST "%python_environment_path%\Scripts\activate.bat" (
+IF EXIST "%~python_environment_path%\Scripts\activate.bat" (
+	RD /S /Q "%~python_environment_path%" &@REM CAREFULL. DELETES EVERYTHING IN THAT FOLDER
+	IF NOT EXIST "%~python_environment_path%\Scripts\activate.bat" (
 		ECHO: Successfully deleted the old python environment
 		ECHO:
 	) ELSE (

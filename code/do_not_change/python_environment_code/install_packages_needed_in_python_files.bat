@@ -19,7 +19,7 @@ pip install pipreqs
 CALL "activate_or_create_environment.bat" "nopause"
 
 @REM move to folder of python files
-CD /D %python_env_code_path%
+CD /D %~python_env_code_path%
 
 @REM install needed packages
 pipreqs . --force --savepath tmp.txt

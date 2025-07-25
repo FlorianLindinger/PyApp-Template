@@ -39,8 +39,6 @@ add incremental printing to log file.
 
 add option to log to file aswell while terminal?
 
-test if CALL :handle_python_crash >> %log_path% 2>&1 works recuresively
-
 test if error of batch fowrk for log
 
 make "nopause" required instead of any? for all files
