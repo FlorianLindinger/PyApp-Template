@@ -1,5 +1,5 @@
 # Helper code used to import settings in settings.yaml as the dictionary s (e.g., value from the line "name: value"
-# in settings.yaml can be accessed as s["name"]).
+# in settings.yaml can be accessed in python as s["name"] after the line "import settings").
 # Yaml automatically interprets the data types, with vales that it can't interpret otherwise becoming strings.
 # This code also converts string vales to float that yaml does not manage to interpret like some python acceptable
 # scientific notation and some simple math operations between float convertables (including scientific notation).
