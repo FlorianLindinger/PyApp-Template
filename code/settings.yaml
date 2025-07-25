@@ -1,11 +1,10 @@
 ####################################################################################
-# SETTINGS FILE (in the yaml format: leave a spece after the ":" (e.g. name: value). Put values that start with "!" in quotation marks)
+# SETTINGS FILE (in the yaml format: leave a spece after the ":" (e.g. name: value). Put values that start with "!" in quotation marks. Allows pythonic scientific notation and simple math operations listed in settings.py)
 ####################################################################################
  
 ####################################################################################
 # important settings:
 ####################################################################################
-
 
 
 ####################################################################################
@@ -20,31 +19,23 @@
 # examples & how to import variables in python:
 ####################################################################################
 
-example 1: a string
-example 2: "a string"
-example 3: 1
-example 4: 1.2
-example 5: true
-example 6: True
-example 7:
-example 8: 1e3
-example 9: 1.4e2/5e2
-example 10: 1+5e1
-example 11: 1e4^3e0
+# --- in settings.yaml (=here) ---
+
+# example 1: a string
+# example 2: "a string"
+# example 3: 1
+# example 4: 1.2
+# example 5: true
+# example 6: True
+# example 7:
+# example 8: 1e3
+# example 9: 1.4e2/5e2
+# example 10: 1+5e1
+# example 11: 2*1e4^3e0
+# example 12: 5/1e4^3e0
 
 # --- in code.py: ---
-# import yaml  # install as pyyaml                                      
-# import re                                                                                                                      
-# with open("settings.yaml") as file: s = yaml.safe_load(file)  # get values with s["name"]	          
-# # Fix what yaml can't interpret: Converts scientific notaion (as exepted in python) and math operation (+-*/^) of 2 float convertables (including scientific notaion) to float:
-# float_regex = r"\s*[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?\s*"  # identifies strings that python recognises as float convertable 
-# def is_match(x, symbol): return (isinstance(x, str) and bool(re.match(f"^{float_regex}[{symbol}]{float_regex}$", x)))  # test if string & if math operation between 2 float convertables 
-# s = {key: float(val) if (isinstance(val, str) and bool(re.match(f"^{float_regex}$", val))) else val for key, val in s.items()} 
-# s = {key: float(val.split(r"/")[0])/float(val.split(r"/")[1]) if is_match(val, r"/") else val for key, val in s.items()}     #type:ignore
-# s = {key: float(val.split("^")[0])**float(val.split("^")[1]) if is_match(val, r"\^") else val for key, val in s.items()}     #type:ignore
-# s = {key: float(val.split("*")[0])*float(val.split("*")[1]) if is_match(val, "*") else val for key, val in s.items()}        #type:ignore
-# s = {key: float(val.split("+")[0])+float(val.split("+")[1]) if is_match(val, "+") else val for key, val in s.items()}        #type:ignore
-# s = {key: float(val.split("-")[0])-float(val.split("-")[1]) if is_match(val, "-") else val for key, val in s.items()}        #type:ignore
+# import settings
 
 # s["example 1"] == "a string"
 # s["example 2"] == "a string"
@@ -54,9 +45,6 @@ example 11: 1e4^3e0
 # s["example 6"] == True
 # s["example 7"] == None
 # s["example 8"] == 1000.0
-# s["example 9"] == 0.28
-# s["example 10"] == 51.0
-# s["example 11"] == 64.0
 
 ####################################################################
 ####################################################################

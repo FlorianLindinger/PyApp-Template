@@ -10,23 +10,23 @@ CD /D "%~dp0"
 SETLOCAL
 
 @REM define local variables (do not have spaces before or after the "=" and at the end of the line; do not add comments to the lines; use "\" to separate folder levels; do not put "\" at the end of paths):
-SET python_environment_path=..\..\python_environment_code\python_environment
+SET batch_file_path=%~1
 
-@REM create python environment if not existing:
-IF NOT EXIST "%python_environment_path%\Scripts\activate.bat" (	
-	ECHO Creating local python environment for first execution
-	ECHO:
-	@ECHO ON
-	CALL create_local_python_environment.bat "nopause"
-	@ECHO OFF	
+@REM run batch file without terminal
+IF NOT "%~4"=="" (
+	powershell -Command "Start-Process '%batch_file_path%' -ArgumentList '%~2', '%~3', '%~4' -WindowStyle Hidden"
+) ELSE (
+	IF NOT "%~3"=="" (
+		powershell -Command "Start-Process '%batch_file_path%' -ArgumentList '%~2', '%~3' -WindowStyle Hidden"
+	) ELSE ( 
+		IF NOT "%~2"=="" (
+			powershell -Command "Start-Process '%batch_file_path%' -ArgumentList '%~2' -WindowStyle Hidden"
+		) ELSE (
+			powershell -Command "Start-Process '%batch_file_path%' -WindowStyle Hidden"
+		)	
+	)
 )
 
-@REM activate python environment:
-CALL "%python_environment_path%\Scripts\activate.bat"
+@REM close program but not a poential program calling this program
+EXIT /B
 
-@REM exit if not called by other script with any argument:
-IF "%~1"=="" (
-	ECHO:
-	ECHO: Press any key to exit
-	PAUSE >NUL 
-)

@@ -1,23 +1,23 @@
 ###########################
 ### general gitignores: ###
 ###########################
-# do not sync python cache:
+# python cache folder:
 __pycache__
-# do not sync the local shortcut to start the program that has absolute device specific paths:
+# shortcut in start folder:
 /*.lnk
-# sync the shortcut to the program that generates the local shortcuts:
-!GENERATE_LAUNCHER_AND_SETTINGS.lnk
-# do not sync temporary pip package file
+# temporary text file:
 tmp.txt
-# do not sync the log output
-/log.txt
-# do not sync the start log output
-/log_start_errors.txt
+# text files in start folder:
+/*.txt
+# whitelist to sync:
+!todo-list.txt
+# whitelist to sync:
+!GENERATE_LAUNCHER_AND_SETTINGS.lnk
 ###########################
 
 
 ###########################
-## specific gitignores: ###
+### specific gitignores: ##
 ###########################
 
 
