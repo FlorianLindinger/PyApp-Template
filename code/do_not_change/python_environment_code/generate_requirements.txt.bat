@@ -39,7 +39,7 @@ CALL activate_or_create_environment.bat nopause
 
 @REM print warning if requirements.txt already exists:
 IF exist "%default_packages_file_path%" (
-    ECHO "%~dp0%default_packages_file_path%" already exists and will be overwritten
+    ECHO "%current_file_path%%default_packages_file_path%" already exists and will be overwritten
 	ECHO:
 )
 
@@ -47,7 +47,7 @@ IF exist "%default_packages_file_path%" (
 python -m pip freeze > "%default_packages_file_path%"
 
 @REM print message:
-CALL make_absolute_path_if_relative: "%~dp0%default_packages_file_path%"
+CALL make_absolute_path_if_relative: "%current_file_path%%default_packages_file_path%"
 ECHO: Generated "%OUTPUT%"
 
 @REM ####################
