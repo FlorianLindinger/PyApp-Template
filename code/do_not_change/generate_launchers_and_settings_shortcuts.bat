@@ -1,15 +1,26 @@
-@REM "@REM" indicates the start of a comment (use "&@REM" for comments after a code line, unless the line starts a nested sequence like a line with IF/ELSE/FOR/..., e.g., "IF A==B ( @REM comment")
+@REM ###################################
+@REM --- Code Description & Comments ---
+@REM ###################################
+
+@REM "@REM" indicates the start of a comment (use "&@REM" for comments at the end of a code line, unless the line starts a nested sequence like a line with IF/ELSE/FOR/..., e.g., "IF A==B ( @REM comment")
+
+@REM #########################
+@REM --- Setup & Variables ---
+@REM #########################
 
 @REM turn off printing of commands:
 @ECHO OFF
 
-@REM move to folder of this file (needed for relative path shortcuts)
-CD /D "%~dp0"
-
 @REM make this code local so no variables of a potential calling program are changed:
 SETLOCAL
 
-@REM define local variables (do not have spaces before or after the "=" and at the end of the line; do not add comments to the lines; use "\" to separate folder levels; do not put "\" at the end of paths):
+@REM move to folder of this file (needed for relative path shortcuts)
+@REM current_file_path varaible needed as workaround for nieche windows bug where this file gets called with quotation marks:
+SET current_file_path=%~dp0
+CD /D "%current_file_path%"
+
+@REM define local variables (do not have spaces before or after the "=" or at the end of the variable value (unless wanted in value). Add inline comments therefore without a space before "&@REM".
+@REM Use "\" to separate folder levels and omit "\" at the end of paths):
 SET non_user_settings_path=..\non-user_settings.ini
 SET icon_path=..\icons\icon.ico
 SET settings_icon_path=..\icons\settings_icon.ico
@@ -17,10 +28,14 @@ SET user_settings_path=..
 SET shortcut_destination_path=..\..
 SET log_path=..\..\log.txt
 
-@REM import settings:
+@REM import settings from settings_path (e.g., for importing parameter "example" add the line within the last round brackets below "IF %%a==example (SET example=%%b)"):
 FOR /F "tokens=1,2 delims==" %%a IN ("%non_user_settings_path%") DO (
 	IF %%a==program_name (SET program_name=%%b)
 )
+
+@REM ######################
+@REM --- Code Execution ---
+@REM ######################
 
 @REM shortcut_by_OptimumX.exe (original Shortcut.exe from OptimiumX: https://www.optimumx.com/downloads.html#Shortcut)
 @REM is an exe that allows to modify/create a shortcut without admin rights.
@@ -53,19 +68,23 @@ ECHO:
 ECHO: "%program_name%","%program_name% (with log & no terminal)" ^& "%program_name%_settings" should be now in "%OUTPUT%" if there were no errors
 ECHO:
 
-@REM exit if not called by other script with any argument:
-IF "%~1"=="" (
-	ECHO:
+@REM ####################
+@REM --- Closing-Code ---
+@REM ####################
+
+@REM pause if not called by other script with "nopause" as last argument:
+FOR %%a IN (%*) DO SET last_argument=%%a
+IF NOT "%last_argument%"=="nopause" (
 	ECHO: Press any key to exit
 	PAUSE >NUL 
 )
 
-@REM exit before function definition would be called irroniously:
-EXIT /B
+@REM Exit program without closing a potential calling program
+EXIT /B 
 
-@REM ###################################################################
-@REM function definitions:
-@REM ###################################################################
+@REM ############################
+@REM --- Function Definitions ---
+@REM ############################
 
 @REM function that makes path to absolute if not already
 :make_absolute_path_if_relative
