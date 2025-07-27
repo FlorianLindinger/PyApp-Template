@@ -1,13 +1,38 @@
-@REM "@REM" indicates the start of a comment (use "&@REM" for comments after a code line, unless the line starts a nested sequence like a line with IF/ELSE/FOR/..., e.g., "IF A==B ( @REM comment")
+@REM ###################################
+@REM --- Code Description & Comments ---
+@REM ###################################
+
+@REM "@REM" indicates the start of a comment (use "&@REM" for comments at the end of a code line, unless the line starts a nested sequence like a line with IF/ELSE/FOR/..., e.g., "IF A==B ( @REM comment")
+
+@REM #########################
+@REM --- Setup & Variables ---
+@REM #########################
 
 @REM turn off printing of commands:
 @ECHO OFF
 
+@REM make this code local so no variables of a potential calling program are changed:
+SETLOCAL
+
 @REM move to folder of this file (needed for relative path shortcuts)
-CD /D "%~dp0"
+@REM current_file_path varaible needed as workaround for nieche windows bug where this file gets called with quotation marks:
+SET current_file_path=%~dp0
+CD /D "%current_file_path%"
+
+@REM define local variables (do not have spaces before or after the "=" or at the end of the variable value (unless wanted in value). Add inline comments therefore without a space before "&@REM".
+@REM Use "\" to separate folder levels and omit "\" at the end of paths):
+SET settings_path=..\non-user_settings.ini
+
+@REM import settings from settings_path (e.g., for importing parameter "example" add the line within the last round brackets below "IF %%a==example (SET example=%%b)"):
+FOR /F "tokens=1,2 delims==" %%a IN (%settings_path%) DO (
+)
+
+@REM ######################
+@REM --- Code Execution ---
+@REM ######################
 
 @REM activate (or create & activate) python environment:
-CALL "activate_or_create_environment.bat" "nopause"
+CALL activate_or_create_environment.bat nopause
 
 @REM upgrade pip
 python -m pip install --upgrade pip
@@ -17,9 +42,20 @@ pip freeze > tmp.txt
 pip install --upgrade -r tmp.txt
 DEL tmp.txt
 
-@REM exit if not called by other script with any argument:
-IF "%~1"=="" (
-	ECHO:
-	ECHO: All packages upgraded if no errors above. Press any key to exit
+@REM ####################
+@REM --- Closing-Code ---
+@REM ####################
+
+@REM pause if not called by other script with "nopause" as last argument:
+FOR %%a IN (%*) DO SET last_argument=%%a
+IF NOT "%last_argument%"=="nopause" (
+	ECHO: Press any key to exit
 	PAUSE >NUL 
 )
+
+@REM Exit program without closing a potential calling program
+EXIT /B 
+
+@REM ############################
+@REM --- Function Definitions ---
+@REM ############################
