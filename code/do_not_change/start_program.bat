@@ -1,27 +1,40 @@
-@REM "@REM" indicates the start of a comment (use "&@REM" for comments after a code line, unless the line starts a nested sequence like a line with IF/ELSE/FOR/..., e.g., "IF A==B ( @REM comment")
+@REM ###################################
+@REM --- Code Description & Comments ---
+@REM ###################################
+
+@REM "@REM" indicates the start of a comment (use "&@REM" for comments at the end of a code line, unless the line starts a nested sequence like a line with IF/ELSE/FOR/..., e.g., "IF A==B ( @REM comment")
+
+@REM #########################
+@REM --- Setup & Variables ---
+@REM #########################
 
 @REM turn off printing of commands:
 @ECHO OFF
+
+@REM make this code local so no variables of a potential calling program are changed:
+SETLOCAL
 
 @REM move to folder of this file (needed for relative path shortcuts)
 @REM current_file_path varaible needed as workaround for nieche windows bug where this file gets called with quotation marks:
 SET current_file_path=%~dp0
 CD /D "%current_file_path%"
 
-@REM make this code local so no variables of a potential calling program are changed:
-SETLOCAL
-
-@REM define local variables (do not have spaces before or after the "=" and at the end of the line; do not add comments to the lines; use "\" to separate folder levels; do not put "\" at the end of paths):
+@REM define local variables (do not have spaces before or after the "=" or at the end of the variable value (unless wanted in value). Add inline comments therefore without a space before "&@REM".
+@REM Use "\" to separate folder levels and omit "\" at the end of paths):
+SET settings_path=..\non-user_settings.ini
 SET python_env_code_path=python_environment_code
 SET python_code_path=..
-SET settings_path=..\non-user_settings.ini
 SET icon_path=..\icons\icon.ico
 
-@REM import settings:
+@REM import settings from settings_path (e.g., for importing parameter "example" add the line within the last round brackets below "IF %%a==example (SET example=%%b)"):
 FOR /F "tokens=1,2 delims==" %%a IN (%settings_path%) DO (
 	IF %%a==program_name (SET program_name=%%b)
 	IF %%a==restart_main_code_on_crash (SET restart_main_code_on_crash=%%b)
 )
+
+@REM ######################
+@REM --- Code Execution ---
+@REM ######################
 
 @REM change terminal title:
 TITLE %program_name%
@@ -70,18 +83,23 @@ IF "%python_crashed%"=="1" (
 )
 ECHO:
 
-@REM pause if not called by other script with "nopause" argument:
-IF NOT "%~1"=="nopause" (
+@REM ####################
+@REM --- Closing-Code ---
+@REM ####################
+
+@REM pause if not called by other script with "nopause" as last argument:
+FOR %%a IN (%*) DO SET last_argument=%%a
+IF NOT "%last_argument%"=="nopause" (
 	ECHO: Press any key to exit
 	PAUSE >NUL 
 )
 
-@REM exit program without closing a potential calling program
+@REM Exit program without closing a potential calling program
 EXIT /B 
 
-@REM ###################################################################
-@REM function definitions:
-@REM ###################################################################
+@REM ############################
+@REM --- Function Definitions ---
+@REM ############################
 
 @REM define handle_python_crash function:
 :handle_python_crash
