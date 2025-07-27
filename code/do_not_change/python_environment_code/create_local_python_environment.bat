@@ -104,9 +104,9 @@ IF NOT "%~1"=="nopause" (
 )
 
 @REM print environment location:
-CALL make_absolute_path_if_relative: "%~dp0%python_environment_path%"
+CALL make_absolute_path_if_relative: "%current_file_path%%python_environment_path%"
 ECHO:
-ECHO Created python%python_version% environment in "%OUTPUT%" if everything worked &@REM %~dp0 gives the local path of the file instead of the caller
+ECHO Created python%python_version% environment in "%OUTPUT%" if everything worked
 ECHO:
 
 @REM ####################
