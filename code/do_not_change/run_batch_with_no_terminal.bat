@@ -53,7 +53,7 @@ IF NOT "%last_argument%"=="nopause" (
 	PAUSE >NUL 
 )
 
-@REM Exit program without closing a potential calling program
+@REM exit program without closing a potential calling program
 EXIT /B 
 
 @REM ############################
