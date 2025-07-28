@@ -2,13 +2,13 @@
 important
 ############################################################
 
-need activate env for pipreqs? for correct package version for python version?
-
 create terminate_running_program_name if running and delete afterwards? for no-terminal mode
 
 auto install powershell needed?
 
 no error to log file for error in start_program?
+
+for crashes in batch outer most it closes everyting? maybe somehow avoid with /K instead of /C
 
 
 ##############################
@@ -30,19 +30,11 @@ For all batch files:
 
 make checks if files exist where no error would appear anywhere and leave window open with a warning if no existing
 
-check if no spaces at SET end
-
-
 check if needed and update to new comments
 	@REM function that makes path to absolute if not already. Access as %OUTPUT% (also gets rid of unresolved ".." in path):
 	:make_absolute_path_if_relative
 		SET OUTPUT=%~f1
 		EXIT /B
-
-template for all
-test if works for empty settings import?
-	
-
 
 
 ############################################################
@@ -71,14 +63,7 @@ check if i can add stoppping of closing terminal
 
 allow for non online package installs somehow via req.txt
 
-
-handle: ERROR: Could not open requirements file: [Errno 2] No such file or directory: 'tmp.txt'
-
 see where i get errorlevel and if it translateds to parent batch. print different message if errior
-
-auto install from py not working
-
-installinog and resetting not working correctly
 
 do i need python -m pip or not. 
 do I need to update pip or python -m
