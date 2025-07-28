@@ -15,8 +15,8 @@
 
 @REM move to folder of this file (needed for relative path shortcuts)
 @REM current_file_path varaible needed as workaround for nieche windows bug where this file gets called with quotation marks:
-SET current_file_path=%~dp0
-CD /D "%current_file_path%"
+SET current_file_path_aoce=%~dp0
+CD /D "%current_file_path_aoce%"
 
 @REM define local variables (do not have spaces before or after the "=" or at the end of the variable value (unless wanted in value). Add inline comments therefore without a space before "&@REM".
 @REM Use "\" to separate folder levels and omit "\" at the end of paths):
@@ -41,6 +41,7 @@ CALL "%python_environment_path_aoce%\Scripts\activate.bat"
 @REM ####################
 
 @REM pause if not called by other script with "nopause" as last argument:
+SET last_argument=
 FOR %%a IN (%*) DO SET last_argument=%%a
 IF NOT "%last_argument%"=="nopause" (
 	ECHO: Press any key to exit

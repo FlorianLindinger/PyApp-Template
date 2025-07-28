@@ -22,7 +22,7 @@ CD /D "%current_file_path%"
 @REM define local variables (do not have spaces before or after the "=" or at the end of the variable value (unless wanted in value). Add inline comments therefore without a space before "&@REM".
 @REM Use "\" to separate folder levels and omit "\" at the end of paths):
 SET python_code_path=..\..
-SET default_python_packages_txt_path=..\..\python_environment_code
+SET python_environment_path=..\..\python_environment_code\python_environment
 
 @REM ######################
 @REM --- Code Execution ---
@@ -38,7 +38,7 @@ pip install pipreqs
 CALL activate_or_create_environment.bat nopause
 
 @REM replace default_python_packages file with needed packages
-pipreqs "%python_code_path%" --force --savepath tmp.txt --ignore "%default_python_packages_txt_path%\python_environment"
+pipreqs "%python_code_path%" --force --savepath tmp.txt --ignore "%python_environment_path%"
 
 @REM reset python environment with only required packages
 CALL reset_python_environment.bat tmp.txt nopause
@@ -51,6 +51,7 @@ DEL tmp.txt
 @REM ####################
 
 @REM pause if not called by other script with "nopause" as last argument:
+SET last_argument=
 FOR %%a IN (%*) DO SET last_argument=%%a
 IF NOT "%last_argument%"=="nopause" (
 	ECHO: Press any key to exit

@@ -26,10 +26,10 @@ SET python_env_code_path=python_environment_code
 SET python_code_path=..
 SET icon_path=..\icons\icon.ico
 
-@REM import settings from settings_path (e.g., for importing parameter "example" add the line within the last round brackets below "IF %%a==example (SET example=%%b)"):
-FOR /F "tokens=1,2 delims==" %%a IN (%settings_path%) DO (
-	IF %%a==program_name (SET program_name=%%b)
-	IF %%a==restart_main_code_on_crash (SET restart_main_code_on_crash=%%b)
+@REM import settings from settings_path (e.g., for importing parameter "example" add the line within the last round brackets below "IF %%a==example ( SET example=%%b)"):
+FOR /F "tokens=1,2 delims==" %%a IN ('findstr "^" "%settings_path%"') DO (
+	IF %%a==program_name ( SET program_name=%%b)
+	IF %%a==restart_main_code_on_crash ( SET restart_main_code_on_crash=%%b)
 )
 
 @REM ######################
@@ -88,6 +88,7 @@ ECHO:
 @REM ####################
 
 @REM pause if not called by other script with "nopause" as last argument:
+SET last_argument=
 FOR %%a IN (%*) DO SET last_argument=%%a
 IF NOT "%last_argument%"=="nopause" (
 	ECHO: Press any key to exit
