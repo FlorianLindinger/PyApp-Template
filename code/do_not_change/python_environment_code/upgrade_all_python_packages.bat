@@ -21,11 +21,7 @@ CD /D "%current_file_path%"
 
 @REM define local variables (do not have spaces before or after the "=" or at the end of the variable value (unless wanted in value). Add inline comments therefore without a space before "&@REM".
 @REM Use "\" to separate folder levels and omit "\" at the end of paths):
-SET settings_path=..\non-user_settings.ini
 
-@REM import settings from settings_path (e.g., for importing parameter "example" add the line within the last round brackets below "IF %%a==example (SET example=%%b)"):
-FOR /F "tokens=1,2 delims==" %%a IN (%settings_path%) DO (
-)
 
 @REM ######################
 @REM --- Code Execution ---
@@ -47,6 +43,7 @@ DEL tmp.txt
 @REM ####################
 
 @REM pause if not called by other script with "nopause" as last argument:
+SET last_argument=
 FOR %%a IN (%*) DO SET last_argument=%%a
 IF NOT "%last_argument%"=="nopause" (
 	ECHO: Press any key to exit
