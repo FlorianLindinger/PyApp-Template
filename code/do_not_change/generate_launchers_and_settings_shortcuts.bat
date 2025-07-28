@@ -28,9 +28,9 @@ SET user_settings_path=..
 SET shortcut_destination_path=..\..
 SET log_path=..\..\log.txt
 
-@REM import settings from settings_path (e.g., for importing parameter "example" add the line within the last round brackets below "IF %%a==example (SET example=%%b)"):
-FOR /F "tokens=1,2 delims==" %%a IN ("%non_user_settings_path%") DO (
-	IF %%a==program_name (SET program_name=%%b)
+@REM import settings from settings_path (e.g., for importing parameter "example" add the line within the last round brackets below "IF %%a==example ( SET example=%%b)"):
+FOR /F "tokens=1,2 delims==" %%a IN ('findstr "^" "%non_user_settings_path%"') DO (
+	IF %%a==program_name ( SET program_name=%%b)
 )
 
 @REM ######################
@@ -44,7 +44,7 @@ FOR /F "tokens=1,2 delims==" %%a IN ("%non_user_settings_path%") DO (
 @REM to taskbar. These shortcuts need absolute paths which don't transfer correctly via GIT. GIT can have relative 
 @REM shortcut path which then would not allow even for the starting shortcut to be moved out of the folder. Moreover 
 @REM manually generated default shortcuts also can't be added to the taskbar. The icon is also added at this opportunity:
-CALL shortcut_by_OptimumX.exe /F:"%program_name%.lnk" /A:C /T:"cmd.exe" /P:"/K start_program.bat" /I:"%current_file_path%%icon_path%" /W:"%current_file_path%
+CALL shortcut_by_OptimumX.exe /F:"%program_name%.lnk" /A:C /T:"cmd.exe" /P:"/C start_program.bat" /I:"%current_file_path%%icon_path%" /W:"%current_file_path%
 
 @REM also create a shortcut for the settings.yaml file
 IF "%user_settings_path%"=="" ( @REM shortcut.exe somehow does not need a closing " if the path after /W ends with \
@@ -73,6 +73,7 @@ ECHO:
 @REM ####################
 
 @REM pause if not called by other script with "nopause" as last argument:
+SET last_argument=
 FOR %%a IN (%*) DO SET last_argument=%%a
 IF NOT "%last_argument%"=="nopause" (
 	ECHO: Press any key to exit

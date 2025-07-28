@@ -21,16 +21,16 @@ CD /D "%current_file_path%"
 
 @REM define local variables (do not have spaces before or after the "=" or at the end of the variable value (unless wanted in value). Add inline comments therefore without a space before "&@REM".
 @REM Use "\" to separate folder levels and omit "\" at the end of paths):
-SET settings_path=..\non-user_settings.ini
+SET settings_path=..\..\non-user_settings.ini
 SET default_packages_file_path=..\..\python_environment_code\default_python_packages.txt
 @REM CAREFUL WITH python_environment_path!
 @REM BE VERY CAREFUL WITH THIS PATH: This folder might be deleted if the environment is reset. So do not write something like just ..\..\ which would delete any folder happening to be at that position. Even if you knwo what is at that path, mistakes with relative paths can happen:
 SET python_environment_path=..\..\python_environment_code\python_environment
 @REM CAREFUL WITH python_environment_path!
 
-@REM import settings from settings_path (e.g., for importing parameter "example" add the line within the last round brackets below "IF %%a==example (SET example=%%b)"):
-FOR /F "tokens=1,2 delims==" %%a IN (%settings_path%) DO (
-	IF %%a==python_version (SET python_version=%%b)
+@REM import settings from settings_path (e.g., for importing parameter "example" add the line within the last round brackets below "IF %%a==example ( SET example=%%b)"):
+FOR /F "tokens=1,2 delims==" %%a IN ('findstr "^" "%settings_path%"') DO (
+	IF %%a==python_version ( SET python_version=%%b)
 )
 
 @REM ######################
@@ -104,16 +104,16 @@ IF NOT "%~1"=="nopause" (
 )
 
 @REM print environment location:
-CALL make_absolute_path_if_relative: "%current_file_path%%python_environment_path%"
+CALL :make_absolute_path_if_relative "%current_file_path%%python_environment_path%"
 ECHO:
-ECHO Created python%python_version% environment in "%OUTPUT%" if everything worked
-ECHO:
+ECHO Created python (version %python_version%) environment in "%OUTPUT%" if everything worked.
 
 @REM ####################
 @REM --- Closing-Code ---
 @REM ####################
 
 @REM pause if not called by other script with "nopause" as last argument:
+SET last_argument=
 FOR %%a IN (%*) DO SET last_argument=%%a
 IF NOT "%last_argument%"=="nopause" (
 	ECHO: Press any key to exit
