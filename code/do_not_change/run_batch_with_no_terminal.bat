@@ -22,33 +22,38 @@ CD /D "%current_file_path%"
 @REM define local variables (do not have spaces before or after the "=" or at the end of the variable value (unless wanted in value). Add inline comments therefore without a space before "&@REM".
 @REM Use "\" to separate folder levels and omit "\" at the end of paths):
 SET batch_file_path=%~1
+SET process_id_file_path=currently_running_hidden_program_id.pid
 
 @REM ######################
 @REM --- Code Execution ---
 @REM ######################
 
-@REM run batch file without terminal
-IF NOT "%~4"=="" (
-	powershell -Command "Start-Process '%batch_file_path%' -ArgumentList '%~2', '%~3', '%~4' -WindowStyle Hidden"
-) ELSE (
-	IF NOT "%~3"=="" (
-		powershell -Command "Start-Process '%batch_file_path%' -ArgumentList '%~2', '%~3' -WindowStyle Hidden"
-	) ELSE ( 
-		IF NOT "%~2"=="" (
-			powershell -Command "Start-Process '%batch_file_path%' -ArgumentList '%~2' -WindowStyle Hidden"
-		) ELSE (
-			powershell -Command "Start-Process '%batch_file_path%' -WindowStyle Hidden"
-		)	
-	)
-)
+@REM put arguments in list "args" to pass to program call:
+SETLOCAL enabledelayedexpansion
+SET "args="
+SET i=2
+:loop_args
+CALL SET "arg=%%~%i%%"
+IF "%arg%"=="" GOTO args_done
+SET "arg=!arg:"=""!"
+SET "args=!args! \"!arg!\""
+SET /a i+=1
+GOTO loop_args
+:args_done
+
+@REM call batch_file_path with arguments in hidden terminal and write to a file its process id to kill it with ? batch file. This id file gets deleted once the program finishes or when it is killed:
+powershell -NoProfile -Command ^
+  "$p = Start-Process -FilePath 'cmd.exe' -ArgumentList '/C', 'CALL \"\"%batch_file_path%\"\"%args%' -WindowStyle Hidden -PassThru; " ^
+  "$p.Id | Out-File -Encoding ascii '%process_id_file_path%'; " ^
+  "$p.WaitForExit(); " ^
+  "Remove-Item -Path '%process_id_file_path%' -ErrorAction SilentlyContinue"
 
 @REM ####################
 @REM --- Closing-Code ---
 @REM ####################
 
 @REM pause if not called by other script with "nopause" as last argument:
-SET last_argument=
-FOR %%a IN (%*) DO SET last_argument=%%a
+FOR %%a IN (%*) DO SET last_argument=%%~a
 IF NOT "%last_argument%"=="nopause" (
 	ECHO: Press any key to exit
 	PAUSE >NUL 
