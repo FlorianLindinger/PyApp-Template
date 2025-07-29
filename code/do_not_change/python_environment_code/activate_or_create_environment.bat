@@ -41,9 +41,8 @@ CALL "%python_environment_path_aoce%\Scripts\activate.bat"
 @REM ####################
 
 @REM pause if not called by other script with "nopause" as last argument:
-SET last_argument=
-FOR %%a IN (%*) DO SET last_argument=%%a
-IF NOT "%last_argument%"=="nopause" (
+FOR %%a IN (%*) DO SET last_argument_aoce=%%~a
+IF NOT "%last_argument_aoce%"=="nopause" (
 	ECHO: Press any key to exit
 	PAUSE >NUL 
 )

@@ -1,0 +1,25 @@
+Traceback (most recent call last):
+  File "D:\Git Repositories\template-run_python_in_env\code\main_code.py", line 16, in <module>
+    print(get_window_titles())
+    ~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Flo\AppData\Local\Programs\Python\Python313\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode character '\u03bc' in position 599: character maps to <undefined>
+
+ ###################################################
+ WARNING: Python returned 1, which indicates a crash
+ ###################################################
+
+
+ ###############################################
+ Running python code intended for after crashes:
+ ###############################################
+
+
+
+ ##########################
+ Python crashed (see above)
+ ##########################
+
+ Press any key to exit

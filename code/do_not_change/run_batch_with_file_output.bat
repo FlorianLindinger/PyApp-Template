@@ -32,7 +32,11 @@ IF "%~2"=="" (
 @REM --- Code Execution ---
 @REM ######################
 
-@REM run batch file and redirect print and error output to log_path
+@REM makes python files (if called) flush immediately what they print to the log file
+SET PYTHONUNBUFFERED=1
+
+@REM run batch file and redirect print and error output to log_path (utf-8 encoding needed to avoid errors for special characters)
+SET PYTHONIOENCODING=utf-8
 IF NOT "%~3"=="" (
 	CALL "%batch_file_path%" "%~3" > "%log_path%" 2>&1
 ) ELSE (
@@ -53,8 +57,7 @@ IF "%file_length%"=="0" (
 @REM ####################
 
 @REM pause if not called by other script with "nopause" as last argument:
-SET last_argument=
-FOR %%a IN (%*) DO SET last_argument=%%a
+FOR %%a IN (%*) DO SET last_argument=%%~a
 IF NOT "%last_argument%"=="nopause" (
 	ECHO: Press any key to exit
 	PAUSE >NUL 
