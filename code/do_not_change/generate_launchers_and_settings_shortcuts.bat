@@ -54,7 +54,7 @@ IF "%user_settings_path%"=="" ( @REM shortcut.exe somehow does not need a closin
 )
 
 @REM also creare shortcut for launcher without terminal and with output to log file
-CALL shortcut_by_OptimumX.exe /F:"%program_name% (with log & no terminal).lnk" /A:C /T:"cmd.exe" /P:"/C run_batch_with_file_output_and_no_terminal.bat start_program.bat '%log_path%' nopause" /I:"%current_file_path%%icon_path%" /W:"%current_file_path%
+CALL shortcut_by_OptimumX.exe /F:"%program_name% (with log & no terminal).lnk" /A:C /T:"cmd.exe" /P:"/C run_batch_with_file_output_and_no_terminal.bat start_program.bat ""%log_path%"" nopause" /I:"%current_file_path%%icon_path%" /W:"%current_file_path%
 
 @REM move shortcut results back to destination 
 ECHO:
@@ -73,8 +73,7 @@ ECHO:
 @REM ####################
 
 @REM pause if not called by other script with "nopause" as last argument:
-SET last_argument=
-FOR %%a IN (%*) DO SET last_argument=%%a
+FOR %%a IN (%*) DO SET last_argument=%%~a
 IF NOT "%last_argument%"=="nopause" (
 	ECHO: Press any key to exit
 	PAUSE >NUL 

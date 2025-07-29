@@ -2,6 +2,8 @@
 important
 ############################################################
 
+make kill process also for not hidden
+
 create terminate_running_program_name if running and delete afterwards? for no-terminal mode
 
 auto install powershell needed?
@@ -10,6 +12,9 @@ no error to log file for error in start_program?
 
 for crashes in batch outer most it closes everyting? maybe somehow avoid with /K instead of /C
 
+force replace blocked log file
+
+fix log file not allowing spaces
 
 ##############################
 For readme
@@ -67,3 +72,4 @@ see where i get errorlevel and if it translateds to parent batch. print differen
 
 do i need python -m pip or not. 
 do I need to update pip or python -m
+

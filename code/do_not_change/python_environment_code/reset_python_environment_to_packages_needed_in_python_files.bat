@@ -51,8 +51,7 @@ DEL tmp.txt
 @REM ####################
 
 @REM pause if not called by other script with "nopause" as last argument:
-SET last_argument=
-FOR %%a IN (%*) DO SET last_argument=%%a
+FOR %%a IN (%*) DO SET last_argument=%%~a
 IF NOT "%last_argument%"=="nopause" (
 	ECHO: Press any key to exit
 	PAUSE >NUL 
