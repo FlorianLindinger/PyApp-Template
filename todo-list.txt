@@ -2,6 +2,15 @@
 important
 ############################################################
 
+no terminal -> id generating and deleting after done (this can have error logging of logging output?) -> logging_output -> start_batch
+normal;  id generating and deleting after don -> start_batch
+
+add arbitrary num of args to other files
+
+make shortcuts generatoir
+
+auto kill last process? probably not. make a non-user setting to auto kill previous process
+
 make kill process also for not hidden
 
 create terminate_running_program_name if running and delete afterwards? for no-terminal mode
