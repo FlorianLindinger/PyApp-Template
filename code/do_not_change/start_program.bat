@@ -50,7 +50,7 @@ change_icon "%program_name%" "%icon_path%"
 
 @REM activate or create & activate python environment:
 CD /D "%python_env_code_path%" &@REM moving to local folder of called file needed because of relative paths in code
-CALL activate_or_create_environment.bat nopause
+CALL activate_or_create_environment.bat "nopause"
 CD /D "%current_file_path%" &@REM moving back to start directory
 
 @REM go to directory where the python codes are (in order to have them running where they are located):
@@ -87,9 +87,8 @@ ECHO:
 @REM --- Closing-Code ---
 @REM ####################
 
-@REM pause if not called by other script with "nopause" as last argument:
-FOR %%a IN (%*) DO SET last_argument=%%~a
-IF NOT "%last_argument%"=="nopause" (
+@REM pause if not called by other script with any argument:
+IF "%~1"=="" (
 	ECHO: Press any key to exit
 	PAUSE >NUL 
 )

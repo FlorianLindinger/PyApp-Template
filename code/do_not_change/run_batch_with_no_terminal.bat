@@ -32,7 +32,7 @@ IF "%~2"=="" (
 @REM --- Code Execution ---
 @REM ######################
 
-@REM put arguments starting from the i-th (from calling this batch file) in the string "args_list" with commas in between and each surrouned by \" on both sides:
+@REM put arguments starting from the i-th (from calling this batch file) in the string "args_list" with commas in between and each surrouned by \" on both sides and a comma at the start if there is at least one element:
 SETLOCAL enabledelayedexpansion
 SET args_list=
 SET i=3
@@ -47,19 +47,14 @@ GOTO loop_args
 :args_done
 
 @REM call batch_file_path with arguments in hidden terminal and write the process ID of the hidden program to process_id_file_path. This file gets deleted when the code ends or if it is killed with kill_process_with_id.bat:
-IF "%args_list%"=="" (
-  powershell -Command "$p = Start-Process 'helpers\run_batch_and_delete_a_file_afterwards' -ArgumentList '%batch_file_path%','%process_id_file_path%' , nopause -WindowStyle Hidden -PassThru; [System.IO.File]::WriteAllText('%process_id_file_path%',$p.Id)"
-) ELSE (
-  powershell -Command "$p = Start-Process 'helpers\run_batch_and_delete_a_file_afterwards' -ArgumentList '%batch_file_path%','%process_id_file_path%', %args_list% , nopause -WindowStyle Hidden -PassThru; [System.IO.File]::WriteAllText('%process_id_file_path%',$p.Id)"
-)
+powershell -Command "$p = Start-Process 'helpers\run_batch_and_delete_a_file_afterwards' -ArgumentList '%batch_file_path%','%process_id_file_path%' %args_list% -WindowStyle Hidden -PassThru; [System.IO.File]::WriteAllText('%process_id_file_path%',$p.Id)"
 
 @REM ####################
 @REM --- Closing-Code ---
 @REM ####################
 
-@REM pause if not called by other script with "nopause" as last argument:
-FOR %%a IN (%*) DO SET last_argument=%%~a
-IF NOT "%last_argument%"=="nopause" (
+@REM pause if not called by other script with any argument:
+IF "%~1"=="" (
 	ECHO: Press any key to exit
 	PAUSE >NUL 
 )

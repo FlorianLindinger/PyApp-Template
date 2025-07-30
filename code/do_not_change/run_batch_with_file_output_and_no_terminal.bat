@@ -50,16 +50,18 @@ SET i=4
 GOTO loop_args
 :args_done
 
-@REM call batch file without terminal and send outputs (including errors) to log_path:
-CALL run_batch_with_no_terminal.bat run_batch_with_file_output.bat "%batch_file_path%" "%log_path%" "%process_id_file_path%" %args_list% nopause
+@REM call batch file without terminal and send outputs (including errors) to log_path and create a process id file as long as code is running:
+CALL run_batch_with_no_terminal.bat ^
+	run_batch_with_file_output.bat "%process_id_file_path%" ^
+	 	"%batch_file_path%" "%log_path%" ^
+		 	%args_list%
 
 @REM ####################
 @REM --- Closing-Code ---
 @REM ####################
 
-@REM pause if not called by other script with "nopause" as last argument:
-FOR %%a IN (%*) DO SET last_argument=%%~a
-IF NOT "%last_argument%"=="nopause" (
+@REM pause if not called by other script with any argument:
+IF "%~1"=="" (
 	ECHO: Press any key to exit
 	PAUSE >NUL 
 )

@@ -2,16 +2,21 @@
 important
 ############################################################
 
+problem if log is blocked
+
+make everything that deletes and saves more safe by only allowing .txt for example
+
+add comment to set that escape character like ()& need ^ . or other way to avoid
+
 add full path and stop if not generated before continuing:
 Error: ..\..\..\tmp.txt does not exist. Press any key to exit
 
 make icon for kill function
 
 make a shortcut helper file which catches all errors and deletes if non?
+or maye launch them with /K and only finsh in end if no errorlevel
 
 move everything that gets generated out of do_not_change to make copy easier
-
-move stuff again to being called with any arguemtn for nopause
 
 normal;  id generating and deleting after don -> start_batch
 
@@ -49,6 +54,8 @@ make checks if files exist where no error would appear anywhere and leave window
 optional
 ############################################################
 
+confirmation question via windows popup?
+
 rename everythong from batch to more generic because it is calling generic 
 
 generate link to settings.py instead if no yaml file and if .py file exists. explain this
@@ -77,3 +84,4 @@ see where i get errorlevel and if it translateds to parent batch. print differen
 do i need python -m pip or not. 
 do I need to update pip or python -m
 
+add more emptly print lines between spam
