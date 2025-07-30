@@ -1,4 +1,3 @@
-@ECHO OFF
 @REM ###################################
 @REM --- Code Description & Comments ---
 @REM ###################################
@@ -22,6 +21,7 @@ CD /D "%current_file_path%"
 
 @REM define local variables (do not have spaces before or after the "=" or at the end of the variable value (unless wanted in value). Add inline comments therefore without a space before "&@REM".
 @REM Use "\" to separate folder levels and omit "\" at the end of paths):
+@REM for extra safety to not delete files: The file (if no number) is mandated to be .pid and must not be included in the path:
 SET process_id_or_file=%~1
 
 @REM ######################
@@ -29,17 +29,25 @@ SET process_id_or_file=%~1
 @REM ######################
 
 @REM get process id if it input is a file containing it
-IF EXIST "%process_id_or_file%" (
-	SET /p PID=<"%process_id_file_path%"
+IF EXIST "%process_id_or_file%.pid" (
+	SET /p PID=<"%process_id_or_file%.pid"
 ) ELSE (
-	SET PID=%process_id_file_path%
+	CALL :is_integer "%process_id_or_file%"
+	IF "%OUTPUT%"=="1" (
+		SET PID=%process_id_or_file%
+	) ELSE (
+		ECHO: Warning: File "%process_id_or_file%.pid" does not exist. ^(don't include the file ending in the argument^). 
+		ECHO: Press any key to exit
+		PAUSE >NUL 
+		EXIT /B
+	)
 )
 
 @REM kill process with process ID PID and its child processes:
 TASKKILL /PID %PID% /T /F
 
-IF EXIST "%process_id_or_file%" (
-	DEL "%process_id_file_path%"
+IF EXIST "%process_id_or_file%.pid" (
+	DEL "%process_id_or_file%.pid"
 )
 
 @REM ####################
@@ -59,3 +67,14 @@ EXIT /B
 @REM ############################
 @REM --- Function Definitions ---
 @REM ############################
+
+SETLOCAL enabledelayedexpansion
+:is_integer
+SET "val=%~1"
+ECHO %val% | FINDSTR /R "^[0-9][0-9]*$" >NUL
+IF %ERRORLEVEL%==0 (
+	SET OUTPUT=1
+) ELSE (
+	SET OUTPUT=0
+)
+EXIT /B

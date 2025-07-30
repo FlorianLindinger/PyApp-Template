@@ -2,6 +2,8 @@
 important
 ############################################################
 
+make a shortcut helper file which catches all errors and deletes if non?
+
 move everything that gets generated out of do_not_change to make copy easier
 
 move stuff again to bing called with any arguemtn

@@ -27,6 +27,8 @@ SET settings_icon_path=..\icons\settings_icon.ico
 SET user_settings_path=..
 SET shortcut_destination_path=..\..
 SET log_path=..\..\log.txt
+@REM: For safety, the file ending (.pid) must not be included in process_id_file_path (see kill_process_with_id.bat):
+SET process_id_file_path=..\..\running_hidden_program_id
 
 @REM import settings from settings_path (e.g., for importing parameter "example" add the line within the last round brackets below "IF %%a==example ( SET example=%%b)"):
 FOR /F "tokens=1,2 delims==" %%a IN ('findstr "^" "%non_user_settings_path%"') DO (
@@ -46,26 +48,30 @@ FOR /F "tokens=1,2 delims==" %%a IN ('findstr "^" "%non_user_settings_path%"') D
 @REM manually generated default shortcuts also can't be added to the taskbar. The icon is also added at this opportunity:
 CALL shortcut_by_OptimumX.exe /F:"%program_name%.lnk" /A:C /T:"cmd.exe" /P:"/C start_program.bat" /I:"%current_file_path%%icon_path%" /W:"%current_file_path%
 
-@REM also create a shortcut for the settings.yaml file
+@REM create a shortcut for the settings.yaml file
 IF "%user_settings_path%"=="" ( @REM shortcut.exe somehow does not need a closing " if the path after /W ends with \
 	CALL shortcut_by_OptimumX.exe /F:"%program_name%_settings.lnk" /A:C /T:"cmd.exe" /P:"/C START settings.yaml" /I:"%current_file_path%%settings_icon_path%" /W:"%current_file_path%
 ) ELSE (
 	CALL shortcut_by_OptimumX.exe /F:"%program_name%_settings.lnk" /A:C /T:"cmd.exe" /P:"/C START settings.yaml" /I:"%current_file_path%%settings_icon_path%" /W:"%current_file_path%%user_settings_path%"
 )
 
-@REM also creare shortcut for launcher without terminal and with output to log file
-CALL shortcut_by_OptimumX.exe /F:"%program_name% (with log & no terminal).lnk" /A:C /T:"cmd.exe" /P:"/C run_batch_with_file_output_and_no_terminal.bat start_program.bat ""%log_path%"" nopause" /I:"%current_file_path%%icon_path%" /W:"%current_file_path%
+@REM creare shortcut for launcher without terminal and with output to log file
+CALL shortcut_by_OptimumX.exe /F:"%program_name% (with log & no terminal).lnk" /A:C /T:"cmd.exe" /P:"/C run_batch_with_file_output_and_no_terminal.bat start_program.bat ""%log_path%"" ""%process_id_file_path%.pid"" nopause" /I:"%current_file_path%%icon_path%" /W:"%current_file_path%
+
+@REM create shortcut for killing the running program
+CALL shortcut_by_OptimumX.exe /F:"stop no-terminal %program_name%.lnk" /A:C /T:"cmd.exe" /P:"/C kill_process_with_id.bat ""%process_id_file_path%"" " /I:"%current_file_path%%icon_path%" /W:"%current_file_path%
 
 @REM move shortcut results back to destination 
 ECHO:
 MOVE "%program_name%.lnk" "%current_file_path%%shortcut_destination_path%"
 MOVE "%program_name%_settings.lnk" "%current_file_path%%shortcut_destination_path%"
 MOVE "%program_name% (with log & no terminal).lnk" "%current_file_path%%shortcut_destination_path%"
+MOVE "stop no-terminal %program_name%.lnk" "%current_file_path%%shortcut_destination_path%"
 
 @REM print info:
 CALL :make_absolute_path_if_relative "%current_file_path%%shortcut_destination_path%"
 ECHO:
-ECHO: "%program_name%","%program_name% (with log & no terminal)" ^& "%program_name%_settings" should be now in "%OUTPUT%" if there were no errors
+ECHO: "%program_name%", "%program_name% (with log & no terminal)", "stop no-terminal %program_name%" ^& "%program_name%_settings" should be now in "%OUTPUT%" if there were no errors
 ECHO:
 
 @REM ####################

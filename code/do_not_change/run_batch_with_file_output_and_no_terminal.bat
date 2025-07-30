@@ -27,6 +27,11 @@ IF "%~2"=="" (
 ) ELSE (
 	SET log_path=%~2
 )
+IF "%~3"=="" (
+	SET process_id_file_path=..\..\running_hidden_program_id.pid
+) ELSE (
+	SET process_id_file_path=%~3
+)
 
 @REM ######################
 @REM --- Code Execution ---
@@ -35,7 +40,7 @@ IF "%~2"=="" (
 @REM put arguments starting from the i-th (from calling this batch file) in the string "args_list" with space in between and each surrouned by " on both sides:
 SETLOCAL enabledelayedexpansion
 SET args_list=
-SET i=3
+SET i=4
 :loop_args
   CALL SET "arg=%%~%i%%"
   IF "%arg%"=="" ( GOTO args_done)
@@ -46,7 +51,7 @@ GOTO loop_args
 :args_done
 
 @REM call batch file without terminal and send outputs (including errors) to log_path:
-CALL run_batch_with_no_terminal.bat run_batch_with_file_output.bat "%batch_file_path%" "%log_path%" %args_list% nopause
+CALL run_batch_with_no_terminal.bat run_batch_with_file_output.bat "%batch_file_path%" "%log_path%" "%process_id_file_path%" %args_list% nopause
 
 @REM ####################
 @REM --- Closing-Code ---
