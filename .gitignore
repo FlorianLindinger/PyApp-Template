@@ -13,6 +13,8 @@ tmp.txt
 !todo-list.txt
 # whitelist to sync:
 !GENERATE_LAUNCHER_AND_SETTINGS.lnk
+# log file
+*log.txt
 ###########################
 
 
@@ -23,4 +25,3 @@ tmp.txt
 
 
 ###########################
-
