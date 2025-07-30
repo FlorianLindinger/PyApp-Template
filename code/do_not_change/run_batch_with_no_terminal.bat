@@ -22,7 +22,11 @@ CD /D "%current_file_path%"
 @REM define local variables (do not have spaces before or after the "=" or at the end of the variable value (unless wanted in value). Add inline comments therefore without a space before "&@REM".
 @REM Use "\" to separate folder levels and omit "\" at the end of paths):
 SET batch_file_path=%~1
-SET process_id_file_path=running_hidden_program_id.pid
+IF "%~2"=="" (
+	SET process_id_file_path=..\..\running_hidden_program_id.pid
+) ELSE (
+	SET log_path=%~2
+)
 
 @REM ######################
 @REM --- Code Execution ---
