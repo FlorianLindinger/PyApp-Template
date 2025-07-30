@@ -30,20 +30,31 @@ SET temporary_txt_path=..\..\..\tmp.txt
 @REM ######################
 
 @REM upgrade pip
-python -m pip install --upgrade pip
+python -m pip install --upgrade pip > NUL 
 
 @REM install globally a package to find required packages in python files
-pip install pipreqs
+pip install pipreqs > NUL
 
 @REM activate (or create & activate) python environment:
 CALL activate_or_create_environment.bat "nopause"
 
-@REM install needed packages
+@REM get list of needed packages
 pipreqs "%python_code_path%" --force --savepath "%temporary_txt_path%" --ignore "%python_environment_path%"
+ECHO:
+ECHO:
+ECHO:
+
+@REM install list of needed packages
 pip install --upgrade -r "%temporary_txt_path%"
 
 @REM remove temporary file that lists needed packages
 DEL "%temporary_txt_path%"
+
+@REM print final message
+ECHO:
+ECHO:
+ECHO:
+ECHO: Everything needed in the python files should be installed now if no errors above.
 
 @REM ####################
 @REM --- Closing-Code ---

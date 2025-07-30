@@ -39,7 +39,7 @@ FOR /F "tokens=1,2 delims==" %%a IN ('findstr "^" "%settings_path%"') DO (
 
 @REM check if any python is installed:
 python --version >NUL
-IF errorlevel 1 (
+IF ERRORLEVEL 1 (
 	ECHO: Error: Install python version %python_version% in windows (https://www.python.org/downloads/windows/^) and restart
 	ECHO:
 	ECHO: Failed (see above^): Press any key to exit
@@ -48,10 +48,10 @@ IF errorlevel 1 (
 )
 
 @REM upgrade pip
-python -m pip install --upgrade pip
+python -m pip install --upgrade pip > NUL
 
 @REM create virtual python environment:
-python -m pip install --upgrade virtualenv
+python -m pip install --upgrade virtualenv > NUL
 IF "%python_version%"=="" (
 	python -m virtualenv "%python_environment_path%"
 ) ELSE (
