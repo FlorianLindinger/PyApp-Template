@@ -2,28 +2,19 @@
 important
 ############################################################
 
+make icon for kill function
+
 make a shortcut helper file which catches all errors and deletes if non?
 
 move everything that gets generated out of do_not_change to make copy easier
 
-move stuff again to bing called with any arguemtn
+move stuff again to being called with any arguemtn for nopause
 
-fix no args for arbitray langth -ArgumentList
-
-make everything auto close and rely on shorcuts?
-
-no terminal -> id generating and deleting after done (this can have error logging of logging output?) -> logging_output -> start_batch
 normal;  id generating and deleting after don -> start_batch
-
-add arbitrary num of args to other files
-
-make shortcuts generatoir
 
 auto kill last process? probably not. make a non-user setting to auto kill previous process
 
 make kill process also for not hidden
-
-create terminate_running_program_name if running and delete afterwards? for no-terminal mode
 
 auto install powershell needed?
 
@@ -32,8 +23,6 @@ no error to log file for error in start_program?
 for crashes in batch outer most it closes everyting? maybe somehow avoid with /K instead of /C
 
 force replace blocked log file
-
-fix log file not allowing spaces
 
 ##############################
 For readme
@@ -51,15 +40,7 @@ explain that it only saves to log file at end
 For all batch files:
 ##############################
 
-
 make checks if files exist where no error would appear anywhere and leave window open with a warning if no existing
-
-check if needed and update to new comments
-	@REM function that makes path to absolute if not already. Access as %OUTPUT% (also gets rid of unresolved ".." in path):
-	:make_absolute_path_if_relative
-		SET OUTPUT=%~f1
-		EXIT /B
-
 
 ############################################################
 optional
@@ -69,8 +50,7 @@ rename everythong from batch to more generic because it is calling generic
 
 generate link to settings.py instead if no yaml file and if .py file exists. explain this
 
-add incremental printing to log file. check if printing to terminal also possible then
-check if option to save line whenever appears in terminal as a log works
+check if printing to terminal also possible incremental
 
 add better text:
 	ECHO: ##########################

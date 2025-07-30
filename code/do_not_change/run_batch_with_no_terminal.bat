@@ -25,17 +25,17 @@ SET batch_file_path=%~1
 IF "%~2"=="" (
 	SET process_id_file_path=..\..\running_hidden_program_id.pid
 ) ELSE (
-	SET log_path=%~2
+	SET process_id_file_path=%~2
 )
 
 @REM ######################
 @REM --- Code Execution ---
 @REM ######################
 
-@REM put arguments starting from the second (from calling this batch file) in the string "args_list" with commas in between and each surrouned by \" on both sides:
+@REM put arguments starting from the i-th (from calling this batch file) in the string "args_list" with commas in between and each surrouned by \" on both sides:
 SETLOCAL enabledelayedexpansion
 SET args_list=
-SET i=2
+SET i=3
 :loop_args
   CALL SET "arg=%%~%i%%"
   IF "%arg%"=="" ( GOTO args_done)
@@ -47,7 +47,11 @@ GOTO loop_args
 :args_done
 
 @REM call batch_file_path with arguments in hidden terminal and write the process ID of the hidden program to process_id_file_path. This file gets deleted when the code ends or if it is killed with kill_process_with_id.bat:
-powershell -Command "$p = Start-Process 'helpers\run_batch_and_delete_a_file_afterwards' -ArgumentList '%batch_file_path%','%process_id_file_path%', %args_list% , nopause -WindowStyle Hidden -PassThru; [System.IO.File]::WriteAllText('%process_id_file_path%',$p.Id)"
+IF "%args_list%"=="" (
+  powershell -Command "$p = Start-Process 'helpers\run_batch_and_delete_a_file_afterwards' -ArgumentList '%batch_file_path%','%process_id_file_path%' , nopause -WindowStyle Hidden -PassThru; [System.IO.File]::WriteAllText('%process_id_file_path%',$p.Id)"
+) ELSE (
+  powershell -Command "$p = Start-Process 'helpers\run_batch_and_delete_a_file_afterwards' -ArgumentList '%batch_file_path%','%process_id_file_path%', %args_list% , nopause -WindowStyle Hidden -PassThru; [System.IO.File]::WriteAllText('%process_id_file_path%',$p.Id)"
+)
 
 @REM ####################
 @REM --- Closing-Code ---
