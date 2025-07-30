@@ -28,7 +28,7 @@ IF "%~2"=="" (
 	SET log_path=%~2
 )
 IF "%~3"=="" (
-	SET process_id_file_path=..\..\running_hidden_program_id.pid
+	SET process_id_file_path=..\..\id_of_currently_running_hidden_program.pid
 ) ELSE (
 	SET process_id_file_path=%~3
 )

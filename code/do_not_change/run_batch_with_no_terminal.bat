@@ -23,7 +23,7 @@ CD /D "%current_file_path%"
 @REM Use "\" to separate folder levels and omit "\" at the end of paths):
 SET batch_file_path=%~1
 IF "%~2"=="" (
-	SET process_id_file_path=..\..\running_hidden_program_id.pid
+	SET process_id_file_path=..\..\id_of_currently_running_hidden_program.pid
 ) ELSE (
 	SET process_id_file_path=%~2
 )

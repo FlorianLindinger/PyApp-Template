@@ -29,7 +29,7 @@ SET user_settings_path=..
 SET shortcut_destination_path=..\..
 SET log_path=..\..\log.txt
 @REM: For safety, the file ending (.pid) must not be included in process_id_file_path (see kill_process_with_id.bat):
-SET process_id_file_path=..\..\running_hidden_program_id
+SET process_id_file_path=..\..\id_of_currently_running_hidden_program
 
 @REM import settings from settings_path (e.g., for importing parameter "example" add the line within the last round brackets below "IF %%a==example ( SET example=%%b)"):
 FOR /F "tokens=1,2 delims==" %%a IN ('findstr "^" "%non_user_settings_path%"') DO (
