@@ -29,7 +29,7 @@ SET user_settings_path=..
 SET shortcut_destination_path=..\..
 SET log_path=..\..\log.txt
 @REM: For safety, the file ending (.pid) must not be included in process_id_file_path (see kill_process_with_id.bat):
-SET process_id_file_path=..\..\running_hidden_program_id.pid
+SET process_id_file_path=..\..\running_hidden_program_id
 
 @REM import settings from settings_path (e.g., for importing parameter "example" add the line within the last round brackets below "IF %%a==example ( SET example=%%b)"):
 FOR /F "tokens=1,2 delims==" %%a IN ('findstr "^" "%non_user_settings_path%"') DO (
@@ -62,7 +62,7 @@ IF "%user_settings_path%"=="" ( @REM shortcut.exe somehow does not need a closin
 )
 
 @REM creare shortcut for launcher without terminal and with output to log file
-CALL shortcut_by_OptimumX.exe /F:"%start_no_terminal_name%.lnk" /A:C /T:"cmd.exe" /P:"/C run_batch_with_file_output_and_no_terminal.bat start_program.bat ""%log_path%"" ""%process_id_file_path%""" /I:"%current_file_path%%icon_path%" /W:"%current_file_path%
+CALL shortcut_by_OptimumX.exe /F:"%start_no_terminal_name%.lnk" /A:C /T:"cmd.exe" /P:"/C run_batch_with_file_output_and_no_terminal.bat start_program.bat ""%log_path%"" ""%process_id_file_path%.pid"" nopause" /I:"%current_file_path%%icon_path%" /W:"%current_file_path%
 
 @REM create shortcut for killing the running program
 CALL shortcut_by_OptimumX.exe /F:"%stop_no_terminal_name%.lnk" /A:C /T:"cmd.exe" /P:"/C kill_process_with_id.bat ""%process_id_file_path%"" " /I:"%current_file_path%%stop_icon_path%" /W:"%current_file_path%
