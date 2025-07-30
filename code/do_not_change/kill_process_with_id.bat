@@ -1,3 +1,4 @@
+@ECHO OFF
 @REM ###################################
 @REM --- Code Description & Comments ---
 @REM ###################################
@@ -21,29 +22,25 @@ CD /D "%current_file_path%"
 
 @REM define local variables (do not have spaces before or after the "=" or at the end of the variable value (unless wanted in value). Add inline comments therefore without a space before "&@REM".
 @REM Use "\" to separate folder levels and omit "\" at the end of paths):
-SET batch_file_path=%~1
-SET process_id_file_path=running_hidden_program_id.pid
+SET process_id_or_file=%~1
 
 @REM ######################
 @REM --- Code Execution ---
 @REM ######################
 
-@REM put arguments starting from the second (from calling this batch file) in the string "args_list" with commas in between and each surrouned by \" on both sides:
-SETLOCAL enabledelayedexpansion
-SET args_list=
-SET i=2
-:loop_args
-  CALL SET "arg=%%~%i%%"
-  IF "%arg%"=="" ( GOTO args_done)
-  IF NOT "%i%"=="2" ( SET "args_list=!args_list!,")
-  SET "arg=!arg:"=""!"
-  SET "args_list=!args_list! '!arg!'"
-  SET /a i+=1
-GOTO loop_args
-:args_done
+@REM get process id if it input is a file containing it
+IF EXIST "%process_id_or_file%" (
+	SET /p PID=<"%process_id_file_path%"
+) ELSE (
+	SET PID=%process_id_file_path%
+)
 
-@REM call batch_file_path with arguments in hidden terminal and write the process ID of the hidden program to process_id_file_path. This file gets deleted when the code ends or if it is killed with kill_process_with_id.bat:
-powershell -Command "$p = Start-Process 'helpers\run_batch_and_delete_a_file_afterwards' -ArgumentList '%batch_file_path%','%process_id_file_path%', %args_list% , nopause -WindowStyle Hidden -PassThru; [System.IO.File]::WriteAllText('%process_id_file_path%',$p.Id)"
+@REM kill process with process ID PID and its child processes:
+TASKKILL /PID %PID% /T /F
+
+IF EXIST "%process_id_or_file%" (
+	DEL "%process_id_file_path%"
+)
 
 @REM ####################
 @REM --- Closing-Code ---

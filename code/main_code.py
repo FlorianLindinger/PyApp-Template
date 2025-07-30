@@ -10,7 +10,7 @@ import settings # imports and converts user variables (e.g., name: value) in set
 import os
 print(os.getcwd())  # prints the current working directory
 
-for i in range(100):
+for i in range(20):
     print(i)
     import time
     time.sleep(1)  # sleep for 0.1 seconds

@@ -32,8 +32,21 @@ IF "%~2"=="" (
 @REM --- Code Execution ---
 @REM ######################
 
-@REM call batch file without terminal and send outputs (including errors) to log_path
-CALL run_batch_with_no_terminal.bat run_batch_with_file_output.bat "%batch_file_path%" "%log_path%" "%~3"
+@REM put arguments starting from the i-th (from calling this batch file) in the string "args_list" with space in between and each surrouned by " on both sides:
+SETLOCAL enabledelayedexpansion
+SET args_list=
+SET i=3
+:loop_args
+  CALL SET "arg=%%~%i%%"
+  IF "%arg%"=="" ( GOTO args_done)
+  SET "arg=!arg:"=""!"
+  SET args_list=!args_list! "!arg!"
+  SET /a i+=1
+GOTO loop_args
+:args_done
+
+@REM call batch file without terminal and send outputs (including errors) to log_path:
+CALL run_batch_with_no_terminal.bat run_batch_with_file_output.bat "%batch_file_path%" "%log_path%" %args_list% nopause
 
 @REM ####################
 @REM --- Closing-Code ---
