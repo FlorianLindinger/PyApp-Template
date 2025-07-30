@@ -45,12 +45,6 @@ make environment batches more into utilities with calls with arguments? need uti
 
 generate shrotcut to log output? -> rename functions. Maybe needed becasue taskbar adding?
 
-add explainer.txt into do_no_change to explain everything
-
-also add to explainer in pyhton_evniroment_code
-
-also add explainer to code folder
-
 move helpers i.e. utiliteid into helpers file and maybe rename utilizties and put more utilizies in
 
 mopve output of uopdates to NUL
