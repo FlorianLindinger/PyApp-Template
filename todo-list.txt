@@ -2,6 +2,12 @@
 important
 ############################################################
 
+move stuff again to bing called with any arguemtn
+
+fix no args for arbitray langth -ArgumentList
+
+make everything auto close and rely on shorcuts?
+
 no terminal -> id generating and deleting after done (this can have error logging of logging output?) -> logging_output -> start_batch
 normal;  id generating and deleting after don -> start_batch
 
@@ -54,6 +60,8 @@ check if needed and update to new comments
 ############################################################
 optional
 ############################################################
+
+rename everythong from batch to more generic because it is calling generic 
 
 generate link to settings.py instead if no yaml file and if .py file exists. explain this
 

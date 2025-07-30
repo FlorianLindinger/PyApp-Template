@@ -34,14 +34,24 @@ IF "%~2"=="" (
 
 @REM makes python files (if called) flush immediately what they print to the log file
 SET PYTHONUNBUFFERED=1
-
-@REM run batch file and redirect print and error output to log_path (utf-8 encoding needed to avoid errors for special characters)
+@REM utf-8 encoding needed for python output (if called) to avoid errors for special characters
 SET PYTHONIOENCODING=utf-8
-IF NOT "%~3"=="" (
-	CALL "%batch_file_path%" "%~3" > "%log_path%" 2>&1
-) ELSE (
-	CALL "%batch_file_path%" > "%log_path%" 2>&1
-)
+
+@REM put arguments starting from the third (from calling this batch file) in the string "args_list" with space in between and each surrouned by " on both sides:
+SETLOCAL enabledelayedexpansion
+SET args_list=
+SET i=3
+:loop_args
+  CALL SET "arg=%%~%i%%"
+  IF "%arg%"=="" ( GOTO args_done)
+  SET "arg=!arg:"=""!"
+  SET args_list=!args_list! "!arg!"
+  SET /a i+=1
+GOTO loop_args
+:args_done
+
+@REM run batch file and redirect print and error output to log_path
+CALL "%batch_file_path%" %args_list% > "%log_path%" 2>&1
 
 @REM print output that is in log file also to console
 TYPE "%log_path%"

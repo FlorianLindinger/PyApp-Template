@@ -22,6 +22,7 @@ CD /D "%current_file_path%"
 @REM define local variables (do not have spaces before or after the "=" or at the end of the variable value (unless wanted in value). Add inline comments therefore without a space before "&@REM".
 @REM Use "\" to separate folder levels and omit "\" at the end of paths):
 SET batch_file_path=%~1
+SET process_id_file_path=running_hidden_program_id.pid
 
 @REM ######################
 @REM --- Code Execution ---
@@ -36,13 +37,13 @@ SET i=2
   IF "%arg%"=="" ( GOTO args_done)
   IF NOT "%i%"=="2" ( SET "args_list=!args_list!,")
   SET "arg=!arg:"=""!"
-  SET "args_list=!args_list! \"!arg!\""
+  SET "args_list=!args_list! '!arg!'"
   SET /a i+=1
 GOTO loop_args
 :args_done
 
-@REM call batch_file_path with arguments in hidden terminal
-powershell -Command "Start-Process '%batch_file_path%' -ArgumentList %args_list% -WindowStyle Hidden"
+@REM call batch_file_path with arguments in hidden terminal and write the process ID of the hidden program to process_id_file_path. This file gets deleted when the code ends or if it is killed with kill_process_with_id.bat:
+powershell -Command "$p = Start-Process 'helpers\run_batch_and_delete_a_file_afterwards' -ArgumentList '%batch_file_path%','%process_id_file_path%', %args_list% , nopause -WindowStyle Hidden -PassThru; [System.IO.File]::WriteAllText('%process_id_file_path%',$p.Id)"
 
 @REM ####################
 @REM --- Closing-Code ---
