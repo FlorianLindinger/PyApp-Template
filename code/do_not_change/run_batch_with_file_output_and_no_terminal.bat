@@ -23,7 +23,7 @@ CD /D "%current_file_path%"
 @REM Use "\" to separate folder levels and omit "\" at the end of paths):
 SET batch_file_path=%~1
 IF "%~2"=="" (
-	SET log_path=log.txt
+	SET log_path=..\..\log.txt
 ) ELSE (
 	SET log_path=%~2
 )

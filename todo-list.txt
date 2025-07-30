@@ -2,6 +2,8 @@
 important
 ############################################################
 
+move everything that gets generated out of do_not_change to make copy easier
+
 move stuff again to bing called with any arguemtn
 
 fix no args for arbitray langth -ArgumentList
