@@ -36,13 +36,13 @@ python -m pip install --upgrade pip
 pip install pipreqs
 
 @REM activate (or create & activate) python environment:
-CALL activate_or_create_environment.bat nopause
+CALL activate_or_create_environment.bat "nopause"
 
 @REM replace default_python_packages file with needed packages
 pipreqs "%python_code_path%" --force --savepath "%temporary_txt_path%" --ignore "%python_environment_path%"
 
 @REM reset python environment with only required packages
-CALL reset_python_environment.bat "%temporary_txt_path%" nopause
+CALL reset_python_environment.bat "%temporary_txt_path%"
 
 @REM remove temporary file that lists needed packages
 DEL "%temporary_txt_path%"
@@ -51,9 +51,8 @@ DEL "%temporary_txt_path%"
 @REM --- Closing-Code ---
 @REM ####################
 
-@REM pause if not called by other script with "nopause" as last argument:
-FOR %%a IN (%*) DO SET last_argument=%%~a
-IF NOT "%last_argument%"=="nopause" (
+@REM pause if not called by other script with any argument:
+IF "%~1"=="" (
 	ECHO: Press any key to exit
 	PAUSE >NUL 
 )

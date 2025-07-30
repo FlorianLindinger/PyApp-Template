@@ -28,8 +28,8 @@ SET python_environment_path=..\..\python_environment_code\python_environment
 @REM ######################
 
 @REM create python environment if not existing:
-if not exist "%python_environment_path%\Scripts\activate.bat" (
-	call activate_or_create_environment.bat "nopause"
+IF NOT EXIST "%python_environment_path%\Scripts\activate.bat" (
+	CALL activate_or_create_environment.bat "nopause"
 )
 
 @REM upgrade pip
