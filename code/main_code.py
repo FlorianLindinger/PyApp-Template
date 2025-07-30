@@ -8,8 +8,8 @@ import settings # imports and converts user variables (e.g., name: value) in set
 # time.sleep(10)
 
 import time
-for i in range(10):
+for i in range(1000):
     print(i)
-    time.sleep(1)
+    time.sleep(0.01)
 
 

@@ -35,10 +35,14 @@ python -m pip install --upgrade pip > NUL
 
 @REM upgrade all packages as far as conflicts allow
 pip freeze > "%temporary_txt_path%"
+ECHO:
+ECHO:
 pip install --upgrade -r "%temporary_txt_path%"
 DEL "%temporary_txt_path%"
 
 @REM final print:
+ECHO:
+ECHO:
 ECHO: Upgraded all packages if no errors above
 
 @REM ####################
