@@ -33,7 +33,7 @@ IF NOT EXIST "%python_environment_path%\Scripts\activate.bat" (
 )
 
 @REM upgrade pip
-pip install --upgrade pip
+pip install --upgrade pip > NUL
 
 @REM print how to install:
 ECHO:

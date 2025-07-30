@@ -62,7 +62,7 @@ python main_code.py
 @REM %ERRORLEVEL% is what the last python execution gives out in sys.exit(errorlevel). 
 @REM Errorlevel 1 (default for python crash) will run main_code.py or after_python_crash_code.py (depending on parameter restart_main_code_on_crash in non-user_settings.ini). Errorlevel -1 will exit the terminal. Any other value will pause the terminal until user presses a button (unless this script is called with any argument):
 IF %ERRORLEVEL% EQU 1 (
-	SET python_crashed=1
+	SET original_python_crashed=1
 	CALL :handle_python_crash
 )
 @REM Does not pause if python returns an errorlevel -1 with sys.exit(-1) in python:
@@ -70,12 +70,23 @@ IF %ERRORLEVEL% EQU -1 (
 	EXIT /B
 )
 
-@REM print final message:
+@REM print final report message:
 ECHO:
-IF "%python_crashed%"=="1" (
-	ECHO: ##########################
-	ECHO: Python crashed (see above^)
-	ECHO: ##########################
+IF "%original_python_crashed%"=="1" (
+	IF "%python_crash_handler_crashed%"=="1" (
+		ECHO: ########################################################
+		ECHO: Finished all python execution.
+		ECHO: The main python code crashed and the python function for
+		ECHO: handling crashes crashed at least once before finishing 
+		ECHO: successfully now (see above^)
+		ECHO: ########################################################
+	) ELSE (
+		ECHO: ######################################################
+		ECHO: Finished all python execution.
+		ECHO: The main python code crashed but the python function
+		ECHO: for handling crashes finished successfully (see above^)
+		ECHO: ######################################################
+	)
 ) ELSE (
 	ECHO: #################################
 	ECHO: Python code finished successfully
@@ -130,6 +141,7 @@ IF %restart_main_code_on_crash% EQU 0 ( @REM  run after_python_crash_code.py (ag
 	ECHO:
 )
 IF %ERRORLEVEL% EQU 1 ( @REM could be infinitely recursive
+	SET python_crash_handler_crashed=1
 	CALL :handle_python_crash
 )
 EXIT /B 0 &@REM exit function with errorcode 0

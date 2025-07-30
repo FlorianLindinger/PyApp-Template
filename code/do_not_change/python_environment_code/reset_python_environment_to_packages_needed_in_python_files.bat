@@ -30,7 +30,7 @@ SET temporary_txt_path=..\..\..\tmp.txt
 @REM ######################
 
 @REM upgrade pip
-python -m pip install --upgrade pip
+python -m pip install --upgrade pip > NUL
 
 @REM install globally a package to find required packages in python files
 pip install pipreqs
