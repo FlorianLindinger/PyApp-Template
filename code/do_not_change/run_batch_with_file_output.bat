@@ -53,9 +53,6 @@ GOTO loop_args
 @REM run batch file and redirect print and error output to log_path
 CALL "%batch_file_path%" %args_list% > "%log_path%" 2>&1
 
-@REM print output that is in log file also to console
-TYPE "%log_path%"
-
 @REM delete log_path if it is empty, i.e. there were no errors/prints in the batch execution:
 FOR /F %%i IN ("%log_path%") DO SET file_length=%%~zi
 IF "%file_length%"=="0" (
