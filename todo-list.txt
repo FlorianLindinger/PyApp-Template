@@ -2,27 +2,19 @@
 important
 ############################################################
 
-problem if log is blocked
+problem if log is blocked. force replace blocked log file
 
 make everything that deletes and saves more safe by only allowing .txt for example
 
-add comment to set that escape character like ()& need ^ . or other way to avoid
+add comment to set that escape character like ()& need ^ . or other way to avoid. is "" around everything or around value solujtiopn?
 
 add full path and stop if not generated before continuing:
 Error: ..\..\..\tmp.txt does not exist. Press any key to exit
 
-make icon for kill function
-
 make a shortcut helper file which catches all errors and deletes if non?
 or maye launch them with /K and only finsh in end if no errorlevel
 
-move everything that gets generated out of do_not_change to make copy easier
-
-normal;  id generating and deleting after don -> start_batch
-
-auto kill last process? probably not. make a non-user setting to auto kill previous process
-
-make kill process also for not hidden
+auto kill last process? probably not. make a non-user setting to auto kill previous process. ask? or add to file and make it kill all of them?
 
 auto install powershell needed?
 
@@ -30,7 +22,7 @@ no error to log file for error in start_program?
 
 for crashes in batch outer most it closes everyting? maybe somehow avoid with /K instead of /C
 
-force replace blocked log file
+make checks if files exist where no error would appear anywhere and leave window open with a warning if no existing
 
 ##############################
 For readme
@@ -43,16 +35,11 @@ For readme
 explain all advantages/features
 explain that it only saves to log file at end
 
-
-##############################
-For all batch files:
-##############################
-
-make checks if files exist where no error would appear anywhere and leave window open with a warning if no existing
-
 ############################################################
 optional
 ############################################################
+
+make kill process also for not hidden?
 
 confirmation question via windows popup?
 
