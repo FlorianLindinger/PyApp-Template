@@ -30,7 +30,7 @@ SET python_environment_path_aoce=..\..\python_environment_code\python_environmen
 IF NOT EXIST "%python_environment_path_aoce%\Scripts\activate.bat" (	
 	ECHO Creating local python environment for first execution
 	ECHO:
-	CALL create_local_python_environment.bat nopause
+	CALL create_local_python_environment.bat "nopause"
 )
 
 @REM activate python environment:
@@ -40,9 +40,8 @@ CALL "%python_environment_path_aoce%\Scripts\activate.bat"
 @REM --- Closing-Code ---
 @REM ####################
 
-@REM pause if not called by other script with "nopause" as last argument:
-FOR %%a IN (%*) DO SET last_argument_aoce=%%~a
-IF NOT "%last_argument_aoce%"=="nopause" (
+@REM pause if not called by other script with any argument:
+IF "%~1"=="" (
 	ECHO: Press any key to exit
 	PAUSE >NUL 
 )

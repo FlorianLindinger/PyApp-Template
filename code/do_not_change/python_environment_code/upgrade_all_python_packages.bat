@@ -28,7 +28,7 @@ SET temporary_txt_path=..\..\..\tmp.txt
 @REM ######################
 
 @REM activate (or create & activate) python environment:
-CALL activate_or_create_environment.bat nopause
+CALL activate_or_create_environment.bat "nopause"
 
 @REM upgrade pip
 python -m pip install --upgrade pip
@@ -45,9 +45,8 @@ ECHO: Upgraded all packages if no errors above
 @REM --- Closing-Code ---
 @REM ####################
 
-@REM pause if not called by other script with "nopause" as last argument:
-FOR %%a IN (%*) DO SET last_argument=%%~a
-IF NOT "%last_argument%"=="nopause" (
+@REM pause if not called by other script with any argument:
+IF "%~1"=="" (
 	ECHO: Press any key to exit
 	PAUSE >NUL 
 )

@@ -112,9 +112,8 @@ ECHO Created python (version %python_version%) environment in "%OUTPUT%" if ever
 @REM --- Closing-Code ---
 @REM ####################
 
-@REM pause if not called by other script with "nopause" as last argument:
-FOR %%a IN (%*) DO SET last_argument=%%~a
-IF NOT "%last_argument%"=="nopause" (
+@REM pause if not called by other script with any argument:
+IF "%~1"=="" (
 	ECHO: Press any key to exit
 	PAUSE >NUL 
 )
