@@ -9,8 +9,10 @@ __pycache__
 tmp.txt
 # whitelist to sync:
 !GENERATE_LAUNCHER_AND_SETTINGS.lnk
-# log file
+# log file:
 log.txt
+# temporary id file for no-terminal start:
+*.pid
 ###########################
 
 
