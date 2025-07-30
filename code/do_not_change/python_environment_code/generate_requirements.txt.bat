@@ -28,7 +28,7 @@ SET default_packages_file_path=..\..\python_environment_code\default_python_pack
 @REM ######################
 
 @REM upgrade pip
-python -m pip install --upgrade pip
+python -m pip install --upgrade pip > NUL
 
 @REM activate environment:
 CALL activate_or_create_environment.bat "nopause"

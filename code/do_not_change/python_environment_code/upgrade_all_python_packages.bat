@@ -31,7 +31,7 @@ SET temporary_txt_path=..\..\..\tmp.txt
 CALL activate_or_create_environment.bat "nopause"
 
 @REM upgrade pip
-python -m pip install --upgrade pip
+python -m pip install --upgrade pip > NUL
 
 @REM upgrade all packages as far as conflicts allow
 pip freeze > "%temporary_txt_path%"

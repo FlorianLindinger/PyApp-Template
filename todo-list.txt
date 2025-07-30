@@ -39,6 +39,13 @@ explain that it only saves to log file at end
 optional
 ############################################################
 
+mopve output of uopdates to NUL
+
+color in prints or even change normal prints somehow. Must also work with file verison
+
+I guess just a number for max calling of crash handlers with 0 being accepted: adjust message printing
+option for not repeat calls of crash scripts? could just retun I guess if receiving arg "crashed". no that does not work since then it gets called 0 times
+
 make kill process also for not hidden?
 
 confirmation question via windows popup?
