@@ -2,6 +2,9 @@
 important
 ############################################################
 
+add full path and stop if not generated before continuing:
+Error: ..\..\..\tmp.txt does not exist. Press any key to exit
+
 make icon for kill function
 
 make a shortcut helper file which catches all errors and deletes if non?

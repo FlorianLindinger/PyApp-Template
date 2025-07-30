@@ -23,6 +23,7 @@ CD /D "%current_file_path%"
 @REM Use "\" to separate folder levels and omit "\" at the end of paths):
 SET python_code_path=..\..
 SET python_environment_path=..\..\python_environment_code\python_environment
+SET temporary_txt_path=..\..\..\tmp.txt
 
 @REM ######################
 @REM --- Code Execution ---
@@ -38,11 +39,11 @@ pip install pipreqs
 CALL activate_or_create_environment.bat nopause
 
 @REM install needed packages
-pipreqs "%python_code_path%" --force --savepath tmp.txt --ignore "%python_environment_path%"
-pip install --upgrade -r tmp.txt
+pipreqs "%python_code_path%" --force --savepath "%temporary_txt_path%" --ignore "%python_environment_path%"
+pip install --upgrade -r "%temporary_txt_path%"
 
 @REM remove temporary file that lists needed packages
-DEL tmp.txt
+DEL "%temporary_txt_path%"
 
 @REM ####################
 @REM --- Closing-Code ---
