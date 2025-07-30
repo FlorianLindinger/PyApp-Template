@@ -21,7 +21,7 @@ CD /D "%current_file_path%"
 
 @REM define local variables (do not have spaces before or after the "=" or at the end of the variable value (unless wanted in value). Add inline comments therefore without a space before "&@REM".
 @REM Use "\" to separate folder levels and omit "\" at the end of paths):
-
+SET temporary_txt_path=..\..\..\tmp.txt
 
 @REM ######################
 @REM --- Code Execution ---
@@ -34,9 +34,12 @@ CALL activate_or_create_environment.bat nopause
 python -m pip install --upgrade pip
 
 @REM upgrade all packages as far as conflicts allow
-pip freeze > tmp.txt
-pip install --upgrade -r tmp.txt
-DEL tmp.txt
+pip freeze > "%temporary_txt_path%"
+pip install --upgrade -r "%temporary_txt_path%"
+DEL "%temporary_txt_path%"
+
+@REM final print:
+ECHO: Upgraded all packages if no errors above
 
 @REM ####################
 @REM --- Closing-Code ---

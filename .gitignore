@@ -7,14 +7,10 @@ __pycache__
 /*.lnk
 # temporary text file:
 tmp.txt
-# text files in start folder:
-/*.txt
-# whitelist to sync:
-!todo-list.txt
 # whitelist to sync:
 !GENERATE_LAUNCHER_AND_SETTINGS.lnk
 # log file
-*log.txt
+log.txt
 ###########################
 
 
