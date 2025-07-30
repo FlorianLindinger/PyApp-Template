@@ -8,7 +8,7 @@ __pycache__
 # temporary text file:
 tmp.txt
 # whitelist to sync:
-!GENERATE_LAUNCHER_AND_SETTINGS.lnk
+!RUN_BEFORE_FIRST_START_TO_GENERATE_SHORTCUTS.lnk
 # log file:
 log.txt
 # temporary id file for no-terminal start:

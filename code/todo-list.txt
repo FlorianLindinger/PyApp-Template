@@ -16,8 +16,6 @@ or maye launch them with /K and only finsh in end if no errorlevel
 
 auto kill last process? probably not. make a non-user setting to auto kill previous process. ask? or add to file and make it kill all of them?
 
-auto install powershell needed?
-
 no error to log file for error in start_program?
 
 for crashes in batch outer most it closes everyting? maybe somehow avoid with /K instead of /C
