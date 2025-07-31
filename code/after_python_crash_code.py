@@ -5,5 +5,5 @@
 # Python can check for this with sys.argv[-1]=="crashed".
 # You can delete this file if you don't want to run any code when it would be executed
 ####################################################################################################################################
-import settings # imports and converts user variables (e.g., name: value) in settings.yaml (access value via dictionary: s["name"])
+from settings import s # imports and converts user variables (e.g., name: value) in settings.yaml (access value via dictionary: s["name"])
 ####################################################################################################################################
