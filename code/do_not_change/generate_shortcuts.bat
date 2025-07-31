@@ -19,8 +19,8 @@ SETLOCAL
 SET current_file_path=%~dp0
 CD /D "%current_file_path%"
 
-@REM define local variables (do not have spaces before or after the "=" or at the end of the variable value (unless wanted in value). Add inline comments therefore without a space before "&@REM".
-@REM Use "\" to separate folder levels and omit "\" at the end of paths):
+@REM define local variables (do not have spaces before or after the "=" or at the end of the variable value (unless wanted in value) -> inline comments without space before "&@REM".
+@REM Use "\" to separate folder levels and omit "\" at the end of paths. Relative paths allowed):
 SET non_user_settings_path=..\non-user_settings.ini
 SET icon_path=..\icons\icon.ico
 SET settings_icon_path=..\icons\settings_icon.ico

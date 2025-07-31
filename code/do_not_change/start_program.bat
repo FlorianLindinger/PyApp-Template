@@ -19,10 +19,10 @@ SETLOCAL
 SET current_file_path=%~dp0
 CD /D "%current_file_path%"
 
-@REM define local variables (do not have spaces before or after the "=" or at the end of the variable value (unless wanted in value). Add inline comments therefore without a space before "&@REM".
-@REM Use "\" to separate folder levels and omit "\" at the end of paths):
+@REM define local variables (do not have spaces before or after the "=" or at the end of the variable value (unless wanted in value) -> inline comments without space before "&@REM".
+@REM Use "\" to separate folder levels and omit "\" at the end of paths. Relative paths allowed):
 SET settings_path=..\non-user_settings.ini
-SET python_env_code_path=python_environment_code
+SET python_env_activation_code_path=python_environment_code\activate_or_create_environment.bat
 SET python_code_path=..\main_code.py
 SET after_python_crash_code_path=..\after_python_crash_code.py
 SET icon_path=..\icons\icon.ico
@@ -50,7 +50,7 @@ COLOR %terminal_bg_color%%terminal_text_color%
 change_icon "%program_name%" "%icon_path%"
 
 @REM activate or create & activate python environment:
-CALL activate_or_create_environment.bat "nopause"
+CALL "%python_env_activation_code_path%" "nopause"
 
 @REM run main python code:
 @REM go to directory of python code and execute it and return to folder of this file:

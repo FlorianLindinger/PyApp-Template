@@ -16,8 +16,8 @@ SETLOCAL
 
 @REM Do not move to folder of this file such that arguement relative paths are with respect to caller
 
-@REM define local variables (do not have spaces before or after the "=" or at the end of the variable value (unless wanted in value). Add inline comments therefore without a space before "&@REM".
-@REM Use "\" to separate folder levels and omit "\" at the end of paths):
+@REM define local variables (do not have spaces before or after the "=" or at the end of the variable value (unless wanted in value) -> inline comments without space before "&@REM".
+@REM Use "\" to separate folder levels and omit "\" at the end of paths. Relative paths allowed):
 SET batch_file_path=%~1
 SET file_path=%~2
 
