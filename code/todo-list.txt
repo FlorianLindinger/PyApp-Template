@@ -22,6 +22,48 @@ for crashes in batch outer most it closes everyting? maybe somehow avoid with /K
 
 make checks if files exist where no error would appear anywhere and leave window open with a warning if no existing
 
+#################################
+
+
+Make browser Version + start with Lesezeichen 
+
+Make pyqt5 a scroll Menü for yaml settings with restart button
+
+No. Confirmation if python finished in gui
+
+Add block of Ctrl c
+
+Add relativ starters?
+
+Python path to nonusersetings
+
+Echo to screen and write to a rotating .log file (with date/time)
+
+class SafeDict(dict):
+    def __getitem__(self, key):
+        if key not in self:
+            return f"Key '{key}' is missing!"
+        return super().__getitem__(key)
+
+my_dict = SafeDict({"name": "Alice"})
+print(my_dict["name"])  # Alice
+print(my_dict["age"])   # Key 'age' is missing!
+
+Add just a Code line to start batch as a setting 
+
+Add Syntax Checker to git and even linting?
+
+Add local gitignores?
+
+Add more default options to do not change 
+
+Change icon in top left corner 
+
+Run terminal in Browser 
+
+Add tabs to terminal 
+
+
 ##############################
 For readme
 ##############################
@@ -33,9 +75,66 @@ For readme
 explain all advantages/features
 explain that it only saves to log file at end
 
+explain that version ..x changes can be updated by replacing do_not_change and should not be breaking
+v.xy changes should be breaking something
+releases should always be stable
+for breaking. explain what needs to be changed to fix.
+
+where it looks for pyron scipts for auto install
+
 ############################################################
 optional
 ############################################################
+
+add option to start minimized
+
+Add the .bat or a shortcut to shell:startup. Useful?
+
+option to ignore every ECHO but let python print
+
+add a batch that update git folder. maybe only main and release. maybe propt user and disaply name and changelog(s)
+
+Auto-Generate .gitignore
+
+add startup time or something
+
+Let the script run in "portable" mode where all logs, configs, environments stay in a single folder -> wherever shortcut is placed also print output and let python think it is there
+
+make lightweight interface instead of terminal. maybe as option or only if installed
+
+somehow have an option to get help when having access to shortcut
+
+Check Git remote for updates and prompt user to pull. print at least if new verison available
+
+Enable verbose logging or keep the terminal open on error.
+
+add option to kill previous. maybe even for non hidden
+
+add utilities like replace line in settings
+
+foreward arguemtns to python. maybe even different settings files to switch between
+
+somehow make echo on option switchable
+
+timestamp to log? subfolder?
+same for pid?
+
+self updatring from git option?
+
+make somehow git run generator for cloning
+
+Bonus: Change color if there's an error (e.g., red background).
+
+still spam for pip version on new download?
+add indicator that environemnt was created and now main code is runs
+decrease/importve spam there becasue everyone will see that
+make better print because it checks anyway if successfull creation?
+
+why different colors for running?
+
+mabye make ######## more fancy. maybe even color
+
+add github short descripton on right of page
 
 make option to not delete empty log files
 
