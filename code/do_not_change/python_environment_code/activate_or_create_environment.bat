@@ -18,8 +18,8 @@
 SET current_file_path_aoce=%~dp0
 CD /D "%current_file_path_aoce%"
 
-@REM define local variables (do not have spaces before or after the "=" or at the end of the variable value (unless wanted in value). Add inline comments therefore without a space before "&@REM".
-@REM Use "\" to separate folder levels and omit "\" at the end of paths):
+@REM define local variables (do not have spaces before or after the "=" or at the end of the variable value (unless wanted in value) -> inline comments without space before "&@REM".
+@REM Use "\" to separate folder levels and omit "\" at the end of paths. Relative paths allowed):
 SET python_environment_path_aoce=..\..\python_environment_code\python_environment
 
 @REM ######################

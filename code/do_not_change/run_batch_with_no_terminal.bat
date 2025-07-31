@@ -19,8 +19,8 @@ SETLOCAL
 SET current_file_path=%~dp0
 CD /D "%current_file_path%"
 
-@REM define local variables (do not have spaces before or after the "=" or at the end of the variable value (unless wanted in value). Add inline comments therefore without a space before "&@REM".
-@REM Use "\" to separate folder levels and omit "\" at the end of paths):
+@REM define local variables (do not have spaces before or after the "=" or at the end of the variable value (unless wanted in value) -> inline comments without space before "&@REM".
+@REM Use "\" to separate folder levels and omit "\" at the end of paths. Relative paths allowed):
 SET batch_file_path=%~1
 IF "%~2"=="" (
 	SET process_id_file_path=..\..\id_of_currently_running_hidden_program.pid
