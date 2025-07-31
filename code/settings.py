@@ -26,10 +26,12 @@ with open("settings.yaml") as file:
 
 # define custom class:
 class custom_error_dictionary(dict):
-     """dictionary subclass for custom error message of missing key:"""
+    """dictionary subclass for custom error message of missing key"""
+
     def __missing__(self, key):
         raise ValueError(
             f'Missing-setting-error: "{key}" is not defined in settings.yaml in {__file__}')
+
 
 # convert dictionary values and convert dictionaries to custom dictionaries:
 if s == None:

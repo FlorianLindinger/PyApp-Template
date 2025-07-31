@@ -23,7 +23,8 @@ CD /D "%current_file_path%"
 @REM Use "\" to separate folder levels and omit "\" at the end of paths):
 SET settings_path=..\non-user_settings.ini
 SET python_env_code_path=python_environment_code
-SET python_code_path=..
+SET python_code_path=..\main_code.py
+SET after_python_crash_code_path=..\after_python_crash_code.py
 SET icon_path=..\icons\icon.ico
 
 @REM import settings from settings_path (e.g., for importing parameter "example" add the line within the last round brackets below "IF %%a==example ( SET example=%%b)"):
@@ -49,15 +50,13 @@ COLOR %terminal_bg_color%%terminal_text_color%
 change_icon "%program_name%" "%icon_path%"
 
 @REM activate or create & activate python environment:
-CD /D "%python_env_code_path%" &@REM moving to local folder of called file needed because of relative paths in code
 CALL activate_or_create_environment.bat "nopause"
-CD /D "%current_file_path%" &@REM moving back to start directory
-
-@REM go to directory where the python codes are (in order to have them running where they are located):
-CD /D "%python_code_path%"
 
 @REM run main python code:
-python main_code.py
+@REM go to directory of python code and execute it and return to folder of this file:
+CD /D "%~dppython_code_path%"
+python "%~nxpython_code_path%"
+CD /D "%current_file_path%"
 
 @REM %ERRORLEVEL% is what the last python execution gives out in sys.exit(errorlevel). 
 @REM Errorlevel 1 (default for python crash) will run main_code.py or after_python_crash_code.py (depending on parameter restart_main_code_on_crash in non-user_settings.ini). Errorlevel -1 will exit the terminal. Any other value will pause the terminal until user presses a button (unless this script is called with any argument):
@@ -119,13 +118,16 @@ ECHO: WARNING: Python returned 1, which indicates a crash
 ECHO: ###################################################
 ECHO:
 IF %restart_main_code_on_crash% EQU 0 ( @REM  run after_python_crash_code.py (again)
-	IF exist after_python_crash_code.py (
+	IF EXIST "%after_python_crash_code_path%" (
 		ECHO:
 		ECHO: ###############################################
 		ECHO: Running python code intended for after crashes:
 		ECHO: ###############################################
 		ECHO:
-		python after_python_crash_code.py
+		@REM go to directory of python code and execute it and return to folder of this file:	
+		CD /D "%~dpafter_python_crash_code_path%"
+		python "%~nxafter_python_crash_code_path%"
+		CD /D "%current_file_path%"
 		ECHO:
 	@REM exit function if after_python_crash_code does not exist
 	) ELSE (
@@ -137,7 +139,10 @@ IF %restart_main_code_on_crash% EQU 0 ( @REM  run after_python_crash_code.py (ag
 	ECHO: Running main python code again after it crashed:
 	ECHO: ################################################
 	ECHO:
-	python main_code.py "crashed" &@REM "crashed" indicated to the python code that it is a repeat call after a crash and can be checked for with len(sys.argv)==2
+	@REM go to directory of python code and execute it and return to folder of this file:
+	CD /D "%~dppython_code_path%"
+	python "%~nxpython_code_path%" "crashed" &@REM argument "crashed" indicated to the python code that it is a repeat call after a crash and can be checked for with sys.argv[-1]=="crashed"
+	CD /D "%current_file_path%"
 	ECHO:
 )
 IF %ERRORLEVEL% EQU 1 ( @REM could be infinitely recursive

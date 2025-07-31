@@ -6,7 +6,7 @@ problem if log is blocked. force replace blocked log file
 
 make everything that deletes and saves more safe by only allowing .txt for example
 
-add comment to set that escape character like ()& need ^ . or other way to avoid. is "" around everything or around value solujtiopn?
+add comment to set that escape character like ()& need ^ . or other way to avoid. is "" around everything or around value solujtiopn? explain that relative paths work
 
 add full path and stop if not generated before continuing:
 Error: ..\..\..\tmp.txt does not exist. Press any key to exit
