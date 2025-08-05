@@ -16,34 +16,32 @@ SETLOCAL
 
 @REM move to folder of this file (needed for relative path shortcuts)
 @REM current_file_path varaible needed as workaround for nieche windows bug where this file gets called with quotation marks:
-SET current_file_path=%~dp0
+SET "current_file_path=%~dp0"
 CD /D "%current_file_path%"
 
-@REM define local variables (do not have spaces before or after the "=" or at the end of the variable value (unless wanted in value) -> inline comments without space before "&@REM".
-@REM Use "\" to separate folder levels and omit "\" at the end of paths. Relative paths allowed):
-SET settings_path=..\non-user_settings.ini
-SET python_env_activation_code_path=python_environment_code\activate_or_create_environment.bat
-SET python_code_path=..\main_code.py
-SET after_python_crash_code_path=..\after_python_crash_code.py
-SET icon_path=..\icons\icon.ico
+@REM define local variables like: SET "label=variable value". Do not have spaces before or after the "=" (unless wanted in value). 
+@REM Use "\" to separate folder levels and omit "\" at the end of paths. Relative paths allowed:
+SET "settings_path=..\non-user_settings.ini"
+SET "python_env_activation_code_path=python_environment_code\activate_or_create_environment.bat"
+SET "python_code_path=..\main_code.py"
+SET "after_python_crash_code_path=..\after_python_crash_code.py"
+SET "icon_path=..\icons\icon.ico"
+SET "terminal_bg_color=9"
+SET "terminal_text_color=F"
 
-@REM import settings from settings_path (e.g., for importing parameter "example" add the line within the last round brackets below "IF %%a==example ( SET example=%%b)"):
-FOR /F "tokens=1,2 delims==" %%a IN ('findstr "^" "%settings_path%"') DO (
-	IF %%a==program_name ( SET program_name=%%b)
-	IF %%a==restart_main_code_on_crash ( SET restart_main_code_on_crash=%%b)
-)
+@REM import settings from settings_path. For example for importing parameter "setting1" add "setting1" to the end of the command with spaces in between the arguements:
+@REM CALL :import_settings "%settings_path%" 
+CALL :import_settings "%settings_path%" program_name restart_main_code_on_crash
 
 @REM ######################
 @REM --- Code Execution ---
 @REM ######################
 
 @REM change terminal title:
-TITLE %program_name%
+TITLE "%program_name%"
 
 @REM change terminal colors (for starting lines):
-@REM ; terminal colors (leave empty for windows default. Options: 0=Black,8=Gray,1=Blue,9=LightBlue,2=Green,A=LightGreen,3=Aqua,B=LightAqua,4=Red,C=LightRed,5=Purple,D=LightPurple,6=Yellow,E=LightYellow,7=White,F=BrightWhite):
-SET terminal_bg_color=9
-SET terminal_text_color=F
+@REM ; terminal colors (leave empty for windows default. Options: 0=Black,8=Gray,1=Blue,9=LightBlue,2=Green,A=LightGreen,3=Aqua,B=LightAqua,4=Red,C=LightRed,5=Purple,D=LightPurple,6=Yellow,E=LightYellow,7=White,F=BrightWhite)
 COLOR %terminal_bg_color%%terminal_text_color%
 
 @REM change terminal icon:
@@ -106,6 +104,11 @@ IF "%~1"=="" (
 @REM exit program without closing a potential calling program
 EXIT /B
 
+
+
+
+
+
 @REM ############################
 @REM --- Function Definitions ---
 @REM ############################
@@ -151,6 +154,22 @@ IF %ERRORLEVEL% EQU 1 ( @REM could be infinitely recursive
 )
 EXIT /B 0 &@REM exit function with errorcode 0
 
+@REM ############################
 
+@REM define settings import function (use as CALL :import_settings file_path settings1 setting2 ...)
+:import_settings
+SET "import_settings_file_path=%~1"
+SHIFT
+:shift_args
+IF "%~1"=="" GOTO : EXIT /B
+SET "key=&~1"
+FOR /F "tokens=1,2 delims==" %%A IN ('findstr "^" "%import_settings_file_path%"') DO (
+	IF /I "%%A"=="!key!" (
+		SET "!key!=%%B"
+	)
+)
+SHIFT
+GOTO :shift_args
 
+@REM ############################
 
