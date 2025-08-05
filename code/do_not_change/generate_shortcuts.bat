@@ -16,30 +16,30 @@ SETLOCAL
 
 @REM move to folder of this file (needed for relative path shortcuts)
 @REM current_file_path varaible needed as workaround for nieche windows bug where this file gets called with quotation marks:
-SET current_file_path=%~dp0
+SET "current_file_path=%~dp0"
 CD /D "%current_file_path%"
 
 @REM define local variables (do not have spaces before or after the "=" or at the end of the variable value (unless wanted in value) -> inline comments without space before "&@REM".
 @REM Use "\" to separate folder levels and omit "\" at the end of paths. Relative paths allowed):
-SET non_user_settings_path=..\non-user_settings.ini
-SET icon_path=..\icons\icon.ico
-SET settings_icon_path=..\icons\settings_icon.ico
-SET stop_icon_path=..\icons\stop.ico
-SET user_settings_path=..
-SET shortcut_destination_path=..\..
-SET log_path=..\..\log.txt
+SET "non_user_settings_path=..\non-user_settings.ini"
+SET "icon_path=..\icons\icon.ico"
+SET "settings_icon_path=..\icons\settings_icon.ico"
+SET "stop_icon_path=..\icons\stop.ico"
+SET "user_settings_path=..""
+SET "shortcut_destination_path=..\..""
+SET "log_path=..\..\log.txt"
 @REM: For safety, the file ending (.pid) must not be included in process_id_file_path (see kill_process_with_id.bat):
-SET process_id_file_path=..\..\id_of_currently_running_hidden_program
+SET "process_id_file_path=..\..\id_of_currently_running_hidden_program"
 
 @REM import settings from settings_path (e.g., for importing parameter "example" add the line within the last round brackets below "IF %%a==example ( SET example=%%b)"):
 FOR /F "tokens=1,2 delims==" %%a IN ('findstr "^" "%non_user_settings_path%"') DO (
 	IF %%a==program_name ( SET program_name=%%b)
 )
 
-SET start_name=%program_name%
-SET start_no_terminal_name=%program_name% ^(with log ^& no terminal^)
-SET settings_name=%program_name% - settings
-SET stop_no_terminal_name=stop ^(no-terminal^) %program_name%
+SET "start_name=%program_name%"
+SET "start_no_terminal_name=%program_name% ^(with log ^& no terminal^)"
+SET "settings_name=%program_name% - settings"
+SET "stop_no_terminal_name=stop ^(no-terminal^) %program_name%"
 
 @REM ######################
 @REM --- Code Execution ---
@@ -99,5 +99,5 @@ EXIT /B
 
 @REM function that makes path to absolute if not already
 :make_absolute_path_if_relative
-	SET OUTPUT=%~f1
+	SET "OUTPUT=%~f1"
 	EXIT /B

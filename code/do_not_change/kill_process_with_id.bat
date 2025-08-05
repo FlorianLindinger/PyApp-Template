@@ -16,13 +16,13 @@ SETLOCAL
 
 @REM move to folder of this file (needed for relative path shortcuts)
 @REM current_file_path varaible needed as workaround for nieche windows bug where this file gets called with quotation marks:
-SET current_file_path=%~dp0
+SET "current_file_path=%~dp0"
 CD /D "%current_file_path%"
 
 @REM define local variables (do not have spaces before or after the "=" or at the end of the variable value (unless wanted in value) -> inline comments without space before "&@REM".
 @REM Use "\" to separate folder levels and omit "\" at the end of paths. Relative paths allowed):
 @REM for extra safety to not delete files: The file (if no number) is mandated to be .pid and must not be included in the path:
-SET process_id_or_file=%~1
+SET "process_id_or_file=%~1"
 
 @REM ######################
 @REM --- Code Execution ---
@@ -34,7 +34,7 @@ IF EXIST "%process_id_or_file%.pid" (
 ) ELSE (
 	CALL :is_integer "%process_id_or_file%"
 	IF "%OUTPUT%"=="1" (
-		SET PID=%process_id_or_file%
+		SET "PID=%process_id_or_file%"
 	) ELSE (
 		ECHO: Warning: File "%process_id_or_file%.pid" does not exist. ^(don't include the file ending in the argument^). 
 		ECHO: Press any key to exit
@@ -72,8 +72,8 @@ SETLOCAL enabledelayedexpansion
 SET "val=%~1"
 ECHO %val% | FINDSTR /R "^[0-9][0-9]*$" >NUL
 IF %ERRORLEVEL%==0 (
-	SET OUTPUT=1
+	SET "OUTPUT=1"
 ) ELSE (
-	SET OUTPUT=0
+	SET "OUTPUT=0"
 )
 EXIT /B

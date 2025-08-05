@@ -16,16 +16,16 @@ SETLOCAL
 
 @REM move to folder of this file (needed for relative path shortcuts)
 @REM current_file_path varaible needed as workaround for nieche windows bug where this file gets called with quotation marks:
-SET current_file_path=%~dp0
+SET "current_file_path=%~dp0"
 CD /D "%current_file_path%"
 
 @REM define local variables (do not have spaces before or after the "=" or at the end of the variable value (unless wanted in value) -> inline comments without space before "&@REM".
 @REM Use "\" to separate folder levels and omit "\" at the end of paths. Relative paths allowed):
-SET batch_file_path=%~1
+SET "batch_file_path=%~1"
 IF "%~2"=="" (
-	SET log_path=..\..\log.txt
+	SET "log_path=..\..\log.txt"
 ) ELSE (
-	SET log_path=%~2
+	SET "log_path=%~2"
 )
 
 @REM ######################
@@ -33,14 +33,14 @@ IF "%~2"=="" (
 @REM ######################
 
 @REM makes python files (if called) flush immediately what they print to the log file
-SET PYTHONUNBUFFERED=1
+SET "PYTHONUNBUFFERED=1"
 @REM utf-8 encoding needed for python output (if called) to avoid errors for special characters
-SET PYTHONIOENCODING=utf-8
+SET "PYTHONIOENCODING=utf-8"
 
 @REM put arguments starting from the third (from calling this batch file) in the string "args_list" with space in between and each surrouned by " on both sides:
 SETLOCAL enabledelayedexpansion
-SET args_list=
-SET i=3
+SET "args_list="
+SET "i=3"
 :loop_args
   CALL SET "arg=%%~%i%%"
   IF "%arg%"=="" ( GOTO args_done)

@@ -18,8 +18,8 @@ SETLOCAL
 
 @REM define local variables (do not have spaces before or after the "=" or at the end of the variable value (unless wanted in value) -> inline comments without space before "&@REM".
 @REM Use "\" to separate folder levels and omit "\" at the end of paths. Relative paths allowed):
-SET batch_file_path=%~1
-SET file_path=%~2
+SET "batch_file_path=%~1"
+SET "file_path=%~2"
 
 @REM ######################
 @REM --- Code Execution ---
@@ -28,7 +28,7 @@ SET file_path=%~2
 @REM put arguments starting from the i-th (from calling this batch file) in the string "args_list" with space in between and each surrouned by " on both sides:
 SETLOCAL enabledelayedexpansion
 SET args_list=
-SET i=3
+SET "i=3"
 :loop_args
   CALL SET "arg=%%~%i%%"
   IF "%arg%"=="" ( GOTO args_done)

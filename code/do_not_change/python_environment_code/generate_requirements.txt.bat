@@ -16,12 +16,12 @@ SETLOCAL
 
 @REM move to folder of this file (needed for relative path shortcuts)
 @REM current_file_path varaible needed as workaround for nieche windows bug where this file gets called with quotation marks:
-SET current_file_path=%~dp0
+SET "current_file_path=%~dp0"
 CD /D "%current_file_path%"
 
 @REM define local variables (do not have spaces before or after the "=" or at the end of the variable value (unless wanted in value) -> inline comments without space before "&@REM".
 @REM Use "\" to separate folder levels and omit "\" at the end of paths. Relative paths allowed):
-SET default_packages_file_path=..\..\python_environment_code\default_python_packages.txt
+SET "default_packages_file_path=..\..\python_environment_code\default_python_packages.txt"
 
 @REM ######################
 @REM --- Code Execution ---
@@ -66,5 +66,5 @@ EXIT /B
 
 @REM function that makes path to absolute if not already. Access as %OUTPUT% (also gets rid of unresolved ".." in path):
 :make_absolute_path_if_relative
-	SET OUTPUT=%~f1
+	SET "OUTPUT=%~f1"
 	EXIT /B
