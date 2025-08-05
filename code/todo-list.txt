@@ -86,6 +86,11 @@ where it looks for pyron scipts for auto install
 optional
 ############################################################
 
+make function:FOR /F "tokens=1,2 delims==" %%a IN ('findstr "^" "%settings_path%"') DO (
+	IF %%a==program_name ( SET program_name=%%b)
+	IF %%a==restart_main_code_on_crash ( SET restart_main_code_on_crash=%%b)
+)
+
 add option to start minimized
 
 Add the .bat or a shortcut to shell:startup. Useful?

@@ -16,14 +16,14 @@ SETLOCAL
 
 @REM move to folder of this file (needed for relative path shortcuts)
 @REM current_file_path varaible needed as workaround for nieche windows bug where this file gets called with quotation marks:
-SET current_file_path=%~dp0
+SET "current_file_path=%~dp0"
 CD /D "%current_file_path%"
 
 @REM define local variables (do not have spaces before or after the "=" or at the end of the variable value (unless wanted in value) -> inline comments without space before "&@REM".
 @REM Use "\" to separate folder levels and omit "\" at the end of paths. Relative paths allowed):
-SET python_code_path=..\..
-SET python_environment_path=..\..\python_environment_code\python_environment
-SET temporary_txt_path=..\..\..\tmp.txt
+SET "python_code_path=..\.."
+SET "python_environment_path=..\..\python_environment_code\python_environment"
+SET "temporary_txt_path=..\..\..\tmp.txt"
 
 @REM ######################
 @REM --- Code Execution ---

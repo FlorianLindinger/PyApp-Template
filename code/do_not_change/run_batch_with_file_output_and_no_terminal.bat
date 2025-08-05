@@ -16,21 +16,21 @@ SETLOCAL
 
 @REM move to folder of this file (needed for relative path shortcuts)
 @REM current_file_path varaible needed as workaround for nieche windows bug where this file gets called with quotation marks:
-SET current_file_path=%~dp0
+SET "current_file_path=%~dp0"
 CD /D "%current_file_path%"
 
 @REM define local variables (do not have spaces before or after the "=" or at the end of the variable value (unless wanted in value) -> inline comments without space before "&@REM".
 @REM Use "\" to separate folder levels and omit "\" at the end of paths. Relative paths allowed):
-SET batch_file_path=%~1
+SET "batch_file_path=%~1"
 IF "%~2"=="" (
-	SET log_path=..\..\log.txt
+	SET "log_path=..\..\log.txt"
 ) ELSE (
-	SET log_path=%~2
+	SET "log_path=%~2"
 )
 IF "%~3"=="" (
-	SET process_id_file_path=..\..\id_of_currently_running_hidden_program.pid
+	SET "process_id_file_path=..\..\id_of_currently_running_hidden_program.pid"
 ) ELSE (
-	SET process_id_file_path=%~3
+	SET "process_id_file_path=%~3"
 )
 
 @REM ######################
