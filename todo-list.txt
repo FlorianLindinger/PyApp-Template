@@ -1,0 +1,62 @@
+add how to copy this folder
+
+add option for yaml install?
+auto install yaml? for new generation? 
+
+allow for local package installs somehow via req.txt
+
+add readme in code\ folder   explain what everything is and that it has to keep its name
+
+check if i can add stoppping of closing terminal
+
+make pyqt5 interface available and easy to use with example. (threading?)
+
+auto fork option? hm maybe just actually copy via a batch file (new folder and copy (dont overwrite at all), and delete .git)
+But fork allows for contributing changes back to original template. Git remplate does not but allows for own forking
+
+add to notes that you can delete after_python_crash_code.py
+
+have option for a*b^c,a*b^c
+
+add some kind of detection that code crashes immediately and that it does not spam repeatedly. or some minimum delay
+
+is there any use in piping the error of the start batch file for non no-terminal mode
+
+add option to not have any prints from batch files?
+remove unnecessary echos if python return -1 ?
+
+add better text:
+ECHO: ##########################
+	ECHO: Python crashed (see above^)
+	ECHO: ##########################
+at least once? in the beginnign?
+
+make unicode log output
+
+add comment if or when "" needed or allowed. code expects none
+
+add incremental printing to log file.
+
+add option to log to file aswell while terminal?
+
+test if CALL :handle_python_crash >> %log_path% 2>&1 works recuresively
+
+test if error of batch fowrk for log
+
+make "nopause" required instead of any? for all files
+
+add error log piping to all shortcuts and wherever possible. and code that deletes an empty error file at end of all codes. where to put file? is there a way to put it where it was called? i guess it would not exist either way if not called by shortcuts
+
+need activate env for pipreqs? for correct package version for python version?
+
+rename make_absolute_path_if_relative and use where needed -> normalize_to_abs_path
+
+create terminate_running_program_name if running and delete afterwards? for no-terminal mode
+
+generate link to settings.py if no yaml found. explain that somewhere
+
+move settings.py to do_not_change? link possible? but helper file is allowed to be change actually??? make folder to package such that it can be imported with subfolder path? probably just keep since can be changed and not critical
+
+update yaml fiel to new tamplate
+
+make pyFROG and pyFLIR
