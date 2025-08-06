@@ -40,7 +40,7 @@ FOR /F "tokens=1,2 delims==" %%a IN ('findstr "^" "%settings_path%"') DO (
 @REM ######################
 
 @REM change terminal title:
-TITLE "%program_name%"
+TITLE %program_name%
 
 @REM change terminal colors (for starting lines):
 @REM ; terminal colors (leave empty for windows default. Options: 0=Black,8=Gray,1=Blue,9=LightBlue,2=Green,A=LightGreen,3=Aqua,B=LightAqua,4=Red,C=LightRed,5=Purple,D=LightPurple,6=Yellow,E=LightYellow,7=White,F=BrightWhite)
