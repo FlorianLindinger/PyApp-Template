@@ -2,7 +2,11 @@
 important
 ############################################################
 
+
+
 there is 2 todo lists????
+
+#add a mode to not sync settings. maybe local seetinfgs? like for com port
 
 some make license not trasfer? but still update if someone makes it->maybe remove license?
 
