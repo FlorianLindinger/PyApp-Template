@@ -29,9 +29,11 @@ SET "icon_path=..\icons\icon.ico"
 SET "terminal_bg_color=9"
 SET "terminal_text_color=F"
 
-@REM import settings from settings_path. For example for importing parameter "setting1" add "setting1" to the end of the command with spaces in between the arguements:
-@REM CALL :import_settings "%settings_path%" 
-CALL :import_settings "%settings_path%" program_name restart_main_code_on_crash
+@REM import settings from settings_path (e.g., for importing parameter "example" add the line within the last round brackets below "IF %%a==example ( SET example=%%b)"):
+FOR /F "tokens=1,2 delims==" %%a IN ('findstr "^" "%settings_path%"') DO (
+	IF %%a==program_name ( SET program_name=%%b)
+	IF %%a==restart_main_code_on_crash ( SET restart_main_code_on_crash=%%b)
+)
 
 @REM ######################
 @REM --- Code Execution ---
@@ -50,10 +52,16 @@ change_icon "%program_name%" "%icon_path%"
 @REM activate or create & activate python environment:
 CALL "%python_env_activation_code_path%" "nopause"
 
+@REM Normalize python_code_path to full absolute path:
+FOR %%F IN ("%python_code_path%") DO (
+    SET "full_python_path=%%~fF"
+    SET "python_code_dir=%%~dpF"
+)
+
 @REM run main python code:
 @REM go to directory of python code and execute it and return to folder of this file:
-CD /D "%~dppython_code_path%"
-python "%~nxpython_code_path%"
+CD /D "%python_code_dir%"
+python "%full_python_path%"
 CD /D "%current_file_path%"
 
 @REM %ERRORLEVEL% is what the last python execution gives out in sys.exit(errorlevel). 
@@ -154,22 +162,6 @@ IF %ERRORLEVEL% EQU 1 ( @REM could be infinitely recursive
 )
 EXIT /B 0 &@REM exit function with errorcode 0
 
-@REM ############################
-
-@REM define settings import function (use as CALL :import_settings file_path settings1 setting2 ...)
-:import_settings
-SET "import_settings_file_path=%~1"
-SHIFT
-:shift_args
-IF "%~1"=="" GOTO : EXIT /B
-SET "key=&~1"
-FOR /F "tokens=1,2 delims==" %%A IN ('findstr "^" "%import_settings_file_path%"') DO (
-	IF /I "%%A"=="!key!" (
-		SET "!key!=%%B"
-	)
-)
-SHIFT
-GOTO :shift_args
 
 @REM ############################
 

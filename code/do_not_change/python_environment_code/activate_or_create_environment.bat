@@ -12,6 +12,8 @@
 @ECHO OFF
 
 @REM this code can't use SETLOCAL to not overwrite global variables because the python environment activation won't work then. Therefore the local variables use unlikely labels:
+@REM In order to not move the current directory of the calling script, this script manually moves back to the starting path
+SET "starting_path_aoce=%CD%"
 
 @REM move to folder of this file (needed for relative path shortcuts)
 @REM current_file_path varaible needed as workaround for nieche windows bug where this file gets called with quotation marks:
@@ -45,6 +47,9 @@ IF "%~1"=="" (
 	ECHO: Press any key to exit
 	PAUSE >NUL 
 )
+
+@REM move back to starting path:
+CD /D %starting_path_aoce%
 
 @REM exit program without closing a potential calling program
 EXIT /B 

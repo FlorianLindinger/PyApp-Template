@@ -2,6 +2,10 @@
 important
 ############################################################
 
+maybe moving to local folder is not needed for setlocal?
+
+do not close if it fuck up main start
+
 problem if log is blocked. force replace blocked log file
 
 make everything that deletes and saves more safe by only allowing .txt for example
