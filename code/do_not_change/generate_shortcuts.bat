@@ -25,8 +25,8 @@ SET "non_user_settings_path=..\non-user_settings.ini"
 SET "icon_path=..\icons\icon.ico"
 SET "settings_icon_path=..\icons\settings_icon.ico"
 SET "stop_icon_path=..\icons\stop.ico"
-SET "user_settings_path=..""
-SET "shortcut_destination_path=..\..""
+SET "user_settings_path=.."
+SET "shortcut_destination_path=..\.."
 SET "log_path=..\..\log.txt"
 @REM: For safety, the file ending (.pid) must not be included in process_id_file_path (see kill_process_with_id.bat):
 SET "process_id_file_path=..\..\id_of_currently_running_hidden_program"
@@ -37,9 +37,9 @@ FOR /F "tokens=1,2 delims==" %%a IN ('findstr "^" "%non_user_settings_path%"') D
 )
 
 SET "start_name=%program_name%"
-SET "start_no_terminal_name=%program_name% ^(with log ^& no terminal^)"
+SET "start_no_terminal_name=%program_name% (with log & no terminal)"
 SET "settings_name=%program_name% - settings"
-SET "stop_no_terminal_name=stop ^(no-terminal^) %program_name%"
+SET "stop_no_terminal_name=stop (no-terminal) %program_name%"
 
 @REM ######################
 @REM --- Code Execution ---
