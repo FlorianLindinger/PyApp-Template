@@ -2,6 +2,12 @@
 important
 ############################################################
 
+add pause to failing generate shortcuts
+
+do not transfer license via git?
+
+install needed packages did not work for pyboson
+
 maybe moving to local folder is not needed for setlocal?
 
 do not close if it fuck up main start
@@ -28,6 +34,9 @@ make checks if files exist where no error would appear anywhere and leave window
 
 #################################
 
+add option to copy failed install with opening tmp.txt and manually relax requirements . make pipreqs relaax auto?
+
+[notice] A new release of pip is available: 25.1.1 -> 25.2 for install_packages needed
 
 Make browser Version + start with Lesezeichen 
 
