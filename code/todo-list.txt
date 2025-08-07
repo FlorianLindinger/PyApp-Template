@@ -2,7 +2,15 @@
 important
 ############################################################
 
+have paths relative to non-user settings path?
 
+add code example hwo to merge settings and x symbol over icon via magicked
+
+have settings ontop of batch files
+
+can i have non user settings file in different drive?
+
+add function that relods settings
 
 there is 2 todo lists????
 
