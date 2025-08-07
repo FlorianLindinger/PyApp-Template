@@ -2,7 +2,7 @@
 @REM --- Code Description & Comments ---
 @REM ###################################
 
-@REM "@REM" indicates the start of a comment (use "&@REM" for comments at the end of a code line, unless the line starts a nested sequence like a line with IF/ELSE/FOR/..., e.g., "IF A==B ( @REM comment")
+@REM Note: "@REM" indicates the start of a comment (use "&@REM" for comments at the end of a code line, unless the line starts a nested sequence like a line with IF/ELSE/FOR/..., e.g., "IF A==B ( @REM comment")
 
 @REM #########################
 @REM --- Setup & Variables ---
@@ -14,16 +14,9 @@
 @REM make this code local so no variables of a potential calling program are changed:
 SETLOCAL
 
-@REM define local variables like: SET "key=value". Do not have spaces before or after the "=" (unless wanted in value). 
-@REM Use "\" to separate folder levels and omit "\" at the end of paths. Relative paths allowed:
-SET "settings_path=..\non-user_settings.ini"
-SET "python_env_activation_code_path=python_environment_code\activate_or_create_environment.bat"
-SET "python_code_path=..\main_code.py"
-SET "after_python_crash_code_path=..\after_python_crash_code.py"
-SET "icon_path=..\icons\icon.ico"
-
 @REM import settings from settings_path:
-FOR /F "tokens=1,2 delims==" %%A IN ('findstr "^" "%settings_path%"') DO ( SET %%A=%%B )
+SET "settings_path=..\non-user_settings.ini"
+FOR /F "tokens=1,2 delims==" %%A IN ('findstr "^" "%settings_path%"') DO ( SET "%%A=%%B" )
 
 @REM move to folder of this file (needed for relative path shortcuts)
 @REM current_file_path varaible needed as workaround for nieche windows bug where this file gets called with quotation marks:
