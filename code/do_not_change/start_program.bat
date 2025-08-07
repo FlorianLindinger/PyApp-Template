@@ -14,26 +14,21 @@
 @REM make this code local so no variables of a potential calling program are changed:
 SETLOCAL
 
-@REM move to folder of this file (needed for relative path shortcuts)
-@REM current_file_path varaible needed as workaround for nieche windows bug where this file gets called with quotation marks:
-SET "current_file_path=%~dp0"
-CD /D "%current_file_path%"
-
-@REM define local variables like: SET "label=variable value". Do not have spaces before or after the "=" (unless wanted in value). 
+@REM define local variables like: SET "key=value". Do not have spaces before or after the "=" (unless wanted in value). 
 @REM Use "\" to separate folder levels and omit "\" at the end of paths. Relative paths allowed:
 SET "settings_path=..\non-user_settings.ini"
 SET "python_env_activation_code_path=python_environment_code\activate_or_create_environment.bat"
 SET "python_code_path=..\main_code.py"
 SET "after_python_crash_code_path=..\after_python_crash_code.py"
 SET "icon_path=..\icons\icon.ico"
-SET "terminal_bg_color=9"
-SET "terminal_text_color=F"
 
-@REM import settings from settings_path (e.g., for importing parameter "example" add the line within the last round brackets below "IF %%a==example ( SET example=%%b)"):
-FOR /F "tokens=1,2 delims==" %%a IN ('findstr "^" "%settings_path%"') DO (
-	IF %%a==program_name ( SET program_name=%%b)
-	IF %%a==restart_main_code_on_crash ( SET restart_main_code_on_crash=%%b)
-)
+@REM import settings from settings_path:
+FOR /F "tokens=1,2 delims==" %%A IN ('findstr "^" "%settings_path%"') DO ( SET %%A=%%B )
+
+@REM move to folder of this file (needed for relative path shortcuts)
+@REM current_file_path varaible needed as workaround for nieche windows bug where this file gets called with quotation marks:
+SET "current_file_path=%~dp0"
+CD /D "%current_file_path%"
 
 @REM ######################
 @REM --- Code Execution ---
@@ -43,7 +38,7 @@ FOR /F "tokens=1,2 delims==" %%a IN ('findstr "^" "%settings_path%"') DO (
 TITLE %program_name%
 
 @REM change terminal colors (for starting lines):
-@REM ; terminal colors (leave empty for windows default. Options: 0=Black,8=Gray,1=Blue,9=LightBlue,2=Green,A=LightGreen,3=Aqua,B=LightAqua,4=Red,C=LightRed,5=Purple,D=LightPurple,6=Yellow,E=LightYellow,7=White,F=BrightWhite)
+
 COLOR %terminal_bg_color%%terminal_text_color%
 
 @REM change terminal icon:
@@ -52,16 +47,20 @@ change_icon "%program_name%" "%icon_path%"
 @REM activate or create & activate python environment:
 CALL "%python_env_activation_code_path%" "nopause"
 
-@REM Normalize python_code_path to full absolute path:
+@REM normalize python code paths to full absolute path and get its directory paths:
 FOR %%F IN ("%python_code_path%") DO (
-    SET "full_python_path=%%~fF"
+    SET "abs_python_code_path=%%~fF"
     SET "python_code_dir=%%~dpF"
+)
+FOR %%F IN ("%after_python_crash_code_path%") DO (
+    SET "abs_crash_python_code_path=%%~fF"
+    SET "crash_python_code_dir=%%~dpF"
 )
 
 @REM run main python code:
 @REM go to directory of python code and execute it and return to folder of this file:
 CD /D "%python_code_dir%"
-python "%full_python_path%"
+python "%abs_python_code_path%"
 CD /D "%current_file_path%"
 
 @REM %ERRORLEVEL% is what the last python execution gives out in sys.exit(errorlevel). 
@@ -112,16 +111,13 @@ IF "%~1"=="" (
 @REM exit program without closing a potential calling program
 EXIT /B
 
-
-
-
-
-
 @REM ############################
 @REM --- Function Definitions ---
 @REM ############################
 
+@REM -------------------------------------------------
 @REM define handle_python_crash function:
+@REM -------------------------------------------------
 :handle_python_crash
 ECHO:
 ECHO: ###################################################
@@ -136,8 +132,8 @@ IF %restart_main_code_on_crash% EQU 0 ( @REM  run after_python_crash_code.py (ag
 		ECHO: ###############################################
 		ECHO:
 		@REM go to directory of python code and execute it and return to folder of this file:	
-		CD /D "%~dpafter_python_crash_code_path%"
-		python "%~nxafter_python_crash_code_path%"
+		CD /D "%python_code_dir%"
+		python "%abs_python_code_path%"
 		CD /D "%current_file_path%"
 		ECHO:
 	@REM exit function if after_python_crash_code does not exist
@@ -151,8 +147,8 @@ IF %restart_main_code_on_crash% EQU 0 ( @REM  run after_python_crash_code.py (ag
 	ECHO: ################################################
 	ECHO:
 	@REM go to directory of python code and execute it and return to folder of this file:
-	CD /D "%~dppython_code_path%"
-	python "%~nxpython_code_path%" "crashed" &@REM argument "crashed" indicated to the python code that it is a repeat call after a crash and can be checked for with sys.argv[-1]=="crashed"
+	CD /D "%crash_python_code_dir%"
+	python "%abs_crash_python_code_path%" "crashed" &@REM argument "crashed" indicated to the python code that it is a repeat call after a crash and can be checked for with sys.argv[-1]=="crashed"
 	CD /D "%current_file_path%"
 	ECHO:
 )
@@ -161,7 +157,4 @@ IF %ERRORLEVEL% EQU 1 ( @REM could be infinitely recursive
 	CALL :handle_python_crash
 )
 EXIT /B 0 &@REM exit function with errorcode 0
-
-
-@REM ############################
-
+@REM -------------------------------------------------
