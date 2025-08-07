@@ -31,7 +31,6 @@ CD /D "%current_file_path%"
 TITLE %program_name%
 
 @REM change terminal colors (for starting lines):
-
 COLOR %terminal_bg_color%%terminal_text_color%
 
 @REM change terminal icon:
