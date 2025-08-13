@@ -1,6 +1,26 @@
 ############################################################
+TODO LIST FOR TEMPLATE-RUN_PYTHON_IN_ENV
+############################################################
+
+############################################################
 important
 ############################################################
+
+it should abort and warn. maybe make independent from global python for start after venv setup`? anyway not reasonable?
+########################################
+did not find executable at 'C:\Users\Flo\AppData\Local\Programs\Python\Python313\python.exe': Das System kann die angegebene Datei nicht finden.
+
+
+ #################################
+ Python code finished successfully
+ #################################
+
+ Press any key to exit
+ ########################################
+
+make settings in non-user settings relative to it. ->. make paths absolute in the functions that use imported paths
+
+cant have 2x different programs on taskleiste
 
 have paths relative to non-user settings path?
 
@@ -49,6 +69,8 @@ for crashes in batch outer most it closes everyting? maybe somehow avoid with /K
 make checks if files exist where no error would appear anywhere and leave window open with a warning if no existing
 
 #################################
+
+#popup for crashes . maybe to general hidden function?
 
 add option to copy failed install with opening tmp.txt and manually relax requirements . make pipreqs relaax auto?
 
