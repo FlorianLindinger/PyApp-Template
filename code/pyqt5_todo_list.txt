@@ -1,0 +1,33 @@
+#######################
+pyqt5 todo list
+######################
+
+# add grid option for radio button/tick button
+
+# make select folder and select file classes->maybe in same object? i e pressing in seleciton changes it. i want selectd result to be changeable and also maybe auto generate fodlers
+
+# make radio options side by side or event auto go to next line. same for tickbox
+
+# make remaining helper with label classes
+
+# make options collacpasble
+
+# save window layout for next start
+# save values for next start? or somehow a way to set default->small button with symbol where for hover it appears as text
+
+
+# button.setToolTip("This is a tooltip that appears on hover.")
+# tooltip over whole area?
+
+# save and open project options
+
+# make settings gray out able
+
+# addd value.setter and property to all classes
+
+# add _ to methods and attributes that should not be used
+
+# GUI thread
+# get and prepare image thread
+# fit gaussian thread
+#
