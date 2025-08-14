@@ -2,46 +2,246 @@
 # todo:
 ###########################
 
-# add grid option for radio button/tick button
-
-# make select folder and select file classes->maybe in same object? i e pressing in seleciton changes it. i want selectd result to be changeable and also maybe auto generate fodlers
-
-# make radio options side by side or event auto go to next line. same for tickbox
-
-# make remaining helper with label classes
-
-# make options collacpasble
-
-# save window layout for next start
-# save values for next start? or somehow a way to set default->small button with symbol where for hover it appears as text
-
-
-# button.setToolTip("This is a tooltip that appears on hover.")
-# tooltip over whole area?
-
-# save and open project options
-
-#make settings gray out able
-
-# addd value.setter and property to all classes
-
-# add _ to methods and attributes that should not be used
 
 from PyQt5.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout,
-    QTabWidget, QPushButton, QLabel, QMessageBox
+    QTabWidget, QPushButton, QLabel, QMessageBox, QLineEdit
 )
+from PyQt5.QtGui import QImage, QPixmap, QIcon
+from PyQt5.QtCore import Qt, QTimer,QObject, QThread, pyqtSignal, pyqtSlot
+
+import cv2
+import numpy as np
+import traceback
+import serial.tools.list_ports
+import sys
+import time
+
+from PyQt5.QtWidgets import (
+    QApplication, QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout,
+    QComboBox, QFileDialog, QTextEdit, QCheckBox, QSizePolicy, QSplitter,
+    QSlider, QLineEdit, QRadioButton, QButtonGroup, QFrame, QProgressBar,
+    QScrollArea
+)
+from PyQt5.QtGui import QImage, QPixmap, QIcon
+from PyQt5.QtCore import Qt, QTimer
+
+import sys
+import cv2
+import numpy as np
+import traceback
+import serial.tools.list_ports
+
+
+class Q_thread_single:
+        
+    def __init__(self,function,connected_function, *args):
+        
+            
+        #needed becasue pyqt5's quirks:
+        class helper_signal_class(QObject):
+            finished=pyqtSignal(object)
+            
+        self.thread = QThread()
+        self.worker = QObject()
+        self.signal=helper_signal_class()
+        
+        def run():
+            output = function( *args)
+            self.signal.finished.emit(output)    
+        
+        self.worker.moveToThread(self.thread)
+        self.signal.finished.connect(connected_function)
+        self.thread.started.connect(run)
+        self.thread.start()
+        
+class helper_Q_worker_single(QObject):
+    """looped_function takes as input what was sent to the thread and sends out the output of the function if that is not None
+    """
+    data_out_signal = pyqtSignal(object)  #define here as a function of the class in order to call its method connect later and not in init
+
+    def __init__(self, function,*args):
+        super().__init__()
+        self.function = function
+        self.args=args
+
+    def run(self):
+        output = self.function(*self.args)
+        if output != None:
+            self.data_out_signal.emit(output)
+
+            
+def Q_thread_single(self_parent, function,connected_function,*args):
+
+    thread = QThread()
+    worker = helper_Q_worker_single(function=function,*args)
+    worker.moveToThread(thread)
+    worker.data_out_signal.connect(connected_function)
+    thread.started.connect(worker.run)
+    thread.start()
+    if hasattr(self_parent,"_single_execution_threads"):
+        self_parent._single_execution_threads.append((thread,worker))
+    else:
+        self_parent._single_execution_threads=[(thread,worker)]
+
+class helper_Q_worker_loop(QObject):
+    """looped_function takes as input what was sent to the thread and sends out the output of the function if that is not None
+    """
+    data_out_signal = pyqtSignal(object)  #define here as a function of the class in order to call its method connect later and not in init
+
+    def __init__(self, looped_function):
+        super().__init__()
+        self.looped_function = looped_function
+        self.exit_signal = False
+        self.paused = False
+        self.received_data = None
+
+    @pyqtSlot(object)  # Other thread → this thread
+    def send_to_thread(self, data):
+        """used for other threads to send data to this thread"""
+        self.received_data = data  # Store latest received message
+
+    def run(self):
+        """start main loop"""
+        while True:
+            if self.exit_signal == True:
+                return
+            elif self.paused == True:
+                time.sleep(0.1)
+            else:
+                output = self.looped_function(self.received_data)
+                if output != None:
+                    self.data_out_signal.emit(output)
+
+
+class Q_thread_loop:
+    def __init__(self, looped_function,connected_function, start_running=True):
+        self._thread = QThread()
+        self._worker = helper_Q_worker_loop(looped_function=looped_function)
+        self._worker.moveToThread(self._thread)
+        self._worker.data_out_signal.connect(connected_function)
+        self._thread.started.connect(self._worker.run)
+        if start_running == True:
+            self._worker.paused = False
+        else:
+            self._worker.paused = True
+        self._thread.start()
+
+
+    def resume(self):
+        self._worker.paused = False
+
+    def pause(self):
+        self._worker.paused = True
+
+    def send(self, data):
+        self._worker.send_to_thread(data)
+
+    def quit(self):
+        self._worker.exit_signal = True
+        self._thread.quit()
+        self._thread.wait()
+
+
+class MainWindow(QWidget):
+    def __init__(self):
+        super().__init__()
+        # self.setWindowTitle("Persistent QThread Example")
+        # self.resize(400, 200)
+
+        layout = QVBoxLayout(self)
+        self.line = QLineEdit()
+        self.label= QLabel("Waiting for ticks...")
+
+        layout.addWidget(self.label)
+        layout.addWidget(self.line)
+
+        def fun(_):
+            if _ is not None:
+                time.sleep(2)
+                print(_)
+                return str(_)
+            time.sleep(2)
+            print(1)
+            return str(time.time())
+        
+        def fun2():
+            time.sleep(5)
+            return 52
+        
+        Q_thread_single(self,fun2,self.update_label)
+
+        self.thread1 = Q_thread_loop(fun,self.update_label)
+
+        # GUI → Thread
+        self.line.returnPressed.connect(lambda: self.thread1.send(self.line.text()))
+
+    def update_label(self, text):
+        self.label.setText(str(text))
+
+    def closeEvent(self, event):
+        self.thread1.quit()
+        event.accept()
+
+
+app = QApplication(sys.argv)
+window = MainWindow()
+window.show()
+sys.exit(app.exec_())
+
+sys.exit()
+
+class Window(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.layout = QVBoxLayout(self)
+
+        self.label = QLabel("Progress: 0")
+        self.button = QPushButton("Start Work")
+        self.layout.addWidget(self.button)
+
+        self.button.clicked.connect(self.start_long_task)
+
+    def start_long_task(self):
+        self.thread = QThread()
+        self.worker = Worker()
+        self.worker.moveToThread(self.thread)
+
+        # Connect signals and slots
+        self.thread.started.connect(self.worker.run)
+        self.worker.progress.connect(self.report_progress)
+        self.worker.finished.connect(self.thread.quit)
+        self.worker.finished.connect(self.worker.deleteLater)
+        self.thread.finished.connect(self.thread.deleteLater)
+
+        # Start the thread
+        self.thread.start()
+
+        # Disable button while working
+        self.button.setEnabled(False)
+        self.thread.finished.connect(lambda: self.button.setEnabled(True))
+
+    def report_progress(self, n):
+        self.label.setText(f"Progress: {n}")
+
+
+app = QApplication(sys.argv)
+win = Window()
+win.show()
+sys.exit(app.exec_())
+
 
 class new_tab_button(QWidget):
-    def __init__(self,parent=None):
+    def __init__(self, parent=None):
         super().__init__(parent)
-        layout=QHBoxLayout(self)
-        layout.setContentsMargins(5,0,0,0)
-        self.button=QPushButton("+")
-        self.button.setFixedSize(20,20)
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(5, 0, 0, 0)
+        self.button = QPushButton("+")
+        self.button.setFixedSize(20, 20)
         self.button.setFlat(True)
         layout.addWidget(self.button)
         self.setLayout(layout)
+
 
 class TabDemo(QWidget):
     def __init__(self):
@@ -56,9 +256,9 @@ class TabDemo(QWidget):
         self.tabs = QTabWidget()
         self.tabs.setTabsClosable(True)
         self.tabs.setMovable(True)
-        
-        self.tabs.setTabPosition(QTabWidget.North)################
-        
+
+        self.tabs.setTabPosition(QTabWidget.North)
+
         main_layout.addWidget(self.tabs)
 
         # Buttons layout
@@ -76,45 +276,45 @@ class TabDemo(QWidget):
 
         # Add an initial tab
         self.add_tab()
-        
+
         self.tabs.tabBarDoubleClicked.connect(self.start_rename)
-        
-        self.tabs._current_index=None
-        self.tabs._current_editor=None
-        
-    def start_rename(self,index):
-        if index<0:
+
+        self.tabs._current_index = None
+        self.tabs._current_editor = None
+
+    def start_rename(self, index):
+        if index < 0:
             return
-        
+
         if self.tabs._current_editor:
             self.commit_rename()
-        
-        tab_rectangle=self.tabs.tabBar().tabRect(index)
-        editor=QLineEdit(self.tabs.tabText(index),self.tabs.tabBar())
+
+        tab_rectangle = self.tabs.tabBar().tabRect(index)
+        editor = QLineEdit(self.tabs.tabText(index), self.tabs.tabBar())
         editor.setGeometry(tab_rectangle)
         editor.setFocus()
         editor.selectAll()
-        
-        self.tabs._current_editor=editor
-        self.tabs._current_index=index
-        
+
+        self.tabs._current_editor = editor
+        self.tabs._current_index = index
+
         editor.returnPressed.connect(self.commit_rename)
-        editor.focusOutEvent=lambda e: (self.commit_rename(),QLineEdit.focusOutEvent(editor,e))
-        
+        editor.focusOutEvent = lambda e: (
+            self.commit_rename(), QLineEdit.focusOutEvent(editor, e))
+
         editor.show()
-        
+
     def commit_rename(self):
         if self.tabs._current_editor and self.tabs._current_index is not None:
             new_name = self.tabs._current_editor.text()
-        
-            if new_name:
-                self.tabs.setTabText(self.tabs._current_index,new_name)
-        self.tabs._current_editor.deleteLater()
-        
-        self.tabs._current_index=None
-        self.tabs._current_editor=None
 
-        
+            if new_name:
+                self.tabs.setTabText(self.tabs._current_index, new_name)
+        self.tabs._current_editor.deleteLater()
+
+        self.tabs._current_index = None
+        self.tabs._current_editor = None
+
     def add_tab(self):
         count = self.tabs.count() + 1
         tab = QWidget()
@@ -122,8 +322,6 @@ class TabDemo(QWidget):
         tab_layout.addWidget(QLabel(f"Content of Tab {count}"))
         self.tabs.addTab(tab, "New Tab")
         self.tabs.setCurrentWidget(tab)
-
-
 
 
 # from PyQt5.QtCore import QPropertyAnimation
@@ -196,28 +394,13 @@ class TabDemo(QWidget):
 # float slider
 
 # sanitize . and , to .
-
 ################################################
 
-from PyQt5.QtWidgets import (
-    QApplication, QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout,
-    QComboBox, QFileDialog, QTextEdit, QCheckBox, QSizePolicy, QSplitter,
-    QSlider, QLineEdit, QRadioButton, QButtonGroup, QFrame, QProgressBar,
-    QScrollArea
-)
-from PyQt5.QtGui import QImage, QPixmap, QIcon
-from PyQt5.QtCore import Qt, QTimer
-
-import sys
-import cv2
-import numpy as np
-import traceback
-import serial.tools.list_ports
 
 title = "test"
 icon_path = r"icons\icon.ico"
 default_com_port = "com9"
-window_pixels_h, window_pixels_v=1000,700
+window_pixels_h, window_pixels_v = 1000, 700
 
 
 def get_available_com_ports_tuple() -> list[str]:
@@ -360,21 +543,21 @@ class Q_updating_dropdown(QWidget):
         self.widget.clear()
         self.widget.addItems(self.get_list_function())
         self.widget.original_showPopup()
-        
+
     def trigger(self):
         self.on_select_function(self.get())
-    def set(self,value):
+
+    def set(self, value):
         self.widget.blockSignals(True)
         self.widget.setCurrentText(value)
         self.widget.blockSignals(False)
+
     def get(self):
         return self.widget.currentText()
-    def set_and_trigger(self,value):
+
+    def set_and_trigger(self, value):
         self.set(value)
         self.trigger()
-
-    
-    
 
 
 class Q_com_port_dropdown(QWidget):
@@ -597,20 +780,21 @@ class Q_dropdown(QWidget):
         self.widget.currentTextChanged.connect(self.on_select_function)
 
         Q_handle_label_positioning(self, label, label_pos)
-        
+
     def trigger(self):
         self.on_select_function(self.get())
-    def set(self,value):
+
+    def set(self, value):
         self.widget.blockSignals(True)
         self.widget.setCurrentText(value)
         self.widget.blockSignals(False)
+
     def get(self):
         return self.widget.currentText()
-    def set_and_trigger(self,value):
+
+    def set_and_trigger(self, value):
         self.set(value)
         self.trigger()
-        
-    
 
 
 class Q_button(QWidget):
@@ -639,25 +823,25 @@ class Q_input_line(QWidget):
         self.widget.textEdited.connect(self.on_change_function)
 
         Q_handle_label_positioning(self, label, label_pos)
-    
-    
+
     def trigger(self):
         self.on_enter_function(self.get())
-    def set(self,value):
+
+    def set(self, value):
         self.widget.blockSignals(True)
         self.widget.setText(value)
         self.widget.blockSignals(False)
+
     def get(self):
         return self.widget.text()
-    def set_and_trigger(self,value):
+
+    def set_and_trigger(self, value):
         self.set(value)
         self.trigger()
-    
 
 
-
-#make maker class which has like trigger and set_and_trigger
-#and set and get
+# make maker class which has like trigger and set_and_trigger
+# and set and get
 
 class Q_check_box(QWidget):
     def __init__(self, on_switch_function, label="", label_pos="right", align="left"):
@@ -672,13 +856,16 @@ class Q_check_box(QWidget):
 
     def trigger(self):
         self.on_switch_function(self.get())
-    def set(self,value):
+
+    def set(self, value):
         self.widget.blockSignals(True)
         self.widget.setChecked(value)
         self.widget.blockSignals(False)
+
     def get(self):
         return self.widget.isChecked()
-    def set_and_trigger(self,value):
+
+    def set_and_trigger(self, value):
         self.set(value)
         self.trigger()
 
@@ -708,6 +895,7 @@ if __name__ == "__main__":
     demo = TabDemo()
     demo.show()
     app.exec()
+
 
 class MainWindow(QWidget):
     def __init__(self):

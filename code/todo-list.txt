@@ -6,6 +6,8 @@ TODO LIST FOR TEMPLATE-RUN_PYTHON_IN_ENV
 important
 ############################################################
 
+
+
 it should abort and warn. maybe make independent from global python for start after venv setup`? anyway not reasonable?
 ########################################
 did not find executable at 'C:\Users\Flo\AppData\Local\Programs\Python\Python313\python.exe': Das System kann die angegebene Datei nicht finden.
@@ -136,6 +138,36 @@ where it looks for pyron scipts for auto install
 ############################################################
 optional
 ############################################################
+
+make code for thread safe data transfer between threads
+		import threading
+		import queue
+		import time
+
+		def worker(q):
+			for i in range(5):
+				time.sleep(1)
+				q.put(f"Message {i}")  # Put data into queue safely
+
+		q = queue.Queue()
+
+		t = threading.Thread(target=worker, args=(q,))
+		t.start()
+
+		# Main thread: receive data
+		while t.is_alive() or not q.empty():
+			try:
+				msg = q.get(timeout=0.1)  # Wait for data
+				print("Got:", msg)
+			except queue.Empty:
+				pass
+
+		t.join()
+
+
+lock = threading.Lock()
+with lock:
+	print(f"{name} got the lock")
 
 make function:FOR /F "tokens=1,2 delims==" %%a IN ('findstr "^" "%settings_path%"') DO (
 	IF %%a==program_name ( SET program_name=%%b)
