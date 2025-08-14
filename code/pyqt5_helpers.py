@@ -2,13 +2,14 @@
 # todo:
 ###########################
 
-
 from PyQt5.QtWidgets import (
-    QApplication, QWidget, QVBoxLayout, QHBoxLayout,
-    QTabWidget, QPushButton, QLabel, QMessageBox, QLineEdit
+    QApplication, QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout,
+    QComboBox, QFileDialog, QTextEdit, QCheckBox, QSizePolicy, QSplitter,
+    QSlider, QLineEdit, QRadioButton, QButtonGroup, QFrame, QProgressBar,
+    QScrollArea,QTabWidget,QMessageBox
 )
 from PyQt5.QtGui import QImage, QPixmap, QIcon
-from PyQt5.QtCore import Qt, QTimer,QObject, QThread, pyqtSignal, pyqtSlot
+from PyQt5.QtCore import Qt, QTimer,QObject,QThread,pyqtSignal,pyqtSlot
 
 import cv2
 import numpy as np
@@ -17,77 +18,41 @@ import serial.tools.list_ports
 import sys
 import time
 
-from PyQt5.QtWidgets import (
-    QApplication, QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout,
-    QComboBox, QFileDialog, QTextEdit, QCheckBox, QSizePolicy, QSplitter,
-    QSlider, QLineEdit, QRadioButton, QButtonGroup, QFrame, QProgressBar,
-    QScrollArea
-)
-from PyQt5.QtGui import QImage, QPixmap, QIcon
-from PyQt5.QtCore import Qt, QTimer
-
-import sys
-import cv2
-import numpy as np
-import traceback
-import serial.tools.list_ports
-
-
-class Q_thread_single:
-        
-    def __init__(self,function,connected_function, *args):
-        
-            
-        #needed becasue pyqt5's quirks:
-        class helper_signal_class(QObject):
-            finished=pyqtSignal(object)
-            
-        self.thread = QThread()
-        self.worker = QObject()
-        self.signal=helper_signal_class()
-        
-        def run():
-            output = function( *args)
-            self.signal.finished.emit(output)    
-        
-        self.worker.moveToThread(self.thread)
-        self.signal.finished.connect(connected_function)
-        self.thread.started.connect(run)
-        self.thread.start()
-        
 class helper_Q_worker_single(QObject):
     """looped_function takes as input what was sent to the thread and sends out the output of the function if that is not None
     """
-    data_out_signal = pyqtSignal(object)  #define here as a function of the class in order to call its method connect later and not in init
+    data_out_signal = pyqtSignal(
+        object)  # define here as a function of the class in order to call its method connect later and not in init
 
-    def __init__(self, function,*args):
+    def __init__(self, function, *args):
         super().__init__()
         self.function = function
-        self.args=args
+        self.args = args
 
     def run(self):
         output = self.function(*self.args)
-        if output != None:
-            self.data_out_signal.emit(output)
+        self.data_out_signal.emit(output)
 
-            
-def Q_thread_single(self_parent, function,connected_function,*args):
+
+def Q_thread_single(self, function, connected_function, *args):
 
     thread = QThread()
-    worker = helper_Q_worker_single(function=function,*args)
+    worker = helper_Q_worker_single(function=function, *args)
     worker.moveToThread(thread)
     worker.data_out_signal.connect(connected_function)
     thread.started.connect(worker.run)
     thread.start()
-    if hasattr(self_parent,"_single_execution_threads"):
-        self_parent._single_execution_threads.append((thread,worker))
+    if hasattr(self, "_single_execution_threads"):
+        self._single_execution_threads.append((thread, worker))
     else:
-        self_parent._single_execution_threads=[(thread,worker)]
+        self._single_execution_threads = [(thread, worker)]
+
 
 class helper_Q_worker_loop(QObject):
     """looped_function takes as input what was sent to the thread and sends out the output of the function if that is not None
     """
-    data_out_signal = pyqtSignal(object)  #define here as a function of the class in order to call its method connect later and not in init
+    data_out_signal = pyqtSignal(
+        object)  # define here as a function of the class in order to call its method connect later and not in init
 
     def __init__(self, looped_function):
         super().__init__()
@@ -115,7 +80,7 @@ class helper_Q_worker_loop(QObject):
 
 
 class Q_thread_loop:
-    def __init__(self, looped_function,connected_function, start_running=True):
+    def __init__(self, looped_function, connected_function, start_running=True):
         self._thread = QThread()
         self._worker = helper_Q_worker_loop(looped_function=looped_function)
         self._worker.moveToThread(self._thread)
@@ -126,7 +91,6 @@ class Q_thread_loop:
         else:
             self._worker.paused = True
         self._thread.start()
-
 
     def resume(self):
         self._worker.paused = False
@@ -143,92 +107,50 @@ class Q_thread_loop:
         self._thread.wait()
 
 
-class MainWindow(QWidget):
-    def __init__(self):
-        super().__init__()
-        # self.setWindowTitle("Persistent QThread Example")
-        # self.resize(400, 200)
+# class MainWindow(QWidget):
+#     def __init__(self):
+#         super().__init__()
 
-        layout = QVBoxLayout(self)
-        self.line = QLineEdit()
-        self.label= QLabel("Waiting for ticks...")
 
-        layout.addWidget(self.label)
-        layout.addWidget(self.line)
+#         layout = QVBoxLayout(self)
+#         self.line = QLineEdit()
+#         self.label = QLabel("Waiting for ticks...")
 
-        def fun(_):
-            if _ is not None:
-                time.sleep(2)
-                print(_)
-                return str(_)
-            time.sleep(2)
-            print(1)
-            return str(time.time())
+#         layout.addWidget(self.label)
+#         layout.addWidget(self.line)
+
+#         def fun(_):
+#             if _ is not None:
+#                 time.sleep(2)
+#                 print(_)
+#                 return str(_)
+#             time.sleep(2)
+#             print(1)
+#             return str(time.time())
+
+#         def fun2():
+#             time.sleep(5)
+#             return 52
+
+#         Q_thread_single(self, fun2, self.update_label)
+
+#         self.thread1 = Q_thread_loop(fun, self.update_label)
+
+#         # GUI → Thread
+#         self.line.returnPressed.connect(
+#             lambda: self.thread1.send(self.line.text()))
+
+#     def update_label(self, text):
+#         self.label.setText(str(text))
+
+#     def closeEvent(self, event):
         
-        def fun2():
-            time.sleep(5)
-            return 52
-        
-        Q_thread_single(self,fun2,self.update_label)
-
-        self.thread1 = Q_thread_loop(fun,self.update_label)
-
-        # GUI → Thread
-        self.line.returnPressed.connect(lambda: self.thread1.send(self.line.text()))
-
-    def update_label(self, text):
-        self.label.setText(str(text))
-
-    def closeEvent(self, event):
-        self.thread1.quit()
-        event.accept()
-
-
-app = QApplication(sys.argv)
-window = MainWindow()
-window.show()
-sys.exit(app.exec_())
-
-sys.exit()
-
-class Window(QWidget):
-    def __init__(self):
-        super().__init__()
-        self.layout = QVBoxLayout(self)
-
-        self.label = QLabel("Progress: 0")
-        self.button = QPushButton("Start Work")
-        self.layout.addWidget(self.button)
-
-        self.button.clicked.connect(self.start_long_task)
-
-    def start_long_task(self):
-        self.thread = QThread()
-        self.worker = Worker()
-        self.worker.moveToThread(self.thread)
-
-        # Connect signals and slots
-        self.thread.started.connect(self.worker.run)
-        self.worker.progress.connect(self.report_progress)
-        self.worker.finished.connect(self.thread.quit)
-        self.worker.finished.connect(self.worker.deleteLater)
-        self.thread.finished.connect(self.thread.deleteLater)
-
-        # Start the thread
-        self.thread.start()
-
-        # Disable button while working
-        self.button.setEnabled(False)
-        self.thread.finished.connect(lambda: self.button.setEnabled(True))
-
-    def report_progress(self, n):
-        self.label.setText(f"Progress: {n}")
-
-
-app = QApplication(sys.argv)
-win = Window()
-win.show()
-sys.exit(app.exec_())
+#         self.thread1.quit()
+#         event.accept()
+# app = QApplication(sys.argv)
+# window = MainWindow()
+# window.show()
+# sys.exit(app.exec_())
 
 
 class new_tab_button(QWidget):
@@ -246,7 +168,6 @@ class new_tab_button(QWidget):
 class TabDemo(QWidget):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Dynamic Tabs Example")
         self.resize(400, 300)
 
         # Main layout
@@ -324,76 +245,6 @@ class TabDemo(QWidget):
         self.tabs.setCurrentWidget(tab)
 
 
-# from PyQt5.QtCore import QPropertyAnimation
-
-# def toggle_sidebar(self):
-#     if self.isVisible():
-#         animation = QPropertyAnimation(sidebar_widget, b"minimumWidth")
-#         animation.setDuration(300)
-#         animation.setStartValue(sidebar_widget.width())
-#         animation.setEndValue(0)
-#         animation.finished.connect(lambda: sidebar_widget.setVisible(False))
-#         animation.start()
-#     else:
-#         self.setVisible(True)
-#         animation = QPropertyAnimation(sidebar_widget, b"minimumWidth")
-#         animation.setDuration(300)
-#         animation.setStartValue(0)
-#         animation.setEndValue(200)  # your sidebar expanded width
-#         animation.start()
-
-# 2. Settings Management
-# A centralized config manager that loads/saves settings (window size, last opened files, preferences).
-# Use QSettings for platform-native persistent storage.
-
-# have tabs be movebale and renamable
-
-# help popup
-
-# top menu buttons that dropdown options
-
-# dark mode ->system default
-
-# allow for color and bg color in terminal
-
-# undo of individual boxes and total GUI
-
-# pbar with bold font of status or fixed text
-
-# save button with popup of path
-
-# implement multithreading with q thread pool:
-# 11. Multithreading Helpers
-# Use QThreadPool and QRunnable for background tasks without blocking UI.
-# Signal/slot pattern for updating UI when tasks finish.
-
-# make functions to put window to foregorund or blink in taskbar or hide or go to small icon taskbar
-
-# template for registering keyboard shortcuts
-
-# update options for githubt
-
-# add sanatize input functions
-
-# popup for crashes . maybe to general hidden function?
-
-# roi image selection. cut to that button. zoom in and out where x is set. add remove grid....
-
-# 12. Animation & Transition Effects
-# Use QPropertyAnimation for smooth UI transitions, fades, or slide-ins.
-
-# 16. Interactive Graphs and Plots
-# Embed matplotlib or pyqtgraph plots with zoom, pan, and tooltips.
-
-# notification to windows
-
-# prevent closing option and detection of closing/ windwos shutdown
-
-# display release version somewhere
-
-# float slider
-
-# sanitize . and , to .
 ################################################
 
 
@@ -414,7 +265,7 @@ def get_frame():
     return frame
 
 
-def Q_make_horizontal_line(height_pxl=2):
+def Q_horizontal_line(height_pxl=2):
     line = QFrame()
     line.setFrameShape(QFrame.HLine)
     line.setFrameShadow(QFrame.Sunken)
@@ -422,7 +273,7 @@ def Q_make_horizontal_line(height_pxl=2):
     return line
 
 
-def Q_make_vertical_line(width_pxl=2):
+def Q_vertical_line(width_pxl=2):
     line = QFrame()
     line.setFrameShape(QFrame.WLine)
     line.setFrameShadow(QFrame.Sunken)
@@ -972,32 +823,32 @@ class MainWindow(QWidget):
         sidebar.setContentsMargins(4, 4, 4, 4)
 
         sidebar.addWidget(self.button)
-        sidebar.addWidget(Q_make_horizontal_line())
+        sidebar.addWidget(Q_horizontal_line())
         sidebar.addWidget(self.dropdown1)
-        sidebar.addWidget(Q_make_horizontal_line())
+        sidebar.addWidget(Q_horizontal_line())
         sidebar.addWidget(self.dropdown2)
         sidebar.addWidget(self.dropdown3)
-        sidebar.addWidget(Q_make_horizontal_line())
+        sidebar.addWidget(Q_horizontal_line())
         sidebar.addWidget(self.switch)
-        sidebar.addWidget(Q_make_horizontal_line())
+        sidebar.addWidget(Q_horizontal_line())
         sidebar.addWidget(self.folder_path_button)
         sidebar.addWidget(self.folder_path_box)
-        sidebar.addWidget(Q_make_horizontal_line())
+        sidebar.addWidget(Q_horizontal_line())
         sidebar.addWidget(self.file_path_button)
         sidebar.addWidget(self.file_path_box)
-        sidebar.addWidget(Q_make_horizontal_line())
+        sidebar.addWidget(Q_horizontal_line())
         sidebar.addWidget(self.text_input)
-        sidebar.addWidget(Q_make_horizontal_line())
+        sidebar.addWidget(Q_horizontal_line())
         sidebar.addWidget(self.slider)
-        sidebar.addWidget(Q_make_horizontal_line())
+        sidebar.addWidget(Q_horizontal_line())
         sidebar.addWidget(self.radio_label)
         sidebar.addWidget(self.radio1)
         sidebar.addWidget(self.radio2)
-        sidebar.addWidget(Q_make_horizontal_line())
+        sidebar.addWidget(Q_horizontal_line())
         sidebar.addWidget(self.progress_bar)
-        sidebar.addWidget(Q_make_horizontal_line())
+        sidebar.addWidget(Q_horizontal_line())
         sidebar.addWidget(self.colored_bar)
-        sidebar.addWidget(Q_make_horizontal_line())
+        sidebar.addWidget(Q_horizontal_line())
         sidebar.addWidget(self.command_line)
         sidebar.addWidget(self.terminal_output)
 
