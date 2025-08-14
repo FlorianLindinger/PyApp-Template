@@ -2,6 +2,63 @@
 pyqt5 todo list
 ######################
 
+# 2. Settings Management
+# A centralized config manager that loads/saves settings (window size, last opened files, preferences).
+# Use QSettings for platform-native persistent storage.
+
+# have tabs be movebale and renamable
+
+# help popup
+
+# top menu buttons that dropdown options
+
+# dark mode ->system default
+
+# allow for color and bg color in terminal
+
+# undo of individual boxes and total GUI
+
+# pbar with bold font of status or fixed text
+
+# save button with popup of path
+
+# implement multithreading with q thread pool:
+# 11. Multithreading Helpers
+# Use QThreadPool and QRunnable for background tasks without blocking UI.
+# Signal/slot pattern for updating UI when tasks finish.
+
+# make functions to put window to foregorund or blink in taskbar or hide or go to small icon taskbar
+
+# template for registering keyboard shortcuts
+
+# update options for githubt
+
+# add sanatize input functions
+
+# popup for crashes . maybe to general hidden function?
+
+# roi image selection. cut to that button. zoom in and out where x is set. add remove grid....
+
+# 12. Animation & Transition Effects
+# Use QPropertyAnimation for smooth UI transitions, fades, or slide-ins.
+
+# 16. Interactive Graphs and Plots
+# Embed matplotlib or pyqtgraph plots with zoom, pan, and tooltips.
+
+# notification to windows
+
+# prevent closing option and detection of closing/ windwos shutdown
+
+# display release version somewhere
+
+# float slider
+
+# sanitize . and , to 
+
+#add auto adding to list to Q_thread_loop for closing threads in end
+
+#put helper_Q_worker_single into function
+
 # add grid option for radio button/tick button
 
 # make select folder and select file classes->maybe in same object? i e pressing in seleciton changes it. i want selectd result to be changeable and also maybe auto generate fodlers
