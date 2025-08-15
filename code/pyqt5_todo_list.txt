@@ -2,6 +2,9 @@
 pyqt5 todo list
 ######################
 
+# add close threads to closeEvent for template
+
+
 # 2. Settings Management
 # A centralized config manager that loads/saves settings (window size, last opened files, preferences).
 # Use QSettings for platform-native persistent storage.
