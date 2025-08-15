@@ -6,10 +6,10 @@ from PyQt5.QtWidgets import (
     QApplication, QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout,
     QComboBox, QFileDialog, QTextEdit, QCheckBox, QSizePolicy, QSplitter,
     QSlider, QLineEdit, QRadioButton, QButtonGroup, QFrame, QProgressBar,
-    QScrollArea,QTabWidget,QMessageBox
+    QScrollArea,QTabWidget,QMessageBox,QTabBar,QToolButton,    
 )
-from PyQt5.QtGui import QImage, QPixmap, QIcon
-from PyQt5.QtCore import Qt, QTimer,QObject,QThread,pyqtSignal,pyqtSlot
+from PyQt5.QtGui import QImage, QPixmap, QIcon,QFont
+from PyQt5.QtCore import Qt, QTimer,QObject,QThread,pyqtSignal,pyqtSlot,QEvent
 
 import cv2
 import numpy as np
@@ -18,34 +18,33 @@ import serial.tools.list_ports
 import sys
 import time
 
-class helper_Q_worker_single(QObject):
-    """looped_function takes as input what was sent to the thread and sends out the output of the function if that is not None
-    """
-    data_out_signal = pyqtSignal(
-        object)  # define here as a function of the class in order to call its method connect later and not in init
+        
+class Q_thread_single(QObject):
+    _data_out = pyqtSignal(object)
 
-    def __init__(self, function, *args):
+    def __init__(self,parent_self, function, connected_function, *args):
         super().__init__()
-        self.function = function
-        self.args = args
+        self._function = function
+        self._connected_function = connected_function
+        self._args = args
 
-    def run(self):
-        output = self.function(*self.args)
-        self.data_out_signal.emit(output)
+        self._thread = QThread()
+        self.moveToThread(self._thread)
+        self._data_out.connect(self._connected_function)
+        self._thread.started.connect(self._run)
+        self._thread.finished.connect(self.deleteLater)
+        self._thread.start()
+        #not thread safe probably actually:
+        if hasattr(parent_self, "_single_execution_threads"):
+            parent_self._single_execution_threads.append(self)
+        else:
+            parent_self._single_execution_threads = [self]
 
-
-def Q_thread_single(self, function, connected_function, *args):
-
-    thread = QThread()
-    worker = helper_Q_worker_single(function=function, *args)
-    worker.moveToThread(thread)
-    worker.data_out_signal.connect(connected_function)
-    thread.started.connect(worker.run)
-    thread.start()
-    if hasattr(self, "_single_execution_threads"):
-        self._single_execution_threads.append((thread, worker))
-    else:
-        self._single_execution_threads = [(thread, worker)]
+    def _run(self):
+        result = self._function(*self._args)
+        self._data_out.emit(result)
+        self._thread.quit()
+        self._thread.wait()
 
 
 class helper_Q_worker_loop(QObject):
@@ -107,142 +106,260 @@ class Q_thread_loop:
         self._thread.wait()
 
 
-# class MainWindow(QWidget):
-#     def __init__(self):
-#         super().__init__()
 
 
-#         layout = QVBoxLayout(self)
-#         self.line = QLineEdit()
-#         self.label = QLabel("Waiting for ticks...")
 
-#         layout.addWidget(self.label)
-#         layout.addWidget(self.line)
+# main_layout = QHBoxLayout()
+# self.tabs = QTabWidget()
+# self.add_tab_button = QToolButton()
+# self.add_tab_button.setText("+")
+# self.add_tab_button.setAutoRaise(True)
+# self.add_tab_button.setStyleSheet("color: green; font-size: 18px; font-weight: bold;")
+# self.add_tab_button.clicked.connect(self.add_tab)
 
-#         def fun(_):
-#             if _ is not None:
-#                 time.sleep(2)
-#                 print(_)
-#                 return str(_)
-#             time.sleep(2)
-#             print(1)
-#             return str(time.time())
+# # Put tabs and button in a horizontal layout
+# main_layout.addWidget(self.tabs)
+# main_layout.addWidget(self.add_tab_button)
 
-#         def fun2():
-#             time.sleep(5)
-#             return 52
-
-#         Q_thread_single(self, fun2, self.update_label)
-
-#         self.thread1 = Q_thread_loop(fun, self.update_label)
-
-#         # GUI → Thread
-#         self.line.returnPressed.connect(
-#             lambda: self.thread1.send(self.line.text()))
-
-#     def update_label(self, text):
-#         self.label.setText(str(text))
-
-#     def closeEvent(self, event):
+class Q_tabs(QWidget):
+    def __init__(self,tab_widget_class=None,moveable=True,closeable=True,allow_new_tab=True,renamable=True):
+        super().__init__()
         
-#         self.thread1.quit()
-#         event.accept()
-# app = QApplication(sys.argv)
-# window = MainWindow()
-# window.show()
-# sys.exit(app.exec_())
+        self.closeable=closeable
+        self.tab_widget_class=tab_widget_class
+        
+        layout = QVBoxLayout(self) 
+               
+        self.tabs = QTabWidget()
+        self.tabs.setMovable(moveable)
+        self.tabs.setStyleSheet("""
+            QTabBar::tab {
+                qproperty-alignment: AlignCenter;  /* centers text */
+                padding: 2px 3px;
+                margin: 2px;
+                min-width: 10px;
+                background: lightgray;     /* inactive tabs */
+                color: black;
+                border-top-left-radius: 3px;
+                border-top-right-radius: 3px;
+            }
+
+            QTabBar::tab:selected {
+                background: dimgray;         /* active tab */
+                color: white;              /* invert text color */
+            }
+
+            /* Keep the red X prominent */
+            QPushButton {
+                color: red;
+                font-weight: bold;
+                font-size: 16px;
+                border: none;
+            }
+        """)
+        layout.addWidget(self.tabs)
+
+        # State for renaming
+        self._editor = None
+        self._rename_index = None
+        if renamable==True:
+            # Signals
+            self.tabs.tabBarDoubleClicked.connect(self._start_rename)
+            # Event filter for all clicks and key events
+            self.installEventFilter(self)
+
+        # Add "+" button
+        if allow_new_tab==True:
+            self.add_tab_button = QToolButton()
+            self.add_tab_button.setText("+")
+            self.add_tab_button.setAutoRaise(True)
+            font = QFont()
+            font.setPointSize(14)
+            font.setBold(True)
+            self.add_tab_button.setFont(font)
+            self.add_tab_button.setStyleSheet("color: green;")
+            self.add_tab_button.clicked.connect(self.add_tab)
+            self.tabs.setCornerWidget(self.add_tab_button, Qt.TopRightCorner)
+
+        if closeable==True:
+            self.tabs.currentChanged.connect(self._update_close_buttons)
+
+        # # Start with one tab
+        self.add_tab()
+
+    def add_tab(self,*_,widget_class=None, title="New Tab"):
+
+        if widget_class is None:
+            if self.tab_widget_class is None:
+                widget=QLabel("No content")
+            else:
+                widget=self.tab_widget_class()
+        else:
+            widget=widget_class()
+
+        index = self.tabs.addTab(widget, title)
+        self.goto_tab(index)
+        if self.closeable==True:
+            self._update_close_buttons()
+        return index
+    
+    def set_current_index(self,index):
+        self.tabs.setCurrentIndex(index)
+        
+    def get_current_index(self):
+        return self.tabs.currentIndex()
+
+    def set_tab_widget(self, widget: QWidget, index=None):
+    # Get the existing tab widget
+        if index is None:
+            index=self.get_current_index()
+        tab = self.tabs[index]
+
+        # Remove all old widgets from the layout
+        layout = tab.layout()
+        if layout is None:
+            layout = QVBoxLayout(tab)
+            tab.setLayout(layout)
+        else:
+            while layout.count():
+                child = layout.takeAt(0)
+                if child.widget():
+                    child.widget().setParent(None)
+
+        # Add the new widget
+        layout.addWidget(widget)
+    
+    def close_tab(self, index=None):
+        if index is None:
+            index=self.get_current_index()
+        self.tabs.removeTab(index)
+        if self.closeable==True:
+            self._update_close_buttons()
+
+    def eventFilter(self, obj, event):
+        # ESC in editor
+        if self._editor and obj is self._editor and event.type() == QEvent.KeyPress:
+            if event.key() == Qt.Key_Escape:
+                self._cancel_rename()
+                return True
+
+        # Click anywhere outside editor
+        if self._editor and event.type() == QEvent.MouseButtonPress:
+            if not self._editor.geometry().contains(self._editor.mapFromGlobal(event.globalPos())):
+                self._commit_rename()
+
+        return super().eventFilter(obj, event)
+
+    def _add_close_button(self, index):
+        btn = QPushButton("x")
+        btn.setFixedSize(15, 15)
+        # Make it bold, red, and bigger
+        btn.setStyleSheet("""
+            color: red;
+            font-weight: bold;
+            font-size: 16px;
+            border: none;
+        """)
+        btn.clicked.connect(lambda _, i=index: self.close_tab(i))
+        self.tabs.tabBar().setTabButton(index, QTabBar.RightSide, btn)
+
+    def _remove_close_button(self, index):
+        self.tabs.tabBar().setTabButton(index, QTabBar.RightSide, None)
+
+    def _update_close_buttons(self):
+        for i in range(self.tabs.count()):
+            if i == self.tabs.currentIndex():
+                self._add_close_button(i)
+            else:
+                self._remove_close_button(i)
 
 
-class new_tab_button(QWidget):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        layout = QHBoxLayout(self)
-        layout.setContentsMargins(5, 0, 0, 0)
-        self.button = QPushButton("+")
-        self.button.setFixedSize(20, 20)
-        self.button.setFlat(True)
-        layout.addWidget(self.button)
-        self.setLayout(layout)
+    def _start_rename(self, index):
+        if index < 0:
+            return
+        if self._editor:
+            self._commit_rename()
+
+        rect = self.tabs.tabBar().tabRect(index)
+        editor = QLineEdit(self.tabs.tabText(index), self.tabs.tabBar())
+        editor.setGeometry(rect)
+        editor.setFocus()
+        editor.selectAll()
+        editor.returnPressed.connect(self._commit_rename)
+        editor.installEventFilter(self)
+
+        self._editor = editor
+        self._rename_index = index
+        editor.show()
+
+    def _commit_rename(self):
+        if self._editor and self._rename_index is not None:
+            new_name = self._editor.text()
+            if new_name:
+                self.tabs.setTabText(self._rename_index, new_name)
+            self._editor.deleteLater()
+        self._editor = None
+        self._rename_index = None
+
+    def _cancel_rename(self):
+        if self._editor:
+            self._editor.deleteLater()
+        self._editor = None
+        self._rename_index = None
 
 
-class TabDemo(QWidget):
+class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
         self.resize(400, 300)
 
-        # Main layout
-        main_layout = QVBoxLayout(self)
+        layout = QVBoxLayout(self)
+        self.line = QLineEdit()
+        self.label = QLabel("Waiting for ticks...")
+        self.tabs=Q_tabs(QLabel,True,True,True,True)
 
-        # Tab widget
-        self.tabs = QTabWidget()
-        self.tabs.setTabsClosable(True)
-        self.tabs.setMovable(True)
+        layout.addWidget(self.tabs)
+        layout.addWidget(self.label)
+        layout.addWidget(self.line)
+        
 
-        self.tabs.setTabPosition(QTabWidget.North)
+        def fun(_):
+            if _ is not None:
+                time.sleep(2)
+                print(_)
+                return str(_)
+            time.sleep(2)
+            print(1)
+            return str(time.time())
 
-        main_layout.addWidget(self.tabs)
+        def fun2():
+            time.sleep(5)
+            return 52
 
-        # Buttons layout
-        buttons_layout = QHBoxLayout()
-        main_layout.addLayout(buttons_layout)
+        Q_thread_single(self, fun2, self.update_label)
 
-        # Add Tab button
-        self.btn_add = QPushButton("Add Tab")
-        buttons_layout.addWidget(self.btn_add)
-        self.btn_add.clicked.connect(self.add_tab)
+        self.thread1 = Q_thread_loop(fun, self.update_label)
 
-        # Remove Tab button
-        self.btn_remove = QPushButton("Remove Tab")
-        buttons_layout.addWidget(self.btn_remove)
+        # GUI → Thread
+        self.line.returnPressed.connect(
+            lambda: self.thread1.send(self.line.text()))
 
-        # Add an initial tab
-        self.add_tab()
+    def update_label(self, text):
+        self.label.setText(str(text))
 
-        self.tabs.tabBarDoubleClicked.connect(self.start_rename)
+    def closeEvent(self, event):
+        
+        self.thread1.quit()
+        event.accept()
+        
+app = QApplication(sys.argv)
+window = MainWindow()
+window.show()
+sys.exit(app.exec_())
 
-        self.tabs._current_index = None
-        self.tabs._current_editor = None
 
-    def start_rename(self, index):
-        if index < 0:
-            return
 
-        if self.tabs._current_editor:
-            self.commit_rename()
 
-        tab_rectangle = self.tabs.tabBar().tabRect(index)
-        editor = QLineEdit(self.tabs.tabText(index), self.tabs.tabBar())
-        editor.setGeometry(tab_rectangle)
-        editor.setFocus()
-        editor.selectAll()
-
-        self.tabs._current_editor = editor
-        self.tabs._current_index = index
-
-        editor.returnPressed.connect(self.commit_rename)
-        editor.focusOutEvent = lambda e: (
-            self.commit_rename(), QLineEdit.focusOutEvent(editor, e))
-
-        editor.show()
-
-    def commit_rename(self):
-        if self.tabs._current_editor and self.tabs._current_index is not None:
-            new_name = self.tabs._current_editor.text()
-
-            if new_name:
-                self.tabs.setTabText(self.tabs._current_index, new_name)
-        self.tabs._current_editor.deleteLater()
-
-        self.tabs._current_index = None
-        self.tabs._current_editor = None
-
-    def add_tab(self):
-        count = self.tabs.count() + 1
-        tab = QWidget()
-        tab_layout = QVBoxLayout(tab)
-        tab_layout.addWidget(QLabel(f"Content of Tab {count}"))
-        self.tabs.addTab(tab, "New Tab")
-        self.tabs.setCurrentWidget(tab)
 
 
 ################################################
