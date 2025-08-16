@@ -1,30 +1,3 @@
-
-
-
-
-class MainWindow(QWidget):
-    def __init__(self):
-        super().__init__()
-
-        a=Q_popup(self,"1",appearance="warning")
-        # time.sleep(5)
-        b=Q_popup(self,"2",appearance="critical")
-        # time.sleep(5)
-        c=Q_popup(self,"3",appearance="info")
-        # time.sleep(5)
-        Q_popup(self,"4",appearance="question")
-
-        layout = QVBoxLayout(self)
-
-
-
-
-app = QApplication([])
-window = MainWindow()
-window.show()
-app.exec_()
-
-
 from PyQt5.QtWidgets import (
     QApplication, QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout,
     QComboBox, QFileDialog, QTextEdit, QCheckBox, QSizePolicy, QSplitter,
@@ -40,6 +13,21 @@ import traceback
 import serial.tools.list_ports
 import sys
 import time
+
+################################################
+
+
+
+
+def get_available_com_ports_tuple() -> list[str]:
+    return [(elem.device, elem.description) for elem in serial.tools.list_ports.comports()]  # nopep8 #type:ignore
+
+
+def get_frame():
+    frame = np.zeros((480, 640, 3), dtype=np.uint8)
+    cv2.putText(frame, "Aspect Ratio Preserved", (50, 240),
+                cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+    return frame
 
 
 
@@ -317,79 +305,6 @@ class Q_tabs(QWidget):
         self._editor = None
         self._rename_index = None
 
-
-class MainWindow(QWidget):
-    def __init__(self):
-        super().__init__()
-        self.resize(400, 300)
-
-        layout = QVBoxLayout(self)
-        self.line = QLineEdit()
-        self.label = QLabel("Waiting for ticks...")
-        self.tabs=Q_tabs(QLabel,True,True,True,True)
-
-        layout.addWidget(self.tabs)
-        layout.addWidget(self.label)
-        layout.addWidget(self.line)
-        
-
-        def fun(_):
-            if _ is not None:
-                time.sleep(2)
-                print(_)
-                return str(_)
-            time.sleep(2)
-            print(1)
-            return str(time.time())
-
-        def fun2():
-            time.sleep(5)
-            return 52
-
-        # Q_thread_single(self, fun2, self.update_label)
-
-        # self.thread1 = Q_thread_loop(fun, self.update_label)
-
-        # GUI → Thread
-        # self.line.returnPressed.connect(
-        #     lambda: self.thread1.send(self.line.text()))
-
-    def update_label(self, text):
-        self.label.setText(str(text))
-
-    def closeEvent(self, event):
-        
-        # self.thread1.quit()
-        event.accept()
-        
-app = QApplication(sys.argv)
-window = MainWindow()
-window.show()
-sys.exit(app.exec_())
-
-
-
-
-
-
-################################################
-
-
-title = "test"
-icon_path = r"icons\icon.ico"
-default_com_port = "com9"
-window_pixels_h, window_pixels_v = 1000, 700
-
-
-def get_available_com_ports_tuple() -> list[str]:
-    return [(elem.device, elem.description) for elem in serial.tools.list_ports.comports()]  # nopep8 #type:ignore
-
-
-def get_frame():
-    frame = np.zeros((480, 640, 3), dtype=np.uint8)
-    cv2.putText(frame, "Aspect Ratio Preserved", (50, 240),
-                cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-    return frame
 
 
 def Q_horizontal_line(height_pxl=2):
@@ -827,8 +742,34 @@ class Q_terminal(QWidget):
 
         Q_handle_label_positioning(self, label, label_pos)
 
-    def log(self, text):
-        self.widget.append(str(text))
+    def log(self, *text,sep=" ", end="\n",color=None, bold=False, bg=None,warn=False):
+        text=str(sep).join([str(t) for t in text])+str(end)
+
+        if warn==True:
+            if color is None:
+                color="white"
+            if bg is None:
+                bg="red"
+            if bold is None:
+                bold=True
+ 
+        lines=text.split("\n")
+
+        for i,line in enumerate(lines):
+            if i==len(lines)-1 and line=="":
+                break 
+            style = ""
+            if color:
+                style += f"color: {color};"
+            if bg:
+                style += f"background-color: {bg};"
+            html = f"<span style='{style}'>{line}</span>"
+            if bold:
+                html = f"<b>{html}</b>"
+            if i!=len(lines)-1:
+                self.widget.insertHtml(html +"<br>")
+            else:
+                self.widget.insertHtml(html)
 
     def clear(self):
         self.widget.clear()
@@ -947,29 +888,37 @@ class Q_output_line(QWidget):
         Q_handle_label_positioning(self, label, label_pos)
 
 
-# self.sidebar.setFixedWidth(self.sidebar_width)  # initial width
+import sys
+from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QHBoxLayout, QVBoxLayout, QLabel
+from PyQt5.QtCore import Qt, QPropertyAnimation,pyqtProperty
 
-# # Toggle animation sets:
-# self.animation.setStartValue(self.sidebar.width())
-# self.animation.setEndValue(0)  # collapse to zero width, not hide
-
-# # Main content:
-# self.main_content.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-
-if __name__ == "__main__":
-    app = QApplication([])
-    demo = TabDemo()
-    demo.show()
-    app.exec()
-
-
-class MainWindow(QWidget):
-    def __init__(self):
+class helper_Q_sidebar_animator(QObject):
+    def __init__(self, splitter):
         super().__init__()
+        self._width = splitter.sizes()[0]
+        self.splitter = splitter
 
-        self.setWindowTitle(title)
-        self.setWindowIcon(QIcon(icon_path))
-        self.resize(int(1920/2), int(1080/2))
+    @pyqtProperty(int)
+    def width(self):
+        return self._width
+
+    @width.setter
+    def width(self, w):
+        self._width = w
+        total = sum(self.splitter.sizes())
+        self.splitter.setSizes([w, total - w])
+        
+        
+        
+class MainWindow(QWidget):
+    def __init__(self,title="",icon_path=None,width=1920/2,height=1080/2,ask_confirm_closing=True):
+        super().__init__()
+        
+        self.ask_confirm_closing=ask_confirm_closing
+
+        self.set_title(title)
+        self.set_icon(icon_path)
+        self.set_size(width,height)
 
         ############################################
 
@@ -990,7 +939,7 @@ class MainWindow(QWidget):
             label="line1", placeholder_text="placeholder")
 
         self.slider = Q_slider(0, 100, label="slider",
-                               on_change_function=self.on_slider_change)
+                               on_change_function=self._on_slider_change)
 
         self.colored_bar = Q_colored_pbar()
 
@@ -1000,12 +949,12 @@ class MainWindow(QWidget):
             on_enter_function=lambda x: None, output=self.terminal_output, placeholder_text="placeholder")
 
         self.file_path_button = QPushButton("Select File")
-        self.file_path_button.clicked.connect(self.on_open_file_path_menu)
+        self.file_path_button.clicked.connect(self._on_open_file_path_menu)
         self.file_path_box = QLineEdit()
         self.file_path_box.setReadOnly(True)
 
         self.folder_path_button = QPushButton("Select Folder")
-        self.folder_path_button.clicked.connect(self.on_open_folder_path_menu)
+        self.folder_path_button.clicked.connect(self._on_open_folder_path_menu)
         self.folder_path_box = QLineEdit()
         self.folder_path_box.setReadOnly(True)
 
@@ -1018,7 +967,7 @@ class MainWindow(QWidget):
         self.radio_group.addButton(self.radio2, id=2)
         self.radio_group.addButton(self.radio3, id=3)
         self.radio1.setChecked(True)
-        self.radio_group.buttonClicked[int].connect(self.on_radio_selected)
+        self.radio_group.buttonClicked[int].connect(self._on_radio_selected)
 
         self.progress_bar = QProgressBar()
         self.progress_bar.setMinimum(0)
@@ -1070,16 +1019,22 @@ class MainWindow(QWidget):
         # Make sidebar vertically scrollable
         self.sidebar_widget = QWidget()
         self.sidebar_widget.setLayout(sidebar)
-        sidebar_scroll_area = QScrollArea()
+        self.sidebar_expanded = True
+
+
+
+        
+        self.sidebar_scroll_area = QScrollArea()
         # make it resize itself horizontally
-        sidebar_scroll_area.setWidgetResizable(True)
-        sidebar_scroll_area.setWidget(self.sidebar_widget)
-
-        self.toggle_button = QPushButton(">")
-        self.toggle_button.setFixedSize(30, 25)
-        self.toggle_button.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
-        self.toggle_button.clicked.connect(self.toggle_sidebar)
-
+        self.sidebar_scroll_area.setWidgetResizable(True)
+        self.sidebar_scroll_area.setWidget(self.sidebar_widget)
+        
+        # Toggle button
+        self.toggle_sidebar_button = QPushButton("☰")  # hamburger icon
+        self.toggle_sidebar_button.setFixedSize(30, 30)
+        self.toggle_sidebar_button.clicked.connect(self.toggle_sidebar)
+        
+    
         ############################################
 
         # Image viewer setup
@@ -1095,7 +1050,7 @@ class MainWindow(QWidget):
             self.image_title.sizePolicy().horizontalPolicy(), QSizePolicy.Fixed)
 
         self.image_title_line = QHBoxLayout()
-        self.image_title_line.addWidget(self.toggle_button)
+        self.image_title_line.addWidget(self.toggle_sidebar_button)
         self.image_title_line.addWidget(self.image_title)
 
         # image box
@@ -1115,17 +1070,19 @@ class MainWindow(QWidget):
         ############################################
 
         # Horizontal splitter for sidebar and right area
-        main_horizontal = QSplitter(Qt.Horizontal)
-        main_horizontal.addWidget(sidebar_scroll_area)
-        main_horizontal.addWidget(right_vertical)
-        main_horizontal.setStretchFactor(0, 1)  # Sidebar smaller by default
-        main_horizontal.setStretchFactor(1, 4)  # Right side bigger
+        self.main_horizontal = QSplitter(Qt.Horizontal)
+        self.main_horizontal.addWidget(self.sidebar_scroll_area)
+        self.main_horizontal.addWidget(right_vertical)
+        self.main_horizontal.setStretchFactor(0, 1)  # Sidebar smaller by default
+        self.main_horizontal.setStretchFactor(1, 4)  # Right side bigger
+        self.previous_sidebar_width =  self.main_horizontal.sizes()[0]
+
 
         ############################################
 
         # Main layout
         main_layout = QHBoxLayout()
-        main_layout.addWidget(main_horizontal)
+        main_layout.addWidget(self.main_horizontal)
         self.setLayout(main_layout)
 
         # Timer to update OpenCV image
@@ -1137,7 +1094,7 @@ class MainWindow(QWidget):
         # code specific initialization:
         ############################################
         self.current_frame = None
-        self.image.resizeEvent = self.on_window_resize
+        self.image.resizeEvent = self._on_window_resize
 
         self.folder_path = None
         self.file_path = None
@@ -1146,42 +1103,32 @@ class MainWindow(QWidget):
     # Methods:
     ########################################
 
-    ########################################
-    # GUI event handlers:
-
+    def log(self,*text,sep=" ",end="\n"):
+        self.terminal_output.log(*text,sep=sep,end=end)
+        
     def toggle_sidebar(self):
-        self.sidebar_widget.setVisible(not self.sidebar_widget.isVisible())
-        if self.toggle_button.text() == "<":
-            self.toggle_button.setText(">")
+        sizes = self.main_horizontal.sizes()
+        sidebar_width = sizes[0]
+
+        if self.sidebar_expanded:
+            # Collapsing sidebar: save width
+            self.previous_sidebar_width = sidebar_width
+            start = sidebar_width
+            end = 0
         else:
-            self.toggle_button.setText("<")
+            # Expanding sidebar: restore previous width
+            start = 0
+            end = self.previous_sidebar_width
 
-    def on_radio_selected(self, id):
-        pass
+        self.sidebar_expanded = not self.sidebar_expanded
 
-    def on_slider_change(self, value):
-        self.progress_bar.setValue(value)
-        self.colored_bar.set_value(value)
-        self.terminal_output.log(value)
-        pass
-
-    def on_open_file_path_menu(self):
-        path, _ = QFileDialog.getOpenFileName(self, "Select File")
-        self.file_path_box.setText(path)
-        pass
-
-    def on_open_folder_path_menu(self):
-        path = QFileDialog.getExistingDirectory(self, "Select Folder")
-        self.folder_path_box.setText(path)
-        pass
-
-    ########################################
-    # update content related:
-
-    def on_window_resize(self, event):
-        self.repaint_image()
-        pass
-        event.accept()  # mark event as handled
+        # Animate only the sidebar width
+        self.animator = helper_Q_sidebar_animator(self.main_horizontal)
+        self.animation = QPropertyAnimation(self.animator, b"width")
+        self.animation.setDuration(100)
+        self.animation.setStartValue(start)
+        self.animation.setEndValue(end)
+        self.animation.start()
 
     def set_image_title(self, text):
         self.image_title.setText(text)
@@ -1189,14 +1136,53 @@ class MainWindow(QWidget):
     def update_content(self):
         try:
             self.current_frame = get_frame()
-            self.repaint_image()
+            self._repaint_image()
         except Exception as e:
             self.terminal_output.log("--------------------")
             self.terminal_output.log(f"[ERROR] {str(e)}:")
             self.terminal_output.log(traceback.format_exc)
             self.terminal_output.log("--------------------")
+            
+    def set_size(self,width,height):
+        self.resize(int(width), int(height))
+        
+    def set_position(self,x,y):
+        self.move(int(x), int(y)) 
 
-    def repaint_image(self):
+    def set_title(self,title=""):
+        self.setWindowTitle(title)
+        
+    def set_icon(self,path):
+        if path is not None:
+            self.setWindowIcon(QIcon(path))
+
+    ########################################
+    # helper GUI event handlers:
+
+    def _on_radio_selected(self, id):
+        pass
+
+    def _on_slider_change(self, value):
+        self.progress_bar.setValue(value)
+        self.colored_bar.set_value(value)
+        self.terminal_output.log(value,color="red",bold=True,sep="\n")
+
+    def _on_open_file_path_menu(self):
+        path, _ = QFileDialog.getOpenFileName(self, "Select File")
+        self.file_path_box.setText(path)
+
+    def _on_open_folder_path_menu(self):
+        path = QFileDialog.getExistingDirectory(self, "Select Folder")
+        self.folder_path_box.setText(path)
+
+    #######################################
+    #helpers
+
+    def _on_window_resize(self, event):
+        self._repaint_image()
+        event.accept()  # mark event as handled
+
+    def _repaint_image(self):
         if self.current_frame is None:
             return
 
@@ -1215,12 +1201,35 @@ class MainWindow(QWidget):
             Qt.SmoothTransformation
         )
         self.image.setPixmap(scaled_pixmap)
+        
+    def closeEvent(self, event):
+        #print("Window is closing!")  # Custom action
+
+        # Optional: ask for confirmation
+        if self.ask_confirm_closing==True:
+            reply = QMessageBox.question(
+                self,
+                "Confirm Exit",
+                "Are you sure you want to quit?",
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No
+            )
+
+            if reply == QMessageBox.Yes:
+                event.accept()  # Close the window
+            else:
+                event.ignore()  # Ignore the close
+        else:
+           event.accept() 
 
     ########################################
 
+title = "test"
+icon_path = r"icons\icon.ico"
+default_com_port = "com9"
+window_pixels_h, window_pixels_v = 1000, 700
 
 app = QApplication(sys.argv)
-window = MainWindow()
-window.resize(window_pixels_h, window_pixels_v)
+window = MainWindow(title,icon_path,window_pixels_h,window_pixels_v)
 window.show()
 sys.exit(app.exec_())

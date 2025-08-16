@@ -2,22 +2,21 @@
 pyqt5 todo list
 ######################
 
-# add close threads to closeEvent for template
+hide everythin in window widget. only stuff that needed in self layer
 
+
+add style to total window. maybe just dark theme
+
+add auto close to popup if neeed for main windwo close
+add option to x buttin in popup
 
 # 2. Settings Management
 # A centralized config manager that loads/saves settings (window size, last opened files, preferences).
 # Use QSettings for platform-native persistent storage.
 
-# have tabs be movebale and renamable
-
 # help popup
 
 # top menu buttons that dropdown options
-
-# dark mode ->system default
-
-# allow for color and bg color in terminal
 
 # undo of individual boxes and total GUI
 
@@ -25,16 +24,10 @@ pyqt5 todo list
 
 # save button with popup of path
 
-# implement multithreading with q thread pool:
-# 11. Multithreading Helpers
-# Use QThreadPool and QRunnable for background tasks without blocking UI.
-# Signal/slot pattern for updating UI when tasks finish.
-
 # make functions to put window to foregorund or blink in taskbar or hide or go to small icon taskbar
 
 # template for registering keyboard shortcuts
 
-# update options for githubt
 
 # add sanatize input functions
 
@@ -42,13 +35,8 @@ pyqt5 todo list
 
 # roi image selection. cut to that button. zoom in and out where x is set. add remove grid....
 
-# 12. Animation & Transition Effects
-# Use QPropertyAnimation for smooth UI transitions, fades, or slide-ins.
-
 # 16. Interactive Graphs and Plots
 # Embed matplotlib or pyqtgraph plots with zoom, pan, and tooltips.
-
-# notification to windows
 
 # prevent closing option and detection of closing/ windwos shutdown
 
@@ -59,8 +47,7 @@ pyqt5 todo list
 # sanitize . and , to 
 
 #add auto adding to list to Q_thread_loop for closing threads in end
-
-#put helper_Q_worker_single into function
+# add close threads to closeEvent for template
 
 # add grid option for radio button/tick button
 
@@ -91,3 +78,14 @@ pyqt5 todo list
 # get and prepare image thread
 # fit gaussian thread
 #
+
+
+######################################
+#               optional
+#########################################
+
+# dark mode ->system default
+
+# allow for color and bg color in terminal
+
+# update options for githubt
