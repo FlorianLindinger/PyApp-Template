@@ -1,6 +1,29 @@
-###########################
-# todo:
-###########################
+
+
+
+
+class MainWindow(QWidget):
+    def __init__(self):
+        super().__init__()
+
+        a=Q_popup(self,"1",appearance="warning")
+        # time.sleep(5)
+        b=Q_popup(self,"2",appearance="critical")
+        # time.sleep(5)
+        c=Q_popup(self,"3",appearance="info")
+        # time.sleep(5)
+        Q_popup(self,"4",appearance="question")
+
+        layout = QVBoxLayout(self)
+
+
+
+
+app = QApplication([])
+window = MainWindow()
+window.show()
+app.exec_()
+
 
 from PyQt5.QtWidgets import (
     QApplication, QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout,
@@ -18,7 +41,410 @@ import serial.tools.list_ports
 import sys
 import time
 
+
+
+def Q_popup(self=None,text="",appearance="info",buttons=None,title=None,wait_for_anwser=None,on_click_function=None):
+    
+    msg = QMessageBox()
+    
+    if appearance.lower() in ["info","information"]:
+        if buttons is None:
+            buttons=["Ok"]
+        if title is None:
+            title="Info"
+        if wait_for_anwser is None:
+            wait_for_anwser=False
+        msg.setIcon(QMessageBox.Information)
+    if appearance.lower() in ["warning"]:
+        if buttons is None:
+            buttons=["Ok"]
+        if title is None:
+            title="Warning"
+        if wait_for_anwser is None:
+            wait_for_anwser=False
+        msg.setIcon(QMessageBox.Warning)
+    if appearance.lower() in ["critical","error"]:
+        if buttons is None:
+            buttons=["Continue"]
+        if title is None:
+            title="Critical"
+        if wait_for_anwser is None:
+            wait_for_anwser=True
+        msg.setIcon(QMessageBox.Critical)
+    if appearance.lower() in ["question","decision"]:
+        if buttons is None:
+            buttons=["Yes","No"]
+        if title is None:
+            title="Question"
+        if wait_for_anwser is None:
+            wait_for_anwser=True
+        msg.setIcon(QMessageBox.Question)
+
+    msg.setWindowTitle(title)
+    msg.setText(text)
+    msg.setMinimumSize(800, 300)  
+    
+    if self is not None:
+        if hasattr(self,"_message_boxes"):
+            self._message_boxes.append(msg)
+        else:
+            self._message_boxes=[msg]
+    
+    buttons_dict={}
+    for name in buttons:
+        btn = msg.addButton(name, QMessageBox.AcceptRole)  # or RejectRole etc.
+        buttons_dict[btn] = name
+    
+    if wait_for_anwser==True:
+        msg.exec_()
+        if on_click_function is None:
+            return buttons_dict[msg.clickedButton()]
+        else:
+            return on_click_function(buttons_dict[msg.clickedButton()])
+    else:
+        if on_click_function is not None:
+            msg.buttonClicked.connect(on_click_function)
+        msg.show()
+        return msg
+
+
+
+class Q_tabs(QWidget):
+    def __init__(self,tab_widget_class=None,moveable=True,closeable=True,allow_new_tab=True,renamable=True,allow_remove_last_tab=True):
+        super().__init__()
         
+        self.allow_remove_last_tab=allow_remove_last_tab
+        self.closeable=closeable
+        self.tab_widget_class=tab_widget_class
+        
+        layout = QVBoxLayout(self)     
+        self.tabs = QTabWidget()
+        self.tabs.setMovable(moveable)
+        self.tabs.setStyleSheet("""
+            QTabBar::tab {
+                qproperty-alignment: AlignCenter;  /* centers text */
+                padding: 2px 3px;
+                margin: 2px;
+                min-width: 10px;
+                background: lightgray;     /* inactive tabs */
+                color: black;
+                border-top-left-radius: 3px;
+                border-top-right-radius: 3px;
+            }
+
+            QTabBar::tab:selected {
+                background: dimgray;         /* active tab */
+                color: white;              /* invert text color */
+            }
+
+            /* Keep the red X prominent */
+            QPushButton {
+                color: red;
+                font-weight: bold;
+                font-size: 16px;
+                border: none;
+            }
+        """)
+        layout.addWidget(self.tabs)
+
+        # State for renaming
+        self._editor = None
+        self._rename_index = None
+        if renamable==True:
+            # Signals
+            self.tabs.tabBarDoubleClicked.connect(self._start_rename)
+            # Event filter for all clicks and key events
+            self.installEventFilter(self)
+
+        #Add "+" button
+        if allow_new_tab==True:
+            self.add_tab_button = QToolButton()
+            self.add_tab_button.setText("+")
+            self.add_tab_button.setAutoRaise(True)
+            font = QFont()
+            font.setPointSize(14)
+            font.setBold(True)
+            self.add_tab_button.setFont(font)
+            self.add_tab_button.setStyleSheet("color: green;")
+            self.add_tab_button.clicked.connect(self.add_tab)
+            self.tabs.setCornerWidget(self.add_tab_button, Qt.TopRightCorner)
+
+        self.tabs.currentChanged.connect(self._update_close_buttons)
+
+        self.placeholder=None
+        self.tabs.tabBar().tabBarClicked.connect(self._on_tab_click)
+
+        # Start with one tab
+        self.add_tab()
+
+    def add_tab(self,*_,widget_class=None, title="New Tab"):
+
+        if widget_class is None:
+            if self.tab_widget_class is None:
+                widget=QLabel("No content")
+            else:
+                widget=self.tab_widget_class()
+        else:
+            widget=widget_class()
+
+        index = self.tabs.addTab(widget, title)
+        self.set_current_index(index)
+        if self.closeable==True:
+            self._update_close_buttons()
+            
+        if self.tabs.indexOf(self.placeholder) != -1:
+            self.tabs.removeTab(self.tabs.indexOf(self.placeholder))
+            
+        return index
+    
+    def set_current_index(self,index):
+        self.tabs.setCurrentIndex(index)
+        
+    def get_current_index(self):
+        return self.tabs.currentIndex()
+
+    def set_tab_widget(self, widget: QWidget, index=None):
+    # Get the existing tab widget
+        if index is None:
+            index=self.get_current_index()
+        tab = self.tabs.widget(index)
+        # Remove all old widgets from the layout
+        layout = tab.layout()
+        if layout is None:
+            layout = QVBoxLayout(tab)
+            tab.setLayout(layout)
+        else:
+            while layout.count():
+                child = layout.takeAt(0)
+                if child.widget():
+                    child.widget().setParent(None)
+
+        # Add the new widget
+        layout.addWidget(widget)
+    
+    def close_tab(self, index=None):
+        if index is None:
+            index=self.get_current_index()
+        if len(self.tabs)==1:
+            self._add_placeholder_tab()
+            self.tabs.removeTab(index)
+        else:
+            self.tabs.removeTab(index)
+            if self.closeable==True:
+                self._update_close_buttons()
+
+    def eventFilter(self, obj, event):
+        # ESC in editor
+        if self._editor and obj is self._editor and event.type() == QEvent.KeyPress:
+            if event.key() == Qt.Key_Escape:
+                self._cancel_rename()
+                return True
+
+        # Click anywhere outside editor
+        if self._editor and event.type() == QEvent.MouseButtonPress:
+            if not self._editor.geometry().contains(self._editor.mapFromGlobal(event.globalPos())):
+                self._commit_rename()
+
+        return super().eventFilter(obj, event)
+
+    def _on_tab_click(self,index):
+        if index == self.tabs.indexOf(self.placeholder):
+            self.add_tab()
+
+    def _add_placeholder_tab(self):
+        self.placeholder = QPushButton()
+        self.placeholder.clicked.connect(self.add_tab)
+        placeholder_layout = QVBoxLayout()
+        placeholder_layout.addWidget(QLabel("Click to add tab"))
+        self.placeholder.setLayout(placeholder_layout)
+        self.tabs.addTab(self.placeholder, "+")
+
+    def _add_close_button(self, index):
+        if len(self.tabs)>1 or self.allow_remove_last_tab==True:
+            btn = QPushButton("x")
+            btn.setFixedSize(15, 15)
+            # Make it bold, red, and bigger
+            btn.setStyleSheet("""
+                color: red;
+                font-weight: bold;
+                font-size: 16px;
+                border: none;
+            """)
+            btn.clicked.connect(lambda _, i=index: self.close_tab(i))
+            self.tabs.tabBar().setTabButton(index, QTabBar.RightSide, btn)
+
+    def _remove_close_button(self, index):
+        self.tabs.tabBar().setTabButton(index, QTabBar.RightSide, None)
+
+    def _update_close_buttons(self):
+        for i in range(self.tabs.count()):
+            if i == self.tabs.currentIndex():
+                if i != self.tabs.indexOf(self.placeholder):
+                    self._add_close_button(i)
+            else:
+                self._remove_close_button(i)
+
+    def _start_rename(self, index):
+        if index < 0:
+            return
+        if self._editor:
+            self._commit_rename()
+
+        rect = self.tabs.tabBar().tabRect(index)
+        editor = QLineEdit(self.tabs.tabText(index), self.tabs.tabBar())
+        editor.setGeometry(rect)
+        editor.setFocus()
+        editor.selectAll()
+        editor.returnPressed.connect(self._commit_rename)
+        editor.installEventFilter(self)
+
+        self._editor = editor
+        self._rename_index = index
+        editor.show()
+
+    def _commit_rename(self):
+        if self._editor and self._rename_index is not None:
+            new_name = self._editor.text()
+            if new_name:
+                self.tabs.setTabText(self._rename_index, new_name)
+            self._editor.deleteLater()
+        self._editor = None
+        self._rename_index = None
+
+    def _cancel_rename(self):
+        if self._editor:
+            self._editor.deleteLater()
+        self._editor = None
+        self._rename_index = None
+
+
+class MainWindow(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.resize(400, 300)
+
+        layout = QVBoxLayout(self)
+        self.line = QLineEdit()
+        self.label = QLabel("Waiting for ticks...")
+        self.tabs=Q_tabs(QLabel,True,True,True,True)
+
+        layout.addWidget(self.tabs)
+        layout.addWidget(self.label)
+        layout.addWidget(self.line)
+        
+
+        def fun(_):
+            if _ is not None:
+                time.sleep(2)
+                print(_)
+                return str(_)
+            time.sleep(2)
+            print(1)
+            return str(time.time())
+
+        def fun2():
+            time.sleep(5)
+            return 52
+
+        # Q_thread_single(self, fun2, self.update_label)
+
+        # self.thread1 = Q_thread_loop(fun, self.update_label)
+
+        # GUI → Thread
+        # self.line.returnPressed.connect(
+        #     lambda: self.thread1.send(self.line.text()))
+
+    def update_label(self, text):
+        self.label.setText(str(text))
+
+    def closeEvent(self, event):
+        
+        # self.thread1.quit()
+        event.accept()
+        
+app = QApplication(sys.argv)
+window = MainWindow()
+window.show()
+sys.exit(app.exec_())
+
+
+
+
+
+
+################################################
+
+
+title = "test"
+icon_path = r"icons\icon.ico"
+default_com_port = "com9"
+window_pixels_h, window_pixels_v = 1000, 700
+
+
+def get_available_com_ports_tuple() -> list[str]:
+    return [(elem.device, elem.description) for elem in serial.tools.list_ports.comports()]  # nopep8 #type:ignore
+
+
+def get_frame():
+    frame = np.zeros((480, 640, 3), dtype=np.uint8)
+    cv2.putText(frame, "Aspect Ratio Preserved", (50, 240),
+                cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+    return frame
+
+
+def Q_horizontal_line(height_pxl=2):
+    line = QFrame()
+    line.setFrameShape(QFrame.HLine)
+    line.setFrameShadow(QFrame.Sunken)
+    line.setFixedHeight(height_pxl)
+    return line
+
+
+def Q_vertical_line(width_pxl=2):
+    line = QFrame()
+    line.setFrameShape(QFrame.WLine)
+    line.setFrameShadow(QFrame.Sunken)
+    line.setFixedWidth(width_pxl)
+    return line
+
+
+def Q_handle_label_positioning(self, label="", label_pos="left", moveable=False, align=None):
+    layout = QVBoxLayout()
+    layout.setContentsMargins(0, 0, 0, 0)
+    if label in ["", None]:
+        layout.addWidget(self.widget)
+    else:
+        self.label = QLabel(label)
+        if label_pos == "top":
+            layout.addLayout(self.label)
+        if label_pos in ["left", "right"]:
+            if moveable == True:
+                widget_line = QSplitter(Qt.Horizontal)
+            else:
+                widget_line = QHBoxLayout()
+                if align is None:
+                    self.widget.setSizePolicy(
+                        QSizePolicy.Expanding, QSizePolicy.Expanding)
+                if align == "right":
+                    widget_line.addStretch()
+            if label_pos == "left":
+                widget_line.addWidget(self.label)
+                widget_line.addWidget(self.widget)
+            else:
+                widget_line.addWidget(self.widget)
+                widget_line.addWidget(self.label)
+            if moveable == True:
+                layout.addWidget(widget_line)
+            else:
+                if align == "left":
+                    widget_line.addStretch()
+                layout.addLayout(widget_line)
+        else:
+            layout.addWidget(self.widget)
+        if label_pos == "bottom":
+            layout.addLayout(self.label)
+    self.setLayout(layout)
+
 class Q_thread_single(QObject):
     _data_out = pyqtSignal(object)
 
@@ -106,334 +532,6 @@ class Q_thread_loop:
         self._thread.wait()
 
 
-
-
-
-# main_layout = QHBoxLayout()
-# self.tabs = QTabWidget()
-# self.add_tab_button = QToolButton()
-# self.add_tab_button.setText("+")
-# self.add_tab_button.setAutoRaise(True)
-# self.add_tab_button.setStyleSheet("color: green; font-size: 18px; font-weight: bold;")
-# self.add_tab_button.clicked.connect(self.add_tab)
-
-# # Put tabs and button in a horizontal layout
-# main_layout.addWidget(self.tabs)
-# main_layout.addWidget(self.add_tab_button)
-
-class Q_tabs(QWidget):
-    def __init__(self,tab_widget_class=None,moveable=True,closeable=True,allow_new_tab=True,renamable=True):
-        super().__init__()
-        
-        self.closeable=closeable
-        self.tab_widget_class=tab_widget_class
-        
-        layout = QVBoxLayout(self) 
-               
-        self.tabs = QTabWidget()
-        self.tabs.setMovable(moveable)
-        self.tabs.setStyleSheet("""
-            QTabBar::tab {
-                qproperty-alignment: AlignCenter;  /* centers text */
-                padding: 2px 3px;
-                margin: 2px;
-                min-width: 10px;
-                background: lightgray;     /* inactive tabs */
-                color: black;
-                border-top-left-radius: 3px;
-                border-top-right-radius: 3px;
-            }
-
-            QTabBar::tab:selected {
-                background: dimgray;         /* active tab */
-                color: white;              /* invert text color */
-            }
-
-            /* Keep the red X prominent */
-            QPushButton {
-                color: red;
-                font-weight: bold;
-                font-size: 16px;
-                border: none;
-            }
-        """)
-        layout.addWidget(self.tabs)
-
-        # State for renaming
-        self._editor = None
-        self._rename_index = None
-        if renamable==True:
-            # Signals
-            self.tabs.tabBarDoubleClicked.connect(self._start_rename)
-            # Event filter for all clicks and key events
-            self.installEventFilter(self)
-
-        # Add "+" button
-        if allow_new_tab==True:
-            self.add_tab_button = QToolButton()
-            self.add_tab_button.setText("+")
-            self.add_tab_button.setAutoRaise(True)
-            font = QFont()
-            font.setPointSize(14)
-            font.setBold(True)
-            self.add_tab_button.setFont(font)
-            self.add_tab_button.setStyleSheet("color: green;")
-            self.add_tab_button.clicked.connect(self.add_tab)
-            self.tabs.setCornerWidget(self.add_tab_button, Qt.TopRightCorner)
-
-        if closeable==True:
-            self.tabs.currentChanged.connect(self._update_close_buttons)
-
-        # # Start with one tab
-        self.add_tab()
-
-    def add_tab(self,*_,widget_class=None, title="New Tab"):
-
-        if widget_class is None:
-            if self.tab_widget_class is None:
-                widget=QLabel("No content")
-            else:
-                widget=self.tab_widget_class()
-        else:
-            widget=widget_class()
-
-        index = self.tabs.addTab(widget, title)
-        self.goto_tab(index)
-        if self.closeable==True:
-            self._update_close_buttons()
-        return index
-    
-    def set_current_index(self,index):
-        self.tabs.setCurrentIndex(index)
-        
-    def get_current_index(self):
-        return self.tabs.currentIndex()
-
-    def set_tab_widget(self, widget: QWidget, index=None):
-    # Get the existing tab widget
-        if index is None:
-            index=self.get_current_index()
-        tab = self.tabs[index]
-
-        # Remove all old widgets from the layout
-        layout = tab.layout()
-        if layout is None:
-            layout = QVBoxLayout(tab)
-            tab.setLayout(layout)
-        else:
-            while layout.count():
-                child = layout.takeAt(0)
-                if child.widget():
-                    child.widget().setParent(None)
-
-        # Add the new widget
-        layout.addWidget(widget)
-    
-    def close_tab(self, index=None):
-        if index is None:
-            index=self.get_current_index()
-        self.tabs.removeTab(index)
-        if self.closeable==True:
-            self._update_close_buttons()
-
-    def eventFilter(self, obj, event):
-        # ESC in editor
-        if self._editor and obj is self._editor and event.type() == QEvent.KeyPress:
-            if event.key() == Qt.Key_Escape:
-                self._cancel_rename()
-                return True
-
-        # Click anywhere outside editor
-        if self._editor and event.type() == QEvent.MouseButtonPress:
-            if not self._editor.geometry().contains(self._editor.mapFromGlobal(event.globalPos())):
-                self._commit_rename()
-
-        return super().eventFilter(obj, event)
-
-    def _add_close_button(self, index):
-        btn = QPushButton("x")
-        btn.setFixedSize(15, 15)
-        # Make it bold, red, and bigger
-        btn.setStyleSheet("""
-            color: red;
-            font-weight: bold;
-            font-size: 16px;
-            border: none;
-        """)
-        btn.clicked.connect(lambda _, i=index: self.close_tab(i))
-        self.tabs.tabBar().setTabButton(index, QTabBar.RightSide, btn)
-
-    def _remove_close_button(self, index):
-        self.tabs.tabBar().setTabButton(index, QTabBar.RightSide, None)
-
-    def _update_close_buttons(self):
-        for i in range(self.tabs.count()):
-            if i == self.tabs.currentIndex():
-                self._add_close_button(i)
-            else:
-                self._remove_close_button(i)
-
-
-    def _start_rename(self, index):
-        if index < 0:
-            return
-        if self._editor:
-            self._commit_rename()
-
-        rect = self.tabs.tabBar().tabRect(index)
-        editor = QLineEdit(self.tabs.tabText(index), self.tabs.tabBar())
-        editor.setGeometry(rect)
-        editor.setFocus()
-        editor.selectAll()
-        editor.returnPressed.connect(self._commit_rename)
-        editor.installEventFilter(self)
-
-        self._editor = editor
-        self._rename_index = index
-        editor.show()
-
-    def _commit_rename(self):
-        if self._editor and self._rename_index is not None:
-            new_name = self._editor.text()
-            if new_name:
-                self.tabs.setTabText(self._rename_index, new_name)
-            self._editor.deleteLater()
-        self._editor = None
-        self._rename_index = None
-
-    def _cancel_rename(self):
-        if self._editor:
-            self._editor.deleteLater()
-        self._editor = None
-        self._rename_index = None
-
-
-class MainWindow(QWidget):
-    def __init__(self):
-        super().__init__()
-        self.resize(400, 300)
-
-        layout = QVBoxLayout(self)
-        self.line = QLineEdit()
-        self.label = QLabel("Waiting for ticks...")
-        self.tabs=Q_tabs(QLabel,True,True,True,True)
-
-        layout.addWidget(self.tabs)
-        layout.addWidget(self.label)
-        layout.addWidget(self.line)
-        
-
-        def fun(_):
-            if _ is not None:
-                time.sleep(2)
-                print(_)
-                return str(_)
-            time.sleep(2)
-            print(1)
-            return str(time.time())
-
-        def fun2():
-            time.sleep(5)
-            return 52
-
-        Q_thread_single(self, fun2, self.update_label)
-
-        self.thread1 = Q_thread_loop(fun, self.update_label)
-
-        # GUI → Thread
-        self.line.returnPressed.connect(
-            lambda: self.thread1.send(self.line.text()))
-
-    def update_label(self, text):
-        self.label.setText(str(text))
-
-    def closeEvent(self, event):
-        
-        self.thread1.quit()
-        event.accept()
-        
-app = QApplication(sys.argv)
-window = MainWindow()
-window.show()
-sys.exit(app.exec_())
-
-
-
-
-
-
-################################################
-
-
-title = "test"
-icon_path = r"icons\icon.ico"
-default_com_port = "com9"
-window_pixels_h, window_pixels_v = 1000, 700
-
-
-def get_available_com_ports_tuple() -> list[str]:
-    return [(elem.device, elem.description) for elem in serial.tools.list_ports.comports()]  # nopep8 #type:ignore
-
-
-def get_frame():
-    frame = np.zeros((480, 640, 3), dtype=np.uint8)
-    cv2.putText(frame, "Aspect Ratio Preserved", (50, 240),
-                cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-    return frame
-
-
-def Q_horizontal_line(height_pxl=2):
-    line = QFrame()
-    line.setFrameShape(QFrame.HLine)
-    line.setFrameShadow(QFrame.Sunken)
-    line.setFixedHeight(height_pxl)
-    return line
-
-
-def Q_vertical_line(width_pxl=2):
-    line = QFrame()
-    line.setFrameShape(QFrame.WLine)
-    line.setFrameShadow(QFrame.Sunken)
-    line.setFixedWidth(width_pxl)
-    return line
-
-
-def Q_handle_label_positioning(self, label="", label_pos="left", moveable=False, align=None):
-    layout = QVBoxLayout()
-    layout.setContentsMargins(0, 0, 0, 0)
-    if label in ["", None]:
-        layout.addWidget(self.widget)
-    else:
-        self.label = QLabel(label)
-        if label_pos == "top":
-            layout.addLayout(self.label)
-        if label_pos in ["left", "right"]:
-            if moveable == True:
-                widget_line = QSplitter(Qt.Horizontal)
-            else:
-                widget_line = QHBoxLayout()
-                if align is None:
-                    self.widget.setSizePolicy(
-                        QSizePolicy.Expanding, QSizePolicy.Expanding)
-                if align == "right":
-                    widget_line.addStretch()
-            if label_pos == "left":
-                widget_line.addWidget(self.label)
-                widget_line.addWidget(self.widget)
-            else:
-                widget_line.addWidget(self.widget)
-                widget_line.addWidget(self.label)
-            if moveable == True:
-                layout.addWidget(widget_line)
-            else:
-                if align == "left":
-                    widget_line.addStretch()
-                layout.addLayout(widget_line)
-        else:
-            layout.addWidget(self.widget)
-        if label_pos == "bottom":
-            layout.addLayout(self.label)
-    self.setLayout(layout)
 
 
 class Q_colored_pbar(QWidget):
