@@ -2,7 +2,7 @@
 @REM --- Code Description & Comments ---
 @REM ###################################
 
-@REM "@REM" indicates the start of a comment (use "&@REM" for comments at the end of a code line, unless the line starts a nested sequence like a line with IF/ELSE/FOR/..., e.g., "IF A==B ( @REM comment")
+@REM Note: "@REM" indicates the start of a comment (use "&@REM" for comments at the end of a code line, unless the line starts a nested sequence like a line with IF/ELSE/FOR/..., e.g., "IF A==B ( @REM comment")
 
 @REM #########################
 @REM --- Setup & Variables ---
@@ -13,6 +13,10 @@
 
 @REM make this code local so no variables of a potential calling program are changed:
 SETLOCAL
+
+@REM import settings from settings_path:
+SET "settings_path=..\non-user_settings.ini"
+FOR /F "tokens=1,2 delims==" %%A IN ('findstr "^" "%settings_path%"') DO ( SET "%%A=%%B" )
 
 @REM move to folder of this file (needed for relative path shortcuts)
 @REM current_file_path varaible needed as workaround for nieche windows bug where this file gets called with quotation marks:
@@ -30,11 +34,6 @@ SET "shortcut_destination_path=..\.."
 SET "log_path=..\..\log.txt"
 @REM: For safety, the file ending (.pid) must not be included in process_id_file_path (see kill_process_with_id.bat):
 SET "process_id_file_path=..\..\id_of_currently_running_hidden_program"
-
-@REM import settings from settings_path (e.g., for importing parameter "example" add the line within the last round brackets below "IF %%a==example ( SET example=%%b)"):
-FOR /F "tokens=1,2 delims==" %%a IN ('findstr "^" "%non_user_settings_path%"') DO (
-	IF %%a==program_name ( SET program_name=%%b)
-)
 
 SET "start_name=%program_name%"
 SET "start_no_terminal_name=%program_name% (with log & no terminal)"
