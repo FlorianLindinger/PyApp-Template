@@ -29,7 +29,8 @@ def get_frame():
                 cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
     return frame
 
-
+Q_splitter_vertical=lambda : QSplitter(Qt.Vertical)
+Q_splitter_horizontal=lambda : QSplitter(Qt.Horizontal)
 
 def Q_popup(self=None,text="",appearance="info",buttons=None,title=None,wait_for_anwser=None,on_click_function=None):
     
@@ -94,8 +95,6 @@ def Q_popup(self=None,text="",appearance="info",buttons=None,title=None,wait_for
             msg.buttonClicked.connect(on_click_function)
         msg.show()
         return msg
-
-
 
 class Q_tabs(QWidget):
     def __init__(self,tab_widget_class=None,moveable=True,closeable=True,allow_new_tab=True,renamable=True,allow_remove_last_tab=True):
@@ -305,8 +304,6 @@ class Q_tabs(QWidget):
         self._editor = None
         self._rename_index = None
 
-
-
 def Q_horizontal_line(height_pxl=2):
     line = QFrame()
     line.setFrameShape(QFrame.HLine)
@@ -329,9 +326,11 @@ def Q_handle_label_positioning(self, label="", label_pos="left", moveable=False,
     if label in ["", None]:
         layout.addWidget(self.widget)
     else:
-        self.label = QLabel(label)
+        if isinstance(label,str):
+            self.label = QLabel(label)
+            label=self.label
         if label_pos == "top":
-            layout.addLayout(self.label)
+            layout.addWidget(label)
         if label_pos in ["left", "right"]:
             if moveable == True:
                 widget_line = QSplitter(Qt.Horizontal)
@@ -343,11 +342,11 @@ def Q_handle_label_positioning(self, label="", label_pos="left", moveable=False,
                 if align == "right":
                     widget_line.addStretch()
             if label_pos == "left":
-                widget_line.addWidget(self.label)
+                widget_line.addWidget(label)
                 widget_line.addWidget(self.widget)
             else:
                 widget_line.addWidget(self.widget)
-                widget_line.addWidget(self.label)
+                widget_line.addWidget(label)
             if moveable == True:
                 layout.addWidget(widget_line)
             else:
@@ -357,7 +356,7 @@ def Q_handle_label_positioning(self, label="", label_pos="left", moveable=False,
         else:
             layout.addWidget(self.widget)
         if label_pos == "bottom":
-            layout.addLayout(self.label)
+            layout.addWidget(label)
     self.setLayout(layout)
 
 class Q_thread_single(QObject):
@@ -567,7 +566,7 @@ class Q_com_port_dropdown(QWidget):
 
 
 class Q_slider(QWidget):
-    def __init__(self, min_val=0, max_val=100, start_val=None, on_change_function=None, set_to_edge_for_out_of_range_setbox=True, setbox_pos="top right", label="", label_pos="top left"):
+    def __init__(self, min_val=0, max_val=100, start_val=None, on_change_function=None, set_to_edge_for_out_of_range_setbox=True,allow_scroll=False, setbox_pos="top right", label="", label_pos="top left"):
         super().__init__()
 
         self.on_change_function = on_change_function
@@ -643,6 +642,12 @@ class Q_slider(QWidget):
         if bottom_line.count() > 0:
             layout.addLayout(bottom_line)
         self.setLayout(layout)
+        
+        if allow_scroll==False:
+            def wheelEvent(event):
+                event.ignore()
+            self.slider.wheelEvent=wheelEvent
+        
 
     def _on_slider_changed(self, value):
         self.setbox.setText(str(value))
@@ -846,10 +851,6 @@ class Q_input_line(QWidget):
         self.set(value)
         self.trigger()
 
-
-# make maker class which has like trigger and set_and_trigger
-# and set and get
-
 class Q_check_box(QWidget):
     def __init__(self, on_switch_function, label="", label_pos="right", align="left"):
         super().__init__()
@@ -888,6 +889,61 @@ class Q_output_line(QWidget):
         Q_handle_label_positioning(self, label, label_pos)
 
 
+class Q_file_path(QWidget):
+    
+    def __init__(self,label="Select File",box_pos="bottom",read_only_textbox=False,placeholder_text=""):
+        super().__init__()
+        
+        self.label=label
+
+        self.widget = QPushButton(label)
+        self.widget.clicked.connect(self._on_open_file_path_menu)
+        
+        self.path_box = QLineEdit()
+        self.path_box.setPlaceholderText(placeholder_text)
+        if read_only_textbox:
+            self.path_box.setReadOnly(True)
+        
+        Q_handle_label_positioning(self, label=self.path_box, label_pos=box_pos)
+        
+    def _on_open_file_path_menu(self):
+        path, _ = QFileDialog.getOpenFileName(self, self.label)
+        self.path_box.setText(path)
+        
+    def set(self,value):
+        self.path_box.setText(value)
+        
+    def get(self,value):
+        self.path_box.text()
+        
+        
+class Q_folder_path(QWidget):
+    
+    def __init__(self,label="Select Folder",box_pos="bottom",read_only_textbox=False,placeholder_text=""):
+        super().__init__()
+        
+        self.label=label
+
+        self.widget = QPushButton(label)
+        self.widget.clicked.connect(self._on_open_path_menu)
+        
+        self.path_box = QLineEdit()
+        self.path_box.setPlaceholderText(placeholder_text)
+        if read_only_textbox:
+            self.path_box.setReadOnly(True)
+        
+        Q_handle_label_positioning(self, label=self.path_box, label_pos=box_pos)
+        
+    def _on_open_path_menu(self):
+        path= QFileDialog.getExistingDirectory(self, self.label)
+        self.path_box.setText(path)
+        
+    def set(self,value):
+        self.path_box.setText(value)
+        
+    def get(self,value):
+        self.path_box.text()
+
 import sys
 from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QHBoxLayout, QVBoxLayout, QLabel
 from PyQt5.QtCore import Qt, QPropertyAnimation,pyqtProperty
@@ -908,17 +964,88 @@ class helper_Q_sidebar_animator(QObject):
         total = sum(self.splitter.sizes())
         self.splitter.setSizes([w, total - w])
         
+class Q_sidebar(QScrollArea):
+    
+    def __init__(self,parent_self):
+        super().__init__()
         
+        self.parent_self=parent_self
+        
+        self.expanded = True
+
+        self._widget = QWidget()
+        
+        self._layout=QVBoxLayout()
+        self._layout.setSpacing(4)  # or some spacing you prefer
+        self._layout.setContentsMargins(4, 4, 4, 4)
+        
+        self._widget.setLayout(self._layout)
+
+        self.setWidget(self._widget)
+        self.setWidgetResizable(True)
+        
+        # Toggle button
+        self.toggle_button = QPushButton("☰") 
+        self.toggle_button.setFixedSize(30, 30)
+        self.toggle_button.clicked.connect(self.toggle_sidebar)
+        
+        try:
+            self.previous_sidebar_width =  self.parent_self.base_horizontal.sizes()[0]
+        except:
+            self.previous_sidebar_width=200
+        
+    def toggle_sidebar(self):
+        sidebar_width = self.parent_self.base_horizontal.sizes()[0]
+
+        if self.expanded:
+            # Collapsing sidebar: save width
+            self.previous_sidebar_width = sidebar_width
+            start = sidebar_width
+            end = 0
+        else:
+            # Expanding sidebar: restore previous width
+            start = 0
+            end = self.previous_sidebar_width
+
+        self.expanded = not self.expanded
+
+        # Animate only the sidebar width
+        self._animator = helper_Q_sidebar_animator(self.parent_self.base_horizontal)
+        self._animation = QPropertyAnimation(self._animator, b"width")
+        self._animation.setDuration(100)
+        self._animation.setStartValue(start)
+        self._animation.setEndValue(end)
+        self._animation.start()  
+
+    def add_line(self,height=2):
+        self._layout.addWidget(Q_horizontal_line(height))
+
+    def add(self,*widgets_or_layouts,line_after=True):
+        for elem in widgets_or_layouts:
+            if isinstance(elem,QWidget):
+                self._layout.addWidget(elem)
+            elif isinstance(elem,(QHBoxLayout,QVBoxLayout)):
+                self._layout.addLayout(elem)
+
+        if line_after==True:
+            self.add_line()
+            
+
         
 class MainWindow(QWidget):
-    def __init__(self,title="",icon_path=None,width=1920/2,height=1080/2,ask_confirm_closing=True):
+    def __init__(self,title="",icon_path=None,width=1920/2,height=1080/2,ask_confirm_closing=False,hide_title_bar=False):
         super().__init__()
+        
+
         
         self.ask_confirm_closing=ask_confirm_closing
 
         self.set_title(title)
         self.set_icon(icon_path)
         self.set_size(width,height)
+        
+        if hide_title_bar:
+            self.setWindowFlags(Qt.FramelessWindowHint | Qt.Window)
 
         ############################################
 
@@ -947,16 +1074,14 @@ class MainWindow(QWidget):
 
         self.command_line = Q_command_line(
             on_enter_function=lambda x: None, output=self.terminal_output, placeholder_text="placeholder")
+        
+        self.folder_selector=Q_folder_path()
+        self.file_selector=Q_file_path()
 
-        self.file_path_button = QPushButton("Select File")
-        self.file_path_button.clicked.connect(self._on_open_file_path_menu)
-        self.file_path_box = QLineEdit()
-        self.file_path_box.setReadOnly(True)
+        #################################
 
-        self.folder_path_button = QPushButton("Select Folder")
-        self.folder_path_button.clicked.connect(self._on_open_folder_path_menu)
-        self.folder_path_box = QLineEdit()
-        self.folder_path_box.setReadOnly(True)
+
+
 
         self.radio_label = QLabel("Whatever:")
         self.radio1 = QRadioButton("Choice 1")
@@ -977,70 +1102,31 @@ class MainWindow(QWidget):
         self.progress_bar.setTextVisible(True)
         # self.progress_bar.setMaximum(0)  # no max means it's in 'busy' mode
 
-        ############################################
-
-        # Create the control sidebar widget with its layout
-        # sidebar vertically stacked content
-
-        sidebar = QVBoxLayout()
-        sidebar.setSpacing(4)  # or some spacing you prefer
-        sidebar.setContentsMargins(4, 4, 4, 4)
-
-        sidebar.addWidget(self.button)
-        sidebar.addWidget(Q_horizontal_line())
-        sidebar.addWidget(self.dropdown1)
-        sidebar.addWidget(Q_horizontal_line())
-        sidebar.addWidget(self.dropdown2)
-        sidebar.addWidget(self.dropdown3)
-        sidebar.addWidget(Q_horizontal_line())
-        sidebar.addWidget(self.switch)
-        sidebar.addWidget(Q_horizontal_line())
-        sidebar.addWidget(self.folder_path_button)
-        sidebar.addWidget(self.folder_path_box)
-        sidebar.addWidget(Q_horizontal_line())
-        sidebar.addWidget(self.file_path_button)
-        sidebar.addWidget(self.file_path_box)
-        sidebar.addWidget(Q_horizontal_line())
-        sidebar.addWidget(self.text_input)
-        sidebar.addWidget(Q_horizontal_line())
-        sidebar.addWidget(self.slider)
-        sidebar.addWidget(Q_horizontal_line())
-        sidebar.addWidget(self.radio_label)
-        sidebar.addWidget(self.radio1)
-        sidebar.addWidget(self.radio2)
-        sidebar.addWidget(Q_horizontal_line())
-        sidebar.addWidget(self.progress_bar)
-        sidebar.addWidget(Q_horizontal_line())
-        sidebar.addWidget(self.colored_bar)
-        sidebar.addWidget(Q_horizontal_line())
-        sidebar.addWidget(self.command_line)
-        sidebar.addWidget(self.terminal_output)
-
-        # Make sidebar vertically scrollable
-        self.sidebar_widget = QWidget()
-        self.sidebar_widget.setLayout(sidebar)
-        self.sidebar_expanded = True
-
-
-
+        ###################################
         
-        self.sidebar_scroll_area = QScrollArea()
-        # make it resize itself horizontally
-        self.sidebar_scroll_area.setWidgetResizable(True)
-        self.sidebar_scroll_area.setWidget(self.sidebar_widget)
+        self.sidebar=Q_sidebar(self)
         
-        # Toggle button
-        self.toggle_sidebar_button = QPushButton("☰")  # hamburger icon
-        self.toggle_sidebar_button.setFixedSize(30, 30)
-        self.toggle_sidebar_button.clicked.connect(self.toggle_sidebar)
-        
+        self.sidebar.add(self.button,True)
+        self.sidebar.add(self.dropdown1)
+        self.sidebar.add(self.dropdown2,self.dropdown3)
+        self.sidebar.add(self.switch)
+        self.sidebar.add(self.file_selector)
+        self.sidebar.add(self.folder_selector)
+        self.sidebar.add(self.text_input)
+        self.sidebar.add(self.slider)
+        self.sidebar.add(self.radio_label,self.radio1,self.radio2)
+        self.sidebar.add(self.progress_bar)
+        self.sidebar.add(self.colored_bar)
+        self.sidebar.add(self.command_line,self.terminal_output)    
     
         ############################################
 
         # Image viewer setup
+        self.current_frame = None
         self.image = QLabel()
         self.image.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
         self.image.setAlignment(Qt.AlignCenter)
+        self.image.resizeEvent = self._on_window_resize
 
         # image_title that does not expand
         self.image_title = QLabel("My Image Title")
@@ -1049,40 +1135,38 @@ class MainWindow(QWidget):
         self.image_title.setSizePolicy(
             self.image_title.sizePolicy().horizontalPolicy(), QSizePolicy.Fixed)
 
-        self.image_title_line = QHBoxLayout()
-        self.image_title_line.addWidget(self.toggle_sidebar_button)
-        self.image_title_line.addWidget(self.image_title)
+        self.image_title_horizontal = QHBoxLayout()
+        self.image_title_horizontal.addWidget(self.sidebar.toggle_button)
+        self.image_title_horizontal.addWidget(self.image_title)
 
         # image box
         image_box = QWidget()
         image_box_layout = QVBoxLayout(image_box)
-        image_box_layout.addLayout(self.image_title_line)
+        image_box_layout.addLayout(self.image_title_horizontal)
         image_box_layout.addWidget(self.image)
 
         ############################################
 
         # Vertical splitter
-        right_vertical = QSplitter(Qt.Vertical)
-        right_vertical.addWidget(image_box)
-        right_vertical.setStretchFactor(0, 5)  # Give image more space
-        right_vertical.setStretchFactor(1, 1)  # Terminal less space
+        main_vertical = Q_splitter_vertical()
+        main_vertical.addWidget(image_box)
+        main_vertical.setStretchFactor(0, 5)  # Give image more space
+        # main_vertical.setStretchFactor(1, 1)  # Terminal less space
 
         ############################################
 
         # Horizontal splitter for sidebar and right area
-        self.main_horizontal = QSplitter(Qt.Horizontal)
-        self.main_horizontal.addWidget(self.sidebar_scroll_area)
-        self.main_horizontal.addWidget(right_vertical)
-        self.main_horizontal.setStretchFactor(0, 1)  # Sidebar smaller by default
-        self.main_horizontal.setStretchFactor(1, 4)  # Right side bigger
-        self.previous_sidebar_width =  self.main_horizontal.sizes()[0]
-
+        self.base_horizontal = Q_splitter_horizontal()
+        self.base_horizontal.addWidget(self.sidebar)
+        self.base_horizontal.addWidget(main_vertical)
+        self.base_horizontal.setStretchFactor(0, 1)  # Sidebar smaller by default
+        self.base_horizontal.setStretchFactor(1, 4)  # Right side bigger
 
         ############################################
 
         # Main layout
         main_layout = QHBoxLayout()
-        main_layout.addWidget(self.main_horizontal)
+        main_layout.addWidget(self.base_horizontal)
         self.setLayout(main_layout)
 
         # Timer to update OpenCV image
@@ -1093,11 +1177,8 @@ class MainWindow(QWidget):
         ############################################
         # code specific initialization:
         ############################################
-        self.current_frame = None
-        self.image.resizeEvent = self._on_window_resize
+        
 
-        self.folder_path = None
-        self.file_path = None
 
     ########################################
     # Methods:
@@ -1106,30 +1187,6 @@ class MainWindow(QWidget):
     def log(self,*text,sep=" ",end="\n"):
         self.terminal_output.log(*text,sep=sep,end=end)
         
-    def toggle_sidebar(self):
-        sizes = self.main_horizontal.sizes()
-        sidebar_width = sizes[0]
-
-        if self.sidebar_expanded:
-            # Collapsing sidebar: save width
-            self.previous_sidebar_width = sidebar_width
-            start = sidebar_width
-            end = 0
-        else:
-            # Expanding sidebar: restore previous width
-            start = 0
-            end = self.previous_sidebar_width
-
-        self.sidebar_expanded = not self.sidebar_expanded
-
-        # Animate only the sidebar width
-        self.animator = helper_Q_sidebar_animator(self.main_horizontal)
-        self.animation = QPropertyAnimation(self.animator, b"width")
-        self.animation.setDuration(100)
-        self.animation.setStartValue(start)
-        self.animation.setEndValue(end)
-        self.animation.start()
-
     def set_image_title(self, text):
         self.image_title.setText(text)
 
@@ -1167,13 +1224,6 @@ class MainWindow(QWidget):
         self.colored_bar.set_value(value)
         self.terminal_output.log(value,color="red",bold=True,sep="\n")
 
-    def _on_open_file_path_menu(self):
-        path, _ = QFileDialog.getOpenFileName(self, "Select File")
-        self.file_path_box.setText(path)
-
-    def _on_open_folder_path_menu(self):
-        path = QFileDialog.getExistingDirectory(self, "Select Folder")
-        self.folder_path_box.setText(path)
 
     #######################################
     #helpers
@@ -1230,6 +1280,6 @@ default_com_port = "com9"
 window_pixels_h, window_pixels_v = 1000, 700
 
 app = QApplication(sys.argv)
-window = MainWindow(title,icon_path,window_pixels_h,window_pixels_v)
+window = MainWindow(title,icon_path,window_pixels_h,window_pixels_v,hide_title_bar=True)
 window.show()
 sys.exit(app.exec_())
