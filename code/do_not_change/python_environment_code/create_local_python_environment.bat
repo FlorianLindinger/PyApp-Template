@@ -81,10 +81,10 @@ CALL "%python_environment_path%\Scripts\activate.bat"
 @REM install packages from file (either default one or one given via argument when calling this batch file or generate empty packages-list-file)
 IF NOT "%~1"=="nopause" (
 	IF NOT "%~1"=="" (
-		IF EXIST %~1 (
-			pip install -r %~1
+		IF EXIST "%~1" (
+			pip install -r "%~1"
 		) ELSE (
-			ECHO: Error: %~1 does not exist. Press any key to exit
+			ECHO: Error: "%~1" does not exist. Press any key to exit
 			PAUSE >NUL 
 			EXIT
 		)

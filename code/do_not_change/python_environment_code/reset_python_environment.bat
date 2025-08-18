@@ -47,7 +47,9 @@ IF EXIST "%python_environment_path%\Scripts\activate.bat" (
 )
 
 @REM create new environment:
-CALL create_local_python_environment.bat %~1 %~2
+CALL create_local_python_environment.bat "%~1" "%~2"
+
+PAUSE
 
 @REM ####################
 @REM --- Closing-Code ---
