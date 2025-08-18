@@ -14,13 +14,29 @@
 @REM make this code local so no variables of a potential calling program are changed:
 SETLOCAL
 
-@REM import settings from settings_path:
-SET "settings_path=..\non-user_settings.ini"
-FOR /F "tokens=1,2 delims==" %%A IN ('findstr "^" "%settings_path%"') DO ( SET "%%A=%%B" )
+@REM define local variables (do not have spaces before or after the "=" or at the end of the variable value (unless wanted in value) -> inline comments without space before "&@REM".
+@REM Use "\" to separate folder levels and omit "\" at the end of paths. Relative paths allowed):
+SET "settings_path=%~1"
 
 @REM move to folder of this file (needed for relative path shortcuts)
 @REM current_file_path varaible needed as workaround for nieche windows bug where this file gets called with quotation marks:
 SET "current_file_path=%~dp0"
+CD /D "%current_file_path%"
+
+@REM import settings from settings_path:
+FOR /F "tokens=1,2 delims==" %%A IN ('findstr "^" "%settings_path%"') DO ( SET "%%A=%%B" )
+
+@REM convert the path settings that are relative to settings file to absolute paths:
+FOR %%I IN ("%settings_path%") DO SET "settings_dir=%%~dpI"
+CD /D "%settings_dir%"
+CALL :MAKE_ABSOLUTE_PATH_IF_RELATIVE "%icon_path%" 
+SET "icon_path=%OUTPUT%"
+CALL :MAKE_ABSOLUTE_PATH_IF_RELATIVE "%python_env_activation_code_path%" 
+SET "python_env_activation_code_path=%OUTPUT%"
+CALL :MAKE_ABSOLUTE_PATH_IF_RELATIVE "%python_code_path%" 
+SET "python_code_path=%OUTPUT%"
+CALL :MAKE_ABSOLUTE_PATH_IF_RELATIVE "%after_python_crash_code_path%" 
+SET "after_python_crash_code_path=%OUTPUT%"
 CD /D "%current_file_path%"
 
 @REM ######################
@@ -94,8 +110,8 @@ ECHO:
 @REM --- Closing-Code ---
 @REM ####################
 
-@REM pause if not called by other script with any argument:
-IF "%~1"=="" (
+@REM pause if not called by other script with multiple arguments:
+IF "%~2"=="" (
 	ECHO: Press any key to exit
 	PAUSE >NUL 
 )
@@ -149,4 +165,12 @@ IF %ERRORLEVEL% EQU 1 ( @REM could be infinitely recursive
 	CALL :handle_python_crash
 )
 EXIT /B 0 &@REM exit function with errorcode 0
+
+@REM -------------------------------------------------
+@REM function that makes relative path (relative to current working directory) to absolute if not already:
+@REM -------------------------------------------------
+:make_absolute_path_if_relative
+	SET "OUTPUT=%~f1"
+	GOTO :EOF
+
 @REM -------------------------------------------------
