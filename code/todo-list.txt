@@ -139,6 +139,8 @@ where it looks for pyron scipts for auto install
 optional
 ############################################################
 
+do GOTO :EOF instead of EXIT /B for functions
+
 add colors to all prints of the batch files.
 
 make code for thread safe data transfer between threads
