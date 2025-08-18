@@ -8,6 +8,7 @@ important
 
 
 
+
 it should abort and warn. maybe make independent from global python for start after venv setup`? anyway not reasonable?
 ########################################
 did not find executable at 'C:\Users\Flo\AppData\Local\Programs\Python\Python313\python.exe': Das System kann die angegebene Datei nicht finden.
@@ -19,6 +20,9 @@ did not find executable at 'C:\Users\Flo\AppData\Local\Programs\Python\Python313
 
  Press any key to exit
  ########################################
+
+
+ 
 
 make settings in non-user settings relative to it. ->. make paths absolute in the functions that use imported paths
 
@@ -138,6 +142,8 @@ where it looks for pyron scipts for auto install
 ############################################################
 optional
 ############################################################
+
+add single function to add args together starting from i
 
 do GOTO :EOF instead of EXIT /B for functions
 
