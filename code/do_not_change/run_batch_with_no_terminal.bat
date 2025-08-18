@@ -32,32 +32,31 @@ IF "%~2"=="" (
 @REM --- Code Execution ---
 @REM ######################
 
-@REM put arguments starting from the i-th (from calling this batch file) in the string "args_list" with commas in between and each surrouned by \" on both sides and a comma at the start if there is at least one element:
-SETLOCAL enabledelayedexpansion
-SET args_list=
+@REM append all arguments to %args% encoded i.e., spaces as __SPC__:
+CALL :AppendEncoded args "%batch_file_path%"
+CALL :AppendEncoded args "%process_id_file_path%"
+
+@REM append any remaining args starting from with i-th:
 SET "i=3"
-:loop_args
-  CALL SET "arg=%%~%i%%"
-  IF "%arg%"=="" ( GOTO args_done)
-  IF NOT "%i%"=="2" ( SET "args_list=!args_list!,")
-  SET "arg=!arg:"=""!"
-  SET "args_list=!args_list! '!arg!'"
-  SET /a i+=1
-GOTO loop_args
-:args_done
+:shift_more
+IF %i% LEQ 1 GOTO done_shifting
+SHIFT
+SET /a i-=1
+GOTO shift_more
+:done_shifting
+:append_more
+  IF "%~1"=="" GOTO end_append
+  CALL :AppendEncoded args "%~1"
+  SHIFT
+  GOTO append_more
+:end_append
 
 @REM call batch_file_path with arguments in hidden terminal and write the process ID of the hidden program to process_id_file_path. This file gets deleted when the code ends or if it is killed with kill_process_with_id.bat:
-POWERSHELL -Command "$p = Start-Process 'helpers\run_batch_and_delete_a_file_afterwards' -ArgumentList '%batch_file_path%','%process_id_file_path%' %args_list% -WindowStyle Hidden -PassThru; [System.IO.File]::WriteAllText('%process_id_file_path%',$p.Id)"
+POWERSHELL -Command "$p = Start-Process 'helpers\run_batch_and_delete_a_file_afterwards' -ArgumentList %args% -WindowStyle Hidden -PassThru; [System.IO.File]::WriteAllText('%process_id_file_path%',$p.Id)"
 
 @REM ####################
 @REM --- Closing-Code ---
 @REM ####################
-
-@REM pause if not called by other script with any argument:
-IF "%~1"=="" (
-	ECHO: Press any key to exit
-	PAUSE >NUL 
-)
 
 @REM exit program without closing a potential calling program
 EXIT /B 
@@ -65,3 +64,25 @@ EXIT /B
 @REM ############################
 @REM --- Function Definitions ---
 @REM ############################
+
+@REM -------------------------------------------------
+@REM Needed for passing arguemtns to powershell call of batch file: Function to add arguments to variable with spaces encoded as __SPC__. Comma added in between arguments.
+@REM -------------------------------------------------
+:AppendEncoded
+  @REM %1 = variable name to append into (no % around name)
+  @REM %2 = raw argument
+  SETLOCAL EnableDelayedExpansion
+  SET "a=%~2"
+  @REM encode spaces with ASCII placeholder
+  SET "a=!a: =__SPC__!"
+  SET "cur=!%~1!"
+  IF DEFINED cur (
+    SET "cur=!cur!, "!a!""
+  ) ELSE (
+    SET "cur="!a!""
+  )
+  ENDLOCAL & SET "%~1=%cur%"
+  EXIT /B
+
+@REM -------------------------------------------------
+

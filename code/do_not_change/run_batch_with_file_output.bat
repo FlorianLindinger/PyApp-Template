@@ -53,21 +53,18 @@ GOTO loop_args
 @REM run batch file and redirect print and error output to log_path
 CALL "%batch_file_path%" %args_list% > "%log_path%" 2>&1
 
-@REM delete log_path if it is empty, i.e. there were no errors/prints in the batch execution:
-FOR /F %%i IN ("%log_path%") DO SET file_length=%%~zi
-IF "%file_length%"=="0" (
-	DEL "%log_path%"
-) 
+@REM @REM delete log_path if it is empty, i.e. there were no errors/prints in the batch execution:
+@REM IF EXIST "%log_path%" (
+@REM     SET "file_length=%~z1"
+@REM     FOR %%F IN ("%log_path%") DO SET "file_length=%%~zF"
+@REM     IF "%file_length%"=="0" (
+@REM         DEL "%log_path%"
+@REM     )
+@REM )
 
 @REM ####################
 @REM --- Closing-Code ---
 @REM ####################
-
-@REM pause if not called by other script with any argument:
-IF "%~1"=="" (
-	ECHO: Press any key to exit
-	PAUSE >NUL 
-)
 
 @REM exit program without closing a potential calling program
 EXIT /B 
