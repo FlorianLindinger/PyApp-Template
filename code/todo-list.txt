@@ -139,6 +139,8 @@ where it looks for pyron scipts for auto install
 optional
 ############################################################
 
+add colors to all prints of the batch files.
+
 make code for thread safe data transfer between threads
 		import threading
 		import queue
