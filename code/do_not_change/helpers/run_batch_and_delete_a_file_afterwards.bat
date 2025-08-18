@@ -16,43 +16,40 @@ SETLOCAL
 
 @REM Do not move to folder of this file such that arguement relative paths are with respect to caller
 
-@REM define local variables (do not have spaces before or after the "=" or at the end of the variable value (unless wanted in value) -> inline comments without space before "&@REM".
-@REM Use "\" to separate folder levels and omit "\" at the end of paths. Relative paths allowed):
-SET "batch_file_path=%~1"
-SET "file_path=%~2"
-
 @REM ######################
 @REM --- Code Execution ---
 @REM ######################
 
-@REM put arguments starting from the i-th (from calling this batch file) in the string "args_list" with space in between and each surrouned by " on both sides:
-SETLOCAL enabledelayedexpansion
-SET args_list=
-SET "i=3"
-:loop_args
-  CALL SET "arg=%%~%i%%"
-  IF "%arg%"=="" ( GOTO args_done)
-  SET "arg=!arg:"=""!"
-  SET args_list=!args_list! "!arg!"
-  SET /a i+=1
-GOTO loop_args
-:args_done
+@REM If present: decode to spaces back from the "__SPC__" placeholder and combine arguements after the first 2 together into args_list
+SET "batch_file_path=%~1"
+SET "batch_file_path=%batch_file_path:__SPC__= %"
+SET "file_path=%~2"
+SET "file_path=%file_path:__SPC__= %"
+@REM shift them out
+SHIFT
+SHIFT
+SETLOCAL EnableDelayedExpansion
+SET "args_list="
+:next_arg
+IF "%~1"=="" GOTO done
+    SET "a=%~1"
+    SET "a=%a:__SPC__= %"
+    SET "args_list=!args_list! "%a%""
+    SHIFT
+GOTO next_arg
+:done
 
 @REM run program with arguments
 CALL "%batch_file_path%" %args_list%
 
 @REM delete file
-DEL "%file_path%"
+IF EXIST "%file_path%" IF NOT EXIST "%file_path%\" (
+    DEL "%file_path%"
+)
 
 @REM ####################
 @REM --- Closing-Code ---
 @REM ####################
-
-@REM pause if not called by other script with any argument:
-IF "%~1"=="" (
-	ECHO: Press any key to exit
-	PAUSE >NUL 
-)
 
 @REM exit program without closing a potential calling program
 EXIT /B 

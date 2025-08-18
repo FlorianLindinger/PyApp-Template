@@ -40,7 +40,7 @@ IF "%~3"=="" (
 @REM put arguments starting from the i-th (from calling this batch file) in the string "args_list" with space in between and each surrouned by " on both sides:
 SETLOCAL enabledelayedexpansion
 SET args_list=
-SET i=4
+SET "i=4"
 :loop_args
   CALL SET "arg=%%~%i%%"
   IF "%arg%"=="" ( GOTO args_done)
@@ -52,19 +52,15 @@ GOTO loop_args
 
 @REM call batch file without terminal and send outputs (including errors) to log_path and create a process id file as long as code is running:
 CALL run_batch_with_no_terminal.bat ^
-	run_batch_with_file_output.bat "%process_id_file_path%" ^
-	 	"%batch_file_path%" "%log_path%" ^
-		 	%args_list%
+	run_batch_with_file_output.bat ^
+	"%process_id_file_path%"  ^
+	"%batch_file_path%" ^
+	"%log_path%" ^
+	%args_list%
 
 @REM ####################
 @REM --- Closing-Code ---
 @REM ####################
-
-@REM pause if not called by other script with any argument:
-IF "%~1"=="" (
-	ECHO: Press any key to exit
-	PAUSE >NUL 
-)
 
 @REM exit program without closing a potential calling program
 EXIT /B 
