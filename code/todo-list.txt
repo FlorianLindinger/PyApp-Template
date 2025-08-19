@@ -6,7 +6,16 @@ TODO LIST FOR TEMPLATE-RUN_PYTHON_IN_ENV
 important
 ############################################################
 
-
+#add stops for no settings file defined or existing & add stop for pyhton not existing
+FINDSTR:  kann nicht ge÷ffnet werden.
+Die Syntax für den Dateinamen, Verzeichnisnamen oder die Datenträgerbezeichnung ist falsch.
+Der DNS-Server ist nicht autorisierend für die Zone.
+Die Syntax für den Dateinamen, Verzeichnisnamen oder die Datenträgerbezeichnung ist falsch.
+D:\Programs\Python311\python.exe: can't find '__main__' module in 'D:\\Git Repositories\\template-run_python_in_env\\code\\do_not_change'
+ #################################
+ Python code finished successfully
+ #################################
+ Press any key to exit
 
 
 it should abort and warn. maybe make independent from global python for start after venv setup`? anyway not reasonable?
@@ -22,15 +31,9 @@ did not find executable at 'C:\Users\Flo\AppData\Local\Programs\Python\Python313
  ########################################
 
 
- 
-
-make settings in non-user settings relative to it. ->. make paths absolute in the functions that use imported paths
-
 cant have 2x different programs on taskleiste
 
-have paths relative to non-user settings path?
 
-add code example hwo to merge settings and x symbol over icon via magicked
 
 have settings ontop of batch files
 
@@ -44,7 +47,6 @@ there is 2 todo lists????
 
 some make license not trasfer? but still update if someone makes it->maybe remove license?
 
-add pause to failing generate shortcuts
 
 do not transfer license via git?
 
@@ -142,6 +144,8 @@ where it looks for pyron scipts for auto install
 ############################################################
 optional
 ############################################################
+
+add code example hwo to merge settings and x symbol over icon via magicked
 
 add single function to add args together starting from i
 

@@ -52,6 +52,13 @@ SETLOCAL ENABLEDELAYEDEXPANSION
 @REM --- Code Execution ---
 @REM ######################
 
+@REM one need multiple copies of windows cmd.exe in order to have multiple cmd shortcuts in the taskbar. We use cmd shortcuts which enables shortcuts to batch files at taskbar in the first place and enables icons:
+MKDIR CMD_exes
+COPY /Y "%SystemRoot%\System32\cmd.exe" "%current_file_path%\CMD_exes\cmd_1_%program_name%.exe"
+COPY /Y "%SystemRoot%\System32\cmd.exe" "%current_file_path%\CMD_exes\cmd_2_%program_name%.exe"
+COPY /Y "%SystemRoot%\System32\cmd.exe" "%current_file_path%\CMD_exes\cmd_3_%program_name%.exe"
+COPY /Y "%SystemRoot%\System32\cmd.exe" "%current_file_path%\CMD_exes\cmd_4_%program_name%.exe"
+
 @REM shortcut_by_OptimumX.exe (original Shortcut.exe from OptimiumX: https://www.optimumx.com/downloads.html#Shortcut)
 @REM is an exe that allows to modify/create a shortcut without admin rights.
 @REM Get help with "shortcut_by_OptimumX.exe /?".
@@ -61,23 +68,16 @@ SETLOCAL ENABLEDELAYEDEXPANSION
 @REM manually generated default shortcuts also can't be added to the taskbar. The icon is also added at this opportunity:
 
 @REM create shortcut for starting the program
-CALL shortcut_by_OptimumX.exe /F:"%start_name%.lnk" /A:C /T:"cmd.exe" /P:"/C start_program.bat ""%settings_path%""" /I:"%icon_path%" /W:"%current_file_path%
+CALL shortcut_by_OptimumX.exe /F:"%shortcut_destination_path%\%start_name%.lnk" /A:C /T:"%current_file_path%\CMD_exes\cmd_1_%program_name%.exe" /P:"/C start_program.bat ""%settings_path%""" /I:"%icon_path%" /W:"%current_file_path%
 
 @REM create a shortcut for the settings.yaml file
-CALL shortcut_by_OptimumX.exe /F:"%settings_name%.lnk" /A:C /T:"cmd.exe" /P:"/C START """" ""%user_settings_path%""" /I:"%settings_icon_path%"
+CALL shortcut_by_OptimumX.exe /F:"%shortcut_destination_path%\%settings_name%.lnk" /A:C /T:"%current_file_path%\CMD_exes\cmd_2_%program_name%.exe" /P:"/C START """" ""%user_settings_path%""" /I:"%settings_icon_path%"
 
 @REM creare shortcut for launcher without terminal and with output to log file
-CALL shortcut_by_OptimumX.exe /F:"%start_no_terminal_name%.lnk" /A:C /T:"cmd.exe" /P:"/C run_batch_with_file_output_and_no_terminal.bat start_program.bat ""%log_path%"" ""%process_id_file_path%.pid"" ""%settings_path%"" nopause" /I:"%icon_path%" /W:"%current_file_path%
+CALL shortcut_by_OptimumX.exe /F:"%shortcut_destination_path%\%start_no_terminal_name%.lnk" /A:C /T:"%current_file_path%\CMD_exes\cmd_3_%program_name%.exe" /P:"/C run_batch_with_file_output_and_no_terminal.bat start_program.bat ""%log_path%"" ""%process_id_file_path%.pid"" ""%settings_path%"" nopause" /I:"%icon_path%" /W:"%current_file_path%
 
 @REM create shortcut for killing the running program
-CALL shortcut_by_OptimumX.exe /F:"%stop_no_terminal_name%.lnk" /A:C /T:"cmd.exe" /P:"/C kill_process_with_id.bat ""%process_id_file_path%"" " /I:"%stop_icon_path%" /W:"%current_file_path%
-
-@REM move shortcut results back to destination 
-ECHO:
-MOVE "%start_name%.lnk" "%shortcut_destination_path%"
-MOVE "%settings_name%.lnk" "%shortcut_destination_path%"
-MOVE "%start_no_terminal_name%.lnk" "%shortcut_destination_path%"
-MOVE "%stop_no_terminal_name%.lnk" "%shortcut_destination_path%"
+CALL shortcut_by_OptimumX.exe /F:"%shortcut_destination_path%\%stop_no_terminal_name%.lnk" /A:C /T:"%current_file_path%\CMD_exes\cmd_4_%program_name%.exe" /P:"/C kill_process_with_id.bat ""%process_id_file_path%"" " /I:"%stop_icon_path%" /W:"%current_file_path%
 
 @REM print info:
 ECHO:
