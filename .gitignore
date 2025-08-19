@@ -13,6 +13,8 @@ tmp.txt
 log.txt
 # temporary id file for no-terminal start:
 *.pid
+# dont sync folder of local cmd copies
+*CMD_exes
 ###########################
 
 
