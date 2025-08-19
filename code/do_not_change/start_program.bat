@@ -165,6 +165,7 @@ IF %ERRORLEVEL% EQU 1 ( @REM could be infinitely recursive
 	CALL :handle_python_crash
 )
 EXIT /B 0 &@REM exit function with errorcode 0
+@REM -------------------------------------------------
 
 @REM -------------------------------------------------
 @REM function that makes relative path (relative to current working directory) to absolute if not already:
@@ -172,5 +173,4 @@ EXIT /B 0 &@REM exit function with errorcode 0
 :make_absolute_path_if_relative
 	SET "OUTPUT=%~f1"
 	GOTO :EOF
-
 @REM -------------------------------------------------
