@@ -254,11 +254,10 @@ why different colors for running?
 
 mabye make ######## more fancy. maybe even color
 
-add github short descripton on right of page
 
 make option to not delete empty log files
 
-make environment batches more into utilities with calls with arguments? need utilizies folder?
+make environment batches more into utilities with calls with arguments? need utilizies folder?maybe whole thing as package but with some args 
 
 generate shrotcut to log output? -> rename functions. Maybe needed becasue taskbar adding?
 
@@ -271,15 +270,12 @@ color in prints or even change normal prints somehow. Must also work with file v
 I guess just a number for max calling of crash handlers with 0 being accepted: adjust message printing
 option for not repeat calls of crash scripts? could just retun I guess if receiving arg "crashed". no that does not work since then it gets called 0 times
 
-make kill process also for not hidden?
-
+a lot of small helpers to helper 
 confirmation question via windows popup?
+-> helper 
 
 rename everythong from batch to more generic because it is calling generic 
 
-generate link to settings.py instead if no yaml file and if .py file exists. explain this
-
-check if printing to terminal also possible incremental
 
 add better text:
 	ECHO: ##########################
@@ -292,7 +288,7 @@ add some kind of detection that code crashes immediately and that it does not sp
 auto fork option? hm maybe just actually copy via a batch file (new folder and copy (dont overwrite at all), and delete .git, shortcuts ..., dont copy basically stuff in gitignore)
 But fork allows for contributing changes back to original template. Git remplate does not but allows for own forking
 
-make pyqt5 interface available and easy to use with example. (threading?)
+make pyqt5 interface available and easy to use with example. 
 
 check if i can add stoppping of closing terminal
 
