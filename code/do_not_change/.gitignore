@@ -1,0 +1,7 @@
+###########################
+### general gitignores: ###
+###########################
+# dont sync folder of local cmd copies
+*CMD_exes
+###########################
+

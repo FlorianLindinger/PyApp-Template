@@ -6,6 +6,14 @@ TODO LIST FOR TEMPLATE-RUN_PYTHON_IN_ENV
 important
 ############################################################
 
+reset_python_environment_to_default_packages
+multiple pauses needed for non existing env folder?
+
+#add check of python verison of current python folder and replace it with venv if not matching. ship python by default 
+
+#check screenshots on phone for ideas
+
+
 #add stops for no settings file defined or existing & add stop for pyhton not existing
 FINDSTR:  kann nicht ge÷ffnet werden.
 Die Syntax für den Dateinamen, Verzeichnisnamen oder die Datenträgerbezeichnung ist falsch.
