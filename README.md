@@ -1,6 +1,6 @@
 # 🐍 template-run_python_in_env
 
-**Template for a Windows-only, easily-shareable, self-environment-controlled, source-code-running, ready-to-use (just insert your python file), plug-and-play python application** 
+**WIP: Template for a Windows-only, easily-shareable, self-environment-controlled, source-code-running, ready-to-use (just insert your python file), plug-and-play python application** 
 
 # Main features
 
