@@ -16,7 +16,7 @@
 - Fully ready for git repositories to only share the needed parts and don't sync generated files or downloaded packages
 - Ready to use: Just insert your python file
 - WIP: Template and boilerplate code for a GUI using PyQt5
-- Feely free to suggest more :)
+- Feel free to suggest more :)
 
 ---
 
