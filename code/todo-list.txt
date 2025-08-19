@@ -23,7 +23,6 @@ multiple pauses needed for non existing env folder?
 
 #check screenshots on phone for ideas
 
-
 #add stops for no settings file defined or existing & add stop for pyhton not existing
 FINDSTR:  kann nicht ge÷ffnet werden.
 Die Syntax für den Dateinamen, Verzeichnisnamen oder die Datenträgerbezeichnung ist falsch.
@@ -48,25 +47,9 @@ did not find executable at 'C:\Users\Flo\AppData\Local\Programs\Python\Python313
  Press any key to exit
  ########################################
 
-
-cant have 2x different programs on taskleiste
-
-
-
-have settings ontop of batch files
-
 can i have non user settings file in different drive?
 
-add function that relods settings
-
-there is 2 todo lists????
-
 #add a mode to not sync settings. maybe local seetinfgs? like for com port
-
-some make license not trasfer? but still update if someone makes it->maybe remove license?
-
-
-do not transfer license via git?
 
 install needed packages did not work for pyboson
 
@@ -100,8 +83,6 @@ make checks if files exist where no error would appear anywhere and leave window
 
 add option to copy failed install with opening tmp.txt and manually relax requirements . make pipreqs relaax auto?
 
-[notice] A new release of pip is available: 25.1.1 -> 25.2 for install_packages needed
-
 Make browser Version + start with Lesezeichen 
 
 Make pyqt5 a scroll Menü for yaml settings with restart button
@@ -112,34 +93,13 @@ Add block of Ctrl c
 
 Add relativ starters?
 
-Python path to nonusersetings
-
-Echo to screen and write to a rotating .log file (with date/time)
-
-class SafeDict(dict):
-    def __getitem__(self, key):
-        if key not in self:
-            return f"Key '{key}' is missing!"
-        return super().__getitem__(key)
-
-my_dict = SafeDict({"name": "Alice"})
-print(my_dict["name"])  # Alice
-print(my_dict["age"])   # Key 'age' is missing!
-
-Add just a Code line to start batch as a setting 
+Add just a Code line to start batch as a setting . aka start program in CMD?
 
 Add Syntax Checker to git and even linting?
-
-Add local gitignores?
-
-Add more default options to do not change 
 
 Change icon in top left corner 
 
 Run terminal in Browser 
-
-Add tabs to terminal 
-
 
 ##############################
 For readme
@@ -150,7 +110,8 @@ For readme
  add to notes that you can delete after_python_crash_code.py
  explain fork.... options
 explain all advantages/features
-explain that it only saves to log file at end
+
+update github top right 
 
 explain that version ..x changes can be updated by replacing do_not_change and should not be breaking
 v.xy changes should be breaking something
@@ -169,91 +130,48 @@ add single function to add args together starting from i
 
 do GOTO :EOF instead of EXIT /B for functions
 
-add colors to all prints of the batch files.
-
-make code for thread safe data transfer between threads
-		import threading
-		import queue
-		import time
-
-		def worker(q):
-			for i in range(5):
-				time.sleep(1)
-				q.put(f"Message {i}")  # Put data into queue safely
-
-		q = queue.Queue()
-
-		t = threading.Thread(target=worker, args=(q,))
-		t.start()
-
-		# Main thread: receive data
-		while t.is_alive() or not q.empty():
-			try:
-				msg = q.get(timeout=0.1)  # Wait for data
-				print("Got:", msg)
-			except queue.Empty:
-				pass
-
-		t.join()
-
-
 lock = threading.Lock()
 with lock:
 	print(f"{name} got the lock")
 
-make function:FOR /F "tokens=1,2 delims==" %%a IN ('findstr "^" "%settings_path%"') DO (
-	IF %%a==program_name ( SET program_name=%%b)
-	IF %%a==restart_main_code_on_crash ( SET restart_main_code_on_crash=%%b)
-)
-
 add option to start minimized
 
-Add the .bat or a shortcut to shell:startup. Useful?
+need an Autostart on Windows option?
 
 option to ignore every ECHO but let python print
 
 add a batch that update git folder. maybe only main and release. maybe propt user and disaply name and changelog(s)
 
-Auto-Generate .gitignore
-
 add startup time or something
 
-Let the script run in "portable" mode where all logs, configs, environments stay in a single folder -> wherever shortcut is placed also print output and let python think it is there
+Let the script run in "portable" mode where all logs, configs, environments stay in a single folder -> wherever shortcut is placed also print output and let python think it is there. somehow transfer shortcut pos to batch files and python for that 
 
 make lightweight interface instead of terminal. maybe as option or only if installed
 
 somehow have an option to get help when having access to shortcut
+-> add info to shortcuts slots
 
 Check Git remote for updates and prompt user to pull. print at least if new verison available
 
-Enable verbose logging or keep the terminal open on error.
+Enable verbose logging or keep the terminal open on error. maybe a setting that every code waits 
 
 add option to kill previous. maybe even for non hidden
 
 add utilities like replace line in settings
 
-foreward arguemtns to python. maybe even different settings files to switch between
+reload imports settings function? 
 
 somehow make echo on option switchable
+import setting in beginning for that 
 
 timestamp to log? subfolder?
 same for pid?
 
-self updatring from git option?
+self updatring from git option?not my code but ones that use template. like a check on Startup and asking for confirmation of update and then restart from ground 
 
 make somehow git run generator for cloning
 
 Bonus: Change color if there's an error (e.g., red background).
-
-still spam for pip version on new download?
-add indicator that environemnt was created and now main code is runs
-decrease/importve spam there becasue everyone will see that
-make better print because it checks anyway if successfull creation?
-
-why different colors for running?
-
-mabye make ######## more fancy. maybe even color
-
 
 make option to not delete empty log files
 
