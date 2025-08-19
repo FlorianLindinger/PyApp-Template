@@ -22,7 +22,7 @@
 
 ## Quick Start
 
-1. Clone/download this repo
+1. Clone/download this repository
 2. Add the python code you want to execute to "code/main_code.py"
 3. Run "code/python_environment_code/install_packages_needed_in_python_files.lnk" to install all packages your python file needs
 4. (Optional: Change program-settings under "code/non-user_settings.ini")
