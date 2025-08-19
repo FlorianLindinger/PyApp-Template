@@ -2,6 +2,8 @@
 
 **WIP: Template for a Windows-only, easily-shareable, self-environment-controlled, source-code-running, ready-to-use (just insert your python file), plug-and-play python application** 
 
+---
+
 # Main features
 
 - Self-contained, fully version controlled, git-sharable, idiot-proof python environment with automatic download of needed packages at user end (no python or any other installation needed for user).
@@ -16,6 +18,7 @@
 - Fully ready for git repositories to only share the needed parts and don't sync generated files or downloaded packages
 - Ready to use: Just insert your python file
 - WIP: Template and boilerplate code for a GUI using PyQt5
+- WIP: Permissive licene
 - Feel free to suggest more :)
 
 ---
