@@ -6,6 +6,8 @@ TODO LIST FOR TEMPLATE-RUN_PYTHON_IN_ENV
 important
 ############################################################
 
+check out https://www.google.com/url?sa=t&source=web&rct=j&opi=89978449&url=https://github.com/mdklatt/cookiecutter-python-app&ved=2ahUKEwio3_yNo5aPAxUsRP4FHYgVFZQQFnoECCkQAQ&usg=AOvVaw0SDEf3SWiMRncvV0_lxJM8
+
 explain GitHub desktop easily
 
 add code to replace base python environment for new python version. maybe freeze current package state and reinstall it for new python version. explain that behavior. maybe prompt for delete with text for reinstall 
