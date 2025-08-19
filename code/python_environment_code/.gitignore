@@ -1,0 +1,9 @@
+###########################
+### general gitignores: ###
+###########################
+# python extral installed packages folder:
+installed_python_packages
+###########################
+
+
+
