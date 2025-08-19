@@ -6,6 +6,8 @@ TODO LIST FOR TEMPLATE-RUN_PYTHON_IN_ENV
 important
 ############################################################
 
+add how and why problems were solved like adding cmds or shortcuts or magick
+
 check out https://www.google.com/url?sa=t&source=web&rct=j&opi=89978449&url=https://github.com/mdklatt/cookiecutter-python-app&ved=2ahUKEwio3_yNo5aPAxUsRP4FHYgVFZQQFnoECCkQAQ&usg=AOvVaw0SDEf3SWiMRncvV0_lxJM8
 
 explain GitHub desktop easily
