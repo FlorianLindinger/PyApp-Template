@@ -6,6 +6,8 @@ TODO LIST FOR TEMPLATE-RUN_PYTHON_IN_ENV
 important
 ############################################################
 
+add space ontop of license file for user ro add stuff. also mentione what likely is from them and me
+
 add my template to bottom to give option to users to add their part ontop
 auto add python license into folder and ref sub licenses in my license
 remove gitignore for after venv. apply create new folder for external after venv
