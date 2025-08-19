@@ -6,6 +6,7 @@ TODO LIST FOR TEMPLATE-RUN_PYTHON_IN_ENV
 important
 ############################################################
 
+auto add python license into folder and ref sub licenses in my license
 remove gitignore for after venv. apply create new folder for external after venv
 auto detect that venv python veriopns does not match and conform to delete and renew. generally confirm to delete 
 renmae base folder to indicate that it should be unchanged
