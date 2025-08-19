@@ -305,27 +305,24 @@ do I need to update pip or python -m
 
 add more emptly print lines between spam
 
-##########################################
+make Code somehow faster. maybe compile
 
 add how to copy this folder
 
-add option for yaml install?
-auto install yaml? for new generation? 
-
 allow for local package installs somehow via req.txt
+
+install via git package possible?
 
 add readme in code\ folder   explain what everything is and that it has to keep its name
 
-check if i can add stoppping of closing terminal
+check if i can add stoppping of closing terminal for non pyqt5
 
-make pyqt5 interface available and easy to use with example. (threading?)
+make pyqt5 interface available and easy to use with example.
 
 auto fork option? hm maybe just actually copy via a batch file (new folder and copy (dont overwrite at all), and delete .git)
 But fork allows for contributing changes back to original template. Git remplate does not but allows for own forking
 
 add to notes that you can delete after_python_crash_code.py
-
-have option for a*b^c,a*b^c
 
 add some kind of detection that code crashes immediately and that it does not spam repeatedly. or some minimum delay
 
@@ -340,32 +337,30 @@ ECHO: ##########################
 	ECHO: ##########################
 at least once? in the beginnign?
 
+generally have more fancy prints and color.
+maybe have program Name as asci art
+
 make unicode log output
 
-add comment if or when "" needed or allowed. code expects none
-
-add incremental printing to log file.
+add comment if or when "" needed or allowed.
 
 add option to log to file aswell while terminal?
 
+add option to log terminal output to log file. maybe replace python print? outside
+
 test if CALL :handle_python_crash >> %log_path% 2>&1 works recuresively
 
-test if error of batch fowrk for log
+test if error of batch forward for log
 
-make "nopause" required instead of any? for all files
+add more crash tests and stops everywhere 
 
 add error log piping to all shortcuts and wherever possible. and code that deletes an empty error file at end of all codes. where to put file? is there a way to put it where it was called? i guess it would not exist either way if not called by shortcuts
 
 need activate env for pipreqs? for correct package version for python version?
+need pipreqs to install in local? for no global python 
 
-rename make_absolute_path_if_relative and use where needed -> normalize_to_abs_path
+possible to make easily old terminal closing. maybe python code in helper 
 
-create terminate_running_program_name if running and delete afterwards? for no-terminal mode
-
-generate link to settings.py if no yaml found. explain that somewhere
-
-move settings.py to do_not_change? link possible? but helper file is allowed to be change actually??? make folder to package such that it can be imported with subfolder path? probably just keep since can be changed and not critical
-
-update yaml fiel to new tamplate
+make option to copy whole folder for new project somehow 
 
 make pyFROG and pyFLIR
