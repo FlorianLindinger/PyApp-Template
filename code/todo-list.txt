@@ -6,6 +6,10 @@ TODO LIST FOR TEMPLATE-RUN_PYTHON_IN_ENV
 important
 ############################################################
 
+explain GitHub desktop easily
+
+add code to replace base python environment for new python version. maybe freeze current package state and reinstall it for new python version. explain that behavior. maybe prompt for delete with text for reinstall 
+
 add space ontop of license file for user ro add stuff. also mentione what likely is from them and me
 
 add my template to bottom to give option to users to add their part ontop
