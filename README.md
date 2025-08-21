@@ -2,6 +2,8 @@
 
 **WIP: Template for a Windows-only, easily-shareable, self-environment-controlled, source-code-running, ready-to-use (just insert your python file), plug-and-play python application** 
 
+---
+
 # Main features
 
 - Self-contained, fully version controlled, git-sharable, idiot-proof python environment with automatic download of needed packages at user end (no python or any other installation needed for user).
@@ -16,13 +18,14 @@
 - Fully ready for git repositories to only share the needed parts and don't sync generated files or downloaded packages
 - Ready to use: Just insert your python file
 - WIP: Template and boilerplate code for a GUI using PyQt5
+- WIP: Permissive licene
 - Feel free to suggest more :)
 
 ---
 
 ## Quick Start
 
-1. Clone/download this repo
+1. Clone/download this repository
 2. Add the python code you want to execute to "code/main_code.py"
 3. Run "code/python_environment_code/install_packages_needed_in_python_files.lnk" to install all packages your python file needs
 4. (Optional: Change program-settings under "code/non-user_settings.ini")
