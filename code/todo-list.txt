@@ -6,6 +6,8 @@ TODO LIST FOR TEMPLATE-RUN_PYTHON_IN_ENV
 important
 ############################################################
 
+#maybe find safer default image
+#maybe just suggest to search for all LICENSE filenames for user to get all subfolder ones
 add my template to bottom to give option to users to add their part ontop
 auto add python license into folder and ref sub licenses in my license
 remove gitignore for after venv. apply create new folder for external after venv
