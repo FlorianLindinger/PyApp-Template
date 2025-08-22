@@ -6,6 +6,10 @@ TODO LIST FOR TEMPLATE-RUN_PYTHON_IN_ENV
 important
 ############################################################
 
+check speed of optional checks and rempove if too slow
+
+folder generation needed for extra packages folder?
+
 #maybe find safer default image
 #maybe just suggest to search for all LICENSE filenames for user to get all subfolder ones
 
