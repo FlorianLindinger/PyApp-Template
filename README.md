@@ -4,7 +4,7 @@
 
 ---
 
-# Main features
+# Main Features
 
 - Self-contained, fully version controlled, git-sharable, idiot-proof python environment with automatic download of needed packages at user end (no python or any other installation needed for user).
 - Structured in a way to make it easily shareable/runnable even with people without any coding/PC experience (plug-and-play)
