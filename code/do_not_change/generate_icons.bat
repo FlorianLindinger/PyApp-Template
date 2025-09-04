@@ -16,7 +16,7 @@ IF %errorlevel% NEQ 0 (
       ECHO: Installation failed. Please (re^)install manually (https://imagemagick.org/script/download.php^) and restart to generate icons. Press any key to exit.
     )
     PAUSE > NUL
-    @REM EXIT /B
+    EXIT /B
 )
 
 @REM generate icon.ico
