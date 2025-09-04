@@ -2,6 +2,10 @@
 HOW TO CORRECTLY MAKE AN ICON
 ################################
 
+TLDR: Replace icon.png/settings.png/stop.png with images that you want (keep name) and run generate_icons.lnk
+
+################################
+
 Icons have to be generated propery to nicely scale with mulitple sizes in a .ico file:
 
 Easiest way is to run generate_icons.lnk in this folder which auto installs the ImageMagick program if not installed already. For that the images icon.png/settings.png/stop.png have to be in this folder and can be changed to get different output icons.
