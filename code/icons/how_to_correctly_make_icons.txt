@@ -2,8 +2,13 @@
 HOW TO CORRECTLY MAKE AN ICON
 ################################
 
-To generate correcly a .ico image:
-Convert image to multi resolution icon with imagemagick program (https://imagemagick.org/script/download.php) program: run in cmd in folder containing the photo you want to convert (change base.png to your photo or rename your photo):
+Icons have to be generated propery to scale nicely with mulitple sizes in a .ico file:
+
+Easiest way is to run generate_icons.lnk in this folder which auto installs the ImageMagick program if not installed already. For that the images icon.png/settings.png/stop.png have to be in this folder.
+
+Alternatively you can install ImageMagick manually (https://imagemagick.org/script/download.php) manually run the commands (see below) that generate_icons.lnk runs. 
+If you want to have just a png->ico for settings.ico or stop.ico (instead of the main icon.ico with settings/stop signs in the corner) you can use and change the names in the first command below.
+If you want a different size of the corner signs for settings.ico/stop.ico, you can change the "0.6" below.
 
 magick "icon.png" -define icon:auto-resize=16,32,48,64,128,256 -compress zip "icon.ico"
 
