@@ -6,6 +6,18 @@ TODO LIST FOR TEMPLATE-RUN_PYTHON_IN_ENV
 important
 ############################################################
 
+add more errorlevels everywhere
+
+fix readme for icons.
+
+checl if alternative for icon change than 7mb exe
+
+Fix Release in git
+
+change everywhere to PyApp-Template
+
+add cmd folder to python env folder and rename it to python_environment_and_startup
+
 check speed of optional checks and rempove if too slow
 
 folder generation needed for extra packages folder?
@@ -137,6 +149,8 @@ releases should always be stable
 for breaking. explain what needs to be changed to fix.
 
 where it looks for pyron scipts for auto install
+
+Add git link to readme? For base 
 
 ############################################################
 optional
