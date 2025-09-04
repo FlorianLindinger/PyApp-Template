@@ -2,9 +2,9 @@
 HOW TO CORRECTLY MAKE AN ICON
 ################################
 
-Icons have to be generated propery to scale nicely with mulitple sizes in a .ico file:
+Icons have to be generated propery to nicely scale with mulitple sizes in a .ico file:
 
-Easiest way is to run generate_icons.lnk in this folder which auto installs the ImageMagick program if not installed already. For that the images icon.png/settings.png/stop.png have to be in this folder.
+Easiest way is to run generate_icons.lnk in this folder which auto installs the ImageMagick program if not installed already. For that the images icon.png/settings.png/stop.png have to be in this folder and can be changed to get different output icons.
 
 Alternatively you can install ImageMagick manually (https://imagemagick.org/script/download.php) manually run the commands (see below) that generate_icons.lnk runs. 
 If you want to have just a png->ico for settings.ico or stop.ico (instead of the main icon.ico with settings/stop signs in the corner) you can use and change the names in the first command below.
