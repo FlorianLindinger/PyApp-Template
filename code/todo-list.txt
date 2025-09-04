@@ -6,6 +6,9 @@ TODO LIST FOR TEMPLATE-RUN_PYTHON_IN_ENV
 important
 ############################################################
 
+add date number to exe and maybe random
+
+
 add more errorlevels everywhere
 
 fix readme for icons.
