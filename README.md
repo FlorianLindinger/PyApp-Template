@@ -35,3 +35,9 @@
 5. (Optional: Add user-settings under "code/python.yaml")
 6. Execute RUN_BEFORE_FIRST_START_TO_GENERATE_SHORTCUTS.lnk
 7. Run program via the generated shortcuts 
+
+---
+
+## Notes
+
+Tested to work in current windows 11
