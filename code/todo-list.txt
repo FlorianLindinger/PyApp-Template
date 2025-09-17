@@ -159,6 +159,27 @@ Add git link to readme? For base
 optional
 ############################################################
 
+from maxi code for auto version
+"""
+#!/bin/bash
+
+echo "previous version:"
+cat VERSION
+echo "new version:"
+read version
+
+echo "$version" > VERSION
+git add VERSION
+git commit -m "set version"
+git push origin
+
+git tag -a v"$version" -m "version $version"
+git push origin v"$version"
+"""
+
+
+
+
 add code example hwo to merge settings and x symbol over icon via magicked
 
 add single function to add args together starting from i
