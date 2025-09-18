@@ -1,10 +1,27 @@
 ############################################################
-TODO LIST FOR TEMPLATE-RUN_PYTHON_IN_ENV
+TODO LIST FOR PyApp-Template
 ############################################################
 
 ############################################################
 important
 ############################################################
+
+make safe delete folder batch
+
+git batches like commit and get update
+
+batch to compare with a git link the diffs. google better ways
+
+add how to use to all utilities
+
+rename repo folder
+
+remove SET "current_file_path=%~dp0"
+CD /D "%current_file_path%" where not needed
+
+move python_environment_code to utiltites
+
+make batch files more into utilities and add it into utilities folder
 
 add more errorlevels everywhere
 

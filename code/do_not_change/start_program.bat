@@ -1,8 +1,6 @@
-@REM ###################################
-@REM --- Code Description & Comments ---
-@REM ###################################
-
-@REM Note: "@REM" indicates the start of a comment (use "&@REM" for comments at the end of a code line, unless the line starts a nested sequence like a line with IF/ELSE/FOR/..., e.g., "IF A==B ( @REM comment")
+@REM ########################
+@REM --- Code Description ---
+@REM ########################
 
 @REM #########################
 @REM --- Setup & Variables ---

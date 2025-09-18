@@ -1,8 +1,6 @@
-@REM ###################################
-@REM --- Code Description & Comments ---
-@REM ###################################
-
-@REM "@REM" indicates the start of a comment (use "&@REM" for comments at the end of a code line, unless the line starts a nested sequence like a line with IF/ELSE/FOR/..., e.g., "IF A==B ( @REM comment")
+@REM ########################
+@REM --- Code Description ---
+@REM ########################
 
 @REM #########################
 @REM --- Setup & Variables ---
@@ -29,11 +27,8 @@ SET "temporary_txt_path=..\..\..\tmp.txt"
 @REM --- Code Execution ---
 @REM ######################
 
-@REM upgrade pip
-python -m pip install --upgrade pip > NUL 
-
 @REM install globally a package to find required packages in python files
-pip install pipreqs > NUL
+pip install pipreqs --disable-pip-version-check > NUL
 
 @REM activate (or create & activate) python environment:
 CALL activate_or_create_environment.bat "nopause"
@@ -45,7 +40,7 @@ ECHO:
 ECHO:
 
 @REM install list of needed packages
-pip install --upgrade -r "%temporary_txt_path%"
+pip install --disable-pip-version-check --upgrade -r "%temporary_txt_path%"
 
 @REM remove temporary file that lists needed packages
 DEL "%temporary_txt_path%"
