@@ -1,8 +1,6 @@
-@REM ###################################
-@REM --- Code Description & Comments ---
-@REM ###################################
-
-@REM "@REM" indicates the start of a comment (use "&@REM" for comments at the end of a code line, unless the line starts a nested sequence like a line with IF/ELSE/FOR/..., e.g., "IF A==B ( @REM comment")
+@REM ########################
+@REM --- Code Description ---
+@REM ########################
 
 @REM #########################
 @REM --- Setup & Variables ---
@@ -27,9 +25,6 @@ SET "default_packages_file_path=..\..\python_environment_code\default_python_pac
 @REM --- Code Execution ---
 @REM ######################
 
-@REM upgrade pip
-python -m pip install --upgrade pip > NUL
-
 @REM activate environment:
 CALL activate_or_create_environment.bat "nopause"
 
@@ -40,7 +35,7 @@ IF EXIST "%default_packages_file_path%" (
 )
 
 @REM generate requirements.txt:
-python -m pip freeze > "%default_packages_file_path%"
+python -m pip freeze --disable-pip-version-check > "%default_packages_file_path%"
 
 @REM print message:
 CALL :make_absolute_path_if_relative "%current_file_path%%default_packages_file_path%"
