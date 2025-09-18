@@ -34,7 +34,7 @@ class custom_error_dictionary(dict):
 
 
 # convert dictionary values and convert dictionaries to custom dictionaries:
-if s == None:
+if s is None:
     # create empty custom dictionary s if the settings.yaml file is empty:
     s = custom_error_dictionary()
     # implicit end of code here

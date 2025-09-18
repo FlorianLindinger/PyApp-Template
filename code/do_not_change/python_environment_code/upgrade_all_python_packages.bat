@@ -1,8 +1,6 @@
-@REM ###################################
-@REM --- Code Description & Comments ---
-@REM ###################################
-
-@REM "@REM" indicates the start of a comment (use "&@REM" for comments at the end of a code line, unless the line starts a nested sequence like a line with IF/ELSE/FOR/..., e.g., "IF A==B ( @REM comment")
+@REM ########################
+@REM --- Code Description ---
+@REM ########################
 
 @REM #########################
 @REM --- Setup & Variables ---
@@ -30,14 +28,11 @@ SET "temporary_txt_path=..\..\..\tmp.txt"
 @REM activate (or create & activate) python environment:
 CALL activate_or_create_environment.bat "nopause"
 
-@REM upgrade pip
-python -m pip install --upgrade pip > NUL
-
 @REM upgrade all packages as far as conflicts allow
-pip freeze > "%temporary_txt_path%"
+pip freeze --disable-pip-version-check > "%temporary_txt_path%"
 ECHO:
 ECHO:
-pip install --upgrade -r "%temporary_txt_path%"
+pip install --disable-pip-version-check --upgrade -r "%temporary_txt_path%"
 DEL "%temporary_txt_path%"
 
 @REM final print:
