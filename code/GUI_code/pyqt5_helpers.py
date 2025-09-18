@@ -1,11 +1,13 @@
+from PyQt5.QtCore import Qt, QPropertyAnimation, pyqtProperty
+from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QHBoxLayout, QVBoxLayout, QLabel
 from PyQt5.QtWidgets import (
     QApplication, QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout,
     QComboBox, QFileDialog, QTextEdit, QCheckBox, QSizePolicy, QSplitter,
     QSlider, QLineEdit, QRadioButton, QButtonGroup, QFrame, QProgressBar,
-    QScrollArea,QTabWidget,QMessageBox,QTabBar,QToolButton,    
+    QScrollArea, QTabWidget, QMessageBox, QTabBar, QToolButton,
 )
-from PyQt5.QtGui import QImage, QPixmap, QIcon,QFont
-from PyQt5.QtCore import Qt, QTimer,QObject,QThread,pyqtSignal,pyqtSlot,QEvent
+from PyQt5.QtGui import QImage, QPixmap, QIcon, QFont
+from PyQt5.QtCore import Qt, QTimer, QObject, QThread, pyqtSignal, pyqtSlot, QEvent
 
 import cv2
 import numpy as np
@@ -15,8 +17,6 @@ import sys
 import time
 
 ################################################
-
-
 
 
 def get_available_com_ports_tuple() -> list[str]:
@@ -29,62 +29,64 @@ def get_frame():
                 cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
     return frame
 
-Q_splitter_vertical=lambda : QSplitter(Qt.Vertical)
-Q_splitter_horizontal=lambda : QSplitter(Qt.Horizontal)
 
-def Q_popup(self=None,text="",appearance="info",buttons=None,title=None,wait_for_anwser=None,on_click_function=None):
-    
+def Q_splitter_vertical(): return QSplitter(Qt.Vertical)
+def Q_splitter_horizontal(): return QSplitter(Qt.Horizontal)
+
+
+def Q_popup(self=None, text="", appearance="info", buttons=None, title=None, wait_for_answer=None, on_click_function=None):
+
     msg = QMessageBox()
-    
-    if appearance.lower() in ["info","information"]:
+
+    if appearance.lower() in ["info", "information"]:
         if buttons is None:
-            buttons=["Ok"]
+            buttons = ["Ok"]
         if title is None:
-            title="Info"
-        if wait_for_anwser is None:
-            wait_for_anwser=False
+            title = "Info"
+        if wait_for_answer is None:
+            wait_for_answer = False
         msg.setIcon(QMessageBox.Information)
     if appearance.lower() in ["warning"]:
         if buttons is None:
-            buttons=["Ok"]
+            buttons = ["Ok"]
         if title is None:
-            title="Warning"
-        if wait_for_anwser is None:
-            wait_for_anwser=False
+            title = "Warning"
+        if wait_for_answer is None:
+            wait_for_answer = False
         msg.setIcon(QMessageBox.Warning)
-    if appearance.lower() in ["critical","error"]:
+    if appearance.lower() in ["critical", "error"]:
         if buttons is None:
-            buttons=["Continue"]
+            buttons = ["Continue"]
         if title is None:
-            title="Critical"
-        if wait_for_anwser is None:
-            wait_for_anwser=True
+            title = "Critical"
+        if wait_for_answer is None:
+            wait_for_answer = True
         msg.setIcon(QMessageBox.Critical)
-    if appearance.lower() in ["question","decision"]:
+    if appearance.lower() in ["question", "decision"]:
         if buttons is None:
-            buttons=["Yes","No"]
+            buttons = ["Yes", "No"]
         if title is None:
-            title="Question"
-        if wait_for_anwser is None:
-            wait_for_anwser=True
+            title = "Question"
+        if wait_for_answer is None:
+            wait_for_answer = True
         msg.setIcon(QMessageBox.Question)
 
     msg.setWindowTitle(title)
     msg.setText(text)
-    msg.setMinimumSize(800, 300)  
-    
+    msg.setMinimumSize(800, 300)
+
     if self is not None:
-        if hasattr(self,"_message_boxes"):
+        if hasattr(self, "_message_boxes"):
             self._message_boxes.append(msg)
         else:
-            self._message_boxes=[msg]
-    
-    buttons_dict={}
+            self._message_boxes = [msg]
+
+    buttons_dict = {}
     for name in buttons:
         btn = msg.addButton(name, QMessageBox.AcceptRole)  # or RejectRole etc.
         buttons_dict[btn] = name
-    
-    if wait_for_anwser==True:
+
+    if wait_for_answer == True:
         msg.exec_()
         if on_click_function is None:
             return buttons_dict[msg.clickedButton()]
@@ -96,15 +98,16 @@ def Q_popup(self=None,text="",appearance="info",buttons=None,title=None,wait_for
         msg.show()
         return msg
 
+
 class Q_tabs(QWidget):
-    def __init__(self,tab_widget_class=None,moveable=True,closeable=True,allow_new_tab=True,renamable=True,allow_remove_last_tab=True):
+    def __init__(self, tab_widget_class=None, moveable=True, closeable=True, allow_new_tab=True, renamable=True, allow_remove_last_tab=True):
         super().__init__()
-        
-        self.allow_remove_last_tab=allow_remove_last_tab
-        self.closeable=closeable
-        self.tab_widget_class=tab_widget_class
-        
-        layout = QVBoxLayout(self)     
+
+        self.allow_remove_last_tab = allow_remove_last_tab
+        self.closeable = closeable
+        self.tab_widget_class = tab_widget_class
+
+        layout = QVBoxLayout(self)
         self.tabs = QTabWidget()
         self.tabs.setMovable(moveable)
         self.tabs.setStyleSheet("""
@@ -137,14 +140,14 @@ class Q_tabs(QWidget):
         # State for renaming
         self._editor = None
         self._rename_index = None
-        if renamable==True:
+        if renamable == True:
             # Signals
             self.tabs.tabBarDoubleClicked.connect(self._start_rename)
             # Event filter for all clicks and key events
             self.installEventFilter(self)
 
-        #Add "+" button
-        if allow_new_tab==True:
+        # Add "+" button
+        if allow_new_tab == True:
             self.add_tab_button = QToolButton()
             self.add_tab_button.setText("+")
             self.add_tab_button.setAutoRaise(True)
@@ -158,42 +161,42 @@ class Q_tabs(QWidget):
 
         self.tabs.currentChanged.connect(self._update_close_buttons)
 
-        self.placeholder=None
+        self.placeholder = None
         self.tabs.tabBar().tabBarClicked.connect(self._on_tab_click)
 
         # Start with one tab
         self.add_tab()
 
-    def add_tab(self,*_,widget_class=None, title="New Tab"):
+    def add_tab(self, *_, widget_class=None, title="New Tab"):
 
         if widget_class is None:
             if self.tab_widget_class is None:
-                widget=QLabel("No content")
+                widget = QLabel("No content")
             else:
-                widget=self.tab_widget_class()
+                widget = self.tab_widget_class()
         else:
-            widget=widget_class()
+            widget = widget_class()
 
         index = self.tabs.addTab(widget, title)
         self.set_current_index(index)
-        if self.closeable==True:
+        if self.closeable == True:
             self._update_close_buttons()
-            
+
         if self.tabs.indexOf(self.placeholder) != -1:
             self.tabs.removeTab(self.tabs.indexOf(self.placeholder))
-            
+
         return index
-    
-    def set_current_index(self,index):
+
+    def set_current_index(self, index):
         self.tabs.setCurrentIndex(index)
-        
+
     def get_current_index(self):
         return self.tabs.currentIndex()
 
     def set_tab_widget(self, widget: QWidget, index=None):
-    # Get the existing tab widget
+        # Get the existing tab widget
         if index is None:
-            index=self.get_current_index()
+            index = self.get_current_index()
         tab = self.tabs.widget(index)
         # Remove all old widgets from the layout
         layout = tab.layout()
@@ -208,16 +211,16 @@ class Q_tabs(QWidget):
 
         # Add the new widget
         layout.addWidget(widget)
-    
+
     def close_tab(self, index=None):
         if index is None:
-            index=self.get_current_index()
-        if len(self.tabs)==1:
+            index = self.get_current_index()
+        if len(self.tabs) == 1:
             self._add_placeholder_tab()
             self.tabs.removeTab(index)
         else:
             self.tabs.removeTab(index)
-            if self.closeable==True:
+            if self.closeable == True:
                 self._update_close_buttons()
 
     def eventFilter(self, obj, event):
@@ -234,7 +237,7 @@ class Q_tabs(QWidget):
 
         return super().eventFilter(obj, event)
 
-    def _on_tab_click(self,index):
+    def _on_tab_click(self, index):
         if index == self.tabs.indexOf(self.placeholder):
             self.add_tab()
 
@@ -247,7 +250,7 @@ class Q_tabs(QWidget):
         self.tabs.addTab(self.placeholder, "+")
 
     def _add_close_button(self, index):
-        if len(self.tabs)>1 or self.allow_remove_last_tab==True:
+        if len(self.tabs) > 1 or self.allow_remove_last_tab == True:
             btn = QPushButton("x")
             btn.setFixedSize(15, 15)
             # Make it bold, red, and bigger
@@ -304,6 +307,7 @@ class Q_tabs(QWidget):
         self._editor = None
         self._rename_index = None
 
+
 def Q_horizontal_line(height_pxl=2):
     line = QFrame()
     line.setFrameShape(QFrame.HLine)
@@ -326,9 +330,9 @@ def Q_handle_label_positioning(self, label="", label_pos="left", moveable=False,
     if label in ["", None]:
         layout.addWidget(self.widget)
     else:
-        if isinstance(label,str):
+        if isinstance(label, str):
             self.label = QLabel(label)
-            label=self.label
+            label = self.label
         if label_pos == "top":
             layout.addWidget(label)
         if label_pos in ["left", "right"]:
@@ -359,10 +363,11 @@ def Q_handle_label_positioning(self, label="", label_pos="left", moveable=False,
             layout.addWidget(label)
     self.setLayout(layout)
 
+
 class Q_thread_single(QObject):
     _data_out = pyqtSignal(object)
 
-    def __init__(self,parent_self, function, connected_function, *args):
+    def __init__(self, parent_self, function, connected_function, *args):
         super().__init__()
         self._function = function
         self._connected_function = connected_function
@@ -374,7 +379,7 @@ class Q_thread_single(QObject):
         self._thread.started.connect(self._run)
         self._thread.finished.connect(self.deleteLater)
         self._thread.start()
-        #not thread safe probably actually:
+        # not thread safe probably actually:
         if hasattr(parent_self, "_single_execution_threads"):
             parent_self._single_execution_threads.append(self)
         else:
@@ -444,8 +449,6 @@ class Q_thread_loop:
         self._worker.exit_signal = True
         self._thread.quit()
         self._thread.wait()
-
-
 
 
 class Q_colored_pbar(QWidget):
@@ -566,7 +569,7 @@ class Q_com_port_dropdown(QWidget):
 
 
 class Q_slider(QWidget):
-    def __init__(self, min_val=0, max_val=100, start_val=None, on_change_function=None, set_to_edge_for_out_of_range_setbox=True,allow_scroll=False, setbox_pos="top right", label="", label_pos="top left"):
+    def __init__(self, min_val=0, max_val=100, start_val=None, on_change_function=None, set_to_edge_for_out_of_range_setbox=True, allow_scroll=False, setbox_pos="top right", label="", label_pos="top left"):
         super().__init__()
 
         self.on_change_function = on_change_function
@@ -642,12 +645,11 @@ class Q_slider(QWidget):
         if bottom_line.count() > 0:
             layout.addLayout(bottom_line)
         self.setLayout(layout)
-        
-        if allow_scroll==False:
+
+        if allow_scroll == False:
             def wheelEvent(event):
                 event.ignore()
-            self.slider.wheelEvent=wheelEvent
-        
+            self.slider.wheelEvent = wheelEvent
 
     def _on_slider_changed(self, value):
         self.setbox.setText(str(value))
@@ -747,22 +749,22 @@ class Q_terminal(QWidget):
 
         Q_handle_label_positioning(self, label, label_pos)
 
-    def log(self, *text,sep=" ", end="\n",color=None, bold=False, bg=None,warn=False):
-        text=str(sep).join([str(t) for t in text])+str(end)
+    def log(self, *text, sep=" ", end="\n", color=None, bold=False, bg=None, warn=False):
+        text = str(sep).join([str(t) for t in text])+str(end)
 
-        if warn==True:
+        if warn == True:
             if color is None:
-                color="white"
+                color = "white"
             if bg is None:
-                bg="red"
+                bg = "red"
             if bold is None:
-                bold=True
- 
-        lines=text.split("\n")
+                bold = True
 
-        for i,line in enumerate(lines):
-            if i==len(lines)-1 and line=="":
-                break 
+        lines = text.split("\n")
+
+        for i, line in enumerate(lines):
+            if i == len(lines)-1 and line == "":
+                break
             style = ""
             if color:
                 style += f"color: {color};"
@@ -771,8 +773,8 @@ class Q_terminal(QWidget):
             html = f"<span style='{style}'>{line}</span>"
             if bold:
                 html = f"<b>{html}</b>"
-            if i!=len(lines)-1:
-                self.widget.insertHtml(html +"<br>")
+            if i != len(lines)-1:
+                self.widget.insertHtml(html + "<br>")
             else:
                 self.widget.insertHtml(html)
 
@@ -851,6 +853,7 @@ class Q_input_line(QWidget):
         self.set(value)
         self.trigger()
 
+
 class Q_check_box(QWidget):
     def __init__(self, on_switch_function, label="", label_pos="right", align="left"):
         super().__init__()
@@ -890,63 +893,62 @@ class Q_output_line(QWidget):
 
 
 class Q_file_path(QWidget):
-    
-    def __init__(self,label="Select File",box_pos="bottom",read_only_textbox=False,placeholder_text=""):
+
+    def __init__(self, label="Select File", box_pos="bottom", read_only_textbox=False, placeholder_text=""):
         super().__init__()
-        
-        self.label=label
+
+        self.label = label
 
         self.widget = QPushButton(label)
         self.widget.clicked.connect(self._on_open_file_path_menu)
-        
+
         self.path_box = QLineEdit()
         self.path_box.setPlaceholderText(placeholder_text)
         if read_only_textbox:
             self.path_box.setReadOnly(True)
-        
-        Q_handle_label_positioning(self, label=self.path_box, label_pos=box_pos)
-        
+
+        Q_handle_label_positioning(
+            self, label=self.path_box, label_pos=box_pos)
+
     def _on_open_file_path_menu(self):
         path, _ = QFileDialog.getOpenFileName(self, self.label)
         self.path_box.setText(path)
-        
-    def set(self,value):
+
+    def set(self, value):
         self.path_box.setText(value)
-        
-    def get(self,value):
+
+    def get(self, value):
         self.path_box.text()
-        
-        
+
+
 class Q_folder_path(QWidget):
-    
-    def __init__(self,label="Select Folder",box_pos="bottom",read_only_textbox=False,placeholder_text=""):
+
+    def __init__(self, label="Select Folder", box_pos="bottom", read_only_textbox=False, placeholder_text=""):
         super().__init__()
-        
-        self.label=label
+
+        self.label = label
 
         self.widget = QPushButton(label)
         self.widget.clicked.connect(self._on_open_path_menu)
-        
+
         self.path_box = QLineEdit()
         self.path_box.setPlaceholderText(placeholder_text)
         if read_only_textbox:
             self.path_box.setReadOnly(True)
-        
-        Q_handle_label_positioning(self, label=self.path_box, label_pos=box_pos)
-        
+
+        Q_handle_label_positioning(
+            self, label=self.path_box, label_pos=box_pos)
+
     def _on_open_path_menu(self):
-        path= QFileDialog.getExistingDirectory(self, self.label)
+        path = QFileDialog.getExistingDirectory(self, self.label)
         self.path_box.setText(path)
-        
-    def set(self,value):
+
+    def set(self, value):
         self.path_box.setText(value)
-        
-    def get(self,value):
+
+    def get(self, value):
         self.path_box.text()
 
-import sys
-from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QHBoxLayout, QVBoxLayout, QLabel
-from PyQt5.QtCore import Qt, QPropertyAnimation,pyqtProperty
 
 class helper_Q_sidebar_animator(QObject):
     def __init__(self, splitter):
@@ -963,37 +965,39 @@ class helper_Q_sidebar_animator(QObject):
         self._width = w
         total = sum(self.splitter.sizes())
         self.splitter.setSizes([w, total - w])
-        
+
+
 class Q_sidebar(QScrollArea):
-    
-    def __init__(self,parent_self):
+
+    def __init__(self, parent_self):
         super().__init__()
-        
-        self.parent_self=parent_self
-        
+
+        self.parent_self = parent_self
+
         self.expanded = True
 
         self._widget = QWidget()
-        
-        self._layout=QVBoxLayout()
+
+        self._layout = QVBoxLayout()
         self._layout.setSpacing(4)  # or some spacing you prefer
         self._layout.setContentsMargins(4, 4, 4, 4)
-        
+
         self._widget.setLayout(self._layout)
 
         self.setWidget(self._widget)
         self.setWidgetResizable(True)
-        
+
         # Toggle button
-        self.toggle_button = QPushButton("☰") 
+        self.toggle_button = QPushButton("☰")
         self.toggle_button.setFixedSize(30, 30)
         self.toggle_button.clicked.connect(self.toggle_sidebar)
-        
+
         try:
-            self.previous_sidebar_width =  self.parent_self.base_horizontal.sizes()[0]
+            self.previous_sidebar_width = self.parent_self.base_horizontal.sizes()[
+                0]
         except:
-            self.previous_sidebar_width=200
-        
+            self.previous_sidebar_width = 200
+
     def toggle_sidebar(self):
         sidebar_width = self.parent_self.base_horizontal.sizes()[0]
 
@@ -1010,40 +1014,38 @@ class Q_sidebar(QScrollArea):
         self.expanded = not self.expanded
 
         # Animate only the sidebar width
-        self._animator = helper_Q_sidebar_animator(self.parent_self.base_horizontal)
+        self._animator = helper_Q_sidebar_animator(
+            self.parent_self.base_horizontal)
         self._animation = QPropertyAnimation(self._animator, b"width")
         self._animation.setDuration(100)
         self._animation.setStartValue(start)
         self._animation.setEndValue(end)
-        self._animation.start()  
+        self._animation.start()
 
-    def add_line(self,height=2):
+    def add_line(self, height=2):
         self._layout.addWidget(Q_horizontal_line(height))
 
-    def add(self,*widgets_or_layouts,line_after=True):
+    def add(self, *widgets_or_layouts, line_after=True):
         for elem in widgets_or_layouts:
-            if isinstance(elem,QWidget):
+            if isinstance(elem, QWidget):
                 self._layout.addWidget(elem)
-            elif isinstance(elem,(QHBoxLayout,QVBoxLayout)):
+            elif isinstance(elem, (QHBoxLayout, QVBoxLayout)):
                 self._layout.addLayout(elem)
 
-        if line_after==True:
+        if line_after == True:
             self.add_line()
-            
 
-        
+
 class MainWindow(QWidget):
-    def __init__(self,title="",icon_path=None,width=1920/2,height=1080/2,ask_confirm_closing=False,hide_title_bar=False):
+    def __init__(self, title="", icon_path=None, width=1920/2, height=1080/2, ask_confirm_closing=False, hide_title_bar=False):
         super().__init__()
-        
 
-        
-        self.ask_confirm_closing=ask_confirm_closing
+        self.ask_confirm_closing = ask_confirm_closing
 
         self.set_title(title)
         self.set_icon(icon_path)
-        self.set_size(width,height)
-        
+        self.set_size(width, height)
+
         if hide_title_bar:
             self.setWindowFlags(Qt.FramelessWindowHint | Qt.Window)
 
@@ -1074,14 +1076,11 @@ class MainWindow(QWidget):
 
         self.command_line = Q_command_line(
             on_enter_function=lambda x: None, output=self.terminal_output, placeholder_text="placeholder")
-        
-        self.folder_selector=Q_folder_path()
-        self.file_selector=Q_file_path()
+
+        self.folder_selector = Q_folder_path()
+        self.file_selector = Q_file_path()
 
         #################################
-
-
-
 
         self.radio_label = QLabel("Whatever:")
         self.radio1 = QRadioButton("Choice 1")
@@ -1103,22 +1102,30 @@ class MainWindow(QWidget):
         # self.progress_bar.setMaximum(0)  # no max means it's in 'busy' mode
 
         ###################################
+
+        self.sidebar = Q_sidebar(self)
         
-        self.sidebar=Q_sidebar(self)
+        self.com_port_dropdown = Q_com_port_dropdown(
+            on_select_function=lambda:None,
+            start_value="Select COM Port"
+            )
         
-        self.sidebar.add(self.button,True)
-        self.sidebar.add(self.dropdown1)
-        self.sidebar.add(self.dropdown2,self.dropdown3)
-        self.sidebar.add(self.switch)
-        self.sidebar.add(self.file_selector)
-        self.sidebar.add(self.folder_selector)
-        self.sidebar.add(self.text_input)
-        self.sidebar.add(self.slider)
-        self.sidebar.add(self.radio_label,self.radio1,self.radio2)
-        self.sidebar.add(self.progress_bar)
-        self.sidebar.add(self.colored_bar)
-        self.sidebar.add(self.command_line,self.terminal_output)    
-    
+        self.sidebar.add(self.com_port_dropdown)
+        
+
+        # self.sidebar.add(self.button, True)
+        # self.sidebar.add(self.dropdown1)
+        # self.sidebar.add(self.dropdown2, self.dropdown3)
+        # self.sidebar.add(self.switch)
+        # self.sidebar.add(self.file_selector)
+        # self.sidebar.add(self.folder_selector)
+        # self.sidebar.add(self.text_input)
+        # self.sidebar.add(self.slider)
+        # self.sidebar.add(self.radio_label, self.radio1, self.radio2)
+        # self.sidebar.add(self.progress_bar)
+        # self.sidebar.add(self.colored_bar)
+        # self.sidebar.add(self.command_line, self.terminal_output)
+
         ############################################
 
         # Image viewer setup
@@ -1159,7 +1166,8 @@ class MainWindow(QWidget):
         self.base_horizontal = Q_splitter_horizontal()
         self.base_horizontal.addWidget(self.sidebar)
         self.base_horizontal.addWidget(main_vertical)
-        self.base_horizontal.setStretchFactor(0, 1)  # Sidebar smaller by default
+        self.base_horizontal.setStretchFactor(
+            0, 1)  # Sidebar smaller by default
         self.base_horizontal.setStretchFactor(1, 4)  # Right side bigger
 
         ############################################
@@ -1177,16 +1185,14 @@ class MainWindow(QWidget):
         ############################################
         # code specific initialization:
         ############################################
-        
-
 
     ########################################
     # Methods:
     ########################################
 
-    def log(self,*text,sep=" ",end="\n"):
-        self.terminal_output.log(*text,sep=sep,end=end)
-        
+    def log(self, *text, sep=" ", end="\n"):
+        self.terminal_output.log(*text, sep=sep, end=end)
+
     def set_image_title(self, text):
         self.image_title.setText(text)
 
@@ -1199,17 +1205,17 @@ class MainWindow(QWidget):
             self.terminal_output.log(f"[ERROR] {str(e)}:")
             self.terminal_output.log(traceback.format_exc)
             self.terminal_output.log("--------------------")
-            
-    def set_size(self,width,height):
-        self.resize(int(width), int(height))
-        
-    def set_position(self,x,y):
-        self.move(int(x), int(y)) 
 
-    def set_title(self,title=""):
+    def set_size(self, width, height):
+        self.resize(int(width), int(height))
+
+    def set_position(self, x, y):
+        self.move(int(x), int(y))
+
+    def set_title(self, title=""):
         self.setWindowTitle(title)
-        
-    def set_icon(self,path):
+
+    def set_icon(self, path):
         if path is not None:
             self.setWindowIcon(QIcon(path))
 
@@ -1222,11 +1228,10 @@ class MainWindow(QWidget):
     def _on_slider_change(self, value):
         self.progress_bar.setValue(value)
         self.colored_bar.set_value(value)
-        self.terminal_output.log(value,color="red",bold=True,sep="\n")
-
+        self.terminal_output.log(value, color="red", bold=True, sep="\n")
 
     #######################################
-    #helpers
+    # helpers
 
     def _on_window_resize(self, event):
         self._repaint_image()
@@ -1251,12 +1256,12 @@ class MainWindow(QWidget):
             Qt.SmoothTransformation
         )
         self.image.setPixmap(scaled_pixmap)
-        
+
     def closeEvent(self, event):
-        #print("Window is closing!")  # Custom action
+        # print("Window is closing!")  # Custom action
 
         # Optional: ask for confirmation
-        if self.ask_confirm_closing==True:
+        if self.ask_confirm_closing == True:
             reply = QMessageBox.question(
                 self,
                 "Confirm Exit",
@@ -1270,9 +1275,10 @@ class MainWindow(QWidget):
             else:
                 event.ignore()  # Ignore the close
         else:
-           event.accept() 
+            event.accept()
 
     ########################################
+
 
 title = "test"
 icon_path = r"icons\icon.ico"
@@ -1280,6 +1286,7 @@ default_com_port = "com9"
 window_pixels_h, window_pixels_v = 1000, 700
 
 app = QApplication(sys.argv)
-window = MainWindow(title,icon_path,window_pixels_h,window_pixels_v,hide_title_bar=True)
+window = MainWindow(title, icon_path, window_pixels_h,
+                    window_pixels_v, hide_title_bar=False)
 window.show()
 sys.exit(app.exec_())
