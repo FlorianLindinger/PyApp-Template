@@ -6,6 +6,10 @@ TODO LIST FOR PyApp-Template
 important
 ############################################################
 
+maybe centralize gitingore again against spam
+
+make option to open terminal until GUI fully up or auto open log on crash
+
 make safe delete folder batch
 
 git batches like commit and get update
