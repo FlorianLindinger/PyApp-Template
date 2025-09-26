@@ -6,6 +6,14 @@ TODO LIST FOR PyApp-Template
 important
 ############################################################
 
+how do i make settings not sync but also change defaults. Maybe add batch that sets settings as defautl via git. make that behaviour clear for devs
+
+prompt if user wants to update if available.
+
+add symbol for no terminal icon gernation. maybe terminal with uno skip symbol
+
+add option to always open settings with program start
+
 maybe centralize gitingore again against spam
 
 make option to open terminal until GUI fully up or auto open log on crash
@@ -17,8 +25,6 @@ git batches like commit and get update
 batch to compare with a git link the diffs. google better ways
 
 add how to use to all utilities
-
-rename repo folder
 
 remove SET "current_file_path=%~dp0"
 CD /D "%current_file_path%" where not needed
