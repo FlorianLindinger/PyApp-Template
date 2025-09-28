@@ -1,23 +1,32 @@
-###########################
-### general gitignores: ###
-###########################
+#################################################
+### general gitignores (from PyApp-Template): ###
+#################################################
 # python cache folder:
 __pycache__
 # shortcut in start folder:
 /*.lnk
 # temporary text file:
 tmp.txt
-# whitelist to sync:
+# whitelist to sync a realitve-path-shortcut:
 !RUN_BEFORE_FIRST_START_TO_GENERATE_SHORTCUTS.lnk
 # log file:
 log.txt
 # temporary id file for no-terminal start:
 *.pid
+# last GUI settings:
+code/GUI_settings.ini
+# folder of local cmd copies:
+code/do_not_change/CMD_exes
+# python external installed packages folder:
+code/python_environment_code/installed_python_packages
 ###########################
 
 
 ###########################
 ### specific gitignores: ##
 ###########################
+
+
+
 
 
