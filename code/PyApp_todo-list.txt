@@ -6,6 +6,10 @@ TODO LIST FOR PyApp-Template
 important
 ############################################################
 
+check if it works with py or python generally after install. (slow scan pc want opposite of flo laptop). install via winget and or utility?
+
+make fail checks like: || goto :fail
+
 how do i make settings not sync but also change defaults. Maybe add batch that sets settings as defautl via git. make that behaviour clear for devs
 
 prompt if user wants to update if available.
