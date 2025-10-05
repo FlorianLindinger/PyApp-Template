@@ -6,6 +6,8 @@ TODO LIST FOR PyApp-Template
 important
 ############################################################
 
+let AI check every file
+
 check if it works with py or python generally after install. (slow scan pc want opposite of flo laptop). install via winget and or utility?
 
 make fail checks like: || goto :fail
