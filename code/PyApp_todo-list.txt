@@ -6,6 +6,8 @@ TODO LIST FOR PyApp-Template
 important
 ############################################################
 
+it crashed and did not print error for missiung packages in pyboson
+
 move over to pyproject.toml
 
 let AI check every file
