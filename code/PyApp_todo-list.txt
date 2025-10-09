@@ -6,6 +6,16 @@ TODO LIST FOR PyApp-Template
 important
 ############################################################
 
+does it actually use env?
+"""
+did not find executable at 'C:\Users\Flo\AppData\Local\Programs\Python\Python313\python.exe': Das System kann die angegebene Datei nicht finden.
+
+ #################################
+ Python code finished successfully
+ #################################
+ Press any key to exit
+"""
+
 it crashed and did not print error for missiung packages in pyboson
 
 move over to pyproject.toml
