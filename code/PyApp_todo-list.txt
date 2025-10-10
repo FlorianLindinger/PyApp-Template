@@ -6,6 +6,34 @@ TODO LIST FOR PyApp-Template
 important
 ############################################################
 
+fix   "ruff.configuration": "D:\\Git Repositories\\python_code_repository\\ruff_settings.toml", working for every pc
+
+copy create env from create_env batch under utilizties
+
+C:\Users\Flo\AppData\Local\Programs\Python\Python313
+winget uninstall --id Python.Python.3.13 -e --silent
+winget install --id Python.Python.3.13 -e --force --source winget --accept-source-agreements --accept-package-agreements --silent --override "InstallAllUsers=0 Include_pip=1 Include_launcher=0 PrependPath=1 SimpleInstall=1 /quiet /norestart"
+
+
+check if exists
+base-executable = C:\Users\Flo\AppData\Local\Programs\Python\Python313\python.exe
+in pyvenv.cfg
+raise good errors if python fails in beginnging
+maybe try winget reinstall and ask user to delete else manually
+if winget chooses a non standard name because soemthing already there i have to update paths from venv or reinstall venv i guess easier
+
+
+include-system-site-packages = false → no global packages.
+PYTHONNOUSERSITE=1 → no per-user packages.
+Together, your venv can only import what’s installed inside itself.
+set PYTHONNOUSERSITE=1
+python %*
+
+#apparently all venvs are just a link to a local python.exe -> not perfectly safe-> ship portable somehow!
+
+install package batch:
+does it actually use env?
+
 does it actually use env?
 """
 did not find executable at 'C:\Users\Flo\AppData\Local\Programs\Python\Python313\python.exe': Das System kann die angegebene Datei nicht finden.
