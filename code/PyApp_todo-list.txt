@@ -6,6 +6,11 @@ TODO LIST FOR PyApp-Template
 important
 ############################################################
 
+:: === test if the global python linked by activated env exists ===
+for /f "tokens=3 delims= " %%A in ('findstr executable "%VIRTUAL_ENV%\pyvenv.cfg"') do set "glob_py_exe_path=%%A"
+
+test what happens if global pyton moves from 3.13.x to 3.13.y with same folder
+
 catch if folder moved/deleted of shortcut and warn
 
 fix   "ruff.configuration": "D:\\Git Repositories\\python_code_repository\\ruff_settings.toml", working for every pc
