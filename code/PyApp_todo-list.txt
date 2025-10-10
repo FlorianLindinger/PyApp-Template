@@ -6,6 +6,8 @@ TODO LIST FOR PyApp-Template
 important
 ############################################################
 
+catch if folder moved/deleted of shortcut and warn
+
 fix   "ruff.configuration": "D:\\Git Repositories\\python_code_repository\\ruff_settings.toml", working for every pc
 
 copy create env from create_env batch under utilizties
