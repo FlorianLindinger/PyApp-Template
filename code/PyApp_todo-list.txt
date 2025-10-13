@@ -240,6 +240,18 @@ Add git link to readme? For base
 optional
 ############################################################
 
+add colors to terminals:
+"""
+@echo off
+:: Enable ANSI escape processing for this console
+powershell -NoProfile -Command ^
+  "$h = Get-StdHandle -11; $m = 0x4; $o = 0; if ((GetConsoleMode $h) -band $m) -eq 0) { SetConsoleMode $h ((GetConsoleMode $h) -bor $m) }"
+
+:: Now you can print color
+for /f "delims=" %%E in ('echo prompt $E^| cmd') do set "ESC=%%E"
+echo %ESC%[93mWARNING:%ESC%[0m something may be wrong.
+"""
+
 from maxi code for auto version
 """
 #!/bin/bash
