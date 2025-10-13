@@ -35,13 +35,8 @@ All files and directories in this repository, **except** the folder listed below
 ## Restricted Component License
 
 The folder `code/do_not_change/` is distributed under its own license.  
-That license applies exclusively to files within that folder and is located at:
-
-```
-code/do_not_change/LICENSE.txt
-```
-
-Refer to that file for its specific terms.
+That license applies exclusively to files within that folder and is located at
+`code/do_not_change/LICENSE.txt`. Refer to that file for its specific terms.
 
 ---
 
