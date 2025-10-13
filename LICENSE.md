@@ -6,8 +6,7 @@ This repository contains components under separate licenses.
 
 ## Notice on File Distribution
 
-This repository may include Python distributions, runtime binaries, Python packages, system executables, or other runtime files. These files are **not part of the project’s original source code** and are **not licensed** under the terms of this repository’s main license or other included licenses.
-These files are excluded from redistribution through Git using the `.gitignore` file, under the section **“TO PREVENT UNLICENSED REDISTRIBUTIONS.”**
+This repository may include Python distributions, runtime binaries, Python packages, system executables, or other runtime files. These files are **not part of the project’s original source code** and are **not licensed** under the terms of this repository’s main license or other included licenses. These files are excluded from redistribution through Git using the `.gitignore` file, under the section **“TO PREVENT UNLICENSED REDISTRIBUTIONS.”**
 
 If you distribute this repository, you must:
 
@@ -32,9 +31,7 @@ All files and directories in this repository, **except** the folder listed below
 
 ## Restricted Component License
 
-The folder `code/do_not_change/` is distributed under its own license.  
-That license applies exclusively to files within that folder and is located at
-`code/do_not_change/LICENSE.txt`. Refer to that file for its specific terms.
+The folder `code/do_not_change/` is distributed under its own license. That license applies exclusively to files within that folder and is located at `code/do_not_change/LICENSE.txt`. Refer to that file for its specific terms.
 
 ---
 
