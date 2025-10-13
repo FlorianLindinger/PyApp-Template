@@ -16,6 +16,8 @@ If you distribute this repository, you must:
 
 2. **When distributing by any other method:**
    - Ensure that files listed in the `.gitignore` section **“TO PREVENT UNLICENSED REDISTRIBUTIONS”** are **not included** in your distribution.
+  
+In case you fork/copy/clone/... this repository to develop a program and this repository is therefore no longer intended as a template, you may remove this "Notice on File Distribution" section of this license and the corresponding point in the summary below, after making sure that the entries in `.gitignore` cover all files that are not licensed for the applying mode of redistribution.
 
 ---
 
