@@ -6,6 +6,9 @@ TODO LIST FOR PyApp-Template
 important
 ############################################################
 
+make sure only stuff is online that is supposed to be there and not from random no 
+gitignore at some point
+
 :: === test if the global python linked by activated env exists ===
 for /f "tokens=3 delims= " %%A in ('findstr executable "%VIRTUAL_ENV%\pyvenv.cfg"') do set "glob_py_exe_path=%%A"
 
