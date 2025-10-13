@@ -1,32 +1,41 @@
-#################################################
-### general gitignores (from PyApp-Template): ###
-#################################################
+# ================================================
+# ==== TO PREVENT UNLICENSED REDISTRIBUTIONS: ====
+# ================================================
+# local cmd.exe copies:
+code/do_not_change/CMD_exes/*
+# installed python packages:
+code/python_environment_code/installed_python_packages/*
+# python distribution:
+code/python_environment_code/python_environment/*
+# =======================================================
+# ==== END OF: TO PREVENT UNLICENSED REDISTRIBUTIONS ====
+# =======================================================
+
+# ===================================================
+# ==== general gitignores (from PyApp-Template): ====
+# ===================================================
 # python cache folder:
 __pycache__
-# shortcut in start folder:
+# shortcuts in root folder:
 /*.lnk
-# temporary text file:
-tmp.txt
-# whitelist to sync a realitve-path-shortcut:
+# whitelist sync of realitve-path-shortcut:
 !RUN_BEFORE_FIRST_START_TO_GENERATE_SHORTCUTS.lnk
-# log file:
+# temporary text files:
+tmp.txt
+# log files:
 log.txt
-# temporary id file for no-terminal start:
+# temporary id files for no-terminal start:
 *.pid
-# last GUI settings:
+# last GUI setting files:
 code/GUI_settings.ini
-# folder of local cmd copies:
-code/do_not_change/CMD_exes
-# python external installed packages folder:
-code/python_environment_code/installed_python_packages
-#################################################
+# ===================================================
 
+# ==============================
+# ==== specific gitignores: ====
+# ==============================
 
-###########################
-### specific gitignores: ##
-###########################
+# ADD YOUR GITIGNORES HERE
 
-
-
+# ==============================
 
 
