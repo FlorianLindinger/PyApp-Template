@@ -6,10 +6,8 @@ This repository contains components under separate licenses.
 
 ## Notice on File Distribution
 
-This repository may include Python distributions, runtime binaries, Python packages, system executables, or other runtime files.  
-These files are **not part of the project’s original source code** and are **not licensed** under the terms of this repository’s main license.
-
-They are excluded from redistribution through Git using the `.gitignore` file, under the section **“TO PREVENT UNLICENSED REDISTRIBUTIONS.”**
+This repository may include Python distributions, runtime binaries, Python packages, system executables, or other runtime files. These files are **not part of the project’s original source code** and are **not licensed** under the terms of this repository’s main license or other included licenses.
+These files are excluded from redistribution through Git using the `.gitignore` file, under the section **“TO PREVENT UNLICENSED REDISTRIBUTIONS.”**
 
 If you distribute this repository, you must:
 
