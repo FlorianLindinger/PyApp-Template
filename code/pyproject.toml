@@ -6,15 +6,10 @@ readme = "README.md"
 license = { text = "WIP" }
 authors = [{ name = "Florian Lindinger", email = "WIP@gmail.com" }]
 requires-python = "WIP"
-dependencies = [
-    "WIP"
-]
+dependencies = ["WIP"]
 
 [project.optional-dependencies]
-dev = [
-    "ruff",
-]
-
+dev = ["ruff"]
 
 
 # ===========================
