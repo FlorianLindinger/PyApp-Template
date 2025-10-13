@@ -1,3 +1,22 @@
+[project]
+name = "PyApp-Template"
+version = "0.1.0"
+description = "WIP"
+readme = "README.md"
+license = { text = "WIP" }
+authors = [{ name = "Florian Lindinger", email = "WIP@gmail.com" }]
+requires-python = "WIP"
+dependencies = [
+    "WIP"
+]
+
+[project.optional-dependencies]
+dev = [
+    "ruff",
+]
+
+
+
 # ===========================
 [tool.ruff] #Ruff (python linter/formatter) configuration
 # ===========================
