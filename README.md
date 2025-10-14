@@ -19,8 +19,7 @@
 - Option for no-terminal execution with stop-button and logging (print & errors) to file.
 - Automatic handling of python crashes with the option to restart the main file or executing and crash-handling python file.
 - Plug-and-play license template & handling of non-distributables via .gitignore & a permissive MIT license for my codes.
-- WIP: Utilities like safer folder deletion (deletion needed for environment reset).
-- WIP: Template and boilerplate code for a GUI using PyQt5.
+
 - Feel free to suggest more :)
 
 ---
@@ -34,6 +33,13 @@
 5. (Optional: Add user-settings under "code/python.yaml")
 6. Execute RUN_BEFORE_FIRST_START_TO_GENERATE_SHORTCUTS.lnk
 7. Run program via the generated shortcuts 
+
+---
+
+## Work in Progress
+
+- WIP: Utilities like safer folder deletion (deletion needed for environment reset).
+- WIP: Template and boilerplate code for a GUI using PyQt5.
 
 ---
 
