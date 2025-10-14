@@ -1,4 +1,4 @@
-# 🐍 PyApp-Template
+# 🐍 PyApp-Template ⊞
 
 **Template for a Windows-only, easily-shareable, self-environment-controlled, source-code-running, ready-to-use (just insert your python file), plug-and-play python application** 
 
