@@ -6,18 +6,16 @@ This repository contains components under separate licenses.
 
 ## Notice on File Distribution
 
-This repository may include Python distributions, runtime binaries, Python packages, system executables, or other runtime files. These files are **not part of the project’s original source code** and are **not licensed** under the terms of this repository’s main license or other included licenses. These files are excluded from redistribution through Git using the `.gitignore` file, under the section **“TO PREVENT UNLICENSED REDISTRIBUTIONS.”**
+This repository may contain newly generated Python distributions, runtime binaries, Python packages, system executables, or other runtime files after execution of any of its codes, which were not part of the original distribution. These generated files are **not necessarily part of the project’s original source code** and are **not necessarily licensed** under the terms of this repository’s main license or other included licenses. These files are, however, excluded from redistribution through Git using the `.gitignore` file, under its section **“TO PREVENT UNLICENSED REDISTRIBUTIONS.”**
 
 If you distribute this repository, you must:
 
 1. **When distributing via Git:**
-   - Keep the `.gitignore` entries under **“TO PREVENT UNLICENSED REDISTRIBUTIONS.”**
-   - Update this section if filenames or paths change, to ensure continued exclusion of unlicensed materials.
+   - Keep the `.gitignore` entries under the section **“TO PREVENT UNLICENSED REDISTRIBUTIONS.”**
+   - Update the **“TO PREVENT UNLICENSED REDISTRIBUTIONS.”** section if filenames or paths change, to ensure continued exclusion of unlicensed materials.
 
 2. **When distributing by any other method:**
-   - Ensure that files listed in the `.gitignore` section **“TO PREVENT UNLICENSED REDISTRIBUTIONS”** are **not included** in your distribution.
-  
-In case you fork/copy/clone/... this repository to develop a program and this repository is therefore no longer intended as a template, you may remove this "Notice on File Distribution" section of this license and the corresponding point in the summary below, after making sure that the entries in `.gitignore` cover all files that are not licensed for the applying mode of redistribution.
+   - Ensure that files targeted in the `.gitignore` section **“TO PREVENT UNLICENSED REDISTRIBUTIONS”** are **not included** in your distribution.
 
 ---
 
