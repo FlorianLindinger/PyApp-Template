@@ -1,12 +1,12 @@
 # 🐍 PyApp-Template
 
-**WIP: Template for a Windows-only, easily-shareable, self-environment-controlled, source-code-running, ready-to-use (just insert your python file), plug-and-play python application** 
+**Template for a Windows-only, easily-shareable, self-environment-controlled, source-code-running, ready-to-use (just insert your python file), plug-and-play python application** 
 
 ---
 
 # Main Features
 
-- Self-contained, fully version controlled, git-sharable, idiot-proof python environment with automatic download of needed packages at user end (no python or any other installation needed for user).
+- Self-contained, fully version controlled, git-sharable, idiot-proof python environment with automatic download of python & needed packages at user end (no installation needed by end user).
 - Structured in a way to make it easily shareable/runnable even with people without any coding/PC experience (plug-and-play).
 - Ready to use: Just insert your python code file.
 - Ready to use settings file (yaml or python) for user interaction with shortcuts to the settings file and improved yaml file variable interpretation which allows a more pythonic way to define variables (simple math operations and scientific notations).
@@ -18,9 +18,8 @@
 - Automatic generation of shortcuts with icons that can be added to the taskbar.
 - Option for no-terminal execution with stop-button and logging (print & errors) to file.
 - Automatic handling of python crashes with the option to restart the main file or executing and crash-handling python file.
-- WIP: Utility for safer folder deletion (deletion needed for environment reset).
-- WIP: Includes minimal version of python/pip/virtualenv such that user does not need to have anything.
-- WIP: Permissive licene.
+- Plug-and-play license template & handling of non-distributables via .gitignore & a permissive MIT license for my codes.
+- WIP: Utilities like safer folder deletion (deletion needed for environment reset).
 - WIP: Template and boilerplate code for a GUI using PyQt5.
 - Feel free to suggest more :)
 
@@ -40,4 +39,4 @@
 
 ## Notes
 
-Tested to work in current windows 11
+Tested to work in current Windows 11 Home/Pro
