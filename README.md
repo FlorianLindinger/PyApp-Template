@@ -38,8 +38,8 @@
 
 ## Work in Progress
 
-- WIP: Utilities like safer folder deletion (deletion needed for environment reset).
-- WIP: Template and boilerplate code for a GUI using PyQt5.
+- Utilities like safer folder deletion.
+- Template and boilerplate code for a GUI using PyQt5.
 
 ---
 
