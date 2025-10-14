@@ -18,8 +18,6 @@
 - Automatic generation of shortcuts with icons that can be added to the taskbar.
 - Option for no-terminal execution with stop-button and logging (print & errors) to file.
 - Automatic handling of python crashes with the option to restart the main file or executing and crash-handling python file.
-- Plug-and-play license template & handling of non-distributables via .gitignore & a permissive MIT license for my codes.
-
 - Feel free to suggest more :)
 
 ---
@@ -40,7 +38,8 @@
 
 - Utilities like safer folder deletion.
 - Template and boilerplate code for a GUI using PyQt5.
-
+- Plug-and-play license template & handling of non-distributables via .gitignore & a permissive MIT license for my codes.
+- 
 ---
 
 ## Notes
