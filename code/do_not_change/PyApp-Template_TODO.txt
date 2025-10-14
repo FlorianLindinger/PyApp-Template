@@ -1,0 +1,447 @@
+############################################################
+TODO LIST FOR PyApp-Template
+############################################################
+
+############################################################
+important
+############################################################
+
+delete the large zip out of git history
+
+make everythig but do_not_change MIT
+
+do i have to delete shortcuts to renew them with own code?
+
+fix not starting
+
+fix shortcut not being distributly if you charge ->remake or mention that you can not charge for stuff built on this framework
+
+check what is not synced and just trash
+
+fix license which now does not work since if user puts in restricitve license this would now be valid since he 
+would restrict public code. How even icons saying cant put any license if my icons and any if theirs
+
+make sure only stuff is online that is supposed to be there and not from random no 
+gitignore at some point
+
+:: === test if the global python linked by activated env exists ===
+for /f "tokens=3 delims= " %%A in ('findstr executable "%VIRTUAL_ENV%\pyvenv.cfg"') do set "glob_py_exe_path=%%A"
+
+test what happens if global pyton moves from 3.13.x to 3.13.y with same folder
+
+catch if folder moved/deleted of shortcut and warn
+
+fix   "ruff.configuration": "D:\\Git Repositories\\python_code_repository\\ruff_settings.toml", working for every pc
+
+copy create env from create_env batch under utilizties
+
+C:\Users\Flo\AppData\Local\Programs\Python\Python313
+winget uninstall --id Python.Python.3.13 -e --silent
+winget install --id Python.Python.3.13 -e --force --source winget --accept-source-agreements --accept-package-agreements --silent --override "InstallAllUsers=0 Include_pip=1 Include_launcher=0 PrependPath=1 SimpleInstall=1 /quiet /norestart"
+
+
+check if exists
+base-executable = C:\Users\Flo\AppData\Local\Programs\Python\Python313\python.exe
+in pyvenv.cfg
+raise good errors if python fails in beginnging
+maybe try winget reinstall and ask user to delete else manually
+if winget chooses a non standard name because soemthing already there i have to update paths from venv or reinstall venv i guess easier
+
+
+include-system-site-packages = false → no global packages.
+PYTHONNOUSERSITE=1 → no per-user packages.
+Together, your venv can only import what’s installed inside itself.
+set PYTHONNOUSERSITE=1
+python %*
+
+#apparently all venvs are just a link to a local python.exe -> not perfectly safe-> ship portable somehow!
+
+install package batch:
+does it actually use env?
+
+does it actually use env?
+"""
+did not find executable at 'C:\Users\Flo\AppData\Local\Programs\Python\Python313\python.exe': Das System kann die angegebene Datei nicht finden.
+
+ #################################
+ Python code finished successfully
+ #################################
+ Press any key to exit
+"""
+
+it crashed and did not print error for missiung packages in pyboson
+
+move over to pyproject.toml
+
+let AI check every file
+
+check if it works with py or python generally after install. (slow scan pc want opposite of flo laptop). install via winget and or utility?
+
+make fail checks like: || goto :fail
+
+how do i make settings not sync but also change defaults. Maybe add batch that sets settings as defautl via git. make that behaviour clear for devs
+
+prompt if user wants to update if available.
+
+add symbol for no terminal icon gernation. maybe terminal with uno skip symbol
+
+add option to always open settings with program start
+
+maybe centralize gitingore again against spam
+
+make option to open terminal until GUI fully up or auto open log on crash
+
+make safe delete folder batch
+
+git batches like commit and get update
+
+batch to compare with a git link the diffs. google better ways
+
+add how to use to all utilities
+
+remove SET "current_file_path=%~dp0"
+CD /D "%current_file_path%" where not needed
+
+move python_environment_code to utiltites
+
+make batch files more into utilities and add it into utilities folder
+add date number to exe and maybe random
+
+
+add more errorlevels everywhere
+
+fix readme for icons.
+
+checl if alternative for icon change than 7mb exe
+
+Fix Release in git
+
+change everywhere to PyApp-Template
+
+add cmd folder to python env folder and rename it to python_environment_and_startup
+
+check speed of optional checks and rempove if too slow
+
+folder generation needed for extra packages folder?
+
+#maybe find safer default image
+#maybe just suggest to search for all LICENSE filenames for user to get all subfolder ones
+
+
+add how and why problems were solved like adding cmds or shortcuts or magick
+
+check out https://www.google.com/url?sa=t&source=web&rct=j&opi=89978449&url=https://github.com/mdklatt/cookiecutter-python-app&ved=2ahUKEwio3_yNo5aPAxUsRP4FHYgVFZQQFnoECCkQAQ&usg=AOvVaw0SDEf3SWiMRncvV0_lxJM8
+
+explain GitHub desktop easily
+
+add code to replace base python environment for new python version. maybe freeze current package state and reinstall it for new python version. explain that behavior. maybe prompt for delete with text for reinstall 
+
+add space ontop of license file for user ro add stuff. also mentione what likely is from them and me
+
+#maybe find safer default image
+#maybe just suggest to search for all LICENSE filenames for user to get all subfolder ones
+add my template to bottom to give option to users to add their part ontop
+auto add python license into folder and ref sub licenses in my license
+remove gitignore for after venv. apply create new folder for external after venv
+auto detect that venv python veriopns does not match and conform to delete and renew. generally confirm to delete 
+renmae base folder to indicate that it should be unchanged
+
+add confirmation to all folder removal
+
+reset_python_environment_to_default_packages
+multiple pauses needed for non existing env folder?
+
+#add check of python verison of current python folder and replace it with venv if not matching. ship python by default 
+
+#check screenshots on phone for ideas
+
+#add stops for no settings file defined or existing & add stop for pyhton not existing
+FINDSTR:  kann nicht ge÷ffnet werden.
+Die Syntax für den Dateinamen, Verzeichnisnamen oder die Datenträgerbezeichnung ist falsch.
+Der DNS-Server ist nicht autorisierend für die Zone.
+Die Syntax für den Dateinamen, Verzeichnisnamen oder die Datenträgerbezeichnung ist falsch.
+D:\Programs\Python311\python.exe: can't find '__main__' module in 'D:\\Git Repositories\\template-run_python_in_env\\code\\do_not_change'
+ #################################
+ Python code finished successfully
+ #################################
+ Press any key to exit
+
+
+it should abort and warn. maybe make independent from global python for start after venv setup`? anyway not reasonable?
+########################################
+did not find executable at 'C:\Users\Flo\AppData\Local\Programs\Python\Python313\python.exe': Das System kann die angegebene Datei nicht finden.
+
+
+ #################################
+ Python code finished successfully
+ #################################
+
+ Press any key to exit
+ ########################################
+
+can i have non user settings file in different drive?
+
+#add a mode to not sync settings. maybe local seetinfgs? like for com port
+
+install needed packages did not work for pyboson
+
+maybe moving to local folder is not needed for setlocal?
+
+do not close if it fuck up main start
+
+problem if log is blocked. force replace blocked log file
+
+make everything that deletes and saves more safe by only allowing .txt for example
+
+add comment to set that escape character like ()& need ^ . or other way to avoid. is "" around everything or around value solujtiopn? explain that relative paths work
+
+add full path and stop if not generated before continuing:
+Error: ..\..\..\tmp.txt does not exist. Press any key to exit
+
+make a shortcut helper file which catches all errors and deletes if non?
+or maye launch them with /K and only finsh in end if no errorlevel
+
+auto kill last process? probably not. make a non-user setting to auto kill previous process. ask? or add to file and make it kill all of them?
+
+no error to log file for error in start_program?
+
+for crashes in batch outer most it closes everyting? maybe somehow avoid with /K instead of /C
+
+make checks if files exist where no error would appear anywhere and leave window open with a warning if no existing
+
+#################################
+
+#popup for crashes . maybe to general hidden function?
+
+add option to copy failed install with opening tmp.txt and manually relax requirements . make pipreqs relaax auto?
+
+Make browser Version + start with Lesezeichen 
+
+Make pyqt5 a scroll Menü for yaml settings with restart button
+
+No. Confirmation if python finished in gui
+
+Add block of Ctrl c
+
+Add relativ starters?
+
+Add just a Code line to start batch as a setting . aka start program in CMD?
+
+Add Syntax Checker to git and even linting?
+
+Change icon in top left corner 
+
+Run terminal in Browser 
+
+##############################
+For readme
+##############################
+
+ explain what everything is and that it has to keep its name
+ explain that you could just use poython for settings
+ add to notes that you can delete after_python_crash_code.py
+ explain fork.... options
+explain all advantages/features
+
+update github top right 
+
+explain that version ..x changes can be updated by replacing do_not_change and should not be breaking
+v.xy changes should be breaking something
+releases should always be stable
+for breaking. explain what needs to be changed to fix.
+
+where it looks for pyron scipts for auto install
+
+Add git link to readme? For base 
+
+############################################################
+optional
+############################################################
+
+add colors to terminals:
+"""
+@echo off
+:: Enable ANSI escape processing for this console
+powershell -NoProfile -Command ^
+  "$h = Get-StdHandle -11; $m = 0x4; $o = 0; if ((GetConsoleMode $h) -band $m) -eq 0) { SetConsoleMode $h ((GetConsoleMode $h) -bor $m) }"
+
+:: Now you can print color
+for /f "delims=" %%E in ('echo prompt $E^| cmd') do set "ESC=%%E"
+echo %ESC%[93mWARNING:%ESC%[0m something may be wrong.
+"""
+
+from maxi code for auto version
+"""
+#!/bin/bash
+
+echo "previous version:"
+cat VERSION
+echo "new version:"
+read version
+
+echo "$version" > VERSION
+git add VERSION
+git commit -m "set version"
+git push origin
+
+git tag -a v"$version" -m "version $version"
+git push origin v"$version"
+"""
+
+
+
+
+add code example hwo to merge settings and x symbol over icon via magicked
+
+add single function to add args together starting from i
+
+do GOTO :EOF instead of EXIT /B for functions
+
+lock = threading.Lock()
+with lock:
+	print(f"{name} got the lock")
+
+add option to start minimized
+
+need an Autostart on Windows option?
+
+option to ignore every ECHO but let python print
+
+add a batch that update git folder. maybe only main and release. maybe propt user and disaply name and changelog(s)
+
+add startup time or something
+
+Let the script run in "portable" mode where all logs, configs, environments stay in a single folder -> wherever shortcut is placed also print output and let python think it is there. somehow transfer shortcut pos to batch files and python for that 
+
+make lightweight interface instead of terminal. maybe as option or only if installed
+
+somehow have an option to get help when having access to shortcut
+-> add info to shortcuts slots
+
+Check Git remote for updates and prompt user to pull. print at least if new verison available
+
+Enable verbose logging or keep the terminal open on error. maybe a setting that every code waits 
+
+add option to kill previous. maybe even for non hidden
+
+add utilities like replace line in settings
+
+reload imports settings function? 
+
+somehow make echo on option switchable
+import setting in beginning for that 
+
+timestamp to log? subfolder?
+same for pid?
+
+self updatring from git option?not my code but ones that use template. like a check on Startup and asking for confirmation of update and then restart from ground 
+
+make somehow git run generator for cloning
+
+Bonus: Change color if there's an error (e.g., red background).
+
+make option to not delete empty log files
+
+make environment batches more into utilities with calls with arguments? need utilizies folder?maybe whole thing as package but with some args 
+
+generate shrotcut to log output? -> rename functions. Maybe needed becasue taskbar adding?
+
+move helpers i.e. utiliteid into helpers file and maybe rename utilizties and put more utilizies in
+
+mopve output of uopdates to NUL
+
+color in prints or even change normal prints somehow. Must also work with file verison
+
+I guess just a number for max calling of crash handlers with 0 being accepted: adjust message printing
+option for not repeat calls of crash scripts? could just retun I guess if receiving arg "crashed". no that does not work since then it gets called 0 times
+
+a lot of small helpers to helper 
+confirmation question via windows popup?
+-> helper 
+
+rename everythong from batch to more generic because it is calling generic 
+
+
+add better text:
+	ECHO: ##########################
+	ECHO: Python crashed (see above^)
+	ECHO: ##########################
+at least once? in the beginnign?
+
+add some kind of detection that code crashes immediately and that it does not spam repeatedly. or some minimum delay
+
+auto fork option? hm maybe just actually copy via a batch file (new folder and copy (dont overwrite at all), and delete .git, shortcuts ..., dont copy basically stuff in gitignore)
+But fork allows for contributing changes back to original template. Git remplate does not but allows for own forking
+
+make pyqt5 interface available and easy to use with example. 
+
+check if i can add stoppping of closing terminal
+
+allow for non online package installs somehow via req.txt
+
+see where i get errorlevel and if it translateds to parent batch. print different message if errior
+
+do i need python -m pip or not. 
+do I need to update pip or python -m
+
+add more emptly print lines between spam
+
+make Code somehow faster. maybe compile
+
+add how to copy this folder
+
+allow for local package installs somehow via req.txt
+
+install via git package possible?
+
+add readme in code\ folder   explain what everything is and that it has to keep its name
+
+check if i can add stoppping of closing terminal for non pyqt5
+
+make pyqt5 interface available and easy to use with example.
+
+auto fork option? hm maybe just actually copy via a batch file (new folder and copy (dont overwrite at all), and delete .git)
+But fork allows for contributing changes back to original template. Git remplate does not but allows for own forking
+
+add to notes that you can delete after_python_crash_code.py
+
+add some kind of detection that code crashes immediately and that it does not spam repeatedly. or some minimum delay
+
+is there any use in piping the error of the start batch file for non no-terminal mode
+
+add option to not have any prints from batch files?
+remove unnecessary echos if python return -1 ?
+
+add better text:
+ECHO: ##########################
+	ECHO: Python crashed (see above^)
+	ECHO: ##########################
+at least once? in the beginnign?
+
+generally have more fancy prints and color.
+maybe have program Name as asci art
+
+make unicode log output
+
+add comment if or when "" needed or allowed.
+
+add option to log to file aswell while terminal?
+
+add option to log terminal output to log file. maybe replace python print? outside
+
+test if CALL :handle_python_crash >> %log_path% 2>&1 works recuresively
+
+test if error of batch forward for log
+
+add more crash tests and stops everywhere 
+
+add error log piping to all shortcuts and wherever possible. and code that deletes an empty error file at end of all codes. where to put file? is there a way to put it where it was called? i guess it would not exist either way if not called by shortcuts
+
+need activate env for pipreqs? for correct package version for python version?
+need pipreqs to install in local? for no global python 
+
+possible to make easily old terminal closing. maybe python code in helper 
+
+make option to copy whole folder for new project somehow 
+
+make pyFROG and pyFLIR
