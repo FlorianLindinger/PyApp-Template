@@ -4,6 +4,7 @@ setlocal EnableExtensions EnableDelayedExpansion
 set "PY_VER=3.13"
 
 :: WIP: make arg version and make latest default for no arg and test all possibitlies
+:: check if it upgrades to 10+ for 9 version
 
 :: find latest python version compatible with PY_VER to find download link
 for /f "usebackq delims=" %%A in (`
