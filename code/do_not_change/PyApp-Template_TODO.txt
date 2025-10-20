@@ -6,6 +6,16 @@ TODO LIST FOR PyApp-Template
 important
 ############################################################
 
+make make_absolute_path_if_relative work with empty path
+
+replace CD wiht pushd and popd because they only change errorlevel on fail
+
+add actiavtgion check in
+python_env_activation_code_path
+and handle returned errorlevel everhywher
+
+fix that every CD and everything resets ERRORLEVEL
+
 fix warniong for following after git clone. maybe fix needed for derivative repos:
   'code/do_not_change/PyApp-Template_VERSION.txt'
   'code/do_not_change/PyApp-Template_version.txt'
@@ -41,7 +51,6 @@ echo Done: %DEST%
 
 make all global variables CAPITALIZED
 
-make make_absolute_path_if_relative work with empty path
 
 delete the large zip out of git history
 
