@@ -6,6 +6,28 @@ TODO LIST FOR PyApp-Template
 important
 ############################################################
 
+maybe just install local python in folder and venv
+"""
+@echo off
+setlocal
+set "PY_VER=3.12.6"
+set "URL=https://www.python.org/ftp/python/%PY_VER%/python-%PY_VER%-amd64.exe"
+set "DEST=%~dp0..\runtime\Python312"
+set "TMP=%TEMP%\py_installer.exe"
+
+if not exist "%DEST%" mkdir "%DEST%"
+powershell -NoProfile -Command "Invoke-WebRequest '%URL%' -OutFile '%TMP%'"
+
+REM Silent install to project folder; Tkinter included by default
+"%TMP%" /quiet InstallAllUsers=0 TargetDir="%DEST%" PrependPath=0 Include_pip=1
+
+del "%TMP%"
+"%DEST%\python.exe" -V || (echo Install failed & exit /b 1)
+"%DEST%\python.exe" -m tkinter || echo Tkinter test opened a window (OK).
+echo Done: %DEST%
+"""
+
+
 make all global variables CAPITALIZED
 
 make make_absolute_path_if_relative work with empty path
