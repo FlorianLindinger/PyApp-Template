@@ -6,6 +6,17 @@ TODO LIST FOR PyApp-Template
 important
 ############################################################
 
+fix warniong for following after git clone:
+  'code/do_not_change/PyApp-Template_VERSION.txt'
+  'code/do_not_change/PyApp-Template_version.txt'
+  'code/do_not_change/README.txt'
+  'code/do_not_change/readme.txt'
+  'code/VERSION.txt'
+  'code/version.txt'
+
+
+
+
 maybe just install local python in folder and venv
 """
 @echo off
