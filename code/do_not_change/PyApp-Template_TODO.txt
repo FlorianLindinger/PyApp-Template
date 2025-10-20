@@ -6,6 +6,10 @@ TODO LIST FOR PyApp-Template
 important
 ############################################################
 
+make all global variables CAPITALIZED
+
+make make_absolute_path_if_relative work with empty path
+
 delete the large zip out of git history
 
 make everythig but do_not_change MIT
