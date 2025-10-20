@@ -2,6 +2,8 @@
 pyqt5 todo list
 ######################
 
+combine from pyboson and here all pyqt5 stuff
+
 make a reset option in q classes and reset all childs that are q classes. maybe find them via new mother class 
 
 have to define function to turn dummy off->stop connection.  Alos for turning on
