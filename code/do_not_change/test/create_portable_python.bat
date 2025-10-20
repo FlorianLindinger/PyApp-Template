@@ -3,6 +3,8 @@ setlocal EnableExtensions EnableDelayedExpansion
 
 set "PY_VER=3.13"
 
+:: WIP: make arg version and make latest default for no arg and test all possibitlies
+
 :: find latest python version compatible with PY_VER to find download link
 for /f "usebackq delims=" %%A in (`
   powershell -NoLogo -NoProfile -Command "$v=(Invoke-WebRequest 'https://www.python.org/ftp/python/').Links.href | Where-Object {$_ -match '^%PY_VER%\.\d+/$'} | Sort-Object | Select-Object -Last 1; if($v){$v.TrimEnd('/')}" 
@@ -30,12 +32,15 @@ powershell -NoLogo -NoProfile -Command ^
 
 :: (re)create final installation folder
 set "TARGET_DIR=portable_python"
+CALL :make_absolute_path_if_relative "%TARGET_DIR%"
+SET "TARGET_DIR=%OUTPUT%"
 rmdir /s /q "%TARGET_DIR%" > NUL
 mkdir "%TARGET_DIR%" > NUL
 
 :: install python files
 pushd tmp
 for /f "delims=" %%M in ('dir /b *.msi') do (
+  echo Processing %%M
   msiexec /a "%%~fM" TARGETDIR="%TARGET_DIR%" INSTALLDIR="%TARGET_DIR%" /qn
 )
 popd
@@ -58,20 +63,21 @@ CALL "%TARGET_DIR%\%local_python_name%" -V || (
   EXIT /B 2
 )
 
-:: print
-echo.
-echo Done.
-
 :: delete temporariy folder
 rmdir /s /q tmp
 
-:: success exit at end of code
+:: print success and exit
+echo.
+echo: Sucessfully created portable Python (%FULL_VER%) at "%TARGET_DIR%". Print any key to exit.
+PAUSE > NUL
 exit /b 0
 
-@REM -------------------------------------------------
-@REM function that makes relative path (relative to current working directory) to absolute if not already:
-@REM -------------------------------------------------
+
+
+:: -------------------------------------------------
+:: function that makes relative path (relative to current working directory) to absolute if not already:
+:: -------------------------------------------------
 :make_absolute_path_if_relative
 	SET "OUTPUT=%~f1"
 	GOTO :EOF
-@REM -------------------------------------------------
+:: -------------------------------------------------
