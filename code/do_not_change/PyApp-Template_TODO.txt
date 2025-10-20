@@ -6,6 +6,14 @@ TODO LIST FOR PyApp-Template
 important
 ############################################################
 
+fix warniong for following after git clone. maybe fix needed for derivative repos:
+  'code/do_not_change/PyApp-Template_VERSION.txt'
+  'code/do_not_change/PyApp-Template_version.txt'
+  'code/do_not_change/README.txt'
+  'code/do_not_change/readme.txt'
+  'code/VERSION.txt'
+  'code/version.txt'
+
 
 
 
