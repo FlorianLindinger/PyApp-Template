@@ -1,4 +1,3 @@
-:: check if more final files deletable
 :: check if fully portable
 
 @echo off
@@ -57,17 +56,6 @@ powershell -NoLogo -NoProfile -Command ^
   " Where-Object { -not ( ([IO.Path]::GetFileNameWithoutExtension( ([IO.Path]::GetFileNameWithoutExtension($_)) )) -match '(_d|_pdb)$' ) };" ^
   "foreach($l in $links){$n=[IO.Path]::GetFileName($l);$p=Join-Path $out $n;Try{Invoke-WebRequest -Uri $l -OutFile $p -UseBasicParsing}catch{Write-Error $l}}"
 
-@REM :: define needed files 
-@REM set "files=core.msi,lib.msi,exe.msi,tcltk.msi,dev.msi,tools.msi"
-
-@REM :: download files
-@REM powershell -NoLogo -NoProfile -Command ^
-@REM   "$base='%URL%'; if($base[-1] -ne '/'){$base+='/'}; $baseUri=[Uri]$base;" ^
-@REM   "$out='tmp'; if(-not (Test-Path $out)){New-Item -ItemType Directory -Path $out > $null};" ^
-@REM   "$want = '%files%'.Split(',') | ForEach-Object { $_.Trim() };" ^
-@REM   "$links = (Invoke-WebRequest -Uri $baseUri -UseBasicParsing).Links | Select-Object -ExpandProperty href | Where-Object { $_ -and ($_ -notmatch '/$') } |  ForEach-Object { ([Uri]::new($baseUri, $_)).AbsoluteUri } | Select-Object -Unique | Where-Object { $want -contains ([IO.Path]::GetFileName($_)) };" ^
-@REM   "foreach($l in $links){ $n=[IO.Path]::GetFileName($l); $p=Join-Path $out $n; try{ Invoke-WebRequest -Uri $l -OutFile $p -UseBasicParsing } catch{ Write-Error $l } }"
-
 :: (re)create final installation folder
 set "TARGET_DIR=portable_python"
 CALL :make_absolute_path_if_relative "%TARGET_DIR%"
@@ -83,17 +71,6 @@ for %%A in (*.msi) do (
   del /q "%TARGET_DIR%\%%~nxA" 2>nul
 )
 popd
-
-@REM :: create a "python.exe" that only sees local paths 
-@REM SET "local_python_name=local_only_python.bat"
-@REM > "%TARGET_DIR%\%local_python_name%" (
-@REM   echo @echo off
-@REM   echo setlocal
-@REM   echo set "ROOT=%%~dp0"
-@REM   echo set "PATH=%%ROOT%%;%%ROOT%%\Scripts;%%SystemRoot%%\System32;%%SystemRoot%%"
-@REM   echo call "%%ROOT%%python.exe" %%*
-@REM   echo endlocal ^& exit /b %%ERRORLEVEL%%
-@REM )
 
 :: verify functioning %local_python_name%
 CALL "%TARGET_DIR%\python.exe" -V || (
