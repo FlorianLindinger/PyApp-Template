@@ -9,7 +9,7 @@
 :: turn off printing of commands:
 @ECHO OFF
 
-:: make this code local so no variables of a potential calling program are changed:
+:: make this code local so no variables of a potential calling program are changed (ENABLEDELAYEDEXPANSION for delayed expasion in settings file):
 SETLOCAL ENABLEDELAYEDEXPANSION
 
 :: define local variables 
@@ -116,5 +116,5 @@ endlocal & EXIT /B %errorlevel%
     ) else (
 	    set "OUTPUT=%~f1"
     )
-	goto :EOF
+goto :EOF
 :: =================================================
