@@ -8,7 +8,7 @@ This folder and its contents are covered by the **MIT License**,
 ## 1. MIT License (Default)
 
 All files and subdirectories in this folder, **except** those listed in
-Section 2 and Section 3, are licensed under the following terms:
+Section 2, are licensed under the following terms:
 
 ```
 MIT License
@@ -38,12 +38,12 @@ THE SOFTWARE.
 
 ## 2. Exception: CMD_exes Folder
 
-The folder named `CMD_exes` contains Windows executables that are **not**
-covered by the MIT License above.  
-Each executable in that folder remains under its respective license terms
+The folder named `CMD_exes` contains Windows executable and localization files 
+that are **not** covered by the MIT License above.  
+Each file in that folder remains under its respective license terms
 provided by Microsoft or its original author(s).  
 Refer to official Microsoft documentation or the relevant license notices
-accompanying those binaries for usage rights and redistribution conditions.
+accompanying those files for usage rights and redistribution conditions.
 
 ---
 
