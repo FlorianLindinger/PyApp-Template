@@ -6,6 +6,11 @@ TODO LIST FOR PyApp-Template
 important
 ############################################################
 
+add ready exe generator that makes everything not needed and bundles python in it
+mention common packages where not allowed or where to check waht license they want.
+somehow make that work with the code crash script added
+
+
 replace all copy with robocopy
 
 test with folder path with space. especially asbs path of shortcuts
