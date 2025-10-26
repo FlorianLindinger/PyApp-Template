@@ -12,14 +12,34 @@
 :: make this code local so no variables of a potential calling program are changed:
 SETLOCAL
 
-:: define local variables (do not have spaces before or after the "=" or at the end of the variable value (unless wanted in value) -> inline comments without space before "&@REM".
-:: Use "\" to separate folder levels and omit "\" at the end of paths. Relative paths allowed):
+:: get name of current localization language needed for cmd.exe that presumably runs this script
+for /f "tokens=2,*" %%A in ('reg query "HKCU\Control Panel\Desktop" /v PreferredUILanguages 2^>nul') do (
+	for %%L in (%%B) do (
+	set "UI_LANG=%%L"
+	goto :done
+	)
+)
+:done
+:: create localization language folder if missing
+if not exist "CMD_exes\%UI_LANG%\" (
+	mkdir "CMD_exes\%UI_LANG%"
+	robocopy "CMD_exes\mui_files" "CMD_exes\%UI_LANG%" /E /R:0 /W:0 /NFL /NDL /NJH /NJS /NP
+)
+
+:: define local variables
 SET "settings_path=%~1"
 
 :: move to folder of this file (needed for relative path shortcuts)
 :: current_file_path varaible needed as workaround for nieche windows bug where this file gets called with quotation marks:
 SET "current_file_path=%~dp0"
 CD /D "%current_file_path%"
+
+:: check if settings file exist
+IF NOT exist "%settings_path%" (
+	echo: [Error] Need to define existing settings path. Defined "%settings_path%". Aborting. Press any key to exit.
+	pause > nul
+	exit /b 1
+)
 
 :: import settings from settings_path:
 FOR /F "tokens=1,2 delims==" %%A IN ('findstr "^" "%settings_path%"') DO ( SET "%%A=%%B" )
@@ -122,13 +142,13 @@ IF "%~2"=="" (
 :: exit program without closing a potential calling program
 EXIT /B
 
-:: ============================
-:: --- Function Definitions ---
-:: ============================
+:: ====================
+:: ==== Functions: ====
+:: ====================
 
-:: -------------------------------------------------
-:: define handle_python_crash function:
-:: -------------------------------------------------
+:: =================================================
+:: function to handle python crashes:
+:: =================================================
 :handle_python_crash
 ECHO:
 ECHO: ===================================================
@@ -168,12 +188,21 @@ IF %ERRORLEVEL% EQU 1 ( @REM could be infinitely recursive
 	CALL :handle_python_crash
 )
 EXIT /B 0 &@REM exit function with errorcode 0
-:: -------------------------------------------------
+:: =================================================
 
-:: -------------------------------------------------
-:: function that makes relative path (relative to current working directory) to absolute if not already:
-:: -------------------------------------------------
+
+
+:: =================================================
+:: function that makes relative path (relative to current working directory) to :: absolute if not already. Works for empty path (relative) path:
+:: Usage:
+::    call :make_absolute_path_if_relative "%some_path%"
+::    set "abs_path=%output%"
+:: =================================================
 :make_absolute_path_if_relative
-	SET "OUTPUT=%~f1"
-	GOTO :EOF
-:: -------------------------------------------------
+    if "%~1"=="" (
+        set "OUTPUT=%CD%"
+    ) else (
+	    set "OUTPUT=%~f1"
+    )
+goto :EOF
+:: =================================================
