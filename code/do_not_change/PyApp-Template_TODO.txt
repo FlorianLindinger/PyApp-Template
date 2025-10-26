@@ -6,6 +6,10 @@ TODO LIST FOR PyApp-Template
 important
 ############################################################
 
+replace all copy with robocopy
+
+test with folder path with space. especially asbs path of shortcuts
+
 add explanation for pyq5 license
 
 make template for license in python for packages 
