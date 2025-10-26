@@ -6,6 +6,8 @@ TODO LIST FOR PyApp-Template
 important
 ############################################################
 
+make template for license in python for packages 
+
 make make_absolute_path_if_relative work with empty path
 
 replace CD wiht pushd and popd because they only change errorlevel on fail
