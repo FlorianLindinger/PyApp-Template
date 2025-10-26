@@ -4,9 +4,9 @@
 # cmd.exe copies:
 code/do_not_change/CMD_exes/*
 # installed python packages:
-code/python_environment_code/installed_python_packages/*
+code/python_environment/installed_python_packages/*
 # python distribution from virtual environment:
-code/python_environment_code/python_environment/*
+code/python_environment/python_environment/*
 # =======================================================
 # ==== END OF: TO PREVENT UNLICENSED REDISTRIBUTIONS ====
 # =======================================================
