@@ -22,6 +22,8 @@ __pycache__
 /*.lnk
 # whitelist sync of realitve-path-shortcut:
 !RUN_BEFORE_FIRST_START_TO_GENERATE_SHORTCUTS.lnk
+# whitelist sync of info.txt:
+!code/do_not_change/CMD_exes/info.txt
 # temporary text files:
 tmp.txt
 # log files:
