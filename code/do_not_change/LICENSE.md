@@ -47,39 +47,12 @@ accompanying those binaries for usage rights and redistribution conditions.
 
 ---
 
-## 3. Exception: shortcut_by_OptimumX.exe
-
-The executable file `shortcut_by_OptimumX.exe`
-(renamed from `shortcut.exe`) is licensed separately under the terms below:
-
-```
-Copyright 2000-2005 Marty List, www.OptimumX.com
-
-LICENSE TERMS
-
-Optimum X freeware utilities are completely free, including commercial use.
-You are allowed to freely distribute these freeware utilities as long as you
-don't charge anything for this. If you distribute this utility, you must
-include all files in the distribution package, without any modification.
-
-DISCLAIMER
-
-The software is provided "AS IS" without any warranty, either expressed or
-implied, including, but not limited to, the implied warranties of
-merchantability and fitness for a particular purpose. The author will not be
-liable for any special, incidental, consequential or indirect damages due to
-loss of data or any other reason.
-```
-
----
-
-## 4. Summary
+## 3. Summary
 
 - All files in this folder are under the MIT License **except:**
   - The contents of the `CMD_exes` folder, which retain their respective
     original licenses.
-  - The file `shortcut_by_OptimumX.exe`, which is governed by
-    Marty List’s Optimum X license shown above.
+
 
 When redistributing or modifying this folder, ensure all license notices
 remain intact and unaltered.
