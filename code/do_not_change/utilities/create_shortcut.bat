@@ -1,13 +1,11 @@
+:: =================================================
+:: Usage: 
+:: make_shortcut.bat "<name>" "<target>" "<target-args>" "<working-dir>" "<icon-path>" "<description>"
+:: Add quotations inside an arg as a double single quote ('')
+:: =================================================
+
 @echo off
 setlocal
-:: WIP: add fail print. (also add how to add quotes in quoest. add double ')
-:: Usage: make_shortcut.bat "<target>" "<working_dir>" "<icon_path>" "<description>"
-:: Example:
-:: make_shortcut.bat "C:\Program Files\App\app.exe" "C:\Program Files\App" "C:\icons\app.ico" "My Shortcut"
-
-
-:: working example:
-::create_shortcut.bat "test11" "code\do_not_change\CMD_exes\cmd_1_PyApp-Template.exe" "/C start_program.bat ''..\non-user_settings.ini''" "code\do_not_change" "code\icons\icon.ico" "description"
 
 set "NAME=%~1"
 set "TARGET=%~2"
@@ -16,11 +14,13 @@ set "WDIR=%~4"
 set "ICON=%~5"
 set "DESC=%~6"
 
+:: print USAGE if no arg given
 if "%~1"=="" (
     echo Usage: %~nx0 "name" "target" "args" "working_dir" "icon_path" "description"
     exit /b 1
 )
 
+:: make paths absolute
 call :make_absolute_path_if_relative "%NAME%"
 set "NAME=%output%"
 call :make_absolute_path_if_relative "%TARGET%"
@@ -30,8 +30,20 @@ set "WDIR=%output%"
 call :make_absolute_path_if_relative "%ICON%"
 set "ICON=%output%"
 
+:: strip accidental .lnk from NAME so we control extension
+if /i "%NAME:~-4%"==".lnk" set "NAME=%NAME:~0,-4%"
+
+:: ensure link directory exists
+for %%D in ("%NAME%") do set "LINKDIR=%%~dpD"
+if not exist "%LINKDIR%" (
+    echo Error: Output directory "%LINKDIR%" does not exist.
+    exit /b 2
+)
+
+:: add shortcut ending
 set "LINK=%NAME%.lnk"
 
+:: create shortcut
 powershell -NoProfile -ExecutionPolicy Bypass ^
   "$ws = New-Object -ComObject WScript.Shell;" ^
   "$lnk = $ws.CreateShortcut('%LINK%');" ^
@@ -40,25 +52,34 @@ powershell -NoProfile -ExecutionPolicy Bypass ^
   "$lnk.WorkingDirectory = '%WDIR%';" ^
   "$lnk.IconLocation = '%ICON%,0';" ^
   "$lnk.Description = '%DESC%';" ^
-  "$lnk.Save()"
+  "$lnk.Save()" 
 
-echo Shortcut created: %LINK%
-exit /b
+:: test if shortcut was created and warn if not
+if not exist "%LINK%" (
+  echo: [Error] Failed to create shortcut (see above^). Aborting. Press any key to exit
+  pause > nul
+  exit /b 4
+)
 
+:: print and exit
+echo Shortcut created: "%LINK%"
+EXIT /B 0
+
+:: ====================
+:: ==== Functions: ====
+:: ====================
+
+:: =================================================
+:: function that makes relative path (relative to current working directory) to :: absolute if not already. Works for empty path (relative) path:
+:: Usage:
+::    call :make_absolute_path_if_relative "%some_path%"
+::    set "abs_path=%output%"
+:: =================================================
 :make_absolute_path_if_relative
-set "output=%~f1"
-goto :eof
-
-
-
-
-:: ===============================================
-:: function that makes relative path (relative to current working directory) to absolute if not already:
-:: Usage: 
-::  call :make_absolute_path_if_relative "some_path"
-::  set "abs_path=%output%"
-:: ===============================================
-:make_absolute_path_if_relative
-	SET "OUTPUT=%~f1"
-	GOTO :EOF
-:: ===============================================
+    if "%~1"=="" (
+        set "OUTPUT=%CD%"
+    ) else (
+	    set "OUTPUT=%~f1"
+    )
+goto :EOF
+:: =================================================
