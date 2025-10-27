@@ -6,6 +6,10 @@ TODO LIST FOR PyApp-Template
 important
 ############################################################
 
+detect missing packages for generate shortcuts and prompt to install.
+
+capture missing package error and prompt install for normal run
+
 
 For python reinstall. Add auto reinstall all installed packages and warn if not possible. Try first with old  packages or no reinstall. Mentioned that and possibly to use upgrade
 
