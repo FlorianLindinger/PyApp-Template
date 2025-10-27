@@ -6,7 +6,9 @@
 
 # Main Features
 
-- Full python version.
+- Full-version python. Usually portable Python entails the embeddable version which lacks some vanilla Python features which are fore example needed for default matplotlib. This template avoids that by making the full version portable without bloated third party solutions.
+- Portable folder that can be offline shared after setup execution.
+- 100% isolated
 - Self-contained, fully version controlled, git-sharable, idiot-proof python environment with automatic download of python & needed packages at user end (no installation needed by end user).
 - Structured in a way to make it easily shareable/runnable even with people without any coding/PC experience (plug-and-play).
 - Ready to use: Just insert your python code file.
