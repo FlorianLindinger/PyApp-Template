@@ -1,6 +1,6 @@
 # 🐍 PyApp-Template
 
-**Template for a Windows-only, portable, shareable,source-code-running, completely isolated, environment-controlled, ready-to-use (just insert Python file) Python application** 
+**Template for a Windows-only, portable & git-shareable, source-code-running, isolated-environment, ready-to-use (just insert Python file) Python application** 
 
 ---
 
