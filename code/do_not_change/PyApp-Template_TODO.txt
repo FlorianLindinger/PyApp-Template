@@ -6,6 +6,10 @@ TODO LIST FOR PyApp-Template
 important
 ############################################################
 
+make code that's runs all setup steps
+
+make shortcut generator run that setup
+
 add embeddable python setting
 
 detect missing packages for generate shortcuts and prompt to install.
