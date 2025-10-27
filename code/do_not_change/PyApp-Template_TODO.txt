@@ -6,6 +6,8 @@ TODO LIST FOR PyApp-Template
 important
 ############################################################
 
+add shortcut for log file
+
 make code that's runs all setup steps
 
 make shortcut generator run that setup
