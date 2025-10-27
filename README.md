@@ -1,11 +1,12 @@
 # 🐍 PyApp-Template
 
-**Template for a Windows-only, portable & git-shareable, source-code-running, 100%-isolated, ready-to-use (just insert Python file) Python application** 
+**Template for a Windows-only, offline portable & git-shareable, source-code-running, 100%-isolated, ready-to-use (just insert Python file), full-version (aka. non-embedded) Python application** 
 
 ---
 
 # Main Features
 
+- Full python version.
 - Self-contained, fully version controlled, git-sharable, idiot-proof python environment with automatic download of python & needed packages at user end (no installation needed by end user).
 - Structured in a way to make it easily shareable/runnable even with people without any coding/PC experience (plug-and-play).
 - Ready to use: Just insert your python code file.
