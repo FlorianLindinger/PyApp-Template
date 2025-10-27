@@ -6,6 +6,8 @@ TODO LIST FOR PyApp-Template
 important
 ############################################################
 
+add embeddable python setting
+
 detect missing packages for generate shortcuts and prompt to install.
 
 capture missing package error and prompt install for normal run
