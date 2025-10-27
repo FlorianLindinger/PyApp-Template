@@ -6,6 +6,8 @@ TODO LIST FOR PyApp-Template
 important
 ############################################################
 
+add message when python path gets repaired
+
 add shortcut for log file
 
 make code that's runs all setup steps
