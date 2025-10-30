@@ -6,6 +6,9 @@ TODO LIST FOR PyApp-Template
 important
 ############################################################
 
+fix 'start_program.bat' is not recognized as an internal or external command,
+operable program or batch file. when folder moved
+
 make make_absolute_path_if_relative work with empty path
 
 replace CD wiht pushd and popd because they only change errorlevel on fail
