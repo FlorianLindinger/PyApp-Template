@@ -1,7 +1,7 @@
 :: =================================================
 :: Usage: 
 :: make_shortcut.bat "<name>" "<target>" "<target-args>" "<working-dir>" "<icon-path>" "<description>"
-:: Add quotations inside an arg as a double single quote ('')
+:: Add quotations inside an arg as a \"
 :: =================================================
 
 @echo off
