@@ -3,6 +3,7 @@
 :: ========================
 
 @echo off
+rem test faulthandler
 rem change icon.exe weird? with no args? is usage being printed?
 
 rem make change icon faster
@@ -349,45 +350,14 @@ rem above: end of python existing case
 :end_of_activation
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-:: go to directory of main python code and execute it and return to folder of this file:
+:: go to directory of main python code and execute it and return to folder of this file. Faulthandler catches python interpreter crash:
 cd /d "%python_code_dir%"
-python "%python_code_path%"
+python -X faulthandler "%python_code_path%"
+set "py_errorlevel=%ERRORLEVEL%"
 cd /d "%current_file_path%"
 
-:: %ERRORLEVEL% is what the last python execution gives out in sys.exit(errorlevel). 
-:: Errorlevel 1 (default for python crash) will run main_code.py or after_python_crash_code.py (depending on parameter restart_main_code_on_crash in non-user_settings.ini). Errorlevel -1 will exit the terminal. Any other value will pause the terminal until user presses a button (unless this script is called with any argument):
-if %ERRORLEVEL% EQU 1 (
-	set "original_python_crashed=1"
-	call :handle_python_crash
-)
-:: Does not pause if python returns an errorlevel -1 with sys.exit(-1) in python:
-if %ERRORLEVEL% EQU -1 (
-	exit 0
-)
-
-:: print final report message:
-echo.
-if "%original_python_crashed%"=="1" (
-	if "%python_crash_handler_crashed%"=="1" (
-		echo ========================================================
-		echo Finished all python execution.
-		echo The main python code crashed and the python function for
-		echo handling crashes crashed at least once before finishing 
-		echo successfully now (see above^)
-		echo ========================================================
-	) else (
-		echo ======================================================
-		echo Finished all python execution.
-		echo The main python code crashed but the python function
-		echo for handling crashes finished successfully (see above^)
-		echo ======================================================
-	)
-) else (
-	echo =================================
-	echo Python code finished successfully
-	echo =================================
-)
-echo.
+:: %py_errorlevel% is what the last python execution gives out in sys.exit({int_errorlevel}). Errorlevel not 0 (default is 1 for python crash) will run main_code.py or after_python_crash_code.py (depending on parameter restart_main_code_on_crash in non-user_settings.ini).
+if %py_errorlevel% neq 0 ( call :handle_python_crash )	
 
 :: wait for any key and exit
 echo Finished code execution. Press any key to exit
@@ -402,50 +372,29 @@ exit 0
 :: function to handle python crashes:
 ::::::::::::::::::::::::::::::::::::::::::::::
 :handle_python_crash
-echo.
-echo ===================================================
-echo WARNING: Python returned 1, which indicates a crash
-echo ===================================================
-echo.
 if %restart_main_code_on_crash% EQU 0 ( 
-	rem run after_python_crash_code.py (again^)
+	rem run after_python_crash_code.py 
 	if exist "%after_python_crash_code_path%" (
-		echo.
-		echo ===============================================
-		echo Running python code intended for after crashes:
-		echo ===============================================
-		echo.
 		:: go to directory of python code and execute it and return to folder of this file:	
-		cd /d "%python_code_dir%"
-		python "%python_code_path%"
+		cd /d "%crash_python_code_dir%"
+		python -X faulthandler "%python_code_path%"
+		set "py_errorlevel=%ERRORLEVEL%"
 		cd /d "%current_file_path%"
-		echo.
 	:: exit function if after_python_crash_code does not exist
-	) else (
-		exit 0 
-		rem exit function with errorcode 0
-	)
+	) else ( exit 0 )
 )	else (  
-	rem run main_code.py again
-	echo.
-	echo ================================================
-	echo Running main python code again after it crashed:
-	echo ================================================
-	echo.
+	rem run main_code.py again (again^)
 	:: go to directory of python code and execute it and return to folder of this file:
-	cd /d "%crash_python_code_dir%"
-	python "%after_python_crash_code_path%" "crashed" 
 	REM argument "crashed" indicated to the python code that it is a repeat call after a crash and can be checked for with sys.argv[-1]=="crashed"
+	cd /d "%python_code_dir%"
+	python -X faulthandler "%after_python_crash_code_path%" "crashed" 
+	set "py_errorlevel=%ERRORLEVEL%"
 	cd /d "%current_file_path%"
-	echo.
 )
-if %ERRORLEVEL% EQU 1 ( 
-	rem could be infinitely recursive
-	set python_crash_handler_crashed=1
-	call :handle_python_crash
-)
-exit 0 
-REM exit function with errorcode 0
+if %py_errorlevel% neq 0 ( call :handle_python_crash 
+) else ( exit 0 )
+
+
 :: =================================================
 :: =================================================
 
