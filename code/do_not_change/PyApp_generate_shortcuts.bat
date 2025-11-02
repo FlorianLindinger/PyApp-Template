@@ -156,11 +156,11 @@ COPY /Y "%SystemRoot%\System32\%UI_LANG%\cmd.exe.mui" "%current_file_path%\CMD_e
 :: create shortcut for starting the program:
 call utilities\create_shortcut.bat "%shortcut_destination_path%\%start_name%.lnk" "%current_file_path%\CMD_exes\cmd_1_%program_name%.exe" "/K PyApp_start_program.bat" "%current_file_path%" "%icon_path%" "PyApp-Template"
 :: create a shortcut for the settings.yaml file:
-call utilities\create_shortcut.bat "%shortcut_destination_path%\%settings_name%.lnk" "%current_file_path%\CMD_exes\cmd_2_%program_name%.exe" "/C START '''' ''%user_settings_path%''" "%current_file_path%" "%settings_icon_path%" "PyApp-Template"
+call utilities\create_shortcut.bat "%shortcut_destination_path%\%settings_name%.lnk" "%current_file_path%\CMD_exes\cmd_2_%program_name%.exe" "/C START \"\" \"%user_settings_path%\"" "%current_file_path%" "%settings_icon_path%" "PyApp-Template"
 :: creare shortcut for launcher without terminal and with output to log file:
-call utilities\create_shortcut.bat "%shortcut_destination_path%\%start_no_terminal_name%.lnk" "%current_file_path%\CMD_exes\cmd_3_%program_name%.exe" "/C run_batch_with_file_output_and_no_terminal.bat PyApp_start_program.bat ''%log_path%'' ''%process_id_file_path%.pid''"  "%current_file_path%" "%icon_path%" "PyApp-Template"
+call utilities\create_shortcut.bat "%shortcut_destination_path%\%start_no_terminal_name%.lnk" "%current_file_path%\CMD_exes\cmd_3_%program_name%.exe" "/C run_batch_with_file_output_and_no_terminal.bat PyApp_start_program.bat \"%log_path%\" \"%process_id_file_path%.pid\""  "%current_file_path%" "%icon_path%" "PyApp-Template"
 :: create shortcut for killing the running program:
-call utilities\create_shortcut.bat "%shortcut_destination_path%\%stop_no_terminal_name%.lnk" "%current_file_path%\CMD_exes\cmd_4_%program_name%.exe" "/C kill_process_with_id.bat ''%process_id_file_path%''" "%current_file_path%" "%stop_icon_path%" "PyApp-Template"
+call utilities\create_shortcut.bat "%shortcut_destination_path%\%stop_no_terminal_name%.lnk" "%current_file_path%\CMD_exes\cmd_4_%program_name%.exe" "/C kill_process_with_id.bat \"%process_id_file_path%\"" "%current_file_path%" "%stop_icon_path%" "PyApp-Template"
 
 :: check if sucessful
 If not exist "%shortcut_destination_path%\%start_name%.lnk" (
