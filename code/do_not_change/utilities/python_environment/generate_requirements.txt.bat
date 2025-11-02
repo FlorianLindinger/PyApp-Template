@@ -1,65 +1,67 @@
-@REM ########################
-@REM --- Code Description ---
-@REM ########################
+:: ========================
+:: --- Code Description ---
+:: ========================
 
-@REM #########################
-@REM --- Setup & Variables ---
-@REM #########################
+:: ====================================
+:: --- Setup, Variables, and Checks ---
+:: ====================================
 
-@REM turn off printing of commands:
-@ECHO OFF
+:: turn off printing of commands and make definitions local
+@ECHO OFF & SETLOCAL
 
-@REM make this code local so no variables of a potential calling program are changed:
-SETLOCAL
+:: handle args
+set "output_file_path=%~1"
 
-@REM move to folder of this file (needed for relative path shortcuts)
-@REM current_file_path varaible needed as workaround for nieche windows bug where this file gets called with quotation marks:
-SET "current_file_path=%~dp0"
-CD /D "%current_file_path%"
+:: set default if not given
+if "%output_file_path%"=="" (
+	output_file_path="requirements.txt"
+)
 
-@REM define local variables (do not have spaces before or after the "=" or at the end of the variable value (unless wanted in value) -> inline comments without space before "&@REM".
-@REM Use "\" to separate folder levels and omit "\" at the end of paths. Relative paths allowed):
-SET "default_packages_file_path=..\..\python_environment_code\default_python_packages.txt"
+:: make path absolute if not
+call :make_absolute_path_if_relative "%output_file_path%"
+set "output_file_path=%OUTPUT%"
 
-@REM ######################
-@REM --- Code Execution ---
-@REM ######################
+:: ======================
+:: --- Code Execution ---
+:: ======================
 
-@REM activate environment:
-CALL activate_or_create_environment.bat "nopause"
-
-@REM print warning if requirements.txt already exists:
-IF EXIST "%default_packages_file_path%" (
-    ECHO "%current_file_path%%default_packages_file_path%" already exists and will be overwritten
+:: print warning if file already exists:
+IF EXIST "%output_file_path%" (
+   ECHO [Warning] "%output_file_path%" already exists and will be overwritten.
 	ECHO:
 )
 
-@REM generate requirements.txt:
-python -m pip freeze --disable-pip-version-check > "%default_packages_file_path%"
+:: generate file:
+python -m pip freeze --disable-pip-version-check > "%output_file_path%"
 
-@REM print message:
-CALL :make_absolute_path_if_relative "%current_file_path%%default_packages_file_path%"
-ECHO:
-ECHO: Generated "%OUTPUT%"
-
-@REM ####################
-@REM --- Closing-Code ---
-@REM ####################
-
-@REM pause if not called by other script with any argument:
-IF "%~1"=="" (
-	ECHO: Press any key to exit
-	PAUSE >NUL 
+:: print success/fail and exit
+if exist "%output_file_path%" (
+	echo: [Success] Generated "%output_file_path%"
+	ECHO:
+	exit /b 0
+) else (
+	echo: [Error] Failed to generate "%output_file_path%". See above. Press any key to exit.
+	pause > nul
+	ECHO:
+	exit /b 1
 )
 
-@REM exit program without closing a potential calling program
-EXIT /B 
+:: ====================
+:: ==== Functions: ====
+:: ====================
 
-@REM ############################
-@REM --- Function Definitions ---
-@REM ############################
-
-@REM function that makes path to absolute if not already. Access as %OUTPUT% (also gets rid of unresolved ".." in path):
+::::::::::::::::::::::::::::::::::::::::::::::::
+:: function that makes relative path (relative to current working directory) to :: absolute if not already. Works for empty path (relative) path:
+:: Usage:
+::    call :make_absolute_path_if_relative "%some_path%"
+::    set "abs_path=%output%"
+::::::::::::::::::::::::::::::::::::::::::::::::
 :make_absolute_path_if_relative
-	SET "OUTPUT=%~f1"
-	EXIT /B
+    if "%~1"=="" (
+        set "OUTPUT=%CD%"
+    ) else (
+	    set "OUTPUT=%~f1"
+    )
+goto :EOF
+:: =================================================
+:: =================================================
