@@ -6,6 +6,7 @@
 rem change icon.exe weird? with no args? is usage being printed?
 
 rem make change icon faster
+rem is it possible to have pyqt5 window be same as ölauncher in taskbar
 
 rem todo:
 rem check if existance checks needed
@@ -93,22 +94,22 @@ set "python_exe_path=%OUTPUT%"
 if NOT exist "%settings_path%" (
 	echo [Error] "%settings_path%" does not exist. Aborting. Press any key to exit.
 	pause > nul
-	exit /b 1
+	exit 1
 )
 if NOT exist "%python_version_checker_path%" (
 	echo [Error] "%python_version_checker_path%" does not exist. Aborting. Press any key to exit.
 	pause > nul
-	exit /b 1
+	exit 2
 )
 if NOT exist "%portable_python_installer_path%" (
 	echo [Error] "%portable_python_installer_path%" does not exist. Aborting. Press any key to exit.
 	pause > nul
-	exit /b 1
+	exit 3
 )
 if NOT exist "%portable_venv_creator_path%" (
 	echo [Error] "%portable_venv_creator_path%" does not exist. Aborting. Press any key to exit.
 	pause > nul
-	exit /b 1
+	exit 4
 )
 
 :: import settings from %settings_path%:
@@ -118,12 +119,12 @@ FOR /F "tokens=1,2 delims==" %%A IN ('findstr "^" "%settings_path%"') DO ( set "
 if "%icon_path%"=="" (
 	echo [Error] icon_path not defined in "%settings_path%". Aborting. Press any key to exit.
 	pause > nul
-	exit /b 2
+	exit 5
 )
 if "%python_code_path%"=="" (
 	echo [Error] python_code_path not defined in "%settings_path%". Aborting. Press any key to exit.
 	pause > nul
-	exit /b 2
+	exit 6
 )
 
 :: convert the path settings that are relative to settings file (at %settings_path%%) to absolute paths:
@@ -170,7 +171,7 @@ REM check if successful
 if "%UI_LANG%"=="" (
 	echo [Error] Could not determine system language. Aborting. Press any key to exit.
 	pause >nul 
-	exit /b 2
+	exit 7
 )
 
 :: create localization language folder if missing
@@ -182,7 +183,7 @@ REM check if successful
 if errorlevel 8 (
 	echo [Error] Copy Windows language files. Aborting. Press any key to exit.
 	pause >nul 
-	exit /b 3
+	exit 8
 )
 
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -192,11 +193,11 @@ if not exist "%python_exe_path%" (
 	REM python not existing case
 	rem install python:
     call "%portable_python_installer_path%" "%python_version%" "%python_folder_folder_path%"
-	if "!ERRORLEVEL!" neq "0" ( exit /b 4 ) 
+	if "!ERRORLEVEL!" neq "0" ( exit 9 ) 
 	rem above: failed to install python. Error print and wait already in call
 	rem install virtual env:
 	call "%portable_venv_creator_path%" "%python_folder_folder_path%" "%python_folder_path%"
-    if "!ERRORLEVEL!" neq "0" ( exit /b 5 ) 
+    if "!ERRORLEVEL!" neq "0" ( exit 10 ) 
 	rem above: failed to install venv. Error print and wait already in call
 	rem activate env:
     call "%env_activator_path%"
@@ -224,7 +225,7 @@ if not exist "%python_exe_path%" (
 	REM python existing case
 	rem check python version matches setting:
 	call "%python_version_checker_path%" "%python_version%" "%python_exe_path%"
-	if "!ERRORLEVEL!" neq "0" ( exit /b 6 ) 
+	if "!ERRORLEVEL!" neq "0" ( exit 11 ) 
 	rem above: failed to determine python version. Error print and wait already in call
 	if "!OUTPUT!"=="1" ( 
 	   REM python version matching case
@@ -237,7 +238,7 @@ if not exist "%python_exe_path%" (
 		    REM env not existing case
         	rem install virtual env:
         	call "%portable_venv_creator_path%" "%python_folder_folder_path%" "%python_folder_path%"
-            if "!ERRORLEVEL!" neq "0" ( exit /b 7 ) 
+            if "!ERRORLEVEL!" neq "0" ( exit 12 ) 
 			rem above: failed to install venv. Error print and wait already in call
         	rem activate env:
             call "%env_activator_path%"
@@ -278,15 +279,15 @@ if not exist "%python_exe_path%" (
                 call "%env_activator_path%"
                 rem get current packages:
                 call "%requirements_generator_path%" "%python_folder_folder_path%\tmp_requirement.txt"
-			    if "!ERRORLEVEL!" neq "0" ( exit /b 8 ) 
+			    if "!ERRORLEVEL!" neq "0" ( exit 13 ) 
 				rem above: failed to generate package list. Error print and wait already in call
                 rem reinstall python:
                 call "%portable_python_installer_path%" "%python_version%" "%python_folder_folder_path%"
-			    if "!ERRORLEVEL!" neq "0" ( exit /b 9 ) 
+			    if "!ERRORLEVEL!" neq "0" ( exit 14 ) 
 				rem above: failed to reinstall python. Error print and wait already in call
 			    rem reinstall virtual env:
 			    call "%portable_venv_creator_path%" "%python_folder_folder_path%" "%python_folder_path%"
-                if "!ERRORLEVEL!" neq "0" ( exit /b 10 ) 
+                if "!ERRORLEVEL!" neq "0" ( exit 15 ) 
 				rem above: failed to reinstall venv. Error print and wait already in call
 			    rem activate to reinstall packages:
                 call "%env_activator_path%"
@@ -310,11 +311,11 @@ if not exist "%python_exe_path%" (
 		REM env not existing case. User does not get asked for python reinstall since either way no venv lost
         	rem reinstall python:
             call "%portable_python_installer_path%" "%python_version%" "%python_folder_folder_path%"
-        	if "!ERRORLEVEL!" neq "0" ( exit /b 11 ) 
+        	if "!ERRORLEVEL!" neq "0" ( exit 16 ) 
 			rem above: failed to install python. Error print and wait already in call
         	rem install virtual env:
         	call "%portable_venv_creator_path%" "%python_folder_folder_path%" "%python_folder_path%"
-            if "!ERRORLEVEL!" neq "0" ( exit /b 12 )  
+            if "!ERRORLEVEL!" neq "0" ( exit 17 )  
 			rem above: failed to install venv. Error print and wait already in call
         	rem activate env:
             call "%env_activator_path%"
@@ -361,7 +362,7 @@ if %ERRORLEVEL% EQU 1 (
 )
 :: Does not pause if python returns an errorlevel -1 with sys.exit(-1) in python:
 if %ERRORLEVEL% EQU -1 (
-	exit /b 0
+	exit 0
 )
 
 :: print final report message:
@@ -391,7 +392,7 @@ echo.
 :: wait for any key and exit
 echo Finished code execution. Press any key to exit
 pause >nul 
-exit /b 0
+exit 0
 
 :: ====================
 :: ==== Functions: ====
@@ -421,7 +422,7 @@ if %restart_main_code_on_crash% EQU 0 (
 		echo.
 	:: exit function if after_python_crash_code does not exist
 	) else (
-		exit /b 0 
+		exit 0 
 		rem exit function with errorcode 0
 	)
 )	else (  
@@ -443,7 +444,7 @@ if %ERRORLEVEL% EQU 1 (
 	set python_crash_handler_crashed=1
 	call :handle_python_crash
 )
-exit /b 0 
+exit 0 
 REM exit function with errorcode 0
 :: =================================================
 :: =================================================

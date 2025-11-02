@@ -154,7 +154,7 @@ COPY /Y "%SystemRoot%\System32\%UI_LANG%\cmd.exe.mui" "%current_file_path%\CMD_e
 :: ===================
 
 :: create shortcut for starting the program:
-call utilities\create_shortcut.bat "%shortcut_destination_path%\%start_name%.lnk" "%current_file_path%\CMD_exes\cmd_1_%program_name%.exe" "/C PyApp_start_program.bat" "%current_file_path%" "%icon_path%" "PyApp-Template"
+call utilities\create_shortcut.bat "%shortcut_destination_path%\%start_name%.lnk" "%current_file_path%\CMD_exes\cmd_1_%program_name%.exe" "/K PyApp_start_program.bat" "%current_file_path%" "%icon_path%" "PyApp-Template"
 :: create a shortcut for the settings.yaml file:
 call utilities\create_shortcut.bat "%shortcut_destination_path%\%settings_name%.lnk" "%current_file_path%\CMD_exes\cmd_2_%program_name%.exe" "/C START '''' ''%user_settings_path%''" "%current_file_path%" "%settings_icon_path%" "PyApp-Template"
 :: creare shortcut for launcher without terminal and with output to log file:
