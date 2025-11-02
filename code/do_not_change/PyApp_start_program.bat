@@ -2,53 +2,63 @@
 :: --- Code Description ---
 :: ========================
 
-todo:
-check if existance checks needed
-max_repeats
-checl what abs PATH i need and if i dont want to run all code always
-maybe remove generate requriements.txt?
-maybe lease install packages from file?
+@echo off
+rem change icon.exe weird? with no args? is usage being printed?
 
-add back install packages batch as utility for py app with correct paths
+rem make change icon faster
 
-use goto:s or functions
-cathc errors of called scripts
+rem todo:
+rem check if existance checks needed
+rem max_repeats
+rem checl what abs PATH i need and if i dont want to run all code always
+rem maybe remove generate requriements.txt?
+rem maybe lease install packages from file?
 
-test if python verison "" works
+rem add back install packages batch as utility for py app with correct paths
 
-test startup time before python
-maybe make batch file that prints runtime of call
+rem use goto:s or functions
+rem cathc errors of called scripts
 
-##################
-start code
-white error and num_repeats  < max_repeats:
-    old_time = get time
-	if repeate_main
-	   start code
-	else:
-	   start fail code
-    if get_toime < old_time + 1 sek:
-	   sleep 1 sek
-##################
+rem test if python verison "" works
 
-print totla report of if crhases of waht happended
+rem test startup time before python
+rem maybe make batch file that prints runtime of call
 
-##################
+rem ##################
+rem start code
+rem white error and num_repeats  < max_repeats:
+rem     old_time = get time
+rem 	if repeate_main
+rem 	   start code
+rem 	else:
+rem 	   start fail code
+rem     if get_toime < old_time + 1 sek:
+rem 	   sleep 1 sek
+rem ##################
+
+rem print totla report of if crhases of waht happended
+
+rem ##################
 
 :: ====================================
 :: --- Setup, Variables, and Checks ---
 :: ====================================
 
-:: turn off printing of commands and make definitions local
-@ECHO OFF & SETLOCAL
+:: turn off printing of commands
+@echo off
+
+:: make variables local and enable delayed expansion
+setlocal EnableDelayedExpansion
 
 :: define local variables (with relative paths being relative to this file)
-SET "settings_path=..\non-user_settings.ini"
+set "settings_path=..\non-user_settings.ini"
+set "cmd_exes_path=CMD_exes"
 
 set "python_version_checker_path=utilities\python_environment\check_if_python_version_matches.bat"
 set "portable_python_installer_path=utilities\python_environment\create_portable_python.bat"
 set "portable_venv_creator_path=utilities\python_environment\create_portable_venv.bat"
 set "requirements_generator_path=utilities\python_environment\generate_requirements.txt_no_version.bat"
+set "icon_changer_path=utilities\change_icon.exe"
 
 set "python_folder_folder_path=..\python_environment"
 set "python_folder_path=%python_folder_folder_path%\portable_python"
@@ -58,81 +68,81 @@ set "default_packages_list=%python_folder_folder_path%\default_python_packages.t
 
 :: move to folder of this file (needed for relative paths)
 :: current_file_path variable needed as workaround for nieche windows bug where this file gets called with quotation marks:
-SET "current_file_path=%~dp0"
-CD /D "%current_file_path%"
+set "current_file_path=%~dp0"
+cd /d "%current_file_path%"
 
 :: make paths absolute if not
-CALL :MAKE_ABSOLUTE_PATH_IF_RELATIVE "%settings_path%" 
-SET "settings_path=%OUTPUT%"
-CALL :MAKE_ABSOLUTE_PATH_IF_RELATIVE "%python_version_checker_path%" 
-SET "python_version_checker_path=%OUTPUT%"
-CALL :MAKE_ABSOLUTE_PATH_IF_RELATIVE "%portable_python_installer_path%" 
-SET "portable_python_installer_path=%OUTPUT%"
-CALL :MAKE_ABSOLUTE_PATH_IF_RELATIVE "%portable_venv_creator_path%" 
-SET "portable_venv_creator_path=%OUTPUT%"
-CALL :MAKE_ABSOLUTE_PATH_IF_RELATIVE "%requirements_generator_path%" 
-SET "requirements_generator_path=%OUTPUT%"
-CALL :MAKE_ABSOLUTE_PATH_IF_RELATIVE "%python_folder_folder_path%" 
-SET "python_folder_folder_path=%OUTPUT%"
-CALL :MAKE_ABSOLUTE_PATH_IF_RELATIVE "%env_activator_path%" 
-SET "env_activator_path=%OUTPUT%"
-CALL :MAKE_ABSOLUTE_PATH_IF_RELATIVE "%python_exe_path%" 
-SET "python_exe_path=%OUTPUT%"
+call :make_absolute_path_if_relative "%settings_path%" 
+set "settings_path=%OUTPUT%"
+call :make_absolute_path_if_relative "%python_version_checker_path%" 
+set "python_version_checker_path=%OUTPUT%"
+call :make_absolute_path_if_relative "%portable_python_installer_path%" 
+set "portable_python_installer_path=%OUTPUT%"
+call :make_absolute_path_if_relative "%portable_venv_creator_path%" 
+set "portable_venv_creator_path=%OUTPUT%"
+call :make_absolute_path_if_relative "%requirements_generator_path%" 
+set "requirements_generator_path=%OUTPUT%"
+call :make_absolute_path_if_relative "%python_folder_folder_path%" 
+set "python_folder_folder_path=%OUTPUT%"
+call :make_absolute_path_if_relative "%env_activator_path%" 
+set "env_activator_path=%OUTPUT%"
+call :make_absolute_path_if_relative "%python_exe_path%" 
+set "python_exe_path=%OUTPUT%"
 
 :: check if files exist
-IF NOT exist "%settings_path%" (
-	echo: [Error] "%settings_path%" does not exist. Aborting. Press any key to exit.
+if NOT exist "%settings_path%" (
+	echo [Error] "%settings_path%" does not exist. Aborting. Press any key to exit.
 	pause > nul
 	exit /b 1
 )
-IF NOT exist "%python_version_checker_path%" (
-	echo: [Error] "%python_version_checker_path%" does not exist. Aborting. Press any key to exit.
+if NOT exist "%python_version_checker_path%" (
+	echo [Error] "%python_version_checker_path%" does not exist. Aborting. Press any key to exit.
 	pause > nul
 	exit /b 1
 )
-IF NOT exist "%portable_python_installer_path%" (
-	echo: [Error] "%portable_python_installer_path%" does not exist. Aborting. Press any key to exit.
+if NOT exist "%portable_python_installer_path%" (
+	echo [Error] "%portable_python_installer_path%" does not exist. Aborting. Press any key to exit.
 	pause > nul
 	exit /b 1
 )
-IF NOT exist "%portable_venv_creator_path%" (
-	echo: [Error] "%portable_venv_creator_path%" does not exist. Aborting. Press any key to exit.
+if NOT exist "%portable_venv_creator_path%" (
+	echo [Error] "%portable_venv_creator_path%" does not exist. Aborting. Press any key to exit.
 	pause > nul
 	exit /b 1
 )
 
 :: import settings from %settings_path%:
-FOR /F "tokens=1,2 delims==" %%A IN ('findstr "^" "%settings_path%"') DO ( SET "%%A=%%B" )
+FOR /F "tokens=1,2 delims==" %%A IN ('findstr "^" "%settings_path%"') DO ( set "%%A=%%B" )
 
 :: check if defined in settings_path
 if "%icon_path%"=="" (
-	echo: [Error] icon_path not defined in "%settings_path%". Aborting. Press any key to exit.
+	echo [Error] icon_path not defined in "%settings_path%". Aborting. Press any key to exit.
 	pause > nul
 	exit /b 2
 )
 if "%python_code_path%"=="" (
-	echo: [Error] python_code_path not defined in "%settings_path%". Aborting. Press any key to exit.
+	echo [Error] python_code_path not defined in "%settings_path%". Aborting. Press any key to exit.
 	pause > nul
 	exit /b 2
 )
 
 :: convert the path settings that are relative to settings file (at %settings_path%%) to absolute paths:
-FOR %%I IN ("%settings_path%") DO SET "settings_dir=%%~dpI"
-CD /D "%settings_dir%"
-CALL :MAKE_ABSOLUTE_PATH_IF_RELATIVE "%icon_path%" 
-SET "icon_path=%OUTPUT%"
-CALL :MAKE_ABSOLUTE_PATH_IF_RELATIVE "%python_code_path%" 
-SET "python_code_path=%OUTPUT%"
-CALL :MAKE_ABSOLUTE_PATH_IF_RELATIVE "%after_python_crash_code_path%" 
-SET "after_python_crash_code_path=%OUTPUT%"
-CD /D "%current_file_path%"
+FOR %%I IN ("%settings_path%") DO set "settings_dir=%%~dpI"
+cd /d "%settings_dir%"
+call :make_absolute_path_if_relative "%icon_path%" 
+set "icon_path=%OUTPUT%"
+call :make_absolute_path_if_relative "%python_code_path%" 
+set "python_code_path=%OUTPUT%"
+call :make_absolute_path_if_relative "%after_python_crash_code_path%" 
+set "after_python_crash_code_path=%OUTPUT%"
+cd /d "%current_file_path%"
 
 :: get python code paths directoriers:
 FOR %%F IN ("%python_code_path%") DO (
-    SET "python_code_dir=%%~dpF"
+    set "python_code_dir=%%~dpF"
 )
 FOR %%F IN ("%after_python_crash_code_path%") DO (
-    SET "crash_python_code_dir=%%~dpF"
+    set "crash_python_code_dir=%%~dpF"
 )
 
 :: ======================
@@ -145,8 +155,8 @@ TITLE %program_name%
 :: change terminal colors (for starting lines):
 COLOR %terminal_bg_color%%terminal_text_color%
 
-:: change terminal icon:
-change_icon "%program_name%" "%icon_path%"
+:: change terminal icon (take ~1 s):
+call "%icon_changer_path%" "%program_name%" "%icon_path%"
 
 :: get name of current localization language needed for cmd.exe that presumably runs this script
 for /f "tokens=2,*" %%A in ('reg query "HKCU\Control Panel\Desktop" /v PreferredUILanguages 2^>nul') do (
@@ -158,209 +168,230 @@ for /f "tokens=2,*" %%A in ('reg query "HKCU\Control Panel\Desktop" /v Preferred
 :done
 REM check if successful
 if "%UI_LANG%"=="" (
-	ECHO: [Error] Could not determine system language. Aborting. Press any key to exit.
-	PAUSE >NUL 
-	EXIT /B 2
+	echo [Error] Could not determine system language. Aborting. Press any key to exit.
+	pause >nul 
+	exit /b 2
 )
 
 :: create localization language folder if missing
-if not exist "CMD_exes\%UI_LANG%\" (
-	mkdir "CMD_exes\%UI_LANG%"
-	robocopy "CMD_exes\mui_files" "CMD_exes\%UI_LANG%" /E /R:0 /W:0 /NFL /NDL /NJH /NJS /NP
+if not exist "%cmd_exes_path%\%UI_LANG%\" (
+	mkdir "%cmd_exes_path%\%UI_LANG%"
+	robocopy "%cmd_exes_path%\mui_files" "%cmd_exes_path%\%UI_LANG%" /E /R:0 /W:0 /NFL /NDL /NJH /NJS /NP
 )
 REM check if successful
 if errorlevel 8 (
-	ECHO: [Error] Copy Windows language files. Aborting. Press any key to exit.
-	PAUSE >NUL 
-	EXIT /B 3
+	echo [Error] Copy Windows language files. Aborting. Press any key to exit.
+	pause >nul 
+	exit /b 3
 )
 
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 :: activate or create & activate python environment:
 
-if not exist "%python_exe_path%" ( &:: python not existing case
+if not exist "%python_exe_path%" ( 
+	REM python not existing case
 	rem install python:
     call "%portable_python_installer_path%" "%python_version%" "%python_folder_folder_path%"
-	if "%ERRORLEVEL%" neq 0 ( exit /b 4 ) &:: failed to install python. Error print and wait already in call
+	if "!ERRORLEVEL!" neq "0" ( exit /b 4 ) 
+	rem above: failed to install python. Error print and wait already in call
 	rem install virtual env:
 	call "%portable_venv_creator_path%" "%python_folder_folder_path%" "%python_folder_path%"
-    if "%ERRORLEVEL%" neq 0 ( exit /b 5 ) &:: failed to install venv. Error print and wait already in call
+    if "!ERRORLEVEL!" neq "0" ( exit /b 5 ) 
+	rem above: failed to install venv. Error print and wait already in call
 	rem activate env:
     call "%env_activator_path%"
 	rem install packages:
-    if not exist "%default_packages_list%" ( &:: python packages list existing case
-        call :MAKE_ABSOLUTE_PATH_IF_RELATIVE "%default_packages_list%"
-		set "default_packages_list=%OUTPUT%"
+    if not exist "%default_packages_list%" ( 
+		REM python packages list not existing case
+        call :make_absolute_path_if_relative "%default_packages_list%"
+		set "default_packages_list=!OUTPUT!"
         echo.
-	    echo [Warning] List of default Python packages ("%default_packages_list%"^) not found. Skipping installation.
+	    echo [Warning] List of default Python packages ("!default_packages_list!"^) not found. Skipping installation.
 	    echo.
 		goto end_of_activation
-	) else ( &:: python packages list not existing case
+	) else ( 
+		REM python packages list existing case
     	echo.
     	echo [Info] Installing packages:
     	echo.
-    	pip install -r "%default_packages_list%" --disable-pip-version-check --upgrade --no-cache-dir 
+    	python -m pip install -r "%default_packages_list%" --disable-pip-version-check --upgrade --no-cache-dir 
     	echo.
     	echo [Info] Finished installing packages
         echo.
     	goto end_of_activation
 	)
-) else ( &:: python existing case
+) else ( 
+	REM python existing case
 	rem check python version matches setting:
-	CALL "%python_version_checker_path%" "%python_version%" "%python_exe_path%"
-	if "%errorlevel%" neq 0 ( exit /b 6 ) &:: failed to determine python version. Error print and wait already in call
-	if "%OUTPUT%"=="1" ( &:: python version matching case
-	   if exist "%env_activator_path%" ( &:: env existing case
+	call "%python_version_checker_path%" "%python_version%" "%python_exe_path%"
+	if "!ERRORLEVEL!" neq "0" ( exit /b 6 ) 
+	rem above: failed to determine python version. Error print and wait already in call
+	if "!OUTPUT!"=="1" ( 
+	   REM python version matching case
+	   if exist "%env_activator_path%" ( 
+		    REM env existing case
             rem activate env:
             call "%env_activator_path%"
 			goto end_of_activation
-	   ) else ( &:: env not existing case
+	   ) else ( 
+		    REM env not existing case
         	rem install virtual env:
         	call "%portable_venv_creator_path%" "%python_folder_folder_path%" "%python_folder_path%"
-            if "%ERRORLEVEL%" neq 0 ( exit /b 7 ) &:: failed to install venv. Error print and wait already in call
+            if "!ERRORLEVEL!" neq "0" ( exit /b 7 ) 
+			rem above: failed to install venv. Error print and wait already in call
         	rem activate env:
             call "%env_activator_path%"
         	rem install packages:
-            if not exist "%default_packages_list%" ( &:: python packages list existing case
-                call :MAKE_ABSOLUTE_PATH_IF_RELATIVE "%default_packages_list%"
-        		set "default_packages_list=%OUTPUT%"
+            if not exist "%default_packages_list%" ( 
+				REM python packages list not existing case
+                call :make_absolute_path_if_relative "%default_packages_list%"
+        		set "default_packages_list=!OUTPUT!"
                 echo.
-        	    echo [Warning] List of default Python packages ("%default_packages_list%"^) not found. Skipping installation.
+        	    echo [Warning] List of default Python packages ("!default_packages_list!!"^) not found. Skipping installation.
         	    echo.
         		goto end_of_activation
-        	) else ( &:: python packages list not existing case
+        	) else ( 
+				REM python packages list existing case
             	echo.
             	echo [Info] Installing packages:
             	echo.
-            	pip install -r "%default_packages_list%" --disable-pip-version-check --upgrade --no-cache-dir 
+            	python -m pip install -r "%default_packages_list%" --disable-pip-version-check --upgrade --no-cache-dir 
             	echo.
             	echo [Info] Finished installing packages
                 echo.
             	goto end_of_activation
         	)
-	   )  &:: end of env not existing case
-	) else ( &:: python version not matching case
-	   if exist "%env_activator_path%" ( &:: env existing case
+	   )  
+	   rem above: end of env not existing case
+	) else ( 
+	   REM python version not matching case
+	   if exist "%env_activator_path%" ( 
+		    REM env existing case
 	        rem ask user if he wants to recreate python and venv with current packages
             echo.
-            echo: [Warning] Installed Python version is not compatible with the version specified in "%settings_path%" (%python_version%^).
-		    echo: Do you want to locally for this program reinstall Python + virtual environment + current packages OR stay with current setup?
+            echo [Warning] Installed Python version is not compatible with the version specified in "%settings_path%" (%python_version%^).
+		    echo Do you want to locally for this program reinstall Python + virtual environment + current packages OR stay with current setup?
 		    call :prompt_user
-            if "%OUTPUT%"=="1" ( &:: user: yes case
+            if "!OUTPUT!"=="1" ( 
+				REM user: yes case
 			    rem activate to get current packages:
                 call "%env_activator_path%"
                 rem get current packages:
                 call "%requirements_generator_path%" "%python_folder_folder_path%\tmp_requirement.txt"
-			    if "%ERRORLEVEL%" neq 0 ( exit /b 8 ) &:: failed to generate package list. Error print and wait already in call
+			    if "!ERRORLEVEL!" neq "0" ( exit /b 8 ) 
+				rem above: failed to generate package list. Error print and wait already in call
                 rem reinstall python:
                 call "%portable_python_installer_path%" "%python_version%" "%python_folder_folder_path%"
-			    if "%ERRORLEVEL%" neq 0 ( exit /b 9 ) &:: failed to reinstall python. Error print and wait already in call
+			    if "!ERRORLEVEL!" neq "0" ( exit /b 9 ) 
+				rem above: failed to reinstall python. Error print and wait already in call
 			    rem reinstall virtual env:
 			    call "%portable_venv_creator_path%" "%python_folder_folder_path%" "%python_folder_path%"
-                if "%ERRORLEVEL%" neq 0 ( exit /b 10 ) &:: failed to reinstall venv. Error print and wait already in call
+                if "!ERRORLEVEL!" neq "0" ( exit /b 10 ) 
+				rem above: failed to reinstall venv. Error print and wait already in call
 			    rem activate to reinstall packages:
                 call "%env_activator_path%"
 			    rem reinstall packages:
-                if not exist "%default_packages_list%" ( &:: python packages list existing case
-                    call :MAKE_ABSOLUTE_PATH_IF_RELATIVE "%default_packages_list%"
-        		    set "default_packages_list=%OUTPUT%"
-                    echo.
-        	        echo [Warning] List of default Python packages ("%default_packages_list%"^) not found. Skipping installation.
-        	        echo.
-        		    goto end_of_activation
-        	    ) else ( &:: python packages list not existing case
-            	    echo.
-            	    echo [Info] Installing packages:
-            	    echo.
-            	    pip install -r "%python_folder_folder_path%\tmp_requirement.txt" --disable-pip-version-check --upgrade --no-cache-dir 
-            	    echo.
-            	    echo [Info] Finished installing packages
-                    echo.
-            	    goto end_of_activation
-        	    )
-		    ) else (  &:: user: no case
+            	echo.
+            	echo [Info] Installing packages:
+            	echo.
+            	python -m pip install -r "%python_folder_folder_path%\tmp_requirement.txt" --disable-pip-version-check --upgrade --no-cache-dir 
+				del "%python_folder_folder_path%\tmp_requirement.txt" >nul 2>&1
+            	echo.
+            	echo [Info] Finished installing packages
+                echo.
+            	goto end_of_activation
+		    ) else (  
+				REM user: no case
 			    rem activate:
                 call "%env_activator_path%"
 			    goto end_of_activation
 		    )
-	   ) else ( &:: env not existing case. User does not get asked for python reinstall since either way no venv lost
+	   ) else ( 
+		REM env not existing case. User does not get asked for python reinstall since either way no venv lost
         	rem reinstall python:
             call "%portable_python_installer_path%" "%python_version%" "%python_folder_folder_path%"
-        	if "%ERRORLEVEL%" neq 0 ( exit /b 11 ) &:: failed to install python. Error print and wait already in call
+        	if "!ERRORLEVEL!" neq "0" ( exit /b 11 ) 
+			rem above: failed to install python. Error print and wait already in call
         	rem install virtual env:
         	call "%portable_venv_creator_path%" "%python_folder_folder_path%" "%python_folder_path%"
-            if "%ERRORLEVEL%" neq 0 ( exit /b 12 ) &:: failed to install venv. Error print and wait already in call
+            if "!ERRORLEVEL!" neq "0" ( exit /b 12 )  
+			rem above: failed to install venv. Error print and wait already in call
         	rem activate env:
             call "%env_activator_path%"
         	rem install packages:
-            if not exist "%default_packages_list%" (  &:: python packages list existing case
-                call :MAKE_ABSOLUTE_PATH_IF_RELATIVE "%default_packages_list%"
-        		set "default_packages_list=%OUTPUT%"
+            if not exist "%default_packages_list%" (  
+				REM python packages list not existing case
+                call :make_absolute_path_if_relative "%default_packages_list%"
+        		set "default_packages_list=!OUTPUT!"
                 echo.
-        	    echo [Warning] List of default Python packages ("%default_packages_list%"^) not found. Skipping installation.
+        	    echo [Warning] List of default Python packages ("!default_packages_list!"^) not found. Skipping installation.
         	    echo.
         		goto end_of_activation
-        	) else (  &:: python packages list not existing case
+        	) else (  
+				REM python packages list existing case
             	echo.
             	echo [Info] Installing packages:
             	echo.
-            	pip install -r "%default_packages_list%" --disable-pip-version-check --upgrade --no-cache-dir 
+            	python -m pip install -r "%default_packages_list%" --disable-pip-version-check --upgrade --no-cache-dir 
             	echo.
             	echo [Info] Finished installing packages
                 echo.
             	goto end_of_activation
         	)
-	   ) &:: end of env not existing case
-    ) &:: end of python version not matching case
-) &:: end of python existing case
+	   ) 
+	   rem above: end of env not existing case
+    ) 
+	rem above: end of python version not matching case
+) 
+rem above: end of python existing case
 
 :end_of_activation
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
 :: go to directory of main python code and execute it and return to folder of this file:
-CD /D "%python_code_dir%"
+cd /d "%python_code_dir%"
 python "%python_code_path%"
-CD /D "%current_file_path%"
+cd /d "%current_file_path%"
 
 :: %ERRORLEVEL% is what the last python execution gives out in sys.exit(errorlevel). 
 :: Errorlevel 1 (default for python crash) will run main_code.py or after_python_crash_code.py (depending on parameter restart_main_code_on_crash in non-user_settings.ini). Errorlevel -1 will exit the terminal. Any other value will pause the terminal until user presses a button (unless this script is called with any argument):
-IF %ERRORLEVEL% EQU 1 (
-	SET "original_python_crashed=1"
-	CALL :handle_python_crash
+if %ERRORLEVEL% EQU 1 (
+	set "original_python_crashed=1"
+	call :handle_python_crash
 )
 :: Does not pause if python returns an errorlevel -1 with sys.exit(-1) in python:
-IF %ERRORLEVEL% EQU -1 (
-	EXIT /B 0
+if %ERRORLEVEL% EQU -1 (
+	exit /b 0
 )
 
 :: print final report message:
-ECHO:
-IF "%original_python_crashed%"=="1" (
-	IF "%python_crash_handler_crashed%"=="1" (
-		ECHO: ========================================================
-		ECHO: Finished all python execution.
-		ECHO: The main python code crashed and the python function for
-		ECHO: handling crashes crashed at least once before finishing 
-		ECHO: successfully now (see above^)
-		ECHO: ========================================================
-	) ELSE (
-		ECHO: ======================================================
-		ECHO: Finished all python execution.
-		ECHO: The main python code crashed but the python function
-		ECHO: for handling crashes finished successfully (see above^)
-		ECHO: ======================================================
+echo.
+if "%original_python_crashed%"=="1" (
+	if "%python_crash_handler_crashed%"=="1" (
+		echo ========================================================
+		echo Finished all python execution.
+		echo The main python code crashed and the python function for
+		echo handling crashes crashed at least once before finishing 
+		echo successfully now (see above^)
+		echo ========================================================
+	) else (
+		echo ======================================================
+		echo Finished all python execution.
+		echo The main python code crashed but the python function
+		echo for handling crashes finished successfully (see above^)
+		echo ======================================================
 	)
-) ELSE (
-	ECHO: =================================
-	ECHO: Python code finished successfully
-	ECHO: =================================
+) else (
+	echo =================================
+	echo Python code finished successfully
+	echo =================================
 )
-ECHO:
+echo.
 
 :: wait for any key and exit
-ECHO: Finished code execution. Press any key to exit
-PAUSE >NUL 
-EXIT /B 0
+echo Finished code execution. Press any key to exit
+pause >nul 
+exit /b 0
 
 :: ====================
 :: ==== Functions: ====
@@ -370,44 +401,50 @@ EXIT /B 0
 :: function to handle python crashes:
 ::::::::::::::::::::::::::::::::::::::::::::::
 :handle_python_crash
-ECHO:
-ECHO: ===================================================
-ECHO: WARNING: Python returned 1, which indicates a crash
-ECHO: ===================================================
-ECHO:
-IF %restart_main_code_on_crash% EQU 0 ( @REM  run after_python_crash_code.py (again)
-	IF EXIST "%after_python_crash_code_path%" (
-		ECHO:
-		ECHO: ===============================================
-		ECHO: Running python code intended for after crashes:
-		ECHO: ===============================================
-		ECHO:
+echo.
+echo ===================================================
+echo WARNING: Python returned 1, which indicates a crash
+echo ===================================================
+echo.
+if %restart_main_code_on_crash% EQU 0 ( 
+	rem run after_python_crash_code.py (again^)
+	if exist "%after_python_crash_code_path%" (
+		echo.
+		echo ===============================================
+		echo Running python code intended for after crashes:
+		echo ===============================================
+		echo.
 		:: go to directory of python code and execute it and return to folder of this file:	
-		CD /D "%python_code_dir%"
+		cd /d "%python_code_dir%"
 		python "%python_code_path%"
-		CD /D "%current_file_path%"
-		ECHO:
+		cd /d "%current_file_path%"
+		echo.
 	:: exit function if after_python_crash_code does not exist
-	) ELSE (
-		EXIT /B 0 &@REM exit function with errorcode 0
+	) else (
+		exit /b 0 
+		rem exit function with errorcode 0
 	)
-)	ELSE (  @REM run main_code.py again
-	ECHO:
-	ECHO: ================================================
-	ECHO: Running main python code again after it crashed:
-	ECHO: ================================================
-	ECHO:
+)	else (  
+	rem run main_code.py again
+	echo.
+	echo ================================================
+	echo Running main python code again after it crashed:
+	echo ================================================
+	echo.
 	:: go to directory of python code and execute it and return to folder of this file:
-	CD /D "%crash_python_code_dir%"
-	python "%after_python_crash_code_path%" "crashed" &@REM argument "crashed" indicated to the python code that it is a repeat call after a crash and can be checked for with sys.argv[-1]=="crashed"
-	CD /D "%current_file_path%"
-	ECHO:
+	cd /d "%crash_python_code_dir%"
+	python "%after_python_crash_code_path%" "crashed" 
+	REM argument "crashed" indicated to the python code that it is a repeat call after a crash and can be checked for with sys.argv[-1]=="crashed"
+	cd /d "%current_file_path%"
+	echo.
 )
-IF %ERRORLEVEL% EQU 1 ( @REM could be infinitely recursive
-	SET python_crash_handler_crashed=1
-	CALL :handle_python_crash
+if %ERRORLEVEL% EQU 1 ( 
+	rem could be infinitely recursive
+	set python_crash_handler_crashed=1
+	call :handle_python_crash
 )
-EXIT /B 0 &@REM exit function with errorcode 0
+exit /b 0 
+REM exit function with errorcode 0
 :: =================================================
 :: =================================================
 
@@ -420,7 +457,7 @@ EXIT /B 0 &@REM exit function with errorcode 0
 ::::::::::::::::::::::::::::::::::::::::::::::::
 :make_absolute_path_if_relative
     if "%~1"=="" (
-        set "OUTPUT=%CD%"
+        set "OUTPUT=%cd%"
     ) else (
 	    set "OUTPUT=%~f1"
     )
@@ -434,7 +471,7 @@ goto :EOF
 ::::::::::::::::::::::::::::::::::::::::::::::::
 :prompt_user
 	CHOICE /c YN /m Delete? Enter y/n for Yes/No
-	IF %ERRORLEVEL%==1 (
+	if !ERRORLEVEL!==1 (
 		set "OUTPUT=1"
 	) else (
 		set "OUTPUT=0"
