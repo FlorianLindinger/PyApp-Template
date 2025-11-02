@@ -3,11 +3,13 @@
 :: ========================
 
 @echo off
+rem allow for space paths everywhere in app name and path
+rem fix shrotcuts
 rem test faulthandler
 rem change icon.exe weird? with no args? is usage being printed?
 
 rem make change icon faster
-rem is it possible to have pyqt5 window be same as ölauncher in taskbar
+rem is it possible to have pyqt5 window be same as launcher in taskbar
 
 rem todo:
 rem check if existance checks needed
@@ -127,6 +129,12 @@ if "%python_code_path%"=="" (
 	pause > nul
 	exit 6
 )
+
+:: give default values if undefined
+if "%restart_main_code_on_crash%"=="" (
+	set "restart_main_code_on_crash=0"
+)
+
 
 :: convert the path settings that are relative to settings file (at %settings_path%%) to absolute paths:
 FOR %%I IN ("%settings_path%") DO set "settings_dir=%%~dpI"
@@ -357,12 +365,12 @@ set "py_errorlevel=%ERRORLEVEL%"
 cd /d "%current_file_path%"
 
 :: %py_errorlevel% is what the last python execution gives out in sys.exit({int_errorlevel}). Errorlevel not 0 (default is 1 for python crash) will run main_code.py or after_python_crash_code.py (depending on parameter restart_main_code_on_crash in non-user_settings.ini).
-if %py_errorlevel% neq 0 ( call :handle_python_crash )	
+if %py_errorlevel% neq 0 ( 
+	call :handle_python_crash 
+) else (
+    exit 0
+)
 
-:: wait for any key and exit
-echo Finished code execution. Press any key to exit
-pause >nul 
-exit 0
 
 :: ====================
 :: ==== Functions: ====
@@ -372,27 +380,33 @@ exit 0
 :: function to handle python crashes:
 ::::::::::::::::::::::::::::::::::::::::::::::
 :handle_python_crash
-if %restart_main_code_on_crash% EQU 0 ( 
+if "%restart_main_code_on_crash%" EQU "0" (
 	rem run after_python_crash_code.py 
 	if exist "%after_python_crash_code_path%" (
-		:: go to directory of python code and execute it and return to folder of this file:	
+		rem go to directory of python code and execute it and return to folder of this file
 		cd /d "%crash_python_code_dir%"
-		python -X faulthandler "%python_code_path%"
+		python -X faulthandler "%after_python_crash_code_path%"
 		set "py_errorlevel=%ERRORLEVEL%"
 		cd /d "%current_file_path%"
-	:: exit function if after_python_crash_code does not exist
-	) else ( exit 0 )
-)	else (  
-	rem run main_code.py again (again^)
-	:: go to directory of python code and execute it and return to folder of this file:
-	REM argument "crashed" indicated to the python code that it is a repeat call after a crash and can be checked for with sys.argv[-1]=="crashed"
+	rem exit function if after_python_crash_code does not exist
+	) else (
+		exit 0 
+	)
+)   else (	
+	rem run main_code.py again
+	rem go to directory of python code and execute it and return to folder of this file:
+	rem argument "crashed" indicated to the python code that it is a repeat call after a crash and can be checked for with sys.argv[-1]=="crashed"
 	cd /d "%python_code_dir%"
-	python -X faulthandler "%after_python_crash_code_path%" "crashed" 
+	python -X faulthandler "%python_code_path%" "crashed" 
 	set "py_errorlevel=%ERRORLEVEL%"
 	cd /d "%current_file_path%"
 )
-if %py_errorlevel% neq 0 ( call :handle_python_crash 
-) else ( exit 0 )
+if "%py_errorlevel%" neq "0" ( 
+	call :handle_python_crash 
+) else ( 
+	exit 0 
+)
+
 
 
 :: =================================================

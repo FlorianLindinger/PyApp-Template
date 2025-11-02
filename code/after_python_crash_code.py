@@ -11,6 +11,7 @@
 import msvcrt
 import sys
 
+print()
 print("Python has crashed (see above). Press any key to exit.")
 msvcrt.getch()  # waits for any kepress
 sys.exit(0)
