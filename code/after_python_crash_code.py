@@ -12,6 +12,6 @@ import msvcrt
 import sys
 
 print()
-print("Python has crashed (see above). Press any key to exit.")
-msvcrt.getch()  # waits for any kepress
+print("[Error] Python has crashed (see above). Press any key to exit.")
+msvcrt.getch()  # waits for any key press
 sys.exit(0)

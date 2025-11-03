@@ -15,9 +15,10 @@ SETLOCAL ENABLEDELAYEDEXPANSION
 :: define local variables (with relative paths being relative to this file)
 SET "settings_path=..\non-user_settings.ini"
 
-:: move to folder of this file (needed for relative path shortcuts)
-:: current_file_path varaible needed as workaround for nieche windows bug where this file gets called with quotation marks:
+:: get current file path and remove trailing \
 SET "current_file_path=%~dp0"
+SET "current_file_path=%current_file_path:~0,-1%"
+:: move to folder of this file (needed for relative path)
 CD /D "%current_file_path%"
 
 :: make paths absolute if not
@@ -120,10 +121,10 @@ IF NOT exist "%user_settings_path%" (
 
 :: generate cmd.exe copies
 MKDIR CMD_exes > NUL 2>&1
-COPY /Y "%SystemRoot%\System32\cmd.exe" "%current_file_path%\CMD_exes\cmd_1_%program_name%.exe"
-COPY /Y "%SystemRoot%\System32\cmd.exe" "%current_file_path%\CMD_exes\cmd_2_%program_name%.exe"
-COPY /Y "%SystemRoot%\System32\cmd.exe" "%current_file_path%\CMD_exes\cmd_3_%program_name%.exe"
-COPY /Y "%SystemRoot%\System32\cmd.exe" "%current_file_path%\CMD_exes\cmd_4_%program_name%.exe"
+COPY /Y "%SystemRoot%\System32\cmd.exe" "%current_file_path%\CMD_exes\cmd_1_%program_name%.exe" > NUL 2>&1
+COPY /Y "%SystemRoot%\System32\cmd.exe" "%current_file_path%\CMD_exes\cmd_2_%program_name%.exe" > NUL 2>&1
+COPY /Y "%SystemRoot%\System32\cmd.exe" "%current_file_path%\CMD_exes\cmd_3_%program_name%.exe" > NUL 2>&1
+COPY /Y "%SystemRoot%\System32\cmd.exe" "%current_file_path%\CMD_exes\cmd_4_%program_name%.exe" > NUL 2>&1
 
 :: ==== add language fildes needed for cmd.exe ====
 REM get name of current localization language
@@ -143,14 +144,14 @@ if "%UI_LANG%"=="" (
 REM add matching localization files needed for cmd.exe
 MKDIR "%current_file_path%\CMD_exes\%UI_LANG%" > NUL 2>&1
 MKDIR "%current_file_path%\CMD_exes\mui_files" > NUL 2>&1
-COPY /Y "%SystemRoot%\System32\%UI_LANG%\cmd.exe.mui" "%current_file_path%\CMD_exes\mui_files\cmd_1_%program_name%.exe.mui"
-COPY /Y "%SystemRoot%\System32\%UI_LANG%\cmd.exe.mui" "%current_file_path%\CMD_exes\mui_files\cmd_2_%program_name%.exe.mui"
-COPY /Y "%SystemRoot%\System32\%UI_LANG%\cmd.exe.mui" "%current_file_path%\CMD_exes\mui_files\cmd_3_%program_name%.exe.mui"
-COPY /Y "%SystemRoot%\System32\%UI_LANG%\cmd.exe.mui" "%current_file_path%\CMD_exes\mui_files\cmd_4_%program_name%.exe.mui"
-COPY /Y "%SystemRoot%\System32\%UI_LANG%\cmd.exe.mui" "%current_file_path%\CMD_exes\%UI_LANG%\cmd_1_%program_name%.exe.mui"
-COPY /Y "%SystemRoot%\System32\%UI_LANG%\cmd.exe.mui" "%current_file_path%\CMD_exes\%UI_LANG%\cmd_2_%program_name%.exe.mui"
-COPY /Y "%SystemRoot%\System32\%UI_LANG%\cmd.exe.mui" "%current_file_path%\CMD_exes\%UI_LANG%\cmd_3_%program_name%.exe.mui"
-COPY /Y "%SystemRoot%\System32\%UI_LANG%\cmd.exe.mui" "%current_file_path%\CMD_exes\%UI_LANG%\cmd_4_%program_name%.exe.mui"
+COPY /Y "%SystemRoot%\System32\%UI_LANG%\cmd.exe.mui" "%current_file_path%\CMD_exes\mui_files\cmd_1_%program_name%.exe.mui" > NUL 2>&1
+COPY /Y "%SystemRoot%\System32\%UI_LANG%\cmd.exe.mui" "%current_file_path%\CMD_exes\mui_files\cmd_2_%program_name%.exe.mui" > NUL 2>&1
+COPY /Y "%SystemRoot%\System32\%UI_LANG%\cmd.exe.mui" "%current_file_path%\CMD_exes\mui_files\cmd_3_%program_name%.exe.mui" > NUL 2>&1
+COPY /Y "%SystemRoot%\System32\%UI_LANG%\cmd.exe.mui" "%current_file_path%\CMD_exes\mui_files\cmd_4_%program_name%.exe.mui" > NUL 2>&1
+COPY /Y "%SystemRoot%\System32\%UI_LANG%\cmd.exe.mui" "%current_file_path%\CMD_exes\%UI_LANG%\cmd_1_%program_name%.exe.mui" > NUL 2>&1
+COPY /Y "%SystemRoot%\System32\%UI_LANG%\cmd.exe.mui" "%current_file_path%\CMD_exes\%UI_LANG%\cmd_2_%program_name%.exe.mui" > NUL 2>&1
+COPY /Y "%SystemRoot%\System32\%UI_LANG%\cmd.exe.mui" "%current_file_path%\CMD_exes\%UI_LANG%\cmd_3_%program_name%.exe.mui" > NUL 2>&1
+COPY /Y "%SystemRoot%\System32\%UI_LANG%\cmd.exe.mui" "%current_file_path%\CMD_exes\%UI_LANG%\cmd_4_%program_name%.exe.mui" > NUL 2>&1
 :: ===================
 
 :: create shortcut for starting the program:
