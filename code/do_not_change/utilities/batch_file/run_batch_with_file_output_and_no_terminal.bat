@@ -17,8 +17,8 @@ SETLOCAL enabledelayedexpansion
 SET "current_file_path=%~dp0"
 rem CD /D "%current_file_path%"
 
-@REM define local variables (do not have spaces before or after the "=" or at the end of the variable value (unless wanted in value) -> inline comments without space before "&@REM".
-@REM Use "\" to separate folder levels and omit "\" at the end of paths. Relative paths allowed):
+:: define local variables (do not have spaces before or after the "=" or at the end of the variable value (unless wanted in value) -> inline comments without space before "&@REM".
+:: Use "\" to separate folder levels and omit "\" at the end of paths. Relative paths allowed):
 SET "batch_file_path=%~1"
 IF "%~2"=="" (
 	SET "log_path=log.txt"
@@ -31,11 +31,11 @@ IF "%~3"=="" (
 	SET "process_id_file_path=%~3"
 )
 
-@REM ######################
-@REM --- Code Execution ---
-@REM ######################
+:: ######################
+:: --- Code Execution ---
+:: ######################
 
-@REM put arguments starting from the i-th (from calling this batch file) in the string "args_list" with space in between and each surrouned by " on both sides:
+:: put arguments starting from the i-th (from calling this batch file) in the string "args_list" with space in between and each surrouned by " on both sides:
 SET args_list=
 SET "i=4"
 :loop_args
@@ -47,7 +47,7 @@ SET "i=4"
 GOTO loop_args
 :args_done
 
-@REM call batch file without terminal and send outputs (including errors) to log_path and create a process id file as long as code is running:
+:: call batch file without terminal and send outputs (including errors) to log_path and create a process id file as long as code is running:
 CALL "%current_file_path%run_batch_with_no_terminal.bat" ^
 	"%current_file_path%run_batch_with_file_output.bat" ^
 	"%process_id_file_path%"  ^
