@@ -9,6 +9,7 @@ rem allow for space paths everywhere in app name and path
 
 rem make a batch or c++ verison of change icon. Or add licenses for pyton veriosn. also to utilities
 
+rem remove helper file for run_wihtout terminal. add delete with "; del" in powersehll part 
 
 rem function call also changes ~dp0. so deliverate use only in beginning and set as variable. avoid move to local file. rather use explicitly this varialbe. add proper globla explanation that function call does that?
 
@@ -36,7 +37,7 @@ rem make batch for generate non strict?
 
 rem test startup time before python
 
-rem##### somehow fix  that star tscitp closes delete file afterwards thing. want to keep utility tho. should work generally
+rem ##### somehow fix  that star tscitp closes delete file afterwards thing. want to keep utility tho. should work generally
 
 rem ##################################
 
@@ -132,7 +133,6 @@ if "%python_code_path%"=="" (
 if "%restart_main_code_on_crash%"=="" (
 	set "restart_main_code_on_crash=0"
 )
-
 
 :: convert the path settings that are relative to settings file (at %settings_path%%) to absolute paths:
 FOR %%I IN ("%settings_path%") DO set "settings_dir=%%~dpI"
