@@ -3,8 +3,13 @@
 :: ========================
 
 @echo off
+rem current_file_path has \. maybe it matters. remove?
+
 rem allow for space paths everywhere in app name and path
-rem fix shrotcuts
+
+rem make a batch or c++ verison of change icon. Or add licenses for pyton veriosn. also to utilities
+
+
 rem test faulthandler
 rem change icon.exe weird? with no args? is usage being printed?
 
@@ -25,25 +30,11 @@ rem cathc errors of called scripts
 
 rem test if python verison "" works
 
+rem make batch for generate non strict?
+
 rem test startup time before python
-rem maybe make batch file that prints runtime of call
 
-rem ##################
-rem start code
-rem white error and num_repeats  < max_repeats:
-rem     old_time = get time
-rem 	if repeate_main
-rem 	   start code
-rem 	else:
-rem 	   start fail code
-rem     if get_toime < old_time + 1 sek:
-rem 	   sleep 1 sek
-rem ##################
-
-rem print totla report of if crhases of waht happended
-
-rem ##################
-
+rem ##################################
 :: ====================================
 :: --- Setup, Variables, and Checks ---
 :: ====================================
