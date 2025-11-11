@@ -6,7 +6,7 @@
 
 rem wait i need admin to copy from system32????
 
-rem add nopause option for all scripts becaseu they would half for no terminal usage. maybe does not matter eitehr way
+rem add nopause option for all scripts becaseu they would halt for no terminal usage. maybe does not matter eitehr way
 
 rem current_file_path has \. maybe it matters. remove?
 
@@ -163,8 +163,8 @@ TITLE %program_name%
 :: change terminal colors (for starting lines):
 COLOR %terminal_bg_color%%terminal_text_color%
 
-:: change terminal icon (take ~1 s):
-call "%icon_changer_path%" "%program_name%" "%icon_path%"
+:: change terminal icon via new terminal that does not delay code execution here (takes ~1s):
+start "" /min "%icon_changer_path%" "%program_name%" "%icon_path%"
 
 :: get name of current localization language needed for cmd.exe that presumably runs this script
 for /f "tokens=2,*" %%A in ('reg query "HKCU\Control Panel\Desktop" /v PreferredUILanguages 2^>nul') do (
