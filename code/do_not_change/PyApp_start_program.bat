@@ -36,8 +36,6 @@ rem add back install packages batch as utility for py app with correct paths
 rem use goto:s or functions
 rem cathc errors of called scripts
 
-rem test if python verison "" works
-
 rem make batch for generate non strict?
 
 rem test startup time before python
@@ -52,11 +50,8 @@ rem ##################################
 :: --- Setup, Variables, and Checks ---
 :: ====================================
 
-:: turn off printing of commands
-@echo off
-
-:: make variables local and enable delayed expansion
-setlocal EnableDelayedExpansion
+:: turn off printing of commands &  make variables local & enable needed features
+@echo off & setlocal EnableDelayedExpansion
 
 :: define local variables (with relative paths being relative to this file)
 set "settings_path=..\non-user_settings.ini"
@@ -203,8 +198,8 @@ if errorlevel 8 (
 
 if not exist "%python_exe_path%" ( 
 	REM python not existing case
-	rem install python:
-    call "%portable_python_installer_path%" "%python_version%" "%python_folder_folder_path%"
+	rem install python: "0" means no installation of Python docs
+    call "%portable_python_installer_path%" "%python_version%" "%python_folder_folder_path%" "%install_tkinter%" "%install_tests%" "0"
 	if "!ERRORLEVEL!" neq "0" ( exit 9 ) 
 	rem above: failed to install python. Error print and wait already in call
 	rem install virtual env:
@@ -294,7 +289,7 @@ if not exist "%python_exe_path%" (
 			    if "!ERRORLEVEL!" neq "0" ( exit 13 ) 
 				rem above: failed to generate package list. Error print and wait already in call
                 rem reinstall python:
-                call "%portable_python_installer_path%" "%python_version%" "%python_folder_folder_path%"
+                call "%portable_python_installer_path%" "%python_version%" "%python_folder_folder_path%" "%install_tkinter%" "%install_tests%" "0"
 			    if "!ERRORLEVEL!" neq "0" ( exit 14 ) 
 				rem above: failed to reinstall python. Error print and wait already in call
 			    rem reinstall virtual env:
@@ -322,7 +317,7 @@ if not exist "%python_exe_path%" (
 	   ) else ( 
 		REM env not existing case. User does not get asked for python reinstall since either way no venv lost
         	rem reinstall python:
-            call "%portable_python_installer_path%" "%python_version%" "%python_folder_folder_path%"
+            call "%portable_python_installer_path%" "%python_version%" "%python_folder_folder_path%" "%install_tkinter%" "%install_tests%" "0"
         	if "!ERRORLEVEL!" neq "0" ( exit 16 ) 
 			rem above: failed to install python. Error print and wait already in call
         	rem install virtual env:
