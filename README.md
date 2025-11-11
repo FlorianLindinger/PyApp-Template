@@ -22,7 +22,8 @@
 - Automatic handling of python crashes with the option to restart the main file or execute a crash-handling python file.
 - Wrapper code built with modular single-function batch files that enable reuse of code parts and easier modification.
 - Includes template files for good practice python projects like readmes, pyproject.toml, license, version, Todo,...
-- Small launch overhead of all features: ~+0.2 s (global python is ~0.15 s)
+- Small launch overhead of all features: ~+0.2 s (global python start is ~0.15 s)
+- Options to install only needed parts of full-Python installation (down to ~48 MB instad of ~150 MB for normal python installations)
 - Feel free to suggest more :)
 
 ---
