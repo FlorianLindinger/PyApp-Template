@@ -15,7 +15,7 @@ dev = ["ruff"]
 # ===========================
 [tool.ruff] #Ruff (python linter/formatter) configuration
 # ===========================
-include = ["*.py", "*.pyi","*.pyw","*.ipynb"] # files to check/correct:
+include = ["*.py", "*.pyi", "*.pyw", "*.ipynb"]                                  # files to check/correct:
 exclude = [".git", ".mypy_cache", ".ruff_cache", "__pycache__", "build", "dist"]
 line-length = 120                                                                # max line length before wrapping
 # Rule families to enable:
@@ -51,7 +51,7 @@ select = [
     "SLF",   # access to private attributes of other classes
     "T10",   # Flag leftover debug statements
     "T20",   # Flag leftover print statements
-    "TCH",   # move import only needed for type checking
+    "TC",   # move import only needed for type checking
     "TID",   # Catches circular or disallowed imports
     "TRY",   # bad exception handling
     "UP",    # Updates syntax for newer Python versions
@@ -68,8 +68,9 @@ ignore = [
     "E712",    # allow `== True/False`
     "EM101",   # allow for strings in error message
     "EM102",   # allow f-string in exception message
-    "FBT001",  # allow boolean parameters
-    "FBT002",  # allow boolean parameters #2
+    "FBT001",  # allow boolean parameters when type hinting
+    "FBT002",  # allow boolean parameters when defining
+    "FBT003",  # allow boolean positions args when calling
     "N801",    # capitalize classes
     "N802",    # allow for lowercase functions
     "N803",    # allow for lowercase parameters
@@ -85,6 +86,7 @@ ignore = [
     "PLR2004", # allow for numbers in comparison
     "PLR5501", # allow for "else: if" instead of "elif"
     "PLW0120", # allow for redundant else after for
+    "PLW0603", # allow for use of globals
     "RET504",  # allow for unnecessary new variable before return
     "RET505",  # allow for unnecessary else before return
     "RET506",  # allow for unnecessary else after raise
@@ -105,6 +107,7 @@ ignore = [
     "TRY003",  # allow for long error message
     "TRY300",  # allow unnecessary many line-including try-excepts
     "TRY301",  # allow for not encapsulated raise in try-except
+    "UP009",   # allow python file encoding declaration
     "UP028",   # don't replace for+yield with "yield from"
 
 
