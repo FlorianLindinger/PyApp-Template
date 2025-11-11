@@ -3,6 +3,11 @@
 :: ========================
 
 @echo off
+
+rem wait i need admin to copy from system32????
+
+rem add nopause option for all scripts becaseu they would half for no terminal usage. maybe does not matter eitehr way
+
 rem current_file_path has \. maybe it matters. remove?
 
 rem allow for space paths everywhere in app name and path
@@ -37,7 +42,7 @@ rem make batch for generate non strict?
 
 rem test startup time before python
 
-rem ##### somehow fix  that star tscitp closes delete file afterwards thing. want to keep utility tho. should work generally
+rem somehow fix  that star tscitp closes delete file afterwards thing. want to keep utility tho. should work generally
 
 rem ##################################
 
