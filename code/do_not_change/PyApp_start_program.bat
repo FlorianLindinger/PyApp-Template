@@ -2,47 +2,7 @@
 :: --- Code Description ---
 :: ========================
 
-@echo off
 
-rem wait i need admin to copy from system32????
-
-rem add nopause option for all scripts becaseu they would halt for no terminal usage. maybe does not matter eitehr way
-
-rem current_file_path has \. maybe it matters. remove?
-
-rem allow for space paths everywhere in app name and path
-
-rem make a batch or c++ verison of change icon. Or add licenses for pyton veriosn. also to utilities
-
-rem remove helper file for run_wihtout terminal. add delete with "; del" in powersehll part 
-
-rem function call also changes ~dp0. so deliverate use only in beginning and set as variable. avoid move to local file. rather use explicitly this varialbe. add proper globla explanation that function call does that?
-
-rem test faulthandler
-rem change icon.exe weird? with no args? is usage being printed?
-
-rem make change icon faster
-rem is it possible to have pyqt5 window be same as launcher in taskbar
-
-rem todo:
-rem check if existance checks needed
-rem max_repeats
-rem checl what abs PATH i need and if i dont want to run all code always
-rem maybe remove generate requriements.txt?
-rem maybe lease install packages from file?
-
-rem add back install packages batch as utility for py app with correct paths
-
-rem use goto:s or functions
-rem cathc errors of called scripts
-
-rem make batch for generate non strict?
-
-rem test startup time before python
-
-rem somehow fix  that star tscitp closes delete file afterwards thing. want to keep utility tho. should work generally
-
-rem ##################################
 
 
 
