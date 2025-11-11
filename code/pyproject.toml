@@ -18,6 +18,7 @@ dev = ["ruff"]
 include = ["*.py", "*.pyi", "*.pyw", "*.ipynb"]                                  # files to check/correct:
 exclude = [".git", ".mypy_cache", ".ruff_cache", "__pycache__", "build", "dist"]
 line-length = 120                                                                # max line length before wrapping
+[tool.ruff.lint]
 # Rule families to enable:
 select = [
     "A",     # shadowing Python built-ins
@@ -51,7 +52,7 @@ select = [
     "SLF",   # access to private attributes of other classes
     "T10",   # Flag leftover debug statements
     "T20",   # Flag leftover print statements
-    "TC",   # move import only needed for type checking
+    "TC",    # move import only needed for type checking
     "TID",   # Catches circular or disallowed imports
     "TRY",   # bad exception handling
     "UP",    # Updates syntax for newer Python versions
