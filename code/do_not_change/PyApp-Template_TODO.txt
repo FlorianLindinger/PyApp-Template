@@ -6,6 +6,15 @@
 important
 ===================================
 
+git does not exist for donwload in git?
+
+check release allways new dwonlaod
+
+fix version file in do_not_cahgne
+
+make multi line:
+ Created shortcuts "PyApp-Template", "PyApp-Template (with log & no terminal)", "stop (no-terminal) PyApp-Template" & "PyApp-Template - settings" in "D:\Downloads\PyApp-Template-0.1.0\PyApp-Template-0.1.0". Press any key to exit.
+
 Fix Release in git
 
 dont print installing packages if None
