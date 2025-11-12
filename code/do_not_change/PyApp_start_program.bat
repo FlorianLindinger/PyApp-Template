@@ -16,13 +16,13 @@
 :: define local variables (with relative paths being relative to this file)
 set "settings_path=..\non-user_settings.ini"
 set "cmd_exes_path=CMD_exes"
-
+:: script path variables
 set "python_version_checker_path=utilities\python_environment\check_if_python_version_matches.bat"
 set "portable_python_installer_path=utilities\python_environment\create_portable_python.bat"
 set "portable_venv_creator_path=utilities\python_environment\create_portable_venv.bat"
 set "requirements_generator_path=utilities\python_environment\generate_requirements.txt_no_version.bat"
 set "icon_changer_path=utilities\change_icon.exe"
-
+:: python related path variables
 set "python_folder_folder_path=..\python_environment"
 set "python_folder_path=%python_folder_folder_path%\portable_python"
 set "python_exe_path=%python_folder_path%\python.exe"
@@ -54,22 +54,22 @@ set "python_exe_path=%OUTPUT%"
 
 :: check if files exist
 if NOT exist "%settings_path%" (
-	echo [Error] "%settings_path%" does not exist. Aborting. Press any key to exit.
+	echo [Error 1] "%settings_path%" does not exist. Aborting. Press any key to exit.
 	pause > nul
 	exit 1
 )
 if NOT exist "%python_version_checker_path%" (
-	echo [Error] "%python_version_checker_path%" does not exist. Aborting. Press any key to exit.
+	echo [Error 2] "%python_version_checker_path%" does not exist. Aborting. Press any key to exit.
 	pause > nul
 	exit 2
 )
 if NOT exist "%portable_python_installer_path%" (
-	echo [Error] "%portable_python_installer_path%" does not exist. Aborting. Press any key to exit.
+	echo [Error 3] "%portable_python_installer_path%" does not exist. Aborting. Press any key to exit.
 	pause > nul
 	exit 3
 )
 if NOT exist "%portable_venv_creator_path%" (
-	echo [Error] "%portable_venv_creator_path%" does not exist. Aborting. Press any key to exit.
+	echo [Error 4] "%portable_venv_creator_path%" does not exist. Aborting. Press any key to exit.
 	pause > nul
 	exit 4
 )
@@ -79,12 +79,12 @@ FOR /F "tokens=1,2 delims==" %%A IN ('findstr "^" "%settings_path%"') DO ( set "
 
 :: check if defined in settings_path
 if "%icon_path%"=="" (
-	echo [Error] icon_path not defined in "%settings_path%". Aborting. Press any key to exit.
+	echo [Error 5] Variable icon_path not defined in "%settings_path%". Aborting. Press any key to exit.
 	pause > nul
 	exit 5
 )
 if "%python_code_path%"=="" (
-	echo [Error] python_code_path not defined in "%settings_path%". Aborting. Press any key to exit.
+	echo [Error 6] Variable python_code_path not defined in "%settings_path%". Aborting. Press any key to exit.
 	pause > nul
 	exit 6
 )
@@ -158,17 +158,17 @@ if errorlevel 8 (
 
 if not exist "%python_exe_path%" ( 
 	REM python not existing case
-	rem install python: "0" means no installation of Python docs
+	REM install python: "0" in next line means no installation of Python docs:
     call "%portable_python_installer_path%" "%python_version%" "%python_folder_folder_path%" "%install_tkinter%" "%install_tests%" "0"
 	if "!ERRORLEVEL!" neq "0" ( exit 9 ) 
-	rem above: failed to install python. Error print and wait already in call
-	rem install virtual env:
+	REM above: failed to install python. Error print and wait already in call
+	REM install virtual env:
 	call "%portable_venv_creator_path%" "%python_folder_folder_path%" "%python_folder_path%"
     if "!ERRORLEVEL!" neq "0" ( exit 10 ) 
-	rem above: failed to install venv. Error print and wait already in call
-	rem activate env:
+	REM above: failed to install venv. Error print and wait already in call
+	REM activate env:
     call "%env_activator_path%"
-	rem install packages:
+	REM install packages:
     if not exist "%default_packages_list%" ( 
 		REM python packages list not existing case
         call :make_absolute_path_if_relative "%default_packages_list%"
@@ -190,26 +190,26 @@ if not exist "%python_exe_path%" (
 	)
 ) else ( 
 	REM python existing case
-	rem check python version matches setting:
+	REM check python version matches setting:
 	call "%python_version_checker_path%" "%python_version%" "%python_exe_path%"
 	if "!ERRORLEVEL!" neq "0" ( exit 11 ) 
-	rem above: failed to determine python version. Error print and wait already in call
+	REM above: failed to determine python version. Error print and wait already in call
 	if "!OUTPUT!"=="1" ( 
 	   REM python version matching case
 	   if exist "%env_activator_path%" ( 
 		    REM env existing case
-            rem activate env:
+            REM activate env:
             call "%env_activator_path%"
 			goto end_of_activation
 	   ) else ( 
 		    REM env not existing case
-        	rem install virtual env:
+        	REM install virtual env:
         	call "%portable_venv_creator_path%" "%python_folder_folder_path%" "%python_folder_path%"
             if "!ERRORLEVEL!" neq "0" ( exit 12 ) 
-			rem above: failed to install venv. Error print and wait already in call
-        	rem activate env:
+			REM above: failed to install venv. Error print and wait already in call
+        	REM activate env:
             call "%env_activator_path%"
-        	rem install packages:
+        	REM install packages:
             if not exist "%default_packages_list%" ( 
 				REM python packages list not existing case
                 call :make_absolute_path_if_relative "%default_packages_list%"
@@ -230,35 +230,35 @@ if not exist "%python_exe_path%" (
             	goto end_of_activation
         	)
 	   )  
-	   rem above: end of env not existing case
+	   REM above: end of env not existing case
 	) else ( 
 	   REM python version not matching case
 	   if exist "%env_activator_path%" ( 
 		    REM env existing case
-	        rem ask user if he wants to recreate python and venv with current packages
+	        REM ask user if he wants to recreate python and venv with current packages
             echo.
             echo [Warning] Installed Python version is not compatible with the version specified in "%settings_path%" (%python_version%^).
 		    echo Do you want to locally for this program reinstall Python + virtual environment + current packages OR stay with current setup?
 		    call :prompt_user
             if "!OUTPUT!"=="1" ( 
 				REM user: yes case
-			    rem activate to get current packages:
+			    REM activate to get current packages:
                 call "%env_activator_path%"
-                rem get current packages:
+                REM get current packages:
                 call "%requirements_generator_path%" "%python_folder_folder_path%\tmp_requirement.txt"
 			    if "!ERRORLEVEL!" neq "0" ( exit 13 ) 
-				rem above: failed to generate package list. Error print and wait already in call
-                rem reinstall python:
+				REM above: failed to generate package list. Error print and wait already in call
+                REM reinstall python:
                 call "%portable_python_installer_path%" "%python_version%" "%python_folder_folder_path%" "%install_tkinter%" "%install_tests%" "0"
 			    if "!ERRORLEVEL!" neq "0" ( exit 14 ) 
-				rem above: failed to reinstall python. Error print and wait already in call
-			    rem reinstall virtual env:
+				REM above: failed to reinstall python. Error print and wait already in call
+			    REM reinstall virtual env:
 			    call "%portable_venv_creator_path%" "%python_folder_folder_path%" "%python_folder_path%"
                 if "!ERRORLEVEL!" neq "0" ( exit 15 ) 
-				rem above: failed to reinstall venv. Error print and wait already in call
-			    rem activate to reinstall packages:
+				REM above: failed to reinstall venv. Error print and wait already in call
+			    REM activate to reinstall packages:
                 call "%env_activator_path%"
-			    rem reinstall packages:
+			    REM reinstall packages:
             	echo.
             	echo [Info] Installing packages:
             	echo.
@@ -270,23 +270,23 @@ if not exist "%python_exe_path%" (
             	goto end_of_activation
 		    ) else (  
 				REM user: no case
-			    rem activate:
+			    REM activate:
                 call "%env_activator_path%"
 			    goto end_of_activation
 		    )
 	   ) else ( 
 		REM env not existing case. User does not get asked for python reinstall since either way no venv lost
-        	rem reinstall python:
+        	REM reinstall python:
             call "%portable_python_installer_path%" "%python_version%" "%python_folder_folder_path%" "%install_tkinter%" "%install_tests%" "0"
         	if "!ERRORLEVEL!" neq "0" ( exit 16 ) 
-			rem above: failed to install python. Error print and wait already in call
-        	rem install virtual env:
+			REM above: failed to install python. Error print and wait already in call
+        	REM install virtual env:
         	call "%portable_venv_creator_path%" "%python_folder_folder_path%" "%python_folder_path%"
             if "!ERRORLEVEL!" neq "0" ( exit 17 )  
-			rem above: failed to install venv. Error print and wait already in call
-        	rem activate env:
+			REM above: failed to install venv. Error print and wait already in call
+        	REM activate env:
             call "%env_activator_path%"
-        	rem install packages:
+        	REM install packages:
             if not exist "%default_packages_list%" (  
 				REM python packages list not existing case
                 call :make_absolute_path_if_relative "%default_packages_list%"
@@ -307,13 +307,14 @@ if not exist "%python_exe_path%" (
             	goto end_of_activation
         	)
 	   ) 
-	   rem above: end of env not existing case
+	   REM above: end of env not existing case
     ) 
-	rem above: end of python version not matching case
+	REM above: end of python version not matching case
 ) 
-rem above: end of python existing case
+REM above: end of python existing case
 
 :end_of_activation
+::End of: activate or create & activate python environment
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
 :: go to directory of main python code and execute it and return to folder of this file. Faulthandler catches python interpreter crash:
@@ -339,21 +340,21 @@ if %py_errorlevel% neq 0 (
 ::::::::::::::::::::::::::::::::::::::::::::::
 :handle_python_crash
 if "%restart_main_code_on_crash%" EQU "0" (
-	rem run after_python_crash_code.py 
+	REM run after_python_crash_code.py 
 	if exist "%after_python_crash_code_path%" (
-		rem go to directory of python code and execute it and return to folder of this file
+		REM go to directory of python code and execute it and return to folder of this file
 		cd /d "%crash_python_code_dir%"
 		python -X faulthandler "%after_python_crash_code_path%"
 		set "py_errorlevel=%ERRORLEVEL%"
 		cd /d "%current_file_path%"
-	rem exit function if after_python_crash_code does not exist
+	REM exit function if after_python_crash_code does not exist
 	) else (
 		exit 0 
 	)
 )   else (	
-	rem run main_code.py again
-	rem go to directory of python code and execute it and return to folder of this file:
-	rem argument "crashed" indicated to the python code that it is a repeat call after a crash and can be checked for with sys.argv[-1]=="crashed"
+	REM run main_code.py again
+	REM go to directory of python code and execute it and return to folder of this file:
+	REM argument "crashed" indicated to the python code that it is a repeat call after a crash and can be checked for with sys.argv[-1]=="crashed"
 	cd /d "%python_code_dir%"
 	python -X faulthandler "%python_code_path%" "crashed" 
 	set "py_errorlevel=%ERRORLEVEL%"

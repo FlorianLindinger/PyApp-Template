@@ -6,6 +6,12 @@
 important
 ===================================
 
+fix broken available shortcuts
+
+add placeholder batches
+
+add doctrings to batches
+
 make license
 
 add print for repair?
@@ -343,6 +349,10 @@ and python_env
 ===================================
 small improvements
 ===================================
+
+make all rem to REM
+
+add error number to [Error]
 
 replace CD wiht pushd and popd because they only change errorlevel on fail->check if better
 
