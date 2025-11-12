@@ -6,6 +6,10 @@
 important
 ===================================
 
+fix git downlaod not working
+
+need close of setting lnk?
+
 git does not exist for donwload in git?
 
 check release allways new dwonlaod
@@ -34,9 +38,13 @@ make code that's runs all setup steps
 
 update github top right 
 
+cehck diff of git to local with code
+
 ===================================
 readme and documentation related
 ===================================
+
+explain renamed needed for terminal cmd separation
 
 add explanation for pyq5 license
 
@@ -67,6 +75,8 @@ fix color in python part of terminal
 ===================================
 checks todo
 ===================================
+
+check if it allows spaces in non user args and maybe clean generally
 
 need admin to copy from system32?
 
