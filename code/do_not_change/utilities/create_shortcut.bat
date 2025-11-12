@@ -1,7 +1,7 @@
 :: =================================================
 :: Usage: 
 :: make_shortcut.bat "<name>" "<target>" "<target-args>" "<working-dir>" "<icon-path>" "<description>"
-:: Add quotations inside an arg as a double single quote ('')
+:: Add quotations inside an arg as a \"
 :: =================================================
 
 @echo off
@@ -33,37 +33,29 @@ set "ICON=%output%"
 :: strip accidental .lnk from NAME so we control extension
 if /i "%NAME:~-4%"==".lnk" set "NAME=%NAME:~0,-4%"
 
-:: ensure link directory exists
-for %%D in ("%NAME%") do set "LINKDIR=%%~dpD"
-if not exist "%LINKDIR%" (
-    echo Error: Output directory "%LINKDIR%" does not exist.
-    exit /b 2
-)
+:: make link directory if not existing
+for %%D in ("%NAME%") do mkdir "%%~dpD" >nul 2>&1
 
 :: add shortcut ending
 set "LINK=%NAME%.lnk"
 
 :: create shortcut
-powershell -NoProfile -ExecutionPolicy Bypass ^
-  "$ws = New-Object -ComObject WScript.Shell;" ^
-  "$lnk = $ws.CreateShortcut('%LINK%');" ^
-  "$lnk.TargetPath = '%TARGET%';" ^
-  "$lnk.Arguments = '%ARGS%';" ^
-  "$lnk.WorkingDirectory = '%WDIR%';" ^
-  "$lnk.IconLocation = '%ICON%,0';" ^
-  "$lnk.Description = '%DESC%';" ^
-  "$lnk.Save()" 
+powershell -NoProfile -ExecutionPolicy Bypass -Command ^
+  "$ws=New-Object -ComObject WScript.Shell;" ^
+  "$lnk=$ws.CreateShortcut($env:LINK);" ^
+  "$lnk.TargetPath=$env:TARGET;" ^
+  "$lnk.Arguments=$env:ARGS;" ^
+  "$lnk.WorkingDirectory=$env:WDIR;" ^
+  "$lnk.IconLocation=$env:ICON+',0';" ^
+  "$lnk.Description=$env:DESC;" ^
+  "$lnk.Save()"
 
-:: test if shortcut was created and warn if not
+:: test if shortcut was created and exit
 if not exist "%LINK%" (
-  echo: [Error] Failed to create shortcut (see above^). Aborting. Press any key to exit
-  pause > nul
-  exit /b 4
+    exit /b 2
+) else (
+    EXIT /B 0
 )
-
-:: print and exit
-echo Shortcut created: "%LINK%"
-EXIT /B 0
 
 :: ====================
 :: ==== Functions: ====
