@@ -2,7 +2,7 @@
 :: --- Code Description ---
 :: ========================
 
-:: Sets globally OUTPUT=1 if no (or empty) python_version_target given as first argument or if given python version is compatible with the python.exe_path of arg 2. If no path given it will pick the global one. Else it will set globally OUTPUT=0.
+:: Sets globally OUTPUT=1 if no (or empty) python_version_target given as first argument or if given python version is compatible with the python.exe_path of arg 2. If no path given it will pick the global one. Else it will set globally OUTPUT=0. If the first arg is empty it will set OUTPUT=1 because it assumes every version is matching.
 
 :: =========================
 :: --- Setup & Variables ---
@@ -45,7 +45,7 @@ for /f "tokens=2 delims= " %%v in ('%python_exe_path% --version 2^>^&1') do set 
 
 
 IF ERRORLEVEL 1 (
-	ECHO: Error: Failed to determine python version from "%python_exe_path%" python.exe path. Program aborted: Press any key to exit
+	ECHO: [Error] Failed to determine python version from "%python_exe_path%" python.exe path. Aborting. Press any key to exit.
 	PAUSE>NUL 
 	EXIT /B 1
 )

@@ -16,7 +16,7 @@ IF %errorlevel% NEQ 0 (
       ECHO: Installation failed. Please (re^)install manually (https://imagemagick.org/script/download.php^) and restart to generate icons. Press any key to exit.
     )
     PAUSE > NUL
-    EXIT /B
+    EXIT 0
 )
 
 @REM generate icon.ico
@@ -50,11 +50,14 @@ magick icon.ico[5] ^
 
 IF %errorlevel% NEQ 0 (
   ECHO:
-  ECHO: Failed to generate stop.ico (see above^)
+  ECHO: Failed to generate stop.ico (see above^). Press any key to exit.
+  PAUSE > NUL
+  EXIT 1
   ECHO:
+) else (
+    ECHO:
+    ECHO: Icons (.ico files^) should have been generated in current folder if no errors above. Press any key to exit.
+    PAUSE > NUL
+    EXIT 0
 )
 
-ECHO:
-ECHO: Icons (.ico files) should have been generated in current folder if no errors above. Press any key to exit
-PAUSE > NUL
-EXIT /B
