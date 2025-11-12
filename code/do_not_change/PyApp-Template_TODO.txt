@@ -6,11 +6,9 @@
 important
 ===================================
 
-fail for path D:\Downloads\PyApp-Template-main (1)\PyApp-Template-main
-
 need close of setting lnk?
 
-git does not exist for donwload in git?
+git does not exist for donwload in git?->create batch that create git
 
 check release allways new dwonlaod
 
