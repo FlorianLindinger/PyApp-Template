@@ -22,25 +22,26 @@
 - Automatic handling of python crashes with the option to restart the main file or execute a crash-handling python file.
 - Wrapper code built with modular single-function batch files that enable reuse of code parts and easier modification.
 - Includes template files for good practice python projects like readmes, pyproject.toml, license, version, Todo,...
+- Small launch overhead of all features: ~+0.2 s (global python start is ~0.15 s)
+- Options to install only needed parts of full-Python installation (down to ~48 MB instad of ~150 MB for normal python installations)
 - Feel free to suggest more :)
 
 ---
 
 ## Quick Start
 
-1. Clone/download this repository
+1. Clone/download/copy this repository
 2. Add the python code you want to execute to "code/main_code.py"
 3. Run "code/python_environment_code/install_packages_needed_in_python_files.lnk" to install all packages your python file needs
-4. (Optional: Change program-settings under "code/non-user_settings.ini")
+4. (Optional: Change program-settings like Python version or program name under "code/non-user_settings.ini")
 5. (Optional: Add user-settings under "code/python.yaml")
-6. Execute RUN_BEFORE_FIRST_START_TO_GENERATE_SHORTCUTS.lnk
+6. Execute RUN_BEFORE_FIRST_START_TO_GENERATE_SHORTCUTS.lnk to generate shortcuts
 7. Run program via the generated shortcuts 
 
 ---
 
 ## Work in Progress
 
-- Utilities like safer folder deletion.
 - Template and boilerplate code for a GUI using PyQt5.
 - Plug-and-play license template & handling of non-distributables via .gitignore & a permissive MIT license for my codes.
   
