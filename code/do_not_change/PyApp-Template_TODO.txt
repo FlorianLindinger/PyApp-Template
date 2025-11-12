@@ -6,11 +6,7 @@
 important
 ===================================
 
-mention that windows might ask for permissions for start since it is code from online
-
 update git topics and order
-
-conside making it temmplate
 
 fix broken available shortcuts
 
@@ -57,6 +53,8 @@ cehck diff of git to local with code
 ===================================
 checks todo
 ===================================
+
+conside making it not temmplate
 
 check if it allows spaces in non user args and maybe clean generally
 
@@ -319,6 +317,8 @@ Check Git remote for updates and prompt user to pull.
 ===================================
 readme and documentation related
 ===================================
+
+mention that windows might ask for permissions for start since it is code from online
 
 mayor version: remove stuff outside do_not_change
 minor version: replacement or added outside do_not_change
