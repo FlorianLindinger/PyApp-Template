@@ -6,6 +6,8 @@ TODO LIST FOR PyApp-Template
 important
 ############################################################
 
+minimize to taskbar option
+
 fix 'start_program.bat' is not recognized as an internal or external command,
 operable program or batch file. when folder moved
 
