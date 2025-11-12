@@ -22,6 +22,14 @@ CD /D "%current_file_path%"
 @REM for extra safety to not delete files: The file (if no number) is mandated to be .pid and must not be included in the path:
 SET "process_id_or_file=%~1"
 
+if "%process_id_or_file%"=="" (
+	echo [Error] Need arguemnt. Usage:
+	echo kill_process_with_id.bat process_id_or_id_file
+	echo Press any key to exit.
+	pause > nul
+	exit 1
+)
+
 @REM ######################
 @REM --- Code Execution ---
 @REM ######################
@@ -34,10 +42,9 @@ IF EXIST "%process_id_or_file%.pid" (
 	IF "%OUTPUT%"=="1" (
 		SET "PID=%process_id_or_file%"
 	) ELSE (
-		ECHO: Warning: File "%process_id_or_file%.pid" does not exist. ^(don't include the file ending in the argument^). 
-		ECHO: Press any key to exit
+		ECHO: [Error] File "%process_id_or_file%.pid" does not exist. ^(don't include the file ending in the argument^). Press any key to exit.
 		PAUSE >NUL 
-		EXIT /B
+		EXIT 2
 	)
 )
 
@@ -48,24 +55,18 @@ IF EXIST "%process_id_or_file%.pid" (
 	DEL "%process_id_or_file%.pid"
 )
 
-@REM ####################
-@REM --- Closing-Code ---
-@REM ####################
-
 @REM pause if not called by other script with any argument:
 IF "%~1"=="" (
 	ECHO: Press any key to exit
 	PAUSE >NUL 
 )
 
-@REM exit program without closing a potential calling program
-EXIT /B 
+EXIT 0
 
 @REM ############################
 @REM --- Function Definitions ---
 @REM ############################
 
-SETLOCAL enabledelayedexpansion
 :is_integer
 SET "val=%~1"
 ECHO %val% | FINDSTR /R "^[0-9][0-9]*$" >NUL

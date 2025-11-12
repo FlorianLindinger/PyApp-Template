@@ -32,7 +32,7 @@ IF EXIST "%output_file_path%" (
 )
 
 :: generate file:
-python -m pip freeze --disable-pip-version-check > "%output_file_path%"
+(for /f "delims==" %%a in ("pip list --format=freeze") do @echo %%a) > "%output_file_path%"
 
 :: print success/fail and exit
 if exist "%output_file_path%" (
