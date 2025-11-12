@@ -106,7 +106,7 @@ if not exist "%PYTHON_FOLDER%\" (
 
 :: Check for Python folder markers
 if not exist "%PYTHON_FOLDER%\python.exe" (
-    echo [Error] folder "%PYTHON_FOLDER%" does not appear to be a Python folder. -^> Delete manually after confirming. ^| Aborting. Press any key to exit.
+    echo [Error] Folder "%PYTHON_FOLDER%" does not appear to be a Python folder. -^> Delete manually after confirming. ^| Aborting. Press any key to exit.
     pause > nul
     exit /b 1
 )
