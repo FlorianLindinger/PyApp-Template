@@ -6,6 +6,12 @@
 important
 ===================================
 
+mention that windows might ask for permissions for start since it is code from online
+
+update git topics and order
+
+conside making it temmplate
+
 fix broken available shortcuts
 
 add placeholder batches
@@ -179,6 +185,12 @@ check if i can add stoppping of closing terminal for non pyqt5
 batch & feature ideas
 ===================================
 
+Maybe add 4 normal launchers that then don't need recreation for offline sharing. Can I fix icon for that?
+
+System tray
+
+Implement logging features
+
 see folder structure for placeholder files instead of coded batch
 
 add progressbar to downlaod and install of python. mabye doable with num elems counting.->add batch function to utils
@@ -287,6 +299,10 @@ reload imports settings function?
 git ideas
 ===================================
 
+make only drop in verisons that change only changd stuff and one can drop in
+
+maybe make file comparison that updates all files one git template end to local app
+
 batch to compare with a git link the diffs. google better ways
 
 git batches like commit and get update
@@ -303,6 +319,10 @@ Check Git remote for updates and prompt user to pull.
 ===================================
 readme and documentation related
 ===================================
+
+mayor version: remove stuff outside do_not_change
+minor version: replacement or added outside do_not_change
+min version: replace do_not_change enough
 
 explain renamed needed for terminal cmd separation
 
