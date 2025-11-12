@@ -6,6 +6,10 @@
 important
 ===================================
 
+make license
+
+add print for repair?
+
 need close of setting lnk?
 
 git does not exist for donwload in git?->create batch that create git
@@ -37,8 +41,6 @@ make code that's runs all setup steps
 update github top right 
 
 cehck diff of git to local with code
-
-
 
 ===================================
 checks todo
@@ -167,13 +169,13 @@ add option to not have any prints from batch files?
 
 check if i can add stoppping of closing terminal for non pyqt5
 
-
-
 ===================================
 batch & feature ideas
 ===================================
 
-add progressbar to downlaod and install of python. mabye doable with num elems counting.
+see folder structure for placeholder files instead of coded batch
+
+add progressbar to downlaod and install of python. mabye doable with num elems counting.->add batch function to utils
 
 add asci character previcew of name for every batch that is not for normal start after setup. add space for unknow character? or also add äöü? add - and _ and numbers. maybe full printable ascii chars
 
