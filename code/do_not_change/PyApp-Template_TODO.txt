@@ -38,37 +38,7 @@ update github top right
 
 cehck diff of git to local with code
 
-===================================
-readme and documentation related
-===================================
 
-explain renamed needed for terminal cmd separation
-
-add explanation for pyq5 license
-
-fix readme for icons.
-
-explain GitHub desktop easily?
-
-make clear relative paths are allowid in settings and what settings are allowed fro non-user-setrtigns
-
- explain that you could just use poython for settings
-explain all advantages/features
-
-Add git link to readme? For base 
-
-add to notes that you can delete after_python_crash_code.py
-
-add readme in code\ folder   explain what everything is and that it has to keep its name
-
-add how to copy this folder
-
-explain that version ..x changes can be updated by replacing do_not_change and should not be breaking
-v.xy changes should be breaking something
-releases should always be stable
-for breaking. explain what needs to be changed to fix.
-
-fix color in python part of terminal
 
 ===================================
 checks todo
@@ -197,23 +167,15 @@ add option to not have any prints from batch files?
 
 check if i can add stoppping of closing terminal for non pyqt5
 
-===================================
-license related
-===================================
 
-fix license which now does not work since if user puts in restricitve license this would now be valid since he 
-would restrict public code. How even icons saying cant put any license if my icons and any if theirs
-
-make workane tempalte
-
-is link to github in license?
-
-make everythig but do_not_change MIT. and icons i guess
-and python_env
 
 ===================================
 batch & feature ideas
 ===================================
+
+add progressbar to downlaod and install of python. mabye doable with num elems counting.
+
+add asci character previcew of name for every batch that is not for normal start after setup. add space for unknow character? or also add äöü? add - and _ and numbers. maybe full printable ascii chars
 
 is it possible to have pyqt5 window be same as launcher in taskbar
 
@@ -329,6 +291,52 @@ self updatring from git option?not my code but ones that use template. like a ch
 Check Git remote for updates and prompt user to pull.
  print at least if new verison available
  add a batch that update git folder. maybe only main and release. maybe propt user and disaply name and changelog(s)
+
+===================================
+readme and documentation related
+===================================
+
+explain renamed needed for terminal cmd separation
+
+add explanation for pyq5 license
+
+fix readme for icons.
+
+explain GitHub desktop easily?
+
+make clear relative paths are allowid in settings and what settings are allowed fro non-user-setrtigns
+
+ explain that you could just use poython for settings
+explain all advantages/features
+
+Add git link to readme? For base 
+
+add to notes that you can delete after_python_crash_code.py
+
+add readme in code\ folder   explain what everything is and that it has to keep its name
+
+add how to copy this folder
+
+explain that version ..x changes can be updated by replacing do_not_change and should not be breaking
+v.xy changes should be breaking something
+releases should always be stable
+for breaking. explain what needs to be changed to fix.
+
+fix color in python part of terminal
+
+===================================
+license related
+===================================
+
+fix license which now does not work since if user puts in restricitve license this would now be valid since he 
+would restrict public code. How even icons saying cant put any license if my icons and any if theirs
+
+make workane tempalte
+
+is link to github in license?
+
+make everythig but do_not_change MIT. and icons i guess
+and python_env
 
 ===================================
 small improvements
