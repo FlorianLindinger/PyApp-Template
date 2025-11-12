@@ -6,6 +6,8 @@
 important
 ===================================
 
+fail for path D:\Downloads\PyApp-Template-main (1)\PyApp-Template-main
+
 fix git downlaod not working
 
 need close of setting lnk?
