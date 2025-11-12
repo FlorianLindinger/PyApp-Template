@@ -1,3 +1,4 @@
-# Auto detect text files and perform LF normalization
+# Auto detect text files and perform LF normalization:
 * text=auto
+# Force git to use CRLF for batch files to not break them:
 *.bat text eol=crlf
