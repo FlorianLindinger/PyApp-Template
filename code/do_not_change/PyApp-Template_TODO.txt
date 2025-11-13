@@ -11,6 +11,13 @@ in create venv batch for no rg make better print:
 important
 ===================================
 
+move out default python list and folders to have folder safe replaceable
+-> renamed to python_e
+-> move python fodlers and default into -> "python_environment"
+->rename lnk file to "dev_tools"
+
+checkl if all batches and links are valid/used/needed
+
 checl install packages form pyhton files
 
 achek new activation start
