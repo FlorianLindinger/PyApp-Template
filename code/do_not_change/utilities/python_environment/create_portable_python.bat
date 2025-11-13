@@ -77,7 +77,7 @@ if not defined FULL_VER (
     exit /b 1
 )
 :: print success
-echo Found (msi-install available) Python version %FULL_VER%
+echo Found (msi-install-available) Python version %FULL_VER%
 
 :: define URL based on full version
 set "URL=https://www.python.org/ftp/python/%FULL_VER%/amd64/"
@@ -144,14 +144,14 @@ for %%A in (*.msi) do (
     )
     del /q "%PYTHON_FOLDER%\%%~nxA" 2>nul
   ) else (
-    echo [Info] Excluded %%~nxA
+    echo Excluding %%~nxA
   )
 )
 popd
 
 :: verify functioning %local_python_name%
 CALL "%PYTHON_FOLDER%\python.exe" -V > Nul || (
-  echo [ERROR] Python not runnable. Aborting. Press any key to exit.
+  echo [Error] Python not runnable. Aborting. Press any key to exit.
   PAUSE > NUL
   EXIT /B 2
 )
