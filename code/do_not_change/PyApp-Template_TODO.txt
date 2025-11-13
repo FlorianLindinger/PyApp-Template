@@ -2,9 +2,19 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+
+in create venv batch for no rg make better print:
+ [Error] "C:\Users\Flo\Documents\Repositories\PyApp-Template\code\do_not_change\utilities\python_environment\portable_python\python.exe" does not exist. Aborting. Press any key to exit.
+
+
+
 ===================================
 important
 ===================================
+
+bundle out activation and cration PyApp to have access everywherer
+
+todo reset python.txt
 
 update git topics and order
 
@@ -53,6 +63,8 @@ cehck diff of git to local with code
 ===================================
 checks todo
 ===================================
+
+check if works for windows not allowed long paths
 
 conside making it not temmplate
 
@@ -317,6 +329,8 @@ Check Git remote for updates and prompt user to pull.
 ===================================
 readme and documentation related
 ===================================
+
+add descriptojn to all all shortcuts
 
 mention that windows might ask for permissions for start since it is code from online
 
