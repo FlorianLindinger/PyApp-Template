@@ -2,6 +2,7 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+combine stuff from PyBoson and rest in GUI folder in utilites
 
 in create venv batch for no rg make better print:
  [Error] "C:\Users\Flo\Documents\Repositories\PyApp-Template\code\do_not_change\utilities\python_environment\portable_python\python.exe" does not exist. Aborting. Press any key to exit.
@@ -10,6 +11,44 @@ in create venv batch for no rg make better print:
 ===================================
 important
 ===================================
+
+can i make a gitignore for do_not_change such that users could not alter that accidentally? or by not coying. can i set that gitignore to all needed parts? same with gitartrbiutse. maybe via link aswell?
+
+make robust against pople deleting python_enviroment parent folder
+
+make sure people can touch evershing outside do not chagn other than non-user settings whcih are needed for start. and i guess the main_code.py
+
+add symbols for exe that peaople shpuld use. maybe windows one or maybe my own. espeeciall for GENERATE SHROTCUTS and generat iconds?
+
+make shortcut generator wrok for any settings file in non-user settings path
+
+make it not genrate shrotcut for no settings availagle. mention no settings posible
+
+double chekc if text in non-user settings is still accurate
+
+update license in do_not_change
+
+fix all paths from scrips in specific_scripts
+
+rename CMD_exes to Windows_cmd_exe_copies. also rename license and gitignoer and shortcut generator so on
+
+check gitignore
+
+make python exe alternative for magick as gneric batch with some contorl
+add a non-generoic batch. maybe give user some control
+
+does shortcut generator see linked icon
+how to generate in user icons folder only if user icon and generate
+how to bundle imagick or only that function at least 
+
+mabye just write in licens that parts of icons that have appartly being copes of my icons are not under the user license. but it is not safe if the degfaulöt changes. hm. maybe generate or delete licens fiels in icon folder
+
+make icons folder in do_no_change and update paths
+
+move every readme and everything into do_no_change and make link via mklink
+-> update is always do_not_change replacement
+
+rename utilities to general_utilities. check shortcuts
 
 move out default python list and folders to have folder safe replaceable
 -> renamed to python_e
@@ -339,6 +378,8 @@ Check Git remote for updates and prompt user to pull.
 ===================================
 readme and documentation related
 ===================================
+
+explain why everything is links and why taht allows easyer updates via replace do_not_change
 
 add descriptojn to all all shortcuts
 
