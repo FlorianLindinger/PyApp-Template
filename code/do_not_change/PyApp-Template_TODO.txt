@@ -2,6 +2,11 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+mabye gnerate gitignore for portable python and env:
+add .gitignore with "*" as line. venv does it only in 3.13+
+# maybe also add "# created by script that ..."
+# maybe also make it add gitignore to tmp?
+
 combine stuff from PyBoson and rest in GUI folder in utilites
 
 in create venv batch for no rg make better print:
@@ -11,6 +16,29 @@ in create venv batch for no rg make better print:
 ===================================
 important
 ===================================
+
+add more explanation text to gitignores
+
+move gitatreibuts into do_not_chagne. at least important stuff
+
+maybe dont have a gitignore in code just for pycache. useser might want to hcange and then changeg link to do_not_cjange
+
+check where tmp.txt could appear and where i have to ignore it.
+generate useless ones in folder that has its git instaed of git exepction on root:
+# temporary text files:
+tmp.txt
+try symlink for gitignores in python folder. Also make a ignore for code folder as symlink.
+
+
+mabye more genera *log*.txt for gitignore.
+# log files:
+log.txt
+
+mention that gitignore in python environement has to stay in place in license and genatally. How to allow for change anything?
+
+mkae dev tool link in poython evn directl to taeget to be save again deletion outside do not chagne
+
+maybe do license as text that dsays no license if linking to imge in donotchange
 
 can i make a gitignore for do_not_change such that users could not alter that accidentally? or by not coying. can i set that gitignore to all needed parts? same with gitartrbiutse. maybe via link aswell?
 
