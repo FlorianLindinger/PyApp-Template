@@ -2,6 +2,12 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+can i make interactiev turn into non interactiev on reopen?
+
+make comput not be loud for no heat
+
+make side grouvps in vscode smaller for scolling over. or add maximize button
+
 mabye gnerate gitignore for portable python and env:
 add .gitignore with "*" as line. venv does it only in 3.13+
 # maybe also add "# created by script that ..."
@@ -16,6 +22,8 @@ in create venv batch for no rg make better print:
 ===================================
 important
 ===================================
+
+create dev branch to have less clutter in main and have summary combinations
 
 add more explanation text to gitignores
 
