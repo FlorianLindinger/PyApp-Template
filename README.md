@@ -30,12 +30,12 @@
 
 ## Quick Start
 
-1. Clone/download this repository
+1. Clone/download/copy this repository
 2. Add the python code you want to execute to "code/main_code.py"
 3. Run "code/python_environment_code/install_packages_needed_in_python_files.lnk" to install all packages your python file needs
-4. (Optional: Change program-settings under "code/non-user_settings.ini")
+4. (Optional: Change program-settings like Python version or program name under "code/non-user_settings.ini")
 5. (Optional: Add user-settings under "code/python.yaml")
-6. Execute RUN_BEFORE_FIRST_START_TO_GENERATE_SHORTCUTS.lnk
+6. Execute RUN_BEFORE_FIRST_START_TO_GENERATE_SHORTCUTS.lnk to generate shortcuts
 7. Run program via the generated shortcuts 
 
 ---
