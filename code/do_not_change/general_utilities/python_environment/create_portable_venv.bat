@@ -76,7 +76,7 @@ if errorlevel 1 (
 )
 
 :: add .gitignore to folder to prevent git from syncing of python environment
->> "%VENV_PATH%\.gitignore" (
+> "%VENV_PATH%\.gitignore" (
   echo # Auto added to prevent synchronization of python environment in git by blacklisting everything with wildcard "*"
   echo *
 )
