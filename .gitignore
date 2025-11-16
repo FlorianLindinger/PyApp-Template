@@ -1,42 +1,23 @@
-# ================================================
-# ==== TO PREVENT UNLICENSED REDISTRIBUTIONS: ====
-# ================================================
-# cmd.exe + localization file copies:
-code/do_not_change/CMD_exes/*
-# python distribution:
-code/python_environment/portable_python/*
-# tmp folder for python distribution installation:
-code/python_environment/tmp/*
-# virtual environment & installed packages:
-code/python_environment/virtual_environment/*
-# =======================================================
-# ==== END OF: TO PREVENT UNLICENSED REDISTRIBUTIONS ====
-# =======================================================
+# Entries in this file will not be synchronized in git
 
-# ===================================================
-# ==== general gitignores (from PyApp-Template): ====
-# ===================================================
-# python cache folder:
+# ============================
+# ==== general gitignores ====
+# ============================
+# python cache folders:
 __pycache__
 # shortcuts in root folder:
 /*.lnk
 # whitelist sync of realitve-path-shortcut:
 !RUN_BEFORE_FIRST_START_TO_GENERATE_SHORTCUTS.lnk
-# whitelist sync of info.txt:
-!code/do_not_change/CMD_exes/info.txt
-# temporary text files:
-tmp.txt
 # log files:
 log.txt
 # temporary id files for no-terminal start:
 *.pid
-# last GUI setting files:
-code/GUI_settings.ini
 # ===================================================
 
-# ==============================
-# ==== specific gitignores: ====
-# ==============================
+# =============================
+# ==== specific gitignores ====
+# =============================
 
 # ADD YOUR GITIGNORES HERE
 
