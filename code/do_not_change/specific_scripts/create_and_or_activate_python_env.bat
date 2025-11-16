@@ -125,6 +125,7 @@ if not exist "%python_exe_path%" (
 		    REM env existing case
             REM activate env:
             call "%env_activator_path%"
+			exit /b 0
 	   ) else ( 
 		    REM env not existing case
 			echo.
@@ -255,9 +256,7 @@ if not exist "%python_exe_path%" (
 ) & REM end of python existing case
 
 :: exit
-exit \b 0
-
-
+exit /b 0
 
 :: ====================
 :: ==== Functions: ====

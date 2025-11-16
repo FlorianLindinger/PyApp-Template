@@ -22,6 +22,8 @@ in create venv batch for no rg make better print:
 important
 ===================================
 
+add more failsafe messages. If fails now without notice the start
+
 dont sync python_file_requirements?
 dont sync tmp_env_for_install_package_from_files
 
