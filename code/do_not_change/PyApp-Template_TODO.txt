@@ -1,6 +1,21 @@
 ======================================
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
+===================================
+unrealated
+===================================
+
+vscode ruff
+2025-11-12 14:51:26.911650000  INFO Registering workspace: c:\Users\agpup\Documents\Repositories
+2025-11-12 14:51:26.978416400  INFO Configuration file watcher successfully registered
+2025-11-12 14:51:27.024018800  INFO Server shut down
+[Error - 2:51:27 PM] Server process exited with code 0.
+2025-11-12 14:51:27.215409000  INFO Registering workspace: c:\Users\agpup\Documents\Repositories
+2025-11-12 14:51:27.216785600  INFO Configuration file watcher successfully registered
+2025-11-12 15:11:42.427337600 ERROR Failed to load settings from `configuration`: error looking key 'env:USERPROFILE' up: environment variable not found
+2025-11-12 15:11:42.427384900  WARN No settings available for file:///c%3A/Users/agpup/AppData/Local/Programs/Python/Python313/Lib/ctypes/__init__.py - falling back to default settings
+
+add  "python.exe -m pip install --upgrade pip" to python installer and python venv maker
 
 can i make interactiev turn into non interactiev on reopen?
 
@@ -17,29 +32,11 @@ combine stuff from PyBoson and rest in GUI folder in utilites
 in create venv batch for no rg make better print:
  [Error] "C:\Users\Flo\Documents\Repositories\PyApp-Template\code\do_not_change\general_utilities\python_environment\portable_python\python.exe" does not exist. Aborting. Press any key to exit.
 
-
-===================================
-unrealated
-===================================
-
-vscode ruff
-2025-11-12 14:51:26.911650000  INFO Registering workspace: c:\Users\agpup\Documents\Repositories
-2025-11-12 14:51:26.978416400  INFO Configuration file watcher successfully registered
-2025-11-12 14:51:27.024018800  INFO Server shut down
-[Error - 2:51:27 PM] Server process exited with code 0.
-2025-11-12 14:51:27.215409000  INFO Registering workspace: c:\Users\agpup\Documents\Repositories
-2025-11-12 14:51:27.216785600  INFO Configuration file watcher successfully registered
-2025-11-12 15:11:42.427337600 ERROR Failed to load settings from `configuration`: error looking key 'env:USERPROFILE' up: environment variable not found
-2025-11-12 15:11:42.427384900  WARN No settings available for file:///c%3A/Users/agpup/AppData/Local/Programs/Python/Python313/Lib/ctypes/__init__.py - falling back to default settings
-
-
-
-
-
-
 ===================================
 important
 ===================================
+
+handle parsing error of everythiong with proper warning in settings
 
 add in settings.py that it searches for settings.yaml or settibn
 

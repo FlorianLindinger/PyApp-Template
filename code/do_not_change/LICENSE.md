@@ -1,10 +1,8 @@
 # Composite MIT License
 
-This folder and its contents are covered by the **MIT License**,  
-**except** where noted below.
+This folder and its contents are covered by the **MIT License**, **except** where noted below.
 
-When redistributing or modifying this folder, ensure all license notices
-remain intact and unaltered.
+When redistributing or modifying this folder, ensure all license notices remain intact and unaltered.
 
 ---
 
@@ -52,5 +50,11 @@ accompanying those files for usage rights and redistribution conditions.
 ## 3. Exception: read_toml\tomli Folder
 
 The folder named `read_toml\tomli` contains parts of the Python package tomli (by Taneli Hukkinen) and is **not** covered by the MIT License above. Each file in that folder remains under the MIT license located in that folder.
+
+---
+
+## 4. Exception: read_yaml\ruamel Folder
+
+The folder named `read_toml\ruamel` contains parts of the Python package ruamel.yaml (by Anthon van der Neut, Ruamel bvba) and is **not** covered by the MIT License above. Each file in that folder remains under the MIT license located in that folder.
 
 ---
