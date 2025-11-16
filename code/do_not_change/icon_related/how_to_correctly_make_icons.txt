@@ -1,10 +1,10 @@
-################################
-HOW TO CORRECTLY MAKE AN ICON
-################################
+=======================================
+==== HOW TO CORRECTLY MAKE AN ICON ====
+=======================================
 
-TLDR: Replace icon.png/settings.png/stop.png with images that you want (keep name) and run generate_icons.lnk
+TLDR: Replace icon.png (and optionally settings.png,stop.png) with images that you want (keep name) and run generate_icons.lnk
 
-################################
+=======================================
 
 Icons have to be generated propery to nicely scale with mulitple sizes in a .ico file:
 
