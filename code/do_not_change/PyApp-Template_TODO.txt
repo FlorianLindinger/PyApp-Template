@@ -22,6 +22,8 @@ in create venv batch for no rg make better print:
 important
 ===================================
 
+add in settings.py that it searches for settings.yaml or settibn
+
 add more failsafe messages. If fails now without notice the start
 
 dont sync python_file_requirements?
