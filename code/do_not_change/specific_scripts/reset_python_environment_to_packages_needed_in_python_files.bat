@@ -21,7 +21,8 @@ CD /D "%current_file_path%"
 @REM Use "\" to separate folder levels and omit "\" at the end of paths. Relative paths allowed):
 SET "python_code_path=..\.."
 SET "python_environment_path=..\..\python_environment_code\python_environment"
-SET "temporary_txt_path=..\..\..\tmp.txt"
+SET "tmp_txt_path=tmp.txt"
+set "python_resetter_path=reset_python_environment.bat"
 
 @REM ######################
 @REM --- Code Execution ---
@@ -34,13 +35,13 @@ pip install pipreqs --disable-pip-version-check
 CALL activate_or_create_environment.bat "nopause"
 
 @REM replace default_python_packages file with needed packages
-pipreqs "%python_code_path%" --force --savepath "%temporary_txt_path%" --ignore "%python_environment_path%"
+pipreqs "%python_code_path%" --force --savepath "%tmp_txt_path%" --ignore "%python_environment_path%"
 
 @REM reset python environment with only required packages
-CALL reset_python_environment.bat "%temporary_txt_path%"
+CALL "%python_resetter_path%" "%tmp_txt_path%"
 
 @REM remove temporary file that lists needed packages
-DEL "%temporary_txt_path%"
+DEL "%tmp_txt_path%"
 
 @REM ####################
 @REM --- Closing-Code ---
