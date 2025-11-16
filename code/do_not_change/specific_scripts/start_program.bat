@@ -14,10 +14,10 @@
 @echo off & setlocal EnableDelayedExpansion
 
 :: define local variables (with relative paths being relative to this file)
-set "settings_path=..\non-user_settings.ini"
-set "cmd_exes_path=CMD_exes"
-set "environment_activator_path=PyApp_create_and_or_activate_python_env.bat"
-set "icon_changer_path=utilities\change_icon.exe"
+set "settings_path=..\..\non-user_settings.ini"
+set "cmd_copies_folder_path=..\cmd_exe_copies"
+set "environment_activator_path=create_and_or_activate_python_env.bat"
+set "icon_changer_path=..\general_utilities\change_icon.exe"
 
 :: move to folder of this file (needed for relative paths).
 :: current_file_path variable needed as workaround for nieche Windows bug where this file gets called with quotation marks:
@@ -110,9 +110,9 @@ if "%UI_LANG%"=="" (
 )
 
 :: create localization language folder if missing
-if not exist "%cmd_exes_path%\%UI_LANG%\" (
-	mkdir "%cmd_exes_path%\%UI_LANG%"
-	robocopy "%cmd_exes_path%\mui_files" "%cmd_exes_path%\%UI_LANG%" /E /R:0 /W:0 /NFL /NDL /NJH /NJS /NP
+if not exist "%cmd_copies_folder_path%\%UI_LANG%\" (
+	mkdir "%cmd_copies_folder_path%\%UI_LANG%"
+	robocopy "%cmd_copies_folder_path%\mui_files" "%cmd_copies_folder_path%\%UI_LANG%" /E /R:0 /W:0 /NFL /NDL /NJH /NJS /NP
 )
 REM check if successful
 if errorlevel 8 (

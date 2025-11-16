@@ -14,16 +14,17 @@
 @echo off & setlocal EnableDelayedExpansion
 
 :: define local variables (with relative paths being relative to this file)
-set "settings_path=..\non-user_settings.ini"
-set "python_version_checker_path=utilities\python_environment\check_if_python_version_matches.bat"
-set "portable_venv_creator_path=utilities\python_environment\create_portable_venv.bat"
-set "portable_python_installer_path=utilities\python_environment\create_portable_python.bat"
-set "requirements_generator_path=utilities\python_environment\generate_requirements.txt_no_version.bat"
-set "python_folder_folder_path=..\python_environment"
+set "settings_path=..\..\non-user_settings.ini"
+set "python_version_checker_path=..\general_utilities\python_environment\check_if_python_version_matches.bat"
+set "portable_venv_creator_path=..\general_utilities\python_environment\create_portable_venv.bat"
+set "portable_python_installer_path=..\general_utilities\python_environment\create_portable_python.bat"
+set "requirements_generator_path=..\general_utilities\python_environment\generate_requirements.txt_no_version.bat"
+set "python_folder_folder_path=..\..\python_environment"
 set "default_packages_list=%python_folder_folder_path%\default_python_packages.txt"
 set "python_folder_path=%python_folder_folder_path%\portable_python"
 set "env_activator_path=%python_folder_folder_path%\virtual_environment\activate.bat"
 set "python_exe_path=%python_folder_path%\python.exe"
+SET "tmp_txt_path=tmp_requirements.txt"
 
 :: move to folder of this file (needed for relative paths).
 :: current_file_path variable needed as workaround for nieche Windows bug where this file gets called with quotation marks:
@@ -169,7 +170,7 @@ if not exist "%python_exe_path%" (
 			    REM activate to get current packages:
                 call "%env_activator_path%"
                 REM get current packages:
-                call "%requirements_generator_path%" "%python_folder_folder_path%\tmp_requirement.txt"
+                call "%requirements_generator_path%" "%tmp_txt_path%"
 			    if "!ERRORLEVEL!" neq "0" ( exit 13 ) 
 				REM above: failed to generate package list. Error print and wait already in call
             	echo.
@@ -196,8 +197,8 @@ if not exist "%python_exe_path%" (
             	echo.
             	echo [Info] Installing packages:
             	echo.
-            	python -m pip install -r "%python_folder_folder_path%\tmp_requirement.txt" --disable-pip-version-check --upgrade --no-cache-dir 
-				del "%python_folder_folder_path%\tmp_requirement.txt" >nul 2>&1
+            	python -m pip install -r "%tmp_txt_path%" --disable-pip-version-check --upgrade --no-cache-dir 
+				del "%tmp_txt_path%" >nul 2>&1
             	echo.
             	echo [Info] Finished installing packages
 		    ) else (  
