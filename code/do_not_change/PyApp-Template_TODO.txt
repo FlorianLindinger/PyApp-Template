@@ -36,6 +36,14 @@ in create venv batch for no rg make better print:
 important
 ===================================
 
+chekc: class custom_error_dictionary(dict):
+    """dictionary subclass for custom error message of missing key"""
+
+    def __missing__(self, key):
+        raise ValueError(f'Missing-setting-error: "{key}" is not defined in {file_path}')
+
+explain that Ruff settings are there and how to use. move over good ruff settings to pyprojkect
+
 handle parsing error of everythiong with proper warning in settings
 
 add in settings.py that it searches for settings.yaml or settibn
