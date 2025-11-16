@@ -42,7 +42,6 @@
 
 ## Work in Progress
 
-- Utilities like safer folder deletion.
 - Template and boilerplate code for a GUI using PyQt5.
 - Plug-and-play license template & handling of non-distributables via .gitignore & a permissive MIT license for my codes.
   
