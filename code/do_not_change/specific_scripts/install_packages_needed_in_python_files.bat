@@ -19,10 +19,11 @@ set "current_file_path=%~dp0"
 cd /d "%current_file_path%"
 
 :: define local variables (with relative paths being relative to this file)
-set "environment_activator_path=PyApp_install_and_or_activate_python_env.bat"
-set "folder_of_python_files_to_search=..\"
-set "python_file_requirements_path=..\python_environment\python_file_requirements.txt"
-set "python_environment_path=..\python_environment"
+set "environment_activator_path=install_and_or_activate_python_env.bat"
+set "folder_of_python_files_to_search=..\..\"
+set "python_file_requirements_path=..\..\python_environment\python_file_requirements.txt"
+set "python_environment_path=..\..\python_environment"
+set "tmp_env_path=tmp_env_for_install_package_from_files"
 
 :: ======================
 :: --- Code Execution ---
@@ -31,13 +32,13 @@ set "python_environment_path=..\python_environment"
 :: activate (or create & activate) python environment:
 call "%environment_activator_path%"
 
-python -m venv tmp_env_for_install_package_from_files
-tmp_env_for_install_package_from_files/Scripts/activate   
+python -m venv "%tmp_env_path%"
+"%tmp_env_path%/Scripts/activate"   
 pip install pipreqs --disable-pip-version-check > nul
 pipreqs "%folder_of_python_files_to_search%" --force --savepath "%python_file_requirements_path%" --ignore "%python_environment_path%"?
 deactivate
 :: carefull with name because it will delete everything:
-rmdir /s /q tmp_env_for_install_package_from_files
+rmdir /s /q "%tmp_env_path%"
 
 :: reactivate python environment:
 call "%environment_activator_path%"
