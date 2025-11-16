@@ -19,7 +19,7 @@ CD /D "%current_file_path%"
 
 @REM define local variables (do not have spaces before or after the "=" or at the end of the variable value (unless wanted in value) -> inline comments without space before "&@REM".
 @REM Use "\" to separate folder levels and omit "\" at the end of paths. Relative paths allowed):
-SET "temporary_txt_path=..\..\..\tmp.txt"
+SET "tmp_txt_path=tmp_requirements.txt"
 
 @REM ######################
 @REM --- Code Execution ---
@@ -29,11 +29,11 @@ SET "temporary_txt_path=..\..\..\tmp.txt"
 CALL activate_or_create_environment.bat "nopause"
 
 @REM upgrade all packages as far as conflicts allow
-pip freeze --disable-pip-version-check > "%temporary_txt_path%"
+pip freeze --disable-pip-version-check > "%tmp_txt_path%"
 ECHO:
 ECHO:
-pip install --disable-pip-version-check --upgrade -r "%temporary_txt_path%"
-DEL "%temporary_txt_path%"
+pip install --disable-pip-version-check --upgrade -r "%tmp_txt_path%"
+DEL "%tmp_txt_path%"
 
 @REM final print:
 ECHO:
