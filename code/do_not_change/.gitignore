@@ -1,0 +1,6 @@
+# cmd.exe + localization file copies (becasue owned by Windows):
+cmd_exe_copies/*
+# whitelist sync of info.txt:
+!cmd_exe_copies/info.txt
+# tmp.txt files being created as part of batch file
+tmp.exe
