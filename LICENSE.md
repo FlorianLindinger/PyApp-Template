@@ -1,5 +1,6 @@
 # WIP. DOES NOT APPLY YET
 
+## 4. Exception: Potentially Icons in icons Folder
 
 
 # Composite License File
