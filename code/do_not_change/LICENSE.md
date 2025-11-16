@@ -49,8 +49,8 @@ accompanying those files for usage rights and redistribution conditions.
 
 ---
 
-## 3. Exception: ruaml.yaml_min_copy Folder
+## 3. Exception: read_toml\tomli Folder
 
-WIP, TODO
+The folder named `read_toml\tomli` contains parts of the Python package tomli (by Taneli Hukkinen) and is **not** covered by the MIT License above. Each file in that folder remains under the MIT license located in that folder.
 
 ---
