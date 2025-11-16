@@ -1,6 +1,7 @@
 # ==============================================================================
-# SETTINGS FILE (in the yaml format: leave a space after the ":" (e.g. name: value). Put values that start with "!" in quotation marks. Allows pythonic scientific notation and simple math operations listed in settings.py)
+# SETTINGS FILE (toml format): Leave a space before and after the "=" (e.g. name = "value"). Strings need "", numbers don't. Allows for scientific notation (e.g. num = 4e-12) and simple math operations (*/+-^) in strings as described in settings.py (e.g. num = "-1e4 ^ 2e-3")
 # ==============================================================================
+
 
 # ==============================================================================
 # important settings:
@@ -10,6 +11,10 @@
 # ==============================================================================
 # less important settings:
 # ==============================================================================
+
+
+
+
 
 
 
