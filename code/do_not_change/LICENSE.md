@@ -3,12 +3,14 @@
 This folder and its contents are covered by the **MIT License**,  
 **except** where noted below.
 
+When redistributing or modifying this folder, ensure all license notices
+remain intact and unaltered.
+
 ---
 
 ## 1. MIT License (Default)
 
-All files and subdirectories in this folder, **except** those listed in
-Section 2, are licensed under the following terms:
+All files and subdirectories in this folder, **except** those listed in the sections below, are licensed under the following terms:
 
 ```
 MIT License
@@ -36,9 +38,9 @@ THE SOFTWARE.
 
 ---
 
-## 2. Exception: CMD_exes Folder
+## 2. Exception: cmd_exe_copies Folder
 
-The folder named `CMD_exes` contains Windows executable and localization files 
+The folder named `cmd_exe_copies` contains Windows executable and localization files 
 that are **not** covered by the MIT License above.  
 Each file in that folder remains under its respective license terms
 provided by Microsoft or its original author(s).  
@@ -47,12 +49,8 @@ accompanying those files for usage rights and redistribution conditions.
 
 ---
 
-## 3. Summary
+## 3. Exception: ruaml.yaml_min_copy Folder
 
-- All files in this folder are under the MIT License **except:**
-  - The contents of the `CMD_exes` folder, which retain their respective
-    original licenses.
+WIP, TODO
 
-
-When redistributing or modifying this folder, ensure all license notices
-remain intact and unaltered.
+---
