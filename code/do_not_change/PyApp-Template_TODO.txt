@@ -28,20 +28,17 @@ in create venv batch for no rg make better print:
 important
 ===================================
 
+describe in main readme quick start better that on can have differnt file edning in settings 
+
+fix path code/dev_tools/install_packages_needed_in_python_files.lnk
+
+under pyproejct toml fix license
+
 check if works for windows not allowed long paths
 
 i can allow full rights in icon folder if i allow my stop settigns parts
 
 explain limitation to name: has to be allowed in names i guess. check if shortucts gernrator breaks: not allowed in names \ / : * ? " < > |
-
-add license notice in icons folder that says it does not fall under global license if it is based on default_icons in do_not_chnange .... or only partially falls under as for parts that not used ...
-update license in do_not_change
-maybe do license as text that dsays no license if linking to imge in donotchange
-mention that gitignore in python environement has to stay in place in license and genatally. How to allow for change anything?
-
-make .ico also link
-
-make settings png better
 
 check all .lnk and mkling things
 
@@ -62,8 +59,6 @@ add a non-generoic batch. maybe give user some control
 does shortcut generator see linked icon
 how to generate in user icons folder only if user icon and generate
 how to bundle imagick or only that function at least 
-
-mabye just write in licens that parts of icons that have appartly being copes of my icons are not under the user license. but it is not safe if the degfaulöt changes. hm. maybe generate or delete licens fiels in icon folder
 
 make icons folder in do_no_change and update paths
 
@@ -95,8 +90,6 @@ fix broken available shortcuts
 add placeholder batches
 
 add doctrings to batches
-
-make license
 
 add print for repair?
 
@@ -425,8 +418,6 @@ min version: replace do_not_change enough
 
 explain renamed needed for terminal cmd separation
 
-add explanation for pyq5 license
-
 fix readme for icons.
 
 explain GitHub desktop easily?
@@ -455,15 +446,7 @@ fix color in python part of terminal
 license related
 ===================================
 
-fix license which now does not work since if user puts in restricitve license this would now be valid since he 
-would restrict public code. How even icons saying cant put any license if my icons and any if theirs
-
-make workane tempalte
-
-is link to github in license?
-
-make everythig but do_not_change MIT. and icons i guess
-and python_env
+add explanation for pyq5 license
 
 ===================================
 small improvements
