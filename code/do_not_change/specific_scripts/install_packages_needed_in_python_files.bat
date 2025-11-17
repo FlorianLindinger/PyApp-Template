@@ -21,8 +21,8 @@ cd /d "%current_file_path%"
 :: define local variables (with relative paths being relative to this file)
 set "environment_activator_path=install_and_or_activate_python_env.bat"
 set "folder_of_python_files_to_search=..\..\"
-set "python_file_requirements_path=..\..\python_environment\python_file_requirements.txt"
-set "python_environment_path=..\..\python_environment"
+set "python_file_requirements_path=..\..\py_env\python_file_requirements.txt"
+set "python_environment_path=..\..\py_env"
 set "tmp_env_path=tmp_env_for_install_package_from_files"
 
 :: ======================

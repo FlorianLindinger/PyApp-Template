@@ -28,6 +28,7 @@ make robust against pople deleting python_enviroment parent folder. does portavl
 
 fix portable creatos batches actually not having args path for the batches they create but default path.
 Mention that paths have to be relative to work as portable. On other hand it will fail if abs input. one could want fixed pytthn and portable venv?
++ copy over changes
 
 ===================================
 important
