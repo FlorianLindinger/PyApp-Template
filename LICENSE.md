@@ -34,12 +34,12 @@ This App is based on the template from https://github.com/FlorianLindinger/PyApp
 
 ## Section 4: Python Distribution & Virtual Environment - License (likely PSF License)
 
-Files inside the folders **`code/python_environment/virtual_environment`** (**except for the folder described in Section 5**) and **`code/python_environment/portable_python`** fall under the license of the *Python Software Foundation*, which is usually included as the `LICENSE.txt` file in the latter folder.
+Files inside the folders **`code/py_env/virt_env`** (**except for the folder described in Section 5**) and **`code/py_env/py_dist`** fall under the license of the *Python Software Foundation*, which is usually included as the `LICENSE.txt` file in the latter folder.
 
 ---
 
 ## Section 5: Third-Party Python Package - Licenses
 
-Files inside **`code/python_environment/virtual_environment/Lib/site-packages`** are third-party Python packages that fall under their respective licenses, which are usually included in their respective folders.
+Files inside **`code/py_env/virt_env/Lib/site-packages`** are third-party Python packages that fall under their respective licenses, which are usually included in their respective folders.
 
 ---

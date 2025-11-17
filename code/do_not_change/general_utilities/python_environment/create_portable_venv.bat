@@ -2,8 +2,8 @@
 :: create_portable_venv.bat "<target_dir>" "<python_folder>"
 ::
 :: Args (all optional):
-::   <target_dir>: Destination directory. The script creates "<target_dir>\virtual_environment". Default: current working directory.
-::   <python_folder>: Path to the portable Python runtime containing python.exe. Accepts relative or absolute. Default: "portable_python".
+::   <target_dir>: Destination directory. The script creates "<target_dir>\virt_env". Default: current working directory.
+::   <python_folder>: Path to the portable Python runtime containing python.exe. Accepts relative or absolute. Default: "py_dist".
 
 :: =======================
 :: ==== Program Start ====
@@ -19,15 +19,15 @@ set "PYTHON_FOLDER=%~2"
 
 :: set default arg if not given
 if "%PYTHON_FOLDER%"=="" (
-    set "PYTHON_FOLDER=portable_python"
+    set "PYTHON_FOLDER=py_dist"
 )
 
 :: make path absolute
 call :make_absolute_path_if_relative "%TARGET_DIR%"
 set "TARGET_DIR=%output%"
 
-:: add "virtual_environment" for delete safety 
-set "VENV_PATH=%TARGET_DIR%\virtual_environment"
+:: add "virt_env" for delete safety 
+set "VENV_PATH=%TARGET_DIR%\virt_env"
 
 :: make path absolute
 call :make_absolute_path_if_relative "%PYTHON_FOLDER%"
@@ -96,7 +96,7 @@ echo(:: get folder of this file with \ at end
 echo(set "VENV_FOLDER=%%~dp0"
 echo(
 echo(:: get where python exe should be 
-echo(set "python_exe_folder=%%VENV_FOLDER%%..\portable_python"
+echo(set "python_exe_folder=%%VENV_FOLDER%%..\py_dist"
 echo(:: compute paths relative to this file
 echo(call :make_absolute_path_if_relative "%%python_exe_folder%%"
 echo(set "python_exe_folder=%%OUTPUT%%"
