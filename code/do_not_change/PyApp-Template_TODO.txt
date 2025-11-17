@@ -28,6 +28,8 @@ in create venv batch for no rg make better print:
 important
 ===================================
 
+check if works for windows not allowed long paths
+
 i can allow full rights in icon folder if i allow my stop settigns parts
 
 explain limitation to name: has to be allowed in names i guess. check if shortucts gernrator breaks: not allowed in names \ / : * ? " < > |
@@ -48,8 +50,6 @@ same with gitartrbiutse. maybe via link aswell?
 make robust against pople deleting python_enviroment parent folder
 
 make sure people can touch evershing outside do not chagn other than non-user settings whcih are needed for start. and i guess the main_code.py
-
-add symbols for exe that peaople shpuld use. maybe windows one or maybe my own. espeeciall for GENERATE SHROTCUTS and generat iconds?
 
 make shortcut generator wrok for any settings file in non-user settings path
 make it not genrate shrotcut for no settings availagle. mention no settings posible
@@ -138,7 +138,6 @@ chekc for all file types: class custom_error_dictionary(dict):
     def __missing__(self, key):
         raise ValueError(f'Missing-setting-error: "{key}" is not defined in {file_path}')
 
-check if works for windows not allowed long paths
 
 conside making it not temmplate
 
