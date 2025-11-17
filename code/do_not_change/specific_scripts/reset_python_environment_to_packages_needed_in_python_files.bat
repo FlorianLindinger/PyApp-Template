@@ -20,7 +20,7 @@ CD /D "%current_file_path%"
 @REM define local variables (do not have spaces before or after the "=" or at the end of the variable value (unless wanted in value) -> inline comments without space before "&@REM".
 @REM Use "\" to separate folder levels and omit "\" at the end of paths. Relative paths allowed):
 SET "python_code_path=..\.."
-SET "python_environment_path=..\..\python_environment_code\python_environment"
+SETttttt "python_environment_path=..\..\python_environment_code\python_environment"
 SET "tmp_txt_path=tmp.txt"
 set "python_resetter_path=reset_python_environment.bat"
 
