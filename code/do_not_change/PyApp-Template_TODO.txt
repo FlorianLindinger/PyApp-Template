@@ -28,6 +28,8 @@ in create venv batch for no rg make better print:
 important
 ===================================
 
+i can allow full rights in icon folder if i allow my stop settigns parts
+
 explain limitation to name: has to be allowed in names i guess. check if shortucts gernrator breaks: not allowed in names \ / : * ? " < > |
 
 add license notice in icons folder that says it does not fall under global license if it is based on default_icons in do_not_chnange .... or only partially falls under as for parts that not used ...
