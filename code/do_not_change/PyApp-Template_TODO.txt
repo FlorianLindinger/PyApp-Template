@@ -57,7 +57,8 @@ make python exe alternative for magick as gneric batch with some contorl
 add a non-generoic batch. maybe give user some control
 how to bundle imagick or only that function at least 
 
-remove settings.yaml
+remove yaml related text if wriong
+fix  main_code and crash code mentioning yaml and settings text
 
 dont print installing packages if None
 print that it instally python for first exectiun. maybe less spam?
