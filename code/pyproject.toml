@@ -1,12 +1,15 @@
 [project]
-name = "PyApp-Template"
-version = "0.1.0"
-description = "WIP"
-readme = "README.md"
+name = "NOT DEFINED"
+version = "NOT DEFINED"
+description = "NOT DEFINED"
+readme = "README.md". wrong?
 license = { text = "WIP" }
+rest for license 
+move around stuff 
 authors = [{ name = "Florian Lindinger", email = "WIP@gmail.com" }]
 # requires-python = "{python-version-number}"
 dependencies = ["WIP"]
+
 
 [project.optional-dependencies]
 dev = ["ruff"]
