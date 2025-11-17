@@ -28,22 +28,7 @@ in create venv batch for no rg make better print:
 important
 ===================================
 
-remove all cmd_exe_copies
-
-fix PyApp-Template (with log & no terminal) shortcut target. i guess fix all.
-
-ranme does not hcange cmd names until again generate shortcuts -> move to start
-
 explain limitation to name: has to be allowed in names i guess. check if shortucts gernrator breaks: not allowed in names \ / : * ? " < > |
-
-
-use 4 symlinks and rename them. same for mui. rename cmd_exe_copies?
-
-explain that you need to renmae to have on taskbar
-
-hardlinks requre same drive
-
-are my relative icon paths actually working or just remembered by windows
 
 add license notice in icons folder that says it does not fall under global license if it is based on default_icons in do_not_chnange .... or only partially falls under as for parts that not used ...
 update license in do_not_change
