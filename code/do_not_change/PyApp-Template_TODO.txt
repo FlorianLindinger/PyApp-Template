@@ -24,104 +24,54 @@ combine stuff from PyBoson and rest in GUI folder in utilites
 in create venv batch for no rg make better print:
  [Error] "C:\Users\Flo\Documents\Repositories\PyApp-Template\code\do_not_change\general_utilities\python_environment\portable_python\python.exe" does not exist. Aborting. Press any key to exit.
 
+make robust against pople deleting python_enviroment parent folder. does portavle batch already do that
+
+fix portable creatos batches actually not having args path for the batches they create but default path.
+Mention that paths have to be relative to work as portable. On other hand it will fail if abs input. one could want fixed pytthn and portable venv?
+
 ===================================
 important
 ===================================
 
-describe in main readme quick start better that on can have differnt file edning in settings 
+check all shortcuts and links. check if needed. also batches
+check install packages form pyhton files
+check new activation start
+need close of setting lnk? check
+check if fresh download works
+test with folder path with space. especially asbs path of shortcuts
+double chekc if text in non-user settings is still accurate
+test portable of whole
 
-fix path code/dev_tools/install_packages_needed_in_python_files.lnk
+todo reset python.txt
+add placeholder batches
 
-under pyproejct toml fix license
+update git topics and order
+Fix Release in git
 
-check if works for windows not allowed long paths
-
-i can allow full rights in icon folder if i allow my stop settigns parts
-
-explain limitation to name: has to be allowed in names i guess. check if shortucts gernrator breaks: not allowed in names \ / : * ? " < > |
-
-check all .lnk and mkling things
-
-same with gitartrbiutse. maybe via link aswell?
-
-make robust against pople deleting python_enviroment parent folder
-
-make sure people can touch evershing outside do not chagn other than non-user settings whcih are needed for start. and i guess the main_code.py
+under pyproejct toml fix license-> make everything placeholder
 
 make shortcut generator wrok for any settings file in non-user settings path
 make it not genrate shrotcut for no settings availagle. mention no settings posible
 
-double chekc if text in non-user settings is still accurate
-
 make python exe alternative for magick as gneric batch with some contorl
 add a non-generoic batch. maybe give user some control
-
-does shortcut generator see linked icon
-how to generate in user icons folder only if user icon and generate
 how to bundle imagick or only that function at least 
 
-make icons folder in do_no_change and update paths
-
-move every readme and everything into do_no_change and make link via mklink
--> update is always do_not_change replacement
-
-rename utilities to general_utilities. check shortcuts
-
-move out default python list and folders to have folder safe replaceable
--> renamed to python_e
--> move python fodlers and default into -> "python_environment"
-->rename lnk file to "dev_tools"
-
-checkl if all batches and links are valid/used/needed
-
-checl install packages form pyhton files
-
-achek new activation start
-
-bundle out activation and cration PyApp to have access everywherer
-
-todo reset python.txt
-add system tray option
-
-update git topics and order
-
-fix broken available shortcuts
-
-add placeholder batches
-
-add doctrings to batches
-
-add print for repair?
-
-need close of setting lnk?
-
-git does not exist for donwload in git?->create batch that create git
-
-check release allways new dwonlaod
-
-fix version file in do_not_cahgne
-
-make multi line:
- Created shortcuts "PyApp-Template", "PyApp-Template (with log & no terminal)", "stop (no-terminal) PyApp-Template" & "PyApp-Template - settings" in "D:\Downloads\PyApp-Template-0.1.0\PyApp-Template-0.1.0". Press any key to exit.
-
-Fix Release in git
+remove settings.yaml
 
 dont print installing packages if None
-
 print that it instally python for first exectiun. maybe less spam?
 maybe print ===========================
-
-test with folder path with space. especially asbs path of shortcuts
-
-fix that every CD and everything resets ERRORLEVEL->check
-
-test portable of whole
-
-update github top right 
+check
 
 ===================================
 checks related
 ===================================
+
+fix that every CD and everything resets ERRORLEVEL->check
+
+check if works for windows not allowed long paths
+and explain limits then
 
 cehck diff of git to local with code
 
@@ -256,8 +206,12 @@ add option to not have any prints from batch files?
 check if i can add stoppping of closing terminal for non pyqt5
 
 ===================================
-batch related 
+batch related & ideas related
 ===================================
+
+git does not exist for donwload in git?->create batch that create git
+
+add system tray option
 
 make code that's runs all setup steps
 
@@ -399,6 +353,12 @@ Check Git remote for updates and prompt user to pull.
 ===================================
 readme related  and documentation related
 ===================================
+
+explain limitation to name: has to be allowed in names i guess. check if shortucts gernrator breaks: not allowed in names \ / : * ? " < > |
+
+add doctrings to batches
+
+describe in main readme quick start better that on can have differnt file edning in settings 
 
 mention small python size option in readme
 
