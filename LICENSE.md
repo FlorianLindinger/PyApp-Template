@@ -4,6 +4,7 @@
 
 
 # Composite License File
+#todo update removal of windows stuff
 
 This repository contains components under separate licenses.
 
