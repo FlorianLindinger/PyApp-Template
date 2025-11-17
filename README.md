@@ -16,7 +16,7 @@
 - **Runs fully accessible source code**. This template makes python files behave effectively as if they were compiled with an included python environment while remaining 100% accessible, avoiding compilation time, and not making user modifications more complex.
 - **Quality of life features for python environment managment** (under code/dev_tools: Environment reset, pip-install-launcher, saving of current packages, auto-installing packages needed in python files,...)
 - Instructions and **utilities to generate proper icon files** from images and automatic inclusion in the shortcuts
-- Option to **change icon and title and colors** of the python-launched **terminal**.
+- Option to **change icon, title, and colors** of the python-launched **terminal**.
 - Automatic generation of **shortcuts** with icons that **can be added to the taskbar**. Usually it is not possible to have multiple shortcuts on the taskbar with **custom icons** that launch python/batch files.
 - **Option for no-terminal execution with stop-button and logging** (print & errors) to file.
 - Automatic **handling of python (interpreter) crashes** with the option to restart the main file or execute a crash-handling python file.
