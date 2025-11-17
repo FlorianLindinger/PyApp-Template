@@ -19,10 +19,10 @@ set "python_version_checker_path=..\general_utilities\python_environment\check_i
 set "portable_venv_creator_path=..\general_utilities\python_environment\create_portable_venv.bat"
 set "portable_python_installer_path=..\general_utilities\python_environment\create_portable_python.bat"
 set "requirements_generator_path=..\general_utilities\python_environment\generate_requirements.txt_no_version.bat"
-set "python_folder_folder_path=..\..\python_environment"
+set "python_folder_folder_path=..\..\py_env"
 set "default_packages_list=%python_folder_folder_path%\default_python_packages.txt"
-set "python_folder_path=%python_folder_folder_path%\portable_python"
-set "env_activator_path=%python_folder_folder_path%\virtual_environment\activate.bat"
+set "python_folder_path=%python_folder_folder_path%\py_dist"
+set "env_activator_path=%python_folder_folder_path%\virt_env\activate.bat"
 set "python_exe_path=%python_folder_path%\python.exe"
 SET "tmp_txt_path=tmp_requirements.txt"
 
