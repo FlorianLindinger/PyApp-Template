@@ -1,33 +1,24 @@
-# WIP. DOES NOT APPLY YET
-
-## 4. Exception: Potentially Icons in icons Folder
-
-
 # Composite License File
-#todo update removal of windows stuff
 
-This repository contains components under separate licenses.
-
----
-
-## Notice on File Distribution
-
-This repository may contain, after execution of any of its codes, newly generated files (which were not part of the original distribution) like Python distributions, Python packages, system executables, or other runtime files. These generated files are **not part of the project’s original source code** and are **not necessarily licensed** under the terms of this repository’s main license or other included licenses. These files are, however, excluded from redistribution through Git using the `.gitignore` file, under its section **“TO PREVENT UNLICENSED REDISTRIBUTIONS.”**
-
-If you distribute this repository, you must:
-
-1. **When distributing via Git:**
-   - Keep the `.gitignore` entries under the section **“TO PREVENT UNLICENSED REDISTRIBUTIONS.”**
-   - Update the **“TO PREVENT UNLICENSED REDISTRIBUTIONS.”** section if filenames or paths change, to ensure continued exclusion of unlicensed materials.
-
-2. **When distributing by any other method:**
-   - Ensure that files targeted in the `.gitignore` section **“TO PREVENT UNLICENSED REDISTRIBUTIONS”** are **not included** in your distribution.
+This repository contains components under separate licenses as described in the sections below.
 
 ---
 
-## Main Project License
+## Section 1: Notice on File Distribution
 
-All files and directories in this repository, **except** the folder listed below, are governed by the following license:
+This repository may contain, after execution of any of its codes, newly generated files of the **Python distribution** or **third-party Python packages**. These files are not part of the project’s original source code and are **not necessarily allowed to be distributed** under their respective licenses (see Sections 4 and 5 below). **If you distribute this repository, you must**:
+
+1. Ensure the main licenses described in Section 2 and 3 allow for your way of distribution
+2. - When distributing via Git:
+   If the files in `code/do_not_change` are unaltered, `.gitignore` files are added which auto-exclude files licensed as described in Sections 4 and 5 from distribution via git. If you alter anything in `code/do_not_change`, make sure this behavior does not change and/or alter this license file accordingly.
+   - When distributing by any other method:
+   Ensure that the licenses described in Sections 4 and 5 allow for your mode of distribution.
+
+---
+
+## Section 2: Main Project - License
+
+All files in this repository, **except for files in the folders described in Sections 3,4, and 5**, are governed by the following license:
 
 ```
 [Insert your chosen license text here]
@@ -35,15 +26,20 @@ All files and directories in this repository, **except** the folder listed below
 
 ---
 
-## Restricted Component License
+## Section 3: Original Template - License (Combined MIT License)
 
-The folder `code/do_not_change/` is distributed under its own license. That license applies exclusively to files within that folder and is located at `code/do_not_change/LICENSE.txt`. Refer to that file for its specific terms.
+This App is based on the template from https://github.com/FlorianLindinger/PyApp-Template by Florian Lindinger. This backend code is located in the **`code/do_not_change`** folder and falls under the combined MIT license described in the `LICENSE.md` file within that folder.
 
 ---
 
-## Summary
+## Section 4: Python Distribution & Virtual Environment - License (likely PSF License)
 
-- Follow the rules in **“Notice on File Distribution”** to prevent redistribution of unlicensed binaries.  
-- The **Main Project License** covers all content outside `code/do_not_change/`.  
-- The **Restricted Component License** applies only to `code/do_not_change/`.  
-- When redistributing or modifying this repository, preserve all license sections and their original texts.
+Files inside the folders **`code/python_environment/virtual_environment`** (**except for the folder described in Section 5**) and **`code/python_environment/portable_python`** fall under the license of the *Python Software Foundation*, which is usually included as the `LICENSE.txt` file in the latter folder.
+
+---
+
+## Section 5: Third-Party Python Package - Licenses
+
+Files inside **`code/python_environment/virtual_environment/Lib/site-packages`** are third-party Python packages that fall under their respective licenses, which are usually included in their respective folders.
+
+---
