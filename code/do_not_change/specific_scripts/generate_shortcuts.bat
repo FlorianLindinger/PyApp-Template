@@ -6,11 +6,8 @@
 :: --- Setup, Variables, and Checks ---
 :: ====================================
 
-:: turn off printing of commands:
-@echo off
-
-:: make this code local so no variables of a potential calling program are changed (EnableDelayedExpansion for delayed expasion in settings file):
-setlocal EnableDelayedExpansion
+:: turn off printing of commands & make variables local & allow for delayed expansion (needed for imported settings with ! inside)
+@echo off & setlocal EnableDelayedExpansion
 
 :: define local variables (with relative paths being relative to this file)
 set "settings_path=..\..\non-user_settings.ini"
@@ -120,51 +117,14 @@ if not exist "%user_settings_path%" (
 :: --- Code Execution ---
 :: ======================
 
-:: The following hacky shortcuts (via cmd.exe call) are generated for the abiltiy to add to taskbar. In order to have multiple cmd.exe-shortcuts in the taskbar, they all need separate renamed copies of cmd.exe:
-
-:: generate cmd.exe copies
-mkdir "%cmd_copies_folder_path%" > nul 2>&1
-copy /y "%SystemRoot%\System32\cmd.exe" "%cmd_copies_folder_path%\cmd_1_%program_name%.exe" > nul 2>&1
-copy /y "%SystemRoot%\System32\cmd.exe" "%cmd_copies_folder_path%\cmd_2_%program_name%.exe" > nul 2>&1
-copy /y "%SystemRoot%\System32\cmd.exe" "%cmd_copies_folder_path%\cmd_3_%program_name%.exe" > nul 2>&1
-copy /y "%SystemRoot%\System32\cmd.exe" "%cmd_copies_folder_path%\cmd_4_%program_name%.exe" > nul 2>&1
-
-:: ==== add language fildes needed for cmd.exe ====
-REM get name of current localization language
-for /f "tokens=2,*" %%A in ('reg query "HKCU\Control Panel\Desktop" /v PreferredUILanguages 2^>nul') do (
-	for %%L in (%%B) do (
-	set "UI_LANG=%%L"
-	goto :done
-	)
-)
-:done
-REM check if successful
-if "%UI_LANG%"=="" (
-	echo: [Error] Could not determine system language. Aborting. Press any key to exit.
-	pause >nul 
-	EXIT /b 2
-)
-REM add matching localization files needed for cmd.exe
-mkdir "%cmd_copies_folder_path%\%UI_LANG%" > nul 2>&1
-mkdir "%cmd_copies_folder_path%\mui_files" > nul 2>&1
-copy /y "%SystemRoot%\System32\%UI_LANG%\cmd.exe.mui" "%cmd_copies_folder_path%\mui_files\cmd_1_%program_name%.exe.mui" > nul 2>&1
-copy /y "%SystemRoot%\System32\%UI_LANG%\cmd.exe.mui" "%cmd_copies_folder_path%\mui_files\cmd_2_%program_name%.exe.mui" > nul 2>&1
-copy /y "%SystemRoot%\System32\%UI_LANG%\cmd.exe.mui" "%cmd_copies_folder_path%\mui_files\cmd_3_%program_name%.exe.mui" > nul 2>&1
-copy /y "%SystemRoot%\System32\%UI_LANG%\cmd.exe.mui" "%cmd_copies_folder_path%\mui_files\cmd_4_%program_name%.exe.mui" > nul 2>&1
-copy /y "%SystemRoot%\System32\%UI_LANG%\cmd.exe.mui" "%cmd_copies_folder_path%\%UI_LANG%\cmd_1_%program_name%.exe.mui" > nul 2>&1
-copy /y "%SystemRoot%\System32\%UI_LANG%\cmd.exe.mui" "%cmd_copies_folder_path%\%UI_LANG%\cmd_2_%program_name%.exe.mui" > nul 2>&1
-copy /y "%SystemRoot%\System32\%UI_LANG%\cmd.exe.mui" "%cmd_copies_folder_path%\%UI_LANG%\cmd_3_%program_name%.exe.mui" > nul 2>&1
-copy /y "%SystemRoot%\System32\%UI_LANG%\cmd.exe.mui" "%cmd_copies_folder_path%\%UI_LANG%\cmd_4_%program_name%.exe.mui" > nul 2>&1
-:: ===================
-
 :: create shortcut for starting the program:
-call "%shortcut_creator_path%" "%shortcut_destination_path%\%start_name%.lnk" "%cmd_copies_folder_path%\cmd_1_%program_name%.exe" "/K %program_starter_path%" "%current_file_path%" "%icon_path%" "PyApp-Template"
-:: create a shortcut for the settings.yaml file:
-call "%shortcut_creator_path%" "%shortcut_destination_path%\%settings_name%.lnk" "%cmd_copies_folder_path%\cmd_2_%program_name%.exe" "/K START \"\" \"%user_settings_path%\"" "%current_file_path%" "%settings_icon_path%" "PyApp-Template"
+call "%shortcut_creator_path%" "%shortcut_destination_path%\%start_name%.lnk" "%SystemRoot%\System32\cmd.exe" "/K %program_starter_path%" "%current_file_path%" "%icon_path%" "PyApp-Template"
+:: create a shortcut for the settings file:
+call "%shortcut_creator_path%" "%shortcut_destination_path%\%settings_name%.lnk" "%SystemRoot%\System32\cmd.exe" "/K START ^"^" ^"%user_settings_path%^"" "%current_file_path%" "%settings_icon_path%" "PyApp-Template"
 :: creare shortcut for launcher without terminal and with output to log file:
-call "%shortcut_creator_path%" "%shortcut_destination_path%\%start_no_terminal_name%.lnk" "%cmd_copies_folder_path%\cmd_3_%program_name%.exe" "/K general_utilities\batch_file\run_batch_with_file_output_and_no_terminal.bat %program_starter_path% \"%log_path%\" \"%process_id_file_path%.pid\""  "%current_file_path%" "%icon_path%" "PyApp-Template"
+call "%shortcut_creator_path%" "%shortcut_destination_path%\%start_no_terminal_name%.lnk" "%SystemRoot%\System32\cmd.exe" "/K general_utilities\batch_file\run_batch_with_file_output_and_no_terminal.bat %program_starter_path% ^"%log_path%^" ^"%process_id_file_path%.pid^""  "%current_file_path%" "%icon_path%" "PyApp-Template"
 :: create shortcut for killing the running program:
-call "%shortcut_creator_path%" "%shortcut_destination_path%\%stop_no_terminal_name%.lnk" "%cmd_copies_folder_path%\cmd_4_%program_name%.exe" "/K general_utilities\kill_process_with_id.bat \"%process_id_file_path%\"" "%current_file_path%" "%stop_icon_path%" "PyApp-Template"
+call "%shortcut_creator_path%" "%shortcut_destination_path%\%stop_no_terminal_name%.lnk" "%SystemRoot%\System32\cmd.exe" "/K general_utilities\kill_process_with_id.bat ^"%process_id_file_path%^"" "%current_file_path%" "%stop_icon_path%" "PyApp-Template"
 
 :: check if sucessful
 If not exist "%shortcut_destination_path%\%start_name%.lnk" (

@@ -15,17 +15,9 @@ vscode ruff
 2025-11-12 15:11:42.427337600 ERROR Failed to load settings from `configuration`: error looking key 'env:USERPROFILE' up: environment variable not found
 2025-11-12 15:11:42.427384900  WARN No settings available for file:///c%3A/Users/agpup/AppData/Local/Programs/Python/Python313/Lib/ctypes/__init__.py - falling back to default settings
 
-add  "python.exe -m pip install --upgrade pip" to python installer and python venv maker
-
 can i make interactiev turn into non interactiev on reopen?
 
-make comput not be loud for no heat
-
 make side grouvps in vscode smaller for scolling over. or add maximize button
-
-mabye gnerate gitignore for portable python and env:
-add .gitignore with "*" as line. venv does it only in 3.13+
-# maybe also add "# created by script that ..."
 
 combine stuff from PyBoson and rest in GUI folder in utilites
 
@@ -36,55 +28,35 @@ in create venv batch for no rg make better print:
 important
 ===================================
 
-chekc: class custom_error_dictionary(dict):
-    """dictionary subclass for custom error message of missing key"""
+remove all cmd_exe_copies
 
-    def __missing__(self, key):
-        raise ValueError(f'Missing-setting-error: "{key}" is not defined in {file_path}')
+fix PyApp-Template (with log & no terminal) shortcut target. i guess fix all.
 
-explain that Ruff settings are there and how to use. move over good ruff settings to pyprojkect
+ranme does not hcange cmd names until again generate shortcuts -> move to start
 
-handle parsing error of everythiong with proper warning in settings
+explain limitation to name: has to be allowed in names i guess. check if shortucts gernrator breaks: not allowed in names \ / : * ? " < > |
 
-add in settings.py that it searches for settings.yaml or settibn
 
-add more failsafe messages. If fails now without notice the start
+use 4 symlinks and rename them. same for mui. rename cmd_exe_copies?
 
-dont sync python_file_requirements?
-dont sync tmp_env_for_install_package_from_files
+explain that you need to renmae to have on taskbar
+
+hardlinks requre same drive
+
+are my relative icon paths actually working or just remembered by windows
 
 add license notice in icons folder that says it does not fall under global license if it is based on default_icons in do_not_chnange .... or only partially falls under as for parts that not used ...
+update license in do_not_change
+maybe do license as text that dsays no license if linking to imge in donotchange
+mention that gitignore in python environement has to stay in place in license and genatally. How to allow for change anything?
+
+make .ico also link
 
 make settings png better
 
 check all .lnk and mkling things
 
-create dev branch to have less clutter in main and have summary combinations
-
-add more explanation text to gitignores
-
-move gitatreibuts into do_not_chagne. at least important stuff
-
-maybe dont have a gitignore in code just for pycache. useser might want to hcange and then changeg link to do_not_cjange
-
-check where tmp.txt could appear and where i have to ignore it.
-generate useless ones in folder that has its git instaed of git exepction on root:
-# temporary text files:
-tmp.txt
-try symlink for gitignores in python folder. Also make a ignore for code folder as symlink.
-
-
-mabye more genera *log*.txt for gitignore.
-# log files:
-log.txt
-
-mention that gitignore in python environement has to stay in place in license and genatally. How to allow for change anything?
-
-mkae dev tool link in poython evn directl to taeget to be save again deletion outside do not chagne
-
-maybe do license as text that dsays no license if linking to imge in donotchange
-
-can i make a gitignore for do_not_change such that users could not alter that accidentally? or by not coying. can i set that gitignore to all needed parts? same with gitartrbiutse. maybe via link aswell?
+same with gitartrbiutse. maybe via link aswell?
 
 make robust against pople deleting python_enviroment parent folder
 
@@ -93,16 +65,9 @@ make sure people can touch evershing outside do not chagn other than non-user se
 add symbols for exe that peaople shpuld use. maybe windows one or maybe my own. espeeciall for GENERATE SHROTCUTS and generat iconds?
 
 make shortcut generator wrok for any settings file in non-user settings path
-
 make it not genrate shrotcut for no settings availagle. mention no settings posible
 
 double chekc if text in non-user settings is still accurate
-
-update license in do_not_change
-
-fix all paths from scrips in specific_scripts
-
-check gitignore
 
 make python exe alternative for magick as gneric batch with some contorl
 add a non-generoic batch. maybe give user some control
@@ -166,23 +131,25 @@ dont print installing packages if None
 print that it instally python for first exectiun. maybe less spam?
 maybe print ===========================
 
-mention small python size option in readme
-
 test with folder path with space. especially asbs path of shortcuts
 
 fix that every CD and everything resets ERRORLEVEL->check
 
 test portable of whole
 
-make code that's runs all setup steps
-
 update github top right 
+
+===================================
+checks related
+===================================
 
 cehck diff of git to local with code
 
-===================================
-checks todo
-===================================
+chekc for all file types: class custom_error_dictionary(dict):
+    """dictionary subclass for custom error message of missing key"""
+
+    def __missing__(self, key):
+        raise ValueError(f'Missing-setting-error: "{key}" is not defined in {file_path}')
 
 check if works for windows not allowed long paths
 
@@ -310,8 +277,10 @@ add option to not have any prints from batch files?
 check if i can add stoppping of closing terminal for non pyqt5
 
 ===================================
-batch & feature ideas
+batch related 
 ===================================
+
+make code that's runs all setup steps
 
 Maybe add 4 normal launchers that then don't need recreation for offline sharing. Can I fix icon for that?
 
@@ -424,8 +393,12 @@ operable program or batch file. when folder moved-> somehow print error
 reload imports settings function? 
 
 ===================================
-git ideas
+git related
 ===================================
+
+mabye more genera *log*.txt for gitignore.
+# log files:
+log.txt
 
 make only drop in verisons that change only changd stuff and one can drop in
 
@@ -445,8 +418,14 @@ Check Git remote for updates and prompt user to pull.
  add a batch that update git folder. maybe only main and release. maybe propt user and disaply name and changelog(s)
 
 ===================================
-readme and documentation related
+readme related  and documentation related
 ===================================
+
+mention small python size option in readme
+
+explain that Ruff settings are there and how to use. move over good ruff settings to pyprojkect
+
+add more explanation text to gitignores
 
 explain why everything is links and why taht allows easyer updates via replace do_not_change
 
