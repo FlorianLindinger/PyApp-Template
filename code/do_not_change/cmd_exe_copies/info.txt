@@ -1,3 +1,0 @@
-The executable files in this directory are renamed copies of Windows' cmd.exe from the Windows' system path (%SystemRoot%\System32)
-
-The contents of the sub folders in this directory are renamed copies of Windows' cmd.exe.mui from a Windows' system path localization folder (e.g. %SystemRoot%\System32\en-US)
