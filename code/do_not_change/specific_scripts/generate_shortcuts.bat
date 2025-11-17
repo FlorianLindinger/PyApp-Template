@@ -11,7 +11,6 @@
 
 :: define local variables (with relative paths being relative to this file)
 set "settings_path=..\..\non-user_settings.ini"
-set "cmd_copies_folder_path=..\cmd_exe_copies"
 set "shortcut_creator_path=..\general_utilities\create_shortcut.bat"
 set "program_starter_path=start_program.bat"
 

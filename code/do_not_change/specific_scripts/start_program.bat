@@ -15,7 +15,6 @@
 
 :: define local variables (with relative paths being relative to this file)
 set "settings_path=..\..\non-user_settings.ini"
-set "cmd_copies_folder_path=..\cmd_exe_copies"
 set "environment_activator_path=create_and_or_activate_python_env.bat"
 set "icon_changer_path=..\general_utilities\change_icon.exe"
 
@@ -94,34 +93,7 @@ COLOR %terminal_bg_color%%terminal_text_color%
 :: change terminal icon via new terminal that does not delay code execution here (takes ~1s):
 start "" /min "%icon_changer_path%" "%program_name%" "%icon_path%"
 
-:: get name of current localization language needed for cmd.exe that presumably runs this script
-for /f "tokens=2,*" %%A in ('reg query "HKCU\Control Panel\Desktop" /v PreferredUILanguages 2^>nul') do (
-	for %%L in (%%B) do (
-	set "UI_LANG=%%L"
-	goto :done
-	)
-)
-:done
-REM check if successful
-if "%UI_LANG%"=="" (
-	echo [Error] Could not determine system language. Aborting. Press any key to exit.
-	pause >nul 
-	exit 7
-)
-
-:: create localization language folder if missing
-if not exist "%cmd_copies_folder_path%\%UI_LANG%\" (
-	mkdir "%cmd_copies_folder_path%\%UI_LANG%"
-	robocopy "%cmd_copies_folder_path%\mui_files" "%cmd_copies_folder_path%\%UI_LANG%" /E /R:0 /W:0 /NFL /NDL /NJH /NJS /NP
-)
-REM check if successful
-if errorlevel 8 (
-	echo [Error] Copy Windows language files. Aborting. Press any key to exit.
-	pause >nul 
-	exit 8
-)
-
-:: active or create & activate virtual Python environment
+:: activate or create & activate virtual Python environment
 call "%environment_activator_path%"
 
 :: go to directory of main python code and execute it and return to folder of this file. Faulthandler catches python interpreter crash:
