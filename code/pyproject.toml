@@ -6,8 +6,7 @@ authors = [{ name = "", email = "" }] # ADD HERE
 requires-python = "" # ADD HERE 
 dependencies = [] # ADD REQUIRED PYTHON PACKAGES HERE
 
-[project]
-readme = "..\README.md"
+readme = "../README.md"
 license = { file = "../LICENSE.md" }
 
 [project.optional-dependencies]
