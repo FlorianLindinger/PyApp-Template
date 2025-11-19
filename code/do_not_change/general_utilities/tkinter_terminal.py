@@ -66,14 +66,13 @@ class Tooltip:
 # ==============================================================================
 
 class CustomTitleBar(tk.Frame):
-    def __init__(self, master, app_title, on_minimize, on_maximize, on_close, on_tray):
+    def __init__(self, master, app_title, on_minimize, on_maximize, on_close, on_tray, 
+                 on_top_toggle, on_highlight_toggle, on_confirm_toggle, on_print_toggle):
         super().__init__(master, bg="#2d2d2d", height=30)
         self.pack_propagate(False) # Prevent shrinking
         
         self.master = master
         self._drag_data = {"x": 0, "y": 0}
-
-        # Title Label
         self.title_label = tk.Label(self, text=app_title, bg="#2d2d2d", fg="#d4d4d4", font=("Segoe UI", 10))
         self.title_label.pack(side=tk.LEFT, padx=10)
 
@@ -86,21 +85,19 @@ class CustomTitleBar(tk.Frame):
         close_config = btn_config.copy()
         close_config["activebackground"] = "#e81123"
         close_config["width"] = 6
-        
         # Maximize Button Config (Larger Font)
         max_config = btn_config.copy()
         max_config["font"] = ("Segoe UI", 12) # Larger font for the square
 
-        # Tray Button (⇩) - Placed on the very left of the group
-        self.tray_btn = tk.Button(self.buttons_frame, text="⇩", command=on_tray, **btn_config)
+        # Tray Button (▼) - Placed on the very left of the group
+        self.tray_btn = tk.Button(self.buttons_frame, text="▼", command=on_tray, **btn_config)
         self.tray_btn.pack(side=tk.LEFT)
-        self.tray_btn.bind("<Enter>", lambda e: self.tray_btn.config(bg="#3e3e42"))
+        self.tray_btn.bind("<Enter>", lambda e: self.tray_btn.config(bg="#007acc"))
         self.tray_btn.bind("<Leave>", lambda e: self.tray_btn.config(bg="#2d2d2d"))
         Tooltip(self.tray_btn, "Minimize to System Tray")
 
         # Minimize Button (―) - Second to the left
         self.min_btn = tk.Button(self.buttons_frame, text="―", command=on_minimize, **btn_config)
-        self.min_btn.pack(side=tk.LEFT)
         self.min_btn.bind("<Enter>", lambda e: self.min_btn.config(bg="#3e3e42"))
         self.min_btn.bind("<Leave>", lambda e: self.min_btn.config(bg="#2d2d2d"))
 
@@ -116,8 +113,68 @@ class CustomTitleBar(tk.Frame):
         self.close_btn.bind("<Enter>", lambda e: self.close_btn.config(bg="#e81123"))
         self.close_btn.bind("<Leave>", lambda e: self.close_btn.config(bg="#2d2d2d"))
 
-        # Bind dragging
-        self.bind("<Button-1>", self.start_drag)
+        # --- Settings Buttons (Left Side) ---
+        self.settings_frame = tk.Frame(self, bg="#2d2d2d")
+        self.settings_frame.pack(side=tk.LEFT, padx=5)
+
+        # Helper to create toggle buttons
+        def create_toggle(text, command, tooltip):
+            btn = tk.Button(self.settings_frame, text=text, command=command, **btn_config)
+            btn.pack(side=tk.LEFT, padx=2)
+            btn.bind("<Enter>", lambda e: btn.config(bg="#3e3e42"))
+            btn.bind("<Leave>", lambda e: btn.config(bg="#2d2d2d" if not btn.cget("relief") == tk.SUNKEN else "#4e4e52"))
+            Tooltip(btn, tooltip)
+            return btn
+
+        self.top_btn = create_toggle("📌", self.toggle_top, "Toggle Always on Top")
+        self.highlight_btn = create_toggle("🔔", self.toggle_highlight, "Toggle Highlight on Print")
+        self.confirm_btn = create_toggle("🔒", self.toggle_confirm, "Toggle Confirm on Close")
+        self.print_btn = create_toggle("💬", self.toggle_print, "Toggle Command Printing")
+        
+        self.callbacks = {
+            "top": on_top_toggle,
+            "highlight": on_highlight_toggle,
+            "confirm": on_confirm_toggle,
+            "print": on_print_toggle
+        }
+        
+        # Initialize states (visual only, logic is in main app)
+        self.toggles = {
+            "top": False,
+            "highlight": False,
+            "confirm": False,
+            "print": True
+        }
+        self.update_toggle_visuals()
+
+    def toggle_top(self):
+        self.toggles["top"] = not self.toggles["top"]
+        self.callbacks["top"](self.toggles["top"])
+        self.update_toggle_visuals()
+
+    def toggle_highlight(self):
+        self.toggles["highlight"] = not self.toggles["highlight"]
+        self.callbacks["highlight"](self.toggles["highlight"])
+        self.update_toggle_visuals()
+
+    def toggle_confirm(self):
+        self.toggles["confirm"] = not self.toggles["confirm"]
+        self.callbacks["confirm"](self.toggles["confirm"])
+        self.update_toggle_visuals()
+
+    def toggle_print(self):
+        self.toggles["print"] = not self.toggles["print"]
+        self.callbacks["print"](self.toggles["print"])
+        self.update_toggle_visuals()
+
+    def update_toggle_visuals(self):
+        for key, btn in [("top", self.top_btn), ("highlight", self.highlight_btn), ("confirm", self.confirm_btn), ("print", self.print_btn)]:
+            if self.toggles[key]:
+                btn.config(fg="#007acc", activeforeground="#007acc") # Blue when active
+            else:
+                btn.config(fg="#d4d4d4", activeforeground="#ffffff")
+
+    def start_drag(self, event):
         self.bind("<B1-Motion>", self.do_drag)
         self.title_label.bind("<Button-1>", self.start_drag)
         self.title_label.bind("<B1-Motion>", self.do_drag)
@@ -134,13 +191,19 @@ class CustomTitleBar(tk.Frame):
         self.master.geometry(f"+{x}+{y}")
 
 class TkinterTerminal:
-    def __init__(self, root, target_script, terminal_name=None, icon_path=None, on_top=False, script_args=[]):
+    def __init__(self, root, target_script, terminal_name=None, icon_path=None, on_top=False, tray_symbol="▼", script_args=[]):
         self.root = root
+        
+        # Feature States
+        self.always_on_top = on_top
+        self.highlight_on_print = False
+        self.confirm_on_close = False
+        self.show_command_printing = True
         
         # Default title if not provided
         if terminal_name is None:
             terminal_name = os.path.basename(target_script)
-            
+
         self.root.title(terminal_name)
         self.root.geometry("900x600")
         
@@ -203,9 +266,17 @@ class TkinterTerminal:
             self.minimize_window, 
             self.maximize_window, 
             self.on_closing,
-            self.minimize_to_tray
+            self.minimize_to_tray,
+            self.set_always_on_top,
+            self.set_highlight_on_print,
+            self.set_confirm_on_close,
+            self.set_show_command_printing
         )
         self.title_bar.pack(side=tk.TOP, fill=tk.X)
+        
+        # Sync initial state
+        self.title_bar.toggles["top"] = self.always_on_top
+        self.title_bar.update_toggle_visuals()
 
         # --- Input Area (Packed FIRST to ensure visibility at bottom) ---
         self.input_frame = tk.Frame(root, bg=self.colors["input_bg"])
@@ -408,6 +479,14 @@ class TkinterTerminal:
         self.output_text.see(tk.END)
         self.output_text.config(state=tk.DISABLED)
 
+        # Highlight on Print Logic
+        if self.highlight_on_print and self.root.focus_displayof() is None:
+             # Flash the taskbar icon (simple version: just force attention)
+             try:
+                 ctypes.windll.user32.FlashWindow(ctypes.windll.user32.GetParent(self.root.winfo_id()), True)
+             except:
+                 pass
+
     def send_input(self, event):
         # if self.process and self.process.poll() is None: # Allow commands even if process is dead? Maybe.
         
@@ -433,7 +512,8 @@ class TkinterTerminal:
         # Handle System Commands (prefixed with !)
         if text.startswith("!"):
             cmd = text[1:].strip()
-            self.write_to_output(f"{text}\n", "stdin")
+            if self.show_command_printing:
+                self.write_to_output(f"{text}\n", "stdin")
             self.write_to_output(f"[System] Running: {cmd}\n", "system")
             
             try:
@@ -450,7 +530,8 @@ class TkinterTerminal:
         # Send to subprocess
         if self.process and self.process.poll() is None:
             # Echo input to output
-            self.write_to_output(text + "\n", "stdin")
+            if self.show_command_printing:
+                self.write_to_output(text + "\n", "stdin")
             
             try:
                 self.process.stdin.write(text + "\n")
@@ -458,7 +539,8 @@ class TkinterTerminal:
             except Exception as e:
                 self.write_to_output(f"\n[System] Error sending input: {e}\n", "error")
         else:
-             self.write_to_output(f"{text}\n", "stdin")
+             if self.show_command_printing:
+                 self.write_to_output(f"{text}\n", "stdin")
              self.write_to_output("\n[System] Process is not running.\n", "system")
 
     def navigate_history(self, direction):
@@ -486,11 +568,30 @@ class TkinterTerminal:
         self.queue.put((text, tag))
 
     def on_closing(self):
+        if self.confirm_on_close:
+            from tkinter import messagebox
+            if not messagebox.askokcancel("Quit", "Do you want to quit?"):
+                return
+
         if hasattr(self, 'tray_icon') and self.tray_icon:
             self.tray_icon.hide()
         if self.process and self.process.poll() is None:
             self.process.terminate()
         self.root.destroy()
+
+    # --- Feature Setters ---
+    def set_always_on_top(self, enabled):
+        self.always_on_top = enabled
+        self.root.attributes("-topmost", enabled)
+
+    def set_highlight_on_print(self, enabled):
+        self.highlight_on_print = enabled
+
+    def set_confirm_on_close(self, enabled):
+        self.confirm_on_close = enabled
+
+    def set_show_command_printing(self, enabled):
+        self.show_command_printing = enabled
 
 
 if __name__ == "__main__":
@@ -501,6 +602,7 @@ if __name__ == "__main__":
     parser.add_argument("--title", help="Title of the terminal window", default=None)
     parser.add_argument("--icon", help="Path to icon file (.ico)", default=None)
     parser.add_argument("--on-top", action="store_true", help="Keep window always on top")
+    parser.add_argument("--tray-symbol", help="Symbol for the minimize-to-tray button", default="▼")
     parser.add_argument("args", nargs=argparse.REMAINDER, help="Arguments for the script")
     
     args = parser.parse_args()
@@ -508,5 +610,5 @@ if __name__ == "__main__":
     root = tk.Tk()
     # We handle geometry in the class now
     
-    terminal = TkinterTerminal(root, args.script, args.title, args.icon, args.on_top, args.args)
+    terminal = TkinterTerminal(root, args.script, args.title, args.icon, args.on_top, args.tray_symbol, args.args)
     root.mainloop()
