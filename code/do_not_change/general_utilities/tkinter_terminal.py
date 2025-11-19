@@ -65,6 +65,20 @@ class Tooltip:
 # Custom Title Bar & Window Logic
 # ==============================================================================
 
+class HoverButton(tk.Label):
+    """Custom button using Label to support proper hover effects on Windows"""
+    def __init__(self, master, text, command, bg="#2d2d2d", fg="#d4d4d4", hover_bg="#3e3e42", 
+                 font=("Segoe UI", 10), width=5, **kwargs):
+        super().__init__(master, text=text, bg=bg, fg=fg, font=font, width=width, 
+                        cursor="hand2", padx=5, pady=3, **kwargs)
+        self.command = command
+        self.default_bg = bg
+        self.hover_bg = hover_bg
+        
+        self.bind("<Button-1>", lambda e: self.command())
+        self.bind("<Enter>", lambda e: self.config(bg=self.hover_bg))
+        self.bind("<Leave>", lambda e: self.config(bg=self.default_bg))
+
 class CustomTitleBar(tk.Frame):
     def __init__(self, master, app_title, on_minimize, on_maximize, on_close, on_tray, 
                  on_top_toggle, on_highlight_toggle, on_confirm_toggle, on_print_toggle):
@@ -80,50 +94,39 @@ class CustomTitleBar(tk.Frame):
         self.buttons_frame = tk.Frame(self, bg="#2d2d2d")
         self.buttons_frame.pack(side=tk.RIGHT)
 
-        # Button Styles
-        btn_config = {"bg": "#2d2d2d", "fg": "#d4d4d4", "bd": 0, "font": ("Segoe UI", 10), "width": 5, "activebackground": "#3e3e42", "activeforeground": "#ffffff"}
+        # Button Styles (with FLAT relief to allow hover to work)
+        btn_config = {"bg": "#2d2d2d", "fg": "#d4d4d4", "bd": 0, "font": ("Segoe UI", 10), "width": 5, "relief": tk.FLAT, "highlightthickness": 0}
         close_config = btn_config.copy()
-        close_config["activebackground"] = "#e81123"
         close_config["width"] = 6
         # Maximize Button Config (Larger Font)
         max_config = btn_config.copy()
         max_config["font"] = ("Segoe UI", 12) # Larger font for the square
 
-        # Tray Button (▼) - Placed on the very left of the group
-        self.tray_btn = tk.Button(self.buttons_frame, text="▼", command=on_tray, **btn_config)
+        # Tray Button (▼) - Bright blue hover
+        self.tray_btn = HoverButton(self.buttons_frame, text="▼", command=on_tray, hover_bg="#0078d4")
+        # Don't add Tooltip yet - testing if it interferes
         self.tray_btn.pack(side=tk.LEFT)
-        self.tray_btn.bind("<Enter>", lambda e: self.tray_btn.config(bg="#007acc"))
-        self.tray_btn.bind("<Leave>", lambda e: self.tray_btn.config(bg="#2d2d2d"))
-        Tooltip(self.tray_btn, "Minimize to System Tray")
 
-        # Minimize Button (―) - Second to the left
-        self.min_btn = tk.Button(self.buttons_frame, text="―", command=on_minimize, **btn_config)
+        # Minimize Button (―) - Gray hover
+        self.min_btn = HoverButton(self.buttons_frame, text="―", command=on_minimize, hover_bg="#3e3e42")
         self.min_btn.pack(side=tk.LEFT)
-        self.min_btn.bind("<Enter>", lambda e: self.min_btn.config(bg="#3e3e42"))
-        self.min_btn.bind("<Leave>", lambda e: self.min_btn.config(bg="#2d2d2d"))
 
-        # Maximize Button (□)
-        self.max_btn = tk.Button(self.buttons_frame, text="□", command=on_maximize, **max_config)
+        # Maximize Button (□) - Gray hover, larger font
+        self.max_btn = HoverButton(self.buttons_frame, text="□", command=on_maximize, hover_bg="#3e3e42", font=("Segoe UI", 12))
         self.max_btn.pack(side=tk.LEFT)
-        self.max_btn.bind("<Enter>", lambda e: self.max_btn.config(bg="#3e3e42"))
-        self.max_btn.bind("<Leave>", lambda e: self.max_btn.config(bg="#2d2d2d"))
 
-        # Close Button (X)
-        self.close_btn = tk.Button(self.buttons_frame, text="✕", command=on_close, **close_config)
+        # Close Button (✕) - Red hover
+        self.close_btn = HoverButton(self.buttons_frame, text="✕", command=on_close, hover_bg="#e81123", width=6)
         self.close_btn.pack(side=tk.LEFT)
-        self.close_btn.bind("<Enter>", lambda e: self.close_btn.config(bg="#e81123"))
-        self.close_btn.bind("<Leave>", lambda e: self.close_btn.config(bg="#2d2d2d"))
 
         # --- Settings Buttons (Left Side) ---
         self.settings_frame = tk.Frame(self, bg="#2d2d2d")
         self.settings_frame.pack(side=tk.LEFT, padx=5)
 
-        # Helper to create toggle buttons
+        # Helper to create toggle buttons with bright blue hover
         def create_toggle(text, command, tooltip):
-            btn = tk.Button(self.settings_frame, text=text, command=command, **btn_config)
+            btn = HoverButton(self.settings_frame, text=text, command=command, hover_bg="#0078d4")
             btn.pack(side=tk.LEFT, padx=2)
-            btn.bind("<Enter>", lambda e: btn.config(bg="#3e3e42"))
-            btn.bind("<Leave>", lambda e: btn.config(bg="#2d2d2d" if not btn.cget("relief") == tk.SUNKEN else "#4e4e52"))
             Tooltip(btn, tooltip)
             return btn
 
