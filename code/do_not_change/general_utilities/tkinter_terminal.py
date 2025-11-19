@@ -1,0 +1,502 @@
+"""
+Tkinter Terminal Emulator
+=========================
+
+A lightweight, thread-safe terminal emulator built with Tkinter.
+Designed to run Python scripts with a modern, dark-themed UI.
+
+Usage:
+    python tkinter_terminal.py <script_path> [options] [-- script_args]
+
+Arguments:
+    script_path       Path to the Python script to execute.
+    script_args       Arguments to pass to the target script.
+
+Options:
+    --title TITLE     Set the window title (default: script filename).
+    --icon ICON_PATH  Set the window/tray icon (default: internal icon).
+    --on-top          Keep the terminal window always on top of other windows.
+
+Example:
+    python tkinter_terminal.py my_script.py --title "My App" --on-top -- --verbose
+"""
+
+import tkinter as tk
+from tkinter import font, ttk
+import subprocess
+import threading
+import sys
+import os
+import queue
+import ctypes
+
+# ==============================================================================
+# Tooltip Class
+# ==============================================================================
+class Tooltip:
+    def __init__(self, widget, text):
+        self.widget = widget
+        self.text = text
+        self.tooltip_window = None
+        self.widget.bind("<Enter>", self.show_tooltip)
+        self.widget.bind("<Leave>", self.hide_tooltip)
+
+    def show_tooltip(self, event=None):
+        x, y, _, _ = self.widget.bbox("insert")
+        x += self.widget.winfo_rootx() + 25
+        y += self.widget.winfo_rooty() + 25
+
+        self.tooltip_window = tw = tk.Toplevel(self.widget)
+        tw.wm_overrideredirect(True)
+        tw.wm_geometry(f"+{x}+{y}")
+
+        label = tk.Label(tw, text=self.text, justify='left',
+                       background="#2d2d2d", foreground="#d4d4d4",
+                       relief='solid', borderwidth=1,
+                       font=("Segoe UI", 8))
+        label.pack(ipadx=1)
+
+    def hide_tooltip(self, event=None):
+        if self.tooltip_window:
+            self.tooltip_window.destroy()
+            self.tooltip_window = None
+
+# ==============================================================================
+# Custom Title Bar & Window Logic
+# ==============================================================================
+
+class CustomTitleBar(tk.Frame):
+    def __init__(self, master, app_title, on_minimize, on_maximize, on_close, on_tray):
+        super().__init__(master, bg="#2d2d2d", height=30)
+        self.pack_propagate(False) # Prevent shrinking
+        
+        self.master = master
+        self._drag_data = {"x": 0, "y": 0}
+
+        # Title Label
+        self.title_label = tk.Label(self, text=app_title, bg="#2d2d2d", fg="#d4d4d4", font=("Segoe UI", 10))
+        self.title_label.pack(side=tk.LEFT, padx=10)
+
+        # Buttons Frame
+        self.buttons_frame = tk.Frame(self, bg="#2d2d2d")
+        self.buttons_frame.pack(side=tk.RIGHT)
+
+        # Button Styles
+        btn_config = {"bg": "#2d2d2d", "fg": "#d4d4d4", "bd": 0, "font": ("Segoe UI", 10), "width": 5, "activebackground": "#3e3e42", "activeforeground": "#ffffff"}
+        close_config = btn_config.copy()
+        close_config["activebackground"] = "#e81123"
+        close_config["width"] = 6
+        
+        # Maximize Button Config (Larger Font)
+        max_config = btn_config.copy()
+        max_config["font"] = ("Segoe UI", 12) # Larger font for the square
+
+        # Tray Button (⇩) - Placed on the very left of the group
+        self.tray_btn = tk.Button(self.buttons_frame, text="⇩", command=on_tray, **btn_config)
+        self.tray_btn.pack(side=tk.LEFT)
+        self.tray_btn.bind("<Enter>", lambda e: self.tray_btn.config(bg="#3e3e42"))
+        self.tray_btn.bind("<Leave>", lambda e: self.tray_btn.config(bg="#2d2d2d"))
+        Tooltip(self.tray_btn, "Minimize to System Tray")
+
+        # Minimize Button (―) - Second to the left
+        self.min_btn = tk.Button(self.buttons_frame, text="―", command=on_minimize, **btn_config)
+        self.min_btn.pack(side=tk.LEFT)
+        self.min_btn.bind("<Enter>", lambda e: self.min_btn.config(bg="#3e3e42"))
+        self.min_btn.bind("<Leave>", lambda e: self.min_btn.config(bg="#2d2d2d"))
+
+        # Maximize Button (□)
+        self.max_btn = tk.Button(self.buttons_frame, text="□", command=on_maximize, **max_config)
+        self.max_btn.pack(side=tk.LEFT)
+        self.max_btn.bind("<Enter>", lambda e: self.max_btn.config(bg="#3e3e42"))
+        self.max_btn.bind("<Leave>", lambda e: self.max_btn.config(bg="#2d2d2d"))
+
+        # Close Button (X)
+        self.close_btn = tk.Button(self.buttons_frame, text="✕", command=on_close, **close_config)
+        self.close_btn.pack(side=tk.LEFT)
+        self.close_btn.bind("<Enter>", lambda e: self.close_btn.config(bg="#e81123"))
+        self.close_btn.bind("<Leave>", lambda e: self.close_btn.config(bg="#2d2d2d"))
+
+        # Bind dragging
+        self.bind("<Button-1>", self.start_drag)
+        self.bind("<B1-Motion>", self.do_drag)
+        self.title_label.bind("<Button-1>", self.start_drag)
+        self.title_label.bind("<B1-Motion>", self.do_drag)
+
+    def start_drag(self, event):
+        self._drag_data["x"] = event.x
+        self._drag_data["y"] = event.y
+
+    def do_drag(self, event):
+        deltax = event.x - self._drag_data["x"]
+        deltay = event.y - self._drag_data["y"]
+        x = self.master.winfo_x() + deltax
+        y = self.master.winfo_y() + deltay
+        self.master.geometry(f"+{x}+{y}")
+
+class TkinterTerminal:
+    def __init__(self, root, target_script, terminal_name=None, icon_path=None, on_top=False, script_args=[]):
+        self.root = root
+        
+        # Default title if not provided
+        if terminal_name is None:
+            terminal_name = os.path.basename(target_script)
+            
+        self.root.title(terminal_name)
+        self.root.geometry("900x600")
+        
+        # Always on Top
+        if on_top:
+            self.root.attributes("-topmost", True)
+        
+        self.icon_path = icon_path
+        
+        # Try to find default icon if not provided
+        if not self.icon_path:
+            default_icon = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "icons", "icon.ico"))
+            if os.path.exists(default_icon):
+                self.icon_path = default_icon
+
+        if self.icon_path:
+            try:
+                self.root.iconbitmap(self.icon_path)
+            except tk.TclError:
+                print(f"Warning: Could not load icon from {self.icon_path}")
+
+        # Remove default title bar
+        self.root.overrideredirect(True)
+        
+        # Apply Windows 11 Rounded Corners (DWMWA_WINDOW_CORNER_PREFERENCE = 33)
+        try:
+            DWMWA_WINDOW_CORNER_PREFERENCE = 33
+            DWMWCP_ROUND = 2
+            hwnd = ctypes.windll.user32.GetParent(self.root.winfo_id())
+            ctypes.windll.dwmapi.DwmSetWindowAttribute(hwnd, DWMWA_WINDOW_CORNER_PREFERENCE, ctypes.byref(ctypes.c_int(DWMWCP_ROUND)), ctypes.sizeof(ctypes.c_int))
+        except Exception:
+            pass # Fail silently on older Windows
+
+        # Make sure it shows in taskbar (sometimes needed for overrideredirect)
+        self.set_appwindow()
+
+        # Modern Dark Theme Colors (VS Code-ish)
+        self.colors = {
+            "bg": "#1e1e1e",
+            "fg": "#d4d4d4",
+            "cursor": "#ffffff",
+            "select_bg": "#264f78",
+            "prompt": "#00ff00",  # Bright Green for high visibility
+            "stdin": "#ce9178",   # Orange-ish (String color)
+            "stdout": "#d4d4d4",
+            "stderr": "#f44747",  # Red
+            "system": "#569cd6",  # Blue
+            "input_bg": "#2d2d2d", # Slightly lighter background for input area
+        }
+
+        self.root.configure(bg=self.colors["bg"])
+
+        # Configure font
+        self.custom_font = font.Font(family="Consolas", size=11)
+
+        # --- Custom Title Bar ---
+        self.title_bar = CustomTitleBar(
+            root, 
+            terminal_name, 
+            self.minimize_window, 
+            self.maximize_window, 
+            self.on_closing,
+            self.minimize_to_tray
+        )
+        self.title_bar.pack(side=tk.TOP, fill=tk.X)
+
+        # --- Input Area (Packed FIRST to ensure visibility at bottom) ---
+        self.input_frame = tk.Frame(root, bg=self.colors["input_bg"])
+        self.input_frame.pack(side=tk.BOTTOM, fill=tk.X, padx=0, pady=0)
+        
+        # Add a separator line
+        self.separator = tk.Frame(self.input_frame, bg="#3e3e42", height=1)
+        self.separator.pack(side=tk.TOP, fill=tk.X)
+        
+        self.input_inner_frame = tk.Frame(self.input_frame, bg=self.colors["input_bg"])
+        self.input_inner_frame.pack(fill=tk.X, padx=10, pady=10)
+
+        self.prompt_label = tk.Label(
+            self.input_inner_frame, 
+            text=">>> ", 
+            bg=self.colors["input_bg"], 
+            fg=self.colors["prompt"], 
+            font=(self.custom_font.cget("family"), 11, "bold") # Bold prompt
+        )
+        self.prompt_label.pack(side=tk.LEFT)
+        
+        self.input_entry = tk.Entry(
+            self.input_inner_frame, 
+            bg=self.colors["input_bg"], 
+            fg="#ffffff", # White text for input
+            insertbackground=self.colors["cursor"],
+            selectbackground=self.colors["select_bg"],
+            font=self.custom_font, 
+            relief=tk.FLAT,
+            bd=0,
+            highlightthickness=0
+        )
+        self.input_entry.pack(side=tk.LEFT, expand=True, fill=tk.X)
+        self.input_entry.bind("<Return>", self.send_input)
+        self.input_entry.bind("<Up>", lambda e: self.navigate_history(-1))
+        self.input_entry.bind("<Down>", lambda e: self.navigate_history(1))
+        self.input_entry.focus_set()
+
+        # --- Output Area (Packed SECOND to fill remaining space) ---
+        self.main_frame = tk.Frame(root, bg=self.colors["bg"])
+        self.main_frame.pack(side=tk.TOP, expand=True, fill=tk.BOTH, padx=10, pady=0)
+
+        # Output area (Text widget)
+        self.output_text = tk.Text(
+            self.main_frame, 
+            bg=self.colors["bg"], 
+            fg=self.colors["fg"], 
+            insertbackground=self.colors["cursor"],
+            selectbackground=self.colors["select_bg"],
+            font=self.custom_font, 
+            state=tk.DISABLED, 
+            wrap=tk.WORD,
+            bd=0, # No border
+            highlightthickness=0 # No focus highlight
+        )
+        self.output_text.pack(expand=True, fill=tk.BOTH, side=tk.LEFT)
+        
+        # Scrollbar for output (Styled minimal if possible, otherwise standard)
+        self.scrollbar = tk.Scrollbar(self.main_frame, command=self.output_text.yview, bg=self.colors["bg"], troughcolor=self.colors["bg"], bd=0, elementborderwidth=0)
+        self.output_text.configure(yscrollcommand=self.scrollbar.set)
+    def set_appwindow(self):
+        # Force the window to appear in the taskbar and behave like a normal app
+        GWL_EXSTYLE = -20
+        WS_EX_APPWINDOW = 0x00040000
+        WS_EX_TOOLWINDOW = 0x00000080
+        
+        hwnd = ctypes.windll.user32.GetParent(self.root.winfo_id())
+        style = ctypes.windll.user32.GetWindowLongW(hwnd, GWL_EXSTYLE)
+        style = style & ~WS_EX_TOOLWINDOW
+        style = style | WS_EX_APPWINDOW
+        ctypes.windll.user32.SetWindowLongW(hwnd, GWL_EXSTYLE, style)
+        
+        # Force refresh
+        self.root.wm_withdraw()
+        self.root.after(10, lambda: self.root.wm_deiconify())
+
+    def minimize_window(self):
+        # Standard minimize to taskbar
+        # SW_SHOWMINIMIZED = 2
+        ctypes.windll.user32.ShowWindow(ctypes.windll.user32.GetParent(self.root.winfo_id()), 2)
+
+    def maximize_window(self):
+        # Simple toggle for now
+        if self.root.state() == "zoomed":
+            self.root.state("normal")
+        else:
+            self.root.state("zoomed")
+
+    def minimize_to_tray(self):
+        self.root.withdraw() # Hide the window completely
+        if not hasattr(self, 'tray_icon') or self.tray_icon is None:
+            # Import here to avoid circular imports if any, or just standard lazy load
+            try:
+                from system_tray import SystemTrayIcon
+                self.tray_icon = SystemTrayIcon(self.root.title(), self.restore_from_tray, self.icon_path)
+            except ImportError:
+                print("Error importing SystemTrayIcon")
+                self.root.deiconify()
+                return
+        
+        self.tray_icon.show()
+
+    def restore_from_tray(self):
+        # This is called from a separate thread, so we must use after() to schedule GUI updates
+        self.root.after(0, self._restore_window_logic)
+
+    def _restore_window_logic(self):
+        self.root.deiconify()
+        # Re-apply appwindow style if needed after restore
+        self.set_appwindow()
+        if self.tray_icon:
+            self.tray_icon.hide()
+            self.tray_icon = None
+
+    def start_resize(self, event):
+        self._resize_data = {"x": event.x_root, "y": event.y_root, "width": self.root.winfo_width(), "height": self.root.winfo_height()}
+
+    def do_resize(self, event):
+        deltax = event.x_root - self._resize_data["x"]
+        deltay = event.y_root - self._resize_data["y"]
+        new_width = self._resize_data["width"] + deltax
+        new_height = self._resize_data["height"] + deltay
+        self.root.geometry(f"{new_width}x{new_height}")
+
+    def start_subprocess(self, target_script, script_args):
+        try:
+            # Use python executable that is running this script
+            cmd = [sys.executable, "-u", target_script] + script_args
+            
+            # Start subprocess with pipes
+            # bufsize=0 and -u flag ensure unbuffered output
+            self.process = subprocess.Popen(
+                cmd,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                bufsize=0,
+                cwd=os.path.dirname(os.path.abspath(target_script)) # Run in script's directory
+            )
+
+            # Start threads to read stdout and stderr
+            threading.Thread(target=self.read_stream, args=(self.process.stdout, "stdout"), daemon=True).start()
+            threading.Thread(target=self.read_stream, args=(self.process.stderr, "stderr"), daemon=True).start()
+            
+            self.queue_write(f"[System] Started: {' '.join(cmd)}\n", "system")
+
+        except Exception as e:
+            self.queue_write(f"[System] Error starting process: {e}\n", "error")
+
+    def read_stream(self, stream, stream_type):
+        """Reads from a stream and puts data into the queue."""
+        try:
+            while True:
+                char = stream.read(1)
+                if not char:
+                    break
+                self.queue.put((char, stream_type))
+        except Exception:
+            pass
+        finally:
+            if self.process and self.process.poll() is not None:
+                self.queue.put(("[System] Process finished.\n", "system"))
+
+    def check_queue(self):
+        """Checks queue for new data and updates text widget."""
+        while not self.queue.empty():
+            try:
+                content, tag = self.queue.get_nowait()
+                self.write_to_output(content, tag)
+            except queue.Empty:
+                break
+        
+        # Check if process is dead
+        if self.process and self.process.poll() is not None:
+             self.input_entry.config(state=tk.DISABLED)
+        
+        self.root.after(10, self.check_queue)
+
+    def write_to_output(self, text, tag):
+        self.output_text.config(state=tk.NORMAL)
+        
+        # Tag configuration
+        self.output_text.tag_config("stderr", foreground=self.colors["stderr"])
+        self.output_text.tag_config("system", foreground=self.colors["system"])
+        self.output_text.tag_config("stdin", foreground=self.colors["stdin"])
+        self.output_text.tag_config("stdout", foreground=self.colors["stdout"])
+        
+        self.output_text.insert(tk.END, text, tag)
+        self.output_text.see(tk.END)
+        self.output_text.config(state=tk.DISABLED)
+
+    def send_input(self, event):
+        # if self.process and self.process.poll() is None: # Allow commands even if process is dead? Maybe.
+        
+        text = self.input_entry.get()
+        self.input_entry.delete(0, tk.END)
+        
+        # Add to history if not empty
+        if text.strip():
+            self.history.append(text)
+            self.history_index = len(self.history) # Reset index to end
+
+        # Handle Special Commands
+        if text.strip().lower() in ["cls", "clear"]:
+            self.output_text.config(state=tk.NORMAL)
+            self.output_text.delete(1.0, tk.END)
+            self.output_text.config(state=tk.DISABLED)
+            return
+            
+        if text.strip().lower() == "exit":
+            self.on_closing()
+            return
+
+        # Handle System Commands (prefixed with !)
+        if text.startswith("!"):
+            cmd = text[1:].strip()
+            self.write_to_output(f"{text}\n", "stdin")
+            self.write_to_output(f"[System] Running: {cmd}\n", "system")
+            
+            try:
+                # Run command and capture output
+                result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+                if result.stdout:
+                    self.write_to_output(result.stdout, "stdout")
+                if result.stderr:
+                    self.write_to_output(result.stderr, "stderr")
+            except Exception as e:
+                 self.write_to_output(f"[System] Error running command: {e}\n", "error")
+            return
+
+        # Send to subprocess
+        if self.process and self.process.poll() is None:
+            # Echo input to output
+            self.write_to_output(text + "\n", "stdin")
+            
+            try:
+                self.process.stdin.write(text + "\n")
+                self.process.stdin.flush()
+            except Exception as e:
+                self.write_to_output(f"\n[System] Error sending input: {e}\n", "error")
+        else:
+             self.write_to_output(f"{text}\n", "stdin")
+             self.write_to_output("\n[System] Process is not running.\n", "system")
+
+    def navigate_history(self, direction):
+        if not self.history:
+            return
+
+        # Update index
+        self.history_index += direction
+        
+        # Clamp index
+        if self.history_index < 0:
+            self.history_index = 0
+        elif self.history_index > len(self.history):
+            self.history_index = len(self.history)
+
+        self.input_entry.delete(0, tk.END)
+        
+        if self.history_index < len(self.history):
+            self.input_entry.insert(0, self.history[self.history_index])
+        else:
+            # If we go past the end, clear the input (new command)
+            pass
+
+    def queue_write(self, text, tag):
+        self.queue.put((text, tag))
+
+    def on_closing(self):
+        if hasattr(self, 'tray_icon') and self.tray_icon:
+            self.tray_icon.hide()
+        if self.process and self.process.poll() is None:
+            self.process.terminate()
+        self.root.destroy()
+
+
+if __name__ == "__main__":
+    import argparse
+    
+    parser = argparse.ArgumentParser(description="Tkinter Terminal Emulator")
+    parser.add_argument("script", help="Path to the python script to run")
+    parser.add_argument("--title", help="Title of the terminal window", default=None)
+    parser.add_argument("--icon", help="Path to icon file (.ico)", default=None)
+    parser.add_argument("--on-top", action="store_true", help="Keep window always on top")
+    parser.add_argument("args", nargs=argparse.REMAINDER, help="Arguments for the script")
+    
+    args = parser.parse_args()
+    
+    root = tk.Tk()
+    # We handle geometry in the class now
+    
+    terminal = TkinterTerminal(root, args.script, args.title, args.icon, args.on_top, args.args)
+    root.mainloop()
