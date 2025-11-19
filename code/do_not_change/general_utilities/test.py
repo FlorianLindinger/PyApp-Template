@@ -16,3 +16,4 @@ while True:
 
 # update docstirng
 
+# mkae option to remove or add timestaps to all orints. make it removeber timesatap eve n if not tunred on
