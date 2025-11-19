@@ -38,8 +38,9 @@ class Tooltip:
         self.widget = widget
         self.text = text
         self.tooltip_window = None
-        self.widget.bind("<Enter>", self.show_tooltip)
-        self.widget.bind("<Leave>", self.hide_tooltip)
+        # Use add='+' to preserve existing bindings (like hover effects)
+        self.widget.bind("<Enter>", self.show_tooltip, add='+')
+        self.widget.bind("<Leave>", self.hide_tooltip, add='+')
 
     def show_tooltip(self, event=None):
         x, y, _, _ = self.widget.bbox("insert")
@@ -104,8 +105,8 @@ class CustomTitleBar(tk.Frame):
 
         # Tray Button (▼) - Bright blue hover
         self.tray_btn = HoverButton(self.buttons_frame, text="▼", command=on_tray, hover_bg="#0078d4")
-        # Don't add Tooltip yet - testing if it interferes
         self.tray_btn.pack(side=tk.LEFT)
+        Tooltip(self.tray_btn, "Minimize to System Tray")
 
         # Minimize Button (―) - Gray hover
         self.min_btn = HoverButton(self.buttons_frame, text="―", command=on_minimize, hover_bg="#3e3e42")
