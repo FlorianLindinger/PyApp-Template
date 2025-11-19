@@ -94,7 +94,7 @@ class CustomTitleBar(tk.Frame):
         
         # Add single-click to open script folder with blue hover
         if self.script_path:
-            self.title_label.bind("<Button-1>", self.on_title_click)
+            self.title_label.bind("<ButtonRelease-1>", self.on_title_click)
             self.title_label.bind("<Enter>", lambda e: self.title_label.config(bg="#0078d4"))
             self.title_label.bind("<Leave>", lambda e: self.title_label.config(bg="#2d2d2d"))
 
