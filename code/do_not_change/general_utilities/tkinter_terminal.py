@@ -15,7 +15,6 @@ Arguments:
 Options:
     --title TITLE     Set the window title (default: script filename).
     --icon ICON_PATH  Set the window/tray icon (default: internal icon).
-    --on-top          Keep the terminal window always on top of other windows.
 
 Example:
     python tkinter_terminal.py my_script.py --title "My App" --on-top -- --verbose
@@ -93,9 +92,11 @@ class CustomTitleBar(tk.Frame):
         self.title_label = tk.Label(self, text=app_title, bg="#2d2d2d", fg="#d4d4d4", font=("Segoe UI", 10), cursor="hand2")
         self.title_label.pack(side=tk.LEFT, padx=10)
         
-        # Add double-click to open script folder
+        # Add single-click to open script folder with blue hover
         if self.script_path:
-            self.title_label.bind("<Double-Button-1>", self.open_script_folder)
+            self.title_label.bind("<Button-1>", self.on_title_click)
+            self.title_label.bind("<Enter>", lambda e: self.title_label.config(bg="#0078d4"))
+            self.title_label.bind("<Leave>", lambda e: self.title_label.config(bg="#2d2d2d"))
 
         # Buttons Frame
         self.buttons_frame = tk.Frame(self, bg="#2d2d2d")
@@ -161,8 +162,14 @@ class CustomTitleBar(tk.Frame):
         # Bind dragging
         self.bind("<Button-1>", self.start_drag)
         self.bind("<B1-Motion>", self.do_drag)
-        self.title_label.bind("<Button-1>", self.start_drag)
-        self.title_label.bind("<B1-Motion>", self.do_drag)
+        self.title_label.bind("<Button-1>", self.start_drag, add='+')
+        self.title_label.bind("<B1-Motion>", self.do_drag, add='+')
+
+    def on_title_click(self, event):
+        """Handle title click - if it's a drag, don't open folder"""
+        # Only open folder if mouse hasn't moved much (not a drag)
+        if abs(event.x - self._drag_data.get("x", event.x)) < 5 and abs(event.y - self._drag_data.get("y", event.y)) < 5:
+            self.open_script_folder()
 
     def toggle_top(self):
         self.toggles["top"] = not self.toggles["top"]
