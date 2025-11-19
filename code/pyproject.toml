@@ -1,19 +1,17 @@
 [project]
-name = "NOT DEFINED"
-version = "NOT DEFINED"
-description = "NOT DEFINED"
-readme = "README.md". wrong?
-license = { text = "WIP" }
-rest for license 
-move around stuff 
-authors = [{ name = "Florian Lindinger", email = "WIP@gmail.com" }]
-# requires-python = "{python-version-number}"
-dependencies = ["WIP"]
+name = "" # ADD HERE 
+version = "" # ADD HERE 
+description = "" # ADD HERE 
+authors = [{ name = "", email = "" }] # ADD HERE
+requires-python = "" # ADD HERE 
+dependencies = [] # ADD REQUIRED PYTHON PACKAGES HERE
 
+[project]
+readme = "..\README.md"
+license = { file = "../LICENSE.md" }
 
 [project.optional-dependencies]
 dev = ["ruff"]
-
 
 # ===========================
 [tool.ruff] #Ruff (python linter/formatter) configuration
