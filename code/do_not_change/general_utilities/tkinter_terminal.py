@@ -98,6 +98,7 @@ class CustomTitleBar(tk.Frame):
 
         # Minimize Button (―) - Second to the left
         self.min_btn = tk.Button(self.buttons_frame, text="―", command=on_minimize, **btn_config)
+        self.min_btn.pack(side=tk.LEFT)
         self.min_btn.bind("<Enter>", lambda e: self.min_btn.config(bg="#3e3e42"))
         self.min_btn.bind("<Leave>", lambda e: self.min_btn.config(bg="#2d2d2d"))
 
