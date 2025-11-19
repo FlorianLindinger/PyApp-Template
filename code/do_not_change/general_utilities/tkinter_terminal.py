@@ -147,6 +147,12 @@ class CustomTitleBar(tk.Frame):
         }
         self.update_toggle_visuals()
 
+        # Bind dragging
+        self.bind("<Button-1>", self.start_drag)
+        self.bind("<B1-Motion>", self.do_drag)
+        self.title_label.bind("<Button-1>", self.start_drag)
+        self.title_label.bind("<B1-Motion>", self.do_drag)
+
     def toggle_top(self):
         self.toggles["top"] = not self.toggles["top"]
         self.callbacks["top"](self.toggles["top"])
@@ -173,11 +179,6 @@ class CustomTitleBar(tk.Frame):
                 btn.config(fg="#007acc", activeforeground="#007acc") # Blue when active
             else:
                 btn.config(fg="#d4d4d4", activeforeground="#ffffff")
-
-    def start_drag(self, event):
-        self.bind("<B1-Motion>", self.do_drag)
-        self.title_label.bind("<Button-1>", self.start_drag)
-        self.title_label.bind("<B1-Motion>", self.do_drag)
 
     def start_drag(self, event):
         self._drag_data["x"] = event.x
