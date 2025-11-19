@@ -266,6 +266,16 @@ class TkinterTerminal:
         # Scrollbar for output (Styled minimal if possible, otherwise standard)
         self.scrollbar = tk.Scrollbar(self.main_frame, command=self.output_text.yview, bg=self.colors["bg"], troughcolor=self.colors["bg"], bd=0, elementborderwidth=0)
         self.output_text.configure(yscrollcommand=self.scrollbar.set)
+
+        # Initialize state variables
+        self.process = None
+        self.queue = queue.Queue()
+        self.history = []
+        self.history_index = 0
+
+        # Start the subprocess and queue checking
+        self.start_subprocess(target_script, script_args)
+        self.check_queue()
     def set_appwindow(self):
         # Force the window to appear in the taskbar and behave like a normal app
         GWL_EXSTYLE = -20
