@@ -438,8 +438,6 @@ class TkinterTerminal:
             threading.Thread(target=self.read_stream, args=(self.process.stdout, "stdout"), daemon=True).start()
             threading.Thread(target=self.read_stream, args=(self.process.stderr, "stderr"), daemon=True).start()
             
-            self.queue_write(f"[System] Started: {' '.join(cmd)}\n", "system")
-
         except Exception as e:
             self.queue_write(f"[System] Error starting process: {e}\n", "error")
 
