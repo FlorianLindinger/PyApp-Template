@@ -22,5 +22,6 @@ while True:
 # make it stay alert on print until seen
 # make all button color on 
 
+# make 
 
-
+# make system tray to noremal remeber old pos
