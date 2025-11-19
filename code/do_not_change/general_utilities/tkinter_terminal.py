@@ -82,14 +82,20 @@ class HoverButton(tk.Label):
 
 class CustomTitleBar(tk.Frame):
     def __init__(self, master, app_title, on_minimize, on_maximize, on_close, on_tray, 
-                 on_top_toggle, on_highlight_toggle, on_confirm_toggle, on_print_toggle):
+                 on_top_toggle, on_highlight_toggle, on_confirm_toggle, on_print_toggle, script_path=None):
         super().__init__(master, bg="#2d2d2d", height=30)
         self.pack_propagate(False) # Prevent shrinking
         
         self.master = master
         self._drag_data = {"x": 0, "y": 0}
-        self.title_label = tk.Label(self, text=app_title, bg="#2d2d2d", fg="#d4d4d4", font=("Segoe UI", 10))
+        self.script_path = script_path
+        
+        self.title_label = tk.Label(self, text=app_title, bg="#2d2d2d", fg="#d4d4d4", font=("Segoe UI", 10), cursor="hand2")
         self.title_label.pack(side=tk.LEFT, padx=10)
+        
+        # Add double-click to open script folder
+        if self.script_path:
+            self.title_label.bind("<Double-Button-1>", self.open_script_folder)
 
         # Buttons Frame
         self.buttons_frame = tk.Frame(self, bg="#2d2d2d")
@@ -195,6 +201,12 @@ class CustomTitleBar(tk.Frame):
         x = self.master.winfo_x() + deltax
         y = self.master.winfo_y() + deltay
         self.master.geometry(f"+{x}+{y}")
+    
+    def open_script_folder(self, event=None):
+        """Open the folder containing the script in Windows Explorer"""
+        if self.script_path:
+            folder_path = os.path.dirname(os.path.abspath(self.script_path))
+            os.startfile(folder_path)
 
 class TkinterTerminal:
     def __init__(self, root, target_script, terminal_name=None, icon_path=None, on_top=False, tray_symbol="▼", script_args=[]):
@@ -275,7 +287,8 @@ class TkinterTerminal:
             self.set_always_on_top,
             self.set_highlight_on_print,
             self.set_confirm_on_close,
-            self.set_show_command_printing
+            self.set_show_command_printing,
+            target_script
         )
         self.title_bar.pack(side=tk.TOP, fill=tk.X)
         
