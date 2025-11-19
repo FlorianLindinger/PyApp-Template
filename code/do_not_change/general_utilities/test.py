@@ -12,3 +12,7 @@ while True:
 
 # open soruce code on click on title
 # make system tray to noremal remeber old pos
+#make it work on single click and also make if hihgligh blue as the other buttons
+
+# update docstirng
+
