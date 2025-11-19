@@ -211,6 +211,8 @@ check if i can add stoppping of closing terminal for non pyqt5
 batch related & ideas related
 ===================================
 
+make a tkinter terminal instead of pyqt5 becasue no packages needed
+
 git does not exist for donwload in git?->create batch that create git
 
 add system tray option
