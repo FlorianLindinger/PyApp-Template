@@ -221,9 +221,8 @@ class TkinterTerminal:
         
         # Try to find default icon if not provided
         if not self.icon_path:
-            default_icon = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "icons", "icon.ico"))
-            if os.path.exists(default_icon):
-                self.icon_path = default_icon
+            if os.path.exists("fallback_terminal_icon.ico"):
+                self.icon_path = "fallback_terminal_icon.ico"
 
         if self.icon_path:
             try:
