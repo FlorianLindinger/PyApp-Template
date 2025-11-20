@@ -544,9 +544,9 @@ class TkinterTerminal:
         new_x = self._resize_data["window_x"]
         new_y = self._resize_data["window_y"]
         
-        # Minimum window size
-        min_width = 400
-        min_height = 300
+        # Minimum window size (reduced for more flexibility)
+        min_width = 250
+        min_height = 200
         
         direction = self._resize_direction
         
@@ -556,18 +556,28 @@ class TkinterTerminal:
         
         if "w" in direction:  # West (left edge)
             potential_width = self._resize_data["width"] - dx
+            # Clamp to minimum and adjust position accordingly
+            new_width = max(min_width, potential_width)
+            # Only move the window if we're not at minimum size
             if potential_width >= min_width:
-                new_width = potential_width
                 new_x = self._resize_data["window_x"] + dx
+            else:
+                # At minimum, adjust x to prevent snapping
+                new_x = self._resize_data["window_x"] + (self._resize_data["width"] - min_width)
         
         if "s" in direction:  # South (bottom edge)
             new_height = max(min_height, self._resize_data["height"] + dy)
         
         if "n" in direction:  # North (top edge)
             potential_height = self._resize_data["height"] - dy
+            # Clamp to minimum and adjust position accordingly
+            new_height = max(min_height, potential_height)
+            # Only move the window if we're not at minimum size
             if potential_height >= min_height:
-                new_height = potential_height
                 new_y = self._resize_data["window_y"] + dy
+            else:
+                # At minimum, adjust y to prevent snapping
+                new_y = self._resize_data["window_y"] + (self._resize_data["height"] - min_height)
         
         # Apply new geometry
         self.root.geometry(f"{new_width}x{new_height}+{new_x}+{new_y}")
