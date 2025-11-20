@@ -225,6 +225,11 @@ class TkinterTerminal:
         self.confirm_on_close = False
         self.show_command_printing = True
         
+        # Resize state
+        self.resize_border_width = 5  # Width of the resize detection area
+        self._resize_data = None
+        self._resize_direction = None
+        
         # Default title if not provided
         if terminal_name is None:
             terminal_name = os.path.basename(target_script)
@@ -372,6 +377,12 @@ class TkinterTerminal:
         # Start the subprocess and queue checking
         self.start_subprocess(target_script, script_args)
         self.check_queue()
+        
+        # Bind resize events to root window (using add='+' to preserve other bindings)
+        self.root.bind("<Motion>", self.update_cursor, add='+')
+        self.root.bind("<Button-1>", self.start_resize, add='+')
+        self.root.bind("<B1-Motion>", self.do_resize, add='+')
+        self.root.bind("<ButtonRelease-1>", self.stop_resize, add='+')
     def set_appwindow(self):
         # Force the window to appear in the taskbar and behave like a normal app
         GWL_EXSTYLE = -20
@@ -443,15 +454,124 @@ class TkinterTerminal:
             self.tray_icon.hide()
             self.tray_icon = None
 
+    def get_resize_direction(self, x, y):
+        """Determine which edge/corner is being hovered based on mouse position"""
+        width = self.root.winfo_width()
+        height = self.root.winfo_height()
+        border = self.resize_border_width
+        
+        # Check corners first (they take priority)
+        if x < border and y < border:
+            return "nw"
+        elif x > width - border and y < border:
+            return "ne"
+        elif x < border and y > height - border:
+            return "sw"
+        elif x > width - border and y > height - border:
+            return "se"
+        # Check edges
+        elif x < border:
+            return "w"
+        elif x > width - border:
+            return "e"
+        elif y < border:
+            return "n"
+        elif y > height - border:
+            return "s"
+        
+        return None
+    
+    def update_cursor(self, event):
+        """Update cursor based on position for resize feedback"""
+        # Don't change cursor if window is maximized
+        if self.root.state() == "zoomed":
+            return
+        
+        direction = self.get_resize_direction(event.x, event.y)
+        
+        cursor_map = {
+            "n": "sb_v_double_arrow",
+            "s": "sb_v_double_arrow",
+            "e": "sb_h_double_arrow",
+            "w": "sb_h_double_arrow",
+            "ne": "size_ne_sw",
+            "nw": "size_nw_se",
+            "se": "size_nw_se",
+            "sw": "size_ne_sw"
+        }
+        
+        if direction:
+            self.root.config(cursor=cursor_map.get(direction, ""))
+        else:
+            self.root.config(cursor="")
+    
     def start_resize(self, event):
-        self._resize_data = {"x": event.x_root, "y": event.y_root, "width": self.root.winfo_width(), "height": self.root.winfo_height()}
+        """Start resizing operation"""
+        # Don't resize if window is maximized
+        if self.root.state() == "zoomed":
+            return
+        
+        direction = self.get_resize_direction(event.x, event.y)
+        
+        if direction:
+            self._resize_direction = direction
+            self._resize_data = {
+                "x": event.x_root,
+                "y": event.y_root,
+                "width": self.root.winfo_width(),
+                "height": self.root.winfo_height(),
+                "window_x": self.root.winfo_x(),
+                "window_y": self.root.winfo_y()
+            }
 
     def do_resize(self, event):
-        deltax = event.x_root - self._resize_data["x"]
-        deltay = event.y_root - self._resize_data["y"]
-        new_width = self._resize_data["width"] + deltax
-        new_height = self._resize_data["height"] + deltay
-        self.root.geometry(f"{new_width}x{new_height}")
+        """Perform the resize operation"""
+        if not self._resize_data or not self._resize_direction:
+            return
+        
+        # Calculate deltas
+        dx = event.x_root - self._resize_data["x"]
+        dy = event.y_root - self._resize_data["y"]
+        
+        # Get current values
+        new_width = self._resize_data["width"]
+        new_height = self._resize_data["height"]
+        new_x = self._resize_data["window_x"]
+        new_y = self._resize_data["window_y"]
+        
+        # Minimum window size
+        min_width = 400
+        min_height = 300
+        
+        direction = self._resize_direction
+        
+        # Handle resizing based on direction
+        if "e" in direction:  # East (right edge)
+            new_width = max(min_width, self._resize_data["width"] + dx)
+        
+        if "w" in direction:  # West (left edge)
+            potential_width = self._resize_data["width"] - dx
+            if potential_width >= min_width:
+                new_width = potential_width
+                new_x = self._resize_data["window_x"] + dx
+        
+        if "s" in direction:  # South (bottom edge)
+            new_height = max(min_height, self._resize_data["height"] + dy)
+        
+        if "n" in direction:  # North (top edge)
+            potential_height = self._resize_data["height"] - dy
+            if potential_height >= min_height:
+                new_height = potential_height
+                new_y = self._resize_data["window_y"] + dy
+        
+        # Apply new geometry
+        self.root.geometry(f"{new_width}x{new_height}+{new_x}+{new_y}")
+    
+    def stop_resize(self, event):
+        """Stop resizing operation"""
+        self._resize_data = None
+        self._resize_direction = None
+        self.root.config(cursor="")
 
     def start_subprocess(self, target_script, script_args):
         try:
