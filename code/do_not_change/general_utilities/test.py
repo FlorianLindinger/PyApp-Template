@@ -28,6 +28,11 @@ while True:
 
 # make when blue on hove it make the button icon white
 
+# maybe add option to remove tray minimizer 
+
+# option to disable print highlight
+
+
 # #=====================================
 # end fix
 # #=====================================
