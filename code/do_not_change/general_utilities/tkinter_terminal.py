@@ -317,7 +317,7 @@ class TkinterTerminal:
         self.separator.pack(side=tk.TOP, fill=tk.X)
         
         self.input_inner_frame = tk.Frame(self.input_frame, bg=self.colors["input_bg"])
-        self.input_inner_frame.pack(fill=tk.X, padx=10, pady=10)
+        self.input_inner_frame.pack(fill=tk.X, padx=10, pady=5)
 
         self.prompt_label = tk.Label(
             self.input_inner_frame, 
