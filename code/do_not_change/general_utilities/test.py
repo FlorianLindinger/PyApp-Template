@@ -2,7 +2,7 @@ import time
 
 while True:
     msg=input()
-    time.sleep(3)
+    time.sleep(2)
     print(msg)
 
 
@@ -25,6 +25,10 @@ while True:
 # option to disable print highlight
 
 # change maximize button icon when maximaize like Windows
+
+# when sanpping to sides make it remember last non-dragged position
+
+# prevent window from going too low to get back. apparently Windows makes it snap up
 
 
 # #=====================================
