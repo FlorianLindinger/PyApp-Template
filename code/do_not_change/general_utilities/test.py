@@ -42,6 +42,8 @@ while True:
 
 #Stop python crash and print and give options to restart? Open windows prompt for crash
 
+#transparency option 
+
 #----------------
 # interactions
 #--------------
