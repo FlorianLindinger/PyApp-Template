@@ -10,6 +10,10 @@ while True:
 #todo
 # #=====================================
 
+#chsnge font with ctrl +- and scroll and. buttons 
+
+#clwar button 
+
 # mkae option to remove or add timestaps to all orints. make it removeber timesatap eve n if not tunred on
 
 # make when blue on hove it make the button icon white
