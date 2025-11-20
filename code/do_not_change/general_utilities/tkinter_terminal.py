@@ -681,17 +681,37 @@ class TkinterTerminal:
     
     def start_fade_effect(self, start_pos, end_pos, original_tag, flash_tag):
         """Start a gradual fade effect for newly printed text"""
-        # Define fade steps - progressively darker yellows fading to background
+        # Define fade steps - very smooth transition with many steps
         fade_colors = [
-            "#6b6b00",  # Bright yellow
-            "#5f5f00",  # 
-            "#535300",  # 
-            "#474700",  # 
-            "#3b3b00",  # 
-            "#2f2f00",  # 
-            "#252500",  # 
-            "#1f1f00",  # 
-            "#1a1a00",  # 
+            "#0078d4",  # Bright blue (Windows accent color)
+            "#0074cc",  # 
+            "#0070c4",  # 
+            "#006cbc",  # 
+            "#0068b4",  # 
+            "#0064ac",  # 
+            "#0060a4",  # 
+            "#005c9c",  # 
+            "#005894",  # 
+            "#00548c",  # 
+            "#005084",  # 
+            "#004c7c",  # 
+            "#004874",  # 
+            "#00446c",  # 
+            "#004064",  # 
+            "#003c5c",  # 
+            "#003854",  # 
+            "#00344c",  # 
+            "#003044",  # 
+            "#002c3c",  # 
+            "#002834",  # 
+            "#00242c",  # 
+            "#002024",  # 
+            "#001c20",  # 
+            "#001a1c",  # 
+            "#001919",  # 
+            "#001a1a",  # 
+            "#001b1b",  # 
+            "#001d1d",  # 
             "#1e1e1e",  # Back to normal background
         ]
         
@@ -721,8 +741,8 @@ class TkinterTerminal:
             
             self.output_text.config(state=tk.DISABLED)
             
-            # Schedule the next fade step (500ms per step = 5 seconds total)
-            self.root.after(500, lambda: self.fade_step(start_pos, end_pos, original_tag, colors, step + 1, flash_tag))
+            # Schedule the next fade step (167ms per step ≈ 5 seconds total for 30 steps)
+            self.root.after(167, lambda: self.fade_step(start_pos, end_pos, original_tag, colors, step + 1, flash_tag))
         except:
             pass  # Ignore errors if text was deleted or widget destroyed
 
