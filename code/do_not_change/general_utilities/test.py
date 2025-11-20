@@ -10,6 +10,8 @@ while True:
 #todo
 # #=====================================
 
+# slight Animations especially for moving to system tray
+
 #chsnge font with ctrl +- and scroll and. buttons 
 
 #clwar button 
