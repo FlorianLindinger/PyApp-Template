@@ -401,6 +401,13 @@ class TkinterTerminal:
             self.root.state("zoomed")
 
     def minimize_to_tray(self):
+        # Save current window state (maximized or normal)
+        self.saved_state = self.root.state()
+        
+        # Only save geometry if not maximized (maximized windows have weird geometry strings)
+        if self.saved_state != "zoomed":
+            self.saved_geometry = self.root.geometry()
+        
         self.root.withdraw() # Hide the window completely
         if not hasattr(self, 'tray_icon') or self.tray_icon is None:
             # Import here to avoid circular imports if any, or just standard lazy load
@@ -420,8 +427,18 @@ class TkinterTerminal:
 
     def _restore_window_logic(self):
         self.root.deiconify()
+        
         # Re-apply appwindow style if needed after restore
         self.set_appwindow()
+        
+        # Restore saved position and size (only if it was not maximized)
+        if hasattr(self, 'saved_state') and self.saved_state == "zoomed":
+            # Restore maximized state
+            self.root.state("zoomed")
+        elif hasattr(self, 'saved_geometry') and self.saved_geometry:
+            # Restore normal position and size
+            self.root.geometry(self.saved_geometry)
+        
         if self.tray_icon:
             self.tray_icon.hide()
             self.tray_icon = None
@@ -620,18 +637,24 @@ class TkinterTerminal:
 if __name__ == "__main__":
     import argparse
     
-    parser = argparse.ArgumentParser(description="Tkinter Terminal Emulator")
-    parser.add_argument("script", help="Path to the python script to run")
-    parser.add_argument("--title", help="Title of the terminal window", default=None)
-    parser.add_argument("--icon", help="Path to icon file (.ico)", default=None)
-    parser.add_argument("--on-top", action="store_true", help="Keep window always on top")
-    parser.add_argument("--tray-symbol", help="Symbol for the minimize-to-tray button", default="▼")
-    parser.add_argument("args", nargs=argparse.REMAINDER, help="Arguments for the script")
-    
-    args = parser.parse_args()
-    
-    root = tk.Tk()
-    # We handle geometry in the class now
-    
-    terminal = TkinterTerminal(root, args.script, args.title, args.icon, args.on_top, args.tray_symbol, args.args)
-    root.mainloop()
+    try:
+        parser = argparse.ArgumentParser(description="Tkinter Terminal Emulator")
+        parser.add_argument("script", help="Path to the python script to run")
+        parser.add_argument("--title", help="Title of the terminal window", default=None)
+        parser.add_argument("--icon", help="Path to icon file (.ico)", default=None)
+        parser.add_argument("--on-top", action="store_true", help="Keep window always on top")
+        parser.add_argument("--tray-symbol", help="Symbol for the minimize-to-tray button", default="▼")
+        parser.add_argument("args", nargs=argparse.REMAINDER, help="Arguments for the script")
+        
+        args = parser.parse_args()
+        
+        root = tk.Tk()
+        # We handle geometry in the class now
+        
+        terminal = TkinterTerminal(root, args.script, args.title, args.icon, args.on_top, args.tray_symbol, args.args)
+        root.mainloop()
+    except Exception as e:
+        import traceback
+        print(f"ERROR: {e}")
+        traceback.print_exc()
+        input("Press Enter to exit...")
