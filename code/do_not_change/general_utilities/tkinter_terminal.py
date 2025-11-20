@@ -162,8 +162,10 @@ class CustomTitleBar(tk.Frame):
         # Bind dragging
         self.bind("<Button-1>", self.start_drag)
         self.bind("<B1-Motion>", self.do_drag)
+        self.bind("<ButtonRelease-1>", self.stop_drag)
         self.title_label.bind("<Button-1>", self.start_drag, add='+')
         self.title_label.bind("<B1-Motion>", self.do_drag, add='+')
+        self.title_label.bind("<ButtonRelease-1>", self.stop_drag, add='+')
 
     def on_title_click(self, event):
         """Handle title click - if it's a drag, don't open folder"""
@@ -201,6 +203,15 @@ class CustomTitleBar(tk.Frame):
     def start_drag(self, event):
         self._drag_data["x"] = event.x
         self._drag_data["y"] = event.y
+        # Store original window state in case we need to restore from maximized
+        if self.master.state() == "zoomed":
+            # If dragging from maximized, restore to normal first
+            self.master.state("normal")
+            # Adjust drag position to keep window under cursor
+            if hasattr(self.master, '_pre_snap_geometry'):
+                # Center the window under cursor
+                width = self.master.winfo_width()
+                self._drag_data["x"] = width // 2
 
     def do_drag(self, event):
         deltax = event.x - self._drag_data["x"]
@@ -208,6 +219,47 @@ class CustomTitleBar(tk.Frame):
         x = self.master.winfo_x() + deltax
         y = self.master.winfo_y() + deltay
         self.master.geometry(f"+{x}+{y}")
+    
+    def stop_drag(self, event):
+        """Handle window snapping when drag ends"""
+        # Get cursor position on screen
+        cursor_x = event.x_root
+        cursor_y = event.y_root
+        
+        # Get screen dimensions
+        screen_width = self.master.winfo_screenwidth()
+        screen_height = self.master.winfo_screenheight()
+        
+        # Define snap threshold (pixels from edge)
+        snap_threshold = 10
+        
+        # Check if cursor is near top edge - maximize
+        if cursor_y <= snap_threshold:
+            # Save current geometry before maximizing
+            if self.master.state() != "zoomed":
+                self.master._pre_snap_geometry = self.master.geometry()
+            self.master.state("zoomed")
+        
+        # Check if cursor is near left edge - snap to left half
+        elif cursor_x <= snap_threshold:
+            self.snap_to_half("left", screen_width, screen_height)
+        
+        # Check if cursor is near right edge - snap to right half
+        elif cursor_x >= screen_width - snap_threshold:
+            self.snap_to_half("right", screen_width, screen_height)
+    
+    def snap_to_half(self, side, screen_width, screen_height):
+        """Snap window to half of the screen"""
+        # Save current geometry
+        self.master._pre_snap_geometry = self.master.geometry()
+        
+        # Calculate half-screen dimensions
+        half_width = screen_width // 2
+        
+        if side == "left":
+            self.master.geometry(f"{half_width}x{screen_height}+0+0")
+        elif side == "right":
+            self.master.geometry(f"{half_width}x{screen_height}+{half_width}+0")
     
     def open_script_folder(self, event=None):
         """Open the folder containing the script in Windows Explorer"""
