@@ -20,6 +20,11 @@ while True:
 
 # make options for all buttons to appear or not and what defaults they have. maybe as file?
 
+# make corner more easy for resize. no resize on x?
+
+# make minimal size smaller
+
+
 # #=====================================
 # end fix
 # #=====================================
