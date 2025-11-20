@@ -24,6 +24,9 @@ while True:
 
 # make minimal size smaller
 
+# on resize too small it snaps larger
+
+# make when blue on hove it make the button icon white
 
 # #=====================================
 # end fix
