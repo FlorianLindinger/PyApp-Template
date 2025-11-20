@@ -454,8 +454,12 @@ class TkinterTerminal:
             self.tray_icon.hide()
             self.tray_icon = None
 
-    def get_resize_direction(self, x, y):
+    def get_resize_direction(self, event):
         """Determine which edge/corner is being hovered based on mouse position"""
+        # Get mouse position relative to root window
+        x = event.x_root - self.root.winfo_x()
+        y = event.y_root - self.root.winfo_y()
+        
         width = self.root.winfo_width()
         height = self.root.winfo_height()
         border = self.resize_border_width
@@ -487,7 +491,7 @@ class TkinterTerminal:
         if self.root.state() == "zoomed":
             return
         
-        direction = self.get_resize_direction(event.x, event.y)
+        direction = self.get_resize_direction(event)
         
         cursor_map = {
             "n": "sb_v_double_arrow",
@@ -511,7 +515,7 @@ class TkinterTerminal:
         if self.root.state() == "zoomed":
             return
         
-        direction = self.get_resize_direction(event.x, event.y)
+        direction = self.get_resize_direction(event)
         
         if direction:
             self._resize_direction = direction
