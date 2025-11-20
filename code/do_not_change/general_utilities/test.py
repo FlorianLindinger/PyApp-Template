@@ -30,6 +30,9 @@ while True:
 
 # prevent window from going too low to get back. apparently Windows makes it snap up
 
+# add color options
+
+# dragging away from max makes it scale instaed of snap to old size and drag
 
 # #=====================================
 # end fix
