@@ -545,8 +545,8 @@ class TkinterTerminal:
         new_y = self._resize_data["window_y"]
         
         # Minimum window size (reduced for more flexibility)
-        min_width = 250
-        min_height = 200
+        min_width = 150
+        min_height = 100
         
         direction = self._resize_direction
         
