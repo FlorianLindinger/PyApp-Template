@@ -650,9 +650,26 @@ class TkinterTerminal:
         self.output_text.tag_config("stdin", foreground=self.colors["stdin"])
         self.output_text.tag_config("stdout", foreground=self.colors["stdout"])
         
+        # Get the position before inserting
+        start_pos = self.output_text.index("end-1c")
+        
+        # Insert text with the content tag
         self.output_text.insert(tk.END, text, tag)
+        
+        # Get the position after inserting
+        end_pos = self.output_text.index("end-1c")
+        
         self.output_text.see(tk.END)
         self.output_text.config(state=tk.DISABLED)
+        
+        # Create a unique flash tag for this specific text to avoid interference
+        if not hasattr(self, '_flash_counter'):
+            self._flash_counter = 0
+        self._flash_counter += 1
+        unique_flash_tag = f"flash_{self._flash_counter}"
+        
+        # Start the gradual fade effect with unique tag
+        self.start_fade_effect(start_pos, end_pos, tag, unique_flash_tag)
 
         # Highlight on Print Logic
         if self.highlight_on_print and self.root.focus_displayof() is None:
@@ -661,6 +678,53 @@ class TkinterTerminal:
                  ctypes.windll.user32.FlashWindow(ctypes.windll.user32.GetParent(self.root.winfo_id()), True)
              except:
                  pass
+    
+    def start_fade_effect(self, start_pos, end_pos, original_tag, flash_tag):
+        """Start a gradual fade effect for newly printed text"""
+        # Define fade steps - progressively darker yellows fading to background
+        fade_colors = [
+            "#6b6b00",  # Bright yellow
+            "#5f5f00",  # 
+            "#535300",  # 
+            "#474700",  # 
+            "#3b3b00",  # 
+            "#2f2f00",  # 
+            "#252500",  # 
+            "#1f1f00",  # 
+            "#1a1a00",  # 
+            "#1e1e1e",  # Back to normal background
+        ]
+        
+        # Start the fade animation
+        self.fade_step(start_pos, end_pos, original_tag, fade_colors, 0, flash_tag)
+    
+    def fade_step(self, start_pos, end_pos, original_tag, colors, step, flash_tag):
+        """Perform one step of the fade animation"""
+        if step >= len(colors):
+            # Fade complete, remove the flash tag
+            try:
+                self.output_text.config(state=tk.NORMAL)
+                self.output_text.tag_remove(flash_tag, start_pos, end_pos)
+                self.output_text.config(state=tk.DISABLED)
+            except:
+                pass
+            return
+        
+        try:
+            self.output_text.config(state=tk.NORMAL)
+            
+            # Configure the unique flash tag with the current color
+            self.output_text.tag_config(flash_tag, background=colors[step])
+            
+            # Apply the flash tag to the text range
+            self.output_text.tag_add(flash_tag, start_pos, end_pos)
+            
+            self.output_text.config(state=tk.DISABLED)
+            
+            # Schedule the next fade step (500ms per step = 5 seconds total)
+            self.root.after(500, lambda: self.fade_step(start_pos, end_pos, original_tag, colors, step + 1, flash_tag))
+        except:
+            pass  # Ignore errors if text was deleted or widget destroyed
 
     def send_input(self, event):
         # if self.process and self.process.poll() is None: # Allow commands even if process is dead? Maybe.
