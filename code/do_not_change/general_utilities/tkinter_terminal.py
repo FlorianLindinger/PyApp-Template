@@ -226,7 +226,7 @@ class TkinterTerminal:
         self.show_command_printing = True
         
         # Resize state
-        self.resize_border_width = 5  # Width of the resize detection area
+        self.resize_border_width = 10  # Width of the resize detection area (increased for easier grabbing)
         self._resize_data = None
         self._resize_direction = None
         
@@ -463,17 +463,18 @@ class TkinterTerminal:
         width = self.root.winfo_width()
         height = self.root.winfo_height()
         border = self.resize_border_width
+        corner_size = 20  # Larger area for corners to make them easier to grab
         
-        # Check corners first (they take priority)
-        if x < border and y < border:
+        # Check corners first (they take priority and have larger detection area)
+        if x < corner_size and y < corner_size:
             return "nw"
-        elif x > width - border and y < border:
+        elif x > width - corner_size and y < corner_size:
             return "ne"
-        elif x < border and y > height - border:
+        elif x < corner_size and y > height - corner_size:
             return "sw"
-        elif x > width - border and y > height - border:
+        elif x > width - corner_size and y > height - corner_size:
             return "se"
-        # Check edges
+        # Check edges (smaller detection area)
         elif x < border:
             return "w"
         elif x > width - border:
