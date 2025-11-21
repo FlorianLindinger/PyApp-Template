@@ -34,6 +34,8 @@ Mention that paths have to be relative to work as portable. On other hand it wil
 important
 ===================================
 
+make dev_tools subfolder for icons and link to that in icons folder -> everythong independent and upgradeable
+
 check all shortcuts and links. check if needed. also batches
 check install packages form pyhton files
 check new activation start
