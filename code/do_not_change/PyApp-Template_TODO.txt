@@ -34,24 +34,22 @@ Mention that paths have to be relative to work as portable. On other hand it wil
 important
 ===================================
 
+
+
+change all to "Press enter to"
+
 do i have to mention that "install packages needed for fiels only searches in code?
 
-check all shortcuts and links. check if needed. also batches
-check install packages form pyhton files
-check new activation start
 need close of setting lnk? check
+
 check if fresh download works
-test with folder path with space. especially asbs path of shortcuts
-double chekc if text in non-user settings is still accurate
+test with folder path with space. 
 test portable of whole
 
-todo reset python.txt
 add placeholder batches
 
 update git topics and order
 Fix Release in git
-
-under pyproejct toml fix license-> make everything placeholder
 
 make shortcut generator wrok for any settings file in non-user settings path
 make it not genrate shrotcut for no settings availagle. mention no settings posible
@@ -59,9 +57,6 @@ make it not genrate shrotcut for no settings availagle. mention no settings posi
 make python exe alternative for magick as gneric batch with some contorl
 add a non-generoic batch. maybe give user some control
 how to bundle imagick or only that function at least 
-
-remove yaml related text if wriong
-fix  main_code and crash code mentioning yaml and settings text
 
 dont print installing packages if None
 print that it instally python for first exectiun. maybe less spam?
@@ -448,93 +443,3 @@ make all global variables CAPITALIZED
 replace all copy with robocopy
 
 ===================================
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
