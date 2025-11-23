@@ -42,6 +42,7 @@
 
 ## Work in Progress
 
+- Fancy terminal replacement based on tkinter for maximal availability
 - Template and boilerplate code for a GUI using PyQt5.
 - Many small improvements and feature ideas.
 
