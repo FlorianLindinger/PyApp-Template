@@ -34,6 +34,8 @@ Mention that paths have to be relative to work as portable. On other hand it wil
 important
 ===================================
 
+do i have to mention that "install packages needed for fiels only searches in code?
+
 check all shortcuts and links. check if needed. also batches
 check install packages form pyhton files
 check new activation start
