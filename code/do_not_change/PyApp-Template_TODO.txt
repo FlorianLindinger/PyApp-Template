@@ -34,9 +34,6 @@ Mention that paths have to be relative to work as portable. On other hand it wil
 important
 ===================================
 
-check all stuff outside do not change and fix all lnk outside such that one can at least start to convert stuff to new system without braking stuff outside. 
--> finalize settings.json,settings.py,non-user.settings,pyproejct.toml
-
 check all shortcuts and links. check if needed. also batches
 check install packages form pyhton files
 check new activation start
