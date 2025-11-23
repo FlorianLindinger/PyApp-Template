@@ -35,6 +35,7 @@ important
 ===================================
 
 check all stuff outside do not change and fix all lnk outside such that one can at least start to convert stuff to new system without braking stuff outside. 
+-> finalize settings.json,settings.py,non-user.settings,pyproejct.toml
 
 rename "USE TOOLS IN dev_tools TO MODIFY"
 make dev_tools subfolder for icons and link to that in icons folder -> everythong independent and upgradeable
