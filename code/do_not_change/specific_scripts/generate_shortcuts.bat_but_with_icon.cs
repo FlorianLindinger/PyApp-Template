@@ -1,5 +1,5 @@
 // compile with:
-// "%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe" /target:winexe /win32icon:..\icon_related\shortcut_generator.ico /out:generate_icons.bat_launcher_for_icon.exe generate_icons.bat_launcher_for_icon.cs
+// "%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe" /target:winexe /win32icon:..\icon_related\shortcut_generator.ico /out:generate_shortcuts.bat_but_with_icon.exe.exe generate_shortcuts.bat_but_with_icon.exe.cs
 
 using System;
 using System.Diagnostics;
