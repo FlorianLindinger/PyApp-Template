@@ -58,7 +58,7 @@ if "%python_code_path%"=="" (
 
 :: give default values if undefined
 if "%restart_main_code_on_crash%"=="" (
-	set "restart_main_code_on_crash=0"
+	set "restart_main_code_on_crash=false"
 )
 
 :: convert the path settings that are relative to settings file (at %settings_path%%) to absolute paths:
@@ -118,7 +118,7 @@ if %py_errorlevel% neq 0 (
 :: function to handle python crashes:
 ::::::::::::::::::::::::::::::::::::::::::::::
 :handle_python_crash
-if "%restart_main_code_on_crash%" EQU "0" (
+if "%restart_main_code_on_crash%"=="false" (
 	REM run after_python_crash_code.py 
 	if exist "%after_python_crash_code_path%" (
 		REM go to directory of python code and execute it and return to folder of this file
