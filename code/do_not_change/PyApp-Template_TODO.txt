@@ -5,6 +5,10 @@
 unrealated
 ===================================
 
+add upgrad pip to virtual env?
+
+deleted old python folder.   ->add where in portavlav python
+
 vscode ruff
 2025-11-12 14:51:26.911650000  INFO Registering workspace: c:\Users\agpup\Documents\Repositories
 2025-11-12 14:51:26.978416400  INFO Configuration file watcher successfully registered
@@ -34,7 +38,9 @@ Mention that paths have to be relative to work as portable. On other hand it wil
 important
 ===================================
 
+test if admin is ultiamtely needed and maybe enable install via zip for 3.11+ for no admin
 
+make settings link smart so you dont have to regenerate it. maybe dont make settings file a setting and find it in batches?
 
 change all to "Press enter to"
 
