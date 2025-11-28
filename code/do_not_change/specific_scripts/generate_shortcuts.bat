@@ -13,6 +13,7 @@
 set "settings_path=..\..\non-user_settings.ini"
 set "shortcut_creator_path=..\general_utilities\create_shortcut.bat"
 set "program_starter_path=start_program.bat"
+set "settings_opener_path=open_settings_file.bat"
 
 :: get current file path and remove trailing \
 set "current_file_path=%~dp0"
@@ -26,7 +27,7 @@ set "settings_path=%OUTPUT%"
 
 :: check if files exist
 if not exist "%settings_path%" (
-	echo: [Error] "%settings_path%" does not exist. Aborting. Press any key to exit.
+	echo [Error] "%settings_path%" does not exist. Aborting. Press any key to exit.
 	pause > nul
 	exit /b 1
 )
@@ -36,37 +37,37 @@ for /F "tokens=1,2 delims==" %%A IN ('findstr "^" "%settings_path%"') DO ( set "
 
 :: check if defined in settings_path
 if "%icon_path%"=="" (
-	echo: [Error] icon_path not defined in "%settings_path%". Aborting. Press any key to exit.
+	echo [Error] icon_path not defined in "%settings_path%". Aborting. Press any key to exit.
 	pause > nul
 	exit /b 2
 )
 if "%settings_icon_path%"=="" (
-	echo: [Error] settings_icon_path not defined in "%settings_path%". Aborting. Press any key to exit.
+	echo [Error] settings_icon_path not defined in "%settings_path%". Aborting. Press any key to exit.
 	pause > nul
 	exit /b 2
 )
 if "%stop_icon_path%"=="" (
-	echo: [Error] stop_icon_path not defined in "%settings_path%". Aborting. Press any key to exit.
+	echo [Error] stop_icon_path not defined in "%settings_path%". Aborting. Press any key to exit.
 	pause > nul
 	exit /b 2
 )
 if "%user_settings_path%"=="" (
-	echo: [Error] user_settings_path not defined in "%settings_path%". Aborting. Press any key to exit.
+	echo [Error] user_settings_path not defined in "%settings_path%". Aborting. Press any key to exit.
 	pause > nul
 	exit /b 2
 )
 if "%shortcut_destination_path%"=="" (
-	echo: [Error] shortcut_destination_path not defined in "%settings_path%". Aborting. Press any key to exit.
+	echo [Error] shortcut_destination_path not defined in "%settings_path%". Aborting. Press any key to exit.
 	pause > nul
 	exit /b 2
 )
 if "%log_path%"=="" (
-	echo: [Error] log_path not defined in "%settings_path%". Aborting. Press any key to exit.
+	echo [Error] log_path not defined in "%settings_path%". Aborting. Press any key to exit.
 	pause > nul
 	exit /b 2
 )
 if "%process_id_file_path%"=="" (
-	echo: [Error] process_id_file_path not defined in "%settings_path%". Aborting. Press any key to exit.
+	echo [Error] process_id_file_path not defined in "%settings_path%". Aborting. Press any key to exit.
 	pause > nul
 	exit /b 2
 )
@@ -92,22 +93,22 @@ cd /d "%current_file_path%"
 
 :: check if files exist
 if not exist "%icon_path%" (
-	echo: [Error] "%icon_path%" does not exist. Aborting. Press any key to exit.
+	echo [Error] "%icon_path%" does not exist. Aborting. Press any key to exit.
 	pause > nul
 	exit /b 3
 )
 if not exist "%settings_icon_path%" (
-	echo: [Error] "%settings_icon_path%" does not exist. Aborting. Press any key to exit.
+	echo [Error] "%settings_icon_path%" does not exist. Aborting. Press any key to exit.
 	pause > nul
 	exit /b 3
 )
 if not exist "%stop_icon_path%" (
-	echo: [Error] "%stop_icon_path%" does not exist. Aborting. Press any key to exit.
+	echo [Error] "%stop_icon_path%" does not exist. Aborting. Press any key to exit.
 	pause > nul
 	exit /b 3
 )
 if not exist "%user_settings_path%" (
-	echo: [Error] "%user_settings_path%" does not exist. Aborting. Press any key to exit.
+	echo [Error] "%user_settings_path%" does not exist. Aborting. Press any key to exit.
 	pause > nul
 	exit /b 3
 )
@@ -117,32 +118,32 @@ if not exist "%user_settings_path%" (
 :: ======================
 
 :: create shortcut for starting the program:
-call "%shortcut_creator_path%" "%shortcut_destination_path%\%start_name%.lnk" "%SystemRoot%\System32\cmd.exe" "/K %program_starter_path%" "%current_file_path%" "%icon_path%" "PyApp-Template"
+call "%shortcut_creator_path%" "%shortcut_destination_path%\%start_name%.lnk" "%SystemRoot%\System32\cmd.exe" "/K %program_starter_path%" "%current_file_path%" "%icon_path%" "%program_name%"
 :: create a shortcut for the settings file:
-call "%shortcut_creator_path%" "%shortcut_destination_path%\%settings_name%.lnk" "%SystemRoot%\System32\cmd.exe" "/K START ^"^" ^"%user_settings_path%^"" "%current_file_path%" "%settings_icon_path%" "PyApp-Template"
+call "%shortcut_creator_path%" "%shortcut_destination_path%\%settings_name%.lnk" "%SystemRoot%\System32\cmd.exe" "/K %settings_opener_path%" "%current_file_path%" "%settings_icon_path%" "%program_name%"
 :: creare shortcut for launcher without terminal and with output to log file:
-call "%shortcut_creator_path%" "%shortcut_destination_path%\%start_no_terminal_name%.lnk" "%SystemRoot%\System32\cmd.exe" "/K general_utilities\batch_file\run_batch_with_file_output_and_no_terminal.bat %program_starter_path% ^"%log_path%^" ^"%process_id_file_path%.pid^""  "%current_file_path%" "%icon_path%" "PyApp-Template"
+call "%shortcut_creator_path%" "%shortcut_destination_path%\%start_no_terminal_name%.lnk" "%SystemRoot%\System32\cmd.exe" "/K general_utilities\batch_file\run_batch_with_file_output_and_no_terminal.bat %program_starter_path% ^"%log_path%^" ^"%process_id_file_path%.pid^""  "%current_file_path%" "%icon_path%" "%program_name%"
 :: create shortcut for killing the running program:
-call "%shortcut_creator_path%" "%shortcut_destination_path%\%stop_no_terminal_name%.lnk" "%SystemRoot%\System32\cmd.exe" "/K general_utilities\kill_process_with_id.bat ^"%process_id_file_path%^"" "%current_file_path%" "%stop_icon_path%" "PyApp-Template"
+call "%shortcut_creator_path%" "%shortcut_destination_path%\%stop_no_terminal_name%.lnk" "%SystemRoot%\System32\cmd.exe" "/K general_utilities\kill_process_with_id.bat ^"%process_id_file_path%^"" "%current_file_path%" "%stop_icon_path%" "%program_name%"
 
 :: check if sucessful
 If not exist "%shortcut_destination_path%\%start_name%.lnk" (
-	echo: [Error] Failed to create shortcut. Press any key to exit.
+	echo [Error] Failed to create shortcut. Press any key to exit.
 	pause > nul
 	exit /b 2
 )
 If not exist "%shortcut_destination_path%\%settings_name%.lnk" (
-	echo: [Error] Failed to create shortcut. Press any key to exit.
+	echo [Error] Failed to create shortcut. Press any key to exit.
 	pause > nul
 	exit /b 2
 )
 If not exist "%shortcut_destination_path%\%start_no_terminal_name%.lnk" (
-	echo: [Error] Failed to create shortcut. Press any key to exit.
+	echo [Error] Failed to create shortcut. Press any key to exit.
 	pause > nul
 	exit /b 2
 )
 If not exist "%shortcut_destination_path%\%stop_no_terminal_name%.lnk" (
-	echo: [Error] Failed to create shortcut. Press any key to exit.
+	echo [Error] Failed to create shortcut. Press any key to exit.
 	pause > nul
 	exit /b 2
 )
