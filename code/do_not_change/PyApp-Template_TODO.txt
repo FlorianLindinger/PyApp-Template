@@ -38,6 +38,8 @@ Mention that paths have to be relative to work as portable. On other hand it wil
 important
 ===================================
 
+test if it works for 3.5 and update min in github text
+
 test if admin is ultiamtely needed and maybe enable install via zip for 3.11+ for no admin
 
 make settings link smart so you dont have to regenerate it. maybe dont make settings file a setting and find it in batches?
