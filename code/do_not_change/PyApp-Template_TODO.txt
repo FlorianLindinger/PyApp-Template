@@ -38,11 +38,17 @@ Mention that paths have to be relative to work as portable. On other hand it wil
 important
 ===================================
 
-test if it works for 3.5 and update min in github text
+check if i lost more when i asccidenitlly delete conversion of true/false to 1/0 in commit in create_portable_python
+
+change all shortcuts to links?
+
+mention 3.6+ and warn if chosen 3.5 bc wont work.
+
+add bakc Installing tools.msi
+
+test if it works for 3.6 and update min in github text
 
 test if admin is ultiamtely needed and maybe enable install via zip for 3.11+ for no admin
-
-make settings link smart so you dont have to regenerate it. maybe dont make settings file a setting and find it in batches?
 
 change all to "Press enter to"
 
