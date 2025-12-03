@@ -34,17 +34,17 @@ fix portable creatos batches actually not having args path for the batches they 
 Mention that paths have to be relative to work as portable. On other hand it will fail if abs input. one could want fixed pytthn and portable venv?
 + copy over changes
 
+how to deal with license for exe creators and git uploading?
+
 ===================================
 important
 ===================================
 
 check if i lost more when i asccidenitlly delete conversion of true/false to 1/0 in commit in create_portable_python
 
-change all shortcuts to links?
+change all shortcuts to links for more clear what happens and quick code inspection?
 
 mention 3.6+ and warn if chosen 3.5 bc wont work.
-
-add bakc Installing tools.msi
 
 test if it works for 3.6 and update min in github text
 
