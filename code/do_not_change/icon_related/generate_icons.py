@@ -1,0 +1,145 @@
+import sys
+
+from PIL import Image
+
+
+def create_icon(
+    image_path,
+    output_path,
+    icon_sizes=(256, 128, 64, 48, 32, 16),
+    background_color=(0, 0, 0, 0),  # transparent
+):
+    """
+    Convert an image into a multi-resolution .ico file with padding
+    to preserve aspect ratio (no distortion).
+
+    background_color=(0, 0, 0, 0) means transparent background
+    """
+
+    src = Image.open(image_path).convert("RGBA")
+    src_w, src_h = src.size
+
+    layers = []
+
+    for size in icon_sizes:
+        # scale factor: fit longest side into "size"
+        scale = size / max(src_w, src_h)
+        new_w = round(src_w * scale)
+        new_h = round(src_h * scale)
+
+        resized = src.resize((new_w, new_h), Image.Resampling.LANCZOS)
+
+        # create square canvas and center the resized image
+        canvas = Image.new("RGBA", (size, size), background_color)
+        offset_x = (size - new_w) // 2
+        offset_y = (size - new_h) // 2
+        canvas.paste(resized, (offset_x, offset_y), resized)
+
+        layers.append(canvas)
+
+    # save as multi-size ICO
+    layers[0].save(
+        output_path,
+        format="ICO",
+        sizes=[(s, s) for s in icon_sizes],
+        append_images=layers[1:],
+    )
+
+
+def create_composite_icon(
+    base_path,
+    overlay_path,
+    output_path,
+    overlay_scale_factor=0.6,
+    icon_sizes=(256, 128, 64, 48, 32, 16),
+    background_color=(0, 0, 0, 0),  # transparent padding
+):
+    """
+    Create a composite icon:
+    - Place overlay on the bottom-right of base.
+    - Preserve aspect ratio.
+    - Pad to square for each icon size (no distortion).
+
+    background_color=(0, 0, 0, 0) means transparent background
+    """
+
+    # Load images
+    base = Image.open(base_path).convert("RGBA")
+    overlay = Image.open(overlay_path).convert("RGBA")
+
+    base_w, base_h = base.size
+    base_max = max(base_w, base_h)
+
+    # Scale overlay relative to base's max dimension
+    overlay_w, overlay_h = overlay.size
+    overlay_max = max(overlay_w, overlay_h)
+
+    scale = base_max / overlay_max * overlay_scale_factor
+    new_ov_w = round(overlay_w * scale)
+    new_ov_h = round(overlay_h * scale)
+
+    overlay = overlay.resize((new_ov_w, new_ov_h), Image.Resampling.LANCZOS)
+
+    # Position overlay: bottom-right (southeast)
+    pos_x = base_w - new_ov_w
+    pos_y = base_h - new_ov_h
+
+    # Composite base + overlay
+    composite = base.copy()
+    composite.paste(overlay, (pos_x, pos_y), overlay)
+
+    comp_w, comp_h = composite.size
+    comp_max = max(comp_w, comp_h)
+
+    layers = []
+
+    # For each icon size: scale with aspect, then pad to square
+    for size in icon_sizes:
+        scale = size / comp_max
+        new_w = round(comp_w * scale)
+        new_h = round(comp_h * scale)
+
+        resized = composite.resize((new_w, new_h), Image.Resampling.LANCZOS)
+
+        canvas = Image.new("RGBA", (size, size), background_color)
+        offset_x = (size - new_w) // 2
+        offset_y = (size - new_h) // 2
+        canvas.paste(resized, (offset_x, offset_y), resized)
+
+        layers.append(canvas)
+
+    # Save multi-size ICO
+    layers[0].save(
+        output_path,
+        format="ICO",
+        sizes=[(s, s) for s in icon_sizes],
+        append_images=layers[1:],
+    )
+
+
+if __name__ == "__main__":
+    if len(sys.argv) > 1:
+        overlay_scale_factor = float(sys.argv[1])
+    else:
+        overlay_scale_factor = 0.6
+
+    # Create the standard icon
+    try:
+        create_icon("icon.png", "icon.ico")
+        print("Generated: icon.ico")
+    except Exception as e:
+        print(f"Error creating icon.ico: {e}")
+
+    # Create the composite icons
+    # The overlay will scale to fit the bottom-right corner without squishing
+    try:
+        create_composite_icon("icon.png", "settings.png", "settings.ico", overlay_scale_factor)
+        print("Generated: settings.ico")
+    except Exception as e:
+        print(f"Error creating settings.ico: {e}")
+
+    try:
+        create_composite_icon("icon.png", "stop.png", "stop.ico", overlay_scale_factor)
+        print("Generated: stop.ico")
+    except Exception as e:
+        print(f"Error creating stop.ico: {e}")
