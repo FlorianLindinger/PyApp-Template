@@ -1,12 +1,12 @@
-# Composite MIT License
+# Composite License
 
-This folder and its contents are **governed by three separate MIT Licenses**, as described in the sections below.
+This folder and its contents are **governed by separate Licenses**, as described in the sections below.
 
 ---
 
 ## Section 1: Main Files (MIT License)
 
-All files in this folder, **except for files in the folders described in Sections 2 and 3**, are governed by the following license:
+All files in this folder, **except for files in the folders described in the Sections below**, are governed by the following license:
 
 ```
 MIT License
@@ -34,14 +34,26 @@ THE SOFTWARE.
 
 ---
 
-## Section 2: tomli Package (MIT License)
+## Section 2: *tomli* Package (MIT License)
 
-The folder `read_toml/tomli` contains parts of the Python package tomli (by Taneli Hukkinen) and is governed under the MIT license described in the `LICENSE` file in that folder.
+The folder `read_toml/tomli` contains parts of the Python package *tomli* (by Taneli Hukkinen) and is governed by the MIT license described in the `LICENSE` file in that folder.
 
 ---
 
-## Section 3: ruamel.yaml Package (MIT License)
+## Section 3: *ruamel.yaml* Package (MIT License)
 
-The folder `read_toml/ruamel` contains parts of the Python package ruamel.yaml (by Anthon van der Neut, Ruamel bvba) and is governed under the MIT license described in the `yaml/LICENSE` file in that folder.
+The folder `read_toml/ruamel` contains parts of the Python package *ruamel.yaml* (by Anthon van der Neut, Ruamel bvba) and is governed by the MIT license described in the `yaml/LICENSE` file in that folder.
+
+---
+
+## Section 4: *change_icon.py.exe* Script (MIT + PSF License)
+
+The executable `change_icon.py.exe` in the folder `general_utilities\window_icon_changer` is a compiled standalone Python script that therefore contains parts from Python and third-party package(s). It is governed by the license file present in that folder that is a composite of MIT and PSF licenses.
+
+---
+
+## Section 5: `*generate_icons.py.exe* Script (MIT + PSF + MIT-CMU License)
+
+The executable `generate_icons.py.exe` in the folder `icon_related/generate_icons` is a compiled standalone Python script that therefore contains parts from Python and third-party package(s). It is governed by the license file present in that folder that is a composite of MIT, PSF, and MIT-CMU licenses.
 
 ---
