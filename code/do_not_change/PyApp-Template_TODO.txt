@@ -42,50 +42,31 @@ important
 
 add good settings for pyrefly for pyproject.toml
 
-mention what the effective license allows and difference to MIT
-
-add licenses to 2 exes to license.md in do_not_change
-
-check if i lost more when i asccidenitlly delete conversion of true/false to 1/0 in commit in create_portable_python
-
 change all shortcuts to links for more clear what happens and quick code inspection?
-
-mention 3.6+ and warn if chosen 3.5 bc wont work.
-
-test if it works for 3.6 and update min in github text
-
-test if admin is ultiamtely needed and maybe enable install via zip for 3.11+ for no admin
-
-change all to "Press enter to"
-
-do i have to mention that "install packages needed for fiels only searches in code?
-
-need close of setting lnk? check
-
-check if fresh download works
-test with folder path with space. 
-test portable of whole
 
 add placeholder batches
 
 update git topics and order
 Fix Release in git
 
-make shortcut generator wrok for any settings file in non-user settings path
-make it not genrate shrotcut for no settings availagle. mention no settings posible
-
-make python exe alternative for magick as gneric batch with some contorl
-add a non-generoic batch. maybe give user some control
-how to bundle imagick or only that function at least 
-
-dont print installing packages if None
-print that it instally python for first exectiun. maybe less spam?
-maybe print ===========================
-check
 
 ===================================
 checks related
 ===================================
+
+need close of setting lnk? check
+
+
+test if it works for 3.6 and update min in github text
+
+test if admin is ultiamtely needed and maybe enable install via zip for 3.11+ for no admin
+
+
+check if i lost more when i asccidenitlly delete conversion of true/false to 1/0 in commit in create_portable_python
+
+check if fresh download works
+test with folder path with space. 
+test portable of whole
 
 fix that every CD and everything resets ERRORLEVEL->check
 
@@ -375,6 +356,12 @@ Check Git remote for updates and prompt user to pull.
 readme related  and documentation related
 ===================================
 
+mention 3.6+ and warn if chosen 3.5 bc wont work.
+
+
+do i have to mention that "install packages needed for fiels only searches in code?
+
+
 explain limitation to name: has to be allowed in names i guess. check if shortucts gernrator breaks: not allowed in names \ / : * ? " < > |
 
 add doctrings to batches
@@ -427,11 +414,24 @@ fix color in python part of terminal
 license related
 ===================================
 
+mention what the effective license allows and difference to MIT
+
+
 add explanation for pyq5 license
 
 ===================================
-small improvements
+small improvements related
 ===================================
+
+make it not genrate shrotcut for no settings availagle. mention no settings posible
+
+
+change all to "Press enter to" for safety
+
+
+dont print installing packages if None
+print that it instally python for first exectiun. maybe less spam?
+maybe print ===========================
 
 make all rem to REM
 
