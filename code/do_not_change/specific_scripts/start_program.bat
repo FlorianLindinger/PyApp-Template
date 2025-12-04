@@ -16,7 +16,7 @@
 :: define local variables (with relative paths being relative to this file)
 set "settings_path=..\..\non-user_settings.ini"
 set "environment_activator_path=create_and_or_activate_python_env.bat"
-set "icon_changer_path=..\general_utilities\change_icon.exe"
+set "icon_changer_path=..\general_utilities\window_icon_changer\change_icon.py.exe"
 
 :: move to folder of this file (needed for relative paths).
 :: current_file_path variable needed as workaround for nieche Windows bug where this file gets called with quotation marks:
