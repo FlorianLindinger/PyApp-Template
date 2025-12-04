@@ -40,6 +40,8 @@ how to deal with license for exe creators and git uploading?
 important
 ===================================
 
+add good settings for pyrefly for pyproject.toml
+
 mention what the effective license allows and difference to MIT
 
 add licenses to 2 exes to license.md in do_not_change
