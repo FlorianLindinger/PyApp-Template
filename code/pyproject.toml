@@ -10,14 +10,15 @@ readme = "../README.md"
 license = { file = "../LICENSE.md" }
 
 [project.optional-dependencies]
-dev = ["ruff"]
+dev = ["ruff","pyrefly"]
 
-# ===========================
+# =======================================================
 [tool.ruff] #Ruff (python linter/formatter) configuration
-# ===========================
-include = ["*.py", "*.pyi", "*.pyw", "*.ipynb"]                                  # files to check/correct:
-exclude = [".git", ".mypy_cache", ".ruff_cache", "__pycache__", "build", "dist"]
-line-length = 120                                                                # max line length before wrapping
+# =======================================================
+
+include = ["*.py", "*.pyi", "*.pyw", "*.ipynb"] # files to check/correct
+exclude = [".git", ".mypy_cache", ".ruff_cache", "__pycache__", "*.build", "*.dist"] # files to exclude from check/correct
+line-length = 120  # max line length before wrapping
 [tool.ruff.lint]
 # Rule families to enable:
 select = [
@@ -28,7 +29,6 @@ select = [
   "BLE",   # no bare "except:" & too broad Exception
   "C4",    # cleaner comprehensions & generators
   "COM",   # comma placement
-  "D",     # require docstrings & docstrings style
   "DTZ",   # timezone-naive datetime usage
   "E",     # major style issues and syntax correctness
   "EM",    # uninformative/inconsistent error messages
@@ -42,7 +42,6 @@ select = [
   "PERF",  # performance issues
   "PIE",   # small correctness & simplification checks
   "PL",    # pylint logic/safety rules
-  # "PT",    # good patterns in Pytest tests
   "Q",   # Enforce single/double quote style 
   "RET", # Ensures consistent return patterns in functions
   "RSE", # correct raise syntax
@@ -58,6 +57,10 @@ select = [
   "UP",  # Updates syntax for newer Python versions
   "W",   # minor style issues
   "YTT", # Catch obsolete sys.version comparisons & old idioms
+
+# Temporarily disable the following rule families:
+# "D",    # docstring rules
+# "PT",   # good patterns in Pytest tests
 ]
 # Ignore specific rules:
 ignore = [
@@ -114,9 +117,8 @@ ignore = [
   "TRY301",  # allow for not encapsulated raise in try-except
   "UP009",   # allow python file encoding declaration
   "UP028",   # don't replace for+yield with "yield from"
-
-
-  # temporarily ignore the following rules:
-  "D", # docstring rules
 ]
-# ===========================
+# ================================================
+[tool.pyrefly] # language server and type checker
+# ================================================
+
