@@ -26,9 +26,9 @@ All files in this repository, **except for files in the folders described in Sec
 
 ---
 
-## Section 3: Original Template - License (Combined License)
+## Section 3: Original Template - License (Composite License)
 
-This App is based on the template from https://github.com/FlorianLindinger/PyApp-Template by Florian Lindinger. This backend code is located in the **`code/do_not_change`** folder and falls under the combined license described in the `LICENSE.md` file within that folder.
+This App is based on the template from https://github.com/FlorianLindinger/PyApp-Template by Florian Lindinger. This backend code is located in the **`code/do_not_change`** folder and falls under the composite license described in the `LICENSE.md` file within that folder.
 
 ---
 
