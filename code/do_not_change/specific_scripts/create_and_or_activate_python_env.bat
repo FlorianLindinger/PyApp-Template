@@ -101,7 +101,7 @@ if not exist "%python_exe_path%" (
 	echo ===========================
 	echo.
 	REM install python: "0" in next line means no installation of Python docs:
-    call "%portable_python_installer_path%" "%python_version%" "%python_folder_folder_path%" "%install_tkinter%" "%install_tests%" %install_tools%" "0"
+    call "%portable_python_installer_path%" "%python_version%" "%python_folder_folder_path%" "%install_tkinter%" "%install_tests%" "%install_tools%" "0"
 	if "!ERRORLEVEL!" neq "0" ( exit 9 ) 
 	REM above: failed to install python. Error print and wait already in call
 	echo.
