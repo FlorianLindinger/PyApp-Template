@@ -101,9 +101,12 @@ if not exist "%python_exe_path%" (
 	echo ===========================
 	echo.
 	REM install python: "0" in next line means no installation of Python docs:
-    call "%portable_python_installer_path%" "%python_version%" "%python_folder_folder_path%" "%install_tkinter%" "%install_tests%" "%install_tools%" "0"
-	if "!ERRORLEVEL!" neq "0" ( exit 9 ) 
-	REM above: failed to install python. Error print and wait already in call
+   call "%portable_python_installer_path%" "%python_version%" "%python_folder_folder_path%" "%install_tkinter%" "%install_tests%" "%install_tools%" "0"
+   if "!ERRORLEVEL!" neq "0" ( 
+		echo [Error 9] Failed to install Python. Aborting. Press any key to exit.
+		pause > nul
+		exit 9 
+   ) 
 	echo.
 	echo =============================================
 	echo ==== Creating Virtual Python Environment ====
@@ -111,39 +114,47 @@ if not exist "%python_exe_path%" (
 	echo.
 	REM install virtual env:
 	call "%portable_venv_creator_path%" "%python_folder_folder_path%" "%python_folder_path%"
-    if "!ERRORLEVEL!" neq "0" ( exit 10 ) 
-	REM above: failed to install venv. Error print and wait already in call
+   if "!ERRORLEVEL!" neq "0" ( 
+		echo [Error 10] Failed to create virtual Python environment. Aborting. Press any key to exit.
+		pause > nul
+		exit 10 
+   ) 
+	echo.
+	echo =============================================
 	REM activate env:
-    call "%env_activator_path%"
+   call "%env_activator_path%"
 	REM install packages:
-    if not exist "%default_packages_list%" ( 
+   if not exist "%default_packages_list%" ( 
 		REM python packages list not existing case
-        call :make_absolute_path_if_relative "%default_packages_list%"
+      call :make_absolute_path_if_relative "%default_packages_list%"
 		set "default_packages_list=!OUTPUT!"
-        echo.
-	    echo [Warning] List of default Python packages ("!default_packages_list!"^) not found. Skipping installation.
+      echo.
+	   echo [Warning] List of default Python packages ("!default_packages_list!"^) not found. Skipping installation.
 	) else ( 
 		REM python packages list existing case
-    	echo.
-    	echo [Info] Installing packages:
-    	echo.
-    	python -m pip install -r "%default_packages_list%" --disable-pip-version-check --upgrade --no-cache-dir 
-    	echo.
-    	echo [Info] Finished installing packages
+      echo.
+      echo [Info] Installing packages:
+      echo.
+		REM can't use pip directly here because pip is implemented in portable venv as batch and does not return (alternatively works if called with "call"):
+      python -m pip install -r "%default_packages_list%" --disable-pip-version-check --upgrade --no-cache-dir 
+      echo.
+      echo [Info] Finished installing packages
 	)
 ) else ( 
 	REM python existing case
 	REM check python version matches setting:
 	call "%python_version_checker_path%" "%python_version%" "%python_exe_path%"
-	if "!ERRORLEVEL!" neq "0" ( exit 11 ) 
-	REM above: failed to determine python version. Error print and wait already in call
+	if "!ERRORLEVEL!" neq "0" ( 
+		echo [Error 11] Failed to determine Python version. Aborting. Press any key to exit.
+		pause > nul
+		exit 11 
+	) 
 	if "!OUTPUT!"=="1" ( 
 	   REM python version matching case
 	   if exist "%env_activator_path%" ( 
-		    REM env existing case
-            REM activate env:
-            call "%env_activator_path%"
-			exit /b 0
+		   REM env existing case
+         REM activate env and exit:
+         goto :success_exit
 	   ) else ( 
 		    REM env not existing case
 			echo.
@@ -153,25 +164,36 @@ if not exist "%python_exe_path%" (
 			echo.
         	REM install virtual env:
         	call "%portable_venv_creator_path%" "%python_folder_folder_path%" "%python_folder_path%"
-            if "!ERRORLEVEL!" neq "0" ( exit 12 ) 
-			REM above: failed to install venv. Error print and wait already in call
-        	REM activate env:
-            call "%env_activator_path%"
-        	REM install packages:
-            if not exist "%default_packages_list%" ( 
+            if "!ERRORLEVEL!" neq "0" ( 
+				echo [Error 12] Failed to create virtual Python environment. Aborting. Press any key to exit.
+				pause > nul
+				exit 12 
+			) 
+        	if not exist "%env_activator_path%" ( 
+				REM env not existing case
+				echo.
+				echo [Error 13] Virtual environment activator not found at "%env_activator_path%". Aborting. Press any key to exit.
+				pause > nul
+				exit 13
+	      )
+			REM activate env:
+         call "%env_activator_path%"
+			REM install packages:
+         if not exist "%default_packages_list%" ( 
 				REM python packages list not existing case
-                call :make_absolute_path_if_relative "%default_packages_list%"
+            call :make_absolute_path_if_relative "%default_packages_list%"
         		set "default_packages_list=!OUTPUT!"
-                echo.
-        	    echo [Warning] List of default Python packages ("!default_packages_list!!"^) not found. Skipping installation.
+            echo.
+        	   echo [Warning] List of default Python packages ("!default_packages_list!!"^) not found. Skipping installation.
         	) else ( 
 				REM python packages list existing case
-            	echo.
-            	echo [Info] Installing packages:
-            	echo.
-            	python -m pip install -r "%default_packages_list%" --disable-pip-version-check --upgrade --no-cache-dir 
-            	echo.
-            	echo [Info] Finished installing packages
+            echo.
+            echo [Info] Installing packages:
+            echo.
+				REM can't use pip directly here because pip is implemented in portable venv as batch and does not return (alternatively works if called with "call"):
+            python -m pip install -r "%default_packages_list%" --disable-pip-version-check --upgrade --no-cache-dir 
+            echo.
+            echo [Info] Finished installing packages
         	)
 	   )  
 	   REM above: end of env not existing case
@@ -179,28 +201,33 @@ if not exist "%python_exe_path%" (
 	   REM python version not matching case
 	   if exist "%env_activator_path%" ( 
 		    REM env existing case
-	        REM ask user if he wants to recreate python and venv with current packages
-            echo.
-            echo [Warning] Installed Python version is not compatible with the version specified in "%settings_path%" (%python_version%^).
+          echo.
+          echo [Warning] Installed Python version is not compatible with the version specified in "%settings_path%" (%python_version%^).
 		    echo Do you want to locally for this program reinstall Python + virtual environment + current packages OR stay with current setup?
 		    call :prompt_user
             if "!OUTPUT!"=="1" ( 
 				REM user: yes case
-			    REM activate to get current packages:
-                call "%env_activator_path%"
-                REM get current packages:
-                call "%requirements_generator_path%" "%tmp_txt_path%"
-			    if "!ERRORLEVEL!" neq "0" ( exit 13 ) 
-				REM above: failed to generate package list. Error print and wait already in call
-            	echo.
+			   REM activate to get current packages:
+            call "%env_activator_path%"
+            REM get current packages:
+            call "%requirements_generator_path%" "%tmp_txt_path%"
+			   if "!ERRORLEVEL!" neq "0" ( 
+					echo [Error 13] Failed to generate current packages list. Aborting. Press any key to exit.
+					pause > nul
+					exit 13 
+				) 
+            echo.
 				echo =============================
 				echo ==== Reinstalling Python ====
 				echo =============================
 				echo.
 				REM reinstall python:
-                call "%portable_python_installer_path%" "%python_version%" "%python_folder_folder_path%" "%install_tkinter%" "%install_tests%" "0"
-			    if "!ERRORLEVEL!" neq "0" ( exit 14 ) 
-				REM above: failed to reinstall python. Error print and wait already in call
+            call "%portable_python_installer_path%" "%python_version%" "%python_folder_folder_path%" "%install_tkinter%" "%install_tests%" "0"
+			   if "!ERRORLEVEL!" neq "0" ( 
+					echo [Error 14] Failed to reinstall Python. Aborting. Press any key to exit.
+					pause > nul
+					exit 14 
+				) 
 			    echo.
 				echo ===============================================
 				echo ==== Recreating Virtual Python Environment ====
@@ -208,22 +235,26 @@ if not exist "%python_exe_path%" (
 				echo.
 				REM reinstall virtual env:
 			    call "%portable_venv_creator_path%" "%python_folder_folder_path%" "%python_folder_path%"
-                if "!ERRORLEVEL!" neq "0" ( exit 15 ) 
-				REM above: failed to reinstall venv. Error print and wait already in call
+             if "!ERRORLEVEL!" neq "0" ( 
+					echo [Error 15] Failed to reinstall virtual environment. Aborting. Press any key to exit.
+					pause > nul
+					exit 15 
+				) 
 			    REM activate to reinstall packages:
                 call "%env_activator_path%"
 			    REM reinstall packages:
             	echo.
             	echo [Info] Installing packages:
             	echo.
+					REM can't use pip directly here because pip is implemented in portable venv as batch and does not return (alternatively works if called with "call"):
             	python -m pip install -r "%tmp_txt_path%" --disable-pip-version-check --upgrade --no-cache-dir 
 				del "%tmp_txt_path%" >nul 2>&1
             	echo.
             	echo [Info] Finished installing packages
 		    ) else (  
 				REM user: no case
-			    REM activate:
-                call "%env_activator_path%"
+			   REM activate:
+            call "%env_activator_path%"
 		    )
 	   ) else ( 
 		REM env not existing case. User does not get asked for python reinstall since either way no venv lost
@@ -234,8 +265,11 @@ if not exist "%python_exe_path%" (
 			echo.
 			REM reinstall python:
             call "%portable_python_installer_path%" "%python_version%" "%python_folder_folder_path%" "%install_tkinter%" "%install_tests%" "0"
-        	if "!ERRORLEVEL!" neq "0" ( exit 16 ) 
-			REM above: failed to install python. Error print and wait already in call
+            if "!ERRORLEVEL!" neq "0" ( 
+				   echo [Error 16] Failed to reinstall Python. Aborting. Press any key to exit.
+				   pause > nul
+				   exit 16 
+				) 
         	echo.
 			echo =============================================
 			echo ==== Creating Virtual Python Environment ====
@@ -243,8 +277,11 @@ if not exist "%python_exe_path%" (
 			echo.
 			REM install virtual env:
         	call "%portable_venv_creator_path%" "%python_folder_folder_path%" "%python_folder_path%"
-            if "!ERRORLEVEL!" neq "0" ( exit 17 )  
-			REM above: failed to install venv. Error print and wait already in call
+         if "!ERRORLEVEL!" neq "0" ( 
+				echo [Error 17] Failed to install virtual environment. Aborting. Press any key to exit.
+				pause > nul
+				exit 17 
+			)  
         	REM activate env:
             call "%env_activator_path%"
         	REM install packages:
@@ -261,19 +298,21 @@ if not exist "%python_exe_path%" (
 					echo.
 					echo [Info] Installing packages:
 					echo.
+					REM can't use pip directly here because pip is implemented in portable venv as batch and does not return (alternatively works if called with "call"):
 					python -m pip install -r "%default_packages_list%" --disable-pip-version-check --upgrade --no-cache-dir 
 					echo.
 					echo [Info] Finished installing packages
 				)
-        	)
+          )
 	    ) & REM end of env not existing case
-    ) & REM end of python version not matching case
-	echo.
-	echo =============================================
-	echo.
+   ) & REM end of python version not matching case
 ) & REM end of python existing case
 
 :: exit
+goto :success_exit
+
+:success_exit
+endlocal & call "%env_activator_path%"
 exit /b 0
 
 :: ====================
@@ -293,5 +332,4 @@ exit /b 0
 	    set "OUTPUT=%~f1"
     )
 goto :EOF
-:: =================================================
 :: =================================================
