@@ -1,61 +1,89 @@
-@REM ########################
-@REM --- Code Description ---
-@REM ########################
+:: ========================
+:: --- Code Description ---
+:: ========================
 
-@REM #########################
-@REM --- Setup & Variables ---
-@REM #########################
+:: This batch file installs packages from a list of packages provided as an argument with "pip install -r".
 
-@REM turn off printing of commands:
-@ECHO OFF
 
-@REM make this code local so no variables of a potential calling program are changed:
-SETLOCAL
+:: ====================================
+:: --- Setup, Variables, and Checks ---
+:: ====================================
 
-@REM define packages_list_path as first argument when calling this file (requirements.txt if not given):
+:: turn off printing of commands &  make variables local & enable needed features:
+@echo off & setlocal EnableDelayedExpansion
+
+:: define local variables (with relative paths being relative to this file)
+set "environment_activator_path=..\create_and_or_activate_python_env.bat"
+
+:: get current file path for relative path variables:
+set "current_file_path=%~dp0"
+
+:: handle args
 SET "packages_list_path=%~1"
 IF "%packages_list_path%"=="" (
-	SET "packages_list_path=requirements.txt"
+	echo [Error 1] No packages list path provided as first argument. Aborting. Press any key to exit.
+	pause > nul
+	exit 1
 )
-
-@REM ######################
-@REM --- Code Execution ---
-@REM ######################
-
-@REM make packages_list_path to absolute path:
+:: make packages_list_path to absolute path:
 CALL :make_absolute_path_if_relative "%packages_list_path%"
 SET "packages_list_path=%OUTPUT%"
 
-@REM install packages from file or warn if it does not exist and abort:
-IF EXIST "%packages_list_path%" (
-	pip install -r "%packages_list_path%" --disable-pip-version-check
-) ELSE (
-	ECHO: Error: "%packages_list_path%" does not exist. Program aborted: Press any key to exit
-	PAUSE >NUL 
-	EXIT
+:: check if files exist
+if NOT exist "%packages_list_path%" (
+	echo [Error 2] "%packages_list_path%" file does not exist. Aborting. Press any key to exit.
+	pause > nul
+	exit 2
 )
 
-@REM ####################
-@REM --- Closing-Code ---
-@REM ####################
-
-@REM pause if not called by other script with any argument:
-IF "%~1"=="" (
-	ECHO: Press any key to exit
-	PAUSE >NUL 
+:: goto folder of this file:
+pushd "%current_file_path%"
+:: check if environment activator exists:
+if NOT exist "%environment_activator_path%" (
+	echo [Error 3] "%environment_activator_path%" file does not exist. Aborting. Press any key to exit.
+	pause > nul
+	exit 3
 )
+:: activate or create & activate virtual Python environment:
+call "%environment_activator_path%"
+if "!ERRORLEVEL!" neq "0" ( 
+	echo [Error 4] Failed to activate or create and/or activate virtual Python environment with error code !ERRORLEVEL!. Aborting. Press any key to exit.
+	pause > nul
+	exit 4 
+)
+:: install packages from file or warn if it does not exist and abort:
+REM can't use pip directly here because pip is implemented in portable venv as batch and does not return (alternatively works if called with "call"):
+python -m pip install -r "%packages_list_path%"  --upgrade --disable-pip-version-check --no-cache-dir 
+if "!ERRORLEVEL!" neq "0" ( 
+	echo [Error 5] Failed to install packages from file. Press any key to exit.
+	popd
+	pause > nul
+	exit 5 
+)
+:: return to original folder:
+popd
 
-@REM exit program without closing a potential calling program
-EXIT /B 
+:: exit program and close calling program
+echo.
+echo Installation completed if no errors above. Press any key to exit.
+pause > nul
+exit 0
 
-@REM ############################
-@REM --- Function Definitions ---
-@REM ############################
+:: ====================
+:: ==== Functions: ====
+:: ====================
 
-@REM -------------------------------------------------
-@REM function that makes relative path (relative to current working directory) to absolute if not already:
-@REM -------------------------------------------------
+::::::::::::::::::::::::::::::::::::::::::::::::
+:: function that makes relative path (relative to current working directory) to :: absolute if not already. Works for empty path (relative) path:
+:: Usage:
+::    call :make_absolute_path_if_relative "%some_path%"
+::    set "abs_path=%output%"
+::::::::::::::::::::::::::::::::::::::::::::::::
 :make_absolute_path_if_relative
-	SET "OUTPUT=%~f1"
-	GOTO :EOF
-@REM -------------------------------------------------
+    if "%~1"=="" (
+        set "OUTPUT=%cd%"
+    ) else (
+	    set "OUTPUT=%~f1"
+    )
+goto :EOF
+:: =================================================
