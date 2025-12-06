@@ -95,6 +95,11 @@ start "" /min "%icon_changer_path%" "%program_name%" "%icon_path%"
 
 :: activate or create & activate virtual Python environment
 call "%environment_activator_path%"
+if "!ERRORLEVEL!" neq "0" ( 
+	echo [Error 3] Failed to activate or create and/or activate virtual Python environment with errorlevel "!ERRORLEVEL!". Aborting. Press any key to exit.
+	pause > nul 
+	exit 3 
+)
 
 :: go to directory of main python code and execute it and return to folder of this file. Faulthandler catches python interpreter crash:
 cd /d "%python_code_dir%"
@@ -144,12 +149,7 @@ if "%py_errorlevel%" neq "0" (
 ) else ( 
 	exit 0 
 )
-
-
-
 :: =================================================
-:: =================================================
-
 
 ::::::::::::::::::::::::::::::::::::::::::::::::
 :: function that makes relative path (relative to current working directory) to :: absolute if not already. Works for empty path (relative) path:
@@ -165,8 +165,6 @@ if "%py_errorlevel%" neq "0" (
     )
 goto :EOF
 :: =================================================
-:: =================================================
-
 
 ::::::::::::::::::::::::::::::::::::::::::::::::
 :: function that prompts user with "Enter y/n for Yes/No" and sets OUTPUT=1 for y and OUTPUT=0 for n.
@@ -179,5 +177,4 @@ goto :EOF
 		set "OUTPUT=0"
 	)
 GOTO :EOF
-:: =================================================
 :: =================================================
