@@ -46,11 +46,6 @@ if NOT exist "%environment_activator_path%" (
 )
 :: activate or create & activate virtual Python environment:
 call "%environment_activator_path%"
-if "!ERRORLEVEL!" neq "0" ( 
-	echo [Error 4] Failed to activate or create and/or activate virtual Python environment with error code !ERRORLEVEL!. Aborting. Press any key to exit.
-	pause > nul
-	exit 4 
-)
 :: install packages from file or warn if it does not exist and abort:
 REM can't use pip directly here because pip is implemented in portable venv as batch and does not return (alternatively works if called with "call"):
 python -m pip install -r "%packages_list_path%"  --upgrade --disable-pip-version-check --no-cache-dir 
