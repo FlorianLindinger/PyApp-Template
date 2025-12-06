@@ -95,11 +95,6 @@ start "" /min "%icon_changer_path%" "%program_name%" "%icon_path%"
 
 :: activate or create & activate virtual Python environment
 call "%environment_activator_path%"
-if "!ERRORLEVEL!" neq "0" ( 
-	echo [Error 3] Failed to activate or create and/or activate virtual Python environment with errorlevel "!ERRORLEVEL!". Aborting. Press any key to exit.
-	pause > nul 
-	exit 3 
-)
 
 :: go to directory of main python code and execute it and return to folder of this file. Faulthandler catches python interpreter crash:
 cd /d "%python_code_dir%"
