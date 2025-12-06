@@ -40,15 +40,16 @@ how to deal with license for exe creators and git uploading?
 important
 ===================================
 
-add good settings for pyrefly for pyproject.toml
+make acitabvator batch handle all its own errors
 
-change all shortcuts to links for more clear what happens and quick code inspection?
+add good settings for pyrefly for pyproject.toml
 
 add placeholder batches
 
 update git topics and order
 Fix Release in git
 
+print script name and path when error possible?
 
 ===================================
 checks related
@@ -422,6 +423,8 @@ add explanation for pyq5 license
 ===================================
 small improvements related
 ===================================
+
+dont print installation if requirements.txt is empty
 
 make it not genrate shrotcut for no settings availagle. mention no settings posible
 
