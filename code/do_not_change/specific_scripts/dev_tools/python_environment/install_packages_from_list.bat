@@ -13,7 +13,7 @@
 @echo off & setlocal EnableDelayedExpansion
 
 :: define local variables (with relative paths being relative to this file)
-set "environment_activator_path=..\create_and_or_activate_python_env.bat"
+set "environment_activator_path=..\..\create_and_or_activate_python_env.bat"
 
 :: get current file path for relative path variables:
 set "current_file_path=%~dp0"
@@ -38,25 +38,35 @@ if NOT exist "%packages_list_path%" (
 
 :: goto folder of this file:
 pushd "%current_file_path%"
+
 :: check if environment activator exists:
 if NOT exist "%environment_activator_path%" (
 	echo [Error 3] "%environment_activator_path%" file does not exist. Aborting. Press any key to exit.
 	pause > nul
 	exit 3
 )
+
+:: ======================
+:: --- Code Execution ---
+:: ======================
+
 :: activate or create & activate virtual Python environment:
 call "%environment_activator_path%"
+if %errorlevel% neq 0 (
+	echo.
+	echo [Error 4] Failed to activate or create the Python environment (see above^). Aborting. Press any key to exit.
+	pause > nul
+	exit 4
+)
+
 :: install packages from file or warn if it does not exist and abort:
 REM can't use pip directly here because pip is implemented in portable venv as batch and does not return (alternatively works if called with "call"):
 python -m pip install -r "%packages_list_path%"  --upgrade --disable-pip-version-check --no-cache-dir 
 if "!ERRORLEVEL!" neq "0" ( 
 	echo [Error 5] Failed to install packages from file. Press any key to exit.
-	popd
 	pause > nul
 	exit 5 
 )
-:: return to original folder:
-popd
 
 :: exit program and close calling program
 echo.
