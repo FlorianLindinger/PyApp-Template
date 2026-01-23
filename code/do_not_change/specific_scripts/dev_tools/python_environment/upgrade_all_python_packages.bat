@@ -19,37 +19,40 @@ CD /D "%current_file_path%"
 
 @REM define local variables (do not have spaces before or after the "=" or at the end of the variable value (unless wanted in value) -> inline comments without space before "&@REM".
 @REM Use "\" to separate folder levels and omit "\" at the end of paths. Relative paths allowed):
-SETttttt "python_environment_path=..\..\python_environment_code\python_environment"
+SETtttttt "tmp_txt_path=tmp_requirements.txt"
 
 @REM ######################
 @REM --- Code Execution ---
 @REM ######################
 
-@REM create python environment if not existing:
-IF NOT EXIST "%python_environment_path%\Scripts\activate.bat" (
-	CALL activate_or_create_environment.bat "nopause"
-)
+@REM activate (or create & activate) python environment:
+CALLll activate_or_create_environment.bat "nopause"
 
-@REM upgrade pip
-pip install --upgrade pip > NUL
-
-@REM print how to install:
+@REM upgrade all packages as far as conflicts allow
+REM can't use pip directly here because pip is implemented in portable venv as batch and does not return (alternatively works if called with "call"):
+python -m pip freeze --disable-pip-version-check > "%tmp_txt_path%"
 ECHO:
-ECHO: Write 'pip install {package name}' to install a package in the local environment:
 ECHO:
+python -m pip install --disable-pip-version-check --upgrade -r "%tmp_txt_path%"
+DEL "%tmp_txt_path%"
 
-@REM start console with environment:
-START /B /LOW /WAIT CALL "%python_environment_path%\Scripts\activate.bat"
+@REM final print:
+ECHO:
+ECHO:
+ECHO: Upgraded all packages if no errors above
 
 @REM ####################
 @REM --- Closing-Code ---
 @REM ####################
 
-@REM print warning because this code should not be reached:
-ECHO:
-ECHO: Error (See above)! Press any key to exit
-PAUSE >NUL 
-EXIT
+@REM pause if not called by other script with any argument:
+IF "%~1"=="" (
+	ECHO: Press any key to exit
+	PAUSE >NUL 
+)
+
+@REM exit program without closing a potential calling program
+EXIT /B 
 
 @REM ############################
 @REM --- Function Definitions ---
