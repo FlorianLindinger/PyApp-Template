@@ -95,6 +95,12 @@ start "" /min "%icon_changer_path%" "%program_name%" "%icon_path%"
 
 :: activate or create & activate virtual Python environment
 call "%environment_activator_path%"
+if %errorlevel% neq 0 (
+	echo.
+	echo [Error 7] Failed to activate or create the Python environment (see above^). Aborting. Press any key to exit.
+	pause > nul
+	exit 7
+)
 
 :: go to directory of main python code and execute it and return to folder of this file. Faulthandler catches python interpreter crash:
 cd /d "%python_code_dir%"
