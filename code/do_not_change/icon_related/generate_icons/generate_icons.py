@@ -1,7 +1,16 @@
+import os
 import sys
+import zlib
 
 from PIL import Image
 
+# settings
+user_png_folder_path = "../../../icons/"
+fallback_png_folder_path = "../"
+output_path = "../../../icons/"
+fallback_base_png_id = "200x200:82f0d3c0"
+fallback_settings_png_id = "200x200:71db6cbb"
+fallback_stop_png_id = "200x200:83248fd0"
 
 def create_icon(
     image_path,
@@ -117,15 +126,54 @@ def create_composite_icon(
     )
 
 
+def image_id(path: str) -> str:
+    with Image.open(path) as img:
+        img = img.convert("RGBA")  # normalize
+        data = img.tobytes()
+        crc = zlib.crc32(data) & 0xFFFFFFFF
+        return f"{img.width}x{img.height}:{crc:08x}"
+
+
 if __name__ == "__main__":
+    # print(image_id(user_png_folder_path + "icon.png"))
+    # print(image_id(user_png_folder_path + "settings.png"))
+    # print(image_id(user_png_folder_path + "stop.png"))
+
     if len(sys.argv) > 1:
         overlay_scale_factor = float(sys.argv[1])
     else:
         overlay_scale_factor = 0.6
 
+    if os.path.exists(user_png_folder_path + "icon.png"):
+        if image_id(user_png_folder_path + "icon.png") == fallback_base_png_id:
+            base_icon_path = fallback_png_folder_path + "default_icon.png"
+            print("Using fallback base icon.")
+        else:
+            base_icon_path = user_png_folder_path + "icon.png"
+    else:
+        base_icon_path = fallback_png_folder_path + "icon.png"
+
+    if os.path.exists(user_png_folder_path + "settings.png"):
+        if image_id(user_png_folder_path + "settings.png") == fallback_settings_png_id:
+            settings_icon_path = fallback_png_folder_path + "default_settings.png"
+            print("Using fallback settings icon.")
+        else:
+            settings_icon_path = user_png_folder_path + "settings.png"
+    else:
+        settings_icon_path = fallback_png_folder_path + "settings.png"
+
+    if os.path.exists(user_png_folder_path + "stop.png"):
+        if image_id(user_png_folder_path + "stop.png") == fallback_stop_png_id:
+            stop_icon_path = fallback_png_folder_path + "default_stop.png"
+            print("Using fallback stop icon.")
+        else:
+            stop_icon_path = user_png_folder_path + "stop.png"
+    else:
+        stop_icon_path = fallback_png_folder_path + "stop.png"
+
     # Create the standard icon
     try:
-        create_icon("icon.png", "icon.ico")
+        create_icon(base_icon_path, output_path + "icon.ico")
         print("Generated: icon.ico")
     except Exception as e:
         print(f"Error creating icon.ico: {e}")
@@ -133,13 +181,13 @@ if __name__ == "__main__":
     # Create the composite icons
     # The overlay will scale to fit the bottom-right corner without squishing
     try:
-        create_composite_icon("icon.png", "settings.png", "settings.ico", overlay_scale_factor)
+        create_composite_icon(base_icon_path, settings_icon_path, output_path + "settings.ico", overlay_scale_factor)
         print("Generated: settings.ico")
     except Exception as e:
         print(f"Error creating settings.ico: {e}")
 
     try:
-        create_composite_icon("icon.png", "stop.png", "stop.ico", overlay_scale_factor)
+        create_composite_icon(base_icon_path, stop_icon_path, output_path + "stop.ico", overlay_scale_factor)
         print("Generated: stop.ico")
     except Exception as e:
         print(f"Error creating stop.ico: {e}")
