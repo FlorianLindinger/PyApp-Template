@@ -40,7 +40,29 @@ how to deal with license for exe creators and git uploading?
 important
 ===================================
 
-make acitabvator batch handle all its own errors
+
+add venv to python->exe (see folder compiler)
+
+make pyhton->exe for standalone aswell for AV safety
+
+test if 
+  --nofollow-import-to=*.tests ^
+for all
+
+fix that python and pip in batches now need call instead of anything else for portable venv. also check if open_terminal_for_manual installation batch works
+
+fix genrate_icons.py.exe being deleted by bitdefender
+
+fix venv now generating stuff in portable_Scripts and replacing activate.bat in Scripts and changes to stuff generated/alterd
+
+mention that shortcuts in dev tools are relative to call location and not folder where shortcut is in the case of a directory link
+
+tmp_env_for_install_package_from_files deleted after? must delete before?
+
+dev tools should be changabel via do_not_change and should not delete stuff if deleted stuff thats called.
+links have to be working. batches can make themselves local once found
+does symlink to folder of symlinks to batch work?
+
 
 add good settings for pyrefly for pyproject.toml
 
@@ -50,6 +72,8 @@ update git topics and order
 Fix Release in git
 
 print script name and path when error possible?
+
+make install packages needed in python files batch seach in code and in .py scripts and not in env
 
 ===================================
 checks related
