@@ -48,7 +48,7 @@ if %errorlevel% neq 0 (
 :: create temp environment and install pipreqs:
 python -m venv "tmp_env_for_install_package_from_files"
 call "tmp_env_for_install_package_from_files/Scripts/activate"   
-pip install --no-deps pipreqs --disable-pip-version-check > nul
+pip install pipreqs --disable-pip-version-check > nul
 
 :: get needed packages:
 pipreqs "%folder_to_search_for_stuff_needing_packages%" --force --savepath "%python_file_requirements_path%" --ignore "%python_environment_folder_path%" --ignore "%do_not_change_folder_path%" --ignore "%dev_tools_folder_path%" --encoding utf-8 --no-follow-links 
