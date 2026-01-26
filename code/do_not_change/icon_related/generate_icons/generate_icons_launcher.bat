@@ -1,7 +1,8 @@
 @echo off
 setlocal
 
-call ..\do_not_change\icon_related\generate_icons_py.exe
+cd /d "%~dp0"
+call generate_icons_standalone\run.exe
 
 echo.
 echo Press any key to exit

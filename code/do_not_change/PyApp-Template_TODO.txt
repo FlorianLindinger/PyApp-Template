@@ -5,7 +5,38 @@
 unrealated
 ===================================
 
+add docstrings to python to exe scripts
 
+create license template for folder exe compiler
+also chack for template
+
+inm python compialtion batches. make input a txt file for additional nuitka args
+
+fix pipreqs for single script:
+"""
+pip install pipreqs --disable-pip-version-check
+mkdir %temp%\tmp_pipreqs
+copy "%python_file%" %temp%\tmp_pipreqs\
+python -m pipreqs.pipreqs %temp%\tmp_pipreqs --force --savepath "%tmp_requirements_file%"
+rmdir /s /q %temp%\tmp_pipreqs
+echo.
+echo ==========================================
+echo Required packages for code:
+echo ==========================================
+type "%tmp_requirements_file%"
+echo ==========================================
+echo.
+pip install -r "%tmp_requirements_file%"  --disable-pip-version-check
+pip install nuitka  --disable-pip-version-check
+"""
+also copy over:
+"""
+rmdir /s /q "%temp%\tmp_venv_for_compilation" > nul 2>&1  
+python -m venv "%temp%\tmp_venv_for_compilation"
+call "%temp%\tmp_venv_for_compilation\Scripts\activate.bat"
+""" for more safety as not a setting
+
+add pipreqs to default packages
 
 add upgrad pip to virtual env?
 
@@ -38,19 +69,13 @@ Mention that paths have to be relative to work as portable. On other hand it wil
 
 how to deal with license for exe creators and git uploading?
 
+make venv optional for all compilatioon scrits
+
 ===================================
 important
 ===================================
 
-remove all symlinks because they may not transfer via git and windows may block them on new not admin host...
-->for batches that can look like batches: make a batch that launches the real batch in do_not_change. wait cant i just use relative link shortcut?
-for folder make explorer.exe ...
-for exe batch with custom icon. Make exe with hardcoded rel link that launches a scrip in do_not_change. wait cant i just use relative link shortcut? I guess that will have icon of cmd.exe
-->for fallback png. Make relative link maybe to png that have writte replace to change on png. Maybe just write "Replace with same name to change" and have it e.g. setting.png. _> compare hashes and mabye have settings file so no need to recompile for hash change
-
-RUN BEFORE FIRST START TO GENERATE SHORTCUTS ->to exe that wants to be in start folder
-
-fix generate_icons.exe ->make to folder exe
+checlk if licensing of new folder exe "generate icons" is correct
 
 see why not all generated shortcuts have proper icon
 
