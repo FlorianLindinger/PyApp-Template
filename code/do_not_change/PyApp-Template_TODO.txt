@@ -84,22 +84,12 @@ addd script that compiles change_icon
 
 remove generate_shortcuts folder
 
-SHORTCUT GENERATOR gets flagged by AV
-
 checlk if licensing of new folder exe "generate icons" is correct
 
-see why not all generated shortcuts have proper icon
-
 fix that python and pip in batches now need call instead of anything else for portable venv. also check if open_terminal_for_manual installation batch works
-
 fix venv now generating stuff in portable_Scripts and replacing activate.bat in Scripts and changes to stuff generated/alterd
 
-tmp_env_for_install_package_from_files deleted after? must delete before?
-
-dev tools should be changabel via do_not_change and should not delete stuff if deleted stuff thats called.
-links have to be working. batches can make themselves local once found
-does symlink to folder of symlinks to batch work?
-
+tmp_env_for_install_package_from_files deleted after? must delete before?->move to temp?
 
 add good settings for pyrefly for pyproject.toml
 
