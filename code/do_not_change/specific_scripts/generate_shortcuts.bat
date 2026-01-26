@@ -10,10 +10,10 @@
 @echo off & setlocal EnableDelayedExpansion
 
 :: define local variables (with relative paths being relative to this file)
-set "settings_path=..\..\..\non-user_settings.ini"
-set "shortcut_creator_path=..\..\general_utilities\create_shortcut.bat"
-set "program_starter_path=..\start_program.bat"
-set "settings_opener_path=..\open_settings_file.bat"
+set "settings_path=..\..\non-user_settings.ini"
+set "shortcut_creator_path=..\general_utilities\create_shortcut.bat"
+set "program_starter_path=start_program.bat"
+set "settings_opener_path=open_settings_file.bat"
 
 :: get current file path and remove trailing \
 set "current_file_path=%~dp0"
