@@ -5,6 +5,11 @@
 unrealated
 ===================================
 
+add venv to python->exe (see folder compiler)
+test if 
+  --nofollow-import-to=*.tests ^
+for all
+
 add docstrings to python to exe scripts
 
 create license template for folder exe compiler
@@ -75,29 +80,19 @@ make venv optional for all compilatioon scrits
 important
 ===================================
 
+addd script that compiles change_icon 
+
+remove generate_shortcuts folder
+
+SHORTCUT GENERATOR gets flagged by AV
+
 checlk if licensing of new folder exe "generate icons" is correct
 
 see why not all generated shortcuts have proper icon
 
-how to fix for icons with symlinks? want to safely update default options but allow for user option. maybe check in exe and have visual file placeholder (not what is actualy used as palceholder) settings.png that somehow knows if it is the placehodler or replaced. maybe check binary and dont have visual file placeholder updated
-
-make a utility to create exe from batch with icon and relative path option
-
-add venv to python->exe (see folder compiler)
-
-make pyhton->exe for standalone aswell for AV safety
-
-test if 
-  --nofollow-import-to=*.tests ^
-for all
-
 fix that python and pip in batches now need call instead of anything else for portable venv. also check if open_terminal_for_manual installation batch works
 
-fix genrate_icons.py.exe being deleted by bitdefender
-
 fix venv now generating stuff in portable_Scripts and replacing activate.bat in Scripts and changes to stuff generated/alterd
-
-mention that shortcuts in dev tools are relative to call location and not folder where shortcut is in the case of a directory link
 
 tmp_env_for_install_package_from_files deleted after? must delete before?
 
