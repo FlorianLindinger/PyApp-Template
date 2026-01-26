@@ -48,6 +48,8 @@ for folder make explorer.exe ...
 for exe batch with custom icon. Make exe with hardcoded rel link that launches a scrip in do_not_change. wait cant i just use relative link shortcut? I guess that will have icon of cmd.exe
 ->for fallback png. Make relative link maybe to png that have writte replace to change on png. Maybe just write "Replace with same name to change" and have it e.g. setting.png. _> compare hashes and mabye have settings file so no need to recompile for hash change
 
+RUN BEFORE FIRST START TO GENERATE SHORTCUTS ->to exe that wants to be in start folder
+
 fix generate_icons.exe ->make to folder exe
 
 see why not all generated shortcuts have proper icon
