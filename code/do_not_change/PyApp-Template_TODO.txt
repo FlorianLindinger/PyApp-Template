@@ -5,6 +5,8 @@
 unrealated
 ===================================
 
+
+
 add upgrad pip to virtual env?
 
 deleted old python folder.   ->add where in portavlav python
@@ -40,6 +42,14 @@ how to deal with license for exe creators and git uploading?
 important
 ===================================
 
+remove all symlinks because they may not transfer via git and windows may block them on new not admin host...
+->maybe exes with folder icon. maybe just open new folder via batch
+
+see why not all generated shortcuts have proper icon
+
+how to fix for icons with symlinks? want to safely update default options but allow for user option. maybe check in exe and have visual file placeholder (not what is actualy used as palceholder) settings.png that somehow knows if it is the placehodler or replaced. maybe check binary and dont have visual file placeholder updated
+
+make a utility to create exe from batch with icon and relative path option
 
 add venv to python->exe (see folder compiler)
 
