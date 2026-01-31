@@ -8,11 +8,8 @@
 :: --- Setup & Variables ---
 :: =========================
 
-:: turn off printing of commands:
-@ECHO OFF
-
-:: make this code local so no variables of a potential calling program are changed:
-SETLOCAL
+:: turn off printing of commands & :: make this code local so no variables of a potential calling program are changed
+@echo off & setlocal
 
 :: define local variables (do not have spaces before or after the "=" or at the end of the variable value (unless wanted in value) -> inline comments without space before "&@REM".
 :: Use "\" to separate folder levels and omit "\" at the end of paths. Relative paths allowed):
@@ -40,15 +37,56 @@ for /f "tokens=1-3 delims=." %%a in ("%python_version_target%") do (
     set "REQ_PATCH=%%c"
 )
 
-:: get python version (stdout/stderr safe)
-for /f "tokens=2 delims= " %%v in ('%python_exe_path% --version 2^>^&1') do set "python_version_found=%%v"
+:: normalize: remove any quotes that may already be present
+set "python_exe_path=%python_exe_path:"=%"
+
+echo "%python_exe_path%"
 
 
-IF ERRORLEVEL 1 (
-	ECHO: [Error] Failed to determine python version from "%python_exe_path%" python.exe path. Aborting. Press any key to exit.
-	PAUSE>NUL 
-	EXIT /B 1
+set "python_exe_path=%python_exe_path:"=%"
+echo python_exe_path="%python_exe_path%"
+echo 1
+if exist "%python_exe_path%" (
+  echo 1.1
+) else (
+  echo 1.2
 )
+if not exist "%python_exe_path%" (
+  echo 1.3
+) else (
+  echo 1.4
+)
+
+
+if not exist "%python_exe_path%" (
+  echo [Error] python.exe does not exist: "%python_exe_path%"
+  echo 2
+  pause >nul
+  exit /b 1
+)
+
+echo 3
+
+:: get python version (stdout/stderr safe)
+set "python_version_found="
+set "tmp_out=%TEMP%\pyver_%RANDOM%.txt"
+
+"%python_exe_path%" -c "import sys; print(sys.version.split()[0])" > "%tmp_out%" 2>&1
+set "rc=%ERRORLEVEL%"
+
+echo 4
+
+set /p "python_version_found="<"%tmp_out%"
+del "%tmp_out%" >nul 2>&1
+
+if not "%rc%"=="0" (
+  echo [Error] Python failed to run: "%python_exe_path%"
+  echo Output: "%python_version_found%"
+  pause >nul
+  exit /b 1
+)
+
+echo 5
 
 :: split into major.minor.patch
 for /f "tokens=1-3 delims=." %%a in ("%python_version_found%") do (
@@ -67,6 +105,8 @@ IF NOT "%CUR_MINOR%"=="%REQ_MINOR%" (
 IF NOT "%CUR_PATCH%"=="%REQ_PATCH%" (
 	IF NOT "%REQ_PATCH%"=="" ( GOTO :return_false)
 )
+
+echo 6
 
 :: return true
 ENDLOCAL 
