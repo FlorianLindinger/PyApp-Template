@@ -76,9 +76,19 @@ how to deal with license for exe creators and git uploading?
 
 make venv optional for all compilatioon scrits
 
+update python verison checkfr from template to utilites
+
 ===================================
 important
 ===================================
+
+maybe just have embedded python and packages in do_not_change and have more things run via python: too large tho
+
+make change_icon.py.exe to folder
+
+test if everything works with space in path
+
+check if computes wihtout extendes paths have problem with starter shortcuts and maybe use rel path to paths in non-user settings -> maybe just target a batch in abs that reads or has baked in the long args . either way better to live changeable settings
 
 addd script that compiles change_icon 
 
