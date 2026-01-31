@@ -102,9 +102,11 @@ if %errorlevel% neq 0 (
 	exit 7
 )
 
+echo 22
+
 :: go to directory of main python code and execute it and return to folder of this file. Faulthandler catches python interpreter crash:
 cd /d "%python_code_dir%"
-python -X faulthandler "%python_code_path%"
+call python.bat -X faulthandler "%python_code_path%"
 set "py_errorlevel=%ERRORLEVEL%"
 cd /d "%current_file_path%"
 
@@ -167,15 +169,3 @@ if "%py_errorlevel%" neq "0" (
 goto :EOF
 :: =================================================
 
-::::::::::::::::::::::::::::::::::::::::::::::::
-:: function that prompts user with "Enter y/n for Yes/No" and sets OUTPUT=1 for y and OUTPUT=0 for n.
-::::::::::::::::::::::::::::::::::::::::::::::::
-:prompt_user
-	CHOICE /c YN /m Delete? Enter y/n for Yes/No
-	if !ERRORLEVEL!==1 (
-		set "OUTPUT=1"
-	) else (
-		set "OUTPUT=0"
-	)
-GOTO :EOF
-:: =================================================
