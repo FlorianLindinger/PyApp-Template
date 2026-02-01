@@ -19,6 +19,8 @@ set "current_file_path=%~dp0"
 cd /d "%current_file_path%"
 
 :: define local variables (with relative paths being relative to this file)
+REM carefull with path of tmp_venv_path because it deletes this folder afterwards
+set "tmp_venv_path=%temp%\tmp_venv_for_install_package_from_files"
 set "environment_activator_path=..\..\create_and_or_activate_python_env.bat"
 set "folder_to_search_for_stuff_needing_packages=..\..\..\..\"
 set "python_file_requirements_path=..\..\..\..\py_env\auto_detected_package_requirements.txt"
@@ -46,8 +48,8 @@ if %errorlevel% neq 0 (
 )
 
 :: create temp environment and install pipreqs:
-python -m venv "tmp_env_for_install_package_from_files"
-call "tmp_env_for_install_package_from_files/Scripts/activate"   
+python -m venv "%tmp_venv_path%"
+call "%tmp_venv_path%/Scripts/activate.bat"   
 pip install pipreqs --disable-pip-version-check > nul
 
 :: get needed packages:
@@ -56,7 +58,7 @@ pipreqs "%folder_to_search_for_stuff_needing_packages%" --force --savepath "%pyt
 :: deactivate temp environment and delete:
 deactivate 
 :: carefull with name because it will delete everything:
-rmdir /s /q "tmp_env_for_install_package_from_files"
+rmdir /s /q "%tmp_venv_path%"
 
 :: reactivate python environment:
 call "%environment_activator_path%"
