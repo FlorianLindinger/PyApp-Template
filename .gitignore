@@ -8,7 +8,7 @@ __pycache__
 # shortcuts in root folder:
 /*.lnk
 # whitelist sync of realitve-path-shortcut:
-!RUN BEFORE FIRST START TO GENERATE SHORTCUTS.lnk
+!RUN BEFORE FIRST START AND AFTER FOLDER MOVE TO GENERATE SHORTCUTS.lnk
 # log files:
 log.txt
 # temporary id files for no-terminal start:
