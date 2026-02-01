@@ -32,20 +32,13 @@ set "current_file_path=%~dp0"
 cd /d "%current_file_path%"
 
 :: make paths absolute if not
-call :make_absolute_path_if_relative "%python_version_checker_path%" 
-set "python_version_checker_path=%OUTPUT%"
-call :make_absolute_path_if_relative "%python_exe_path%" 
-set "python_exe_path=%OUTPUT%"
-call :make_absolute_path_if_relative "%portable_venv_creator_path%" 
-set "portable_venv_creator_path=%OUTPUT%"
-call :make_absolute_path_if_relative "%portable_python_installer_path%" 
-set "portable_python_installer_path=%OUTPUT%"
-call :make_absolute_path_if_relative "%requirements_generator_path%" 
-set "requirements_generator_path=%OUTPUT%"
-call :make_absolute_path_if_relative "%env_activator_path%" 
-set "env_activator_path=%OUTPUT%"
-call :make_absolute_path_if_relative "%python_folder_folder_path%" 
-set "python_folder_folder_path=%OUTPUT%"
+call :set_abs_path "%python_version_checker_path%" "python_version_checker_path"
+call :set_abs_path "%python_exe_path%" "python_exe_path"
+call :set_abs_path "%portable_venv_creator_path%" "portable_venv_creator_path"
+call :set_abs_path "%portable_python_installer_path%" "portable_python_installer_path"
+call :set_abs_path "%requirements_generator_path%" "requirements_generator_path"
+call :set_abs_path "%env_activator_path%" "env_activator_path"
+call :set_abs_path "%python_folder_folder_path%" "python_folder_folder_path"
 
 :: check if files exist
 if NOT exist "%python_version_checker_path%" (
@@ -126,8 +119,7 @@ if not exist "%python_exe_path%" (
 	REM install packages:
    if not exist "%default_packages_list%" ( 
 		REM python packages list not existing case
-      call :make_absolute_path_if_relative "%default_packages_list%"
-		set "default_packages_list=!OUTPUT!"
+      call :set_abs_path "%default_packages_list%" "default_packages_list"
       echo.
 	   echo [Warning] List of default Python packages ("!default_packages_list!"^) not found. Skipping installation.
 	) else ( 
@@ -144,7 +136,7 @@ if not exist "%python_exe_path%" (
 	REM python existing case
 	REM check python version matches setting:
 	call "%python_version_checker_path%" "%python_version%" "%python_exe_path%"
-	if "!ERRORLEVEL!" neq "0" ( 
+	if "!OUTPUT!" == "2" ( 
 		echo [Error 11] Failed to determine Python version. Aborting. Press any key to exit.
 		pause > nul
 		exit 11 
@@ -181,8 +173,7 @@ if not exist "%python_exe_path%" (
 			REM install packages:
          if not exist "%default_packages_list%" ( 
 				REM python packages list not existing case
-            call :make_absolute_path_if_relative "%default_packages_list%"
-        		set "default_packages_list=!OUTPUT!"
+            call :set_abs_path "%default_packages_list%" "default_packages_list"
             echo.
         	   echo [Warning] List of default Python packages ("!default_packages_list!!"^) not found. Skipping installation.
         	) else ( 
@@ -286,8 +277,7 @@ if not exist "%python_exe_path%" (
         	REM install packages:
             if not exist "%default_packages_list%" (
 				REM python packages list not existing case
-                call :make_absolute_path_if_relative "%default_packages_list%"
-        		set "default_packages_list=!OUTPUT!"
+                call :set_abs_path "%default_packages_list%" "default_packages_list"
                 echo.
         	    echo [Warning] List of default Python packages ("!default_packages_list!"^) not found. Skipping installation.
         	) else (  
@@ -319,16 +309,21 @@ exit /b 0
 :: ====================
 
 ::::::::::::::::::::::::::::::::::::::::::::::::
-:: function that makes relative path (relative to current working directory) to :: absolute if not already. Works for empty path (relative) path:
+:: function that converts relative (to current working directory) path {arg1} to absolute and sets it to variable {arg2}. Works for empty path {arg1} which then sets the current working directory to variable {arg2}. Raises error if {arg2} is missing:
 :: Usage:
-::    call :make_absolute_path_if_relative "%some_path%"
-::    set "abs_path=%output%"
+::    call :set_abs_path "%some_path%" "some_path"
 ::::::::::::::::::::::::::::::::::::::::::::::::
-:make_absolute_path_if_relative
+:set_abs_path
+    if "%~2"=="" (
+        echo [Error] Second argument is missing for :set_abs_path function in "%~f0". (First argument was "%~1"^). 
+        echo Aborting. Press any key to exit.
+        pause > nul
+        exit /b 1
+    )
     if "%~1"=="" (
-        set "OUTPUT=%cd%"
+        set "%~2=%CD%"
     ) else (
-	    set "OUTPUT=%~f1"
+	    set "%~2=%~f1"
     )
 goto :EOF
 :: =================================================
