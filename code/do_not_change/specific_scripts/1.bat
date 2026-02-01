@@ -16,7 +16,7 @@
 :: define local variables (with relative paths being relative to this file)
 set "settings_path=..\..\non-user_settings.ini"
 set "environment_activator_path=create_and_or_activate_python_env.bat"
-set "icon_changer_path=..\general_utilities\window_icon_changer\change_icon.py.exe"
+set "icon_changer_path=..\general_utilities\window_icon_changer\change_icon.py_standalone_compiled\run.exe"
 
 :: move to folder of this file (needed for relative paths).
 :: current_file_path variable needed as workaround for nieche Windows bug where this file gets called with quotation marks:
@@ -24,10 +24,8 @@ set "current_file_path=%~dp0"
 cd /d "%current_file_path%"
 
 :: make paths absolute if not
-call :make_absolute_path_if_relative "%settings_path%" 
-set "settings_path=%OUTPUT%"
-call :make_absolute_path_if_relative "%environment_activator_path%" 
-set "environment_activator_path=%OUTPUT%"
+call :set_abs_path "%settings_path%" "settings_path"
+call :set_abs_path "%environment_activator_path%" "environment_activator_path" 
 
 :: check if files exist
 if NOT exist "%settings_path%" (
@@ -64,12 +62,9 @@ if "%restart_main_code_on_crash%"=="" (
 :: convert the path settings that are relative to settings file (at %settings_path%%) to absolute paths:
 FOR %%I IN ("%settings_path%") DO set "settings_dir=%%~dpI"
 cd /d "%settings_dir%"
-call :make_absolute_path_if_relative "%icon_path%" 
-set "icon_path=%OUTPUT%"
-call :make_absolute_path_if_relative "%python_code_path%" 
-set "python_code_path=%OUTPUT%"
-call :make_absolute_path_if_relative "%after_python_crash_code_path%" 
-set "after_python_crash_code_path=%OUTPUT%"
+call :set_abs_path "%icon_path%" "icon_path"
+call :set_abs_path "%python_code_path%" "python_code_path"
+call :set_abs_path "%after_python_crash_code_path%" "after_python_crash_code_path"
 cd /d "%current_file_path%"
 
 :: get python code paths directoriers:
@@ -153,17 +148,20 @@ if "%py_errorlevel%" neq "0" (
 :: =================================================
 
 ::::::::::::::::::::::::::::::::::::::::::::::::
-:: function that makes relative path (relative to current working directory) to :: absolute if not already. Works for empty path (relative) path:
+:: function that converts relative (to current working directory) path {arg1} to absolute and sets it to variable {arg2}. Works for empty path {arg1} which then sets the current working directory to variable {arg2}. Raises error if {arg2} is missing:
 :: Usage:
-::    call :make_absolute_path_if_relative "%some_path%"
-::    set "abs_path=%output%"
+::    call :set_abs_path "%some_path%" "some_path"
 ::::::::::::::::::::::::::::::::::::::::::::::::
-:make_absolute_path_if_relative
+:set_abs_path
+    if "%~2"=="" (
+        echo [Error] Second argument is missing for :set_abs_path function in "%~f0". (First argument was "%~1"^). 
+        echo Aborting. Press any key to exit.
+        pause > nul
+        exit /b 1
+    )
     if "%~1"=="" (
-        set "OUTPUT=%cd%"
+        set "%~2=%CD%"
     ) else (
-	    set "OUTPUT=%~f1"
+	    set "%~2=%~f1"
     )
 goto :EOF
-:: =================================================
-
