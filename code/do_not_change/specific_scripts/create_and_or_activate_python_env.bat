@@ -133,7 +133,7 @@ if not exist "%python_exe_path%" (
       echo [Info] Installing packages:
       echo.
 		REM can't use pip directly here because pip is implemented in portable venv as batch and does not return (alternatively works if called with "call"):
-      call python -m pip install -r "%default_packages_list%" --disable-pip-version-check --upgrade --no-cache-dir 
+      call python -m pip install -r "!default_packages_list!" --disable-pip-version-check --upgrade --no-cache-dir 
       echo.
       echo [Info] Finished installing packages
 	)
@@ -187,7 +187,7 @@ if not exist "%python_exe_path%" (
             echo [Info] Installing packages:
             echo.
 				REM can't use pip directly here because pip is implemented in portable venv as batch and does not return (alternatively works if called with "call"):
-            call python -m pip install -r "%default_packages_list%" --disable-pip-version-check --upgrade --no-cache-dir 
+            call python -m pip install -r "!default_packages_list!" --disable-pip-version-check --upgrade --no-cache-dir 
             echo.
             echo [Info] Finished installing packages
         	)
@@ -288,12 +288,12 @@ if not exist "%python_exe_path%" (
         	) else (  
 				REM python packages list existing case
 				REM check if any package listed:
-				findstr /R /V "^\s*$" "%default_packages_list%" > nul && (
+				findstr /R /V "^\s*$" "!default_packages_list!" > nul && (
 					echo.
 					echo [Info] Installing packages:
 					echo.
 					REM can't use pip directly here because pip is implemented in portable venv as batch and does not return (alternatively works if called with "call"):
-					call python -m pip install -r "%default_packages_list%" --disable-pip-version-check --upgrade --no-cache-dir 
+					call python -m pip install -r "!default_packages_list!" --disable-pip-version-check --upgrade --no-cache-dir 
 					echo.
 					echo [Info] Finished installing packages
 				)
