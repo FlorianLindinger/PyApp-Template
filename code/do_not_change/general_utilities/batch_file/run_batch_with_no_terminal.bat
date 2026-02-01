@@ -12,7 +12,7 @@
 :: set variables from args or default args:
 SET "batch_file_path=%~1"
 IF "%~2"=="" (
-	SET "process_id_file_path=id_of_currently_running_hidden_program.pid"
+	SET "process_id_file_path=running_hidden_app_id.pid"
 ) ELSE (
 	SET "process_id_file_path=%~2"
 )
