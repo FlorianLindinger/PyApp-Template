@@ -15,7 +15,7 @@
 
 :: define local variables (with relative paths being relative to this file)
 set "settings_path=..\..\non-user_settings.ini"
-set "python_version_checker_path=..\general_utilities\python_environment\check_if_python_version_matches.bat"
+set "python_version_checker_path=..\general_utilities\python_environment\check_if_python_version_compatible.bat"
 set "portable_venv_creator_path=..\general_utilities\python_environment\create_portable_venv.bat"
 set "portable_python_installer_path=..\general_utilities\python_environment\create_portable_python.bat"
 set "requirements_generator_path=..\general_utilities\python_environment\generate_requirements.txt_no_version.bat"
