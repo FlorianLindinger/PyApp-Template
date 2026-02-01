@@ -82,25 +82,6 @@ update python verison checkfr from template to utilites
 important
 ===================================
 
-maybe just have embedded python and packages in do_not_change and have more things run via python: too large tho
-
-make change_icon.py.exe to folder
-
-test if everything works with space in path
-
-check if computes wihtout extendes paths have problem with starter shortcuts and maybe use rel path to paths in non-user settings -> maybe just target a batch in abs that reads or has baked in the long args . either way better to live changeable settings
-
-addd script that compiles change_icon 
-
-remove generate_shortcuts folder
-
-checlk if licensing of new folder exe "generate icons" is correct
-
-fix that python and pip in batches now need call instead of anything else for portable venv. also check if open_terminal_for_manual installation batch works
-fix venv now generating stuff in portable_Scripts and replacing activate.bat in Scripts and changes to stuff generated/alterd
-
-tmp_env_for_install_package_from_files deleted after? must delete before?->move to temp?
-
 add good settings for pyrefly for pyproject.toml
 
 add placeholder batches
@@ -108,13 +89,17 @@ add placeholder batches
 update git topics and order
 Fix Release in git
 
-print script name and path when error possible?
-
 make install packages needed in python files batch seach in code and in .py scripts and not in env
 
 ===================================
 checks related
 ===================================
+
+check if open_terminal_for_manual installation batch works
+
+
+cehck if all pyhthon, pip have call before
+
 
 need close of setting lnk? check
 
@@ -476,6 +461,9 @@ fix color in python part of terminal
 license related
 ===================================
 
+checlk if licensing of new folder exe "generate icons" is correct
+
+
 mention what the effective license allows and difference to MIT
 
 
@@ -484,6 +472,9 @@ add explanation for pyq5 license
 ===================================
 small improvements related
 ===================================
+
+print script name and path when error possible?
+
 
 dont print installation if requirements.txt is empty
 
@@ -525,5 +516,9 @@ make icon cahnge exe smaller
 make all global variables CAPITALIZED
 
 replace all copy with robocopy
+
+
+remove if nonoe:
+[Info] installing packages
 
 ===================================
