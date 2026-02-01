@@ -6,14 +6,13 @@
 important
 ===================================
 
-chekc if works for download via git
-
 add good settings for pyrefly for pyproject.toml
 
 add placeholder batches
 
 update git topics and order
 Fix Release in git
+update README
 
 make install packages needed in python files batch seach in code and in .py scripts and not in env
 
@@ -98,6 +97,9 @@ update python verison checkfr from template to utilites
 ===================================
 checks related
 ===================================
+
+chekc if works for download via git
+
 
 check if open_terminal_for_manual installation batch works
 
