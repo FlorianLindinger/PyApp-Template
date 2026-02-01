@@ -93,7 +93,7 @@ if not defined FULL_VER (
     exit /b 1
 )
 :: print success
-echo Found (msi-install-available) Python version %FULL_VER%
+echo Found (msi-install-available) Python version %FULL_VER% for requested version %PY_VER%
 
 :: define URL based on full version
 set "URL=https://www.python.org/ftp/python/%FULL_VER%/amd64/"

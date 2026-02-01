@@ -1,6 +1,22 @@
 ======================================
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
+
+===================================
+important
+===================================
+
+chekc if works for download via git
+
+add good settings for pyrefly for pyproject.toml
+
+add placeholder batches
+
+update git topics and order
+Fix Release in git
+
+make install packages needed in python files batch seach in code and in .py scripts and not in env
+
 ===================================
 unrealated
 ===================================
@@ -78,18 +94,6 @@ make venv optional for all compilatioon scrits
 
 update python verison checkfr from template to utilites
 
-===================================
-important
-===================================
-
-add good settings for pyrefly for pyproject.toml
-
-add placeholder batches
-
-update git topics and order
-Fix Release in git
-
-make install packages needed in python files batch seach in code and in .py scripts and not in env
 
 ===================================
 checks related

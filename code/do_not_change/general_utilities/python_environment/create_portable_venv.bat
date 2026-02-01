@@ -61,7 +61,7 @@ REM Create the temporary Python script (using ECHO commands)
     ECHO     print("ERROR: Check inputs or drive compatibility."^)
 )
 REM Execute the Python script and capture the output into a Batch variable
-FOR /F "delims=" %%L IN ('cmd /c ""%PYTHON_FOLDER%\python.exe" "%tmp_file_path_for_code_execution%" "%VENV_PATH%" "%PYTHON_FOLDER%" 2^>NUL"') DO (
+FOR /F "usebackq delims=" %%L IN (`""%PYTHON_FOLDER%\python.exe" "%tmp_file_path_for_code_execution%" "%VENV_PATH%" "%PYTHON_FOLDER%" 2^>NUL"`) DO (
     SET "VENV_TO_PYTHON_REL_PATH=%%L"
 )
 REM Delete the temporary script
