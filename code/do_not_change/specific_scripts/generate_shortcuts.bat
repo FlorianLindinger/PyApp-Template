@@ -58,16 +58,6 @@ if "%shortcut_destination_path%"=="" (
 	pause > nul
 	exit /b 2
 )
-if "%log_path%"=="" (
-	echo [Error] log_path not defined in "%settings_path%". Aborting. Press any key to exit.
-	pause > nul
-	exit /b 2
-)
-if "%process_id_file_path%"=="" (
-	echo [Error] process_id_file_path not defined in "%settings_path%". Aborting. Press any key to exit.
-	pause > nul
-	exit /b 2
-)
 
 :: convert the path settings that are relative to settings file to absolute paths:
 for %%I IN ("%settings_path%") DO set "settings_dir=%%~dpI"
@@ -76,8 +66,6 @@ call :set_abs_path "%icon_path%" "icon_path"
 call :set_abs_path "%settings_icon_path%" "settings_icon_path"
 call :set_abs_path "%stop_icon_path%" "stop_icon_path"
 call :set_abs_path "%shortcut_destination_path%" "shortcut_destination_path"
-call :set_abs_path "%log_path%" "log_path"
-call :set_abs_path "%process_id_file_path%" "process_id_file_path"
 cd /d "%current_file_path%"
 
 :: check if files exist
@@ -108,10 +96,10 @@ call "%create_shortcut_batch_path%" "%shortcut_destination_path%\%start_name%.ln
 set "arg=/K call ""%open_settings_file_batch_path%"""
 call "%create_shortcut_batch_path%" "%shortcut_destination_path%\%settings_name%.lnk" "%SystemRoot%\System32\cmd.exe" "%arg%" "%current_file_path%" "%settings_icon_path%" "%program_name%"
 :: create shortcut for launcher without terminal and with output to log file:
-set "arg=/K call ""%run_batch_with_file_output_and_no_terminal_batch_path%"" ""%start_program_batch_path%"" ""%log_path%"" ""%process_id_file_path%.pid"""
+set "arg=/K call ""%run_batch_with_file_output_and_no_terminal_batch_path%"""
 call "%create_shortcut_batch_path%" "%shortcut_destination_path%\%start_no_terminal_name%.lnk" "%SystemRoot%\System32\cmd.exe" "%arg%" "%current_file_path%" "%icon_path%" "%program_name%"
 :: create shortcut for killing the running program:
-set "arg=/K call ""%kill_process_with_id_batch_path%"" ""%process_id_file_path%"""
+set "arg=/K call ""%kill_process_with_id_batch_path%"""
 call "%create_shortcut_batch_path%" "%shortcut_destination_path%\%stop_no_terminal_name%.lnk" "%SystemRoot%\System32\cmd.exe" "%arg%" "%current_file_path%" "%stop_icon_path%" "%program_name%"
 
 :: check if successful
