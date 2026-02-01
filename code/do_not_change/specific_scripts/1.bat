@@ -99,7 +99,7 @@ if %errorlevel% neq 0 (
 
 :: go to directory of main python code and execute it and return to folder of this file. Faulthandler catches python interpreter crash:
 cd /d "%python_code_dir%"
-call python.bat -X faulthandler "%python_code_path%"
+call python -X faulthandler "%python_code_path%"
 set "py_errorlevel=%ERRORLEVEL%"
 cd /d "%current_file_path%"
 
