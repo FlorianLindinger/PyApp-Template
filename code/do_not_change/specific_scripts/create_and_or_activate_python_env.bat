@@ -22,7 +22,7 @@ set "requirements_generator_path=..\general_utilities\python_environment\generat
 set "python_folder_folder_path=..\..\py_env"
 set "default_packages_list=%python_folder_folder_path%\default_python_packages.txt"
 set "python_folder_path=%python_folder_folder_path%\py_dist"
-set "env_activator_path=%python_folder_folder_path%\virt_env\activate.bat"
+set "env_activator_path=%python_folder_folder_path%\virt_env\Scripts\activate.bat"
 set "python_exe_path=%python_folder_path%\python.exe"
 SET "tmp_txt_path=tmp_requirements.txt"
 
@@ -89,9 +89,14 @@ if "%install_tools%"=="true" (
 if not exist "%python_exe_path%" ( 
 	REM python not existing case
 	echo.
-	echo ===========================
-	echo ==== Installing Python ====
-	echo ===========================
+	echo.
+	echo.
+	echo.
+	echo.
+	echo.
+	echo =================================================
+	echo ==== Locally Installing Python in App Folder ====
+	echo =================================================
 	echo.
 	REM install python: "0" in next line means no installation of Python docs:
    call "%portable_python_installer_path%" "%python_version%" "%python_folder_folder_path%" "%install_tkinter%" "%install_tests%" "%install_tools%" "0"
@@ -128,7 +133,7 @@ if not exist "%python_exe_path%" (
       echo [Info] Installing packages:
       echo.
 		REM can't use pip directly here because pip is implemented in portable venv as batch and does not return (alternatively works if called with "call"):
-      python -m pip install -r "%default_packages_list%" --disable-pip-version-check --upgrade --no-cache-dir 
+      call python -m pip install -r "%default_packages_list%" --disable-pip-version-check --upgrade --no-cache-dir 
       echo.
       echo [Info] Finished installing packages
 	)
@@ -142,13 +147,13 @@ if not exist "%python_exe_path%" (
 		exit 11 
 	) 
 	if "!OUTPUT!"=="1" ( 
-	   	REM python version matching case
-	   	if exist "%env_activator_path%" ( 
-			REM env existing case
-        	REM activate env and exit:
-        	goto :success_exit
+	   REM python version matching case
+	   if exist "%env_activator_path%" ( 
+		   REM env existing case
+		   REM activate env and exit:
+		   goto :success_exit
 		) else ( 
-		    REM env not existing case
+		   REM env not existing case
 			echo.
 			echo =============================================
 			echo ==== Creating Virtual Python Environment ====
@@ -182,7 +187,7 @@ if not exist "%python_exe_path%" (
             echo [Info] Installing packages:
             echo.
 				REM can't use pip directly here because pip is implemented in portable venv as batch and does not return (alternatively works if called with "call"):
-            python -m pip install -r "%default_packages_list%" --disable-pip-version-check --upgrade --no-cache-dir 
+            call python -m pip install -r "%default_packages_list%" --disable-pip-version-check --upgrade --no-cache-dir 
             echo.
             echo [Info] Finished installing packages
         	)
@@ -237,7 +242,7 @@ if not exist "%python_exe_path%" (
             	echo [Info] Installing packages:
             	echo.
 				REM can't use pip directly here because pip is implemented in portable venv as batch and does not return (alternatively works if called with "call"):
-            	python -m pip install -r "%tmp_txt_path%" --disable-pip-version-check --upgrade --no-cache-dir 
+            	call python -m pip install -r "%tmp_txt_path%" --disable-pip-version-check --upgrade --no-cache-dir 
 				del "%tmp_txt_path%" >nul 2>&1
             	echo.
             	echo [Info] Finished installing packages
@@ -288,7 +293,7 @@ if not exist "%python_exe_path%" (
 					echo [Info] Installing packages:
 					echo.
 					REM can't use pip directly here because pip is implemented in portable venv as batch and does not return (alternatively works if called with "call"):
-					python -m pip install -r "%default_packages_list%" --disable-pip-version-check --upgrade --no-cache-dir 
+					call python -m pip install -r "%default_packages_list%" --disable-pip-version-check --upgrade --no-cache-dir 
 					echo.
 					echo [Info] Finished installing packages
 				)
@@ -301,7 +306,6 @@ if not exist "%python_exe_path%" (
 goto :success_exit
 
 :success_exit
-echo 21
 endlocal & call "%env_activator_path%"
 exit /b 0
 

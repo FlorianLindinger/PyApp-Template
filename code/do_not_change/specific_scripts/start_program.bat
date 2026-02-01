@@ -124,7 +124,7 @@ if "%restart_main_code_on_crash%"=="false" (
 	if exist "%after_python_crash_code_path%" (
 		REM go to directory of python code and execute it and return to folder of this file
 		cd /d "%crash_python_code_dir%"
-		python -X faulthandler "%after_python_crash_code_path%"
+		call python -X faulthandler "%after_python_crash_code_path%"
 		set "py_errorlevel=%ERRORLEVEL%"
 		cd /d "%current_file_path%"
 	REM exit function if after_python_crash_code does not exist
@@ -136,7 +136,7 @@ if "%restart_main_code_on_crash%"=="false" (
 	REM go to directory of python code and execute it and return to folder of this file:
 	REM argument "crashed" indicated to the python code that it is a repeat call after a crash and can be checked for with sys.argv[-1]=="crashed"
 	cd /d "%python_code_dir%"
-	python -X faulthandler "%python_code_path%" "crashed" 
+	call python -X faulthandler "%python_code_path%" "crashed" 
 	set "py_errorlevel=%ERRORLEVEL%"
 	cd /d "%current_file_path%"
 )

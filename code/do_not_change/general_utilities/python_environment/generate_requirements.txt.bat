@@ -32,7 +32,7 @@ IF EXIST "%output_file_path%" (
 )
 
 :: generate file:
-python -m pip freeze --disable-pip-version-check > "%output_file_path%"
+call python -m pip freeze --disable-pip-version-check > "%output_file_path%"
 
 :: print success/fail and exit
 if exist "%output_file_path%" (
