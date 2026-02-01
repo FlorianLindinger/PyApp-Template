@@ -14,12 +14,11 @@ set "output_file_path=%~1"
 
 :: set default if not given
 if "%output_file_path%"=="" (
-	output_file_path="requirements.txt"
+	set "output_file_path=requirements.txt"
 )
 
 :: make path absolute if not
-call :make_absolute_path_if_relative "%output_file_path%"
-set "output_file_path=%OUTPUT%"
+call :set_abs_path "%output_file_path%" "output_file_path"
 
 :: ======================
 :: --- Code Execution ---
@@ -51,17 +50,21 @@ if exist "%output_file_path%" (
 :: ====================
 
 ::::::::::::::::::::::::::::::::::::::::::::::::
-:: function that makes relative path (relative to current working directory) to :: absolute if not already. Works for empty path (relative) path:
+:: function that converts relative (to current working directory) path {arg1} to absolute and sets it to variable {arg2}. Works for empty path {arg1} which then sets the current working directory to variable {arg2}. Raises error if {arg2} is missing:
 :: Usage:
-::    call :make_absolute_path_if_relative "%some_path%"
-::    set "abs_path=%output%"
+::    call :set_abs_path "%some_path%" "some_path"
 ::::::::::::::::::::::::::::::::::::::::::::::::
-:make_absolute_path_if_relative
+:set_abs_path
+    if "%~2"=="" (
+        echo [Error] Second argument is missing for :set_abs_path function in "%~f0". (First argument was "%~1"^). 
+        echo Aborting. Press any key to exit.
+        pause > nul
+        exit /b 1
+    )
     if "%~1"=="" (
-        set "OUTPUT=%CD%"
+        set "%~2=%CD%"
     ) else (
-	    set "OUTPUT=%~f1"
+	    set "%~2=%~f1"
     )
 goto :EOF
-:: =================================================
 :: =================================================
