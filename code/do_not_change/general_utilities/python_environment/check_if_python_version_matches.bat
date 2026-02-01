@@ -2,17 +2,15 @@
 :: --- Code Description ---
 :: ========================
 
-:: Sets globally OUTPUT=1 if no (or empty) python_version_target given as first argument or if given python version is compatible with the python.exe_path of arg 2. If no path given it will pick the global one. Else it will set globally OUTPUT=0. If the first arg is empty it will set OUTPUT=1 because it assumes every version is matching.
+:: Sets globally OUTPUT=1 if no (or empty) python_version_target given as first argument or if given python version is compatible with the python.exe_path of arg 2. If no path given it will pick the global one. Else it will set globally OUTPUT=0 for not compatible and OUTPUT=2 for error determining python version. If the first argument is empty it will set OUTPUT=1 because it assumes every version is matching.
 
 :: =========================
 :: --- Setup & Variables ---
 :: =========================
 
-:: turn off printing of commands:
-@ECHO OFF
 
-:: make this code local so no variables of a potential calling program are changed:
-SETLOCAL
+:: turn off printing of commands &  make variables local
+@echo off & setlocal 
 
 :: define local variables (do not have spaces before or after the "=" or at the end of the variable value (unless wanted in value) -> inline comments without space before "&@REM".
 :: Use "\" to separate folder levels and omit "\" at the end of paths. Relative paths allowed):
@@ -41,13 +39,13 @@ for /f "tokens=1-3 delims=." %%a in ("%python_version_target%") do (
 )
 
 :: get python version (stdout/stderr safe)
-for /f "tokens=2 delims= " %%v in ('%python_exe_path% --version 2^>^&1') do set "python_version_found=%%v"
+set "python_version_found="
+for /f "usebackq tokens=1,2 delims= " %%a in (`"%python_exe_path%" --version 2^>^&1`) do (
+	if "%%a"=="Python" set "python_version_found=%%b"
+)
 
-
-IF ERRORLEVEL 1 (
-	ECHO: [Error] Failed to determine python version from "%python_exe_path%" python.exe path. Aborting. Press any key to exit.
-	PAUSE>NUL 
-	EXIT /B 1
+IF NOT DEFINED python_version_found (
+	GOTO :return_error
 )
 
 :: split into major.minor.patch
@@ -69,15 +67,7 @@ IF NOT "%CUR_PATCH%"=="%REQ_PATCH%" (
 )
 
 :: return true
-ENDLOCAL 
-SET "OUTPUT=1"
-
-:: ====================
-:: --- Closing-Code ---
-:: ====================
-
-:: exit program without closing a potential calling program
-EXIT /B 0
+goto :return_true
 
 :: ============================
 :: --- Function Definitions ---
@@ -87,6 +77,16 @@ EXIT /B 0
 ENDLOCAL 
 SET "OUTPUT=0"
 EXIT /B 0
+
+:return_true
+ENDLOCAL 
+SET "OUTPUT=1"
+EXIT /B 0
+
+:return_error
+ENDLOCAL 
+SET "OUTPUT=2"
+EXIT /B 1
 
 :: -------------------------------------------------
 
