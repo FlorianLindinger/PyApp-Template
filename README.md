@@ -24,6 +24,7 @@
 - **Small launch overhead** of all features: ~+0.2 s (global python start is ~0.15 s)
 - Options to **install only needed parts of full-Python** installation (down to ~48 MB instad of ~150 MB for normal python installations)
 - Plug and play **license template**, where all backend template code parts fall under the **permissive MIT license** and non-MIT parts are auto-excluded via .gitignore. and generated at the user end.
+- Avoiding opaque executables for transparency and to minimize antivirus false positives.
 - Feel free to suggest more :)
 
 ---
