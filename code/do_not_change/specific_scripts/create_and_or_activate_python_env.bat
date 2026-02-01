@@ -150,12 +150,12 @@ if not exist "%python_exe_path%" (
 		exit 11 
 	) 
 	if "!OUTPUT!"=="1" ( 
-	   REM python version matching case
-	   if exist "%env_activator_path%" ( 
-		   REM env existing case
-         REM activate env and exit:
-         goto :success_exit
-	   ) else ( 
+	   	REM python version matching case
+	   	if exist "%env_activator_path%" ( 
+			REM env existing case
+        	REM activate env and exit:
+        	goto :success_exit
+		) else ( 
 		    REM env not existing case
 			echo.
 			echo =============================================
@@ -198,32 +198,31 @@ if not exist "%python_exe_path%" (
 	   )  
 	   REM above: end of env not existing case
 	) else ( 
-	   REM python version not matching case
-	   if exist "%env_activator_path%" ( 
+	   	REM python version not matching case
+	   	if exist "%env_activator_path%" ( 
 		    REM env existing case
-          echo.
-          echo [Warning] Installed Python version is not compatible with the version specified in "%settings_path%" (%python_version%^).
-		    echo Do you want to locally for this program reinstall Python + virtual environment + current packages OR stay with current setup?
-		    call :prompt_user
+         	echo.
+          	echo [Warning] Installed Python version is not compatible with the version specified in "%settings_path%" (%python_version%^).
+		    call :prompt_user "Do you want to reinstall Python locally inside this program + a virtual environment + current packages OR stay with current setup? (Y/N)"
             if "!OUTPUT!"=="1" ( 
 				REM user: yes case
-			   REM activate to get current packages:
-            call "%env_activator_path%"
-            REM get current packages:
-            call "%requirements_generator_path%" "%tmp_txt_path%"
-			   if "!ERRORLEVEL!" neq "0" ( 
+			   	REM activate to get current packages:
+            	call "%env_activator_path%"
+            	REM get current packages:
+            	call "%requirements_generator_path%" "%tmp_txt_path%"
+			   	if "!ERRORLEVEL!" neq "0" ( 
 					echo [Error 13] Failed to generate current packages list. Aborting. Press any key to exit.
 					pause > nul
 					exit 13 
 				) 
-            echo.
+            	echo.
 				echo =============================
 				echo ==== Reinstalling Python ====
 				echo =============================
 				echo.
 				REM reinstall python:
-            call "%portable_python_installer_path%" "%python_version%" "%python_folder_folder_path%" "%install_tkinter%" "%install_tests%" "0"
-			   if "!ERRORLEVEL!" neq "0" ( 
+            	call "%portable_python_installer_path%" "%python_version%" "%python_folder_folder_path%" "%install_tkinter%" "%install_tests%" "0"
+			   	if "!ERRORLEVEL!" neq "0" ( 
 					echo [Error 14] Failed to reinstall Python. Aborting. Press any key to exit.
 					pause > nul
 					exit 14 
@@ -235,7 +234,7 @@ if not exist "%python_exe_path%" (
 				echo.
 				REM reinstall virtual env:
 			    call "%portable_venv_creator_path%" "%python_folder_folder_path%" "%python_folder_path%"
-             if "!ERRORLEVEL!" neq "0" ( 
+             	if "!ERRORLEVEL!" neq "0" ( 
 					echo [Error 15] Failed to reinstall virtual environment. Aborting. Press any key to exit.
 					pause > nul
 					exit 15 
@@ -246,17 +245,17 @@ if not exist "%python_exe_path%" (
             	echo.
             	echo [Info] Installing packages:
             	echo.
-					REM can't use pip directly here because pip is implemented in portable venv as batch and does not return (alternatively works if called with "call"):
+				REM can't use pip directly here because pip is implemented in portable venv as batch and does not return (alternatively works if called with "call"):
             	python -m pip install -r "%tmp_txt_path%" --disable-pip-version-check --upgrade --no-cache-dir 
 				del "%tmp_txt_path%" >nul 2>&1
             	echo.
             	echo [Info] Finished installing packages
 		    ) else (  
 				REM user: no case
-			   REM activate:
-            call "%env_activator_path%"
+			   	REM activate:
+            	call "%env_activator_path%"
 		    )
-	   ) else ( 
+	   	) else ( 
 		REM env not existing case. User does not get asked for python reinstall since either way no venv lost
         	echo.
 			echo =============================
@@ -331,5 +330,26 @@ exit /b 0
     ) else (
 	    set "OUTPUT=%~f1"
     )
+goto :EOF
+:: =================================================
+
+::::::::::::::::::::::::::::::::::::::::::::::::
+:: function that prompts user with prompt=arg1 and sets OUTPUT=1 for y and OUTPUT=0 for n.
+::::::::::::::::::::::::::::::::::::::::::::::::
+:prompt_user
+setlocal
+set "ans="
+set "OUT="
+:ask
+set /p "ans=%~1"
+if /i "%ans%"=="y" (
+    set "OUT=1"
+) else if /i "%ans%"=="n" (
+    set "OUT=0"
+) else (
+    echo Invalid input. Please enter y or n.
+    goto ask
+)
+endlocal & set "OUTPUT=%OUT%"
 goto :EOF
 :: =================================================
