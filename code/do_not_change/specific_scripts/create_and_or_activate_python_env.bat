@@ -301,6 +301,7 @@ if not exist "%python_exe_path%" (
 goto :success_exit
 
 :success_exit
+echo 21
 endlocal & call "%env_activator_path%"
 exit /b 0
 
