@@ -130,7 +130,7 @@ if not exist "%python_exe_path%" (
 	) else ( 
 		REM python packages list existing case
       echo.
-      echo [Info] Installing packages:
+      echo [Info] Installing packages (see below^):
       echo.
 		REM can't use pip directly here because pip is implemented in portable venv as batch and does not return (alternatively works if called with "call"):
       call python -m pip install -r "!default_packages_list!" --disable-pip-version-check --upgrade --no-cache-dir 
@@ -184,7 +184,7 @@ if not exist "%python_exe_path%" (
         	) else ( 
 				REM python packages list existing case
             echo.
-            echo [Info] Installing packages:
+            echo [Info] Installing packages (see below^):
             echo.
 				REM can't use pip directly here because pip is implemented in portable venv as batch and does not return (alternatively works if called with "call"):
             call python -m pip install -r "!default_packages_list!" --disable-pip-version-check --upgrade --no-cache-dir 
@@ -239,7 +239,7 @@ if not exist "%python_exe_path%" (
                 call "%env_activator_path%"
 			    REM reinstall packages:
             	echo.
-            	echo [Info] Installing packages:
+            	echo [Info] Installing packages (see below^):
             	echo.
 				REM can't use pip directly here because pip is implemented in portable venv as batch and does not return (alternatively works if called with "call"):
             	call python -m pip install -r "%tmp_txt_path%" --disable-pip-version-check --upgrade --no-cache-dir 
@@ -290,7 +290,7 @@ if not exist "%python_exe_path%" (
 				REM check if any package listed:
 				findstr /R /V "^\s*$" "!default_packages_list!" > nul && (
 					echo.
-					echo [Info] Installing packages:
+					echo [Info] Installing packages (see below^):
 					echo.
 					REM can't use pip directly here because pip is implemented in portable venv as batch and does not return (alternatively works if called with "call"):
 					call python -m pip install -r "!default_packages_list!" --disable-pip-version-check --upgrade --no-cache-dir 
