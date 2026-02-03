@@ -6,6 +6,10 @@
 important
 ===================================
 
+is python_code_path setting working with pipreqs
+
+make somehow shortcut generation lnk not require admin. Maybe icon is ont worth it and batch would do
+
 add good settings for pyrefly for pyproject.toml
 
 add placeholder batches
