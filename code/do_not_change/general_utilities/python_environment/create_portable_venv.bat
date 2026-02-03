@@ -247,7 +247,7 @@ if errorlevel 1 (
 > "%portable_scripts_path%\pip.bat" (
   echo :: force pip command to use python that works for portable virtual environments
   echo @echo off
-  echo "%%~dp0..\python.bat" -m pip %%*
+  echo "%%~dp0python.bat" -m pip %%*
 )
 :: check if created
 if not exist "%portable_scripts_path%\pip.bat" (
