@@ -1,10 +1,14 @@
 import builtins
+import inspect
 import re
+import sys
 import time
 import traceback
+import types
+from collections.abc import Callable
+from functools import wraps
 
-from helper_functions import *
-from PyQt5.QtCore import QEvent, QObject, QSettings, Qt, QThread, QTimer, pyqtSignal, pyqtSlot
+from PyQt5.QtCore import QEvent, QObject, QSettings, QSignalBlocker, Qt, QThread, QTimer, pyqtSignal, pyqtSlot
 from PyQt5.QtGui import QBrush, QColor, QFont, QIcon, QImage, QIntValidator, QPainter, QPen, QPixmap
 from PyQt5.QtWidgets import (
     QAbstractSpinBox,
@@ -16,7 +20,6 @@ from PyQt5.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QLineEdit,
-    QMainWindow,
     QMessageBox,
     QProgressBar,
     QPushButton,
@@ -34,27 +37,156 @@ from PyQt5.QtWidgets import (
 )
 
 try:
-    import serial.tools.list_ports  # install as pysersial
-except Exception:
+    import serial.tools.list_ports  # install as pyserial
+except ModuleNotFoundError:
     pass
-import cv2
-import numpy as np
+try:
+    import cv2
+except ModuleNotFoundError:
+    pass
+try:
+    import numpy as np
+except ModuleNotFoundError:
+    pass
+
+################################################
+# helper code
+
+
+def get_main_globals():
+    """needed if a global is changed in an imported script but meant for the outer most caller. Returns the correct globals()"""
+    return sys.modules["__main__"].__dict__
+
+
+def get_num_required_params(func):
+    """Returns number of requried parameters of function."""
+    sig = inspect.signature(func)
+    return sum(
+        1
+        for p in sig.parameters.values()
+        if p.default is inspect._empty and p.kind in (p.POSITIONAL_ONLY, p.POSITIONAL_OR_KEYWORD, p.KEYWORD_ONLY)  # noqa: SLF001
+    )
+
+
+################################################
+# launcher code
+
+
+def Q_start():
+    app = QApplication(sys.argv)
+    get_main_globals()["app_from_Q_start"] = app
+    return app
+
+
+def Q_end(widget):
+    app = get_main_globals()["app_from_Q_start"]
+    widget.show()
+    sys.exit(app.exec_())
+
+
+################################################
+# code helpers for saveing/loading GUI settings/states
+
+
+class Q_Settings(QSettings):
+    """Child class to QSettings that adds some shorthands for methods and some default args."""
+
+    def __init__(self, parent_class, ini_file_path="GUI_settings.ini"):
+        super().__init__(ini_file_path, QSettings.IniFormat)
+
+        self.parent_class = parent_class
+
+        # runs restore_gui_to_startup after child class __init__ to set state with present child widgets:
+        QTimer.singleShot(0, self.restore_gui_to_startup)
+
+    def get(self, key):
+        return self.value(key)
+
+    def set(self, key, value):
+        self.setValue(key, value)
+
+    def reset_gui_startup_setting(self):
+        self.beginGroup("gui")
+        self.remove("")
+        self.endGroup()
+
+    def reset_all_startup_settings(self):
+        self.clear()
+
+    def restore_gui_to_startup(self):
+        geometry = self.get("gui/geometry")
+        state = self.get("gui/state")
+        if geometry:
+            self.parent_class.restoreGeometry(geometry)
+        if state and hasattr(self.parent_class, "restoreState"):
+            self.parent_class.restoreState(state)
+        for i, widget in enumerate(self.parent_class.findChildren(QSplitter)):
+            state = self.get(f"gui/splitter{i}")
+            if state:
+                widget.restoreState(state)
+        for i, widget in enumerate(self.parent_class.findChildren(Q_sidebar)):
+            expanded_state = self.get(f"gui/sidebar{i}_expanded")
+            if expanded_state is not None:
+                widget.set_expanded_state(expanded_state)
+                # widget.updateGeometry()
+
+    def set_gui_state_as_startup(self):
+        self.set("gui/geometry", self.parent_class.saveGeometry())
+        if hasattr(self.parent_class, "saveState"):
+            self.set("gui/state", self.parent_class.saveState())
+        for i, widget in enumerate(self.parent_class.findChildren(QSplitter)):
+            self.set(f"gui/splitter{i}", widget.saveState())
+        for i, widget in enumerate(self.parent_class.findChildren(Q_sidebar)):
+            self.set(f"gui/sidebar{i}_expanded", widget.isVisible())
+
 
 ################################################
 # code interaction with GUI
 
 
 class Q_add_globals_check:
-    def __init__(self, parent_self, label, on_change_function, sleep_ms=100, function_wants_value=None):
-        self.running = True
+    def __init__(
+        self,
+        parent_self,
+        label,
+        on_change_function,
+        start_running=True,
+        function_wants_value: None | bool = None,
+    ):
+        if start_running == True:
+            self.running = True
+        else:
+            self.running = False
         self.label = label
         self.function = on_change_function
-        self.sleep_ms = sleep_ms
+        self.parent_self = parent_self
         self.last_seen_value = get_main_globals()[self.label]
-        if function_wants_value == None:
+        if function_wants_value is None:
             function_wants_value = get_num_required_params(on_change_function) > 0
         self.function_wants_value = function_wants_value
 
+        # add globals check requirements to parent if not already present
+        if not hasattr(parent_self, "check_globals_list"):
+            # add list of checks to parent if not already
+            parent_self.check_globals_list = []
+
+            # global variable change check method
+            def _check_globals_change(self):
+                if len(self.check_globals_list) == 0:
+                    return
+                else:
+                    for check_globals_object in self.check_globals_list:
+                        check_globals_object.check()
+
+            parent_self._check_globals_change = types.MethodType(
+                _check_globals_change, parent_self
+            )  # extra stuff needed to add method to instance # noqa: SLF001
+
+            parent_self._globals_check_timer = QTimer(parent_self)  # Timer to check globals #noqa: SLF001
+            parent_self._globals_check_timer.timeout.connect(parent_self._check_globals_change)  # noqa: SLF001
+            parent_self._globals_check_timer.start(100)  # update every 100 ms -> up to 10 fps #noqa: SLF001
+
+        # add check to list
         parent_self.check_globals_list.append(self)
 
     def check(self):
@@ -95,7 +227,7 @@ def Q_print(*args, **kwargs):
 
 
 ################################################
-# useer interaction with GUI
+# user interaction with GUI
 
 
 def Q_popup(
@@ -231,7 +363,7 @@ class _Q_worker_loop(QObject):
                     output = self.looped_function()
                 else:
                     output = self.looped_function(self.received_data)
-                if output != None:
+                if output is not None:
                     self.data_out_signal.emit(output)
 
 
@@ -252,9 +384,9 @@ class Q_thread_single(QObject):
         self._thread.start()
         # not thread safe probably actually:
         if hasattr(parent_self, "_single_execution_threads"):
-            parent_self._single_execution_threads.append(self)
+            parent_self._single_execution_threads.append(self)  # noqa: SLF001
         else:
-            parent_self._single_execution_threads = [self]
+            parent_self._single_execution_threads = [self]  # noqa: SLF001
 
     def _run(self):
         result = self._function(*self._args)
@@ -348,20 +480,6 @@ def Q_handle_label_positioning(self, label="", label_pos="left", moveable=False,
     self.setLayout(layout)
 
 
-# helper decorator to prevent signal trigger
-# def Q_block_trigger_decorator(func):
-#     def Q_block_signal_decorator_wrapper(*args, **kwargs):
-#         args[0].widget.blockSignals(True)
-#         func(*args, **kwargs)
-#         args[0].widget.blockSignals(False)
-#     return Q_block_signal_decorator_wrapper
-
-
-from functools import wraps
-
-from PyQt5.QtCore import QSignalBlocker
-
-
 def Q_block_trigger_decorator(method):
     @wraps(method)
     def wrapper(self, *args, **kwargs):
@@ -374,13 +492,10 @@ def Q_block_trigger_decorator(method):
     return wrapper
 
 
-# helper parent class to define common methods and make child classes searchable
-
-
 class _Q_class_helper(QWidget):
     def __init__(self, remember=True):
         super().__init__()
-        self.remember = True
+        self.remember = remember
 
     def set_state(self, state):
         if self.remember == True:
@@ -534,14 +649,14 @@ class _helper_Q_selector_int(QSpinBox):
 
 
 class Q_selector_int(_Q_class_helper):
-    """does not select the value when changed and changes the value to max/min value instead of preventing to enter it. Commits value on change"""
+    """does not select the value when changed and changes the value to max_val/min_val value instead of preventing to enter it. Commits value on change"""
 
     def __init__(
         self,
         on_change_function_or_global_label=None,
         start_value=0,
-        min=-(2**31),
-        max=2**31 - 1,
+        min_val=-(2**31),
+        max_val=2**31 - 1,
         step=1,
         label="",
         label_pos="left",
@@ -550,8 +665,10 @@ class Q_selector_int(_Q_class_helper):
         self.widget = _helper_Q_selector_int()
         self.widget.valueChanged.connect(self.trigger)
 
-        if on_change_function_or_global_label == None:
-            on_change_function_or_global_label = lambda *_, **__: None
+        if on_change_function_or_global_label is None:
+
+            def on_change_function_or_global_label(*_, **__):
+                return None
         elif isinstance(on_change_function_or_global_label, str):
             self.global_label = on_change_function_or_global_label
 
@@ -562,8 +679,8 @@ class Q_selector_int(_Q_class_helper):
 
         Q_handle_label_positioning(self, label, label_pos)
 
-        self.set_maximum(max)
-        self.set_minimum(min)
+        self.set_maximum(max_val)
+        self.set_minimum(min_val)
         self.set(start_value)
 
         self.widget.setSingleStep(step)
@@ -580,12 +697,12 @@ class Q_selector_int(_Q_class_helper):
         self.widget.lineEdit().setValidator(QIntValidator(-2147483648, 2147483647, self.widget))
 
     def set_maximum(self, value):
-        if value == None:
+        if value is None:
             value = 2**31 - 1
         self.widget.setMaximum(value)
 
     def set_minimum(self, value):
-        if value == None:
+        if value is None:
             value = -(2**31)
         self.widget.setMinimum(value)
 
@@ -649,7 +766,7 @@ class Q_bulb(QWidget):
         return dc
 
     def _bright_color(self, c: str, factor=130) -> QColor:
-        # factor > 100 → lighter; try 170–200 for strong glow
+        # factor > 100 → lighter; try 170-200 for strong glow
         c = QColor(c)
         return QColor(c).lighter(factor)
 
@@ -716,13 +833,16 @@ class Q_updating_dropdown(QWidget):
 
 
 class Q_com_port_dropdown(QWidget):
-    """updates available com ports for opening dropdown"""
+    """updates available com ports for opening dropdown
+
+    WIP:        placeholder_text="Select COM port",
+
+    """
 
     def __init__(
         self,
         default_port=None,
         on_select_function=None,
-        placeholder_text="Select COM port",
         trigger_for_reselection=False,
         label="",
         label_pos="left",
@@ -827,13 +947,13 @@ class Q_slider(QWidget):
         # slider
         self.slider = QSlider(Qt.Horizontal)
         self.slider.setRange(self.min_val, self.max_val)
-        if start_val != None:
+        if start_val is not None:
             self.slider.setValue(start_val)
         self.slider.valueChanged.connect(self._on_slider_changed)
 
         # setbox
         self.setbox = QLineEdit()
-        if start_val != None:
+        if start_val is not None:
             self.setbox.setText(str(start_val))
         self.setbox.editingFinished.connect(self._on_line_edit_finished)
 
@@ -1002,8 +1122,11 @@ class Q_output_terminal(QWidget):
         self._append_log_signal.connect(self._append_log, type=Qt.QueuedConnection)
 
         if copy_prints_to_log == True:
-            builtins.original_print = builtins.print
-            self.original_print = builtins.original_print
+            try:
+                self.original_print = builtins.original_print
+            except AttributeError:
+                builtins.original_print = builtins.print
+                self.original_print = builtins.original_print
 
             def _print_and_log(*args, **kwargs):
                 self.log(*args, *kwargs)
@@ -1027,8 +1150,8 @@ class Q_output_terminal(QWidget):
                 cursor.removeSelectedText()
                 cursor.deleteChar()
 
-    def log(self, *text, sep=" ", end="\n", color=None, bold=False, bg=None, warn=False, flush=None, file=None):
-        """flush and file args are for compatibility with print"""
+    def log(self, *text, sep=" ", end="\n", color=None, bold=False, bg=None, warn=False, flush=None, file=None):  # noqa: ARG002
+        """unused flush and file args are for compatibility with print"""
         if self.enable_logging == False:
             return
 
@@ -1070,7 +1193,7 @@ class Q_output_terminal(QWidget):
 
 
 class Q_dropdown(QWidget):
-    def __init__(self, values=[], on_select_function=None, label="", label_pos="left"):
+    def __init__(self, values=(), on_select_function=None, label="", label_pos="left"):
         super().__init__()
 
         self.on_select_function = on_select_function
@@ -1104,8 +1227,8 @@ class Q_button(QWidget):
         self.on_click_function = on_click_function
 
         self.widget = QPushButton(text)
-        # lambda needed becasue pyqt5 passes bool of button to function
-        self.widget.clicked.connect(lambda x: self.on_click_function())
+        # lambda needed becasue pyqt5 passes bool of button to function:
+        self.widget.clicked.connect(lambda _: self.on_click_function())
 
         Q_handle_label_positioning(self, label, label_pos)
 
@@ -1117,8 +1240,8 @@ class Q_input_line(QWidget):
         label_pos="left",
         start_text=None,
         placeholder_text="",
-        on_enter_function=lambda x: None,
-        on_change_function=lambda x: None,
+        on_enter_function=lambda _: None,
+        on_change_function=lambda _: None,
     ):
         super().__init__()
 
@@ -1157,8 +1280,10 @@ class Q_checkbox(QWidget):
         self.widget = QCheckBox()
         self.widget.stateChanged.connect(self.trigger)
 
-        if on_change_function_or_global_label == None:
-            on_change_function_or_global_label = lambda *_, **__: None
+        if on_change_function_or_global_label is None:
+
+            def on_change_function_or_global_label(*_, **__):
+                return None
         elif isinstance(on_change_function_or_global_label, str):
             self.global_label = on_change_function_or_global_label
 
@@ -1214,7 +1339,7 @@ class Q_file_path(QWidget):
         if read_only_textbox:
             self.path_box.setReadOnly(True)
 
-        if start_value != None:
+        if start_value is not None:
             self.set(start_value)
 
         Q_handle_label_positioning(self, label=self.path_box, label_pos=box_pos)
@@ -1264,6 +1389,8 @@ class Q_folder_path(QWidget):
 class Q_tabs(QWidget):
     def __init__(
         self,
+        title=None,
+        icon_path=None,
         tab_widget_class=None,
         moveable=True,
         closeable=True,
@@ -1278,6 +1405,10 @@ class Q_tabs(QWidget):
         self.closeable = closeable
         self.confirm_tab_close = confirm_tab_close
         self.tab_widget_class = tab_widget_class
+        self.title = title
+
+        self.set_title(title)
+        self.set_icon(icon_path)
 
         layout = QVBoxLayout(self)
         self.tabs = QTabWidget()
@@ -1339,6 +1470,15 @@ class Q_tabs(QWidget):
         # Start with one tab
         self.add_tab()
 
+    def set_title(self, title):
+        self.title = title
+        self.setWindowTitle(title)
+
+    def set_icon(self, icon_path):
+        self.icon_path = icon_path
+        if icon_path is not None:
+            self.setWindowIcon(QIcon(icon_path))
+
     def add_tab(self, *_, widget_class=None, title="New Tab"):
         if widget_class is None:
             if self.tab_widget_class is None:
@@ -1386,7 +1526,7 @@ class Q_tabs(QWidget):
     def close_tab(self, index=None):
         if index is None:
             index = self.get_current_index()
-        if len(self.tabs) == 1:
+        if self.tabs.count() == 1:
             if self.confirm_tab_close:
                 answer = Q_popup(
                     self,
@@ -1441,7 +1581,7 @@ class Q_tabs(QWidget):
         self.tabs.addTab(self.placeholder, "+")
 
     def _add_close_button(self, index):
-        if len(self.tabs) > 1 or self.allow_remove_last_tab == True:
+        if self.tabs.count() > 1 or self.allow_remove_last_tab == True:
             btn = QPushButton("x")
             btn.setFixedSize(15, 15)
             # Make it bold, red, and bigger
@@ -1525,10 +1665,11 @@ class Q_sidebar(QScrollArea):
         self.toggle_button = QPushButton(button_label)
         self.toggle_button.setFixedSize(30, 30)
         self.toggle_button.clicked.connect(self.toggle_expanded)
+        self._layout.insertWidget(0, self.toggle_button)
 
         try:
             self.previous_expanded_width = self.get_expanded_width()
-        except:
+        except Exception:
             self.previous_expanded_width = 200
 
     @property
@@ -1592,13 +1733,201 @@ class Q_sidebar(QScrollArea):
         self._add_line_before_next_add = line_after
 
 
-class Q_image_GUI(QMainWindow):
-    """Intended as a parent class for an iamge GUI with settings sidebar.
+class Q_GUI_backend(QWidget):
+    """Intended as a parent class for any GUI that has a sidebar.
+
+    Needed in child class:
+        Run "super().__init__()" in start of __init__.
+
+        If you define your own closeEvent(self,event) than add "super().closeEvent(event)" at end
+
+        change bulb color or on state by changing the global vars bulb_on and bulb_color
+
+        TODO: Add settings as self.settings.add(~Widget~/~Layout~)
+
+        check:main_box = Q_splitter_vertical()  # allows user to change size between elements
+
+        # mention Q_add_globals_check
+
+    """
+
+    def __init__(
+        self,
+        title: str = "",
+        icon_path: str | None = None,
+        ask_confirm_closing: bool = False,
+        hide_title_bar: bool = False,
+        on_close_function: Callable | None = None,
+        settings_file_path: str = "GUI_settings.ini",
+    ):
+        super().__init__()
+
+        ############################################
+        # handle args
+
+        self.ask_confirm_closing = ask_confirm_closing
+        if on_close_function is None:
+            self.on_close_function = lambda: None
+        else:
+            self.on_close_function = on_close_function
+        self.set_title(title)
+        self.set_icon(icon_path)
+        if hide_title_bar == True:
+            self.setWindowFlags(Qt.FramelessWindowHint | Qt.Window)
+
+        ############################################
+        # setup settings file loading/saving
+
+        self.settings = Q_Settings(self, settings_file_path)
+
+    ########################################
+    # general methods:
+
+    def log(self, *text, sep=" ", end="\n"):
+        if hasattr(self, "output_terminal"):
+            self.output_terminal.log(*text, sep=sep, end=end)
+        else:
+            print(*text, sep=sep, end=end)
+
+    def set_size(self, width, height):
+        self.resize(int(width), int(height))
+
+    def set_position(self, x, y):
+        self.move(int(x), int(y))
+
+    def set_title(self, title=""):
+        self.setWindowTitle(title)
+
+    def set_icon(self, icon_path):
+        self.icon_path = icon_path
+        if icon_path is not None:
+            self.setWindowIcon(QIcon(icon_path))
+
+    #######################################
+    # Q event handler replacement (needs specific names)
+
+    def _helper_closeEvent(self):
+        """Saves gui sate to next startup. Execute on_close_function. Closes threads in self.threads"""
+        self.settings.set_gui_state_as_startup()
+
+        self.on_close_function()
+
+        if hasattr(self, "threads"):
+            for thread in self.threads:
+                try:
+                    thread.quit()
+                except Exception:
+                    pass
+
+    def closeEvent(self, event):  # type:ignore
+        # Optional: ask for confirmation
+        if self.ask_confirm_closing == True:
+            reply = QMessageBox.question(
+                self, "Confirm Exit", "Are you sure you want to quit?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No
+            )
+            if reply == QMessageBox.Yes:
+                self._helper_closeEvent()
+                event.accept()  # Close the window
+            else:
+                event.ignore()  # Ignore the close
+        else:
+            self._helper_closeEvent()
+            event.accept()  # Close the window
+
+
+class Q_sidebar_GUI(Q_GUI_backend):
+    """Intended as a parent class for any GUI that has a sidebar.
+
+    Needed in child class:
+        Run "super().__init__()" in start of __init__.
+
+        If you define your own closeEvent(self,event) than add "super().closeEvent(event)" at end
+
+        change bulb color or on state by changing the global vars bulb_on and bulb_color
+
+        TODO: Add settings as self.settings.add(~Widget~/~Layout~)
+
+        check:main_box = Q_splitter_vertical()  # allows user to change size between elements
+
+        # mention Q_add_globals_check
+
+    """
+
+    def __init__(
+        self,
+        widget: QWidget | None = None,
+        title: str = "",
+        icon_path: str | None = None,
+        ask_confirm_closing: bool = False,
+        hide_title_bar: bool = False,
+        on_close_function: Callable | None = None,
+        add_bulb: bool = True,
+        settings_file_path: str = "GUI_settings.ini",
+    ):
+        super().__init__(
+            title=title,
+            icon_path=icon_path,
+            ask_confirm_closing=ask_confirm_closing,
+            hide_title_bar=hide_title_bar,
+            on_close_function=on_close_function,
+            settings_file_path=settings_file_path,
+        )
+        ############################################
+        # handle args
+
+        if widget is None:
+            self._widget = QLabel("Placeholder: Define widget...")
+        else:
+            self._widget = widget
+
+        ############################################
+        # Layout init
+        ############################################
+
+        # sidebar
+        self.sidebar = Q_sidebar(self)
+        if add_bulb == True:
+            self.bulb = Q_bulb()
+            get_main_globals()["bulb_on"] = self.bulb.get_state()
+            get_main_globals()["bulb_color"] = self.bulb.get_color()
+            Q_add_globals_check(self, "bulb_on", self.bulb.set_state)
+            Q_add_globals_check(self, "bulb_color", self.bulb.set_color)
+
+        # Horizontal splitter for sidebar and main box (right side)
+        self.sidebar_main_splitter = Q_splitter_horizontal()
+        self.sidebar_main_splitter.addWidget(self.sidebar)
+        self.sidebar_main_splitter.addWidget(self._widget)  # widget is at index 1 of sidebar_main_splitter
+        self._widget_index = 1
+        self.sidebar_main_splitter.setStretchFactor(0, 1)
+        self.sidebar_main_splitter.setStretchFactor(1, 4)
+        self.sidebar_main_splitter.setStretchFactor(2, 3)
+
+        # to avoid manual scroll collapse:
+        self.sidebar_main_splitter.setChildrenCollapsible(False)
+
+        # frame layout for proper display
+        frame_layout = QHBoxLayout()
+        frame_layout.addWidget(self.sidebar_main_splitter)
+        self.setLayout(frame_layout)
+
+    def replace_widget(self, widget: QWidget):
+        # replace widget
+        self.sidebar_main_splitter.replaceWidget(self._widget_index, widget)
+        # Clean up the old widget memory
+        self._widget.deleteLater()
+        # Update the variable so 'self._widget' points to the new one
+        self._widget = widget
+
+    def get_widget(self):
+        return self._widget
+
+
+class Q_image_GUI(Q_sidebar_GUI):
+    """Intended as a parent class for an image GUI with settings sidebar.
 
     Needed in child class:
         Run "super().__init__()" in start of __init__.
         Define get_image method.
-        Add settings as self.settings.add(~Widget~/~Layout~)
         If you define your own closeEvent(self,event) than add "super().closeEvent(event)" at end
 
         change bulb color or on state by changing the global vars bulb_on and bulb_color
@@ -1612,114 +1941,70 @@ class Q_image_GUI(QMainWindow):
         hide_title_bar=False,
         on_close_function=None,
         add_bulb=True,
-        default_width=1920 / 2,
-        defualt_height=1080 / 2,
-        defualt_x_pos=1920 / 3,
-        defautl_y_pos=1080 / 3,
-        default_sidebar_width=200,
-        default_sidebar_extended_state=True,
+        settings_file_path="GUI_settings.ini",
     ):
-        super().__init__()
-
-        self.central_widget = QWidget()
-        self.setCentralWidget(self.central_widget)
-
-        ############################################
-        # load GUI settings
-
-        self.settings = QSettings("GUI_settings.ini", QSettings.IniFormat)
-        self.settings.get = self.settings.value
-        self.settings.set = self.settings.setValue
-
-        # runs _restore_saved_GUI after child class __init__ to set state with present child widgets:
-        QTimer.singleShot(0, self._restore_saved_GUI)
+        super().__init__(
+            title=title,
+            icon_path=icon_path,
+            ask_confirm_closing=ask_confirm_closing,
+            hide_title_bar=hide_title_bar,
+            add_bulb=add_bulb,
+            on_close_function=on_close_function,
+            settings_file_path=settings_file_path,
+        )
 
         ############################################
-        # globals check
+        # init attributes
 
-        self.check_globals_list = []
-        self._globals_check_timer = QTimer(self)
-        self._globals_check_timer.timeout.connect(self.check_globals_change)
-        self._globals_check_timer.start(100)  # ms
-
-        ############################################
-        # sidebar
-
-        self.sidebar = Q_sidebar(self)
-        if add_bulb == True:
-            self.bulb = Q_bulb()
-            get_main_globals()["bulb_on"] = self.bulb.get_state()
-            get_main_globals()["bulb_color"] = self.bulb.get_color()
-            Q_add_globals_check(self, "bulb_on", self.bulb.set_state)
-            Q_add_globals_check(self, "bulb_color", self.bulb.set_color)
-
-        ############################################
-
-        self.set_title(title)
-        self.set_icon(icon_path)
-        if hide_title_bar:
-            self.setWindowFlags(Qt.FramelessWindowHint | Qt.Window)
-        if on_close_function == None:
-            self.on_close_function = lambda: None
-        else:
-            self.on_close_function = on_close_function
-        self.ask_confirm_closing = ask_confirm_closing
-        self.threads = []  # for threads in child class
-        self.output_terminal = None  # in case not defined in child class
         self.current_image = None
         self.zoom = 1
 
         ############################################
         # Timer to update image
 
-        self._globals_check_timer = QTimer()
-        self._globals_check_timer.timeout.connect(self.update_image)
-        # update every 10 ms -> up to 100 fps
-        self._globals_check_timer.start(10)
+        self._image_update_timer = QTimer()
+        self._image_update_timer.timeout.connect(self.update_image)
+        self._image_update_timer.start(10)  # update every 10 ms -> up to 100 fps
 
         ############################################
-        # Image box setup
+        # layout setup
 
         self.image = QLabel()
         self.image.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
         self.image.setAlignment(Qt.AlignCenter)
         self.image.resizeEvent = self._on_window_resize
 
-        ############
-
         self.top_line = QLabel("My Image Title")
         self.top_line.setAlignment(Qt.AlignCenter)
         self.top_line.setStyleSheet("font-weight: bold; font-size: 20px;")
         self.top_line.setSizePolicy(self.top_line.sizePolicy().horizontalPolicy(), QSizePolicy.Fixed)
 
-        def get():
+        def top_line_get():
             return self.top_line.text()
 
-        self.top_line.get = get
+        self.top_line.get = top_line_get
 
-        def set(text):
+        def top_line_set(text):
             self.top_line.setText(text)
 
-        self.top_line.set = set
+        self.top_line.set = top_line_set
         self.top_line_layout = QHBoxLayout()
         self.top_line_layout.addWidget(self.sidebar.toggle_button)
         self.top_line_layout.addWidget(self.top_line)
-
-        ############
 
         self.bottom_line = QLabel("")
         self.bottom_line.setAlignment(Qt.AlignCenter)
         self.bottom_line.setStyleSheet("font-weight: bold; font-size: 20px;")
 
-        def get():
+        def bottom_line_get():
             return self.bottom_line.text()
 
-        self.bottom_line.get = get
+        self.bottom_line.get = bottom_line_get
 
-        def set(text):
+        def bottom_line_set(text):
             self.bottom_line.setText(text)
 
-        self.bottom_line.set = set
+        self.bottom_line.set = bottom_line_set
         self.bottom_line_layout = QHBoxLayout()
         self.bottom_line_layout.addWidget(self.bottom_line)
         # self.bottom_line_layout.addStretch()
@@ -1738,82 +2023,12 @@ class Q_image_GUI(QMainWindow):
         main_box = Q_splitter_vertical()  # allows user to change size between elements
         main_box.addWidget(image_box)
 
-        ############################################
-        # right box
-
-        # self.zoom_slider = Q_slider(label="Zoom Factor", min_val=1,
-        #                             max_val=100, start_val=1, on_change_function=self.set_zoom)
-
-        # self.image2 = QLabel()
-        # self.image2.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
-        # self.image2.setAlignment(Qt.AlignCenter)
-        # self.image2.resizeEvent = self._on_window_resize2
-
-        # self.image2_title = QLabel("WIP")
-        # self.image2_title.setAlignment(Qt.AlignCenter)
-        # self.image2_title.setStyleSheet("font-weight: bold; font-size: 16px;")
-        # self.image2_title.setSizePolicy(
-        #     self.image2_title.sizePolicy().horizontalPolicy(),
-        #     QSizePolicy.Fixed)
-
-        # self.image2_title_line = QHBoxLayout()
-        # self.image2_title_line.addWidget(self.image2_title)
-
-        # image2_box = QWidget()
-        # image2_box_layout = QVBoxLayout(image2_box)
-        # image2_box_layout.addLayout(self.image2_title_line)
-        # image2_box_layout.addWidget(self.image2)
-
-        # right_box = Q_splitter_vertical()  # allows user to change size between elements
-        # right_box.addWidget(image2_box)
-
-        ############################################
-        # Horizontal splitter for sidebar and main box (right side)
-
-        self.frame_horizontal_splitter = Q_splitter_horizontal()
-        self.frame_horizontal_splitter.addWidget(self.sidebar)
-        self.frame_horizontal_splitter.addWidget(main_box)
-        # self.frame_horizontal_splitter.addWidget(right_box)
-        self.frame_horizontal_splitter.setStretchFactor(0, 1)
-        self.frame_horizontal_splitter.setStretchFactor(1, 4)
-        self.frame_horizontal_splitter.setStretchFactor(2, 3)
-
-        # to avoid manual scroll collapse:
-        self.frame_horizontal_splitter.setChildrenCollapsible(False)
-
-        ############################################
-        # frame layout
-
-        frame_layout = QHBoxLayout()
-        frame_layout.addWidget(self.frame_horizontal_splitter)
-        self.central_widget.setLayout(frame_layout)
+        self.set_widget(main_box)
+        self.sidebar_main_splitter.addWidget(main_box)
 
     ########################################
-    # general gethods:
+    # general methods:
     ########################################
-
-    def reset_startup_gui_settings(self):
-        self.settings.beginGroup("gui")
-        self.settings.remove("")
-        self.settings.endGroup()
-        print("Reset startup GUI settings.")
-
-    def reset_startup_settings(self):
-        self.settings.clear()
-        print("Reset startup settings.")
-
-    # global variable change check and trigger if changed. Add elements with Q_add_globals_check:
-    def check_globals_change(self):
-        if len(self.check_globals_list) == 0:
-            self._globals_check_timer.stop()
-        for checker_object in self.check_globals_list:
-            checker_object.check()
-
-    def log(self, *text, sep=" ", end="\n"):
-        if self.output_terminal is not None:
-            self.output_terminal.log(*text, sep=sep, end=end)
-        else:
-            print(*text, sep=sep, end=end)
 
     def update_image(self):
         try:
@@ -1821,23 +2036,10 @@ class Q_image_GUI(QMainWindow):
             self._repaint_image()
         except Exception as e:
             self.log("--------------------")
-            self.log(f"[ERROR START] {str(e)}:")
-            self.log(traceback.format_exc)
-            self.log(f"[ERROR END] {str(e)}:")
+            self.log(f"[ERROR START] {e}:")
+            self.log(traceback.format_exc())
+            self.log(f"[ERROR END] {e}:")
             self.log("--------------------")
-
-    def set_size(self, width, height):
-        self.resize(int(width), int(height))
-
-    def set_position(self, x, y):
-        self.move(int(x), int(y))
-
-    def set_title(self, title=""):
-        self.setWindowTitle(title)
-
-    def set_icon(self, path):
-        if path is not None:
-            self.setWindowIcon(QIcon(path))
 
     def get_image(self):
         """fallback warning mehtod"""
@@ -1847,7 +2049,7 @@ class Q_image_GUI(QMainWindow):
         scale = 1.4
         th = 3
         color = (255, 255, 255)
-        (text_w, text_h), baseline = cv2.getTextSize(text, font, scale, th)
+        (text_w, text_h), _baseline = cv2.getTextSize(text, font, scale, th)
         x = (warn_frame.shape[1] - text_w) // 2
         y = (warn_frame.shape[0] + text_h) // 2
         cv2.putText(warn_frame, text, (x, y), font, scale, color, th, cv2.LINE_AA)
@@ -1896,53 +2098,3 @@ class Q_image_GUI(QMainWindow):
         # Scale pixmap to label size, keeping aspect ratio
         scaled_pixmap = pixmap.scaled(self.image2.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation)
         self.image2.setPixmap(scaled_pixmap)
-
-    def _execute_close(self):
-        self.settings.set("gui/geometry", self.saveGeometry())
-        self.settings.set("gui/state", self.saveState())
-        for i, widget in enumerate(self.findChildren(QSplitter)):
-            self.settings.set(f"gui/splitter{i}", widget.saveState())
-        for i, widget in enumerate(self.findChildren(Q_sidebar)):
-            self.settings.set(f"gui/sidebar{i}_expanded", widget.isVisible())
-
-        self.on_close_function()
-        for thread in self.threads:
-            try:
-                thread.quit()
-            except Exception:
-                pass
-
-    def _restore_saved_GUI(self):
-        geometry = self.settings.get("gui/geometry")
-        state = self.settings.get("gui/state")
-        if geometry:
-            self.restoreGeometry(geometry)
-        if state:
-            self.restoreState(state)
-        for i, widget in enumerate(self.findChildren(QSplitter)):
-            state = self.settings.get(f"gui/splitter{i}")
-            if state:
-                widget.restoreState(state)
-        for i, widget in enumerate(self.findChildren(Q_sidebar)):
-            expanded_state = self.settings.get(f"gui/sidebar{i}_expanded")
-            if expanded_state != None:
-                widget.set_expanded_state(expanded_state)
-                # widget.updateGeometry()
-
-    #######################################
-    # Q event handlers
-
-    def closeEvent(self, event):
-        # Optional: ask for confirmation
-        if self.ask_confirm_closing == True:
-            reply = QMessageBox.question(
-                self, "Confirm Exit", "Are you sure you want to quit?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No
-            )
-            if reply == QMessageBox.Yes:
-                self._execute_close()
-                event.accept()  # Close the window
-            else:
-                event.ignore()  # Ignore the close
-        else:
-            self._execute_close()
-            event.accept()  # Close the window

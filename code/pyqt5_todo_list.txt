@@ -2,6 +2,9 @@
 pyqt5 todo list
 ######################
 
+consider adding QStatusBar at bottom 
+consider adding QMenuBar at top
+
 add bulb to top line
 
 switcht ot pyside6 and google how to make look good in windows11 and auto use dark mode settings of windows
