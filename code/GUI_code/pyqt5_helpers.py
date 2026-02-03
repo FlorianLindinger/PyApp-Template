@@ -301,11 +301,31 @@ def Q_popup(
 
 
 def Q_splitter_vertical():
-    return QSplitter(Qt.Vertical)
+    splitter = QSplitter(Qt.Vertical)
+    # splitter.setStyleSheet("""
+    #     QSplitter::handle {
+    #         background-color: #d0d0d0;
+    #         height: 3px;
+    #     }
+    #     QSplitter::handle:hover {
+    #         background-color: #a0a0a0;
+    #     }
+    # """)
+    return splitter
 
 
 def Q_splitter_horizontal():
-    return QSplitter(Qt.Horizontal)
+    splitter = QSplitter(Qt.Horizontal)
+    # splitter.setStyleSheet("""
+    #     QSplitter::handle {
+    #         background-color: #d0d0d0;
+    #         width: 3px;
+    #     }
+    #     QSplitter::handle:hover {
+    #         background-color: #a0a0a0;
+    #     }
+    # """)
+    return splitter
 
 
 def Q_horizontal_line(height_pxl=2):
@@ -1665,11 +1685,10 @@ class Q_sidebar(QScrollArea):
         self.toggle_button = QPushButton(button_label)
         self.toggle_button.setFixedSize(30, 30)
         self.toggle_button.clicked.connect(self.toggle_expanded)
-        self._layout.insertWidget(0, self.toggle_button)
 
         try:
             self.previous_expanded_width = self.get_expanded_width()
-        except Exception:
+        except:
             self.previous_expanded_width = 200
 
     @property
@@ -1731,6 +1750,7 @@ class Q_sidebar(QScrollArea):
                 self._layout.insertLayout(self._layout.count() - self._strech_at_end, elem)
         # add line on next add
         self._add_line_before_next_add = line_after
+
 
 
 class Q_GUI_backend(QWidget):
