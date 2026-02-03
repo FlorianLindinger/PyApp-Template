@@ -2,9 +2,24 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+make a batch that find needed packages. 
+save auto determined needed packges next to defualt packages
+
+
+print lsit of packages whenever they are install from list
+print apps that will be installed with [Info] Installing packages (see below):
+
+how to ensure there is python for install_packages_needed_in_python_files.bat? use local python? and trigger its installatin wihtout venv?
+-> apparently activaes to have ensured. maybe dont fore venv aswell. allow for only python install. definitetly becasue otherwise venv ,igjht already ahve worong installed
+
+add prints to install_packages_needed_in_python_files.bat
+. maybe also what was before nad what is now and maybe diff
+
 ===================================
 important
 ===================================
+
+even notepad.exe for dev_tools required confirmation
 
 is python_code_path setting working with pipreqs
 

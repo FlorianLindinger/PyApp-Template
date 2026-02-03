@@ -42,7 +42,7 @@ if %errorlevel% neq 0 (
 
 :: upgrade pip
 REM can't use pip directly here because pip is implemented in portable venv as batch and does not return (alternatively works if called with "call"):
-python -m pip install --upgrade pip
+call python -m pip install --upgrade pip
 if %errorlevel% neq 0 (
     echo [Warning] pip upgrade failed.
 ) else (
