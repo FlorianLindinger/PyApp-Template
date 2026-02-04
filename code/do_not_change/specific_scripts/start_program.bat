@@ -48,8 +48,8 @@ if "%icon_path%"=="" (
 	pause > nul
 	exit 5
 )
-if "%python_code_path%"=="" (
-	echo [Error 6] Variable python_code_path not defined in "%settings_path%". Aborting. Press any key to exit.
+if "%python_code_name%"=="" (
+	echo [Error 6] Variable python_code_name not defined in "%settings_path%". Aborting. Press any key to exit.
 	pause > nul
 	exit 6
 )
@@ -69,17 +69,7 @@ if "%python_version%"=="" (
 FOR %%I IN ("%settings_path%") DO set "settings_dir=%%~dpI"
 cd /d "%settings_dir%"
 call :set_abs_path "%icon_path%" "icon_path"
-call :set_abs_path "%python_code_path%" "python_code_path"
-call :set_abs_path "%after_python_crash_code_path%" "after_python_crash_code_path"
 cd /d "%current_file_path%"
-
-:: get python code paths directoriers:
-FOR %%F IN ("%python_code_path%") DO (
-    set "python_code_dir=%%~dpF"
-)
-FOR %%F IN ("%after_python_crash_code_path%") DO (
-    set "crash_python_code_dir=%%~dpF"
-)
 
 :: ======================
 :: --- Code Execution ---
@@ -105,15 +95,13 @@ if "%use_global_python%"=="false" (
 	)
 )
 
-:: go to directory of main python code and execute it and return to folder of this file. Faulthandler catches python interpreter crash:
-cd /d "%python_code_dir%"
+:: Execute python code. Faulthandler catches python interpreter crash:
 if "%use_global_python%"=="false" (
-	call python -X faulthandler "%python_code_path%"
+	call python -X faulthandler "%python_code_name%"
 ) else (
-	py -%python_version% -X faulthandler "%python_code_path%"
+	py -%python_version% -X faulthandler "%python_code_name%"
 )
 set "py_errorlevel=%ERRORLEVEL%"
-cd /d "%current_file_path%"
 
 :: %py_errorlevel% is what the last python execution gives out in sys.exit({int_errorlevel}). Errorlevel not 0 (default is 1 for python crash) will run main_code.py or after_python_crash_code.py (depending on parameter restart_main_code_on_crash in non-user_settings.ini).
 if %py_errorlevel% neq 0 ( 
@@ -133,31 +121,25 @@ if %py_errorlevel% neq 0 (
 if "%restart_main_code_on_crash%"=="false" (
 	REM run after_python_crash_code.py 
 	if exist "%after_python_crash_code_path%" (
-		REM go to directory of python code and execute it and return to folder of this file
-		cd /d "%crash_python_code_dir%"
 		if "%use_global_python%"=="false" (
-			call python -X faulthandler "%after_python_crash_code_path%"
+			call python -X faulthandler "%after_python_crash_code_name%"
 		) else (
-			py -%python_version% -X faulthandler "%python_code_path%"
+			py -%python_version% -X faulthandler "%after_python_crash_code_name%"
 		)
 		set "py_errorlevel=%ERRORLEVEL%"
-		cd /d "%current_file_path%"
 	REM exit function if after_python_crash_code does not exist
 	) else (
 		exit 0 
 	)
 )   else (	
 	REM run main_code.py again
-	REM go to directory of python code and execute it and return to folder of this file:
 	REM argument "crashed" indicated to the python code that it is a repeat call after a crash and can be checked for with sys.argv[-1]=="crashed"
-	cd /d "%python_code_dir%"
 	if "%use_global_python%"=="false" (
-		call python -X faulthandler "%python_code_path%" "crashed" 
+		call python -X faulthandler "%python_code_name%" "crashed" 
 	) else (
-		py -%python_version% -X faulthandler "%python_code_path%"
+		py -%python_version% -X faulthandler "%python_code_name%" "crashed"
 	)
 	set "py_errorlevel=%ERRORLEVEL%"
-	cd /d "%current_file_path%"
 )
 if "%py_errorlevel%" neq "0" ( 
 	call :handle_python_crash 
