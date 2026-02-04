@@ -2,6 +2,48 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+"""
+can i get just the packages with pipreqs. install them in emnpty venv and then freeze to get workfing list ? Yes, this is actually the most professional way to handle dependencies. It allows you to use pipreqs for discovery and pip for resolution.
+:: ... [Inside your temp venv after pipreqs --mode no-pin has run] ...
+
+make a batch for finding list of required for a given python exe and folder and output path
+
+echo.
+echo ==============================================
+echo Installing discovered packages...
+echo ==============================================
+:: Install the "naked" requirements. Pip solves the versions here.
+call python -m pip install -r "%python_file_requirements_path%"
+
+if %errorlevel% equ 0 (
+    echo.
+    echo ==============================================
+    echo Cleaning and Freezing requirements...
+    echo ==============================================
+    
+    :: The "Clean Freeze" Trick:
+    :: We use a python one-liner to compare what's installed against what we actually asked for.
+    :: This removes 'pipreqs' and other 'meta' tools from the final list.
+    
+    python -c "import pkg_resources; reqs = [line.strip().lower() for line in open(r'%python_file_requirements_path%') if line.strip()]; installed = {p.project_name.lower(): p.version for p in pkg_resources.working_set}; f = open(r'%python_file_requirements_path%', 'w'); [f.write(f'{name}=={installed[name]}\n') for name in reqs if name in installed]; f.close()"
+    
+    echo Final clean requirements list created.
+)
+"""
+
+
+difference in packages is already printed by pigar
+
+add comment to all settings: REM add a "." if otherwise backslashes are at the end  ???
+
+ship pipreqs as folder exe?
+
+replace pipreqs with pigar
+
+add pipreqs mappigns to all
+
+create a pipreqs batch that has the needed mappings for all common packages e.g. opencv-python for cv2
+
 make a batch that find needed packages. 
 save auto determined needed packges next to defualt packages
 
@@ -10,7 +52,8 @@ print lsit of packages whenever they are install from list
 print apps that will be installed with [Info] Installing packages (see below):
 
 how to ensure there is python for install_packages_needed_in_python_files.bat? use local python? and trigger its installatin wihtout venv?
--> apparently activaes to have ensured. maybe dont fore venv aswell. allow for only python install. definitetly becasue otherwise venv ,igjht already ahve worong installed
+-> apparently activaes to have ensured. maybe dont fore venv aswell. allow for only python install. definitetly becasue otherwise venv ,igjht already ahve worong installed.
+definitely chekc if python vertison correct
 
 add prints to install_packages_needed_in_python_files.bat
 . maybe also what was before nad what is now and maybe diff
