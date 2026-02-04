@@ -33,9 +33,6 @@ if %errorlevel% equ 0 (
 )
 """
 
-
-difference in packages is already printed by pigar
-
 add comment to all settings: REM add a "." if otherwise backslashes are at the end  ???
 
 ship pipreqs as folder exe?
