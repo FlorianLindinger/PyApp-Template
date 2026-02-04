@@ -2,6 +2,8 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+add "generate_list_of_needed_python_packages.bat"
+
 """
 can i get just the packages with pipreqs. install them in emnpty venv and then freeze to get workfing list ? Yes, this is actually the most professional way to handle dependencies. It allows you to use pipreqs for discovery and pip for resolution.
 :: ... [Inside your temp venv after pipreqs --mode no-pin has run] ...
@@ -61,6 +63,8 @@ add prints to install_packages_needed_in_python_files.bat
 ===================================
 important
 ===================================
+
+remove setting for where to store pythoin files. maybe allow only name and not  other folder
 
 even notepad.exe for dev_tools required confirmation
 
