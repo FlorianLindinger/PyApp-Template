@@ -12,6 +12,11 @@
 :: define local variables (with relative paths being relative to this file)
 set "settings_path=..\..\non-user_settings.ini"
 
+:: move to folder of this file (needed for relative paths).
+:: current_file_path variable needed as workaround for nieche Windows bug where this file gets called with quotation marks:
+set "current_file_path=%~dp0"
+cd /d "%current_file_path%"
+
 :: import settings from settings_path:
 for /F "tokens=1,2 delims==" %%A IN ('findstr "^" "%settings_path%"') DO ( set "%%A=%%B" )
 
