@@ -26,6 +26,7 @@ cd /d "%current_file_path%"
 :: make paths absolute if not
 call :set_abs_path "%settings_path%" "settings_path"
 call :set_abs_path "%environment_activator_path%" "environment_activator_path" 
+call :set_abs_path "%icon_changer_path%" "icon_changer_path"
 
 :: check if files exist
 if NOT exist "%settings_path%" (
@@ -65,11 +66,14 @@ if "%python_version%"=="" (
 	set "python_version=3"
 )
 
-:: convert the path settings that are relative to settings file (at %settings_path%%) to absolute paths:
+:: move to directory of settings file to use its variables relative to it
 FOR %%I IN ("%settings_path%") DO set "settings_dir=%%~dpI"
 cd /d "%settings_dir%"
+
+:: convert to absolute paths (now relative to settings file)
 call :set_abs_path "%icon_path%" "icon_path"
-cd /d "%current_file_path%"
+call :set_abs_path "%python_code_name%" "python_code_name"
+call :set_abs_path "%after_python_crash_code_name%" "after_python_crash_code_name"
 
 :: ======================
 :: --- Code Execution ---
