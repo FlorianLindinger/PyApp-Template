@@ -2,13 +2,24 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
-add "generate_list_of_needed_python_packages.bat"
+do i need activate? linking to Scipots\python does the same. But also in portable venv?
+
+handle modeule not foiund errror better. maybe link to script atht installs
+
+add errorlevel checks to the 1.bat ... to catch errors
+eg.C:\Users\Flo\Documents\Repositories\PyBoson\code\py_env\virt_env\portable_Scripts\..\Scripts\python.exe: can't open file 'C:\\Users\\Flo\\Documents\\Repositories\\PyBoson\\code\\do_not_change\\specific_scripts\\main_code.py': [Errno 2] No such file or directory
+
+-i need a script to check python distro ==  wanted and reinstalls it and deletes venv if needed and resets packages to old
+-i need a scipt that creates venv if not there that calls the python script if not 
+-i need a script to install packages dfrom defualt script that calls the venv script if not
+-i need the main script to check for auto determine message in deauflt_package.txt 
+
+make a determine_requiremnets.txt.bat
+make a installed_packages_to_requirements.txt.bat
+make different version for not fixed versions
+
 
 """
-can i get just the packages with pipreqs. install them in emnpty venv and then freeze to get workfing list ? Yes, this is actually the most professional way to handle dependencies. It allows you to use pipreqs for discovery and pip for resolution.
-:: ... [Inside your temp venv after pipreqs --mode no-pin has run] ...
-
-make a batch for finding list of required for a given python exe and folder and output path
 
 echo.
 echo ==============================================
@@ -33,18 +44,10 @@ if %errorlevel% equ 0 (
 )
 """
 
-add comment to all settings: REM add a "." if otherwise backslashes are at the end  ???
-
-ship pipreqs as folder exe?
-
-replace pipreqs with pigar
 
 add pipreqs mappigns to all
 
-create a pipreqs batch that has the needed mappings for all common packages e.g. opencv-python for cv2
 
-make a batch that find needed packages. 
-save auto determined needed packges next to defualt packages
 
 
 print lsit of packages whenever they are install from list
@@ -61,7 +64,16 @@ add prints to install_packages_needed_in_python_files.bat
 important
 ===================================
 
-remove setting for where to store pythoin files. maybe allow only name and not  other folder
+mention recent improivenetmns to taskabr combining and setting to start in shortcut folder
+
+# somehow pass wdir via shortcuts. maybe have setting to start in shortcut folder or app folder?
+
+app id should be passed from shortcut such that always correct app id is used
+# Tell Windows to use this AppID for this process
+myAppID = sys.argv[1]
+ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myAppID)
+
+how to katch model not found error? maybe ahve minimum open time? somehow python should be in charge and able to fail. maybe only katch if defualt_packages.txt still has trigger text
 
 even notepad.exe for dev_tools required confirmation
 
@@ -471,6 +483,9 @@ Check Git remote for updates and prompt user to pull.
 ===================================
 readme related  and documentation related
 ===================================
+
+add comment to all settings: REM add a "." if otherwise backslashes are at the end  ???
+
 
 mention 3.6+ and warn if chosen 3.5 bc wont work.
 
