@@ -92,7 +92,6 @@ if not exist "!LINK!" (
     pause > nul
     exit /b 2
 ) else (
-    echo [SUCCESS] Shortcut was created.
     exit /b 0
 )
 
@@ -211,7 +210,6 @@ if (-not [string]::IsNullOrEmpty($env:APPID)) {
     Start-Sleep -Milliseconds 200
     try {
         [AppIdHelper]::SetAppId($env:LINK, $env:APPID)
-        Write-Host " + AppID applied: $env:APPID"
     } catch {
         Write-Host " ! Failed to set AppID" -ForegroundColor Red
     }
