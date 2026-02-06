@@ -2,7 +2,8 @@
 :: --- Code Description ---
 :: ========================
 
-
+use determine_requirements.txt.bat to determine needed packages from python files and install them in the python environment.
+look at todo list
 
 
 
