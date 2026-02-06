@@ -1,11 +1,13 @@
 ; launcher.nsi
 ; --------------------------------------
-Name "Batch Launcher (Safe)"
+Name "Batch Launcher"
 OutFile "launcher.exe"
 
-; Show window for debugging
-ShowInstDetails show
-AutoCloseWindow false
+; 1. HIDE THE WINDOW
+; This prevents the "Installing..." window from appearing.
+SilentInstall silent
+
+; Standard settings
 RequestExecutionLevel user
 !include "LogicLib.nsh"
 
@@ -14,47 +16,52 @@ Section "Main"
     Var /GLOBAL BatchArg
     Var /GLOBAL MySelf
 
-    DetailPrint "Parsing arguments..."
+    ; ------------------------------------------
+    ; ARGUMENT PARSING
+    ; ------------------------------------------
+    ; Argument 1 = launcher.exe (We skip this)
+    ; Argument 2 = Batch File Path
+    ; Argument 3 = The Argument to pass
 
-    ; --- FIX IS HERE ---
-    ; Index 1 is the Launcher.exe itself. 
-    ; Index 2 is the Batch File.
-    ; Index 3 is the Argument.
-
-    ; Get The Batch Path (Index 2)
+    ; Get Batch Path (Index 2)
     Push 2
     Call GetParameter
     Pop $BatchPath
 
-    ; Get The Argument (Index 3)
+    ; Get Argument (Index 3)
     Push 3
     Call GetParameter
     Pop $BatchArg
 
-    DetailPrint "Target Batch: $BatchPath"
-    DetailPrint "Target Arg:   $BatchArg"
-
-    ; --- SAFETY CHECK ---
-    ; Prevent the launcher from running itself recursively
+    ; ------------------------------------------
+    ; SAFETY CHECKS
+    ; ------------------------------------------
+    
+    ; 1. Check for Recursive Loop (Launcher launching itself)
     StrCpy $MySelf "$EXEPATH"
     ${If} "$BatchPath" == "$MySelf"
-        MessageBox MB_ICONSTOP "CRITICAL ERROR: Recursive Loop Detected!$\r$\nThe launcher attempted to run itself.$\r$\nCheck your shortcut arguments."
+        MessageBox MB_OK|MB_ICONSTOP "CRITICAL ERROR: Recursive Loop Detected!$\r$\nThe launcher attempted to run itself.$\r$\nCheck your shortcut arguments."
         Abort
     ${EndIf}
 
-    ; Check if file exists
+    ; 2. Check if the Batch file actually exists
     IfFileExists "$BatchPath" Found NotFound
 
     NotFound:
-        MessageBox MB_ICONSTOP "Error: Batch file not found at:$\r$\n$BatchPath"
+        ; This is the only time a window will pop up (Error mode)
+        MessageBox MB_OK|MB_ICONSTOP "Error: Target batch file not found at:$\r$\n$BatchPath"
         Abort
 
     Found:
-        DetailPrint "Executing..."
-        ; Run cmd /k to keep window open for debugging
-        ExecWait 'cmd.exe /k ""$BatchPath" "$BatchArg""'
+        ; ------------------------------------------
+        ; EXECUTION
+        ; ------------------------------------------
+        ; We use 'Exec' so the launcher closes immediately after starting the batch.
+        ; We removed 'cmd /k' so the batch runs naturally (closes when done).
         
-        DetailPrint "Done."
+        Exec '"$BatchPath" "$BatchArg"'
+        
+        Quit
 SectionEnd
 
 ; --------------------------------------
