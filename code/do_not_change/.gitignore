@@ -4,3 +4,7 @@ tmp.exe
 python_file_requirements.txt
 # compilation build folder
 *.build
+# DO_NOT_SYNC folders
+DO_NOT_SYNC
+# python cache folders:
+__pycache__

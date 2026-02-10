@@ -62,13 +62,13 @@ if "%~1"=="" (
 )
 
 :: make paths absolute
-call :set_abs_path "!NAME!" "NAME"
-call :set_abs_path "!TARGET!" "TARGET"
-call :set_abs_path "!WDIR!" "WDIR"
+rem call :set_abs_path "!NAME!" "NAME"
+rem call :set_abs_path "!TARGET!" "TARGET"
+rem call :set_abs_path "!WDIR!" "WDIR"
 
 :: Only set absolute path for ICON if ICON is not empty
 if not "!ICON!"=="" (
-    call :set_abs_path "!ICON!" "ICON"
+   call :set_abs_path "!ICON!" "ICON"
 )
 
 :: strip accidental .lnk from NAME
@@ -80,6 +80,16 @@ for %%D in ("!NAME!") do mkdir "%%~dpD" >nul 2>&1
 :: add shortcut ending
 set "LINK=!NAME!.lnk"
 
+:: delete old target
+if exist "%LINK%" (
+    del "%LINK%"
+    if !ERRORLEVEL! neq 0 (
+        echo [ERROR] Failed to delete old shortcut at "%LINK%" (is its Properties window open?^). Aborting. Press any key to exit.
+        pause > nul
+        exit /b 2
+    )
+)
+
 :: ========================================================
 :: EXECUTION: Handover to Embedded PowerShell
 :: ========================================================
@@ -88,7 +98,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command "iex (${%~f0} | out-strin
 
 :: test if shortcut was created and exit
 if not exist "!LINK!" (
-    echo [ERROR] Shortcut was not created.
+    echo [ERROR] Shortcut was not created. Aborting. Press any key to exit.
     pause > nul
     exit /b 2
 ) else (
@@ -110,6 +120,7 @@ goto :EOF
 
 :USAGE_ERROR
 echo Usage: %~nx0 "name" "target" "args" "working_dir" "icon_path" "description" "appid"
+echo Aborting. Press any key to exit.
 pause > nul
 exit /b 1
 goto :eof
