@@ -2,6 +2,30 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+lesss padding for first print
+
+ahve travebakc error also inside qt tetrminalk
+
+change to global error icon with try excpet of crash
+
+add title and struff to terminal opemneer
+
+add print to script where the errror occured. can i make link?
+
+fix errors not spawining a terminal to dispaly errrors
+
+test if taskbar grouping works for:
+p = subprocess.Popen(
+            [python_exe, script_path],
+            creationflags=subprocess.CREATE_NEW_CONSOLE,
+
+addd debug mode launch that lkaunches it in attached mode. add a debug launcehr shortcut to code folder
+
+use nuitka mode attach to have 2 exe in one. Not sure if teriminal emuatr can still combine with launcher. also better for AV safety
+
+maybne only python script that calls qt terminal needs to change app id. lets cehck if anything can be launched maybe this exe gernaetor thing agian
+
+
 do i need activate? linking to Scipots\python does the same. But also in portable venv?
 
 handle modeule not foiund errror better. maybe link to script atht installs
@@ -63,6 +87,25 @@ add prints to install_packages_needed_in_python_files.bat
 ===================================
 important
 ===================================
+
+maybe run batch via : 
+"""
+3. "Portable" Application Launchers (NSIS / Inno Setup)
+You can use a tool like NSIS (Nullsoft Scriptable Install System) to create a small "Launcher executable."
+
+How it works: NSIS is a scripting language that compiles into a very small, high-reputation .exe. It is used by thousands of apps (like VLC, Spotify).
+
+The Script: You write a script that says "Execute runtime\python.exe main.py and hide the window."
+
+AV Safety: High. NSIS has a very high reputation with Antivirus companies. It is rarely flagged compared to PyInstaller.
+
+Grouping: Excellent. The NSIS .exe can have its own icon embedded directly in the file.
+"""
+
+move all batch stuff to pyhon with runtime? need a non cmd.exe for shortcut target.
+i cant use the installed python since it might not be there anymore and ligic might change in verisons. I guess i can use the pyrton dist directly and then activae and run the script. But then i need to make sure the python dist is there. . actually jsut need python to run the batch which then can do whateveer needed. But if hte bartch fails then the shortcut will not work again and nothing can recover
+
+
 
 mention recent improivenetmns to taskabr combining and setting to start in shortcut folder
 
