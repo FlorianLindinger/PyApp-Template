@@ -1,0 +1,547 @@
+# todo: docstring
+
+# =============================
+#      Local Variables
+# =============================
+settings_file_path = r"..\..\non-user_settings.ini"  # relative to working directory
+python_exe_for_setup = r"..\python_runtime\python.exe"  # relative to working directory
+setup_python_file = r"..\specific_scripts\setup.py"  # relative to working directory
+# =============================
+
+
+# =============================
+#      Terminal Appearance
+# =============================
+
+COLORS = {
+    "WINDOW_BG": "#1e1e1e",
+    "TEXT_MAIN": "#cccccc",
+    "TEXT_DIM": "#888888",
+    "STDOUT": "#d4d4d4",
+    "STDERR": "#ff6b6b",
+    "INPUT_ECHO": "#3794ff",
+    "SUCCESS": "#00ff00",
+    "SELECTION_BG": "#264f78",
+    "SCROLLBAR_HANDLE": "#424242",
+    "SCROLLBAR_HANDLE_HOVER": "#4f4f4f",
+    "INPUT_BG": "#252526",
+    "INPUT_BORDER": "#3c3c3c",
+    "INPUT_FOCUS_BORDER": "#007fd4",
+    "BUTTON_BG": "#0e639c",
+    "BUTTON_HOVER": "#1177bb",
+    "BUTTON_PRESSED": "#094771",
+    "BUTTON_DISABLED": "#333333",
+    "PROMPT": "#0e639c",
+}
+
+STYLESHEET = """
+/* Global Window */
+QMainWindow {{
+    background-color: {WINDOW_BG};
+}}
+QWidget {{
+    background-color: {WINDOW_BG};
+    color: {TEXT_MAIN};
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 14px;
+}}
+
+/* Headings/Labels */
+QLabel {{
+    color: {TEXT_MAIN};
+    font-weight: 500;
+}}
+
+/* Output Area */
+QPlainTextEdit {{
+    background-color: {WINDOW_BG};
+    color: {STDOUT};
+    border: none;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 14px;
+    selection-background-color: {SELECTION_BG};
+}}
+QPlainTextEdit:focus {{
+    border: none;
+}}
+
+/* ScrollBar */
+QScrollBar:vertical {{
+    border: none;
+    background: {WINDOW_BG};
+    width: 14px;
+    margin: 0px 0px 0px 0px;
+}}
+QScrollBar::handle:vertical {{
+    background: {SCROLLBAR_HANDLE};
+    min-height: 20px;
+    border-radius: 7px;
+    margin: 2px;
+}}
+QScrollBar::handle:vertical:hover {{
+    background: {SCROLLBAR_HANDLE_HOVER};
+}}
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{
+    height: 0px;
+}}
+QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {{
+    background: none;
+}}
+
+/* Input Area */
+QLineEdit {{
+    background-color: {INPUT_BG};
+    color: {STDOUT};
+    border: 1px solid {INPUT_BORDER};
+    border-radius: 4px;
+    padding: 8px;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 14px;
+    selection-background-color: {SELECTION_BG};
+}}
+QLineEdit:focus {{
+    border: 1px solid {INPUT_FOCUS_BORDER};
+}}
+
+/* Buttons */
+QPushButton {{
+    background-color: {BUTTON_BG};
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-weight: bold;
+}}
+QPushButton:hover {{
+    background-color: {BUTTON_HOVER};
+}}
+QPushButton:pressed {{
+    background-color: {BUTTON_PRESSED};
+}}
+QPushButton:disabled {{
+    background-color: {BUTTON_DISABLED};
+    color: {TEXT_DIM};
+}}
+""".format(**COLORS)
+
+# =============================
+#      Imports
+# =============================
+
+import ctypes
+import os
+import subprocess
+import sys
+import tempfile
+import traceback
+
+from PySide6.QtCore import QProcess, Qt, QTimer
+from PySide6.QtGui import QColor, QFont, QTextCharFormat, QTextCursor
+from PySide6.QtWidgets import (
+    QApplication,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QMainWindow,
+    QMessageBox,
+    QPlainTextEdit,
+    QPushButton,
+    QVBoxLayout,
+    QWidget,
+)
+
+# =============================
+#      Definitions
+# =============================
+
+
+def format_path(path: str) -> str:
+    """Ensures drive letters are capitalized for a more premium look on Windows."""
+    abs_path = os.path.abspath(path)
+    drive, rest = os.path.splitdrive(abs_path)
+    if drive:
+        return drive.upper() + rest
+    return abs_path
+
+
+class TerminalEmulator(QMainWindow):
+    def __init__(
+        self,
+        python_exe: str,
+        script_path: str,
+        args: list[str],
+        wdir_for_script=None,
+        close_on_success: bool = True,
+        no_input: bool = False,
+        title: str = "Terminal",
+    ):
+        super().__init__()
+
+        self.args = args
+        self.wdir_for_script = wdir_for_script
+        self.close_on_success = close_on_success
+        self.no_input = no_input
+        self.script_path = format_path(script_path)
+        self.python_exe = format_path(python_exe)
+        self.waiting_for_exit = False
+
+        self.setWindowTitle(title)
+        self.resize(1000, 700)
+        self.setStyleSheet(STYLESHEET)
+
+        self.proc = QProcess(self)
+        self.proc.readyReadStandardOutput.connect(self._on_stdout)
+        self.proc.readyReadStandardError.connect(self._on_stderr)
+        self.proc.started.connect(self._on_started)
+        self.proc.finished.connect(self._on_finished)
+        self.proc.errorOccurred.connect(self._on_error)
+
+        self._build_ui()
+        self._start_process()
+
+    def _build_ui(self) -> None:
+        root = QWidget()
+        self.setCentralWidget(root)
+        layout = QVBoxLayout(root)
+        layout.setContentsMargins(15, 15, 15, 15)
+        layout.setSpacing(10)
+
+        self.output = QPlainTextEdit()
+        self.output.setReadOnly(True)
+        self.output.setUndoRedoEnabled(False)
+
+        mono = QFont("Consolas")
+        if not mono.exactMatch():
+            mono = QFont("Courier New")
+        mono.setStyleHint(QFont.StyleHint.Monospace)
+        mono.setPointSize(11)
+        self.output.setFont(mono)
+
+        layout.addWidget(self.output, 1)
+
+        if not self.no_input:
+            input_row = QHBoxLayout()
+            input_row.setSpacing(10)
+
+            self.prompt = QLabel(">")
+            self.prompt.setFont(mono)
+            self.prompt.setStyleSheet(f"color: {COLORS['PROMPT']}; font-weight: bold;")
+            input_row.addWidget(self.prompt)
+
+            self.input = QLineEdit()
+            self.input.setFont(mono)
+            self.input.setPlaceholderText("Type command here...")
+            self.input.returnPressed.connect(self._send_line)
+            input_row.addWidget(self.input, 1)
+
+            self.btn_send = QPushButton("Send")
+            self.btn_send.setCursor(Qt.CursorShape.PointingHandCursor)
+            self.btn_send.clicked.connect(self._send_line)
+            input_row.addWidget(self.btn_send)
+
+            layout.addLayout(input_row)
+
+    def _append_text(self, text: str, color=None) -> None:
+        if not text:
+            return
+        self.output.moveCursor(QTextCursor.MoveOperation.End)
+        cursor = self.output.textCursor()
+
+        fmt = QTextCharFormat()
+        if color:
+            fmt.setForeground(QColor(color))
+        else:
+            # Default color matching the stylesheet
+            fmt.setForeground(QColor(COLORS["STDOUT"]))
+
+        cursor.insertText(text, fmt)
+        self.output.moveCursor(QTextCursor.MoveOperation.End)
+
+    def _append_line(self, line: str, color=None) -> None:
+        self._append_text(line + ("" if line.endswith("\n") else "\n"), color)
+
+    def _show_critical_error(self, title: str, message: str) -> None:
+        # parent=None forces a separate taskbar entry for the dialog
+        msg = QMessageBox(None)
+        msg.setIcon(QMessageBox.Icon.Critical)
+        msg.setWindowTitle(title)
+        msg.setText(message)
+        msg.setTextInteractionFlags(
+            Qt.TextInteractionFlag.TextSelectableByMouse | Qt.TextInteractionFlag.TextSelectableByKeyboard
+        )
+        # Ensure it appears in the taskbar and can glow
+        msg.setWindowFlags(msg.windowFlags() | Qt.WindowType.Window)
+        QApplication.alert(msg)
+        msg.exec()
+
+    def _start_process(self) -> None:
+        # Validate paths early
+        if self.python_exe != "py" and not os.path.isfile(self.python_exe):
+            self._show_critical_error("Invalid Python", f"Python runtime not found:\n{self.python_exe}")
+            return
+        if not os.path.isfile(self.script_path):
+            self._show_critical_error("Invalid Script", f"Script not found:\n{self.script_path}")
+            return
+
+        process_args = list(self.args)
+
+        self.output.clear()
+
+        # Unbuffered so output appears immediately.
+        args = ["-u", self.script_path, *process_args]
+
+        # Working directory
+        if self.wdir_for_script not in [None, False, ""]:
+            self.proc.setWorkingDirectory(self.wdir_for_script)
+
+        self.proc.start(self.python_exe, args)
+        if not self.no_input:
+            QTimer.singleShot(0, self.input.setFocus)
+
+    def stop_process(self) -> None:
+        if self.proc.state() == QProcess.ProcessState.NotRunning:
+            return
+        self._append_line("\n[Stopping process...]")
+        self.proc.terminate()
+        if not self.proc.waitForFinished(1500):
+            self.proc.kill()
+            self.proc.waitForFinished(1500)
+
+    def closeEvent(self, event) -> None:
+        self.stop_process()
+        super().closeEvent(event)
+
+    def _send_line(self) -> None:
+        if self.proc.state() != QProcess.ProcessState.Running:
+            return
+
+        line = self.input.text()
+        self.input.clear()
+
+        self._append_line(f"> {line}", color=COLORS["INPUT_ECHO"])
+
+        data = (line + "\n").encode("utf-8", errors="replace")
+        self.proc.write(data)
+
+    def _on_stdout(self) -> None:
+        data = bytes(self.proc.readAllStandardOutput()).decode("utf-8", errors="replace")
+        self._append_text(data)
+
+    def _on_stderr(self) -> None:
+        data = bytes(self.proc.readAllStandardError()).decode("utf-8", errors="replace")
+        self._append_text(data, color=COLORS["STDERR"])
+
+    def _on_started(self) -> None:
+        pass
+
+    def _on_finished(self, exit_code: int, exit_status: QProcess.ExitStatus) -> None:
+        current_title = self.windowTitle()
+        if exit_code == 0:
+            self.setWindowTitle(f"{current_title} (Finished)")
+            if self.close_on_success:
+                QTimer.singleShot(0, self.close)
+            else:
+                self._append_line("\n[Success] Press enter to exit", color=COLORS["SUCCESS"])
+                self.waiting_for_exit = True
+        else:
+            self.setWindowTitle(f"{current_title} (Crashed: Code {exit_code})")
+            self._append_line(f"\n[Process finished: exit_code={exit_code}]", color=COLORS["STDERR"])
+            self._append_line("Press enter to exit", color=COLORS["STDERR"])
+            self.waiting_for_exit = True
+
+        self.setFocus()
+        self.output.setFocus()
+
+    def _on_error(self, err: QProcess.ProcessError) -> None:
+        current_title = self.windowTitle()
+        self.setWindowTitle(f"{current_title} (Error: {err})")
+
+        # 1. Capture the current stack trace
+        # Using stack() shows how the code reached this error handler
+        tb_lines = traceback.format_stack()
+        clean_tb = "".join(tb_lines[:-1])  # Exclude this handler itself from the list
+
+        # 2. Append the error and the trace to the terminal UI
+        self._append_line(f"\n[Process error: {err}]")
+        self._append_line("Traceback (most recent call last):")
+        self._append_line(clean_tb)
+
+        # 3. If you want to log it to the real console too
+        print(f"Process Error: {err}\n{clean_tb}", file=sys.stderr)
+
+    def keyPressEvent(self, event) -> None:
+        if getattr(self, "waiting_for_exit", False) and event.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter):
+            self.close()
+            return
+        if event.modifiers() == Qt.KeyboardModifier.ControlModifier and event.key() == Qt.Key.Key_L:
+            self.output.clear()
+            return
+        super().keyPressEvent(event)
+
+
+def _set_app_id(app_id) -> None:
+    if not app_id:
+        return
+    if os.name != "nt":
+        return
+    try:
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(app_id)
+    except Exception:
+        pass
+
+
+def read_key_value_file(file_path, key_val_separator="=", comment_chars=("#", ";")):
+    key_val_dict = {}
+    with open(file_path, encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            # Skip empty lines and comments
+            if not line or line.startswith(comment_chars):
+                continue
+
+            key, value = line.split(key_val_separator, 1)
+            key_val_dict[key.strip()] = value.strip()
+    return key_val_dict
+
+
+def print_msg_in_new_terminal(
+    msg: str,
+    key_press_propmpt_message="[Error] Press Enter to exit",
+    window_title="Error",
+    bg_color="4",  # Default: Red
+    font_color="e",  # Default: Light Yellow
+) -> None:
+    """
+    Spawns a new terminal.
+    bg_color/fg_color use Windows CMD hex codes (0-f).
+    """
+    with tempfile.NamedTemporaryFile("w", delete=False, suffix=".txt", encoding="utf-8") as f:
+        path = f.name
+        f.write(msg)
+
+    # Combine hex codes for the 'color' command
+    color_code = f"{bg_color}{font_color}"
+
+    child_code = f"""
+import sys, pathlib, os, ctypes
+# Set Window Title
+ctypes.windll.kernel32.SetConsoleTitleW("{window_title}")
+
+# Set Global Colors and Refresh Screen
+os.system('color {color_code}')
+os.system('cls')
+
+p = pathlib.Path(sys.argv[1])
+try:
+    print(p.read_text(encoding="utf-8", errors="replace"))
+finally:
+    try: os.remove(p)
+    except OSError: pass
+
+print()
+input("{key_press_propmpt_message}")
+"""
+
+    subprocess.Popen(
+        [sys.executable, "-c", child_code, path],
+        creationflags=subprocess.CREATE_NEW_CONSOLE,
+        close_fds=True,
+    )
+
+
+# ====================================
+#      main function and execution
+# ====================================
+
+
+def main() -> None:
+
+    # print usage if wrong and abort
+    if len(sys.argv) < 6:
+        print(
+            f'[Error] Usage: py {os.path.basename(__file__)} "<create_terminal=1/0>" "<python_exe>" "<script_path>" "<wdir:None="">" "<app_id>" "arg1" "arg2" ...'
+        )
+        print(f"Got arguments: {sys.argv}")
+        print()
+        input("Aborting. Press enter to exit...")
+        raise SystemExit(2)
+
+    # get args
+    create_terminal = sys.argv[1]  # 1 or 0
+    python_exe = sys.argv[2]
+    script_path = sys.argv[3]
+    wdir_for_script = sys.argv[4]
+    app_id = sys.argv[5]
+    remaining_args = sys.argv[6:]
+
+    # change app id of current process (for taskbar grouping with shortcut)
+    _set_app_id(app_id)
+
+    # run setup python file
+    if setup_python_file != "":
+        p = subprocess.Popen(
+            [python_exe_for_setup, setup_python_file],
+            creationflags=subprocess.CREATE_NEW_CONSOLE,
+        )
+        p.wait()  # wait for setup to finish
+
+    # process non-user_settings
+    settings = read_key_value_file(settings_file_path)
+    if "close_on_success" in settings:
+        if settings["close_on_success"].lower() in ("y", "yes", "true", "1"):
+            close_on_success = True
+        else:
+            close_on_success = False
+    else:
+        # default value
+        close_on_success = True
+    if "terminal_needs_input" in settings:
+        if settings["terminal_needs_input"].lower() in ("y", "yes", "true", "1"):
+            terminal_needs_input = True
+        else:
+            terminal_needs_input = False
+    else:
+        # default value
+        terminal_needs_input = True
+    if "program_name" in settings:
+        title = settings["program_name"]
+    else:
+        title = "Terminal"
+
+    # run main python script in windowless or termnial emulator
+    if create_terminal == "1":
+        # launch termnial emulator
+        app = QApplication(sys.argv)
+        w = TerminalEmulator(
+            python_exe=python_exe,
+            script_path=script_path,
+            args=remaining_args,
+            wdir_for_script=wdir_for_script,
+            close_on_success=close_on_success,
+            no_input=not terminal_needs_input,
+            title=title,
+        )
+        w.show()
+
+        raise SystemExit(app.exec())
+    else:
+        # launch windows terminal
+        p = subprocess.Popen(
+            [python_exe, script_path],
+            creationflags=subprocess.CREATE_NEW_CONSOLE,
+        )
+        p.wait()  # wait for file to finish
+        raise SystemExit(p.returncode)
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except Exception as e:
+        error_msg = f"[Error] {e}\n\n{traceback.format_exc()}\n"
+
+        # Show in a new terminal
+        print_msg_in_new_terminal(error_msg)
+
+        # Ensure non-zero exit for the launcher / parent process
+        raise SystemExit(1)
