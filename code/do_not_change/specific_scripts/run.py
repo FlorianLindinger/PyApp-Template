@@ -1,39 +1,18 @@
 # todo: docstring
 
 # ==========================================================================
-#   Local Variables (relative paths are relative to folder of this file)
+#   Local Variables
 # ==========================================================================
 
-
-def resolve_path(base, *relative_parts):
-    """
-    Joins a base path with relative parts and resolves to an absolute path.
-    Removes the '..' to make the path clean and readable.
-    """
-    return os.path.abspath(os.path.join(base, *relative_parts))
-
 import os
-import sys
-# 1. Detect Base Directory
-if "__compiled__" in globals():
-    # --- NUITKA COMPILED MODE ---
-    # In standalone compiled mode, the .exe is usually inside a .dist folder.
-    # We need to go up 1 level compared to the source script.
-    file_dir =  os.path.dirname(sys.argv[0]) + "\\..\\"
-else:
-    # --- STANDARD PYTHON MODE ---
-    # Get location of this .py file
-    file_dir =  os.path.dirname(os.path.abspath(__file__)) + "\\"
+file_dir = os.path.dirname(os.path.abspath(__file__)) + "\\"
 
-# Standard relative steps
-python_scripts_folder_path = resolve_path(file_dir, "..", "..") + "\\"
-local_python_exe_for_script_path = resolve_path(
-    file_dir, "..", "..", "py_env", "virt_env", "portable_Scripts", "python.bat"
-)
-settings_file_path = resolve_path(file_dir, "..", "..", "non-user_settings.ini")
-
-python_exe_for_setup_path = resolve_path(file_dir, "..", "python_runtime", "python.exe")
-setup_python_file_path = resolve_path(file_dir, "..", "specific_scripts", "setup.py")
+python_scripts_folder_path = os.path.normpath(file_dir + "..\\..\\")
+local_python_exe_for_script_path = os.path.normpath(file_dir + "..\\..\\py_env\\virt_env\\portable_Scripts\\python.bat")
+settings_file_path = os.path.normpath(file_dir + "..\\..\\non-user_settings.ini")
+qt_terminal_exe_path = os.path.normpath(file_dir + "..\\terminal_emulator\\compiled\\run.exe")
+icon_path = os.path.normpath(file_dir + "..\\..\\icons\\icon.ico")
+stylesheet_path =os.path.normpath(file_dir + "..\\terminal_emulator\\terminal_style.qss")
 
 # =============================
 #      Terminal Appearance
@@ -44,143 +23,16 @@ RED = "\033[91m"
 GREEN = "\033[92m"
 RESET = "\033[0m"
 
-COLORS = {
-    "WINDOW_BG": "#1e1e1e",
-    "TEXT_MAIN": "#cccccc",
-    "TEXT_DIM": "#888888",
-    "STDOUT": "#d4d4d4",
-    "STDERR": "#ff6b6b",
-    "INPUT_ECHO": "#3794ff",
-    "SUCCESS": "#00ff00",
-    "SELECTION_BG": "#264f78",
-    "SCROLLBAR_HANDLE": "#424242",
-    "SCROLLBAR_HANDLE_HOVER": "#4f4f4f",
-    "INPUT_BG": "#252526",
-    "INPUT_BORDER": "#3c3c3c",
-    "INPUT_FOCUS_BORDER": "#007fd4",
-    "BUTTON_BG": "#0e639c",
-    "BUTTON_HOVER": "#1177bb",
-    "BUTTON_PRESSED": "#094771",
-    "BUTTON_DISABLED": "#333333",
-    "PROMPT": "#0e639c",
-}
-
-STYLESHEET = """
-/* Global Window */
-QMainWindow {{
-    background-color: {WINDOW_BG};
-}}
-QWidget {{
-    background-color: {WINDOW_BG};
-    color: {TEXT_MAIN};
-    font-family: 'Segoe UI', sans-serif;
-    font-size: 14px;
-}}
-
-/* Headings/Labels */
-QLabel {{
-    color: {TEXT_MAIN};
-    font-weight: 500;
-}}
-
-/* Output Area */
-QPlainTextEdit {{
-    background-color: {WINDOW_BG};
-    color: {STDOUT};
-    border: none;
-    font-family: 'Consolas', 'Courier New', monospace;
-    font-size: 14px;
-    selection-background-color: {SELECTION_BG};
-}}
-QPlainTextEdit:focus {{
-    border: none;
-}}
-
-/* ScrollBar */
-QScrollBar:vertical {{
-    border: none;
-    background: {WINDOW_BG};
-    width: 14px;
-    margin: 0px 0px 0px 0px;
-}}
-QScrollBar::handle:vertical {{
-    background: {SCROLLBAR_HANDLE};
-    min-height: 20px;
-    border-radius: 7px;
-    margin: 2px;
-}}
-QScrollBar::handle:vertical:hover {{
-    background: {SCROLLBAR_HANDLE_HOVER};
-}}
-QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{
-    height: 0px;
-}}
-QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {{
-    background: none;
-}}
-
-/* Input Area */
-QLineEdit {{
-    background-color: {INPUT_BG};
-    color: {STDOUT};
-    border: 1px solid {INPUT_BORDER};
-    border-radius: 4px;
-    padding: 8px;
-    font-family: 'Consolas', 'Courier New', monospace;
-    font-size: 14px;
-    selection-background-color: {SELECTION_BG};
-}}
-QLineEdit:focus {{
-    border: 1px solid {INPUT_FOCUS_BORDER};
-}}
-
-/* Buttons */
-QPushButton {{
-    background-color: {BUTTON_BG};
-    color: white;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 4px;
-    font-weight: bold;
-}}
-QPushButton:hover {{
-    background-color: {BUTTON_HOVER};
-}}
-QPushButton:pressed {{
-    background-color: {BUTTON_PRESSED};
-}}
-QPushButton:disabled {{
-    background-color: {BUTTON_DISABLED};
-    color: {TEXT_DIM};
-}}
-""".format(**COLORS)
-
 # =============================
 #      Imports
 # =============================
 
 import ctypes
-import os
 import shutil
 import subprocess
 import sys
 import tempfile
 import traceback
-
-from PySide6.QtCore import QProcess, Qt, QTimer
-from PySide6.QtGui import QColor, QFont, QTextCharFormat, QTextCursor
-from PySide6.QtWidgets import (
-    QApplication,
-    QHBoxLayout,
-    QLabel,
-    QLineEdit,
-    QMainWindow,
-    QMessageBox,
-    QPlainTextEdit,
-    QPushButton,
-    QVBoxLayout,
-    QWidget,
-)
 
 # =============================
 #      Definitions
@@ -196,219 +48,6 @@ def format_path(path: str) -> str:
     if drive:
         return drive.upper() + rest
     return abs_path
-
-
-# =============================
-
-# PySide6 code
-
-
-class TerminalEmulator(QMainWindow):
-    def __init__(
-        self,
-        python_exe_for_script_path: str,
-        script_path: str,
-        args: list[str],
-        wdir_is_script_dir=True,
-        close_on_success: bool = True,
-        no_input: bool = False,
-        title: str = "Terminal",
-    ):
-        super().__init__()
-
-        self.args = args
-        self.wdir_is_script_dir = wdir_is_script_dir
-        self.close_on_success = close_on_success
-        self.no_input = no_input
-        self.script_path = script_path
-        self.python_exe_for_script_path = python_exe_for_script_path
-        self.waiting_for_exit = False
-
-        self.setWindowTitle(title)
-        self.resize(1000, 700)
-        self.setStyleSheet(STYLESHEET)
-
-        self.proc = QProcess(self)
-        self.proc.readyReadStandardOutput.connect(self._on_stdout)
-        self.proc.readyReadStandardError.connect(self._on_stderr)
-        self.proc.started.connect(self._on_started)
-        self.proc.finished.connect(self._on_finished)
-        self.proc.errorOccurred.connect(self._on_error)
-
-        self._build_ui()
-        self._start_process()
-
-    def _build_ui(self) -> None:
-        root = QWidget()
-        self.setCentralWidget(root)
-        layout = QVBoxLayout(root)
-        layout.setContentsMargins(15, 15, 15, 15)
-        layout.setSpacing(10)
-
-        self.output = QPlainTextEdit()
-        self.output.setReadOnly(True)
-        self.output.setUndoRedoEnabled(False)
-
-        mono = QFont("Consolas")
-        if not mono.exactMatch():
-            mono = QFont("Courier New")
-        mono.setStyleHint(QFont.StyleHint.Monospace)
-        mono.setPointSize(11)
-        self.output.setFont(mono)
-
-        layout.addWidget(self.output, 1)
-
-        if not self.no_input:
-            input_row = QHBoxLayout()
-            input_row.setSpacing(10)
-
-            self.prompt = QLabel(">")
-            self.prompt.setFont(mono)
-            self.prompt.setStyleSheet(f"color: {COLORS['PROMPT']}; font-weight: bold;")
-            input_row.addWidget(self.prompt)
-
-            self.input = QLineEdit()
-            self.input.setFont(mono)
-            self.input.setPlaceholderText("Type command here...")
-            self.input.returnPressed.connect(self._send_line)
-            input_row.addWidget(self.input, 1)
-
-            self.btn_send = QPushButton("Send")
-            self.btn_send.setCursor(Qt.CursorShape.PointingHandCursor)
-            self.btn_send.clicked.connect(self._send_line)
-            input_row.addWidget(self.btn_send)
-
-            layout.addLayout(input_row)
-
-    def _append_text(self, text: str, color=None) -> None:
-        if not text:
-            return
-        self.output.moveCursor(QTextCursor.MoveOperation.End)
-        cursor = self.output.textCursor()
-
-        fmt = QTextCharFormat()
-        if color:
-            fmt.setForeground(QColor(color))
-        else:
-            # Default color matching the stylesheet
-            fmt.setForeground(QColor(COLORS["STDOUT"]))
-
-        cursor.insertText(text, fmt)
-        self.output.moveCursor(QTextCursor.MoveOperation.End)
-
-    def _append_line(self, line: str, color=None) -> None:
-        self._append_text(line + ("" if line.endswith("\n") else "\n"), color)
-
-    def _show_critical_error(self, title: str, message: str) -> None:
-        # parent=None forces a separate taskbar entry for the dialog
-        msg = QMessageBox(None)
-        msg.setIcon(QMessageBox.Icon.Critical)
-        msg.setWindowTitle(title)
-        msg.setText(message)
-        msg.setTextInteractionFlags(
-            Qt.TextInteractionFlag.TextSelectableByMouse | Qt.TextInteractionFlag.TextSelectableByKeyboard
-        )
-        # Ensure it appears in the taskbar and can glow
-        msg.setWindowFlags(msg.windowFlags() | Qt.WindowType.Window)
-        QApplication.alert(msg)
-        msg.exec()
-
-    def _start_process(self) -> None:
-
-        process_args = list(self.args)
-
-        self.output.clear()
-
-        # Unbuffered so output appears immediately.
-        args = ["-u", self.script_path, *process_args]
-
-        # Working directory
-        if self.wdir_is_script_dir == True:
-            self.proc.setWorkingDirectory(os.path.dirname(self.script_path))
-
-        self.proc.start(self.python_exe_for_script_path, args)
-        if not self.no_input:
-            QTimer.singleShot(0, self.input.setFocus)
-
-    def stop_process(self) -> None:
-        if self.proc.state() == QProcess.ProcessState.NotRunning:
-            return
-        self._append_line("\n[Stopping process...]")
-        self.proc.terminate()
-        if not self.proc.waitForFinished(1500):
-            self.proc.kill()
-            self.proc.waitForFinished(1500)
-
-    def closeEvent(self, event) -> None:
-        self.stop_process()
-        super().closeEvent(event)
-
-    def _send_line(self) -> None:
-        if self.proc.state() != QProcess.ProcessState.Running:
-            return
-
-        line = self.input.text()
-        self.input.clear()
-
-        self._append_line(f"> {line}", color=COLORS["INPUT_ECHO"])
-
-        data = (line + "\n").encode("utf-8", errors="replace")
-        self.proc.write(data)
-
-    def _on_stdout(self) -> None:
-        data = bytes(self.proc.readAllStandardOutput()).decode("utf-8", errors="replace")
-        self._append_text(data)
-
-    def _on_stderr(self) -> None:
-        data = bytes(self.proc.readAllStandardError()).decode("utf-8", errors="replace")
-        self._append_text(data, color=COLORS["STDERR"])
-
-    def _on_started(self) -> None:
-        pass
-
-    def _on_finished(self, exit_code: int, exit_status: QProcess.ExitStatus) -> None:
-        current_title = self.windowTitle()
-        if exit_code == 0:
-            self.setWindowTitle(f"{current_title} (Finished)")
-            if self.close_on_success:
-                QTimer.singleShot(0, self.close)
-            else:
-                self._append_line("\n[Success] Press enter to exit", color=COLORS["SUCCESS"])
-                self.waiting_for_exit = True
-        else:
-            self.setWindowTitle(f"[Crashed: Code {exit_code}] {current_title}")
-            self._append_line(f"\n[Process finished: exit_code={exit_code}]", color=COLORS["STDERR"])
-            self._append_line("Press enter to exit", color=COLORS["STDERR"])
-            self.waiting_for_exit = True
-
-        self.setFocus()
-        self.output.setFocus()
-
-    def _on_error(self, err: QProcess.ProcessError) -> None:
-        current_title = self.windowTitle()
-        self.setWindowTitle(f"{current_title} (Error: {err})")
-
-        # 1. Capture the current stack trace
-        # Using stack() shows how the code reached this error handler
-        tb_lines = traceback.format_stack()
-        clean_tb = "".join(tb_lines[:-1])  # Exclude this handler itself from the list
-
-        # 2. Append the error and the trace to the terminal UI
-        self._append_line(f"\n[Process error: {err}]")
-        self._append_line("Traceback (most recent call last):")
-        self._append_line(clean_tb)
-
-        # 3. If you want to log it to the real console too
-        print(f"Process Error: {err}\n{clean_tb}", file=sys.stderr)
-
-    def keyPressEvent(self, event) -> None:
-        if getattr(self, "waiting_for_exit", False) and event.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter):
-            self.close()
-            return
-        if event.modifiers() == Qt.KeyboardModifier.ControlModifier and event.key() == Qt.Key.Key_L:
-            self.output.clear()
-            return
-        super().keyPressEvent(event)
 
 
 # =============================
@@ -444,20 +83,10 @@ def read_key_value_file(file_path, key_val_separator="=", comment_chars=("#", ";
 
 # print related
 
-# def print_red(msg):
-#     print(f"{RED}{msg}{RESET}")
-# def print_green(msg):
-#     print(f"{GREEN}{msg}{RESET}")
-# def input_red(msg):
-#     input(f"{RED}{msg}{RESET}")
-# def input_green(msg):
-#     input(f"{GREEN}{msg}{RESET}")
-
-
-def wrap_print(msg: str, wrap_character: str = "=",max_len=80):
+def wrap_print(msg: str, wrap_character: str = "=", max_len=80):
     size = len(msg)
-    if max_len not in [False,None] and size>max_len:
-        size=max_len
+    if max_len not in [False, None] and size > max_len:
+        size = max_len
     print(wrap_character * size)
     print(msg * size)
     print(wrap_character * size)
@@ -738,20 +367,7 @@ def main() -> None:
     remaining_args = sys.argv[3:]
 
     # run setup python file
-    if setup_python_file_path not in ["", None, False]:
-        # raise if setup/python script not found
-        if not os.path.exists(setup_python_file_path):
-            raise FileNotFoundError(f'[Error] Python setup script not found at "{format_path(setup_python_file_path)}"')
-        if not os.path.exists(python_exe_for_setup_path):
-            raise FileNotFoundError(
-                f'[Error] Python exe for setup script not found at "{format_path(python_exe_for_setup_path)}"'
-            )
-        # run setup
-        p = subprocess.Popen(
-            [python_exe_for_setup_path, setup_python_file_path],
-            creationflags=subprocess.CREATE_NEW_CONSOLE,
-        )
-        p.wait()  # wait for setup to finish
+
 
     # raise error if settings not found
     if not os.path.exists(settings_file_path):
@@ -796,30 +412,29 @@ def main() -> None:
     # run main python script in windowless or termnial emulator
     if create_terminal == "1":
         try:
-            # launch termnial emulator
-            Q_app = QApplication(sys.argv)
-            window = TerminalEmulator(
-                python_exe_for_script_path=python_exe_for_script_path,
-                script_path=script_path,
-                args=remaining_args,
-                wdir_is_script_dir=wdir_is_script_dir,
-                close_on_success=close_on_success,
-                no_input=not terminal_needs_input,
-                title=title,
-            )
-            window.show()
-            # Start the event loop to keep the window and its processes alive
-            exit_code = Q_app.exec()
-            raise SystemExit(exit_code)
+            args = [
+                python_exe_for_script_path,
+                script_path,
+                "1" if wdir_is_script_dir else "0",
+                "1" if close_on_success else "0",
+                "1" if close_on_failure else "0",
+                "1" if close_on_crash else "0",
+                "1" if terminal_needs_input else "0",
+                title,
+                icon_path if icon_path else "",
+                stylesheet_path
+            ]
+            
+            # Append remaining script arguments individually
+            args.extend(remaining_args)
+
+            # run and wait (using the compiled terminal emulator)
+            subprocess.run([qt_terminal_exe_path, *args], check=True)
 
         except Exception as e:
             # dont use "close_on_crash" setting since this crash is not crash of python script
             print_error_in_new_terminal(e)
-            
-            if "Q_app" in globals() and Q_app is not None:
-                raise SystemExit(Q_app.exec())
-            else:
-                raise SystemExit(1)
+            sys.exit(1)
 
     else:
         # launch windows terminal
@@ -851,7 +466,7 @@ def main() -> None:
         p.wait()  # wait for file to finish
 
         # return (SystemExit does not raise Exception)
-        raise SystemExit(p.returncode)
+        sys.exit(p.returncode)
 
 
 # ====================================
@@ -866,4 +481,4 @@ if __name__ == "__main__":
         print_error_in_new_terminal(e)
 
         # return with errorcode 1
-        raise SystemExit(1)
+        sys.exit(1)
