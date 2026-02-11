@@ -13,6 +13,11 @@ setup_python_file = r"..\specific_scripts\setup.py"  # relative to working direc
 #      Terminal Appearance
 # =============================
 
+# ANSI Color Codes
+RED = "\033[91m"
+GREEN = "\033[92m"
+RESET = "\033[0m"
+
 COLORS = {
     "WINDOW_BG": "#1e1e1e",
     "TEXT_MAIN": "#cccccc",
@@ -181,8 +186,8 @@ class TerminalEmulator(QMainWindow):
         self.wdir_for_script = wdir_for_script
         self.close_on_success = close_on_success
         self.no_input = no_input
-        self.script_path = format_path(script_path)
-        self.python_exe = format_path(python_exe)
+        self.script_path = script_path
+        self.python_exe = python_exe
         self.waiting_for_exit = False
 
         self.setWindowTitle(title)
@@ -275,13 +280,6 @@ class TerminalEmulator(QMainWindow):
         msg.exec()
 
     def _start_process(self) -> None:
-        # Validate paths early
-        if self.python_exe != "py" and not os.path.isfile(self.python_exe):
-            self._show_critical_error("Invalid Python", f"Python runtime not found:\n{self.python_exe}")
-            return
-        if not os.path.isfile(self.script_path):
-            self._show_critical_error("Invalid Script", f"Script not found:\n{self.script_path}")
-            return
 
         process_args = list(self.args)
 
@@ -344,7 +342,7 @@ class TerminalEmulator(QMainWindow):
                 self._append_line("\n[Success] Press enter to exit", color=COLORS["SUCCESS"])
                 self.waiting_for_exit = True
         else:
-            self.setWindowTitle(f"{current_title} (Crashed: Code {exit_code})")
+            self.setWindowTitle(f"[Crashed: Code {exit_code}] {current_title}")
             self._append_line(f"\n[Process finished: exit_code={exit_code}]", color=COLORS["STDERR"])
             self._append_line("Press enter to exit", color=COLORS["STDERR"])
             self.waiting_for_exit = True
@@ -449,12 +447,142 @@ input("{key_press_propmpt_message}")
     )
 
 
+def set_terminal_name(name: str) -> None:
+    """Safely set the terminal title using Windows API."""
+    try:
+        #Clean the name
+        safe_name = name.replace("\n", "").replace("\r", "")
+        
+        if os.name == "nt":
+            ctypes.windll.kernel32.SetConsoleTitleW(safe_name)
+        elif sys.stdout.isatty():
+            sys.stdout.write(f"\033]0;{safe_name}\007")
+            sys.stdout.flush()
+    except Exception:
+        pass
+
+
+def get_terminal_name():
+    # Create a buffer to hold the text
+    buffer = ctypes.create_unicode_buffer(1024)
+    # Get the title
+    ctypes.windll.kernel32.GetConsoleTitleW(buffer, len(buffer))
+    return buffer.value
+
+# def print_red(msg):
+#     print(f"{RED}{msg}{RESET}")
+# def print_green(msg):
+#     print(f"{GREEN}{msg}{RESET}")
+# def input_red(msg):
+#     input(f"{RED}{msg}{RESET}")
+# def input_green(msg):
+#     input(f"{GREEN}{msg}{RESET}")
+
+def setting_is_true(settings_dict, key, default):
+    if key in settings_dict:
+        if settings_dict[key].lower() in ("y", "yes", "true", "1"):
+            return True
+        else:
+            return False
+    else:
+        return default
+
+
+error_catcher_wrapper_template = r"""
+import subprocess, sys, ctypes, traceback, os
+
+RED = {RED}
+GREEN = {GREEN}
+RESET = {RESET}
+python_exe = r"{python_exe}"
+script_path = r"{script_path}"
+args = {remaining_args}
+close_on_crash = {close_on_crash}
+close_on_failure = {close_on_failure}
+close_on_success = {close_on_success}
+wdir_for_script = r"{wdir_for_script}"
+
+def print_red(msg):
+    print(f"{{RED}}{{msg}}{{RESET}}")
+def print_green(msg):
+    print(f"{{GREEN}}{{msg}}{{RESET}}")
+def input_red(msg):
+    input(f"{{RED}}{{msg}}{{RESET}}")
+def input_green(msg):
+    input(f"{{GREEN}}{{msg}}{{RESET}}")
+
+def set_terminal_name(name: str) -> None:
+    try:
+        #Clean the name
+        safe_name = name.replace("\n", "").replace("\r", "")
+        
+        if os.name == "nt":
+            ctypes.windll.kernel32.SetConsoleTitleW(safe_name)
+        elif sys.stdout.isatty():
+            sys.stdout.write(f"\033]0;{{safe_name}}\007")
+            sys.stdout.flush()
+    except Exception:
+        pass
+
+def get_terminal_name():
+    try:
+        buffer = ctypes.create_unicode_buffer(1024)
+        ctypes.windll.kernel32.GetConsoleTitleW(buffer, len(buffer))
+        return buffer.value
+    except Exception:
+        return "Terminal"
+
+try:
+    actual_wdir = wdir_for_script if wdir_for_script.strip() else None
+    
+    result = subprocess.run(
+        [python_exe, script_path] + args, 
+        cwd=actual_wdir
+    )
+    
+    if result.returncode == 0:
+        if close_on_success:
+            sys.exit(0)
+        else:
+            set_terminal_name(f"[Success] {{get_terminal_name()}}")
+            print()
+            input_green("[Success] Press Enter to exit.")
+    else:
+        if close_on_failure:
+            sys.exit(result.returncode)
+        else:
+            set_terminal_name(f"[Failure] {{get_terminal_name()}}")
+            print()
+            print_red(f"[Failure] Script exited with code: {{result.returncode}}")
+            input_red("[Python Failure Return] Press Enter to exit.")
+            
+except Exception as e:
+    if close_on_crash:
+        sys.exit(1)
+    else:
+        set_terminal_name(f"[Crash] {{get_terminal_name()}}")
+        print()
+        print_red("="*40)
+        print_red(f"CRITICAL LAUNCH ERROR: {{e}}")
+        print_red("="*40)
+        traceback.print_exc()
+        print_red("="*40)
+        print(f"[Info] Python: {{python_exe}}")
+        print(f"[Info] Script: {{script_path}}")
+        print()
+        input_red("[Python Crash] See above. Press Enter to exit.")
+"""
+
+
 # ====================================
 #      main function and execution
 # ====================================
 
 
 def main() -> None:
+    # ======================
+    #    setup
+    # ======================
 
     # print usage if wrong and abort
     if len(sys.argv) < 6:
@@ -474,73 +602,113 @@ def main() -> None:
     app_id = sys.argv[5]
     remaining_args = sys.argv[6:]
 
+    # make abs path and nice looking format
+    python_exe = format_path(python_exe)
+    script_path = format_path(script_path)
+    if setup_python_file not in ["",None,False]:
+        setup_python_file=format_path(setup_python_file)
+
     # change app id of current process (for taskbar grouping with shortcut)
     _set_app_id(app_id)
 
     # run setup python file
-    if setup_python_file != "":
+    if setup_python_file not in ["",None,False]:
+        # raise if setup script not found
+        if not os.path.exists(setup_python_file):
+            raise FileNotFoundError(f'[Error] Python setup script not found at "{setup_python_file}"')
+        # run setup
         p = subprocess.Popen(
             [python_exe_for_setup, setup_python_file],
             creationflags=subprocess.CREATE_NEW_CONSOLE,
         )
         p.wait()  # wait for setup to finish
 
+    # raise error if python or script not found
+    if not os.path.exists(python_exe):
+        raise FileNotFoundError(f'[Error] Python executable/command not found at "{python_exe}"')
+    if not os.path.exists(script_path):
+        raise FileNotFoundError(f'[Error] Python script not found at "{script_path}"')
+
     # process non-user_settings
     settings = read_key_value_file(settings_file_path)
-    if "close_on_success" in settings:
-        if settings["close_on_success"].lower() in ("y", "yes", "true", "1"):
-            close_on_success = True
-        else:
-            close_on_success = False
-    else:
-        # default value
-        close_on_success = True
-    if "terminal_needs_input" in settings:
-        if settings["terminal_needs_input"].lower() in ("y", "yes", "true", "1"):
-            terminal_needs_input = True
-        else:
-            terminal_needs_input = False
-    else:
-        # default value
-        terminal_needs_input = True
+    terminal_needs_input = setting_is_true(settings, "terminal_needs_input", True)
+    close_on_success = setting_is_true(settings, "close_on_success", True)
+    close_on_crash = setting_is_true(settings, "close_on_crash", False)
+    close_on_failure = setting_is_true(settings, "close_on_failure", False)
     if "program_name" in settings:
         title = settings["program_name"]
     else:
-        title = "Terminal"
+        title = "Terminal"  # default value
+
+    # ======================
+    #    execution
+    # ======================
 
     # run main python script in windowless or termnial emulator
     if create_terminal == "1":
-        # launch termnial emulator
-        app = QApplication(sys.argv)
-        w = TerminalEmulator(
-            python_exe=python_exe,
-            script_path=script_path,
-            args=remaining_args,
-            wdir_for_script=wdir_for_script,
-            close_on_success=close_on_success,
-            no_input=not terminal_needs_input,
-            title=title,
-        )
-        w.show()
+        try:
+            # launch termnial emulator
+            app = QApplication(sys.argv)
+            w = TerminalEmulator(
+                python_exe=python_exe,
+                script_path=script_path,
+                args=remaining_args,
+                wdir_for_script=wdir_for_script,
+                close_on_success=close_on_success,
+                no_input=not terminal_needs_input,
+                title=title,
+            )
+            w.show()
 
-        raise SystemExit(app.exec())
+        except Exception as e:
+            error_msg = f"{e}\n\n{traceback.format_exc()}\n"
+
+            # print error in new terminal (because this script might be launched without terminal)
+            print_msg_in_new_terminal(error_msg)
+
+            # return (SystemExit does not raise Exception)
+            raise SystemExit(app.exec())
+
     else:
         # launch windows terminal
-        p = subprocess.Popen(
-            [python_exe, script_path],
-            creationflags=subprocess.CREATE_NEW_CONSOLE,
+
+        # The 'error_catcher_wrapper' code to run inside the new window
+        error_catcher_wrapper = error_catcher_wrapper_template.format(
+            python_exe=python_exe,
+            script_path=script_path,
+            remaining_args=repr(remaining_args),
+            close_on_crash=close_on_crash,
+            close_on_failure=close_on_failure,
+            close_on_success=close_on_success,
+            wdir_for_script=wdir_for_script,
+            RED=repr(RED),
+            GREEN=repr(GREEN),
+            RESET=repr(RESET),
         )
+
+        # launch this error_catcher_wrapper (handles exceptions/prints/prompts) in the new console
+        p = subprocess.Popen([sys.executable, "-c", error_catcher_wrapper], creationflags=subprocess.CREATE_NEW_CONSOLE)
+        set_terminal_name(title)  # chante terminal title
         p.wait()  # wait for file to finish
+
+        # return (SystemExit does not raise Exception)
         raise SystemExit(p.returncode)
+
+
+# ===================================
 
 
 if __name__ == "__main__":
     try:
         main()
     except Exception as e:
-        error_msg = f"[Error] {e}\n\n{traceback.format_exc()}\n"
+        error_msg = "=" * 40 + "\n"
+        error_msg += f"{e}\n"
+        error_msg += "=" * 40 + "\n"
+        error_msg += f"{traceback.format_exc()}"
+        error_msg += "=" * 40 + "\n"
 
-        # Show in a new terminal
+        # print error in new terminal (because this script might be launched without terminal)
         print_msg_in_new_terminal(error_msg)
 
         # Ensure non-zero exit for the launcher / parent process
