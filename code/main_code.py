@@ -5,12 +5,13 @@ import numpy as np
 
 for i in range(100):
     print(i)
-    time.sleep(0.01)
+    time.sleep(0.02)
     
 import os
 print(os.getcwd())
+
     
-asd
+# asd
 
 # test2.py script finishes naturally
 sys.exit(0)
