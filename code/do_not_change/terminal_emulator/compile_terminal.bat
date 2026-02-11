@@ -6,7 +6,7 @@ REM  Build settings (edit these)
 REM ============================
 set "PY_VERSION=3.13"
 set "VENV_DIR=DO_NOT_SYNC\.venv"
-set "SCRIPT=pyside6_terminal.py"
+set "SCRIPT=terminal_emulator.py"
 set "EXE_NAME=run"
 set "DO_PRUNE=yes"
 REM options: attach, force, disable
