@@ -17,6 +17,7 @@
 set "settings_path=..\..\non-user_settings.ini"
 set "environment_activator_path=create_and_or_activate_python_env.bat"
 set "icon_changer_path=..\general_utilities\window_icon_changer\change_icon.py_standalone_compiled\run.exe"
+set "python_app_id_changer_path=do_not_change\specific_scripts\change_AppID_and_run_py_script.py"
 
 :: move to folder of this file (needed for relative paths).
 :: current_file_path variable needed as workaround for nieche Windows bug where this file gets called with quotation marks:
@@ -101,9 +102,9 @@ if "%use_global_python%"=="false" (
 
 :: Execute python code. Faulthandler catches python interpreter crash:
 if "%use_global_python%"=="false" (
-	call python -X faulthandler "%python_code_name%"
+	call python -X faulthandler "%python_app_id_changer_path%" "%python_code_name%" "%~1"
 ) else (
-	py -%python_version% -X faulthandler "%python_code_name%"
+	py -%python_version% -X faulthandler "%python_app_id_changer_path%" "%python_code_name%" "%~1"
 )
 set "py_errorlevel=%ERRORLEVEL%"
 
