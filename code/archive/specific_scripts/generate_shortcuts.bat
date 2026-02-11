@@ -17,6 +17,12 @@ set "create_shortcut_batch_path=..\general_utilities\create_shortcut.bat"
 :: no spaces allowed for 2 settings below
 set "run_batch_with_file_output_and_no_terminal_batch_path=2.bat"
 set "kill_process_with_id_batch_path=3.bat"
+set "do_not_change_folder_path=.."
+set "python_exe_path=..\python_runtime\python.exe"
+set "specific_scripts_path=."
+rem set "python_exe_path_relative_to_do_not_change=python_runtime\python.exe"
+rem set "batch_runner_path_relative_to_do_not_change=specific_scripts\run_batch.py"
+set "batch_runner_path_relative_to_specific_scripts=run_batch.py"
 
 :: get current file path and remove trailing \
 set "current_file_path=%~dp0"
@@ -26,6 +32,14 @@ cd /d "%current_file_path%"
 
 :: make paths absolute if not
 call :set_abs_path "%settings_path%" "settings_path"
+rem call :set_abs_path "%do_not_change_folder_path%" "do_not_change_folder_path"
+call :set_abs_path "%python_exe_path%" "python_exe_path"
+call :set_abs_path "%specific_scripts_path%" "specific_scripts_path"
+
+:: warn if target does not exist
+if not exist "%specific_scripts_path%" (
+	echo [Warning] Shortcut target "%specific_scripts_path%" does not exist.
+)
 
 :: check if files exist
 if not exist "%settings_path%" (
@@ -89,18 +103,52 @@ if not exist "%stop_icon_path%" (
 :: --- Code Execution ---
 :: ======================
 
+:: %create_shortcut_batch_path% has arguments "<name>" "<target>" "<target-args>" "<working-dir>" "<icon-path>" "<description>" "<appid>"
+
 :: create shortcut for starting the program:
-set "arg=/K call ""%start_program_batch_path%"""
-call "%create_shortcut_batch_path%" "%shortcut_destination_path%\%start_name%.lnk" "%SystemRoot%\System32\cmd.exe" "%arg%" "%current_file_path%" "%icon_path%" "%program_name%"
+set "name=%shortcut_destination_path%\%start_name%.lnk"
+set "target=%python_exe_path%"
+set "args=""%batch_runner_path_relative_to_specific_scripts%"" ""%start_program_batch_path%"" test3"
+set "wdir=%specific_scripts_path%"
+set "icon=%icon_path%"
+set "description=%program_name%"
+set "app_id=test3"
+call "%create_shortcut_batch_path%" "%name%" "%target%" "%args%" "%wdir%" "%icon%" "%description%" "%app_id%"
+
+pause
+exit /b
+
 :: create a shortcut for the settings file:
-set "arg=/K call ""%open_settings_file_batch_path%"""
-call "%create_shortcut_batch_path%" "%shortcut_destination_path%\%settings_name%.lnk" "%SystemRoot%\System32\cmd.exe" "%arg%" "%current_file_path%" "%settings_icon_path%" "%program_name%"
+set "name=%shortcut_destination_path%\%settings_name%.lnk"
+set "target=%python_exe_path_relative_to_do_not_change%"
+set "args=""%batch_runner_path_relative_to_do_not_change%"" ""%open_settings_file_batch_path%"" %program_name%2"
+set "wdir=""%do_not_change_folder_path%"""
+set "icon=%settings_icon_path%"
+set "description=%program_name%"
+set "app_id=%program_name%2"
+call "%create_shortcut_batch_path%" "%name%" "%target%" "%args%" "%wdir%" "%icon%" "%description%" "%app_id%"
+
 :: create shortcut for launcher without terminal and with output to log file:
-set "arg=/K call ""%run_batch_with_file_output_and_no_terminal_batch_path%"""
-call "%create_shortcut_batch_path%" "%shortcut_destination_path%\%start_no_terminal_name%.lnk" "%SystemRoot%\System32\cmd.exe" "%arg%" "%current_file_path%" "%icon_path%" "%program_name%"
+set "name=%shortcut_destination_path%\%start_no_terminal_name%.lnk"
+set "target=%python_exe_path_relative_to_do_not_change%"
+set "args=""%batch_runner_path_relative_to_do_not_change%"" ""%run_batch_with_file_output_and_no_terminal_batch_path%"" %program_name%3"
+set "wdir=""%do_not_change_folder_path%"""
+set "icon=%icon_path%"
+set "description=%program_name%"
+set "app_id=%program_name%3"
+call "%create_shortcut_batch_path%" "%name%" "%target%" "%args%" "%wdir%" "%icon%" "%description%" "%app_id%"
+
 :: create shortcut for killing the running program:
-set "arg=/K call ""%kill_process_with_id_batch_path%"""
-call "%create_shortcut_batch_path%" "%shortcut_destination_path%\%stop_no_terminal_name%.lnk" "%SystemRoot%\System32\cmd.exe" "%arg%" "%current_file_path%" "%stop_icon_path%" "%program_name%"
+set "name=%shortcut_destination_path%\%stop_no_terminal_name%.lnk"
+set "target=%python_exe_path_relative_to_do_not_change%"
+set "args=""%batch_runner_path_relative_to_do_not_change%"" ""%kill_process_with_id_batch_path%"" %program_name%4"
+set "wdir=""%do_not_change_folder_path%"""
+set "icon=%stop_icon_path%"
+set "description=%program_name%"
+set "app_id=%program_name%4"
+call "%create_shortcut_batch_path%" "%name%" "%target%" "%args%" "%wdir%" "%icon%" "%description%" "%app_id%"
+
+:: ============================
 
 :: check if successful
 If not exist "%shortcut_destination_path%\%start_name%.lnk" (

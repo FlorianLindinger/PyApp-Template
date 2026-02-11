@@ -5,4 +5,4 @@
 set "current_file_path=%~dp0"
 cd /d "%current_file_path%"
 
-call "start_program.bat"
+call "start_program.bat" "%~1"
