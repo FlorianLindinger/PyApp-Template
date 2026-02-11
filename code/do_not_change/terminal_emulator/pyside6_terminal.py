@@ -3,13 +3,37 @@
 # ==========================================================================
 #   Local Variables (relative paths are relative to folder of this file)
 # ==========================================================================
-python_scripts_folder_path = r"..\..\\"
-local_python_exe_for_script_path = r"..\..\py_env\virt_env\portable_Scripts\python.bat"
-settings_file_path = r"..\..\non-user_settings.ini"
-python_exe_for_setup_path = r"..\python_runtime\python.exe"
-setup_python_file_path = r"..\specific_scripts\setup.py"
-# ==========================================================================
 
+
+def resolve_path(base, *relative_parts):
+    """
+    Joins a base path with relative parts and resolves to an absolute path.
+    Removes the '..' to make the path clean and readable.
+    """
+    return os.path.abspath(os.path.join(base, *relative_parts))
+
+import os
+import sys
+# 1. Detect Base Directory
+if "__compiled__" in globals():
+    # --- NUITKA COMPILED MODE ---
+    # In standalone compiled mode, the .exe is usually inside a .dist folder.
+    # We need to go up 1 level compared to the source script.
+    file_dir =  os.path.dirname(sys.argv[0]) + "\\..\\"
+else:
+    # --- STANDARD PYTHON MODE ---
+    # Get location of this .py file
+    file_dir =  os.path.dirname(os.path.abspath(__file__)) + "\\"
+
+# Standard relative steps
+python_scripts_folder_path = resolve_path(file_dir, "..", "..") + "\\"
+local_python_exe_for_script_path = resolve_path(
+    file_dir, "..", "..", "py_env", "virt_env", "portable_Scripts", "python.bat"
+)
+settings_file_path = resolve_path(file_dir, "..", "..", "non-user_settings.ini")
+
+python_exe_for_setup_path = resolve_path(file_dir, "..", "python_runtime", "python.exe")
+setup_python_file_path = resolve_path(file_dir, "..", "specific_scripts", "setup.py")
 
 # =============================
 #      Terminal Appearance
@@ -137,6 +161,7 @@ QPushButton:disabled {{
 
 import ctypes
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -388,20 +413,6 @@ class TerminalEmulator(QMainWindow):
 
 # =============================
 
-
-def _set_app_id(app_id) -> None:
-    if not app_id:
-        return
-    if os.name != "nt":
-        return
-    try:
-        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(app_id)
-    except Exception:
-        pass
-
-
-# =============================
-
 # file reading related
 
 
@@ -451,21 +462,50 @@ def wrap_print(msg: str, wrap_character: str = "="):
     return size
 
 
+def get_python_interpreter() -> str | None:
+    """Returns a valid Python executable path or command."""
+    interpreters = []
+
+    # If compiled, check global paths defined during setup
+    if "__compiled__" in globals():
+        # These are usually defined at the top level of this module
+        # Note: We use globals() access because they might not be passed as args
+        potential_runtime = globals().get("python_exe_for_setup_path")
+        if potential_runtime and os.path.exists(potential_runtime):
+            interpreters.append(potential_runtime)
+    else:
+        # In source mode, current executable is fine
+        interpreters.append(sys.executable)
+
+    # Fallback to common system names
+    interpreters.extend(["py", "python", "python3"])
+
+    for interp in interpreters:
+        if os.path.isabs(interp):
+            if os.path.exists(interp):
+                return interp
+        else:
+            if shutil.which(interp):
+                return interp
+
+    return None
+
+
 def print_error_in_new_terminal(
     exception,
     key_press_prompt_message="[Error] Press Enter to exit",
     window_title="Error",
     bg_color="4",  # Default: Red
-    font_color="e",  # Default: Light Yellow
+    font_color="E",  # Default: Light Yellow
     wrapping_character="=",
 ):
-    size = len(exception)
+    size = len(str(exception))
 
-    msg = wrapping_character * size
-    msg += exception
-    msg += wrapping_character * size
-    msg += traceback.format_exc(exception)
-    msg += wrapping_character * size
+    msg = wrapping_character * size + "\n"
+    msg += str(exception) + "\n"
+    msg += wrapping_character * size + "\n"
+    msg += traceback.format_exc()
+    msg += wrapping_character * size + "\n"
 
     print_msg_in_new_terminal(
         msg=msg,
@@ -514,11 +554,28 @@ print()
 input("{key_press_prompt_message}")
 """
 
-    subprocess.Popen(
-        [sys.executable, "-c", child_code, path],
-        creationflags=subprocess.CREATE_NEW_CONSOLE,
-        close_fds=True,
-    )
+    python_exe = get_python_interpreter()
+
+    if python_exe:
+        subprocess.Popen(
+            [python_exe, "-c", child_code, path],
+            creationflags=subprocess.CREATE_NEW_CONSOLE,
+            close_fds=True,
+        )
+    else:
+        # Fallback if no Python is found - create a batch file to show the message
+        bat_content = f'@echo off\ntitle {window_title}\ncolor {color_code}\ncls\ntype "{path}"\necho.\npause'
+        with tempfile.NamedTemporaryFile("w", delete=False, suffix=".bat", encoding="utf-8") as bf:
+            bat_path = bf.name
+            bf.write(bat_content)
+
+        subprocess.Popen(
+            [bat_path],
+            creationflags=subprocess.CREATE_NEW_CONSOLE,
+            close_fds=True,
+        )
+        # We can't easily auto-delete the .bat file while it's running,
+        # but it's in temp and small.
 
 
 # =============================
@@ -638,10 +695,24 @@ except Exception as e:
         print()
         input_red("[Python Crash] See above. Press Enter to exit.")
 """
+# =============================
+
+# miscellaneous
+
+
+def _set_app_id(app_id) -> None:
+    if not app_id:
+        return
+    if os.name != "nt":
+        return
+    try:
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(app_id)
+    except Exception:
+        pass
 
 
 # ====================================
-#      definition of main function
+#    definition of main function
 # ====================================
 
 
@@ -651,8 +722,9 @@ def main() -> None:
 
     # print usage if wrong and abort
     if len(sys.argv) < 2:
+        exe_name = os.path.basename(sys.argv[0])
         raise ValueError(
-            '[Error] Too few arguments. Usage: (py {os.path.basename(__file__)}/exe_name.exe) "<create_terminal=1/0>" "<optional:app_id>" "arg1" "arg2" ...'
+            f'[Error] Too few arguments.\n\nUsage: {exe_name} "<create_terminal=1/0>" "<optional:app_id>" "arg1" "arg2" ...'
         )
 
     # get args from calling this script
@@ -723,8 +795,8 @@ def main() -> None:
     if create_terminal == "1":
         try:
             # launch termnial emulator
-            app = QApplication(sys.argv)
-            w = TerminalEmulator(
+            Q_app = QApplication(sys.argv)
+            window = TerminalEmulator(
                 python_exe_for_script_path=python_exe_for_script_path,
                 script_path=script_path,
                 args=remaining_args,
@@ -733,16 +805,19 @@ def main() -> None:
                 no_input=not terminal_needs_input,
                 title=title,
             )
-            w.show()
+            window.show()
+            # Start the event loop to keep the window and its processes alive
+            exit_code = Q_app.exec()
+            raise SystemExit(exit_code)
 
         except Exception as e:
-            error_msg = f"{e}\n\n{traceback.format_exc()}\n"
-
-            # print error in new terminal (because this script might be launched without terminal)
-            print_msg_in_new_terminal(error_msg)
-
-            # return (SystemExit does not raise Exception)
-            raise SystemExit(app.exec())
+            # dont use "close_on_crash" setting since this crash is not crash of python script
+            print_error_in_new_terminal(e)
+            
+            if "Q_app" in globals() and Q_app is not None:
+                raise SystemExit(Q_app.exec())
+            else:
+                raise SystemExit(1)
 
     else:
         # launch windows terminal
@@ -762,7 +837,14 @@ def main() -> None:
         )
 
         # launch this error_catcher_wrapper (handles exceptions/prints/prompts) in the new console
-        p = subprocess.Popen([sys.executable, "-c", error_catcher_wrapper], creationflags=subprocess.CREATE_NEW_CONSOLE)
+        python_exe = get_python_interpreter()
+        if not python_exe:
+            # If no python is found, we at least try to show the error in a box
+            # or print it before failing.
+            print("[Error] No Python interpreter found to launch the terminal wrapper.")
+            sys.exit(1)
+
+        p = subprocess.Popen([python_exe, "-c", error_catcher_wrapper], creationflags=subprocess.CREATE_NEW_CONSOLE)
         set_terminal_name(title)  # chante terminal title
         p.wait()  # wait for file to finish
 
