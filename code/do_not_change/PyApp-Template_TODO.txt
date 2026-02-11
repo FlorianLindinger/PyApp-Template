@@ -2,6 +2,14 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+ replace in code           
+icon_path=icons\icon.ico
+settings_icon_path=icons\settings.ico
+stop_icon_path=icons\stop.ico
+remove icons setting?
+
+make extra icon for no terminal mode
+
 check if pillow install is liocense safe
 
 install pip for first install:
