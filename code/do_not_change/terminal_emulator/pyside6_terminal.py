@@ -1,12 +1,14 @@
 # todo: docstring
 
-# =============================
-#      Local Variables
-# =============================
-settings_file_path = r"..\..\non-user_settings.ini"  # relative to working directory
-python_exe_for_setup = r"..\python_runtime\python.exe"  # relative to working directory
-setup_python_file = r"..\specific_scripts\setup.py"  # relative to working directory
-# =============================
+# ==========================================================================
+#   Local Variables (relative paths are relative to folder of this file)
+# ==========================================================================
+python_scripts_folder_path = r"..\..\\"
+local_python_exe_for_script_path = r"..\..\py_env\virt_env\portable_Scripts\python.bat"
+settings_file_path = r"..\..\non-user_settings.ini"
+python_exe_for_setup_path = r"..\python_runtime\python.exe"
+setup_python_file_path = r"..\specific_scripts\setup.py"
+# ==========================================================================
 
 
 # =============================
@@ -159,6 +161,8 @@ from PySide6.QtWidgets import (
 #      Definitions
 # =============================
 
+# path related
+
 
 def format_path(path: str) -> str:
     """Ensures drive letters are capitalized for a more premium look on Windows."""
@@ -169,13 +173,18 @@ def format_path(path: str) -> str:
     return abs_path
 
 
+# =============================
+
+# PySide6 code
+
+
 class TerminalEmulator(QMainWindow):
     def __init__(
         self,
-        python_exe: str,
+        python_exe_for_script_path: str,
         script_path: str,
         args: list[str],
-        wdir_for_script=None,
+        wdir_is_script_dir=True,
         close_on_success: bool = True,
         no_input: bool = False,
         title: str = "Terminal",
@@ -183,11 +192,11 @@ class TerminalEmulator(QMainWindow):
         super().__init__()
 
         self.args = args
-        self.wdir_for_script = wdir_for_script
+        self.wdir_is_script_dir = wdir_is_script_dir
         self.close_on_success = close_on_success
         self.no_input = no_input
         self.script_path = script_path
-        self.python_exe = python_exe
+        self.python_exe_for_script_path = python_exe_for_script_path
         self.waiting_for_exit = False
 
         self.setWindowTitle(title)
@@ -289,10 +298,10 @@ class TerminalEmulator(QMainWindow):
         args = ["-u", self.script_path, *process_args]
 
         # Working directory
-        if self.wdir_for_script not in [None, False, ""]:
-            self.proc.setWorkingDirectory(self.wdir_for_script)
+        if self.wdir_is_script_dir == True:
+            self.proc.setWorkingDirectory(os.path.dirname(self.script_path))
 
-        self.proc.start(self.python_exe, args)
+        self.proc.start(self.python_exe_for_script_path, args)
         if not self.no_input:
             QTimer.singleShot(0, self.input.setFocus)
 
@@ -377,6 +386,9 @@ class TerminalEmulator(QMainWindow):
         super().keyPressEvent(event)
 
 
+# =============================
+
+
 def _set_app_id(app_id) -> None:
     if not app_id:
         return
@@ -386,6 +398,21 @@ def _set_app_id(app_id) -> None:
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(app_id)
     except Exception:
         pass
+
+
+# =============================
+
+# file reading related
+
+
+def setting_is_true(settings_dict, key, default):
+    if key in settings_dict:
+        if settings_dict[key].lower() in ("y", "yes", "true", "1"):
+            return True
+        else:
+            return False
+    else:
+        return default
 
 
 def read_key_value_file(file_path, key_val_separator="=", comment_chars=("#", ";")):
@@ -402,12 +429,59 @@ def read_key_value_file(file_path, key_val_separator="=", comment_chars=("#", ";
     return key_val_dict
 
 
-def print_msg_in_new_terminal(
-    msg: str,
-    key_press_propmpt_message="[Error] Press Enter to exit",
+# =============================
+
+# print related
+
+# def print_red(msg):
+#     print(f"{RED}{msg}{RESET}")
+# def print_green(msg):
+#     print(f"{GREEN}{msg}{RESET}")
+# def input_red(msg):
+#     input(f"{RED}{msg}{RESET}")
+# def input_green(msg):
+#     input(f"{GREEN}{msg}{RESET}")
+
+
+def wrap_print(msg: str, wrap_character: str = "="):
+    size = len(msg)
+    print(wrap_character * size)
+    print(msg * size)
+    print(wrap_character * size)
+    return size
+
+
+def print_error_in_new_terminal(
+    exception,
+    key_press_prompt_message="[Error] Press Enter to exit",
     window_title="Error",
     bg_color="4",  # Default: Red
     font_color="e",  # Default: Light Yellow
+    wrapping_character="=",
+):
+    size = len(exception)
+
+    msg = wrapping_character * size
+    msg += exception
+    msg += wrapping_character * size
+    msg += traceback.format_exc(exception)
+    msg += wrapping_character * size
+
+    print_msg_in_new_terminal(
+        msg=msg,
+        key_press_prompt_message=key_press_prompt_message,
+        window_title=window_title,
+        bg_color=bg_color,
+        font_color=font_color,
+    )
+
+
+def print_msg_in_new_terminal(
+    msg: str,
+    key_press_prompt_message="Press Enter to exit",
+    window_title="Message",
+    bg_color="0",  # Default: Black
+    font_color="7",  # Default: White
 ) -> None:
     """
     Spawns a new terminal.
@@ -437,7 +511,7 @@ finally:
     except OSError: pass
 
 print()
-input("{key_press_propmpt_message}")
+input("{key_press_prompt_message}")
 """
 
     subprocess.Popen(
@@ -447,12 +521,17 @@ input("{key_press_propmpt_message}")
     )
 
 
+# =============================
+
+# Windows terminal related
+
+
 def set_terminal_name(name: str) -> None:
     """Safely set the terminal title using Windows API."""
     try:
-        #Clean the name
+        # Clean the name
         safe_name = name.replace("\n", "").replace("\r", "")
-        
+
         if os.name == "nt":
             ctypes.windll.kernel32.SetConsoleTitleW(safe_name)
         elif sys.stdout.isatty():
@@ -469,24 +548,10 @@ def get_terminal_name():
     ctypes.windll.kernel32.GetConsoleTitleW(buffer, len(buffer))
     return buffer.value
 
-# def print_red(msg):
-#     print(f"{RED}{msg}{RESET}")
-# def print_green(msg):
-#     print(f"{GREEN}{msg}{RESET}")
-# def input_red(msg):
-#     input(f"{RED}{msg}{RESET}")
-# def input_green(msg):
-#     input(f"{GREEN}{msg}{RESET}")
 
-def setting_is_true(settings_dict, key, default):
-    if key in settings_dict:
-        if settings_dict[key].lower() in ("y", "yes", "true", "1"):
-            return True
-        else:
-            return False
-    else:
-        return default
+# =============================
 
+# wrapper code
 
 error_catcher_wrapper_template = r"""
 import subprocess, sys, ctypes, traceback, os
@@ -494,18 +559,16 @@ import subprocess, sys, ctypes, traceback, os
 RED = {RED}
 GREEN = {GREEN}
 RESET = {RESET}
-python_exe = r"{python_exe}"
+python_exe_for_script_path = r"{python_exe_for_script_path}"
 script_path = r"{script_path}"
 args = {remaining_args}
 close_on_crash = {close_on_crash}
 close_on_failure = {close_on_failure}
 close_on_success = {close_on_success}
-wdir_for_script = r"{wdir_for_script}"
+wdir_is_script_dir = {wdir_is_script_dir}
 
 def print_red(msg):
     print(f"{{RED}}{{msg}}{{RESET}}")
-def print_green(msg):
-    print(f"{{GREEN}}{{msg}}{{RESET}}")
 def input_red(msg):
     input(f"{{RED}}{{msg}}{{RESET}}")
 def input_green(msg):
@@ -533,11 +596,14 @@ def get_terminal_name():
         return "Terminal"
 
 try:
-    actual_wdir = wdir_for_script if wdir_for_script.strip() else None
+    if wdir_is_script_dir == True:
+        cwd=os.path.dirname(script_path)
+    else:
+        cwd=None
     
     result = subprocess.run(
-        [python_exe, script_path] + args, 
-        cwd=actual_wdir
+        [python_exe_for_script_path, script_path] + args, 
+        cwd=cwd
     )
     
     if result.returncode == 0:
@@ -567,7 +633,7 @@ except Exception as e:
         print_red("="*40)
         traceback.print_exc()
         print_red("="*40)
-        print(f"[Info] Python: {{python_exe}}")
+        print(f"[Info] Python Exe/Command: {{python_exe_for_script_path}}")
         print(f"[Info] Script: {{script_path}}")
         print()
         input_red("[Python Crash] See above. Press Enter to exit.")
@@ -575,61 +641,49 @@ except Exception as e:
 
 
 # ====================================
-#      main function and execution
+#      definition of main function
 # ====================================
 
 
 def main() -> None:
     # ======================
-    #    setup
-    # ======================
+    # setup
 
     # print usage if wrong and abort
-    if len(sys.argv) < 6:
-        print(
-            f'[Error] Usage: py {os.path.basename(__file__)} "<create_terminal=1/0>" "<python_exe>" "<script_path>" "<wdir:None="">" "<app_id>" "arg1" "arg2" ...'
+    if len(sys.argv) < 2:
+        raise ValueError(
+            '[Error] Too few arguments. Usage: (py {os.path.basename(__file__)}/exe_name.exe) "<create_terminal=1/0>" "<optional:app_id>" "arg1" "arg2" ...'
         )
-        print(f"Got arguments: {sys.argv}")
-        print()
-        input("Aborting. Press enter to exit...")
-        raise SystemExit(2)
 
-    # get args
+    # get args from calling this script
     create_terminal = sys.argv[1]  # 1 or 0
-    python_exe = sys.argv[2]
-    script_path = sys.argv[3]
-    wdir_for_script = sys.argv[4]
-    app_id = sys.argv[5]
-    remaining_args = sys.argv[6:]
-
-    # make abs path and nice looking format
-    python_exe = format_path(python_exe)
-    script_path = format_path(script_path)
-    if setup_python_file not in ["",None,False]:
-        setup_python_file=format_path(setup_python_file)
-
-    # change app id of current process (for taskbar grouping with shortcut)
-    _set_app_id(app_id)
+    if len(sys.argv) > 2:
+        app_id = sys.argv[2]
+        # change app id of current process (for taskbar grouping with shortcut)
+        _set_app_id(app_id)
+    remaining_args = sys.argv[3:]
 
     # run setup python file
-    if setup_python_file not in ["",None,False]:
-        # raise if setup script not found
-        if not os.path.exists(setup_python_file):
-            raise FileNotFoundError(f'[Error] Python setup script not found at "{setup_python_file}"')
+    if setup_python_file_path not in ["", None, False]:
+        # raise if setup/python script not found
+        if not os.path.exists(setup_python_file_path):
+            raise FileNotFoundError(f'[Error] Python setup script not found at "{format_path(setup_python_file_path)}"')
+        if not os.path.exists(python_exe_for_setup_path):
+            raise FileNotFoundError(
+                f'[Error] Python exe for setup script not found at "{format_path(python_exe_for_setup_path)}"'
+            )
         # run setup
         p = subprocess.Popen(
-            [python_exe_for_setup, setup_python_file],
+            [python_exe_for_setup_path, setup_python_file_path],
             creationflags=subprocess.CREATE_NEW_CONSOLE,
         )
         p.wait()  # wait for setup to finish
 
-    # raise error if python or script not found
-    if not os.path.exists(python_exe):
-        raise FileNotFoundError(f'[Error] Python executable/command not found at "{python_exe}"')
-    if not os.path.exists(script_path):
-        raise FileNotFoundError(f'[Error] Python script not found at "{script_path}"')
+    # raise error if settings not found
+    if not os.path.exists(settings_file_path):
+        raise FileNotFoundError(f'[Error] Settings file not found at "{format_path(settings_file_path)}"')
 
-    # process non-user_settings
+    # import and process non-user_settings
     settings = read_key_value_file(settings_file_path)
     terminal_needs_input = setting_is_true(settings, "terminal_needs_input", True)
     close_on_success = setting_is_true(settings, "close_on_success", True)
@@ -639,10 +693,31 @@ def main() -> None:
         title = settings["program_name"]
     else:
         title = "Terminal"  # default value
+    use_global_python = setting_is_true(settings, "use_global_python", False)
+    if use_global_python == True:
+        python_exe_for_script_path = "py"
+    else:
+        python_exe_for_script_path = format_path(local_python_exe_for_script_path)
+        # raise error if python or script or settings not found
+        if not os.path.exists(python_exe_for_script_path):
+            raise FileNotFoundError(f'[Error] Python executable/command not found at "{python_exe_for_script_path}"')
+    start_in_shortcut_folder = setting_is_true(settings, "start_in_shortcut_folder", False)
+    wdir_is_script_dir = not start_in_shortcut_folder
+    if "python_code_name" in settings:
+        python_code_name = settings["python_code_name"]
+        script_path = python_scripts_folder_path + python_code_name
+    else:
+        raise ValueError(f'[Error] Setting "python_code_name" not found in "{format_path(settings_file_path)}"')
+
+    # make abs path and nice looking format
+    script_path = format_path(script_path)
+
+    # raise error if script not found
+    if not os.path.exists(script_path):
+        raise FileNotFoundError(f'[Error] Python script not found at "{script_path}"')
 
     # ======================
-    #    execution
-    # ======================
+    # launch terminal
 
     # run main python script in windowless or termnial emulator
     if create_terminal == "1":
@@ -650,10 +725,10 @@ def main() -> None:
             # launch termnial emulator
             app = QApplication(sys.argv)
             w = TerminalEmulator(
-                python_exe=python_exe,
+                python_exe_for_script_path=python_exe_for_script_path,
                 script_path=script_path,
                 args=remaining_args,
-                wdir_for_script=wdir_for_script,
+                wdir_is_script_dir=wdir_is_script_dir,
                 close_on_success=close_on_success,
                 no_input=not terminal_needs_input,
                 title=title,
@@ -674,13 +749,13 @@ def main() -> None:
 
         # The 'error_catcher_wrapper' code to run inside the new window
         error_catcher_wrapper = error_catcher_wrapper_template.format(
-            python_exe=python_exe,
+            python_exe_for_script_path=python_exe_for_script_path,
             script_path=script_path,
             remaining_args=repr(remaining_args),
             close_on_crash=close_on_crash,
             close_on_failure=close_on_failure,
             close_on_success=close_on_success,
-            wdir_for_script=wdir_for_script,
+            wdir_is_script_dir=wdir_is_script_dir,
             RED=repr(RED),
             GREEN=repr(GREEN),
             RESET=repr(RESET),
@@ -695,21 +770,16 @@ def main() -> None:
         raise SystemExit(p.returncode)
 
 
-# ===================================
-
+# ====================================
+#      execution of main function
+# ====================================
 
 if __name__ == "__main__":
     try:
         main()
     except Exception as e:
-        error_msg = "=" * 40 + "\n"
-        error_msg += f"{e}\n"
-        error_msg += "=" * 40 + "\n"
-        error_msg += f"{traceback.format_exc()}"
-        error_msg += "=" * 40 + "\n"
-
         # print error in new terminal (because this script might be launched without terminal)
-        print_msg_in_new_terminal(error_msg)
+        print_error_in_new_terminal(e)
 
-        # Ensure non-zero exit for the launcher / parent process
+        # return with errorcode 1
         raise SystemExit(1)
