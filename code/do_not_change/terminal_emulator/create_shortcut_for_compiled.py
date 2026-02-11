@@ -68,14 +68,20 @@ if __name__ == "__main__":
         wdir = sys.argv[2]
         path_to_terminal_emulator_exe = sys.argv[3]
         icon_file = sys.argv[4]
-        
         use_qt_terminal=sys.argv[5]
         app_id = sys.argv[6]
-        args_for_script = sys.argv[7:]
+        args_for_target = sys.argv[7]
+        args_for_script = sys.argv[8]
 
-        args_for_shortcut = f'{use_qt_terminal} "{app_id}"' +" "*(len(args_for_script)>0)   + " ".join(
-            args_for_script
-        )
+        args_for_shortcut = ""
+        if args_for_target:
+            args_for_shortcut += args_for_target.strip() + " "
+
+        args_for_shortcut += f'{use_qt_terminal} "{app_id}"'
+
+        if args_for_script:
+            args_for_shortcut += " " + args_for_script.strip()
+
 
         create_shortcut_with_appid(
             output=shortcut_location,
@@ -89,8 +95,6 @@ if __name__ == "__main__":
         print()
         print("Success!")
         print()
-        input("[Success] Press Enter to exit...")
-
     except Exception as e:
         print(f"[Error] Failed to create shortcuts: {e}")
         print(traceback.format_exc())
