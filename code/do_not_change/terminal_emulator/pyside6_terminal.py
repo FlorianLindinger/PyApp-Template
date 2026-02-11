@@ -454,8 +454,10 @@ def read_key_value_file(file_path, key_val_separator="=", comment_chars=("#", ";
 #     input(f"{GREEN}{msg}{RESET}")
 
 
-def wrap_print(msg: str, wrap_character: str = "="):
+def wrap_print(msg: str, wrap_character: str = "=",max_len=80):
     size = len(msg)
+    if max_len not in [False,None] and size>max_len:
+        size=max_len
     print(wrap_character * size)
     print(msg * size)
     print(wrap_character * size)
@@ -724,7 +726,7 @@ def main() -> None:
     if len(sys.argv) < 2:
         exe_name = os.path.basename(sys.argv[0])
         raise ValueError(
-            f'[Error] Too few arguments.\n\nUsage: {exe_name} "<create_terminal=1/0>" "<optional:app_id>" "arg1" "arg2" ...'
+            f'[Error] Too few arguments ({sys.argv}).\n\nUsage: {exe_name} "<create_terminal=1/0>" "<optional:app_id>" "arg1" "arg2" ...'
         )
 
     # get args from calling this script
