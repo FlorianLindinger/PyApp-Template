@@ -2,6 +2,74 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+chekc what functions to copy to fun_flo in terminal scriopt
+
+===================================
+ new terminal related
+===================================
+
+rename pyside6_terminal.py
+
+get parity in both window mode error msges:
+""""
+except Exception as e:
+    if close_on_crash:
+        sys.exit(1)
+    else:
+        set_terminal_name(f"[Crash] {{get_terminal_name()}}")
+        print()
+        print_red("="*40)
+        print_red(f"CRITICAL LAUNCH ERROR: {{e}}")
+        print_red("="*40)
+        traceback.print_exc()
+        print_red("="*40)
+        print(f"[Info] Python Exe/Command: {{python_exe_for_script_path}}")
+        print(f"[Info] Script: {{script_path}}")
+        print()
+        input_red("[Python Crash] See above. Press 
+        Enter to exit.")
+"""
+
+add comments to error_catcher_wrapper_template
+
+can the shortcut pass the remaining_args???
+can at least the exe????
+
+get wdir_for_script = sys.argv[4] instaed from settings
+
+relative path local python_exe becasue why not 
+
+relative path local script_path becasue why not and maybe allow then for settings
+
+app id should stay as arg since it should come from shortcut
+
+also look at todo in old fancy termionl 
+copy features form fancy terminal
+
+add app name to opnedd crash terminal
+
+make ====== as long as msg and retrun legnt
+
+highlight windows temrinal on crahs
+
+add setting to stay open for errorcode!=0
+
+does this work as expected:
+"""
+       except Exception as e:
+            error_msg = f"{e}\n\n{traceback.format_exc()}\n"
+
+            # print error in new terminal (because this script might be launched without terminal)
+            print_msg_in_new_terminal(error_msg)
+
+            #return (SystemExit does not raise Exception)
+            raise SystemExit(app.exec())
+            
+    else:
+"""
+
+test if global python works and allow for py and python
+
 lesss padding for first print
 
 ahve travebakc error also inside qt tetrminalk
@@ -25,6 +93,9 @@ use nuitka mode attach to have 2 exe in one. Not sure if teriminal emuatr can st
 
 maybne only python script that calls qt terminal needs to change app id. lets cehck if anything can be launched maybe this exe gernaetor thing agian
 
+===================================
+   Unsorted
+===================================
 
 do i need activate? linking to Scipots\python does the same. But also in portable venv?
 
