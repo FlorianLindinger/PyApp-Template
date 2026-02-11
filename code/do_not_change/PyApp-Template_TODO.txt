@@ -2,6 +2,18 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+install pip for first install:
+"""
+[Info] Installing default packages...
+
+[notice] A new release of pip is available: 25.3 -> 26.0.1
+[notice] To update, run: C:\Users\Flo\Documents\Repositories\PyApp Template\code\py_env\virt_env\Scripts\python.exe -m pip install --upgrade pip
+"""
+
+move general_utilties stuff into utilities repo
+
+make double clic kthing in root also into python
+
 chelc if emnbeddated python laincj works for shorctu grpuoping and differnetiating 
 
 chekc what functions to copy to fun_flo in terminal scriopt
