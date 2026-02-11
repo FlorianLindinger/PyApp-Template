@@ -2,11 +2,21 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+better to have uncompiled setup.py file for no need to recompile? or maybe speed concern or extra space concern. or maybe i just strip down uncompied qt packages:
+
+chelc if emnbeddated python laincj works for shorctu grpuoping and differnetiating 
+
 chekc what functions to copy to fun_flo in terminal scriopt
+
+cmd shortcut also works for app id with qt window
 
 ===================================
  new terminal related
 ===================================
+
+shortcuts can fail if properties open. am i deletingand chekcing afterwars?
+
+sanastize app name before using in shortcuts tarrget and shortuct name and appid
 
 test if error handled if shortcut passes no args
 
