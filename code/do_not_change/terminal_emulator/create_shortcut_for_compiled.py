@@ -3,11 +3,12 @@ import sys
 import time
 import traceback
 
-# Import propsys and shellcon for flags
 import win32com.propsys.propsys as propsys
 import win32com.propsys.pscon as pscon
 from win32com.client import Dispatch
 from win32com.shell import shellcon
+
+# =============================
 
 
 def create_shortcut_with_appid(args, output, app_id, icon_path=None, target=sys.executable, wdir=""):
@@ -59,19 +60,20 @@ def create_shortcut_with_appid(args, output, app_id, icon_path=None, target=sys.
     pStore.Commit()
 
 
+# =============================
+
 if __name__ == "__main__":
     try:
         shortcut_location = sys.argv[1]
         wdir = sys.argv[2]
         path_to_terminal_emulator_exe = sys.argv[3]
-        python_to_run_script_path = sys.argv[4]
-        icon_file = sys.argv[5]
+        icon_file = sys.argv[4]
+        
+        use_qt_terminal=sys.argv[5]
         app_id = sys.argv[6]
-        script_path = sys.argv[7]
-        script_wdir = sys.argv[8]
-        args_for_script = sys.argv[9:]
+        args_for_script = sys.argv[7:]
 
-        args_for_shortcut = f'"{python_to_run_script_path}" "{script_path}" "{script_wdir}" "{app_id}"' + " ".join(
+        args_for_shortcut = f'{use_qt_terminal} "{app_id}"' +" "*(len(args_for_script)>0)   + " ".join(
             args_for_script
         )
 
