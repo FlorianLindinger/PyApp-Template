@@ -2,6 +2,8 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+check if pillow install is liocense safe
+
 install pip for first install:
 """
 [Info] Installing default packages...
