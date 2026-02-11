@@ -4,6 +4,11 @@ import pathlib
 import subprocess
 import sys
 
+# Ensure the script directory is in path for local imports (especially when run via shortcut)
+script_dir = pathlib.Path(__file__).parent.resolve()
+if str(script_dir) not in sys.path:
+    sys.path.insert(0, str(script_dir))
+
 import launcher_utilities as utils
 
 
@@ -22,21 +27,20 @@ def main():
     args, passthrough = parser.parse_known_args()
 
     # 3. Action Routing
-    if args.shortcuts:
-        utils.run_python(sys.executable, str(script_dir / "generate_shortcuts.py"), [])
+    if args.prepare_env or args.shortcuts:
+        utils.prepare_environment(settings, settings_path, script_dir)
+        if args.shortcuts:
+            utils.run_python(sys.executable, str(script_dir / "generate_shortcuts.py"), [])
+        if args.prepare_env:
+            print("[Info] Environment preparation complete.")
         return
 
     if args.background:
+        utils.prepare_environment(settings, settings_path, script_dir)
         utils.launch_background(settings, settings_path, pathlib.Path(__file__).resolve())
         return
 
     # 4. Default behavior: Prepare Env & Launch
-    utils.apply_terminal_settings(settings)
-    utils.prepare_environment(settings, settings_path, script_dir)
-
-    if args.prepare_env:
-        print("[Info] Environment preparation complete.")
-        return
 
     # 5. Execute Main Code
     python_code = (settings_dir / settings.get("python_code_name", "main_code.py")).resolve()
