@@ -10,6 +10,7 @@ set "SCRIPT=pyside6_terminal.py"
 set "EXE_NAME=run"
 set "DO_PRUNE=yes"
 REM options: attach, force, disable
+REM "attach" means that it will print to console if called via console but not open one if called by double click
 set "WINDOWS_CONSOLE_MODE=attach"
 
 REM Metadata

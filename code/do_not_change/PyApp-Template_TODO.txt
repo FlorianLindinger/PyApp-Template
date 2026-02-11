@@ -8,6 +8,17 @@ chekc what functions to copy to fun_flo in terminal scriopt
  new terminal related
 ===================================
 
+test if error handled if shortcut passes no args
+
+if open new terminal fails, at least print i in dubug console i guess
+
+close_on_crash=close_on_crash,
+close_on_failure=close_on_failure,
+close_on_success=close_on_success,
+chekc if works on all paths
+
+add descript ón to shorticts
+
 rename pyside6_terminal.py
 
 get parity in both window mode error msges:
