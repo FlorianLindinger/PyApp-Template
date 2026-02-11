@@ -2,17 +2,19 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
-better to have uncompiled setup.py file for no need to recompile? or maybe speed concern or extra space concern. or maybe i just strip down uncompied qt packages:
-
 chelc if emnbeddated python laincj works for shorctu grpuoping and differnetiating 
 
 chekc what functions to copy to fun_flo in terminal scriopt
 
 cmd shortcut also works for app id with qt window
 
+make all shorctus call teh same python.exe so only one confirmation to run? does that wokr taht way
+
 ===================================
  new terminal related
 ===================================
+
+move out terminal emulator part to compiled and leave rest python and run via runtime. but drawback is that there is no attached terminal mode. drawback is also long target path to call python and a script
 
 shortcuts can fail if properties open. am i deletingand chekcing afterwars?
 
