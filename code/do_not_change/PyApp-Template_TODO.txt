@@ -2,6 +2,17 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+
+add comments to theme.qss
+
+
+
+
+
+fidx id_of_currently_running_hidden_program not disappierung and only pappreing for hiddne
+
+fix id_of_currently_running_hidden_program not having .pid
+
  replace in code           
 icon_path=icons\icon.ico
 settings_icon_path=icons\settings.ico
