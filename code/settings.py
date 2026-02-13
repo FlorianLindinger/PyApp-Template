@@ -46,7 +46,7 @@ elif os.path.exists(base + ".yaml"):
     from do_not_change.read_yaml.ruamel.yaml import YAML
 
     with open(file_path, encoding="utf-8") as f:
-        s = YAML(typ="safe").load(f)  #
+        s = YAML(typ="safe").load(f)
 elif os.path.exists(base + ".yml"):
     file_path = os.path.abspath(base + ".yml")
     from do_not_change.read_yaml.ruamel.yaml import YAML
