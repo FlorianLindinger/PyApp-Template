@@ -2,11 +2,11 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+add readme extensiom
 
 add comments to theme.qss
 
-
-
+update pyproject.toml but not anabel the D
 
 
 fidx id_of_currently_running_hidden_program not disappierung and only pappreing for hiddne
@@ -46,6 +46,10 @@ make all shorctus call teh same python.exe so only one confirmation to run? does
 ===================================
  new terminal related
 ===================================
+
+change color of taskbar app bar
+
+have option to always have it ontop and ways to toggle that at runtime
 
 move out terminal emulator part to compiled and leave rest python and run via runtime. but drawback is that there is no attached terminal mode. drawback is also long target path to call python and a script
 
