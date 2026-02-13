@@ -16,6 +16,11 @@ dev = ["ruff","pyrefly"]
 [tool.ruff] #Ruff (python linter/formatter) configuration
 # =======================================================
 
+# (Global settings go at the top)
+# Explicitly set the cache to a relative folder. 
+# This stops Ruff from searching for %USERPROFILE% to store its cache.
+cache-dir = ".ruff_cache"
+
 include = ["*.py", "*.pyi", "*.pyw", "*.ipynb"] # files to check/correct
 exclude = [".git", ".mypy_cache", ".ruff_cache", "__pycache__", "*.build", "*.dist"] # files to exclude from check/correct
 line-length = 120  # max line length before wrapping
@@ -67,10 +72,39 @@ ignore = [
   "B905",    # allow for zip without explicit strict setting
   "BLE001",  # don't replace "try ... except: pass" #3
   "COM812",  # require trailing comma (formatter handles)
+  "D100",    # allow missing docstring in public module
+  "D102",    # allow missing docstring in public method
+  "D105",    # allow missing docstring in magic method
+  "D106",    # allow missing docstring in public nested class
+  "D107",    # allow missing docstring in public __init__
+  "D200",    # allow one-liner docstrings on multiple lines
+  "D202",    # allow blank lines after docstring
+  "D203",    # allow for lack of blank line before class docstring
+  "D204",    # allow  blank line after class docstring
+  "D205",    # allow 1 blank line after summary in docstring
+  "D209",    # allow docstring closing quotes on same line
+  "D211",    # allow blank line before class docstring
+  "D212",    # allow docstring to start on second line
+  "D213",    # allow multi-line docstring summary to start at the second line
+  "D400",    # allow no period at end of first line
   "D401",    # allow non imperative mood in docstrings
+  "D402",    # allow function signature in first line of docstring
+  "D403",    # allow no capitalized docstring first letter
+  "D404",    # allow doctstring to start with "This"
+  "D405",    # allow docstring sections to be uncapitalized
+  "D406",    # allow for non-newline chragacter after docstring section headers
+  "D407",    # allow for no underline for docstring section headers
+  "D408",    # missing-section-underline-after-name
+  "D409",    # mismatched-section-underline-length 
+  "D410",    # allow missing blank line after "Args" section
+  "D411",    # allow missing blank line before "Warnings" section
+  "D412",    # blank-lines-between-header-and-content 
+  "D413",    # allow for missing blank line after last docstring section
+  "D415",    # allow no .?! at end of first line in docstring
   "E402",    # allow imports not at top
   "E501",    # max line length handled via formatter
   "E712",    # allow `== True/False`
+  "E741",    # allow variable names that look like l, O, or I"
   "EM101",   # allow for strings in error message
   "EM102",   # allow f-string in exception message
   "FBT001",  # allow boolean parameters when type hinting
@@ -117,7 +151,9 @@ ignore = [
   "TRY301",  # allow for not encapsulated raise in try-except
   "UP009",   # allow python file encoding declaration
   "UP028",   # don't replace for+yield with "yield from"
+  "W293",    # allow whitespace in empty line (for indented multiline str)
 ]
+
 # ================================================
 [tool.pyrefly] # language server and type checker
 # ================================================
