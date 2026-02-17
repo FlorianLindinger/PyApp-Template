@@ -2,6 +2,8 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+add vscode settigns to pyproject.toml
+
 add readme extensiom
 
 add comments to theme.qss
@@ -46,6 +48,11 @@ make all shorctus call teh same python.exe so only one confirmation to run? does
 ===================================
  new terminal related
 ===================================
+
+add search
+
+
+maybe make input visible toggle in hindsight
 
 change color of taskbar app bar
 
