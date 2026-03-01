@@ -1,7 +1,10 @@
 import argparse
 import ctypes
 import os
+import shutil
+import subprocess
 import sys
+import traceback
 from ctypes import wintypes
 
 try:
@@ -163,7 +166,7 @@ class Input_line(QLineEdit):
             super().keyPressEvent(event)
 
 
-class TerminalWindow(QMainWindow):
+class Terminal_window(QMainWindow):
     def __init__(
         self,
         script_path: str,
@@ -194,8 +197,9 @@ class TerminalWindow(QMainWindow):
             ("confirm_close", {"pinned": False}),
             ("restart", {}),
             ("clear", {}),
-            ("stop", {}),
-            ("to_tray", {}),
+            ("stop", {"visible": True}),
+            ("to_tray", {"clickable": True}),
+            ("open_script", {"pinned": False}),
         ]
 
         self._pin_symbol_on = "\N{PUSHPIN}"
@@ -224,6 +228,7 @@ class TerminalWindow(QMainWindow):
         for label, dictionary in button_settings.items():
             if label not in default_button_settings:
                 button_settings[label] = {**base_default_button_settings, **dictionary}
+        self.button_settings = button_settings
 
         if not os.path.isfile(script_path):
             print(f"[Error] File not found: {script_path}")
@@ -252,19 +257,6 @@ class TerminalWindow(QMainWindow):
         self.start_height = height
         self.set_size(width, height)
 
-        #######################
-        # miscelaneous attributes
-
-        self._is_closing = False
-        self._window_is_in_tray = False
-        self._follow_next_insert_once = False
-
-        #######################
-        # menu button
-
-        self._menu_buttons: dict[str, QPushButton] = {}
-        self._menu_pin_buttons: dict[str, QToolButton] = {}
-
         ###################
         # terminal output
 
@@ -284,66 +276,76 @@ class TerminalWindow(QMainWindow):
         ###################
         # setup buttons
 
-        self._show_input_button = self._add_button("Show Input", "show_input")
-        self._show_input_button.setCheckable(True)
-        self._show_input_button.clicked.connect(self.set_show_input_state)
-        self._show_input_button.setToolTip("Hide user input lines")
-
         self._clear_button = self._add_button("Clear", "clear")
         self._clear_button.clicked.connect(self.clear_terminal)
         self._clear_button.setToolTip("Clear the terminal")
 
         self._restart_button = self._add_button("Restart", "restart")
-        self._restart_button.clicked.connect(self._restart_process)
+        self._restart_button.clicked.connect(self.restart_script)
         self._restart_button.setToolTip("Restart the script")
 
         self._stop_button = self._add_button("Stop", "stop")
-        self._stop_button.clicked.connect(self._stop_process)
+        self._stop_button.clicked.connect(self.stop_script)
         self._stop_button.setToolTip("Stop the running script")
 
-        self._autoscroll_button = self._add_button("Autoscroll", "autoscroll")
-        self._autoscroll_button.setCheckable(True)
+        self._autoscroll_button = self._add_button("Autoscroll", "autoscroll", True)
         self._autoscroll_button.setToolTip("Disable auto-scrolling to bottom")
 
         self._to_tray_button = self._add_button("To Tray", "to_tray")
         self._to_tray_button.clicked.connect(self.set_window_system_tray)
         self._to_tray_button.setToolTip("Minimize window to system tray")
 
-        self._foreground_on_print_button = self._add_button("Fg on Print", "foreground_on_print")
-        self._foreground_on_print_button.setCheckable(True)
+        self._show_input_button = self._add_button("Show Input", "show_input", True)
+        self._show_input_button.clicked.connect(self.set_show_input_state)
+        self._show_input_button.setToolTip("Show user input lines")
+
+        self._foreground_on_print_button = self._add_button("Fg on Print", "foreground_on_print", True)
         self._foreground_on_print_button.setToolTip("Bring window to foreground when script prints")
 
-        self._highlight_on_print_button = self._add_button("Hl on Print", "highlight_on_print")
-        self._highlight_on_print_button.setCheckable(True)
+        self._highlight_on_print_button = self._add_button("Hl on Print", "highlight_on_print", True)
         self._highlight_on_print_button.setToolTip("Flash taskbar icon when script prints")
 
-        self._confirm_close_button = self._add_button("Confirm Close", "confirm_close")
-        self._confirm_close_button.setCheckable(True)
+        self._confirm_close_button = self._add_button("Confirm Close", "confirm_close", True)
         self._confirm_close_button.setToolTip("Ask for confirmation before closing the window")
 
+        self._open_script_button = self._add_button("Open Script", "open_script")
+        self._open_script_button.setToolTip("Open the Python script that this terminal emulator is running")
+        self._open_script_button.clicked.connect(self.open_python_script_in_editor)
+
         ###################
-        # set up top bar and process buttons
+        # set up menu
 
-        self.menu_button = QMenu(self)
-        self.menu_button.addSection("Top Bar Controls")
-        self.menu_button.setStyleSheet(CSS)
-        self.menu_button.aboutToShow.connect(self._refresh_menu_controls)
+        # menu dropdown
 
-        for index, (label, button) in enumerate(self._buttons):
-            row_widget = QWidget(self.menu_button)
-            row_layout = QHBoxLayout(row_widget)
-            row_layout.setContentsMargins(8, 2, 8, 2)
-            row_layout.setSpacing(6)
+        self._menu_dropdown = QMenu(self)
+        self._menu_dropdown.addSection("Top Bar Controls")
+        self._menu_dropdown.setStyleSheet(CSS)
+        self._menu_dropdown.aboutToShow.connect(self._refresh_menu_controls)
+
+        self._menu_pin_buttons: dict[str, QToolButton] = {}
+        self._menu_buttons: dict[str, QPushButton] = {}
+        self._menu_entries: dict[str, QWidgetAction] = {}
+        for label, button in self._buttons.items():
+            # row_widget inside thte menu dropdown consists of the button and the pin button.
+            menu_row_widget = QWidget(self._menu_dropdown)
+            menu_row_layout = QHBoxLayout(menu_row_widget)
+            menu_row_layout.setContentsMargins(8, 2, 8, 2)
+            menu_row_layout.setSpacing(6)
 
             menu_row_button = QPushButton(button.text())
-            if label == "restart":
-                menu_row_button.setObjectName("restart_menu_button")
+            menu_row_button.setToolTip(button.toolTip())
+            menu_row_button.setEnabled(button.isEnabled())
             if button.isCheckable():
                 menu_row_button.setCheckable(True)
+                menu_row_button.setChecked(button.isChecked())
+
+            if label == "restart":
+                menu_row_button.setObjectName("restart_menu_button")
+
             menu_row_button.setMinimumWidth(130)
+            menu_row_button.clicked.connect(lambda _=False, button_name=label: self._press_button_in_menu(button_name))
+            menu_row_layout.addWidget(menu_row_button, 1)
             self._menu_buttons[label] = menu_row_button
-            menu_row_button.clicked.connect(lambda _=False, button_name=label: self._menu_press_button(button_name))
-            row_layout.addWidget(menu_row_button, 1)
 
             if button_settings[label]["unpin_able"] == True:
                 menu_row_pin_button = QToolButton()
@@ -354,42 +356,27 @@ class TerminalWindow(QMainWindow):
                 )
                 menu_row_pin_button.setToolTip("Pin or unpin from top bar")
                 self._menu_pin_buttons[label] = menu_row_pin_button
-                row_layout.addWidget(menu_row_pin_button)
+                menu_row_layout.addWidget(menu_row_pin_button)
 
-            row_action = QWidgetAction(self.menu_button)
-            row_action.setDefaultWidget(row_widget)
-            self.menu_button.addAction(row_action)
-            if index < len(self._buttons) - 1:
-                self.menu_button.addSeparator()
+            menu_row_action = QWidgetAction(self._menu_dropdown)
+            menu_row_action.setDefaultWidget(menu_row_widget)
+            self._menu_dropdown.addAction(menu_row_action)
 
-        for label, button in self._buttons:
-            if button.isCheckable():
-                button.toggled.connect(lambda checked, lab=label: self._sync_menu_button_checked(lab, checked))
+            # set visible states
+            menu_row_action.setVisible(button_settings[label]["visible"])
 
-        ###################
+            self._menu_entries[label] = menu_row_action
+
         # menu button
 
         self._menu_button = QToolButton(self._top_bar_widget)
+        self._menu_button.setToolTip("Show all controls")
         self._menu_button.setText("Menu")
         self._menu_button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
-        self._menu_button.setMenu(self.menu_button)
+        self._menu_button.setMenu(self._menu_dropdown)
         self._menu_button.setMinimumWidth(56)
         self._menu_button.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
-        self._menu_button.clicked.connect(lambda _=False: self._refresh_menu_controls())
-
-        self._button_pin_states = {}
-        for label, button in self._buttons:
-            # Apply options
-            self.set_button_visible_state(label, button_settings[label]["visible"])
-            self.set_button_clickable_state(label, button_settings[label]["clickable"])
-
-            self._button_pin_states[label] = button_settings[label]["pinned"]
-
-            if button.isCheckable():
-                button.setChecked(button_settings[label]["starting_state"])
-
-            button.setMinimumWidth(32)
-            button.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
+        # self._menu_button.clicked.connect(lambda _=False: self._refresh_menu_controls())
 
         ###################
         # set up input bar
@@ -415,18 +402,9 @@ class TerminalWindow(QMainWindow):
         self.setCentralWidget(container)
 
         ###################
-        # set up process running python script
-
-        self.process = QProcess(self)
-        self.process.readyReadStandardOutput.connect(self._read_stdout)
-        self.process.readyReadStandardError.connect(self._read_stderr)
-        self.process.finished.connect(self._on_finished)
-
-        self._start_process()
-
-        ###################
         # set up system tray
 
+        self._window_is_in_tray = False
         self.tray_icon = QSystemTrayIcon(self)
         if self.start_icon_path:
             self.tray_icon.setIcon(QIcon(self.start_icon_path))
@@ -455,27 +433,37 @@ class TerminalWindow(QMainWindow):
             app.aboutToQuit.connect(self._cleanup)
 
         ###################
-        # apply styles
+        # build top bar and dropdown menu
 
         self._refresh_menu_controls()
         self._refresh_top_bar()
+
+        #######################
+        # miscelaneous attributes
+
+        self._window_is_closing = False
+        self._go_to_bottom_on_next_text_print = False
+
+        ###################
+        # set up thread for running python script and start script
+
+        self.process = QProcess(self)
+        self.process.readyReadStandardOutput.connect(self._read_stdout)
+        self.process.readyReadStandardError.connect(self._read_stderr)
+        self.process.finished.connect(self._on_finished)
+
+        self.start_script()
 
     ##################
     # methods
     ##################
 
     #################
-    # buttons
-
-    def press_button(self, label: str) -> None:
-        btn = self.get_button_widget(label)
-        if btn.isCheckable():
-            btn.setChecked(not btn.isChecked())
-        else:
-            btn.click()
+    # buttons methods
+    #################
 
     ###############
-    # button setters
+    # specific button state setters
 
     def set_autoscroll_state(self, state: bool) -> None:
         if self.get_autoscroll_state() != state:
@@ -486,7 +474,7 @@ class TerminalWindow(QMainWindow):
         if self.get_show_input_state() != state:
             self._show_input_button.setChecked(state)
             self._restyle(self._show_input_button)
-            self._refresh_output_view()
+            self._refresh_terminal_output()
 
     def set_highlight_on_print_state(self, state: bool) -> None:
         if self.get_highlight_on_print_state() != state:
@@ -499,7 +487,7 @@ class TerminalWindow(QMainWindow):
             self._restyle(self._foreground_on_print_button)
 
     ###############
-    # button getters
+    # specific button state getters
 
     def get_highlight_on_print_state(self) -> bool:
         return self._highlight_on_print_button.isChecked()
@@ -514,7 +502,7 @@ class TerminalWindow(QMainWindow):
         return self._show_input_button.isChecked()
 
     ###############
-    # button togglers
+    # specific button state togglers
 
     def toggle_autoscroll(self) -> None:
         self.set_autoscroll_state(not self.get_autoscroll_state())
@@ -529,17 +517,24 @@ class TerminalWindow(QMainWindow):
         self.set_foreground_on_print_state(not self.get_foreground_on_print_state())
 
     ###############
-    # button handling related setters
+    # general button miscellaneous
+
+    def press_button(self, label: str) -> None:
+        btn = self.get_button_widget(label)
+        if btn.isCheckable():
+            btn.setChecked(not btn.isChecked())
+        else:
+            btn.click()
+
+    ###############
+    # general button related setters
 
     def set_button_clickable_state(self, label: str, enabled: bool) -> None:
-        self.get_button_widget(label).setEnabled(enabled)
-
-        button = self._menu_buttons.get(label)
-        if button:
-            button.setEnabled(enabled)
+        self._buttons[label].setEnabled(enabled)
+        self._menu_buttons[label].setEnabled(enabled)
 
     def set_button_state_and_trigger_on_change(self, label: str, enabled: bool) -> None:
-        if self.get_button_state(label) != enabled:
+        if self._buttons[label].isChecked() != enabled:
             self.press_button(label)
 
     def set_button_pinned_state(self, label: str, checked: bool) -> None:
@@ -548,33 +543,42 @@ class TerminalWindow(QMainWindow):
         self._refresh_top_bar()
 
     def set_button_visible_state(self, label: str, visible: bool) -> None:
-        self.get_button_widget(label).setVisible(visible)
-
-        button = self._menu_buttons.get(label)
-        if button:
-            button.setVisible(visible)
+        self._button_visible_states[label] = visible
+        self._menu_entries[label].setVisible(visible)
+        self._refresh_top_bar()
 
     ###############
-    # button handling related getters
+    # general button related getters
 
     def get_button_widget(self, label: str) -> QPushButton:
-        for lab, button in self._buttons:
-            if lab == label:
-                return button
-        else:
-            raise ValueError(f"Button {label} not found")
+        return self._buttons[label]
 
     def get_button_clickable_state(self, label: str) -> bool:
-        return self.get_button_widget(label).isEnabled()
+        return self._buttons[label].isEnabled()
 
     def get_button_pinned_state(self, label: str) -> bool:
         return self._button_pin_states[label]
 
     def get_button_state(self, label: str) -> bool:
-        return self.get_button_widget(label).isChecked()
+        return self._buttons[label].isChecked()
 
     def get_button_visible_state(self, label: str) -> bool:
-        return self.get_button_widget(label).isVisible()
+        return self._buttons[label].isVisible()
+
+    ###############
+    # general button related togglers
+
+    def toggle_button_clickable_state(self, label: str):
+        self.set_button_clickable_state(label, not self.get_button_clickable_state(label))
+
+    def toggle_button_pinned_state(self, label: str):
+        self.set_button_pinned_state(label, not self.get_button_pinned_state(label))
+
+    def toggle_button_state(self, label: str):
+        self.set_button_state_and_trigger_on_change(label, not self.get_button_state(label))
+
+    def toggle_button_visible_state(self, label: str):
+        self.set_button_visible_state(label, not self.get_button_visible_state(label))
 
     #################
     # terminal (output field) related
@@ -589,16 +593,21 @@ class TerminalWindow(QMainWindow):
         color: QColor | None = None,
         is_user_input: bool = False,
         always_go_to_bottom_for_user_input: bool = True,
+        error=False,
     ) -> None:
+
+        if error == True:
+            color = QColor(ERROR_PRINT)
+
         self._terminal_output_entries.append((text, color, is_user_input))
 
         if is_user_input and always_go_to_bottom_for_user_input:
             self.go_to_terminal_bottom()
             # Only force-follow if we will actually insert text
-            self._follow_next_insert_once = self.get_show_input_state()
+            self._go_to_bottom_on_next_text_print = self.get_show_input_state()
 
         if is_user_input and not self.get_show_input_state():
-            self._follow_next_insert_once = False
+            self._go_to_bottom_on_next_text_print = False
             return
 
         self._insert_text(text, color)
@@ -702,7 +711,7 @@ class TerminalWindow(QMainWindow):
         """
         Force the window to the foreground on Windows, bypassing focus stealing prevention.
         """
-        if self._is_closing:
+        if self._window_is_closing:
             return
 
         # Ensure window is shown and not minimized
@@ -804,6 +813,65 @@ class TerminalWindow(QMainWindow):
         user32.FlashWindowEx(ctypes.byref(info))
 
     ###############
+    # script related
+
+    def open_python_script_in_editor(self):
+        try:
+            if not os.path.exists(self.script_path):
+                print(f"Could not find file at path: {self.script_path}")
+
+            vscode_exe_path = shutil.which("code")
+            if vscode_exe_path is not None:
+                subprocess.Popen([vscode_exe_path, self.script_path])  # noqa:S603
+            else:
+                # Fallback
+                subprocess.Popen(["notepad.exe", self.script_path])  # noqa:S603
+        except Exception as m:
+            self.terminal_print(traceback.format_exc(), error=True)
+
+    def start_script(self) -> None:
+        if self.process.state() != QProcess.ProcessState.NotRunning:
+            self.stop_script()
+
+        # Clear restart button state if it was clicked
+        for btn in [self._buttons["restart"], self._menu_buttons["restart"]]:
+            if btn:
+                btn.setProperty("restarting", "false")
+                btn.style().unpolish(btn)
+                btn.style().polish(btn)
+
+        python_exe = sys.executable or "python"
+        self.process.start(python_exe, [self.script_path])
+        self.input_line.setEnabled(True)
+        self.set_button_clickable_state("stop", True)
+        if not self.process.waitForStarted(3000):
+            self.terminal_print("Failed to start process.\n", error=True)
+            self.input_line.setEnabled(False)
+            self.set_button_clickable_state("stop", False)
+
+    def stop_script(self) -> None:
+        if self.process.state() != QProcess.ProcessState.NotRunning:
+            self.process.terminate()
+            if not self.process.waitForFinished(2000):
+                self.process.kill()
+                self.process.waitForFinished(1000)
+
+    def restart_script(self) -> None:
+        # Set restarting visual state
+        for btn in [self._restart_button, self._menu_buttons.get("restart")]:
+            if btn:
+                btn.setProperty("restarting", "true")
+                btn.style().unpolish(btn)
+                btn.style().polish(btn)
+
+        QApplication.processEvents()
+        self.stop_script()
+        self.clear_terminal()
+        self.set_title(None)
+        self.set_icon(None)
+        self.start_script()
+
+    ###############
     # backend
 
     def _restyle(self, w: QWidget) -> None:
@@ -825,18 +893,34 @@ class TerminalWindow(QMainWindow):
         menu_btn.style().polish(menu_btn)
         menu_btn.update()
 
-    def _menu_press_button(self, label: str) -> None:
+    def _press_button_in_menu(self, label: str) -> None:
         self.press_button(label)
         self._refresh_menu_controls()
 
-    def _add_button(self, button_text: str, button_label: str):
+    def _add_button(self, button_text: str, button_label: str, checkable: bool = False):
+        # add attributes if missing
+        if not hasattr(self, "_buttons"):
+            self._buttons: dict[str, QPushButton] = {}
+        if not hasattr(self, "_button_pin_states"):
+            self._button_pin_states: dict[str, bool] = {}
+        if not hasattr(self, "_button_visible_states"):
+            self._button_visible_states: dict[str, bool] = {}
+
         button = QPushButton(button_text, self._top_bar_widget)
         button.hide()  # <-- important: prevent overlap until layout adds it
+        button.setMinimumWidth(32)
+        button.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
+        if checkable == True:
+            button.setCheckable(True)
+            button.setChecked(self.button_settings[button_label]["starting_state"])
+            button.toggled.connect(lambda checked, lab=button_label: self._sync_menu_button_checked(lab, checked))
+        button.setEnabled(self.button_settings[button_label]["clickable"])
+        self._button_pin_states[button_label] = self.button_settings[button_label]["pinned"]
+        self._button_visible_states[button_label] = self.button_settings[button_label]["visible"]
 
-        if not hasattr(self, "_buttons"):
-            self._buttons = []
+        # add button to list
+        self._buttons[button_label] = button
 
-        self._buttons.append((button_label, button))
         return button
 
     def _on_tray_icon_activated(self, reason) -> None:
@@ -853,7 +937,7 @@ class TerminalWindow(QMainWindow):
 
         sb: QScrollBar = self._terminal_output.verticalScrollBar()
 
-        follow = self.get_autoscroll_state() or self._follow_next_insert_once
+        follow = self.get_autoscroll_state() or self._go_to_bottom_on_next_text_print
 
         old_scroll = sb.value()
         old_cursor = self._terminal_output.textCursor()  # keep selection/caret if you want
@@ -869,7 +953,7 @@ class TerminalWindow(QMainWindow):
         doc_cursor.insertText(text, fmt)
 
         # Always clear one-shot flag
-        self._follow_next_insert_once = False
+        self._go_to_bottom_on_next_text_print = False
 
         if follow:
             # Scroll to bottom (don't rely on ensureCursorVisible in non-follow mode)
@@ -891,6 +975,13 @@ class TerminalWindow(QMainWindow):
 
         QTimer.singleShot(0, restore_view)
 
+    def _refresh_terminal_output(self) -> None:
+        self._terminal_output.clear()
+        for text, color, is_user_input in self._terminal_output_entries:
+            if is_user_input and not self.get_show_input_state():
+                continue
+            self._insert_text(text, color)
+
     def _refresh_menu_controls(self) -> None:
         # Sync pin buttons
         for label, pin_button in self._menu_pin_buttons.items():
@@ -899,34 +990,22 @@ class TerminalWindow(QMainWindow):
             pin_button.setChecked(is_pinned)
             pin_button.setText(self._pin_symbol_on if is_pinned else self._pin_symbol_off)
 
-        # Sync action buttons state
+        # Sync menu dropdown buttons state
         for label, button_in_menu in self._menu_buttons.items():
-            # Find the corresponding top bar button to get its checked state
-            for btn_label, top_button in self._buttons:
-                if btn_label == label:
-                    button_in_menu.setChecked(top_button.isChecked())
-                    break
-
-    def _refresh_output_view(self) -> None:
-        self._terminal_output.clear()
-        for text, color, is_user_input in self._terminal_output_entries:
-            if is_user_input and not self.get_show_input_state():
-                continue
-            self._insert_text(text, color)
+            button_in_menu.setChecked(self._buttons[label].isChecked())
 
     def _refresh_top_bar(self) -> None:
-        # remove all items from the layout
-        while self._top_bar.count():
+        # remove all items from the layout except the menu button
+        while self._top_bar.count() > 0:
             _item = self._top_bar.takeAt(0)
-            # no need to hide here; we decide below
 
-        # menu button always in the bar
+        # re add menu button in top bar
         self._menu_button.show()
         self._top_bar.addWidget(self._menu_button)
 
         # show pinned buttons, hide unpinned (prevents overlap)
-        for label, button in self._buttons:
-            if self._button_pin_states.get(label, False) and button.isEnabled() is not None:
+        for label, button in self._buttons.items():
+            if self._button_pin_states[label] and self._button_visible_states[label]:
                 button.show()
                 self._top_bar.addWidget(button)
             else:
@@ -934,67 +1013,32 @@ class TerminalWindow(QMainWindow):
 
         self._top_bar.addStretch()
 
-    def _start_process(self) -> None:
-        if self.process.state() != QProcess.ProcessState.NotRunning:
-            self._stop_process()
-
-        # Clear restarting state if it was set
-        for btn in [self._restart_button, self._menu_buttons.get("restart")]:
-            if btn:
-                btn.setProperty("restarting", "false")
-                btn.style().unpolish(btn)
-                btn.style().polish(btn)
-
-        python_exe = sys.executable or "python"
-        self.terminal_print(f"$ {python_exe} {self.script_path}\n\n")
-        self.process.start(python_exe, [self.script_path])
-        self.input_line.setEnabled(True)
-        self.set_button_clickable_state("stop", True)
-        if not self.process.waitForStarted(3000):
-            self.terminal_print("Failed to start process.\n", QColor(ERROR_PRINT))
-            self.input_line.setEnabled(False)
-            self.set_button_clickable_state("stop", False)
-
-    def _stop_process(self) -> None:
-        if self.process.state() != QProcess.ProcessState.NotRunning:
-            self.process.terminate()
-            if not self.process.waitForFinished(2000):
-                self.process.kill()
-                self.process.waitForFinished(1000)
-
-    def _restart_process(self) -> None:
-        # Set restarting visual state
-        for btn in [self._restart_button, self._menu_buttons.get("restart")]:
-            if btn:
-                btn.setProperty("restarting", "true")
-                btn.style().unpolish(btn)
-                btn.style().polish(btn)
-
-        QApplication.processEvents()
-        self._stop_process()
-        self.clear_terminal()
-        self.set_title(None)
-        self.set_icon(None)
-        self._start_process()
-
     def _read_stdout(self) -> None:
-        data = bytes(self.process.readAllStandardOutput()).decode(errors="replace")  # type: ignore
-        self.terminal_print(data)
+        msg = bytes(self.process.readAllStandardOutput()).decode(errors="replace")  # type: ignore
+
+        if msg.startswith("Terminal_window."):
+            rest = msg[len("Terminal_window."):]
+            try:
+                eval(f"self.{rest}")
+            except Exception as m:
+                self.terminal_print(traceback.format_exc(), error=True)
+
+        else:
+            self.terminal_print(msg)
 
     def _read_stderr(self) -> None:
         data = bytes(self.process.readAllStandardError()).decode(errors="replace")  # type: ignore
-        self.terminal_print(data, QColor(ERROR_PRINT))
+        self.terminal_print(data, error=True)
 
     def _on_finished(self, exit_code: int, _exit_status: QProcess.ExitStatus) -> None:
-        color = QColor(ERROR_PRINT) if exit_code != 0 else None
-        self.terminal_print(f"\n\n[process exited with code {exit_code}]\n", color)
+        self.terminal_print(f"\n\n[process exited with code {exit_code}]\n", error=(exit_code != 0))
         self.input_line.setEnabled(False)
         self.set_button_clickable_state("stop", False)
 
     def _cleanup(self) -> None:
-        if self._is_closing:
+        if self._window_is_closing:
             return
-        self._is_closing = True
+        self._window_is_closing = True
 
         try:
             self.tray_icon.hide()
@@ -1047,7 +1091,7 @@ def main() -> int:
     icon_path = args.icon
 
     app = QApplication(sys.argv)
-    window = TerminalWindow(script_path, icon_path=icon_path)
+    window = Terminal_window(script_path, icon_path=icon_path)
     window.show()
     return app.exec()
 
