@@ -1,0 +1,232 @@
+# #=====================================
+#current problems
+# #=====================================
+
+when i drag away from snapped to edge window it does not restore prvious shape
+
+when attempting to resize from top it changes to moving. i guess all direction when starting form top bar
+
+mkae some kind of indication that it will snap to the edges
+
+clicking the script name does not work
+
+it crashes when i engage wiht that script:
+
+"""
+    """
+    Simple test script for the PySide6 terminal emulator.
+    Tests basic input/output functionality.
+    """
+
+    import sys
+    import time
+
+    print("=" * 50)
+    print("PySide6 Terminal Test Script")
+    print("=" * 50)
+    print()
+
+    # Test stdout
+    print("This is standard output (stdout)")
+    print("Testing multiple lines...")
+    for i in range(5):
+        print(f"Line {i + 1}")
+        time.sleep(0.2)
+
+    print()
+
+    # Test stderr
+    print("Now testing stderr output...", file=sys.stderr)
+    sys.stderr.write("This is an error message!\n")
+    sys.stderr.flush()
+
+    print()
+
+    # Test input
+    name = input("What is your name? ")
+    print(f"Hello, {name}!")
+
+    age = input("How old are you? ")
+    print(f"You are {age} years old.")
+
+    print()
+
+    # Test long output
+    print("Testing long output (scroll test):")
+    for i in range(20):
+        print(f"Long line {i + 1}: " + "x" * 80)
+
+    print()
+    print("Test completed successfully!")
+    print("You can now test the terminal features:")
+    print("  - Try typing commands")
+    print("  - Use Up/Down arrows for history")
+    print("  - Try Ctrl+F to search")
+    print("  - Try Ctrl+Scroll to zoom")
+    print("  - Type 'exit' to close")
+    print()
+
+    # Keep running for interactive testing
+    while True:
+        try:
+            user_input = input(">>> ")
+            if user_input.lower() == "quit":
+                break
+            print(f"You entered: {user_input}")
+        except EOFError:
+            break
+
+    print("Goodbye!")
+"""
+
+# #=====================================
+#fixed problems
+# #=====================================
+
+
+
+# #=====================================
+#todo
+# #=====================================
+
+add a qss style sheet file. see DO_NOT_SYNC\App attempts\
+
+add to submenu the setting to change colors
+
+add timestamps button and or setting. maybe add just all to a setting  submenu. also the script os no acciendtal open. alllow for "allow minimize button". make submenu stuff pinable to top bar
+
+# addd scrollbar when too many lines
+
+#now again resize from top does not work; now maximizing over taskbar is again wrong. was broken by attempt to undid last changes becaseu they broke remembering position beofre snap; 
+
+# make it also not go to far ontop like bottom
+
+#Option to open logged file for crash
+
+#Option to print to file parallel and link to that file
+
+#Stop python crash and print and give options to restart? Open windows prompt for crash
+
+
+# mkae option to remove or add timestaps to all orints. make it removeber timesatap eve n if not tunred on
+
+#####################################
+
+#----------------
+# optional
+#--------------
+
+# change maximize button icon when maximaize like Windows
+
+# slight Animations especially for moving to system tray
+
+change confirm on close icon
+
+#transparency option -> maxbe as option ontop under "Window"
+
+#Print of name in asci Option
+
+#Calculator option?
+
+# ight click paste and copy option
+
+#Auto clickable links and paths?
+
+#----------------
+# interactions
+#--------------
+
+#Option to remember last state? Safe history? Relaod?
+
+#Maybe tabs for chat and for plots
+
+#Does progressbars work? Maybe build one in
+
+#Give option to change color of taskbar icon during runtime and before. tell user how to change icon and name during runtime and also color
+
+#any way of python to communicate with terminal. for like buttons.
+#Help button giving all commands
+
+# #=====================================
+# settings
+# #=====================================
+
+# confirm on close should not be on runtime?
+
+# add color options for colors of: button icons, button highlight, window top bottom main colors text
+
+# option to disable print highlight
+
+# maybe add option to remove tray minimizer 
+
+# make options for all buttons to appear or not and what defaults they have. maybe as file?
+
+# #=====================================
+# end fix
+# #=====================================
+
+#Add as option to PyApp-Template
+
+#How does it abfangen commands that do terminal stuff
+
+# remove unneeded args
+
+# update docstirng
+
+# is it cross platform?
+# is it vaniall only?
+
+# make error print nicer
+
+# mabye check all commit fixes if soemthing broke ruff
+
+
+
+######################################
+
+
+harmoize vscode/antigravtiy extensiokns
+
+################
+#important
+
+propmp user on close
+
+always hioghlihgt in taskbar and put in foreground for crash
+
+is exit code correct?
+
+add python dist path
+
+add way of script to talk to terminal
+
+it does not respce settong on highlihgt and foregorund
+
+not working hihglihgt whne only needed-> fix is_active_windwo
+
+################
+
+indicate what is toggle and what trigger button
+
+make buttons scrollable on to small
+same in menu
+
+
+mkae top bar disappearable and only come when cles with mounse
+
+enabled buttons dont darken
+
+add prompt windows
+
+order for buttons?
+
+does taskbar highlighting have color?
+maybe hihgligh green on finsihed and also toggle if put to foregound on finihsed?
+
+minimize to taskbar not hiddin in up arrow. but remember if once set
+
+in menu make unpinned first. only refresh on open
+make label centered in menu row
+
+
+ask AI if features missing form old fancy_terminl in tkinter

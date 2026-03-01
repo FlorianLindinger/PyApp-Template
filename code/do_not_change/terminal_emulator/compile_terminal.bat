@@ -9,7 +9,7 @@ set "VENV_DIR=DO_NOT_SYNC\.venv"
 set "SCRIPT=terminal_emulator.py"
 set "EXE_NAME=run"
 set "DO_PRUNE=yes"
-REM options: attach, force, disable
+REM WINDOWS_CONSOLE_MODE options: attach, force, disable.
 REM "attach" means that it will print to console if called via console but not open one if called by double click
 set "WINDOWS_CONSOLE_MODE=attach"
 
@@ -32,7 +32,8 @@ if not exist "%VENV_DIR%" (
   echo Venv not found. Creating...
   py -%PY_VERSION% -m venv "%VENV_DIR%"
   if errorlevel 1 (
-    echo Failed to create venv.
+    echo Failed to create venv. Press any key to exit.
+    pause > nul
     exit /b 1
   )
   echo Installing build dependencies...
@@ -40,7 +41,8 @@ if not exist "%VENV_DIR%" (
     nuitka ^
     PySide6-Essentials
   if errorlevel 1 (
-    echo Failed to install dependencies.
+    echo Failed to install dependencies. Press any key to exit.
+    pause > nul
     exit /b 1
   )
 ) else (
@@ -53,7 +55,7 @@ REM ============================
 REM  Safety Verification
 REM ============================
 
-if "%EXE_NAME%"=="" ( echo ERROR: EXE_NAME variable is empty. Safety halt. & pause & exit /b 1 )
+if "%EXE_NAME%"=="" ( echo ERROR: EXE_NAME variable is empty. Press any key to eit & pause >nul & exit /b 1 )
 
 REM Clean output (but keep venv)
 if exist "DO_NOT_SYNC\build" (
@@ -119,7 +121,8 @@ echo Build started at !STR_START!
 echo.
 call !CMD!
 if errorlevel 1 (
-  echo Build failed.
+  echo Build failed. Press any key to exit.
+  pause > nul
   exit /b 1
 )
 for /f "tokens=*" %%A in ('powershell -NoProfile -Command "(Get-Date).Ticks"') do set "TICKS_END=%%A"
@@ -138,7 +141,8 @@ if not exist "%SOURCE%" (
     set "SOURCE=DO_NOT_SYNC\build\%%D"
     goto :found_dist
   )
-  echo Dist folder not found: DO_NOT_SYNC\build\*.dist
+  echo Dist folder not found: DO_NOT_SYNC\build\*.dist. Press any key to exit.
+  pause > nul
   exit /b 1
 )
 :found_dist
@@ -153,8 +157,8 @@ if /i "%DO_PRUNE%"=="yes" (
     set "TARGET=DO_NOT_SYNC\build\pruned.dist"
     
     REM Extra safety check for pruning target
-    if "!TARGET!"=="" ( echo ERROR: Prune TARGET is empty. & pause & exit /b 1 )
-    if "!TARGET!"=="!SOURCE!" ( echo ERROR: Prune TARGET cannot be the same as SOURCE. & pause & exit /b 1 )
+    if "!TARGET!"=="" ( echo ERROR: Prune TARGET is empty. Press any key to exit. & pause >nul & exit /b 1 )
+    if "!TARGET!"=="!SOURCE!" ( echo ERROR: Prune TARGET cannot be the same as SOURCE. Press any key to exit. & pause>nul & exit /b 1 )
     
     echo Creating copy from !SOURCE! to !TARGET!...
     if exist "!TARGET!" rmdir /s /q "!TARGET!"
