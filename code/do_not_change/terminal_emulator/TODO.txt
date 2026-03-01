@@ -2,82 +2,21 @@
 #current problems
 # #=====================================
 
-when i drag away from snapped to edge window it does not restore prvious shape
+show input is not working
 
-when attempting to resize from top it changes to moving. i guess all direction when starting form top bar
+it does not respce settong on highlihgt and foregorund
 
-mkae some kind of indication that it will snap to the edges
+not working hihglihgt whne only needed-> fix is_active_windwo
 
-clicking the script name does not work
 
-it crashes when i engage wiht that script:
 
-"""
-    """
-    Simple test script for the PySide6 terminal emulator.
-    Tests basic input/output functionality.
-    """
+move out terminal emulator part to compiled and leave rest python and run via runtime. but drawback is that there is no attached terminal mode. drawback is also long target path to call python and a script
 
-    import sys
-    import time
+implement in template
 
-    print("=" * 50)
-    print("PySide6 Terminal Test Script")
-    print("=" * 50)
-    print()
+test if appid works
 
-    # Test stdout
-    print("This is standard output (stdout)")
-    print("Testing multiple lines...")
-    for i in range(5):
-        print(f"Line {i + 1}")
-        time.sleep(0.2)
-
-    print()
-
-    # Test stderr
-    print("Now testing stderr output...", file=sys.stderr)
-    sys.stderr.write("This is an error message!\n")
-    sys.stderr.flush()
-
-    print()
-
-    # Test input
-    name = input("What is your name? ")
-    print(f"Hello, {name}!")
-
-    age = input("How old are you? ")
-    print(f"You are {age} years old.")
-
-    print()
-
-    # Test long output
-    print("Testing long output (scroll test):")
-    for i in range(20):
-        print(f"Long line {i + 1}: " + "x" * 80)
-
-    print()
-    print("Test completed successfully!")
-    print("You can now test the terminal features:")
-    print("  - Try typing commands")
-    print("  - Use Up/Down arrows for history")
-    print("  - Try Ctrl+F to search")
-    print("  - Try Ctrl+Scroll to zoom")
-    print("  - Type 'exit' to close")
-    print()
-
-    # Keep running for interactive testing
-    while True:
-        try:
-            user_input = input(">>> ")
-            if user_input.lower() == "quit":
-                break
-            print(f"You entered: {user_input}")
-        except EOFError:
-            break
-
-    print("Goodbye!")
-"""
+add settings to non-user settings
 
 # #=====================================
 #fixed problems
@@ -89,48 +28,116 @@ it crashes when i engage wiht that script:
 #todo
 # #=====================================
 
+print clickable link to script on crsh
+
+enabled buttons dont change color opn hover because choice
+
+prompt window on crash:
+ def _show_critical_error(self, title: str, message: str) -> None:
+        msg = QMessageBox(None)
+        msg.setIcon(QMessageBox.Icon.Critical)
+        msg.setWindowTitle(title)
+        msg.setText(message)
+        msg.setTextInteractionFlags(
+            Qt.TextInteractionFlag.TextSelectableByMouse | Qt.TextInteractionFlag.TextSelectableByKeyboard
+        )
+        msg.setWindowFlags(msg.windowFlags() | Qt.WindowType.Window)
+        QApplication.alert(msg)
+        msg.exec()
+
+compare to  DO_NOT_SYNC\App attempts\
+
+add
+        python_exe_for_script_path = sys.argv[1]
+        script_path = sys.argv[2]
+        wdir_is_script_dir = str_to_bool(sys.argv[3])
+        close_on_success = str_to_bool(sys.argv[4])
+        close_on_failure = str_to_bool(sys.argv[5])
+        close_on_crash = str_to_bool(sys.argv[6])
+        terminal_needs_input = str_to_bool(sys.argv[7])
+        title = sys.argv[8]
+        icon_path = sys.argv[9] if sys.argv[9] else None
+        stylesheet_arg = sys.argv[10]
+        extra_args = sys.argv[11:]
+
+copy over all functionalyi from   DO_NOT_SYNC\App attempts\
+
+option for no extra buttons
+
+check ideas list for terminal? was it in notes or main todo?
+
+add python dist path
+
+
+#Add as option to PyApp-Template
+
+
+on crash make it go to foreground and altert
+
+add always ontop button. ->alllow for "allow minimize button". disable somehwo windows button
+
 add a qss style sheet file. see DO_NOT_SYNC\App attempts\
 
-add to submenu the setting to change colors
+add timestamps button setting.
 
-add timestamps button and or setting. maybe add just all to a setting  submenu. also the script os no acciendtal open. alllow for "allow minimize button". make submenu stuff pinable to top bar
+remember last window state
 
-# addd scrollbar when too many lines
-
-#now again resize from top does not work; now maximizing over taskbar is again wrong. was broken by attempt to undid last changes becaseu they broke remembering position beofre snap; 
-
-# make it also not go to far ontop like bottom
-
-#Option to open logged file for crash
-
-#Option to print to file parallel and link to that file
-
-#Stop python crash and print and give options to restart? Open windows prompt for crash
+indicate what is toggle and what trigger button
 
 
-# mkae option to remove or add timestaps to all orints. make it removeber timesatap eve n if not tunred on
+add search
 
-#####################################
+test if error handled if shortcut passes no args
+
+if open new terminal fails, at least print i in dubug console i guess
+
 
 #----------------
 # optional
 #--------------
 
-# change maximize button icon when maximaize like Windows
+use global dark mode settings
 
-# slight Animations especially for moving to system tray
+make buttons scrollable on to small
+same in menu
 
-change confirm on close icon
+mkae top bar disappearable and only come when cles with mounse. also pin for that
+
+
+
+
+add prompt windows
+
+add more stuff that is QT and nice for the running scropt
+
+
+does taskbar highlighting have color?
+maybe hihgligh green on finsihed and also toggle if put to foregound on finihsed?
+
+
+
+make minimize to taskbar not hiddin in up arrow. but it remember if once set
+
+
+#Option to print to file parallel and link to that file->no becasue called script can also do that?
+#Option to open logged file for crash->no because windwo should never crash?
+
+add  setting to change colors during runtime?
+
+add correct color formatting like traceback on vscode
+
+# slight Animations especially for moving to system tray. Explain tray more in hint
 
 #transparency option -> maxbe as option ontop under "Window"
 
-#Print of name in asci Option
-
-#Calculator option?
-
-# ight click paste and copy option
-
 #Auto clickable links and paths?
+
+in menu make unpinned first? only refresh on open
+make label centered in menu row and save space when possible horizonally
+
+ask AI if features missing form old fancy_terminl in tkinter
+
+change color of taskbar app bar
 
 #----------------
 # interactions
@@ -138,95 +145,96 @@ change confirm on close icon
 
 #Option to remember last state? Safe history? Relaod?
 
-#Maybe tabs for chat and for plots
+can python somehow plot in terminal
 
 #Does progressbars work? Maybe build one in
 
 #Give option to change color of taskbar icon during runtime and before. tell user how to change icon and name during runtime and also color
 
-#any way of python to communicate with terminal. for like buttons.
-#Help button giving all commands
-
-# #=====================================
-# settings
-# #=====================================
-
-# confirm on close should not be on runtime?
-
-# add color options for colors of: button icons, button highlight, window top bottom main colors text
-
-# option to disable print highlight
-
-# maybe add option to remove tray minimizer 
-
-# make options for all buttons to appear or not and what defaults they have. maybe as file?
-
-# #=====================================
-# end fix
-# #=====================================
-
-#Add as option to PyApp-Template
-
-#How does it abfangen commands that do terminal stuff
-
-# remove unneeded args
-
-# update docstirng
-
-# is it cross platform?
-# is it vaniall only?
-
-# make error print nicer
-
-# mabye check all commit fixes if soemthing broke ruff
 
 
 
-######################################
 
 
-harmoize vscode/antigravtiy extensiokns
-
-################
-#important
-
-propmp user on close
-
-always hioghlihgt in taskbar and put in foreground for crash
-
-is exit code correct?
-
-add python dist path
-
-add way of script to talk to terminal
-
-it does not respce settong on highlihgt and foregorund
-
-not working hihglihgt whne only needed-> fix is_active_windwo
-
-################
-
-indicate what is toggle and what trigger button
-
-make buttons scrollable on to small
-same in menu
 
 
-mkae top bar disappearable and only come when cles with mounse
+get parity in both window mode error msges:
+""""
+except Exception as e:
+    if close_on_crash:
+        sys.exit(1)
+    else:
+        set_terminal_name(f"[Crash] {{get_terminal_name()}}")
+        print()
+        print_red("="*40)
+        print_red(f"CRITICAL LAUNCH ERROR: {{e}}")
+        print_red("="*40)
+        traceback.print_exc()
+        print_red("="*40)
+        print(f"[Info] Python Exe/Command: {{python_exe_for_script_path}}")
+        print(f"[Info] Script: {{script_path}}")
+        print()
+        input_red("[Python Crash] See above. Press 
+        Enter to exit.")
+"""
 
-enabled buttons dont darken
+add comments to error_catcher_wrapper_template
 
-add prompt windows
+can the shortcut pass the remaining_args???
+can at least the exe????
 
-order for buttons?
+get wdir_for_script = sys.argv[4] instaed from settings
 
-does taskbar highlighting have color?
-maybe hihgligh green on finsihed and also toggle if put to foregound on finihsed?
+relative path local python_exe becasue why not 
 
-minimize to taskbar not hiddin in up arrow. but remember if once set
+relative path local script_path becasue why not and maybe allow then for settings
 
-in menu make unpinned first. only refresh on open
-make label centered in menu row
+app id should stay as arg since it should come from shortcut
 
+also look at todo in old fancy termionl 
+copy features form fancy terminal
 
-ask AI if features missing form old fancy_terminl in tkinter
+add app name to opnedd crash terminal
+
+make ====== as long as msg and retrun legnt
+
+highlight windows temrinal on crahs
+
+add setting to stay open for errorcode!=0
+
+does this work as expected:
+"""
+       except Exception as e:
+            error_msg = f"{e}\n\n{traceback.format_exc()}\n"
+
+            # print error in new terminal (because this script might be launched without terminal)
+            print_msg_in_new_terminal(error_msg)
+
+            #return (SystemExit does not raise Exception)
+            raise SystemExit(app.exec())
+            
+    else:
+"""
+
+test if global python works and allow for py and python
+
+ahve travebakc error also inside qt tetrminalk
+
+change to global error icon with try excpet of crash
+
+add title and struff to terminal opemneer
+
+add print to script where the errror occured. can i make link?
+
+fix errors not spawining a terminal to dispaly errrors
+
+test if taskbar grouping works for:
+p = subprocess.Popen(
+            [python_exe, script_path],
+            creationflags=subprocess.CREATE_NEW_CONSOLE,
+
+addd debug mode launch that lkaunches it in attached mode. add a debug launcehr shortcut to code folder
+
+use nuitka mode attach to have 2 exe in one. Not sure if teriminal emuatr can still combine with launcher. also better for AV safety
+
+maybne only python script that calls qt terminal needs to change app id. lets cehck if anything can be launched maybe this exe gernaetor thing agian
