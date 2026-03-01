@@ -45,120 +45,7 @@ cmd shortcut also works for app id with qt window
 
 make all shorctus call teh same python.exe so only one confirmation to run? does that wokr taht way
 
-===================================
- new terminal related
-===================================
 
-add search
-
-
-maybe make input visible toggle in hindsight
-
-change color of taskbar app bar
-
-have option to always have it ontop and ways to toggle that at runtime
-
-move out terminal emulator part to compiled and leave rest python and run via runtime. but drawback is that there is no attached terminal mode. drawback is also long target path to call python and a script
-
-shortcuts can fail if properties open. am i deletingand chekcing afterwars?
-
-sanastize app name before using in shortcuts tarrget and shortuct name and appid
-
-test if error handled if shortcut passes no args
-
-if open new terminal fails, at least print i in dubug console i guess
-
-close_on_crash=close_on_crash,
-close_on_failure=close_on_failure,
-close_on_success=close_on_success,
-chekc if works on all paths
-
-add descript ón to shorticts
-
-rename pyside6_terminal.py
-
-get parity in both window mode error msges:
-""""
-except Exception as e:
-    if close_on_crash:
-        sys.exit(1)
-    else:
-        set_terminal_name(f"[Crash] {{get_terminal_name()}}")
-        print()
-        print_red("="*40)
-        print_red(f"CRITICAL LAUNCH ERROR: {{e}}")
-        print_red("="*40)
-        traceback.print_exc()
-        print_red("="*40)
-        print(f"[Info] Python Exe/Command: {{python_exe_for_script_path}}")
-        print(f"[Info] Script: {{script_path}}")
-        print()
-        input_red("[Python Crash] See above. Press 
-        Enter to exit.")
-"""
-
-add comments to error_catcher_wrapper_template
-
-can the shortcut pass the remaining_args???
-can at least the exe????
-
-get wdir_for_script = sys.argv[4] instaed from settings
-
-relative path local python_exe becasue why not 
-
-relative path local script_path becasue why not and maybe allow then for settings
-
-app id should stay as arg since it should come from shortcut
-
-also look at todo in old fancy termionl 
-copy features form fancy terminal
-
-add app name to opnedd crash terminal
-
-make ====== as long as msg and retrun legnt
-
-highlight windows temrinal on crahs
-
-add setting to stay open for errorcode!=0
-
-does this work as expected:
-"""
-       except Exception as e:
-            error_msg = f"{e}\n\n{traceback.format_exc()}\n"
-
-            # print error in new terminal (because this script might be launched without terminal)
-            print_msg_in_new_terminal(error_msg)
-
-            #return (SystemExit does not raise Exception)
-            raise SystemExit(app.exec())
-            
-    else:
-"""
-
-test if global python works and allow for py and python
-
-lesss padding for first print
-
-ahve travebakc error also inside qt tetrminalk
-
-change to global error icon with try excpet of crash
-
-add title and struff to terminal opemneer
-
-add print to script where the errror occured. can i make link?
-
-fix errors not spawining a terminal to dispaly errrors
-
-test if taskbar grouping works for:
-p = subprocess.Popen(
-            [python_exe, script_path],
-            creationflags=subprocess.CREATE_NEW_CONSOLE,
-
-addd debug mode launch that lkaunches it in attached mode. add a debug launcehr shortcut to code folder
-
-use nuitka mode attach to have 2 exe in one. Not sure if teriminal emuatr can still combine with launcher. also better for AV safety
-
-maybne only python script that calls qt terminal needs to change app id. lets cehck if anything can be launched maybe this exe gernaetor thing agian
 
 ===================================
    Unsorted
@@ -226,6 +113,14 @@ add prints to install_packages_needed_in_python_files.bat
 important
 ===================================
 
+sanastize app name before using in shortcuts tarrget and shortuct name and appid
+
+add descript ón to shorticts
+
+
+shortcuts can fail if properties open. am i deletingand chekcing afterwars?
+
+
 maybe run batch via : 
 """
 3. "Portable" Application Launchers (NSIS / Inno Setup)
@@ -275,6 +170,8 @@ make install packages needed in python files batch seach in code and in .py scri
 ===================================
 unrealated
 ===================================
+
+syncrhonize extensions vscode antigraivy
 
 add venv to python->exe (see folder compiler)
 test if 
