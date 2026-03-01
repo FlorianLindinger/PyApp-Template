@@ -1,1 +1,0 @@
-batch names are shortened to not cause problems with Windows shortcuts
