@@ -5,6 +5,7 @@
 # ==========================================================================
 
 import os
+
 file_dir = os.path.dirname(os.path.abspath(__file__)) + "\\"
 
 python_scripts_folder_path = os.path.normpath(file_dir + "..\\..\\")
@@ -12,7 +13,7 @@ local_python_exe_for_script_path = os.path.normpath(file_dir + "..\\..\\py_env\\
 settings_file_path = os.path.normpath(file_dir + "..\\..\\non-user_settings.ini")
 qt_terminal_exe_path = os.path.normpath(file_dir + "..\\terminal_emulator\\compiled\\run.exe")
 icon_path = os.path.normpath(file_dir + "..\\..\\icons\\icon.ico")
-stylesheet_path =os.path.normpath(file_dir + "..\\terminal_emulator\\terminal_style.qss")
+stylesheet_path = os.path.normpath(file_dir + "..\\terminal_emulator\\terminal_style.qss")
 
 # =============================
 #      Terminal Appearance
@@ -82,6 +83,7 @@ def read_key_value_file(file_path, key_val_separator="=", comment_chars=("#", ";
 # =============================
 
 # print related
+
 
 def wrap_print(msg: str, wrap_character: str = "=", max_len=80):
     size = len(msg)
@@ -368,7 +370,6 @@ def main() -> None:
 
     # run setup python file
 
-
     # raise error if settings not found
     if not os.path.exists(settings_file_path):
         raise FileNotFoundError(f'[Error] Settings file not found at "{format_path(settings_file_path)}"')
@@ -400,7 +401,7 @@ def main() -> None:
         raise ValueError(f'[Error] Setting "python_code_name" not found in "{format_path(settings_file_path)}"')
 
     # make abs path and nice looking format
-    script_path = format_path(script_path)
+    # script_path = format_path(script_path)
 
     # raise error if script not found
     if not os.path.exists(script_path):
@@ -422,9 +423,9 @@ def main() -> None:
                 "1" if terminal_needs_input else "0",
                 title,
                 icon_path if icon_path else "",
-                stylesheet_path
+                stylesheet_path,
             ]
-            
+
             # Append remaining script arguments individually
             args.extend(remaining_args)
 
