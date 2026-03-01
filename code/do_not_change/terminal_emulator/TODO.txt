@@ -2,13 +2,11 @@
 #current problems
 # #=====================================
 
-show input is not working
+show input is not working. add timestamp at same time. how to deal iwth prints that dont have \n?
 
-it does not respce settong on highlihgt and foregorund
+it does not respct settong on highlihgt and foregorund?
 
-not working hihglihgt whne only needed-> fix is_active_windwo
-
-
+not working hihglihgt whne only needed-> fix is_active_window?
 
 move out terminal emulator part to compiled and leave rest python and run via runtime. but drawback is that there is no attached terminal mode. drawback is also long target path to call python and a script
 
@@ -27,6 +25,8 @@ add settings to non-user settings
 # #=====================================
 #todo
 # #=====================================
+
+add terminal_needs_input. Or button for input?
 
 print clickable link to script on crsh
 
