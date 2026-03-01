@@ -2,6 +2,23 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+add option to use uncompiled terminal emulatopr
+
+implement start_in_shortcut_folder
+
+does it set app id if user makes a QT window in script?
+
+explicitly import functions from utils
+
+move runtime python.exe further up. maybe via link? and shorter: "P.exe". -> relative Shortcut
+use targets:
+T.py app     windows/q terminal from settings. make it not use "" if not needed
+no_Te.py        no terminal
+quitT.py
+setti.py
+
+open setting in vscode by defualt?
+
 add vscode settigns to pyproject.toml
 
 add readme extensiom
