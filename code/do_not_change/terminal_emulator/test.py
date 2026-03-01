@@ -25,5 +25,9 @@ while True:
         time.sleep(4)
         print(msg)
     
+    elif msg=="tv":
+        print('Terminal_window.toggle_button_visible_state("stop")')
+    elif msg=="te":
+        print('Terminal_window.toggle_button_clickable_state("stop")')
     else:
         print(msg)
