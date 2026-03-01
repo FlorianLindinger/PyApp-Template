@@ -2,6 +2,18 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+compare what stuff in archive needs to be added to utilitites repo
+
+fix icon generator lnk
+
+Plan: run setup and everything in embedded terminal and then launch the 3 terminal options wihtout staying open but wrap them in code that would open a terminal with error message on unhandled crash or python crahs or something.
+
+how do i transfer fany terminal settings via non-user_settings.ini
+
+should i swithc to a .py non user settings file? ->yes
+
+fix hidden launch and clsoe
+
 add option to use uncompiled terminal emulatopr
 
 implement start_in_shortcut_folder
@@ -10,12 +22,7 @@ does it set app id if user makes a QT window in script?
 
 explicitly import functions from utils
 
-move runtime python.exe further up. maybe via link? and shorter: "P.exe". -> relative Shortcut
-use targets:
-T.py app     windows/q terminal from settings. make it not use "" if not needed
-no_Te.py        no terminal
-quitT.py
-setti.py
+add to shortctu descripotion soemtinh like launchers name.py via embedded python P.exe
 
 open setting in vscode by defualt?
 
