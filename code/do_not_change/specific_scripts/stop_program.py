@@ -1,14 +1,8 @@
-import pathlib
+# TODO
 
-import launcher_utilities as utils
+process_id_file_path = r"..\..\id_of_currently_running_app.pid"
 
+# read id
+# close id
 
-def main():
-    script_dir = pathlib.Path(__file__).parent.resolve()
-    settings_path = (script_dir / "../../non-user_settings.ini").resolve()
-    settings = utils.get_settings(settings_path)
-    utils.stop_program(settings, settings_path)
-
-
-if __name__ == "__main__":
-    main()
+close window after 1 sek if sucessful and leasve if not
