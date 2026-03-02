@@ -228,4 +228,7 @@ echo.
 echo Compilation Duration: !DURATION!
 echo.
 
+echo Press any key to exit.
+pause > nul
+
 endlocal
