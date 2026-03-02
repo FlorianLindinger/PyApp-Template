@@ -2,6 +2,8 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+re add running of main sript and crash scriopt and error handling
+
 maybe make non user settings to toml
 
 addd changes from set.py and open_setrtings.py to other 3
