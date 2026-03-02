@@ -2,7 +2,13 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+maybe make non user settings to toml
 
+addd changes from set.py and open_setrtings.py to other 3
+
+checlk what functions are needed in helper_functions
+
+make the getsettings class have custom missing message like the end user settings class
 
 pass the id_setting to main_code that do their own window. probably via wrapper
 
@@ -81,7 +87,7 @@ cmd shortcut also works for app id with qt window
 
 make all shorctus call teh same python.exe so only one confirmation to run? does that wokr taht way
 
-
+update HOW_TO_CHANGE_ICONS
 
 ===================================
    Unsorted
