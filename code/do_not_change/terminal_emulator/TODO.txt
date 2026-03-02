@@ -12,7 +12,6 @@ move out terminal emulator part to compiled and leave rest python and run via ru
 
 implement in template
 
-test if appid works
 
 add settings to non-user settings
 
