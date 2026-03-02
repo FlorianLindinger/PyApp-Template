@@ -308,7 +308,7 @@ input("{key_press_prompt_message}")
     python_exe = get_python_interpreter()
 
     if python_exe:
-        subprocess.Popen(
+        subprocess.Popen(  # noqa:S603
             [python_exe, "-c", child_code, path],
             creationflags=subprocess.CREATE_NEW_CONSOLE,
             close_fds=True,
@@ -324,7 +324,7 @@ input("{key_press_prompt_message}")
 
             bf.write(bat_content)
 
-        subprocess.Popen(
+        subprocess.Popen(  # noqa:S603
             [bat_path],
             creationflags=subprocess.CREATE_NEW_CONSOLE,
             close_fds=True,
@@ -511,7 +511,7 @@ try:
     result = subprocess.run(
 
 
-        [python_exe_for_script_path, script_path] + args, 
+        [python_exe_for_script_path, script_path] + args,
 
 
         cwd=cwd
@@ -716,7 +716,7 @@ def main() -> None:
     if (use_fancy_terminal == True) and (create_terminal == True):  # run in termnial emulator
         try:
             if use_uncompiled_terminal_and_run_it_in_global == True:
-                subprocess.Popen(
+                subprocess.Popen(  # noqa:S603
                     [
                         "pyw",
                         uncompiled_terminal_path,
@@ -747,7 +747,7 @@ def main() -> None:
 
                 # run and wait (using the compiled terminal emulator)
 
-                subprocess.run([compiled_terminal_path, *args], check=True)
+                subprocess.run([compiled_terminal_path, *args], check=True)  # noqa:S603
 
         except Exception as e:
             # dont use "close_on_crash" setting since this crash is not crash of python script
@@ -785,10 +785,10 @@ def main() -> None:
             sys.exit(1)
 
         if create_terminal == True:  # run in windows terminal
-            p = subprocess.Popen([python_exe, "-c", error_catcher_wrapper], creationflags=subprocess.CREATE_NEW_CONSOLE)
+            p = subprocess.Popen([python_exe, "-c", error_catcher_wrapper], creationflags=subprocess.CREATE_NEW_CONSOLE)  # noqa:S603
 
         else:  # run without terminal but create one on crash.
-            p = subprocess.Popen([python_exe, "-c", error_catcher_wrapper], creationflags=subprocess.CREATE_NEW_CONSOLE)
+            p = subprocess.Popen([python_exe, "-c", error_catcher_wrapper], creationflags=subprocess.CREATE_NEW_CONSOLE)  # noqa:S603
 
         set_terminal_name(title)  # change terminal title
 
