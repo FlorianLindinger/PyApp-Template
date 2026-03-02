@@ -170,8 +170,9 @@ class Terminal_window(QMainWindow):
     def __init__(
         self,
         script_path: str,
-        icon_path: str | None = None,
-        title: str | None = None,
+        icon_path: str  = "",
+        python_exe="py",
+        title: str = "",
         width: int = 900,
         height: int = 600,
         button_settings: dict[str, dict] | None = None,
@@ -215,6 +216,7 @@ class Terminal_window(QMainWindow):
 
         script_path = os.path.abspath(script_path)
         self.script_path = script_path
+        self.python_exe = python_exe
 
         # Create the final default settings dictionary (label: settings_dict) with fallback base_default_button_settings if not defined in altered_default_button_settings
         default_button_settings: dict[str, dict[str, bool]] = {
@@ -236,7 +238,7 @@ class Terminal_window(QMainWindow):
             input()
             sys.exit(1)
 
-        if icon_path is None:
+        if icon_path == "":
             fallback_icon = os.path.join(
                 os.path.dirname(os.path.abspath(__file__)),
                 "fallback_terminal_icon.ico",
@@ -244,11 +246,11 @@ class Terminal_window(QMainWindow):
             if os.path.isfile(fallback_icon):
                 icon_path = fallback_icon
             else:
-                icon_path = None
+                icon_path = ""
         self.start_icon_path = icon_path
         self.set_icon(icon_path)
 
-        if title is None:
+        if title == "":
             title = f"{os.path.basename(script_path)}"
         self.start_title = title
         self.set_title(title)
@@ -636,19 +638,19 @@ class Terminal_window(QMainWindow):
     ###############
     # window related general setters
 
-    def set_icon(self, icon_path: str | None) -> None:
+    def set_icon(self, icon_path: str ) -> None:
         """resets to start icon if icon_path is None"""
-        if icon_path is not None:
+        if icon_path != "":
             self.icon_path = icon_path
             self.setWindowIcon(QIcon(icon_path))
-        elif self.start_icon_path is not None:
+        elif self.start_icon_path != "":
             self.icon_path = self.start_icon_path
             self.setWindowIcon(QIcon(self.start_icon_path))
 
-    def set_title(self, title: str | None) -> None:
-        if title is not None:
+    def set_title(self, title: str) -> None:
+        if title != "":
             self.setWindowTitle(title)
-        elif self.start_title is not None:
+        elif self.start_title != "":
             self.setWindowTitle(self.start_title)
 
     def set_size(self, width: int | None, height: int | None) -> None:
@@ -840,8 +842,7 @@ class Terminal_window(QMainWindow):
                 btn.style().unpolish(btn)
                 btn.style().polish(btn)
 
-        python_exe = sys.executable or "python"
-        self.process.start(python_exe, [self.script_path])
+        self.process.start(self.python_exe, [self.script_path])
         self.input_line.setEnabled(True)
         self.set_button_clickable_state("stop", True)
         if not self.process.waitForStarted(3000):
@@ -867,8 +868,6 @@ class Terminal_window(QMainWindow):
         QApplication.processEvents()
         self.stop_script()
         self.clear_terminal()
-        self.set_title(None)
-        self.set_icon(None)
         self.start_script()
 
     ###############
@@ -1075,26 +1074,55 @@ class Terminal_window(QMainWindow):
 ###########################
 
 
-def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Simple PySide6 terminal emulator for running a Python script.")
-    parser.add_argument("script_path", help="Path to the Python script to run")
-    parser.add_argument(
-        "--icon",
-        help="Path to window icon file (.ico). If omitted, fallback_terminal_icon.ico is used when available.",
-    )
-    return parser.parse_args()
-
+def set_app_id(app_id) -> None:
+    """Needed for grouping behavor in taskbar. Seems to only work for QT GUI windows"""
+    try:
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(app_id)
+    except Exception:
+        pass
 
 def main() -> int:
-    args = parse_args()
-    script_path = args.script_path
-    icon_path = args.icon
-
+    
+    # process args
+    if len(sys.argv)<2:
+        raise ValueError("Have to give at least Python script path as argument. Usage: name.py script_path [python_exe] [title] [icon_path]")
+    script_path=sys.argv[1]
+    if len(sys.argv)>2:
+        python_exe=sys.argv[2]
+    else:
+        python_exe=""
+    if len(sys.argv)>3:
+        title=sys.argv[3]
+    else:
+        title=""
+    if len(sys.argv)>4:
+        icon_path=sys.argv[4]
+    else:
+        icon_path=""
+    if len(sys.argv)>5:
+        app_id=sys.argv[5]
+        if app_id != "":
+            set_app_id(app_id)
+    
+    # close_on_crash
+    # close_on_failure
+    # close_on_success
+    # wdir_is_script_dir
+    # terminal_needs_input
+    # button_settings
+    # style_path
+    
+    
+    
+    # launcher terminal
     app = QApplication(sys.argv)
-    window = Terminal_window(script_path, icon_path=icon_path)
+    window = Terminal_window(script_path, icon_path=icon_path,title=title,python_exe=python_exe)
     window.show()
     return app.exec()
 
+
+################
+# execute
 
 if __name__ == "__main__":
     raise SystemExit(main())
