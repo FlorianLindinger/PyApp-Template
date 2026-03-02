@@ -3,14 +3,42 @@ import ctypes
 import os
 import pathlib
 import re
+import shutil
 import signal
 import subprocess
 import sys
+import traceback
 import unicodedata
 
 # ============================
 # ==== Core Utility Funcs ====
 # ============================
+
+def get_file_dir(__file__):
+    """get directory of file that calls this with \\ at end."""
+    return os.path.dirname(os.path.abspath(__file__)) + "\\"
+
+def make_abs_relative_to_file(path,file):
+    """makes a path absolute if relative with respect to the file (as if the file defined it)"""
+    if not os.path.isabs(path):
+        return os.path.normpath(os.path.dirname(file) + "\\" + path)
+    else:
+        return path
+
+
+def open_in_editor(path):
+    try:
+        if not os.path.exists(path):
+            print(f"Could not find file at path: {path}")
+
+        vscode_exe_path = shutil.which("code")
+        if vscode_exe_path is not None:
+            subprocess.Popen([vscode_exe_path, path])  # noqa:S603
+        else:
+            # Fallback
+            subprocess.Popen(["notepad.exe", path])  # noqa:S603
+    except Exception as m:
+        print(traceback.format_exc())
 
 
 def sanitize_app_id(input_string):
@@ -82,9 +110,9 @@ def sanitize_filename(filename, replacement="_"):
     return filename if filename else "unnamed_file"
 
 
-def get_settings(settings_path: pathlib.Path) -> dict:
-    if not settings_path.exists():
-        raise FileNotFoundError(f"[Error] Settings file not found: {settings_path}")
+def get_settings(settings_path: str) -> dict:
+    if not os.path.exists(settings_path):
+        raise FileNotFoundError(f"[Error] Settings file not found at: {settings_path}")
     config = configparser.ConfigParser(interpolation=None)
     try:
         with open(settings_path, "r", encoding="utf-8") as f:
@@ -144,23 +172,6 @@ def run_command(cmd: list, shell: bool = False, capture_output: bool = False) ->
 # ============================
 # ==== Domain Logic Funcs ====
 # ============================
-
-
-def open_settings(settings_path: pathlib.Path, settings: dict):
-    user_settings_rel = settings.get("user_settings_path")
-    if not user_settings_rel:
-        print(f"[Error] 'user_settings_path' not defined.")
-        return
-    user_settings_abs = (settings_path.parent / user_settings_rel).resolve()
-    if not user_settings_abs.exists():
-        print(f"[Error] Settings file not found: {user_settings_abs}")
-        return
-    print(f"[Info] Opening {user_settings_abs.name}...")
-    if os.name == "nt":
-        os.startfile(user_settings_abs)
-    else:
-        opener = "open" if sys.platform == "darwin" else "xdg-open"
-        run_command([opener, str(user_settings_abs)])
 
 
 def stop_program(settings: dict, settings_path: pathlib.Path):
