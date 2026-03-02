@@ -15,7 +15,7 @@ os.chdir(script_dir)
 if str(script_dir) not in sys.path:
     sys.path.insert(0, str(script_dir))
 
-import launcher_utilities as utils  # type:ignore
+import helper_functions as utils  # type:ignore
 
 # local settings:
 
@@ -131,7 +131,7 @@ def make_lnk(output_path, icon_path, script_path, args=None, appid=None, descrip
     if args is not None:
         shortcut_args = f'"{script_path}" {args}'
     else:
-        shortcut_args = '"script_path"'
+        shortcut_args = f'"{script_path}"'
 
     create_shortcut_with_appid(
         args=shortcut_args,
