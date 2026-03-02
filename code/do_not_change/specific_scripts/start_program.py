@@ -11,10 +11,10 @@ file_dir = os.path.dirname(os.path.abspath(__file__)) + "\\"
 python_scripts_folder_path = os.path.normpath(file_dir + "..\\..\\")
 local_python_exe_for_script_path = os.path.normpath(file_dir + "..\\..\\py_env\\virt_env\\portable_Scripts\\python.bat")
 settings_file_path = os.path.normpath(file_dir + "..\\..\\non-user_settings.ini")
-qt_terminal_exe_path = os.path.normpath(file_dir + "..\\terminal_emulator\\compiled\\run.exe")
 icon_path = os.path.normpath(file_dir + "..\\..\\icons\\icon.ico")
 stylesheet_path = os.path.normpath(file_dir + "..\\terminal_emulator\\terminal_style.qss")
-
+compiled_terminal_path = os.path.normpath(file_dir + "..\\terminal_emulator\\compiled\\run.exe")
+uncompiled_terminal_path = os.path.normpath(file_dir + r"..\terminal_emulator\terminal_emulator.py" )
 
 if python_scripts_folder_path!="" and python_scripts_folder_path[-1]!="\\":
     python_scripts_folder_path+="\\"
@@ -340,7 +340,7 @@ except Exception as e:
 # miscellaneous
 
 
-def _set_app_id(app_id) -> None:
+def set_app_id(app_id) -> None:
     """Needed for grouping behavor in taskbar. Seems to only work for QT Windows"""
     if not app_id:
         return
@@ -366,7 +366,8 @@ def main() -> None:
         create_terminal = True
     if len(sys.argv) > 1:
         app_id = sys.argv[1]
-        _set_app_id(app_id)
+    else:
+        app_id=""
 
     # raise error if settings file not found
     if not os.path.exists(settings_file_path):
@@ -379,7 +380,10 @@ def main() -> None:
     close_on_success = setting_is_true(s, "close_on_success", True)
     close_on_crash = setting_is_true(s, "close_on_crash", False)
     close_on_failure = setting_is_true(s, "close_on_failure", False)
+    use_uncompiled_terminal_and_run_it_in_global = setting_is_true(s,"use_uncompiled_terminal_and_run_it_in_global",False)
+    
     wdir_is_script_dir = not setting_is_true(s, "start_in_shortcut_folder", False)
+    
 
     if "program_name" in s:
         title = s["program_name"]
@@ -410,22 +414,30 @@ def main() -> None:
 
     # run main python script in windowless or termnial emulator or windows terminal
     if (use_fancy_terminal == True) and (create_terminal == True):  # run in termnial emulator
-        try:
-            args = [
-                python_exe_for_script_path,
-                script_path,
-                "1" if wdir_is_script_dir else "0",
-                "1" if close_on_success else "0",
-                "1" if close_on_failure else "0",
-                "1" if close_on_crash else "0",
-                "1" if terminal_needs_input else "0",
-                title,
-                icon_path if icon_path else "",
-                stylesheet_path,
-            ]
 
-            # run and wait (using the compiled terminal emulator)
-            subprocess.run([qt_terminal_exe_path, *args], check=True)
+        try:
+            if use_uncompiled_terminal_and_run_it_in_global == True:
+                subprocess.Popen(["pyw",uncompiled_terminal_path,script_path,python_exe_for_script_path,title,icon_path,app_id],creationflags=subprocess.CREATE_NEW_CONSOLE)
+                    
+            else:
+                
+                set_app_id(app_id)
+                
+                args = [
+                    python_exe_for_script_path,
+                    script_path,
+                    "1" if wdir_is_script_dir else "0",
+                    "1" if close_on_success else "0",
+                    "1" if close_on_failure else "0",
+                    "1" if close_on_crash else "0",
+                    "1" if terminal_needs_input else "0",
+                    title,
+                    icon_path if icon_path else "",
+                    stylesheet_path,
+                ]
+
+                # run and wait (using the compiled terminal emulator)
+                subprocess.run([compiled_terminal_path, *args], check=True)
 
         except Exception as e:
             # dont use "close_on_crash" setting since this crash is not crash of python script
@@ -480,8 +492,7 @@ if __name__ == "__main__":
         # return with errorcode 1
         sys.exit(1)
 
-
-
+sys.exit(0)
 
 import argparse
 import os

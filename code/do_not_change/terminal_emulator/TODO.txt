@@ -26,6 +26,22 @@ add settings to non-user settings
 #todo
 # #=====================================
 
+save last button state and pos and size in file and try to reload. maybe safe in DO_NOT_CHANGE
+
+implement 
+        error_catcher_wrapper = error_catcher_wrapper_template.format(
+            python_exe_for_script_path=python_exe_for_script_path,
+            script_path=script_path,
+            close_on_crash=close_on_crash,
+            close_on_failure=close_on_failure,
+            close_on_success=close_on_success,
+            wdir_is_script_dir=wdir_is_script_dir,
+            RED=repr(RED),
+            GREEN=repr(GREEN),
+            RESET=repr(RESET),
+
+add python_exe input with fallback globla
+
 add terminal_needs_input. Or button for input?
 
 print clickable link to script on crsh

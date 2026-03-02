@@ -1,37 +1,74 @@
-import sys
 import time
 
-import numpy as np
-
-for i in range(100):
-    print(i)
-    time.sleep(0.02)
+while True:
+    msg= input()
+    if msg=="error":
+        raise Exception("error")
+    elif msg=="crash1":
+        raise RuntimeError("intentional crash test")
+    elif msg=="crash2":
+        import os
+        os._exit(1)
+    elif msg=="crash3":
+        import os
+        os.abort()
+    elif msg=="crash4":
+        import ctypes
+        ctypes.string_at(0)  # dereference NULL -> segfault on most platforms
+    elif msg=="crash5":
+        a = []
+        while True:
+            a.append(b"x" * 10_000_000)
+    elif msg=="exit":
+        break
+    elif msg=="sleep":
+        time.sleep(4)
+        print(msg)
+    elif msg=="np":
+        import numpy
     
-import os
-print(os.getcwd())
+    elif msg=="tv":
+        print('Terminal_window.toggle_button_visible_state("stop")')
+    elif msg=="te":
+        print('Terminal_window.toggle_button_clickable_state("stop")')
+    else:
+        print(msg)
+
+
+# import sys
+# import time
+
+# import numpy as np
+
+# for i in range(100):
+#     print(i)
+#     time.sleep(0.02)
+    
+# import os
+# print(os.getcwd())
 
     
 # asd
 
 # test2.py script finishes naturally
-sys.exit(0)
+# sys.exit(0)
 
 
 
 
-import sys
-import ctypes
-from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel
+# import sys
+# import ctypes
+from PyQt5.QtWidgets import QApplication, QMainWindow
 
 # Tell Windows to use this AppID for this process
-myAppID = "test2"
-ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myAppID)
+# myAppID = "test2"
+# ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myAppID)
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("My Custom App")
-        self.resize(400, 300)
+        # self.setWindowTitle("My Custom App")
+        # self.resize(400, 300)
         
         # Optional: Set a specific window icon here if you want
         # self.setWindowIcon(QIcon("icon.ico")) 
