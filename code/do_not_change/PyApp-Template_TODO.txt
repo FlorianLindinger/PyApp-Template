@@ -2,6 +2,18 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+
+
+pass the id_setting to main_code that do their own window. probably via wrapper
+
+    # set WDIR beofer terminal call
+
+set only app id where it does soemthing in start_program
+
+rename it to developer_settings
+
+how to catch pysie6 crash?
+
 compare what stuff in archive needs to be added to utilitites repo
 
 fix icon generator lnk
