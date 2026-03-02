@@ -1,16 +1,21 @@
 import os
+import signal
 import sys
 import zlib
 
 from PIL import Image
 
 # settings
-user_png_folder_path = "../../../icons/"
-fallback_png_folder_path = "../"
-output_path = "../../../icons/"
+user_png_folder_path = "../../icons/"
+fallback_png_folder_path = "./"
+output_path = "../../icons/"
 fallback_base_png_id = "200x200:82f0d3c0"
 fallback_settings_png_id = "200x200:71db6cbb"
 fallback_stop_png_id = "200x200:83248fd0"
+
+file_path = os.path.dirname(os.path.abspath(__file__))
+os.chdir(file_path)
+
 
 def create_icon(
     image_path,
@@ -191,3 +196,7 @@ if __name__ == "__main__":
         print("Generated: stop.ico")
     except Exception as e:
         print(f"Error creating stop.ico: {e}")
+
+    print()
+    input("Press enter to exit.")
+    os.kill(os.getppid(), signal.SIGTERM)
