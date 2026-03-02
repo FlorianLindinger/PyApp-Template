@@ -7,8 +7,10 @@ import shutil
 import signal
 import subprocess
 import sys
+import tempfile
 import traceback
 import unicodedata
+import urllib.request
 
 # ============================
 
@@ -51,7 +53,7 @@ def open_in_editor(path):
 
             subprocess.Popen(["notepad.exe", path])  # noqa:S603
 
-    except Exception as m:
+    except Exception as _e:
         print(traceback.format_exc())
 
 
@@ -148,7 +150,7 @@ def get_settings(settings_path: str) -> dict:
     config = configparser.ConfigParser(interpolation=None)
 
     try:
-        with open(settings_path, "r", encoding="utf-8") as f:
+        with open(settings_path, encoding="utf-8") as f:
             config.read_string("[DEFAULT]\n" + f.read())
 
         return dict(config["DEFAULT"])
@@ -175,7 +177,7 @@ def apply_terminal_settings(settings: dict):
         txt = settings.get("terminal_text_color", "")
 
         if bg or txt:
-            os.system(f"color {bg}{txt}")
+            os.system(f"color {bg}{txt}")  # noqa:S605
 
     else:
         sys.stdout.write(f"\x1b]2;{name}\x07")
@@ -207,7 +209,7 @@ def run_python(python_exe: str, script_path: str, args: list, use_faulthandler: 
     cmd += [script_path] + args
 
     try:
-        return subprocess.run(cmd).returncode
+        return subprocess.run(cmd).returncode  # noqa:S603
 
     except Exception as e:
         print(f"[Error] Python execution failed: {e}")
@@ -218,7 +220,7 @@ def run_python(python_exe: str, script_path: str, args: list, use_faulthandler: 
 def run_command(cmd: list, shell: bool = False, capture_output: bool = False) -> subprocess.CompletedProcess:
 
     try:
-        return subprocess.run(cmd, shell=shell, capture_output=capture_output, text=True)
+        return subprocess.run(cmd, shell=shell, capture_output=capture_output, text=True)  # noqa:S603
 
     except Exception as e:
         print(f"[Error] Command failed: {e}")
@@ -246,7 +248,7 @@ def stop_program(settings: dict, settings_path: pathlib.Path):
         return
 
     try:
-        with open(pid_path, "r", encoding="utf-8") as f:
+        with open(pid_path, encoding="utf-8") as f:
             pid = int(f.read().strip())
 
         print(f"[Info] Stopping process {pid}...")
@@ -280,7 +282,7 @@ def launch_background(settings: dict, settings_path: pathlib.Path, launcher_py: 
 
     try:
         with open(log_path, "a", encoding="utf-8") as log_file:
-            proc = subprocess.Popen(
+            proc = subprocess.Popen(  # noqa:S603
                 [sys.executable, str(launcher_py)],
                 stdout=log_file,
                 stderr=subprocess.STDOUT,
@@ -354,22 +356,11 @@ def activate_and_or_create_venv():
         sys.exit(1)
 
 
-import pathlib
-import re
-import shutil
-import subprocess
-import sys
-import tempfile
-import urllib.request
-
-import helper_functions as utils
-
-
 def find_latest_full_version(ver_input):
     base_url = "https://www.python.org/ftp/python/"
     try:
-        req = urllib.request.Request(base_url, headers={"User-Agent": "Mozilla/5.0"})
-        with urllib.request.urlopen(req) as response:
+        req = urllib.request.Request(base_url, headers={"User-Agent": "Mozilla/5.0"})  # noqa:S310
+        with urllib.request.urlopen(req) as response:  # noqa:S310
             html = response.read().decode("utf-8")
 
         pattern = r'href="(\d+\.\d+\.\d+)/"'
@@ -386,11 +377,11 @@ def find_latest_full_version(ver_input):
         for v in versions:
             amd64_url = f"{base_url}{v}/amd64/"
             try:
-                req_v = urllib.request.Request(amd64_url, headers={"User-Agent": "Mozilla/5.0"})
-                with urllib.request.urlopen(req_v) as resp:
+                req_v = urllib.request.Request(amd64_url, headers={"User-Agent": "Mozilla/5.0"})  # noqa:S310
+                with urllib.request.urlopen(req_v) as resp:  # noqa:S310
                     if resp.status == 200:
                         return v
-            except:
+            except Exception:
                 continue
         return None
     except Exception as e:
@@ -401,15 +392,15 @@ def find_latest_full_version(ver_input):
 def download_msi_files(full_ver, download_dir, exclude_pattern):
     base_url = f"https://www.python.org/ftp/python/{full_ver}/amd64/"
     try:
-        req = urllib.request.Request(base_url, headers={"User-Agent": "Mozilla/5.0"})
-        with urllib.request.urlopen(req) as response:
+        req = urllib.request.Request(base_url, headers={"User-Agent": "Mozilla/5.0"})  # noqa:S310
+        with urllib.request.urlopen(req) as response:  # noqa:S310
             html = response.read().decode("utf-8")
 
         msi_links = re.findall(r'href="([^"]+\.msi)"', html)
         downloaded = []
 
         for link in msi_links:
-            if link.endswith("_d.msi") or link.endswith("_pdb.msi"):
+            if link.endswith(("_d.msi", "_pdb.msi")):
                 continue
 
             component_name = link.split(".")[0]
@@ -418,7 +409,7 @@ def download_msi_files(full_ver, download_dir, exclude_pattern):
 
             out_path = download_dir / link
             print(f"Downloading {link}...")
-            urllib.request.urlretrieve(base_url + link, out_path)
+            urllib.request.urlretrieve(base_url + link, out_path)  # noqa:S310
             downloaded.append(out_path)
         return downloaded
     except Exception as e:
@@ -432,7 +423,7 @@ def extract_msi_files(msi_files, target_dir):
         # msiexec is picky about TARGETDIR quoting.
         # Using shell=True and manual quoting for maximum reliability on Windows.
         cmd = f'msiexec /a "{msi}" TARGETDIR="{target_dir}" /qn'
-        subprocess.run(cmd, check=True, shell=True)
+        subprocess.run(cmd, check=True, shell=True)  # noqa:S602
         copied_msi = target_dir / msi.name
         if copied_msi.exists():
             copied_msi.unlink()
@@ -441,7 +432,7 @@ def extract_msi_files(msi_files, target_dir):
 def install_portable_python():
     script_dir = pathlib.Path(__file__).parent.resolve()
     settings_path = (script_dir / "../../non-user_settings.ini").resolve()
-    settings = utils.get_settings(settings_path)
+    settings = get_settings(settings_path)
 
     py_env_dir = (settings_path.parent / "py_env").resolve()
     python_dist = py_env_dir / "py_dist"
@@ -503,9 +494,9 @@ def install_portable_python():
 
     print("[Info] Setting up pip...")
     py_exe = str(python_dist / "python.exe")
-    subprocess.run([py_exe, "-m", "ensurepip", "--upgrade"], capture_output=True)
-    subprocess.run([py_exe, "-m", "pip", "install", "--upgrade", "pip"], capture_output=True)
-    subprocess.run([py_exe, "-m", "pip", "install", "--upgrade", "pip"], capture_output=True)
+    subprocess.run([py_exe, "-m", "ensurepip", "--upgrade"], capture_output=True)  # noqa:S603
+    subprocess.run([py_exe, "-m", "pip", "install", "--upgrade", "pip"], capture_output=True)  # noqa:S603
+    subprocess.run([py_exe, "-m", "pip", "install", "--upgrade", "pip"], capture_output=True)  # noqa:S603
 
     print(f"\n[Success] Portable Python {full_v} created at {python_dist}")
 
@@ -564,7 +555,7 @@ goto :EOF
 def create_portable_venv():
     script_dir = pathlib.Path(__file__).parent.resolve()
     settings_path = (script_dir / "../../non-user_settings.ini").resolve()
-    utils.get_settings(settings_path)
+    get_settings(settings_path)
 
     py_env_dir = (settings_path.parent / "py_env").resolve()
     python_dist = py_env_dir / "py_dist"
@@ -572,7 +563,7 @@ def create_portable_venv():
 
     if not python_exe.exists():
         print("[Info] Base Python missing. Triggering installer...")
-        utils.run_python(sys.executable, str(script_dir / "env_install_python.py"), [])
+        run_python(sys.executable, str(script_dir / "env_install_python.py"), [])
         if not python_exe.exists():
             print("[Error] Base Python still missing after installation attempt.")
             input("Press Enter to exit.")
@@ -589,11 +580,11 @@ def create_portable_venv():
             sys.exit(2)
 
     print("\n==== Creating Virtual Environment ====\n")
-    subprocess.run([str(python_exe), "-m", "venv", str(venv_dir)], check=True)
+    subprocess.run([str(python_exe), "-m", "venv", str(venv_dir)], check=True)  # noqa:S603
 
     try:
         venv_python = venv_dir / "Scripts/python.exe"
-        subprocess.run([str(venv_python), "-m", "pip", "install", "--upgrade", "pip"])
+        subprocess.run([str(venv_python), "-m", "pip", "install", "--upgrade", "pip"])  # noqa:S603
 
         rel_path = os.path.relpath(python_dist, venv_dir)
         print("[Info] Generating portable wrappers...")
@@ -603,7 +594,7 @@ def create_portable_venv():
         if packages_list.exists():
             print("\n[Info] Installing default packages...")
 
-            subprocess.run(
+            subprocess.run(  # noqa:S603
                 [str(venv_python), "-m", "pip", "install", "-r", str(packages_list), "--upgrade", "--no-cache-dir"]
             )
 
