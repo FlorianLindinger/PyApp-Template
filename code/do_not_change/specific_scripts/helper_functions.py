@@ -31,7 +31,7 @@ def get_file_dir(__file__):
     return os.path.dirname(os.path.abspath(__file__)) + "\\"
 
 
-def make_abs_relative_to_file(path, file):
+def make_abs_path_relative_to_file(path, file):
     """makes a path absolute if relative with respect to the file (as if the file defined it)"""
     if not os.path.isabs(path):
         return os.path.normpath(os.path.dirname(file) + "\\" + path)
@@ -280,6 +280,7 @@ def run_python(python_exe: str, script_path: str, args: list, use_faulthandler: 
         print(f"[Error] Python execution failed: {e}")
         return 1
 
+
 #############################
 # terminal related functions
 #############################
@@ -328,6 +329,7 @@ def get_terminal_name():
 # user interaction related functions
 #############################
 
+
 def open_in_editor(path):
     try:
         if not os.path.exists(path):
@@ -351,9 +353,11 @@ def prompt_user(message: str) -> bool:
             return False
         print("Invalid input. Please enter y or n.")
 
+
 #############################
 # python installing related functions
 #############################
+
 
 def activate_and_or_create_venv():
     script_dir = pathlib.Path(__file__).parent.resolve()
@@ -698,7 +702,6 @@ except Exception as e:
 """
 
 
-
 def set_app_id(app_id) -> None:
     """Needed for grouping behavor in taskbar. Seems to only work for QT Windows"""
     if not app_id:
@@ -711,19 +714,12 @@ def set_app_id(app_id) -> None:
         pass
 
 
-
-
-
-
-
 def run_command(cmd: list, shell: bool = False, capture_output: bool = False) -> subprocess.CompletedProcess:
     try:
         return subprocess.run(cmd, shell=shell, capture_output=capture_output, text=True)  # noqa:S603
     except Exception as e:
         print(f"[Error] Command failed: {e}")
         return subprocess.CompletedProcess(cmd, 1)
-
-
 
 
 def stop_program(settings: dict, settings_path: pathlib.Path):
@@ -768,6 +764,3 @@ def launch_background(settings: dict, settings_path: pathlib.Path, launcher_py: 
         print(f"[Success] Started with PID {proc.pid}")
     except Exception as e:
         print(f"[Error] Background launch failed: {e}")
-
-
-
