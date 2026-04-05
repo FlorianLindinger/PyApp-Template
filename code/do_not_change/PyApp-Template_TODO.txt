@@ -606,6 +606,8 @@ Check Git remote for updates and prompt user to pull.
 readme related  and documentation related
 ===================================
 
+finish readme in do_not_change
+
 add comment to all settings: REM add a "." if otherwise backslashes are at the end  ???
 
 
@@ -678,6 +680,8 @@ add explanation for pyq5 license
 ===================================
 small improvements related
 ===================================
+
+improve icon of do_not_change
 
 print script name and path when error possible?
 
