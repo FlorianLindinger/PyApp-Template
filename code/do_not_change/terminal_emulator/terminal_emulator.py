@@ -169,9 +169,14 @@ class Terminal_window(QMainWindow):
     def __init__(
         self,
         script_path: str,
-        icon_path: str  = "",
+        icon_path: str = "",
         python_exe="py",
         title: str = "",
+        close_on_crash: bool = False,
+        close_on_failure: bool = False,
+        close_on_success: bool = True,
+        wdir_is_script_dir: bool = True,
+        terminal_needs_input: bool = True,
         width: int = 900,
         height: int = 600,
         button_settings: dict[str, dict] | None = None,
@@ -637,7 +642,7 @@ class Terminal_window(QMainWindow):
     ###############
     # window related general setters
 
-    def set_icon(self, icon_path: str ) -> None:
+    def set_icon(self, icon_path: str) -> None:
         """resets to start icon if icon_path is None"""
         if icon_path != "":
             self.icon_path = icon_path
@@ -841,7 +846,7 @@ class Terminal_window(QMainWindow):
                 btn.style().unpolish(btn)
                 btn.style().polish(btn)
 
-        self.process.start(self.python_exe, [self.script_path])
+        self.process.start(self.python_exe, ["-u", self.script_path])  # -u makes the prints not be buffered aka delayed
         self.input_line.setEnabled(True)
         self.set_button_clickable_state("stop", True)
         if not self.process.waitForStarted(3000):
@@ -1015,7 +1020,7 @@ class Terminal_window(QMainWindow):
         msg = bytes(self.process.readAllStandardOutput()).decode(errors="replace")  # type: ignore
 
         if msg.startswith("Terminal_window."):
-            rest = msg[len("Terminal_window."):]
+            rest = msg[len("Terminal_window.") :]
             try:
                 eval(f"self.{rest}")
             except Exception as m:
@@ -1080,29 +1085,54 @@ def set_app_id(app_id) -> None:
     except Exception:
         pass
 
+
 def main() -> int:
-    
+    # script_path,python_exe,title,icon_path,app_id
+
     # process args
-    if len(sys.argv)<2:
-        raise ValueError("Have to give at least Python script path as argument. Usage: name.py script_path [python_exe] [title] [icon_path]")
-    script_path=sys.argv[1]
-    if len(sys.argv)>2:
-        python_exe=sys.argv[2]
+    if len(sys.argv) < 2:
+        raise ValueError(
+            "Have to give at least Python script path as argument. Usage: name.py script_path [python_exe] [title] [icon_path]"
+        )
+    script_path = sys.argv[1]
+    if len(sys.argv) > 2:
+        python_exe = sys.argv[2]
     else:
-        python_exe=""
-    if len(sys.argv)>3:
-        title=sys.argv[3]
+        python_exe = ""
+    if len(sys.argv) > 3:
+        title = sys.argv[3]
     else:
-        title=""
-    if len(sys.argv)>4:
-        icon_path=sys.argv[4]
+        title = ""
+    if len(sys.argv) > 4:
+        icon_path = sys.argv[4]
     else:
-        icon_path=""
-    if len(sys.argv)>5:
-        app_id=sys.argv[5]
+        icon_path = ""
+    if len(sys.argv) > 5:
+        app_id = sys.argv[5]
         if app_id != "":
             set_app_id(app_id)
-    
+    if len(sys.argv) > 6:
+        close_on_crash = sys.argv[6] == "1"
+    else:
+        close_on_crash = False
+
+    if len(sys.argv) > 7:
+        close_on_failure = sys.argv[7] == "1"
+    else:
+        close_on_failure = False
+    if len(sys.argv) > 8:
+        close_on_success = sys.argv[8] == "1"
+    else:
+        close_on_success = False
+    if len(sys.argv) > 9:
+        wdir_is_script_dir = sys.argv[9] == "1"
+    else:
+        wdir_is_script_dir = False
+    if len(sys.argv) > 10:
+        terminal_needs_input = sys.argv[10] == "1"
+    else:
+        terminal_needs_input = False
+
     # close_on_crash
     # close_on_failure
     # close_on_success
@@ -1110,12 +1140,20 @@ def main() -> int:
     # terminal_needs_input
     # button_settings
     # style_path
-    
-    
-    
+
     # launcher terminal
     app = QApplication(sys.argv)
-    window = Terminal_window(script_path, icon_path=icon_path,title=title,python_exe=python_exe)
+    window = Terminal_window(
+        script_path,
+        icon_path=icon_path,
+        title=title,
+        python_exe=python_exe,
+        close_on_crash=close_on_crash,
+        close_on_failure=close_on_failure,
+        close_on_success=close_on_success,
+        wdir_is_script_dir=wdir_is_script_dir,
+        terminal_needs_input=terminal_needs_input,
+    )
     window.show()
     return app.exec()
 
