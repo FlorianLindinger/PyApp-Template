@@ -34,26 +34,14 @@ THE SOFTWARE.
 
 ---
 
-## Section 2: *tomli* Package (MIT License)
+## Section 2: Embeddible Python Distribution (PSF License)
 
-The folder `read_toml/tomli` contains parts of the Python package *tomli* (by Taneli Hukkinen) and is governed by the MIT license described in the `LICENSE` file in that folder.
-
----
-
-## Section 3: *ruamel.yaml* Package (MIT License)
-
-The folder `read_toml/ruamel` contains parts of the Python package *ruamel.yaml* (by Anthon van der Neut, Ruamel bvba) and is governed by the MIT license described in the `yaml/LICENSE` file in that folder.
+The contents of the folder `P` are files from an embeddable Python distribution which has been modified by renaming and removing some files. All remaining files fall under the license locaed at `P/LICENSE.txt`
 
 ---
 
-## Section 4: *change_icon.py.exe* Script (MIT + PSF License)
+## Section 3: Third-Party Python Packages Pillow (MIT-CMU License)
 
-The executable `change_icon.py.exe` in the folder `general_utilities\window_icon_changer` is a compiled standalone Python script that therefore contains parts from Python and third-party package(s). It is governed by the license file present in that folder that is a composite of MIT and PSF licenses.
-
----
-
-## Section 5: `*generate_icons.py.exe* Script (MIT + PSF + MIT-CMU License)
-
-The executable `generate_icons.py.exe` in the folder `icon_related/generate_icons` is a compiled standalone Python script that therefore contains parts from Python and third-party package(s). It is governed by the license file present in that folder that is a composite of MIT, PSF, and MIT-CMU licenses.
+The contents of the folders `python_packages/PIL` and `python_packages/pillow-12.1.1.dist-info` are parts of the third-pary Python package `Pillow`. All these files fall under the license locaed at `python_packages/pillow-12.1.1.dist-info/licenses/LICENSE`.
 
 ---
