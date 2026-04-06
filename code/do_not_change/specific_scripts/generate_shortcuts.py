@@ -1,5 +1,4 @@
 import os
-import pathlib
 import signal
 import sys
 import time
@@ -10,60 +9,74 @@ from win32com.client import Dispatch  # type:ignore
 from win32com.shell import shellcon  # type:ignore
 
 # move to folder of this file for correct relative paths and ensure it's in path
-script_dir = pathlib.Path(__file__).parent.resolve()
-os.chdir(script_dir)
-if str(script_dir) not in sys.path:
-    sys.path.insert(0, str(script_dir))
+file_dir = os.path.dirname(os.path.abspath(__file__))+"\\"
 
-import helper_functions as utils  # type:ignore
+# =============================
+# import from helper_functions
+# =============================
+project_root = os.path.normpath(file_dir + "..\\..")
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
+from do_not_change.specific_scripts.helper_functions import (
+    backend_python_exe_path,
+    backend_pythonw_exe_path,
+    sanitize_app_id,
+    sanitize_filename,
+    settings,
+    settings_file_path,
+)
+
+# =============================
 
 # local settings:
 
-settings_path = (script_dir / "../../non-user_settings.ini").resolve()
-python_exe = str((script_dir / ".." / "P" / "P.exe").resolve())
-output_path = (script_dir / ".." / ".." / "..").resolve()
+python_exe = backend_python_exe_path
+pythonw_exe = backend_pythonw_exe_path
 
-launcher_py = (script_dir / ".." / "T.py").resolve()
-settings_py = (script_dir / ".." / "set.py").resolve()
-launcher_no_terminl_py = (script_dir / ".." / "noT.py").resolve()
-stop_no_terminal_py = (script_dir / ".." / "q_T.py").resolve()
+output_path = os.path.normpath(file_dir + "..\\..\\..")+"\\"
 
-launcher_icon_path = str((script_dir / ".." / ".." / "icons" / "icon.ico").resolve())
-settings_icon_path = str((script_dir / ".." / ".." / "icons" / "settings.ico").resolve())
-launcher_no_terminl_icon_path = str((script_dir / ".." / ".." / "icons" / "icon.ico").resolve())
-stop_no_terminal_icon_path = str((script_dir / ".." / ".." / "icons" / "stop.ico").resolve())
+launcher_py = os.path.normpath(file_dir + "..\\T.py")
+settings_py = os.path.normpath(file_dir + "..\\set.py")
+launcher_no_terminl_py = os.path.normpath(file_dir + "..\\noT.py")
+stop_no_terminal_py = os.path.normpath(file_dir + "..\\q_T.py")
 
-settings = utils.get_settings(settings_path)
+launcher_icon_path = os.path.normpath(file_dir + "..\\..\\icons\\icon.ico")
+settings_icon_path = os.path.normpath(file_dir + "..\\..\\icons\\settings.ico")
+launcher_no_terminl_icon_path = os.path.normpath(file_dir + "..\\..\\icons\\icon.ico")
+stop_no_terminal_icon_path = os.path.normpath(file_dir + "..\\..\\icons\\stop.ico")
+
 if "program_name" not in settings:
-    input(f'[Error] Missing "program_name" setting in "{settings_path}". Press enter to exit.')
+    input(f'[Error] Missing "program_name" setting in "{settings_file_path}". Press enter to exit.')
     os.kill(os.getppid(), signal.SIGTERM)
 if "start_name" not in settings:
-    input(f'[Error] Missing "start_name" setting in "{settings_path}". Press enter to exit.')
+    input(f'[Error] Missing "start_name" setting in "{settings_file_path}". Press enter to exit.')
     os.kill(os.getppid(), signal.SIGTERM)
 if "start_no_terminal_name" not in settings:
-    input(f'[Error] Missing "start_no_terminal_name" setting in "{settings_path}". Press enter to exit.')
+    input(f'[Error] Missing "start_no_terminal_name" setting in "{settings_file_path}". Press enter to exit.')
     os.kill(os.getppid(), signal.SIGTERM)
 if "settings_name" not in settings:
-    input(f'[Error] Missing "settings_name" setting in "{settings_path}". Press enter to exit.')
+    input(f'[Error] Missing "settings_name" setting in "{settings_file_path}". Press enter to exit.')
     os.kill(os.getppid(), signal.SIGTERM)
 if "stop_no_terminal_name" not in settings:
-    input(f'[Error] Missing "stop_no_terminal_name" setting in "{settings_path}". Press enter to exit.')
+    input(f'[Error] Missing "stop_no_terminal_name" setting in "{settings_file_path}". Press enter to exit.')
     os.kill(os.getppid(), signal.SIGTERM)
 program_name = settings["program_name"]
 
 launcher_lnk_name = (
-    str(output_path / utils.sanitize_filename(settings["start_name"].replace("program_name", program_name))) + ".lnk"
+    output_path + sanitize_filename(settings["start_name"].replace("program_name", program_name)) + ".lnk"
 )
+
 settings_lnk_name = (
-    str(output_path / utils.sanitize_filename(settings["settings_name"].replace("program_name", program_name))) + ".lnk"
+    output_path + sanitize_filename(settings["settings_name"].replace("program_name", program_name)) + ".lnk"
 )
+
 launcher_no_terminl_lnk_name = (
-    str(output_path / utils.sanitize_filename(settings["start_no_terminal_name"].replace("program_name", program_name)))
-    + ".lnk"
+    output_path + sanitize_filename(settings["start_no_terminal_name"].replace("program_name", program_name)) + ".lnk"
 )
+
 stop_no_terminal_lnk_name = (
-    str(output_path / utils.sanitize_filename(settings["stop_no_terminal_name"].replace("program_name", program_name)))
-    + ".lnk"
+    output_path + sanitize_filename(settings["stop_no_terminal_name"].replace("program_name", program_name)) + ".lnk"
 )
 
 
@@ -124,7 +137,7 @@ def create_shortcut_with_appid(args, output, target=None, icon_path=None, wdir="
                 print(f"[Warning] Failed to set AppID: {e}")
 
 
-def make_lnk(output_path, icon_path, script_path, args=None, appid=None, description=""):
+def make_lnk(output_path, icon_path, script_path, args=None, appid=None, description="", terminal=True):
 
     print(f"[Info] Generating: {output_path}")
 
@@ -133,24 +146,35 @@ def make_lnk(output_path, icon_path, script_path, args=None, appid=None, descrip
     else:
         shortcut_args = f'"{script_path}"'
 
-    create_shortcut_with_appid(
-        args=shortcut_args,
-        output=output_path,
-        app_id=appid,
-        icon_path=icon_path,
-        target=python_exe,
-        wdir="",
-        description=description,
-    )
+    if terminal == True:
+        create_shortcut_with_appid(
+            args=shortcut_args,
+            output=output_path,
+            app_id=appid,
+            icon_path=icon_path,
+            target=python_exe,
+            wdir="",
+            description=description,
+        )
+    else:
+        create_shortcut_with_appid(
+            args=shortcut_args,
+            output=output_path,
+            app_id=appid,
+            icon_path=icon_path,
+            target=pythonw_exe,
+            wdir="",
+            description=description,
+        )
 
 
 def main():
 
     # Generate the 4 shortcuts
-    appid = utils.sanitize_app_id(program_name)
+    appid = sanitize_app_id(program_name)
     # replace and shorten if too long which might cause path length limit problems (10 is arbitrary)
     if len(appid) > 15:
-        appid.replace(["-", "."], "")
+        appid.replace("-", "").replace(".", "")
     if len(appid) > 15:
         appid = appid[:7] + appid[-7:]
     make_lnk(launcher_lnk_name, launcher_icon_path, launcher_py, args=appid, appid=appid, description="WIP")
