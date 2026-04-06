@@ -5,22 +5,25 @@ relative_path_to_actual_script = "specific_scripts\\open_settings.py"
 ###################
 
 import os
-import subprocess
+import runpy
 import sys
 
 ###################
 
+script_path = os.path.join(os.path.dirname(__file__), relative_path_to_actual_script)
+
+sys.argv = [script_path]
+
 try:
-    file_path = os.path.join(os.path.dirname(__file__), relative_path_to_actual_script)
+    runpy.run_path(script_path, run_name="__main__")
+    exit_code = 0
+except SystemExit as e:
+    if isinstance(e.code, int):
+        exit_code = e.code
+    elif e.code is None:
+        exit_code = 0
+    else:
+        # e.code can be something else which is treated as error
+        exit_code = 1
 
-    result = subprocess.run([sys.executable, file_path])  # noqa:S603
-
-    sys.exit(result.returncode)
-
-except Exception as e:
-    import traceback
-    print(f"[Error] An error occurred while trying to open the settings: {e}")
-    print("=" * 80)
-    print(traceback.format_exc())
-    print()
-    input("Press enter to exit.")
+sys.exit(exit_code)
