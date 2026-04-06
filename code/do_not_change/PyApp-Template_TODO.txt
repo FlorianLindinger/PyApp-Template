@@ -2,6 +2,60 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+# maybe not import stuff that does not have to be imported every time helper_funciton are imported. especially in wrapper
+
+add back change icon to python wrapper
+
+update license that python packages fall under their license
+
+add as option to have faulthandler? ["-X", "faulthandler"]. Remove all popen and subprocess.run with runpy
+
+readd color choice to all terminals
+
+fix 2 main shortcuts not beaing allowed on taskbar by differnt app_id? not copy of P.exe because grouping should match launcher
+
+prevent windows popup
+
+disable all the terminal name settin when unneded in wrapper?
+
+easy way to select terminal theme: corlor of all selection swuares and color of selected in output and inpuit and color of user input. And eventually fading color i guess.fad ig better for bg of line I guess
+
+change order of buttons and defaulöts in fancy termina
+
+does the settings.py import even work for non same wdir
+
+make it prompt for closureof "terminal title" in fancy termianl
+
+how does dev pass button settings.
+
+does app id translate if user has GUI in main_script. Or mention how to do it if not working like in fancy terminal
+
+move out stuff that isnt reused from helper_functions?
+
+readd faulthandler like:
+    # def run_python(python_exe: str, script_path: str, args: list, use_faulthandler: bool = True) -> int:
+    #     cmd = [python_exe]
+    #     if use_faulthandler:
+    #         cmd += ["-X", "faulthandler"]
+    #     cmd += [script_path] + args
+    #     try:
+    #         return subprocess.run(cmd).returncode  # noqa:S603
+    #     except Exception as e:
+    #         print(f"[Error] Python execution failed: {e}")
+    #         return 1
+
+readd launch background where no terminal mode see launch_background
+
+here: how does the wrapper know when to create new window for prints:
+    else:  # run without terminal but create one on crash.
+          subprocess.Popen(  # noqa:S603
+            [backend_pythonw_exe_path, "-c", error_catcher_wrapper], creationflags=subprocess.CREATE_NO_WINDOW
+        )
+
+terminal emulator fisst menu click is slow
+
+shouldbd every shortcut start with terminal window and exit???? terminal_emulator.py and wrapper handle error, right
+
 make a batch in do_not_change instead of use_uncompiled_terminal_and_run_it_in_global
 how can i force it on the spot to be terminal or not. maybe another arg in start_program.- > make more batches.
 
@@ -9,8 +63,6 @@ how can i force it on the spot to be terminal or not. maybe another arg in start
 add p.returncode also for terminal eumlatopr. Make it return the errors of the python script but also ones for my crsahes?
 
 chgekc that all prints in start_program are in new terminal
-
-fix print not printing immeadiatly in fancy_terminal
 
 add ways to launch in terminal to get all prints
 
