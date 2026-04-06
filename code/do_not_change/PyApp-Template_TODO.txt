@@ -2,6 +2,18 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+make a batch in do_not_change instead of use_uncompiled_terminal_and_run_it_in_global
+how can i force it on the spot to be terminal or not. maybe another arg in start_program.- > make more batches.
+
+
+add p.returncode also for terminal eumlatopr. Make it return the errors of the python script but also ones for my crsahes?
+
+chgekc that all prints in start_program are in new terminal
+
+fix print not printing immeadiatly in fancy_terminal
+
+add ways to launch in terminal to get all prints
+
 re add running of main sript and crash scriopt and error handling
 
 maybe make non user settings to toml
@@ -680,6 +692,8 @@ add explanation for pyq5 license
 ===================================
 small improvements related
 ===================================
+
+move the batches for peortable python to python i guess
 
 improve icon of do_not_change
 
