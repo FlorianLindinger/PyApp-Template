@@ -5,18 +5,29 @@ relative_path_to_actual_script = "specific_scripts\\start_program.py"
 ###################
 
 import os
-import subprocess
+import runpy
 import sys
 
 ###################
 
-args = [
-    sys.argv[1],
-    "1",
-]  # [app_id,create_terminal] # create_terminal is "1" to create a terminal, "0" to not create a terminal
-
 script_path = os.path.join(os.path.dirname(__file__), relative_path_to_actual_script)
 
-result = subprocess.run([sys.executable, script_path, *args])  # noqa:S603
+sys.argv = [
+    script_path,
+    sys.argv[1],  # app id
+    "1",  # create_terminal: 1" = create, "0" = not
+]
 
-sys.exit(result.returncode)
+try:
+    runpy.run_path(script_path, run_name="__main__")
+    exit_code = 0
+except SystemExit as e:
+    if isinstance(e.code, int):
+        exit_code = e.code
+    elif e.code is None:
+        exit_code = 0
+    else:
+        # e.code can be something else which is treated as error
+        exit_code = 1
+
+sys.exit(exit_code)
