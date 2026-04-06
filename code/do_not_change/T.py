@@ -10,7 +10,10 @@ import sys
 
 ###################
 
-args = [sys.argv[1], "1"]  # [app_id,create_terminal] # create_terminal is "1" to create a terminal, "0" to not create a terminal
+args = [
+    sys.argv[1],
+    "1",
+]  # [app_id,create_terminal] # create_terminal is "1" to create a terminal, "0" to not create a terminal
 
 script_path = os.path.join(os.path.dirname(__file__), relative_path_to_actual_script)
 
