@@ -1,10 +1,15 @@
+# =============
+# imports
+
 import ctypes
+import ctypes.wintypes
+import importlib.util
 import os
 import shutil
 import subprocess
 import sys
 import traceback
-from ctypes import wintypes
+from pathlib import Path
 
 try:
     from typing import override  # Python 3.12+
@@ -33,19 +38,32 @@ from PySide6.QtWidgets import (
     QWidgetAction,
 )
 
-# Shared Color Palette
 
+
+# =============
+# default terminal emulator style sheet
+
+default_accent_color = "#3B78FF"  # "none" for Windows accent color
+
+LIGHT_GRAY="#D3D3D3"
+GRAY="#C0C0C0"
+SLIGHTLY_DARK_GRAY="#B3B3B3"
+
+DARK_GRAY="#2E2E2E"
+DARKER_GRAY="#1C1C1C"
+DARKEST_GRAY="#101010"
+ALMOST_BLACK="#050505"
+
+INPUT_PRINT = default_accent_color
 ERROR_PRINT = "#FF5252"
-INPUT_PRINT = "#6BB6FF"
-OUTPUT_PRINT = "#FFFFFF"
 
-WINDOW_BG = "#1c1b1b"
-TOP_BAR_BG = "#1a1919"
+WINDOW_BG = "none"  # "#1c1b1b"
+TOP_BAR_BG = "none"  # "#1a1919"
 
-BUTTON_TEXT = "#FFFFFF"
+BUTTON_TEXT = "none"  # "#FFFFFF"
 
 BUTTON_BORDER = "#302e2e"
-BUTTON_ENABLED_BORDER = "#d63c24"
+BUTTON_ENABLED_BORDER = default_accent_color
 BUTTON_ACTIVELY_RUNNING_BORDER = "#24d62a"
 
 BUTTON_BG = TOP_BAR_BG
@@ -60,57 +78,62 @@ MENU_BUTTON_BG = BUTTON_BG
 MENU_BUTTON_HOVER_BG = BUTTON_HOVER_BG
 MENU_BUTTON_BORDER = BUTTON_BORDER
 
-CSS = (
+TEXT_SELECTED_BG = default_accent_color
+FIELD_SELECTED_ACCENT = default_accent_color
+
+
+default_QSS = (
     "QPushButton, QToolButton {"
-    "  padding: 4px 10px;"
-    f"  border: 1px solid {BUTTON_BORDER};"
-    "  border-radius: 6px;"
+    "   padding: 4px 4px;"
     f"  background-color: {BUTTON_BG};"
     f"  color: {BUTTON_TEXT};"
-    "  font-weight: 600;"
+    "   font-weight: 600;"
+    "   border-radius: 7px;"
+    f"  border: 2px solid {DARK_GRAY};"
+    f"  border-bottom: 2px solid {ALMOST_BLACK};"
     "}"
     "QPushButton:hover, QToolButton:hover {"
     f"  background-color: {BUTTON_HOVER_BG};"
     "}"
     "QPushButton:checked, QToolButton:checked {"
     "  background-color: transparent;"
-    f"  border: 1px solid {BUTTON_ENABLED_BORDER};"
+    f"  border: 2px solid {BUTTON_ENABLED_BORDER};"
     f"  color: {BUTTON_TEXT};"
     "}"
     "QPushButton[restarting='true'], QToolButton[restarting='true'] {"
-    f"  border: 1px solid {BUTTON_ACTIVELY_RUNNING_BORDER};"
+    f"  border: 2px solid {BUTTON_ACTIVELY_RUNNING_BORDER};"
     f"  color: {BUTTON_TEXT};"
     "}"
     "QPushButton:disabled, QToolButton:disabled {"
     f"  color: {UNCLICKABLE_BUTTON_BG};"
-    "  text-decoration: line-through;"
-    f"  border: 1px solid {UNCLICKABLE_BUTTON_BG};"
+    "   text-decoration: line-through;"
+    f"  border: 2px solid {UNCLICKABLE_BUTTON_BG};"
     "}"
     "QMenu::section {"
     f"  color: {BUTTON_TEXT};"
-    "  font-weight: 600;"
-    "  padding: 6px 12px;"
+    "   font-weight: 600;"
+    "   padding: 6px 12px;"
     f"  background-color: {WINDOW_BG};"
     "}"
     "QMenu::separator {"
-    "  height: 1px;"
+    "   height: 1px;"
     f"  background: {BUTTON_BORDER};"
-    "  margin: 4px 8px;"
+    "   margin: 4px 8px;"
     "}"
     "QMenu QPushButton, QMenu QToolButton {"
-    f"  border: 1px solid {BUTTON_BORDER};"
-    "  border-radius: 6px;"
+    f"  border: 2px solid {BUTTON_BORDER};"
+    "   border-radius: 7px;"
     f"  background-color: {BUTTON_BG};"
     f"  color: {BUTTON_TEXT};"
-    "  padding: 4px 10px;"
-    "  text-align: left;"
-    "  font-weight: 600;"
+    "   padding: 4px 4px;"
+    "   text-align: left;"
+    "   font-weight: 600;"
     "}"
     "QMenu QPushButton:hover, QMenu QToolButton:hover {"
     f"  background-color: {BUTTON_HOVER_BG};"
     "}"
     "QMenu QPushButton:checked, QMenu QToolButton:checked {"
-    "  background-color: transparent;"
+    "   background-color: transparent;"
     f"  border: 1px solid {BUTTON_ENABLED_BORDER};"
     f"  color: {BUTTON_TEXT};"
     "}"
@@ -120,12 +143,41 @@ CSS = (
     "}"
     "QMenu QPushButton:disabled, QMenu QToolButton:disabled {"
     f"  color: {UNCLICKABLE_BUTTON_BG};"
-    "  text-decoration: line-through;"
+    "   text-decoration: line-through;"
     f"  border: 1px solid {UNCLICKABLE_BUTTON_BG};"
+    "}"
+    
+    
+    "QTextEdit {" # terminal output unselected
+    f"  selection-background-color: {TEXT_SELECTED_BG};"
+    "   border-radius: 11px;"
+    f"  border: 3px solid {DARKEST_GRAY};"
+    f"  background-color: {DARK_GRAY};"
+    f"  border-bottom: 2px solid {SLIGHTLY_DARK_GRAY};"
+    "}"
+    "QTextEdit:focus {" # terminal output selected
+    f" border-bottom: 2px solid {FIELD_SELECTED_ACCENT};"
+    "}"
+    
+    "QLineEdit {" # terminal input unselected
+    f"   selection-background-color: {TEXT_SELECTED_BG};"
+    "    border-radius: 7px;"
+    f"   border: 1px solid {DARKEST_GRAY};"
+    f"   background-color: {DARK_GRAY};"
+    f"   border-bottom: 1px solid {SLIGHTLY_DARK_GRAY};"
+    "}"
+    "QLineEdit:focus {" # terminal input selected
+    f"  background-color: {DARKER_GRAY};"
+    f"  border-bottom: 1px solid {FIELD_SELECTED_ACCENT};"
     "}"
 )
 
 
+# =============
+# definitions
+
+
+# classes
 class Input_line(QLineEdit):
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -220,7 +272,13 @@ class Terminal_window(QMainWindow):
 
         script_path = os.path.abspath(script_path)
         self.script_path = script_path
+        python_exe = os.path.abspath(python_exe)
         self.python_exe = python_exe
+        self.close_on_crash = close_on_crash
+        self.close_on_failure = close_on_failure
+        self.close_on_success = close_on_success
+        self.wdir_is_script_dir = wdir_is_script_dir
+        self.terminal_needs_input = terminal_needs_input
 
         # Create the final default settings dictionary (label: settings_dict) with fallback base_default_button_settings if not defined in altered_default_button_settings
         default_button_settings: dict[str, dict[str, bool]] = {
@@ -235,6 +293,9 @@ class Terminal_window(QMainWindow):
             if label not in default_button_settings:
                 button_settings[label] = {**base_default_button_settings, **dictionary}
         self.button_settings = button_settings
+        if not self.terminal_needs_input:
+            self.button_settings["show_input"]["visible"] = False
+            self.button_settings["show_input"]["clickable"] = False
 
         if not os.path.isfile(script_path):
             print(f"[Error] File not found: {script_path}")
@@ -274,7 +335,6 @@ class Terminal_window(QMainWindow):
         # top bar
 
         self._top_bar_widget = QWidget(self)
-        self._top_bar_widget.setStyleSheet(CSS)
         self._top_bar = QHBoxLayout(self._top_bar_widget)
         self._top_bar.setContentsMargins(8, 6, 8, 6)
         self._top_bar.setSpacing(6)
@@ -291,7 +351,7 @@ class Terminal_window(QMainWindow):
         self._restart_button.setToolTip("Restart the script")
 
         self._stop_button = self._add_button("Stop", "stop")
-        self._stop_button.clicked.connect(self.stop_script)
+        self._stop_button.clicked.connect(lambda: self.stop_script(user_requested=True))
         self._stop_button.setToolTip("Stop the running script")
 
         self._autoscroll_button = self._add_button("Autoscroll", "autoscroll", True)
@@ -325,7 +385,6 @@ class Terminal_window(QMainWindow):
 
         self._menu_dropdown = QMenu(self)
         self._menu_dropdown.addSection("Top Bar Controls")
-        self._menu_dropdown.setStyleSheet(CSS)
         self._menu_dropdown.aboutToShow.connect(self._refresh_menu_controls)
 
         self._menu_pin_buttons: dict[str, QToolButton] = {}
@@ -391,9 +450,11 @@ class Terminal_window(QMainWindow):
         self.input_line.setPlaceholderText("Type input for the running script and press Enter...")
         self.input_line.returnPressed.connect(self.enter_input)
 
-        input_row = QHBoxLayout()
+        self._input_row_widget = QWidget(self)
+        input_row = QHBoxLayout(self._input_row_widget)
         input_row.addWidget(QLabel(">"))
         input_row.addWidget(self.input_line)
+        self._input_row_widget.setVisible(self.terminal_needs_input)
 
         ###################
         # set up layout
@@ -401,7 +462,7 @@ class Terminal_window(QMainWindow):
         layout = QVBoxLayout()
         layout.addWidget(self._top_bar_widget)
         layout.addWidget(self._terminal_output)
-        layout.addLayout(input_row)
+        layout.addWidget(self._input_row_widget)
 
         container = QWidget()
         container.setLayout(layout)
@@ -449,6 +510,9 @@ class Terminal_window(QMainWindow):
 
         self._window_is_closing = False
         self._go_to_bottom_on_next_text_print = False
+        self._auto_close_requested = False
+        self._suppress_next_finish_event = False
+        self._stop_requested_by_user = False
 
         ###################
         # set up thread for running python script and start script
@@ -639,6 +703,34 @@ class Terminal_window(QMainWindow):
         self.input_line.add_to_history(text)
         self.clear_input()
 
+    def _set_input_enabled(self, enabled: bool) -> None:
+        self.input_line.setEnabled(enabled and self.terminal_needs_input)
+
+    def _normalized_window_title(self) -> str:
+        title = self.windowTitle()
+        for prefix in ("[Success] ", "[Failure] ", "[Crash] "):
+            if title.startswith(prefix):
+                return title.removeprefix(prefix)
+        return title
+
+    def _clear_completion_title(self) -> None:
+        self.setWindowTitle(self._normalized_window_title())
+
+    def _set_completion_title(self, status: str) -> None:
+        self.setWindowTitle(f"[{status}] {self._normalized_window_title()}")
+
+    def _close_automatically(self, exit_code: int = 0) -> None:
+        if self._window_is_closing:
+            return
+
+        self._auto_close_requested = True
+        app = QApplication.instance()
+        if app:
+            app.exit(exit_code)
+            return
+
+        self.close()
+
     ###############
     # window related general setters
 
@@ -729,14 +821,13 @@ class Terminal_window(QMainWindow):
         self.activateWindow()
 
         # Windows-specific force focus
-        if os.name == "nt":
-            try:
-                hwnd = int(self.winId())
-                # SW_RESTORE = 9
-                ctypes.windll.user32.ShowWindow(hwnd, 9)
-                ctypes.windll.user32.SetForegroundWindow(hwnd)
-            except Exception:
-                pass
+        try:
+            hwnd = int(self.winId())
+            # SW_RESTORE = 9
+            ctypes.windll.user32.ShowWindow(hwnd, 9)
+            ctypes.windll.user32.SetForegroundWindow(hwnd)
+        except Exception:
+            pass
 
     def highlight_in_taskbar(self) -> None:
         QApplication.alert(self)
@@ -766,11 +857,11 @@ class Terminal_window(QMainWindow):
 
         class FLASHWINFO(ctypes.Structure):
             _fields_ = [
-                ("cbSize", wintypes.UINT),
-                ("hwnd", wintypes.HWND),
-                ("dwFlags", wintypes.DWORD),
-                ("uCount", wintypes.UINT),
-                ("dwTimeout", wintypes.DWORD),
+                ("cbSize", ctypes.wintypes.UINT),
+                ("hwnd", ctypes.wintypes.HWND),
+                ("dwFlags", ctypes.wintypes.DWORD),
+                ("uCount", ctypes.wintypes.UINT),
+                ("dwTimeout", ctypes.wintypes.DWORD),
             ]
 
         # If you want EXACT count, do NOT use TIMER/TIMERNOFG because then uCount is ignored.
@@ -802,11 +893,11 @@ class Terminal_window(QMainWindow):
 
         class FLASHWINFO(ctypes.Structure):
             _fields_ = [
-                ("cbSize", wintypes.UINT),
-                ("hwnd", wintypes.HWND),
-                ("dwFlags", wintypes.DWORD),
-                ("uCount", wintypes.UINT),
-                ("dwTimeout", wintypes.DWORD),
+                ("cbSize", ctypes.wintypes.UINT),
+                ("hwnd", ctypes.wintypes.HWND),
+                ("dwFlags", ctypes.wintypes.DWORD),
+                ("uCount", ctypes.wintypes.UINT),
+                ("dwTimeout", ctypes.wintypes.DWORD),
             ]
 
         info = FLASHWINFO(
@@ -832,12 +923,18 @@ class Terminal_window(QMainWindow):
             else:
                 # Fallback
                 subprocess.Popen(["notepad.exe", self.script_path])  # noqa:S603
-        except Exception as m:
+        except Exception as e:
+            self.terminal_print(f"Failed to opne python script with error: {e}", error=True)
+            self.terminal_print("=" * 20, error=True)
             self.terminal_print(traceback.format_exc(), error=True)
+            self.terminal_print("=" * 20, error=True)
 
     def start_script(self) -> None:
         if self.process.state() != QProcess.ProcessState.NotRunning:
-            self.stop_script()
+            self.stop_script(suppress_finished_event=True)
+
+        self._stop_requested_by_user = False
+        self._clear_completion_title()
 
         # Clear restart button state if it was clicked
         for btn in [self._buttons["restart"], self._menu_buttons["restart"]]:
@@ -846,16 +943,30 @@ class Terminal_window(QMainWindow):
                 btn.style().unpolish(btn)
                 btn.style().polish(btn)
 
+        if self.wdir_is_script_dir:
+            self.process.setWorkingDirectory(os.path.dirname(self.script_path))
+        else:
+            self.process.setWorkingDirectory("")
+
         self.process.start(self.python_exe, ["-u", self.script_path])  # -u makes the prints not be buffered aka delayed
-        self.input_line.setEnabled(True)
+        self._set_input_enabled(True)
         self.set_button_clickable_state("stop", True)
         if not self.process.waitForStarted(3000):
-            self.terminal_print("Failed to start process.\n", error=True)
-            self.input_line.setEnabled(False)
+            error_message = self.process.errorString().strip()
+            if error_message:
+                self.terminal_print(f"Failed to start process: {error_message}\n", error=True)
+            else:
+                self.terminal_print("Failed to start process.\n", error=True)
+            self._set_completion_title("Crash")
+            self._set_input_enabled(False)
             self.set_button_clickable_state("stop", False)
+            if self.close_on_crash:
+                QTimer.singleShot(0, lambda: self._close_automatically(1))
 
-    def stop_script(self) -> None:
+    def stop_script(self, user_requested: bool = False, suppress_finished_event: bool = False) -> None:
         if self.process.state() != QProcess.ProcessState.NotRunning:
+            self._stop_requested_by_user = user_requested
+            self._suppress_next_finish_event = suppress_finished_event
             self.process.terminate()
             if not self.process.waitForFinished(2000):
                 self.process.kill()
@@ -870,7 +981,7 @@ class Terminal_window(QMainWindow):
                 btn.style().polish(btn)
 
         QApplication.processEvents()
-        self.stop_script()
+        self.stop_script(suppress_finished_event=True)
         self.clear_terminal()
         self.start_script()
 
@@ -1034,9 +1145,39 @@ class Terminal_window(QMainWindow):
         self.terminal_print(data, error=True)
 
     def _on_finished(self, exit_code: int, _exit_status: QProcess.ExitStatus) -> None:
+        if self._suppress_next_finish_event:
+            self._suppress_next_finish_event = False
+            self._stop_requested_by_user = False
+            return
+
+        if self._stop_requested_by_user:
+            self._stop_requested_by_user = False
+            self.terminal_print("\n\n[process stopped]\n", error=True)
+            self._set_input_enabled(False)
+            self.set_button_clickable_state("stop", False)
+            return
+
+        if _exit_status == QProcess.ExitStatus.CrashExit:
+            crash_code = exit_code if exit_code != 0 else 1
+            self.terminal_print(f"\n\n[process crashed with code {crash_code}]\n", error=True)
+            self._set_completion_title("Crash")
+            self._set_input_enabled(False)
+            self.set_button_clickable_state("stop", False)
+            if self.close_on_crash:
+                QTimer.singleShot(0, lambda: self._close_automatically(crash_code))
+            return
+
         self.terminal_print(f"\n\n[process exited with code {exit_code}]\n", error=(exit_code != 0))
-        self.input_line.setEnabled(False)
+        self._set_input_enabled(False)
         self.set_button_clickable_state("stop", False)
+        if exit_code == 0:
+            self._set_completion_title("Success")
+            if self.close_on_success:
+                QTimer.singleShot(0, lambda: self._close_automatically(0))
+        else:
+            self._set_completion_title("Failure")
+            if self.close_on_failure:
+                QTimer.singleShot(0, lambda: self._close_automatically(exit_code))
 
     def _cleanup(self) -> None:
         if self._window_is_closing:
@@ -1059,7 +1200,7 @@ class Terminal_window(QMainWindow):
 
     @override
     def closeEvent(self, event) -> None:
-        if self._confirm_close_button.isChecked():
+        if not self._auto_close_requested and self._confirm_close_button.isChecked():
             reply = QMessageBox.question(
                 self,
                 "Confirm Exit",
@@ -1075,7 +1216,7 @@ class Terminal_window(QMainWindow):
         super().closeEvent(event)
 
 
-###########################
+# miscellaneous
 
 
 def set_app_id(app_id) -> None:
@@ -1086,60 +1227,63 @@ def set_app_id(app_id) -> None:
         pass
 
 
+def arg_to_bool(index: int, default: bool) -> bool:
+    if len(sys.argv) <= index:
+        return default
+
+    return sys.argv[index].strip().lower() in {"1", "true", "yes", "on"}
+
+
+def arg_to_str(index: int, default: str = "") -> str:
+    if len(sys.argv) <= index:
+        return default
+    return sys.argv[index]
+
+
+def load_variable_from_file(file_path: str, variable_name: str):
+    path = Path(file_path).resolve()
+
+    spec = importlib.util.spec_from_file_location(path.stem, path)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"Cannot load module from {path}")
+
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    return getattr(module, variable_name)
+
+
+# main
+
+
 def main() -> int:
+    global default_QSS
     # script_path,python_exe,title,icon_path,app_id
 
     # process args
     if len(sys.argv) < 2:
         raise ValueError(
-            "Have to give at least Python script path as argument. Usage: name.py script_path [python_exe] [title] [icon_path]"
+            "terminal_emulator.py needs at least the Python script path as argument. Usage: terminal_emulator.py script_path [python_exe] [title] [icon_path] [app_id] [wdir_is_script_dir] [close_on_crash] [close_on_failure] [close_on_success]  [terminal_needs_input]"
         )
+
     script_path = sys.argv[1]
-    if len(sys.argv) > 2:
-        python_exe = sys.argv[2]
-    else:
-        python_exe = ""
-    if len(sys.argv) > 3:
-        title = sys.argv[3]
-    else:
-        title = ""
-    if len(sys.argv) > 4:
-        icon_path = sys.argv[4]
-    else:
-        icon_path = ""
-    if len(sys.argv) > 5:
-        app_id = sys.argv[5]
-        if app_id != "":
-            set_app_id(app_id)
-    if len(sys.argv) > 6:
-        close_on_crash = sys.argv[6] == "1"
-    else:
-        close_on_crash = False
+    python_exe = arg_to_str(2, "py")
+    title = arg_to_str(3, "")
+    icon_path = arg_to_str(4, "")
+    app_id = arg_to_str(5, "")
+    wdir_is_script_dir = arg_to_bool(6, True)
+    close_on_crash = arg_to_bool(7, False)
+    close_on_failure = arg_to_bool(8, False)
+    close_on_success = arg_to_bool(9, True)
+    log_path_rel_to_wdir = arg_to_str(10, "")
 
-    if len(sys.argv) > 7:
-        close_on_failure = sys.argv[7] == "1"
-    else:
-        close_on_failure = False
-    if len(sys.argv) > 8:
-        close_on_success = sys.argv[8] == "1"
-    else:
-        close_on_success = False
-    if len(sys.argv) > 9:
-        wdir_is_script_dir = sys.argv[9] == "1"
-    else:
-        wdir_is_script_dir = False
-    if len(sys.argv) > 10:
-        terminal_needs_input = sys.argv[10] == "1"
-    else:
-        terminal_needs_input = False
+    accent_color = arg_to_str(11, "")
+    terminal_needs_input = arg_to_bool(12, True)
+    stylesheet_path = arg_to_str(13, "")
+    dark_mode=arg_to_str(14, "1")
 
-    # close_on_crash
-    # close_on_failure
-    # close_on_success
-    # wdir_is_script_dir
-    # terminal_needs_input
-    # button_settings
-    # style_path
+    if app_id != "":
+        set_app_id(app_id)
 
     # launcher terminal
     app = QApplication(sys.argv)
@@ -1154,11 +1298,29 @@ def main() -> int:
         wdir_is_script_dir=wdir_is_script_dir,
         terminal_needs_input=terminal_needs_input,
     )
+    
+    # set dark mode. For neither "1" or "0" case it will choose Windows settings
+    if dark_mode=="1":
+        app.styleHints().setColorScheme(Qt.ColorScheme.Dark)
+    elif dark_mode=="0":
+        app.styleHints().setColorScheme(Qt.ColorScheme.Light)
+
+    try:
+        if stylesheet_path != "" and os.path.exists(stylesheet_path):
+            app.setStyleSheet(load_variable_from_file(stylesheet_path, "QSS"))
+        else:
+            app.setStyleSheet(default_QSS)
+    except Exception as e:
+        print(f'Failed to load/apply style sheet from path "{stylesheet_path}" with error: {e}')
+        print("=" * 20)
+        print(traceback.format_exc())
+        print("=" * 20)
+
     window.show()
     return app.exec()
 
 
-################
+# =============
 # execute
 
 if __name__ == "__main__":
