@@ -6,7 +6,6 @@
 # =============================
 
 try:
-
     import os
 
     file_dir = os.path.dirname(os.path.abspath(__file__)) + "\\"
@@ -40,7 +39,7 @@ try:
         format_path,
         get_value,
         input_red,
-        launcher_wrapper_path,
+        script_wrapper_path,
         settings,
         settings_file_path,
         setup_venv,
@@ -59,9 +58,7 @@ try:
     # main function
     # =============================
 
-
     def main() -> None:
-
 
         # process args
 
@@ -100,10 +97,10 @@ try:
         log_path_rel_to_wdir = get_value(settings, "log_path_rel_to_wdir", "..\\log.txt")
         terminal_bg_color = get_value(settings, "terminal_bg_color", "0")
         terminal_text_color = get_value(settings, "terminal_text_color", "F")
-        terminal_colors=terminal_bg_color+terminal_text_color
-        after_python_crash_code_name = get_value(settings, "after_python_crash_code_name", "")
+        terminal_colors = terminal_bg_color + terminal_text_color
 
         fancy_terminal_stylesheet_path = get_value(settings, "fancy_terminal_stylesheet_path", "")
+        fancy_terminal_accent_color_hex = get_value(settings, "fancy_terminal_accent_color_hex", "")
 
         if "python_code_name" in settings:
             python_code_name = settings["python_code_name"]
@@ -123,11 +120,18 @@ try:
                 raise FileNotFoundError(f'[Error] Python executable not found at "{venv_exe_path}"')
             python_exe_for_script_path = venv_exe_path
 
+        after_python_crash_code_name = get_value(settings, "after_python_crash_code_name", "")
+        if after_python_crash_code_name != "":
+            after_python_crash_code_path = python_scripts_folder_path + after_python_crash_code_name
+            if not os.path.exists(after_python_crash_code_path):
+                after_python_crash_code_path = ""
+        else:
+            after_python_crash_code_path = ""
+
         # ======================
         # launch terminal
 
         args = [
-            script_path,
             title,
             icon_path if icon_path else "",
             app_id,
@@ -136,35 +140,37 @@ try:
             "1" if close_on_failure else "0",
             "1" if close_on_success else "0",
             log_path_rel_to_wdir,
+            # restart_main_code_on_crash,
+            # after_python_crash_code_path
         ]
 
         if (use_fancy_terminal == True) and (create_terminal == True):
             # run in termnial emulator
 
             # terminal emulator need additional arg python_exe_for_script_path
-            args = [
-                *args[:1],
-                python_exe_for_script_path,
-                *args[1:],
-                accent_color,
+            args += [
+                fancy_terminal_accent_color_hex,
                 "1" if terminal_needs_input else "0",
                 fancy_terminal_stylesheet_path,
             ]
 
             if use_uncompiled_terminal_and_run_it_in_global == True:
                 subprocess.Popen(  # noqa:S603
-                    ["pyw", uncompiled_terminal_path, *args],
+                    ["pyw", uncompiled_terminal_path, script_path, python_exe_for_script_path, *args],
                     creationflags=subprocess.CREATE_NO_WINDOW,
                 )
             else:
                 # run and wait (using the compiled terminal emulator)
-                subprocess.Popen([compiled_terminal_path, *args], creationflags=subprocess.CREATE_NO_WINDOW)  # noqa:S603
+                subprocess.Popen(  # noqa:S603
+                    [compiled_terminal_path, script_path, python_exe_for_script_path, *args],
+                    creationflags=subprocess.CREATE_NO_WINDOW,
+                )
 
         else:
             # run in Windows terminal or no window
 
-            
-            args += [terminal_colors,"1" if create_terminal else "0", backend_python_exe_path]
+            # script_wrapper_path need addition args
+            args += [terminal_colors, "1" if create_terminal else "0", backend_python_exe_path]
 
             # launch script in wrapper that handles:
             #   errors
@@ -176,20 +182,19 @@ try:
             #   closer or keep open logic on finish/error/fail
             #   print in additional terminal for final print info if in no-terminal mode
             if create_terminal == True:  # run in windows terminal
-                
                 subprocess.Popen(  # noqa:S603
-                    [python_exe_for_script_path, launcher_wrapper_path, *args], creationflags=subprocess.CREATE_NEW_CONSOLE
+                    [python_exe_for_script_path, script_wrapper_path, script_path, *args],
+                    creationflags=subprocess.CREATE_NEW_CONSOLE,
                 )
             else:  # run without terminal but create one on crash.
                 subprocess.Popen(  # noqa:S603
-                    [python_exe_for_script_path, launcher_wrapper_path, *args], creationflags=subprocess.CREATE_NO_WINDOW
+                    [python_exe_for_script_path, script_wrapper_path, script_path, *args],
+                    creationflags=subprocess.CREATE_NO_WINDOW,
                 )
-
 
     # =============================
     # execution of main function
     # =============================
-
 
     if __name__ == "__main__":
         try:
@@ -202,11 +207,12 @@ try:
             sys.exit(1)
 
 except Exception as e:
-    import traceback
     import sys
+    import traceback
+
     print(f"[Error] Failed during start of program with error: {e}:")
-    print("="*20)
+    print("=" * 20)
     print(traceback.format_exc())
-    print("="*20)
+    print("=" * 20)
     input("Press enter to exit")
     sys.exit(1)

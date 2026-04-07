@@ -24,7 +24,7 @@ py_env_folder_path = os.path.normpath(file_dir + "..\\..\\py_env")
 backend_python_exe_path = os.path.normpath(file_dir + "..\\P\\P.exe")
 backend_pythonw_exe_path = os.path.normpath(file_dir + "..\\P\\Pw.exe")
 
-launcher_wrapper_path=file_dir + "launcher_with_except_and_appid.py"
+script_wrapper_path = file_dir + "script_wrapper.py"
 
 #############################
 # process local variables
@@ -257,7 +257,8 @@ def get_settings(settings_path: str) -> dict:
     except Exception as e:
         raise ValueError(f"[Error] Failed to parse settings: {e}") from e
 
-def get_value(dictionary:dict,key:str,default:str)->str:
+
+def get_value(dictionary: dict, key: str, default: str) -> str:
     if key in dictionary:
         return dictionary[key]
     else:
@@ -515,9 +516,6 @@ def setup_venv():
 #############################
 # miscellaneous
 #############################
-
-
-
 
 
 # def set_app_id(app_id) -> None:
