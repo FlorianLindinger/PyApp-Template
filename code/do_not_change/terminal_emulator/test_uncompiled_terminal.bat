@@ -2,7 +2,7 @@
 
 :start
 
-py terminal_emulator.py "..\..\main_code.py" "..\..\py_env\virt_env\portable_Scripts\python.bat" "Test Title" "..\..\icons\icon.ico" "pyapp-template"
+py terminal_emulator.py "..\..\main_code.py" "..\..\py_env\virt_env\portable_Scripts\python.bat" "Test Title" "..\..\icons\icon.ico" "pyapp-template" "1" "0" "0" "0" "log.txt" "9F"
 
 echo.
 echo Press any key to reopen...
