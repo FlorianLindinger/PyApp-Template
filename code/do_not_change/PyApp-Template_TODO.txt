@@ -2,6 +2,61 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+change icon od dev_tools
+
+for fancy terminal: reduce padding and optimise a litte thje style while respecting windows dark theme
+seome padding clip in top right corner
+make buttoins also 3d where they stick out if disabled and stick in for enabled. maybe hard to do with color
+text input somehow alos scaleable
+change accent slightl yfor shadow effectr
+make down arrow of menu not overlap with text
+more hove texz for to tzray
+
+make error print bold in fancy terminal
+
+option to force dark mode
+
+i rather have differnet color setting for windows terminal and qt one
+
+setting to open log on crash for no terminal?
+
+save pid in code fodler
+
+mentoipn:
+  sys.argv=[script_path,icon_path,title,close_on_crash,close_on_failure,close_on_success]
+          runpy.run_path(script_path, run_name="__main__")
+
+add time to logging. maybe with "logging" package
+
+# move over arg_to_str,arg_to_bool
+    def arg_to_bool(index: int, default: bool) -> bool:
+        if len(sys.argv) <= index:
+            return default
+
+        return sys.argv[index].strip().lower() in {"1", "true", "yes", "on"}
+
+    def arg_to_str(index: int, default: str="") -> str:
+        if len(sys.argv) <= index:
+            return default
+        return sys.argv[index]
+
+# sort stuff in terminal_emulator
+
+add settings for fancy terminal sytlesheet to non-user settings and path to .css file to override
+how to select between path css and settings?
+
+# do i need to set style sheet to more? can i just set it to everythiong?
+
+# how to add button settings?
+
+# waht is log path relative to? malke it realcite to wdir and mention that
+
+add logging? for all as option 
+->redirecrt woht -u 
+see chat: "APP id  in subprocess"
+
+#unhide with subprocess.CREATE_NO_WINDOW and launch wihdt python.exe
+
 # maybe not import stuff that does not have to be imported every time helper_funciton are imported. especially in wrapper
 
 add back change icon to python wrapper
