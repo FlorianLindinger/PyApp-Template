@@ -2,7 +2,7 @@
 
 :start
 
-compiled\run.exe "..\..\main_code.py" "..\..\py_env\virt_env\portable_Scripts\python.bat" "Test Title" "..\..\icons\icon.ico" "pyapp-template"
+compiled\run.exe "..\..\main_code.py" "..\..\py_env\virt_env\portable_Scripts\python.bat" "Test Title" "..\..\icons\icon.ico" "pyapp-template" "1" "0" "0" "0" "log.txt" "9F"
 
 echo.
 echo Press any key to reopen...
