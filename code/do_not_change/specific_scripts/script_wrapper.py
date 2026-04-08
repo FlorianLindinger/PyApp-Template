@@ -24,18 +24,18 @@ try:
     # handle args
 
     script_path = sys.argv[1]
-    
+
     title = sys.argv[2]
     icon_path = sys.argv[3]
     app_id = sys.argv[4]
-    wdir_is_script_dir = sys.argv[5]
-    close_on_crash = sys.argv[6]
-    close_on_failure = sys.argv[7]
-    close_on_success = sys.argv[8]
+    wdir_is_script_dir = sys.argv[5] == "1"
+    close_on_crash = sys.argv[6] == "1"
+    close_on_failure = sys.argv[7] == "1"
+    close_on_success = sys.argv[8] == "1"
     log_path_rel_to_wdir = sys.argv[9]
-    
+
     terminal_colors = sys.argv[10]
-    script_has_terminal = sys.argv[11]
+    script_has_terminal = sys.argv[11] == "1"
     # script_has_terminal = "1" means that this window is run in a terminal and False that it is invisible and one needs to create a new terminal to print
     backend_python_exe_path = sys.argv[12]  # i guess safer for extra terminal print if the user python is broken
 
@@ -58,12 +58,24 @@ try:
     def input_green(msg):
         input(f"{ASCI_GREEN}{msg}{ASCI_RESET}")
 
+    def set_terminal_name(name: str) -> None:
+        try:
+            os.system(f"title {name.replace('r\n', '').replace(r'\r', '')}")  # noqa:S605
+        except Exception:
+            pass
 
+    def get_terminal_name():
+        try:
+            buffer = ctypes.create_unicode_buffer(1024)
+            ctypes.windll.kernel32.GetConsoleTitleW(buffer, len(buffer))
+            return str(buffer.value)
+        except Exception:
+            return "Terminal"
 
-    if script_has_terminal==True:
+    if script_has_terminal:
         from ctypes import wintypes
 
-        def change_terminal_icon(icon_path: str, print_errors: bool = True) -> int:
+        def set_terminal_icon(icon_path: str, print_errors: bool = True) -> int:
             """Change the icon of the current terminal window and return the first touched hwnd."""
 
             WM_SETICON = 0x0080
@@ -353,23 +365,6 @@ try:
 
             return candidate_hwnds[0]
 
-
-        
-        def set_terminal_name(name: str) -> None:
-            try:
-                os.system(f"title {name.replace('r\n', '').replace(r'\r', '')}")  # noqa:S605
-            except Exception:
-                pass
-        
-
-        def get_terminal_name():
-            try:
-                buffer = ctypes.create_unicode_buffer(1024)
-                ctypes.windll.kernel32.GetConsoleTitleW(buffer, len(buffer))
-                return str(buffer.value)
-            except Exception:
-                return "Terminal"
-
     def run_text_in_new_terminal_and_wait(text):
         import subprocess  # noqa:PLC0415
 
@@ -433,11 +428,11 @@ try:
 
     try:
         # set working directory
-        if wdir_is_script_dir == "1":
+        if wdir_is_script_dir:
             os.chdir(os.path.dirname(script_path))
 
         if log_path_rel_to_wdir != "":
-            log_file = open(log_path_rel_to_wdir, "w", encoding="utf-8", buffering=1) #noqa:SIM115
+            log_file = open(log_path_rel_to_wdir, "w", encoding="utf-8", buffering=1)  # noqa:SIM115
             atexit.register(log_file.close)
             sys.stdout = pipe_splitter(sys.__stdout__, log_file)
             sys.stderr = pipe_splitter(sys.__stderr__, log_file)
@@ -450,16 +445,23 @@ try:
                 print(e)
 
         # set terminal name
-        if script_has_terminal == "1":
-            set_terminal_name(title)
-            set_terminal_icon(icon_path)
+        if script_has_terminal:
+            set_terminal_name(title)  # type:ignore
+            set_terminal_icon(icon_path)  # type:ignore
 
             if terminal_colors != "":
                 os.system(f"color {terminal_colors}")  # noqa:S605
 
         # run and wait for finish
         try:
-            sys.argv = [script_path, icon_path, title, close_on_crash, close_on_failure, close_on_success]
+            sys.argv = [
+                script_path,
+                icon_path,
+                title,
+                "1" if close_on_crash else "0",
+                "1" if close_on_failure else "0",
+                "1" if close_on_success else "0",
+            ]
             runpy.run_path(script_path, run_name="__main__")
             exit_code = 0
         except SystemExit as e:
@@ -476,7 +478,7 @@ try:
             if close_on_success:
                 sys.exit(0)
             else:
-                if script_has_terminal == "1":
+                if script_has_terminal:
                     set_terminal_name(f"[Success] {get_terminal_name()}")
                     print()
                     print_green("[Program finished successfully] ", end="")
@@ -496,7 +498,7 @@ try:
             if close_on_failure:
                 sys.exit(exit_code)
             else:
-                if script_has_terminal == "1":
+                if script_has_terminal:
                     set_terminal_name(f"[Failure] {get_terminal_name()}")
                     print()
                     print_red(f"[Python Failure Return] Script exited with code: {exit_code}")
@@ -520,8 +522,11 @@ try:
             if close_on_crash:
                 sys.exit(1)
             else:
-                if script_has_terminal == "1":
-                    set_terminal_name(f"[Crash] {get_terminal_name()}")
+                if script_has_terminal:
+                    try:
+                        set_terminal_name(f"[Crash] {get_terminal_name()}")
+                    except Exception:
+                        pass
                     print()
                     print_red("=" * 40)
                     print_red(f"CRITICAL LAUNCH ERROR: {e}")
@@ -577,7 +582,7 @@ except Exception as e:
     print("=" * 20)
     input("Press enter to exit")
     sys.exit(1)
-    
+
 finally:
     try:
         log_file.close()  # type:ignore
