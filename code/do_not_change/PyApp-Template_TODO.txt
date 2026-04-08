@@ -3,40 +3,39 @@
 ======================================
 
 ===================================
-   Unsorted
+very important
 ===================================
-
-move out common variables from common functions i guess
-
-is there a drawpack in having P.lnk to P\P.exe? for shortness
-
-choose even shorter shortcut path ->named like set.py
-
-test PID stop
-
-add package install to venv setup!!!!!
-
-i guess there is an arguemtn for non py file for user_settings because how to open for user. maybe add back toml? 
-
-make non user settings to toml or yaml since why not or maybe just python.
-->python becasue settgins for terminal_emulator
-rename it to developer_settings and import explicitly
-add button settings
 
 re add running of main sript and crash scriopt and error handling
 
-add back change icon to script wrapper
+add package install to venv setup!!!!!
+
+save pid in code folder
+test PID stop
+
+===================================
+   Unsorted
+===================================
+
+for error in main_script: dont print traceback to runpy I guess.
+
+i guess also add fancy_terminal stylesheet to non user settings and remove path option
+
+does python_version="" work?
+
+
+developer_settings:add button settings as dict?
+
 
 i guess i want restart and python_fail script no in same popen since it is kind of only needed if python completely crsahes. i guess i make the after script still for normal error exit? but there could be deliberate non 0 exit and they could always catch if they want
 
 setting to open log on crash for no terminal?
 
-save pid in code folder
-
 mention that args get passed to called script:
   sys.argv=[script_path,icon_path,title,close_on_crash,close_on_failure,close_on_success]
           runpy.run_path(script_path, run_name="__main__")
 
+move out common variables from common functions i guess
 
 # move over arg_to_str,arg_to_bool
     def arg_to_bool(index: int, default: bool) -> bool:
@@ -61,8 +60,6 @@ fix 2 main shortcuts not beaing allowed on taskbar by differnt app_id? not copy 
 check that:disable all the terminal name settin when unneded in wrapper?
 
 does the settings.py import even work for non same wdir
-
-how does dev pass button settings.
 
 move out stuff that isnt reused from common_code...? at least if it does an import or leads to unnecessary common_code import
 
@@ -693,5 +690,8 @@ let AI check every file
 ask AI for speedup and safety and robustness improvmens and also comments and docsttirngs
 
 mention in outer most license what licenses the template backend has
+
+is there a possiblity in having P.lnk to P\P.exe? for shortness
+
 
 ===================================
