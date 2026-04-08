@@ -1,12 +1,9 @@
 import configparser
-import ctypes
 import os
-import re
 import shutil
 import subprocess
 import sys
 import traceback
-import unicodedata
 from pathlib import Path
 
 #############################
@@ -136,65 +133,6 @@ def make_abs_path_relative_to_file(path, file):
 #############################
 
 
-def sanitize_app_id(input_string):
-    # 1. Convert to lowercase and normalize unicode (e.g., convert 'é' to 'e')
-    name = unicodedata.normalize("NFKD", input_string).encode("ascii", "ignore").decode("ascii").lower()
-    # 2. Replace spaces and underscores with hyphens
-    name = re.sub(r"[\s_]+", "-", name)
-    # 3. Remove any character that isn't lowercase a-z, 0-9, a hyphen, or a dot
-    name = re.sub(r"[^a-z0-9\-\.]", "", name)
-    # 4. Remove duplicate hyphens or dots (e.g., "my--app" becomes "my-app")
-    name = re.sub(r"-+", "-", name)
-    name = re.sub(r"\.+", ".", name)
-    # 5. Trim hyphens/dots from the start and end
-    name = name.strip("-.")
-    return name
-
-
-def sanitize_filename(filename, replacement="_"):
-    # 1. Characters illegal in Windows: < > : " / \ | ? *
-    # Also handles control characters (0-31)
-    illegal_chars = r'[<>:"/\\|?*\x00-\x1f]'
-    filename = re.sub(illegal_chars, replacement, filename)
-    # 2. Windows reserved filenames (CON, PRN, AUX, NUL, COM1-9, LPT1-9)
-    # These cannot be filenames even with an extension (e.g., CON.txt is bad)
-    reserved_names = {
-        "CON",
-        "PRN",
-        "AUX",
-        "NUL",
-        "COM1",
-        "COM2",
-        "COM3",
-        "COM4",
-        "COM5",
-        "COM6",
-        "COM7",
-        "COM8",
-        "COM9",
-        "LPT1",
-        "LPT2",
-        "LPT3",
-        "LPT4",
-        "LPT5",
-        "LPT6",
-        "LPT7",
-        "LPT8",
-        "LPT9",
-    }
-    # Check the "stem" (name before the dot)
-    base_name = os.path.splitext(filename)[0].upper()
-    if base_name in reserved_names:
-        filename = f"{replacement}{filename}"
-    # 3. Strip trailing dots and spaces (Windows ignores/removes these)
-    filename = filename.rstrip(". ")
-    # 4. Enforce length limit (255 characters for the filename itself)
-    if len(filename) > 255:
-        filename = filename[:255]
-    # 5. Handle empty strings (if sanitization removed everything)
-    return filename if filename else "unnamed_file"
-
-
 def format_bytes(num_bytes) -> str:
     units = ["B", "KB", "MB", "GB", "TB"]
     size = float(num_bytes)
@@ -263,43 +201,6 @@ def get_value(dictionary: dict, key: str, default: str) -> str:
         return dictionary[key]
     else:
         return default
-
-
-#############################
-# terminal related functions
-#############################
-
-
-# def apply_terminal_settings(settings: dict):
-#     name = settings.get("program_name", "App")
-#     ctypes.windll.kernel32.SetConsoleTitleW(name)
-#     try:
-#         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(name)
-#     except Exception:
-#         pass
-#     bg = settings.get("terminal_bg_color", "")
-#     txt = settings.get("terminal_text_color", "")
-#     if bg or txt:
-#         os.system(f"color {bg}{txt}")  # noqa:S605
-
-
-def set_terminal_name(name: str) -> None:
-    try:
-        # Clean the name
-        safe_name = name.replace("\n", "").replace("\r", "")
-        os.system(f'title "{safe_name}"')  # noqa:S605
-    except Exception:
-        pass
-
-
-def get_terminal_name():
-    try:
-        buffer = ctypes.create_unicode_buffer(1024)
-        ctypes.windll.kernel32.GetConsoleTitleW(buffer, len(buffer))
-        return buffer.value
-    except Exception:
-        return "Terminal"
-
 
 #############################
 # user interaction related functions
