@@ -34,15 +34,11 @@ try:
 
     from do_not_change.specific_scripts.common_code_and_variables import (
         backend_python_exe_path,
+        developer_settings,
         error_print,
-        format_path,
-        get_value,
         input_red,
         script_wrapper_path,
-        settings,
-        settings_file_path,
         setup_venv,
-        val_is_true,
         venv_exe_path,
     )
 
@@ -77,37 +73,32 @@ try:
         setup_venv()
 
         # =============================
-        # import and process non-user_settings
+        # import and process developer_settings
 
-        use_fancy_terminal = val_is_true(settings, "use_fancy_terminal", True)
-        terminal_needs_input = val_is_true(settings, "terminal_needs_input", True)
-        close_on_success = val_is_true(settings, "close_on_success", True)
-        close_on_crash = val_is_true(settings, "close_on_crash", False)
-        close_on_failure = val_is_true(settings, "close_on_failure", False)
-        use_uncompiled_terminal_and_run_it_in_global = val_is_true(
-            settings, "use_uncompiled_terminal_and_run_it_in_global", False
+        use_fancy_terminal = getattr(developer_settings, "use_fancy_terminal", True)
+        terminal_needs_input = getattr(developer_settings, "terminal_needs_input", True)
+        close_on_success = getattr(developer_settings, "close_on_success", True)
+        close_on_crash = getattr(developer_settings, "close_on_crash", False)
+        close_on_failure = getattr(developer_settings, "close_on_failure", False)
+        use_uncompiled_terminal_and_run_it_in_global = getattr(
+            developer_settings, "use_uncompiled_terminal_and_run_it_in_global", False
         )
-        wdir_is_script_dir = not val_is_true(settings, "start_in_shortcut_folder", False)
-        use_global_python = val_is_true(settings, "use_global_python", False)
-        log_even_with_terminal = val_is_true(settings, "log_even_with_terminal", True)
-        restart_main_code_on_crash = val_is_true(settings, "restart_main_code_on_crash", False)
+        wdir_is_script_dir = not getattr(developer_settings, "start_in_shortcut_folder", False)
+        use_global_python = getattr(developer_settings, "use_global_python", False)
+        log_even_with_terminal = getattr(developer_settings, "log_even_with_terminal", True)
+        restart_main_code_on_crash = getattr(developer_settings, "restart_main_code_on_crash", False)
 
-        title = get_value(settings, "program_name", "Terminal")
-        log_path_rel_to_wdir = get_value(settings, "log_path_rel_to_wdir", "..\\log.txt")
-        terminal_bg_color = get_value(settings, "terminal_bg_color", "0")
-        terminal_text_color = get_value(settings, "terminal_text_color", "F")
+        title = getattr(developer_settings, "program_name", "Terminal")
+        log_path_rel_to_wdir = getattr(developer_settings, "log_path_rel_to_wdir", "..\\log.txt")
+        terminal_bg_color = getattr(developer_settings, "terminal_bg_color", "0")
+        terminal_text_color = getattr(developer_settings, "terminal_text_color", "F")
         terminal_colors = terminal_bg_color + terminal_text_color
 
-        fancy_terminal_stylesheet_path = get_value(settings, "fancy_terminal_stylesheet_path", "")
-        fancy_terminal_accent_color_hex = get_value(settings, "fancy_terminal_accent_color_hex", "")
-        dark_mode=get_value(settings, "dark_mode", "1")
+        fancy_terminal_stylesheet_path = getattr(developer_settings, "fancy_terminal_stylesheet_path", "")
+        fancy_terminal_accent_color_hex = getattr(developer_settings, "fancy_terminal_accent_color_hex", "")
+        dark_mode = getattr(developer_settings, "dark_mode", "1")
 
-        if "python_code_name" in settings:
-            python_code_name = settings["python_code_name"]
-        else:
-            raise ValueError(f'[Error] Setting "python_code_name" not found in "{format_path(settings_file_path)}"')
-
-        script_path = python_scripts_folder_path + python_code_name
+        script_path = python_scripts_folder_path + developer_settings.python_code_name
         # raise error if script not found
         if not os.path.exists(script_path):
             raise FileNotFoundError(f'[Error] Python script not found at "{script_path}"')
@@ -120,7 +111,7 @@ try:
                 raise FileNotFoundError(f'[Error] Python executable not found at "{venv_exe_path}"')
             python_exe_for_script_path = venv_exe_path
 
-        after_python_crash_code_name = get_value(settings, "after_python_crash_code_name", "")
+        after_python_crash_code_name = getattr(developer_settings, "after_python_crash_code_name", "")
         if after_python_crash_code_name != "":
             after_python_crash_code_path = python_scripts_folder_path + after_python_crash_code_name
             if not os.path.exists(after_python_crash_code_path):
@@ -152,7 +143,7 @@ try:
                 fancy_terminal_accent_color_hex,
                 "1" if terminal_needs_input else "0",
                 fancy_terminal_stylesheet_path,
-                dark_mode
+                dark_mode,
             ]
 
             if use_uncompiled_terminal_and_run_it_in_global == True:

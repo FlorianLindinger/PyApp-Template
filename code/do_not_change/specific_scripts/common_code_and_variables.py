@@ -1,4 +1,3 @@
-import configparser
 import os
 import shutil
 import subprocess
@@ -7,11 +6,14 @@ import traceback
 from pathlib import Path
 
 #############################
+
+
+#############################
 # local variables (might also be imported by callers)
 
 file_dir = os.path.dirname(os.path.abspath(__file__)) + "\\"
 
-settings_file_path = os.path.normpath(file_dir + "..\\..\\non-user_settings.ini")
+developer_settings_path = os.path.normpath(file_dir + "..\\..\\developer_settings.py")
 
 portable_python_installer_path = os.path.normpath(file_dir + "..\\general_scripts\\create_portable_python.bat")
 portable_venv_creator_path = os.path.normpath(file_dir + "..\\general_scripts\\create_portable_venv.bat")
@@ -25,6 +27,9 @@ script_wrapper_path = file_dir + "script_wrapper.py"
 
 #############################
 # process local variables
+
+sys.path.insert(0, os.path.dirname(developer_settings_path))
+import developer_settings
 
 python_dist_path = py_env_folder_path + "\\py_dist"
 venv_dir_path = py_env_folder_path + "\\virt_env"
@@ -173,34 +178,35 @@ def error_print(message, max_wrapper_len=20, wrapper_symbol="=", red=False):
 #############################
 
 
-def val_is_true(dictionay, key, default=None):
-    """Returns True if the key exists in dictionay and its value is a truthy string, otherwise returns False or the default."""
-    if key in dictionay:
-        if dictionay[key].lower() in ("y", "yes", "true", "1"):
-            return True
-        else:
-            return False
-    else:
-        return default
+# def val_is_true(dictionay, key, default=None):
+#     """Returns True if the key exists in dictionay and its value is a truthy string, otherwise returns False or the default."""
+#     if key in dictionay:
+#         if dictionay[key].lower() in ("y", "yes", "true", "1"):
+#             return True
+#         else:
+#             return False
+#     else:
+#         return default
 
 
-def get_settings(settings_path: str) -> dict:
-    if not os.path.exists(settings_path):
-        raise FileNotFoundError(f"[Error] Settings file not found at: {settings_path}")
-    config = configparser.ConfigParser(interpolation=None)
-    try:
-        with open(settings_path, encoding="utf-8") as f:
-            config.read_string("[DEFAULT]\n" + f.read())
-        return dict(config["DEFAULT"])
-    except Exception as e:
-        raise ValueError(f"[Error] Failed to parse settings: {e}") from e
+# def get_settings(settings_path: str) -> dict:
+#     if not os.path.exists(settings_path):
+#         raise FileNotFoundError(f"[Error] Settings file not found at: {settings_path}")
+#     config = configparser.ConfigParser(interpolation=None)
+#     try:
+#         with open(settings_path, encoding="utf-8") as f:
+#             config.read_string("[DEFAULT]\n" + f.read())
+#         return dict(config["DEFAULT"])
+#     except Exception as e:
+#         raise ValueError(f"[Error] Failed to parse settings: {e}") from e
 
 
-def get_value(dictionary: dict, key: str, default: str) -> str:
-    if key in dictionary:
-        return dictionary[key]
-    else:
-        return default
+# def get_value(dictionary: dict, key: str, default: str) -> str:
+#     if key in dictionary:
+#         return dictionary[key]
+#     else:
+#         return default
+
 
 #############################
 # user interaction related functions
@@ -308,13 +314,12 @@ def delete_python_dist():
 
 def create_portable_python():
 
-    settings = get_settings(settings_file_path)
-    version = settings.get("python_version", "3.13")
+    python_version = getattr(developer_settings, "python_version", "") or ""
 
     # find what optional subparts of full python to install
-    install_tkinter = "1" if val_is_true(settings, "install_tkinter", "true") else "0"
-    install_tests = "1" if val_is_true(settings, "install_tests", "false") else "0"
-    install_tools = "1" if val_is_true(settings, "install_tools", "false") else "0"
+    install_tkinter = "1" if getattr(developer_settings, "install_tkinter", True) else "0"
+    install_tests = "1" if getattr(developer_settings, "install_tests", False) else "0"
+    install_tools = "1" if getattr(developer_settings, "install_tools", False) else "0"
     install_docs = "0"
 
     # run a batch file to install portable python and wait for finish
@@ -325,7 +330,7 @@ def create_portable_python():
                 "/c",
                 "call",
                 portable_python_installer_path,
-                version,
+                python_version,
                 py_env_folder_path,  # scripts adds py_dist
                 install_tkinter,
                 install_tests,
@@ -373,10 +378,9 @@ def create_portable_venv():
 
 
 def setup_venv():
-    """makes sure the venv exists and has correct version, if not it creates it. It does not activate it as one is expected to run the venv exe"""
-
-    settings = get_settings(settings_file_path)
-    target_v = settings.get("python_version", "3.13")
+    """Makes sure the venv exists and has correct version, if not it creates it. It does not activate it as one is expected to run the venv exe"""
+    
+    wanted_python_version=getattr(developer_settings,"python_version","")
 
     if not os.path.exists(python_exe_path):
         # python distribution not found case -> install python and delete venv if exists to renew it
@@ -393,7 +397,7 @@ def setup_venv():
         create_portable_venv()
 
     else:  # python distribution existing case
-        match = check_python_version(target_version=target_v, exe_path=python_exe_path)
+        match = check_python_version(target_version=wanted_python_version, exe_path=python_exe_path)
 
         if match:
             if not os.path.exists(venv_exe_path):
@@ -415,22 +419,7 @@ def setup_venv():
 
 
 #############################
-# miscellaneous
-#############################
-
-
-# def set_app_id(app_id) -> None:
-#     """Needed for grouping behavor in taskbar. Seems to only work for QT Windows"""
-#     try:
-#         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(app_id)
-#     except Exception:
-#         pass
-
-
-#############################
 # process local variables that are also imported by callers
 
 python_exe_path = os.path.normpath(python_dist_path + "\\python.exe")
 relative_venv_to_python_dist = os.path.relpath(python_dist_path, os.path.dirname(venv_dir_path))
-
-settings = get_settings(settings_file_path)
