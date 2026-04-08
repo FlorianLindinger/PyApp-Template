@@ -39,9 +39,3 @@ THE SOFTWARE.
 The contents of the folder `P` are files from an embeddable Python distribution which has been modified by renaming and removing some files. All remaining files fall under the license locaed at `P/LICENSE.txt`
 
 ---
-
-## Section 3: Third-Party Python Packages Pillow (MIT-CMU License)
-
-The contents of the folders `python_packages/PIL` and `python_packages/pillow-12.1.1.dist-info` are parts of the third-pary Python package `Pillow`. All these files fall under the license locaed at `python_packages/pillow-12.1.1.dist-info/licenses/LICENSE`.
-
----
