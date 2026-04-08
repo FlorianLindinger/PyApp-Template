@@ -24,6 +24,7 @@ try:
     # handle args
 
     script_path = sys.argv[1]
+    
     title = sys.argv[2]
     icon_path = sys.argv[3]
     app_id = sys.argv[4]
@@ -32,11 +33,10 @@ try:
     close_on_failure = sys.argv[7]
     close_on_success = sys.argv[8]
     log_path_rel_to_wdir = sys.argv[9]
+    
     terminal_colors = sys.argv[10]
-
     script_has_terminal = sys.argv[11]
     # script_has_terminal = "1" means that this window is run in a terminal and False that it is invisible and one needs to create a new terminal to print
-
     backend_python_exe_path = sys.argv[12]  # i guess safer for extra terminal print if the user python is broken
 
     # ==================
@@ -139,7 +139,7 @@ try:
             os.chdir(os.path.dirname(script_path))
 
         if log_path_rel_to_wdir != "":
-            log_file = open(log_path_rel_to_wdir, "w", encoding="utf-8", buffering=1)
+            log_file = open(log_path_rel_to_wdir, "w", encoding="utf-8", buffering=1) #noqa:SIM115
             atexit.register(log_file.close)
             sys.stdout = pipe_splitter(sys.__stdout__, log_file)
             sys.stderr = pipe_splitter(sys.__stderr__, log_file)
@@ -267,22 +267,21 @@ try:
             )
             run_text_in_new_terminal_and_wait(script)
 
-    finally:
-        if log_path_rel_to_wdir != "":
-            try:
-                log_file.close()  # type:ignore
-            except Exception:
-                pass
-            # sys.exit(number) is not altered by this "finally" block
-
 
 except Exception as e:
     import sys
     import traceback
 
-    print(f"[Error] Failed druing launcher script with error: {e}:")
+    print(f"[Error] Failed in wrapper script with error: {e}:")
     print("=" * 20)
     print(traceback.format_exc())
     print("=" * 20)
     input("Press enter to exit")
     sys.exit(1)
+    
+finally:
+    try:
+        log_file.close()  # type:ignore
+    except Exception:
+        pass
+    # sys.exit(number) is not altered by this "finally" block
