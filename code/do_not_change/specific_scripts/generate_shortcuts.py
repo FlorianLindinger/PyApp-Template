@@ -37,9 +37,9 @@ pythonw_exe = backend_pythonw_exe_path
 output_path = os.path.normpath(file_dir + "..\\..\\..") + "\\"
 
 launcher_py = os.path.normpath(file_dir + "..\\T.py")
-settings_py = os.path.normpath(file_dir + "..\\set.py")
-launcher_no_terminl_py = os.path.normpath(file_dir + "..\\noT.py")
-stop_no_terminal_py = os.path.normpath(file_dir + "..\\q_T.py")
+settings_py = os.path.normpath(file_dir + "..\\S.py")
+launcher_no_terminl_py = os.path.normpath(file_dir + "..\\N.py")
+stop_no_terminal_py = os.path.normpath(file_dir + "..\\Q.py")
 
 launcher_icon_path = os.path.normpath(file_dir + "..\\..\\icons\\icon.ico")
 settings_icon_path = os.path.normpath(file_dir + "..\\..\\icons\\settings.ico")
