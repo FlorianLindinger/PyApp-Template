@@ -12,13 +12,13 @@ from win32com.shell import shellcon  # type:ignore
 file_dir = os.path.dirname(os.path.abspath(__file__))+"\\"
 
 # =============================
-# import from helper_functions
+# import from common_code_and_variables.py
 # =============================
 project_root = os.path.normpath(file_dir + "..\\..")
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
-from do_not_change.specific_scripts.helper_functions import (
+from do_not_change.specific_scripts.common_code_and_variables import (
     backend_python_exe_path,
     backend_pythonw_exe_path,
     sanitize_app_id,
