@@ -2,6 +2,36 @@
 #current problems
 # #=====================================
 
+terminal emulator first menu click is slow
+
+make it prompt for closureof "terminal title" in fancy termianl
+
+change order of buttons and defaulöts in fancy termina
+
+add fading for print
+
+# how to add button settings?
+
+google more ideas for fancy stylesheet
+
+# sort stuff in terminal_emulator
+
+
+log to file as option and clickable link i guess
+
+for fancy terminal: reduce padding and optimise a litte thje style while respecting windows dark theme
+seome padding clip in top right corner
+make buttoins also 3d where they stick out if disabled and stick in for enabled. maybe hard to do with color
+text input somehow alos scaleable
+change accent slightl yfor shadow effectr
+make down arrow of menu not overlap with text
+more hove texz for to tzray
+
+change all nones in default style sheet
+
+make error print bold in fancy terminal
+
+
 show input is not working. add timestamp at same time. how to deal iwth prints that dont have \n?
 
 it does not respct settong on highlihgt and foregorund?
@@ -10,10 +40,9 @@ not working hihglihgt whne only needed-> fix is_active_window?
 
 move out terminal emulator part to compiled and leave rest python and run via runtime. but drawback is that there is no attached terminal mode. drawback is also long target path to call python and a script
 
-implement in template
+add p.returncode also for terminal eumlatopr. Make it return the errors of the python script but also ones for my crsahes?
 
-
-add settings to non-user settings
+add comments to theme.qss
 
 # #=====================================
 #fixed problems
