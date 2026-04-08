@@ -1,7 +1,9 @@
 import os
+import re
 import signal
 import sys
 import time
+import unicodedata
 
 import win32com.propsys.propsys as propsys  # type:ignore #noqa
 import win32com.propsys.pscon as pscon  # type:ignore #noqa
@@ -9,7 +11,7 @@ from win32com.client import Dispatch  # type:ignore
 from win32com.shell import shellcon  # type:ignore
 
 # move to folder of this file for correct relative paths and ensure it's in path
-file_dir = os.path.dirname(os.path.abspath(__file__))+"\\"
+file_dir = os.path.dirname(os.path.abspath(__file__)) + "\\"
 
 # =============================
 # import from common_code_and_variables.py
@@ -21,8 +23,6 @@ if project_root not in sys.path:
 from do_not_change.specific_scripts.common_code_and_variables import (
     backend_python_exe_path,
     backend_pythonw_exe_path,
-    sanitize_app_id,
-    sanitize_filename,
     settings,
     settings_file_path,
 )
@@ -34,7 +34,7 @@ from do_not_change.specific_scripts.common_code_and_variables import (
 python_exe = backend_python_exe_path
 pythonw_exe = backend_pythonw_exe_path
 
-output_path = os.path.normpath(file_dir + "..\\..\\..")+"\\"
+output_path = os.path.normpath(file_dir + "..\\..\\..") + "\\"
 
 launcher_py = os.path.normpath(file_dir + "..\\T.py")
 settings_py = os.path.normpath(file_dir + "..\\set.py")
@@ -61,23 +61,68 @@ if "settings_name" not in settings:
 if "stop_no_terminal_name" not in settings:
     input(f'[Error] Missing "stop_no_terminal_name" setting in "{settings_file_path}". Press enter to exit.')
     os.kill(os.getppid(), signal.SIGTERM)
+
 program_name = settings["program_name"]
 
-launcher_lnk_name = (
-    output_path + sanitize_filename(settings["start_name"].replace("program_name", program_name)) + ".lnk"
-)
+# ====================
 
-settings_lnk_name = (
-    output_path + sanitize_filename(settings["settings_name"].replace("program_name", program_name)) + ".lnk"
-)
+def sanitize_filename(filename, replacement="_"):
+    # 1. Characters illegal in Windows: < > : " / \ | ? *
+    # Also handles control characters (0-31)
+    illegal_chars = r'[<>:"/\\|?*\x00-\x1f]'
+    filename = re.sub(illegal_chars, replacement, filename)
+    # 2. Windows reserved filenames (CON, PRN, AUX, NUL, COM1-9, LPT1-9)
+    # These cannot be filenames even with an extension (e.g., CON.txt is bad)
+    reserved_names = {
+        "CON",
+        "PRN",
+        "AUX",
+        "NUL",
+        "COM1",
+        "COM2",
+        "COM3",
+        "COM4",
+        "COM5",
+        "COM6",
+        "COM7",
+        "COM8",
+        "COM9",
+        "LPT1",
+        "LPT2",
+        "LPT3",
+        "LPT4",
+        "LPT5",
+        "LPT6",
+        "LPT7",
+        "LPT8",
+        "LPT9",
+    }
+    # Check the "stem" (name before the dot)
+    base_name = os.path.splitext(filename)[0].upper()
+    if base_name in reserved_names:
+        filename = f"{replacement}{filename}"
+    # 3. Strip trailing dots and spaces (Windows ignores/removes these)
+    filename = filename.rstrip(". ")
+    # 4. Enforce length limit (255 characters for the filename itself)
+    if len(filename) > 255:
+        filename = filename[:255]
+    # 5. Handle empty strings (if sanitization removed everything)
+    return filename if filename else "unnamed_file"
 
-launcher_no_terminl_lnk_name = (
-    output_path + sanitize_filename(settings["start_no_terminal_name"].replace("program_name", program_name)) + ".lnk"
-)
 
-stop_no_terminal_lnk_name = (
-    output_path + sanitize_filename(settings["stop_no_terminal_name"].replace("program_name", program_name)) + ".lnk"
-)
+def sanitize_app_id(input_string):
+    # 1. Convert to lowercase and normalize unicode (e.g., convert 'é' to 'e')
+    name = unicodedata.normalize("NFKD", input_string).encode("ascii", "ignore").decode("ascii").lower()
+    # 2. Replace spaces and underscores with hyphens
+    name = re.sub(r"[\s_]+", "-", name)
+    # 3. Remove any character that isn't lowercase a-z, 0-9, a hyphen, or a dot
+    name = re.sub(r"[^a-z0-9\-\.]", "", name)
+    # 4. Remove duplicate hyphens or dots (e.g., "my--app" becomes "my-app")
+    name = re.sub(r"-+", "-", name)
+    name = re.sub(r"\.+", ".", name)
+    # 5. Trim hyphens/dots from the start and end
+    name = name.strip("-.")
+    return name
 
 
 def create_shortcut_with_appid(args, output, target=None, icon_path=None, wdir="", app_id=None, description=""):
@@ -169,6 +214,23 @@ def make_lnk(output_path, icon_path, script_path, args=None, appid=None, descrip
 
 
 def main():
+    
+    launcher_lnk_name = (
+        output_path + sanitize_filename(settings["start_name"].replace("program_name", program_name)) + ".lnk"
+    )
+
+    settings_lnk_name = (
+        output_path + sanitize_filename(settings["settings_name"].replace("program_name", program_name)) + ".lnk"
+    )
+
+    launcher_no_terminl_lnk_name = (
+        output_path + sanitize_filename(settings["start_no_terminal_name"].replace("program_name", program_name)) + ".lnk"
+    )
+
+    stop_no_terminal_lnk_name = (
+        output_path + sanitize_filename(settings["stop_no_terminal_name"].replace("program_name", program_name)) + ".lnk"
+    )
+
 
     # Generate the 4 shortcuts
     appid = sanitize_app_id(program_name)
