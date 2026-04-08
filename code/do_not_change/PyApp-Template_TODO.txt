@@ -2,31 +2,33 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
-change icon od dev_tools
+===================================
+   Unsorted
+===================================
 
-for fancy terminal: reduce padding and optimise a litte thje style while respecting windows dark theme
-seome padding clip in top right corner
-make buttoins also 3d where they stick out if disabled and stick in for enabled. maybe hard to do with color
-text input somehow alos scaleable
-change accent slightl yfor shadow effectr
-make down arrow of menu not overlap with text
-more hove texz for to tzray
+add package install to venv setup!!!!!
 
-make error print bold in fancy terminal
+i guess there is an arguemtn for non py file for user_settings because how to open for user. maybe add back toml? 
 
-option to force dark mode
+make non user settings to toml or yaml since why not or maybe just python.
+->python becasue settgins for terminal_emulator
+rename it to developer_settings and import explicitly
+add button settings
 
-i rather have differnet color setting for windows terminal and qt one
+re add running of main sript and crash scriopt and error handling
+
+add back change icon to script wrapper
+
+i guess i want restart and python_fail script no in same popen since it is kind of only needed if python completely crsahes. i guess i make the after script still for normal error exit? but there could be deliberate non 0 exit and they could always catch if they want
 
 setting to open log on crash for no terminal?
 
-save pid in code fodler
+save pid in code folder
 
-mentoipn:
+mention that args get passed to called script:
   sys.argv=[script_path,icon_path,title,close_on_crash,close_on_failure,close_on_success]
           runpy.run_path(script_path, run_name="__main__")
 
-add time to logging. maybe with "logging" package
 
 # move over arg_to_str,arg_to_bool
     def arg_to_bool(index: int, default: bool) -> bool:
@@ -40,54 +42,23 @@ add time to logging. maybe with "logging" package
             return default
         return sys.argv[index]
 
-# sort stuff in terminal_emulator
-
-add settings for fancy terminal sytlesheet to non-user settings and path to .css file to override
-how to select between path css and settings?
-
-# do i need to set style sheet to more? can i just set it to everythiong?
-
-# how to add button settings?
-
-# waht is log path relative to? malke it realcite to wdir and mention that
+clean up non-user_settings
 
 add logging? for all as option 
-->redirecrt woht -u 
-see chat: "APP id  in subprocess"
-
-#unhide with subprocess.CREATE_NO_WINDOW and launch wihdt python.exe
-
-# maybe not import stuff that does not have to be imported every time helper_funciton are imported. especially in wrapper
-
-add back change icon to python wrapper
-
-update license that python packages fall under their license
 
 add as option to have faulthandler? ["-X", "faulthandler"]. Remove all popen and subprocess.run with runpy
 
-readd color choice to all terminals
-
 fix 2 main shortcuts not beaing allowed on taskbar by differnt app_id? not copy of P.exe because grouping should match launcher
 
-prevent windows popup
-
-disable all the terminal name settin when unneded in wrapper?
-
-easy way to select terminal theme: corlor of all selection swuares and color of selected in output and inpuit and color of user input. And eventually fading color i guess.fad ig better for bg of line I guess
-
-change order of buttons and defaulöts in fancy termina
+check that:disable all the terminal name settin when unneded in wrapper?
 
 does the settings.py import even work for non same wdir
 
-make it prompt for closureof "terminal title" in fancy termianl
-
 how does dev pass button settings.
 
-does app id translate if user has GUI in main_script. Or mention how to do it if not working like in fancy terminal
+move out stuff that isnt reused from common_code...? at least if it does an import or leads to unnecessary common_code import
 
-move out stuff that isnt reused from helper_functions?
-
-readd faulthandler like:
+re-add faulthandler like: -> what does faulthandler for popen. do i need a wrapepr to add faulthandler
     # def run_python(python_exe: str, script_path: str, args: list, use_faulthandler: bool = True) -> int:
     #     cmd = [python_exe]
     #     if use_faulthandler:
@@ -99,96 +70,35 @@ readd faulthandler like:
     #         print(f"[Error] Python execution failed: {e}")
     #         return 1
 
-readd launch background where no terminal mode see launch_background
-
-here: how does the wrapper know when to create new window for prints:
-    else:  # run without terminal but create one on crash.
-          subprocess.Popen(  # noqa:S603
-            [backend_pythonw_exe_path, "-c", error_catcher_wrapper], creationflags=subprocess.CREATE_NO_WINDOW
-        )
-
-terminal emulator fisst menu click is slow
-
-shouldbd every shortcut start with terminal window and exit???? terminal_emulator.py and wrapper handle error, right
-
 make a batch in do_not_change instead of use_uncompiled_terminal_and_run_it_in_global
-how can i force it on the spot to be terminal or not. maybe another arg in start_program.- > make more batches.
+how can i force it on the spot to be terminal or not. maybe another arg in start_program.- > make more batches to simulate shortcut press but use_uncompiled_terminal_and_run_it_in_global=true
 
+chgeck that all prints in start_program are in new terminal
 
-add p.returncode also for terminal eumlatopr. Make it return the errors of the python script but also ones for my crsahes?
-
-chgekc that all prints in start_program are in new terminal
-
-add ways to launch in terminal to get all prints
-
-re add running of main sript and crash scriopt and error handling
-
-maybe make non user settings to toml
-
-addd changes from set.py and open_setrtings.py to other 3
-
-checlk what functions are needed in helper_functions
-
-make the getsettings class have custom missing message like the end user settings class
-
-pass the id_setting to main_code that do their own window. probably via wrapper
-
-    # set WDIR beofer terminal call
-
-set only app id where it does soemthing in start_program
-
-rename it to developer_settings
-
-how to catch pysie6 crash?
+how is pysie6 crash handles/catched?
 
 compare what stuff in archive needs to be added to utilitites repo
 
 fix icon generator lnk
 
-Plan: run setup and everything in embedded terminal and then launch the 3 terminal options wihtout staying open but wrap them in code that would open a terminal with error message on unhandled crash or python crahs or something.
-
-how do i transfer fany terminal settings via non-user_settings.ini
-
-should i swithc to a .py non user settings file? ->yes
-
-fix hidden launch and clsoe
-
-add option to use uncompiled terminal emulatopr
-
-implement start_in_shortcut_folder
-
-does it set app id if user makes a QT window in script?
-
-explicitly import functions from utils
-
 add to shortctu descripotion soemtinh like launchers name.py via embedded python P.exe
 
-open setting in vscode by defualt?
+open setting in vscode by defualt? if available
 
-add vscode settigns to pyproject.toml
+add vscode settigns to pyproject.toml?
 
-add readme extensiom
+update pyproject.toml but not enable the D
 
-add comments to theme.qss
-
-update pyproject.toml but not anabel the D
-
+make python versions of batches for python/venv install
 
 fidx id_of_currently_running_hidden_program not disappierung and only pappreing for hiddne
-
 fix id_of_currently_running_hidden_program not having .pid
-
- replace in code           
-icon_path=icons\icon.ico
-settings_icon_path=icons\settings.ico
-stop_icon_path=icons\stop.ico
-remove icons setting?
 
 make extra icon for no terminal mode
 
-check if pillow install is liocense safe
+is there a good way to disable syncing with setting in dev settings to not sync pillow? fractured framework template tho in production veriosn. but prodcution i guess is fair enough. Maybe only install pillow when needed-> yes. or ask AI to make minimal own version by copying all needed parts->yes, also in utilities repo
 
-install pip for first install:
+install pip for first installs:
 """
 [Info] Installing default packages...
 
@@ -198,41 +108,29 @@ install pip for first install:
 
 move general_utilties stuff into utilities repo
 
-make double clic kthing in root also into python
+???:make double click thing in root also into python
 
-chelc if emnbeddated python laincj works for shorctu grpuoping and differnetiating 
+check if embedded python works for multiple app for taskbar adding
 
 chekc what functions to copy to fun_flo in terminal scriopt
 
-cmd shortcut also works for app id with qt window
-
-make all shorctus call teh same python.exe so only one confirmation to run? does that wokr taht way
-
 update HOW_TO_CHANGE_ICONS
 
-===================================
-   Unsorted
-===================================
+test if still portable
 
-do i need activate? linking to Scipots\python does the same. But also in portable venv?
+mkae clickable link to script for main_script crash. or at least press enter "y" to open 
 
 handle modeule not foiund errror better. maybe link to script atht installs
 
-add errorlevel checks to the 1.bat ... to catch errors
-eg.C:\Users\Flo\Documents\Repositories\PyBoson\code\py_env\virt_env\portable_Scripts\..\Scripts\python.exe: can't open file 'C:\\Users\\Flo\\Documents\\Repositories\\PyBoson\\code\\do_not_change\\specific_scripts\\main_code.py': [Errno 2] No such file or directory
+i guess i dont want to reinstall same packages for changes in python version? warn that if changed it will reset venv to defauölt in dev settings?
 
--i need a script to check python distro ==  wanted and reinstalls it and deletes venv if needed and resets packages to old
--i need a scipt that creates venv if not there that calls the python script if not 
--i need a script to install packages dfrom defualt script that calls the venv script if not
--i need the main script to check for auto determine message in deauflt_package.txt 
-
+does pyhon have better options to checl waht packages are needed in main_script + its imports
 make a determine_requiremnets.txt.bat
 make a installed_packages_to_requirements.txt.bat
-make different version for not fixed versions
+make different version for not fixed package versions
 
 
-"""
-
+???:"""
 echo.
 echo ==============================================
 echo Installing discovered packages...
@@ -256,21 +154,21 @@ if %errorlevel% equ 0 (
 )
 """
 
-
 add pipreqs mappigns to all
-
-
-
 
 print lsit of packages whenever they are install from list
 print apps that will be installed with [Info] Installing packages (see below):
 
-how to ensure there is python for install_packages_needed_in_python_files.bat? use local python? and trigger its installatin wihtout venv?
--> apparently activaes to have ensured. maybe dont fore venv aswell. allow for only python install. definitetly becasue otherwise venv ,igjht already ahve worong installed.
-definitely chekc if python vertison correct
-
 add prints to install_packages_needed_in_python_files.bat
 . maybe also what was before nad what is now and maybe diff
+
+are there ways to make embeded python more trusted so it does not prompt for first time?
+
+add shortcut to log? 
+
+add log mode to only append. What is limit here????
+
+renamed to DONT_CHANGE bc shorter
 
 ===================================
 important
@@ -278,47 +176,14 @@ important
 
 sanastize app name before using in shortcuts tarrget and shortuct name and appid
 
-add descript ón to shorticts
-
-
 shortcuts can fail if properties open. am i deletingand chekcing afterwars?
 
+how to katch module not found error? maybe ahve minimum open time of main_script? ->At least if it restarts forever->sleep?mention that. somehow python should be in charge and able to fail. maybe only catch if defualt_packages.txt still has its default "trigger text"-> have default text in defualt_packages.txt to indicate that it was not chagned and inform user by call and fail for modeul not foiund that they have to isntall via "xyz" and link to that.
 
-maybe run batch via : 
-"""
-3. "Portable" Application Launchers (NSIS / Inno Setup)
-You can use a tool like NSIS (Nullsoft Scriptable Install System) to create a small "Launcher executable."
+even notepad.exe for dev_tools required confirmation i guess? better ways? maybe also same embeddded python
 
-How it works: NSIS is a scripting language that compiles into a very small, high-reputation .exe. It is used by thousands of apps (like VLC, Spotify).
-
-The Script: You write a script that says "Execute runtime\python.exe main.py and hide the window."
-
-AV Safety: High. NSIS has a very high reputation with Antivirus companies. It is rarely flagged compared to PyInstaller.
-
-Grouping: Excellent. The NSIS .exe can have its own icon embedded directly in the file.
-"""
-
-move all batch stuff to pyhon with runtime? need a non cmd.exe for shortcut target.
-i cant use the installed python since it might not be there anymore and ligic might change in verisons. I guess i can use the pyrton dist directly and then activae and run the script. But then i need to make sure the python dist is there. . actually jsut need python to run the batch which then can do whateveer needed. But if hte bartch fails then the shortcut will not work again and nothing can recover
-
-
-
-mention recent improivenetmns to taskabr combining and setting to start in shortcut folder
-
-# somehow pass wdir via shortcuts. maybe have setting to start in shortcut folder or app folder?
-
-app id should be passed from shortcut such that always correct app id is used
-# Tell Windows to use this AppID for this process
-myAppID = sys.argv[1]
-ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myAppID)
-
-how to katch model not found error? maybe ahve minimum open time? somehow python should be in charge and able to fail. maybe only katch if defualt_packages.txt still has trigger text
-
-even notepad.exe for dev_tools required confirmation
-
-is python_code_path setting working with pipreqs
-
-make somehow shortcut generation lnk not require admin. Maybe icon is ont worth it and batch would do
+ does it still do that???:make somehow shortcut generation lnk not require admin. Maybe icon is ont worth it and batch would do.. Maybe change icon of P.exe and call directly? do i bake a icon into P.exe?
+ add comment to that shortcut
 
 add good settings for pyrefly for pyproject.toml
 
@@ -336,17 +201,17 @@ unrealated
 
 syncrhonize extensions vscode antigraivy
 
-add venv to python->exe (see folder compiler)
+add venv to "python->exe" (see folder compiler)
 test if 
   --nofollow-import-to=*.tests ^
 for all
 
-add docstrings to python to exe scripts
+add docstrings to "python to exe" scripts
 
 create license template for folder exe compiler
-also chack for template
+also check for template
 
-inm python compialtion batches. make input a txt file for additional nuitka args
+in python compialtion batches. make input a txt file for additional nuitka args
 
 fix pipreqs for single script:
 """
@@ -405,8 +270,6 @@ Mention that paths have to be relative to work as portable. On other hand it wil
 
 how to deal with license for exe creators and git uploading?
 
-make venv optional for all compilatioon scrits
-
 update python verison checkfr from template to utilites
 
 
@@ -416,15 +279,11 @@ checks related
 
 chekc if works for download via git
 
-
 check if open_terminal_for_manual installation batch works
-
 
 cehck if all pyhthon, pip have call before
 
-
 need close of setting lnk? check
-
 
 test if it works for 3.6 and update min in github text
 
@@ -554,6 +413,9 @@ check if existance checks needed
 settings ideas
 ===================================
 
+add settings for fancy terminal sytlesheet to non-user settings and path to .qss file to override
+how to select between path qss and settings?
+
 add option to always open settings with program start
 
  auto open log on crash
@@ -575,8 +437,11 @@ add option to not have any prints from batch files?
 check if i can add stoppping of closing terminal for non pyqt5
 
 ===================================
-batch related & ideas related
+new script related & ideas related
 ===================================
+
+add time to logging. maybe with "logging" package
+
 
 make a tkinter terminal instead of pyqt5 becasue no packages needed
 
@@ -725,6 +590,9 @@ Check Git remote for updates and prompt user to pull.
 readme related  and documentation related
 ===================================
 
+mention setting to start in shortcut folder
+
+
 finish readme in do_not_change
 
 add comment to all settings: REM add a "." if otherwise backslashes are at the end  ???
@@ -738,7 +606,7 @@ do i have to mention that "install packages needed for fiels only searches in co
 
 explain limitation to name: has to be allowed in names i guess. check if shortucts gernrator breaks: not allowed in names \ / : * ? " < > |
 
-add doctrings to batches
+add doctrings to scripts
 
 describe in main readme quick start better that on can have differnt file edning in settings 
 
@@ -790,11 +658,9 @@ license related
 
 checlk if licensing of new folder exe "generate icons" is correct
 
-
 mention what the effective license allows and difference to MIT
 
-
-add explanation for pyq5 license
+add explanation for pyqt6 license
 
 ===================================
 small improvements related
@@ -806,50 +672,17 @@ improve icon of do_not_change
 
 print script name and path when error possible?
 
-
 dont print installation if requirements.txt is empty
 
 make it not genrate shrotcut for no settings availagle. mention no settings posible
-
-
-change all to "Press enter to" for safety
-
 
 dont print installing packages if None
 print that it instally python for first exectiun. maybe less spam?
 maybe print ===========================
 
-make all rem to REM
-
-add error number to [Error]
-
-replace CD wiht pushd and popd because they only change errorlevel on fail->check if better
-
-add actiavtgion check in
-python_env_activation_code_path?
-
-and handle returned errorlevel everhywher
-
 let AI check every file
-
-make fail checks like: || goto :fail
-
-add more errorlevels everywhere
-
-make everyhwre same ehco style and code style
-
-add more crash tests and stops everywhere 
 
 ask AI for speedup and safety and robustness improvmens and also comments and docsttirngs
 
-make icon cahnge exe smaller
-
-make all global variables CAPITALIZED
-
-replace all copy with robocopy
-
-
-remove if nonoe:
-[Info] installing packages
 
 ===================================
