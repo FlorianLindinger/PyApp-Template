@@ -24,7 +24,7 @@ try:
     import sys
 
     # =============================
-    # import from helper_functions
+    # import from common_code_and_variables.py
     # =============================
 
     file_dir = os.path.dirname(os.path.abspath(__file__))
@@ -32,9 +32,8 @@ try:
     if project_root not in sys.path:
         sys.path.insert(0, project_root)
 
-    from do_not_change.specific_scripts.helper_functions import (
+    from do_not_change.specific_scripts.common_code_and_variables import (
         backend_python_exe_path,
-        backend_pythonw_exe_path,
         error_print,
         format_path,
         get_value,
@@ -101,6 +100,7 @@ try:
 
         fancy_terminal_stylesheet_path = get_value(settings, "fancy_terminal_stylesheet_path", "")
         fancy_terminal_accent_color_hex = get_value(settings, "fancy_terminal_accent_color_hex", "")
+        dark_mode=get_value(settings, "dark_mode", "1")
 
         if "python_code_name" in settings:
             python_code_name = settings["python_code_name"]
@@ -152,6 +152,7 @@ try:
                 fancy_terminal_accent_color_hex,
                 "1" if terminal_needs_input else "0",
                 fancy_terminal_stylesheet_path,
+                dark_mode
             ]
 
             if use_uncompiled_terminal_and_run_it_in_global == True:
