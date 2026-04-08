@@ -75,7 +75,7 @@ try:
     if script_has_terminal:
         from ctypes import wintypes
 
-        def set_terminal_icon(icon_path: str, print_errors: bool = True) -> int:
+        def set_terminal_icon(icon_path: str, print_errors: bool = False) -> int:
             """Change the icon of the current terminal window and return the first touched hwnd."""
 
             WM_SETICON = 0x0080
