@@ -23,8 +23,7 @@ if project_root not in sys.path:
 from do_not_change.specific_scripts.common_code_and_variables import (
     backend_python_exe_path,
     backend_pythonw_exe_path,
-    settings,
-    settings_file_path,
+    developer_settings,
 )
 
 # =============================
@@ -46,25 +45,8 @@ settings_icon_path = os.path.normpath(file_dir + "..\\..\\icons\\settings.ico")
 launcher_no_terminl_icon_path = os.path.normpath(file_dir + "..\\..\\icons\\icon.ico")
 stop_no_terminal_icon_path = os.path.normpath(file_dir + "..\\..\\icons\\stop.ico")
 
-if "program_name" not in settings:
-    input(f'[Error] Missing "program_name" setting in "{settings_file_path}". Press enter to exit.')
-    os.kill(os.getppid(), signal.SIGTERM)
-if "start_name" not in settings:
-    input(f'[Error] Missing "start_name" setting in "{settings_file_path}". Press enter to exit.')
-    os.kill(os.getppid(), signal.SIGTERM)
-if "start_no_terminal_name" not in settings:
-    input(f'[Error] Missing "start_no_terminal_name" setting in "{settings_file_path}". Press enter to exit.')
-    os.kill(os.getppid(), signal.SIGTERM)
-if "settings_name" not in settings:
-    input(f'[Error] Missing "settings_name" setting in "{settings_file_path}". Press enter to exit.')
-    os.kill(os.getppid(), signal.SIGTERM)
-if "stop_no_terminal_name" not in settings:
-    input(f'[Error] Missing "stop_no_terminal_name" setting in "{settings_file_path}". Press enter to exit.')
-    os.kill(os.getppid(), signal.SIGTERM)
-
-program_name = settings["program_name"]
-
 # ====================
+
 
 def sanitize_filename(filename, replacement="_"):
     # 1. Characters illegal in Windows: < > : " / \ | ? *
@@ -214,26 +196,17 @@ def make_lnk(output_path, icon_path, script_path, args=None, appid=None, descrip
 
 
 def main():
-    
-    launcher_lnk_name = (
-        output_path + sanitize_filename(settings["start_name"].replace("program_name", program_name)) + ".lnk"
-    )
 
-    settings_lnk_name = (
-        output_path + sanitize_filename(settings["settings_name"].replace("program_name", program_name)) + ".lnk"
-    )
+    launcher_lnk_name = output_path + sanitize_filename(developer_settings.start_name) + ".lnk"
 
-    launcher_no_terminl_lnk_name = (
-        output_path + sanitize_filename(settings["start_no_terminal_name"].replace("program_name", program_name)) + ".lnk"
-    )
+    settings_lnk_name = output_path + sanitize_filename(developer_settings.settings_name) + ".lnk"
 
-    stop_no_terminal_lnk_name = (
-        output_path + sanitize_filename(settings["stop_no_terminal_name"].replace("program_name", program_name)) + ".lnk"
-    )
+    launcher_no_terminl_lnk_name = output_path + sanitize_filename(developer_settings.start_no_terminal_name) + ".lnk"
 
+    stop_no_terminal_lnk_name = output_path + sanitize_filename(developer_settings.stop_no_terminal_name) + ".lnk"
 
     # Generate the 4 shortcuts
-    appid = sanitize_app_id(program_name)
+    appid = sanitize_app_id(developer_settings.program_name)
     # replace and shorten if too long which might cause path length limit problems (10 is arbitrary)
     if len(appid) > 15:
         appid.replace("-", "").replace(".", "")

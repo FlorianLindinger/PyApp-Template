@@ -15,16 +15,16 @@ if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
 from do_not_change.specific_scripts.common_code_and_variables import (
+    developer_settings,
+    developer_settings_path,
     error_print,
     make_abs_path_relative_to_file,
-    settings,
-    settings_file_path,
 )
 
 # ==========================================================================
 # code execution
 
-pid_path = make_abs_path_relative_to_file(settings["process_id_file_path"], settings_file_path)
+pid_path = make_abs_path_relative_to_file(developer_settings.process_id_file_path, developer_settings_path)
 
 if not os.path.exists(pid_path):
     print(f"[Info] No PID file found at {pid_path}.")

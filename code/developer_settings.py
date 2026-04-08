@@ -1,0 +1,87 @@
+# ============================
+# ==== important settings ====
+# ============================
+
+# -------------------------------------------------
+# Name of the this program, the terminal, and shortcuts (white space allowed):
+program_name = "PyApp-Template"
+# -------------------------------------------------
+# Python version. Can be in format "x"/"x.y"/"x.y.z". Finds latest (msi-install-available) Python version compatible with this setting. Empty string "" gives latest (not recommended if you want to make sure the code works always the same):
+python_version = "3.13"
+# -------------------------------------------------
+# Option (True or False) to restart main code ("python_code_name" setting below) when python crashes (or python returns not 0 with "sys.exit(returned_number)") instead of starting the after python crash script ("after_python_crash_code_path" setting below). It will pass the argument "crashed" to python for the restarts (python can check for that with sys.argv[-1]=="crashed"))
+restart_main_code_on_crash = False
+# -------------------------------------------------
+# Path of user settings file (file can be deleted)
+user_settings_path = "settings.py"
+# -------------------------------------------------
+# Decide if global python (python & packages need to be installed manually on PC) should be used instead of automatic localized download and installation of all.
+use_global_python = False
+# -------------------------------------------------
+# Decide what parts of vanilla full Python install you actually need (enabling all is ~90 MB, disabling all is ~47 MB):
+#   Include Tkinter GUI library? Required for Tk-based GUIs or IDLE and used as default backend for matplotlib.pyplot. (~11 MB):
+install_tkinter = True
+# -------------------------------------------------
+# Decide working directory behavior.
+# True  = Start in the folder where the shortcut is located
+# False = Start in the "code" folder
+start_in_shortcut_folder = False
+# -------------------------------------------------
+
+# =================================
+# ==== less important settings ====
+# =================================
+
+# -------------------------------------------------
+# Decide what parts of vanilla full Python install you actually need (enabling all is ~90 MB, disabling all is ~47 MB):
+#   Include Python's internal test suite (Lib/test)? Only needed for interpreter testing. (~31 MB):
+install_tests = False
+#   Include Python's "Tools" folder? Needed for: Language translation workflows/Python's code demos/old editors/old exe converters. (~1 MB, some installation time):
+install_tools = False
+# -------------------------------------------------
+# Name of Python code file:
+python_code_name = "main_code.py"
+after_python_crash_code_name = "after_python_crash_code.py"
+
+# -------------------------------------------------
+# Names of generated shortcuts ("program_name" in name will be replaced with the value of the variable "program_name" (setting above)):
+start_name = f"{program_name}"
+start_no_terminal_name = f"{program_name} (with log & no terminal)"
+settings_name = f"{program_name} - settings"
+stop_no_terminal_name = f"stop (no-terminal) {program_name}"
+# -------------------------------------------------
+
+# ================================
+
+
+# Path of the log output if the program is run in no-terminal mode:
+log_path_rel_to_wdir = "..\\log.txt"
+
+
+log_even_with_terminal = True
+
+close_on_crash = False
+close_on_failure = False
+close_on_success = False
+
+
+# ================================
+use_fancy_terminal = False
+# ================================
+terminal_needs_input = True
+use_uncompiled_terminal_and_run_it_in_global = False
+fancy_terminal_accent_color_hex = "todo"  # leave empty for windows accent color, or provide hex color (e.g. #FF0000 for red). Only used if "use_fancy_terminal" is True.
+
+fancy_terminal_stylesheet_path = "fancy_terminal_stylesheet.py"
+button_settings = ""
+# ================================
+# -------------------------------------------------
+# Terminal colors (leave empty for windows default. Options:
+# Background:
+# 0=Black,1=Blue,2=Green,3=Aqua,4=Red,5=Purple,6=Yellow,8=Gray,7=White,9=LightBlue
+# Text:
+# A=LightGreen,B=LightAqua,C=LightRed,,D=LightPurple,E=LightYellow,F=BrightWhite)
+terminal_bg_color = "9"
+terminal_text_color = "F"
+
+process_id_file_path = "TODO_PID.pid"
