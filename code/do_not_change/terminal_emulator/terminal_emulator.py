@@ -18,7 +18,6 @@ try:
     except ImportError:
         from typing_extensions import override  # Python 3.11 and earlier
 
-
     from PySide6.QtCore import QProcess, QSignalBlocker, Qt, QTimer
     from PySide6.QtGui import QAction, QColor, QIcon, QPalette, QTextCharFormat, QTextCursor
     from PySide6.QtWidgets import (
@@ -54,7 +53,6 @@ try:
     DARKEST_GRAY = "#101010"
     ALMOST_BLACK = "#050505"
 
-
     WINDOW_BG = "#1c1b1b"
     TOP_BAR_BG = "#1a1919"
 
@@ -73,7 +71,6 @@ try:
     MENU_BUTTON_BG = BUTTON_BG
     MENU_BUTTON_HOVER_BG = BUTTON_HOVER_BG
     MENU_BUTTON_BORDER = BUTTON_BORDER
-
 
     default_QSS = (
         "QPushButton, QToolButton {"
@@ -162,10 +159,8 @@ try:
         "}"
     )
 
-
     # =============
     # definitions
-
 
     # classes
     class Input_line(QLineEdit):
@@ -205,7 +200,6 @@ try:
 
             else:
                 super().keyPressEvent(event)
-
 
     class Terminal_window(QMainWindow):
         def __init__(
@@ -272,7 +266,8 @@ try:
 
             # Create the final default settings dictionary (label: settings_dict) with fallback base_default_button_settings if not defined in altered_default_button_settings
             default_button_settings: dict[str, dict[str, bool]] = {
-                label: {**base_default_button_settings, **overrides} for label, overrides in altered_default_button_settings
+                label: {**base_default_button_settings, **overrides}
+                for label, overrides in altered_default_button_settings
             }
             if button_settings is None:
                 button_settings = {}
@@ -398,7 +393,9 @@ try:
                     menu_row_button.setObjectName("restart_menu_button")
 
                 menu_row_button.setMinimumWidth(130)
-                menu_row_button.clicked.connect(lambda _=False, button_name=label: self._press_button_in_menu(button_name))
+                menu_row_button.clicked.connect(
+                    lambda _=False, button_name=label: self._press_button_in_menu(button_name)
+                )
                 menu_row_layout.addWidget(menu_row_button, 1)
                 self._menu_buttons[label] = menu_row_button
 
@@ -938,7 +935,9 @@ try:
             else:
                 self.process.setWorkingDirectory("")
 
-            self.process.start(self.python_exe, ["-u", self.script_path])  # -u makes the prints not be buffered aka delayed
+            self.process.start(
+                self.python_exe, ["-u", self.script_path]
+            )  # -u makes the prints not be buffered aka delayed
             self._set_input_enabled(True)
             self.set_button_clickable_state("stop", True)
             if not self.process.waitForStarted(3000):
@@ -1205,9 +1204,7 @@ try:
             self._cleanup()
             super().closeEvent(event)
 
-
     # miscellaneous
-
 
     class pipe_splitter:
         """use like the following example to save prints and errors to log file and print to console at same time:
@@ -1227,7 +1224,6 @@ try:
             for stream in self.streams:
                 stream.flush()
 
-
     def set_app_id(app_id) -> None:
         """Needed for grouping behavor in taskbar. Seems to only work for QT GUI windows"""
         try:
@@ -1235,19 +1231,16 @@ try:
         except Exception:
             pass
 
-
     def arg_to_bool(index: int, default: bool) -> bool:
         if len(sys.argv) <= index:
             return default
 
         return sys.argv[index].strip().lower() in {"1", "true", "yes", "on"}
 
-
     def arg_to_str(index: int, default: str = "") -> str:
         if len(sys.argv) <= index:
             return default
         return sys.argv[index]
-
 
     def load_variable_from_file(file_path: str, variable_name: str):
         path = Path(file_path).resolve()
@@ -1261,19 +1254,14 @@ try:
 
         return getattr(module, variable_name)
 
-
     def is_valid_hex_color(color_str: str) -> bool:
         color = QColor(color_str)
         return color.isValid()
 
-
     # main
 
-    # def main() -> int:
-    #     global INPUT_PRINT
-    #     global log_path_rel_to_wdir
-    #     global log_file
-        # script_path,python_exe,title,icon_path,app_id
+    def main() -> int:
+        global INPUT_PRINT
 
         # process args
         if len(sys.argv) < 2:
@@ -1302,7 +1290,7 @@ try:
             set_app_id(app_id)
 
         if log_path_rel_to_wdir != "":
-            log_file = open(log_path_rel_to_wdir, "w", encoding="utf-8", buffering=1) #noqa:SIM115
+            log_file = open(log_path_rel_to_wdir, "w", encoding="utf-8", buffering=1)  # noqa:SIM115
             atexit.register(log_file.close)
             sys.stdout = pipe_splitter(sys.__stdout__, log_file)
             sys.stderr = pipe_splitter(sys.__stderr__, log_file)
@@ -1353,7 +1341,6 @@ try:
         window.show()
         return app.exec()
 
-
     # =============
     # execute
     if __name__ == "__main__":
@@ -1372,7 +1359,7 @@ except Exception as e:
 
 finally:
     try:
-        log_file.close()  # type:ignore
+        log_file.close()  # type:ignore #noqa
     except Exception:
         pass
     # sys.exit(number) is not altered by this "finally" block
