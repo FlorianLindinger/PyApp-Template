@@ -6,6 +6,12 @@
    Unsorted
 ===================================
 
+move out common variables from common functions i guess
+
+is there a drawpack in having P.lnk to P\P.exe? for shortness
+
+choose even shorter shortcut path ->named like set.py
+
 test PID stop
 
 add package install to venv setup!!!!!
@@ -686,5 +692,6 @@ let AI check every file
 
 ask AI for speedup and safety and robustness improvmens and also comments and docsttirngs
 
+mention in outer most license what licenses the template backend has
 
 ===================================
