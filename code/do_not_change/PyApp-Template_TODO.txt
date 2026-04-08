@@ -6,6 +6,8 @@
    Unsorted
 ===================================
 
+test PID stop
+
 add package install to venv setup!!!!!
 
 i guess there is an arguemtn for non py file for user_settings because how to open for user. maybe add back toml? 
@@ -494,7 +496,7 @@ option to install globally thet program
 
 Add relativ starters aka no shortuct?
 
-Change icon in top left corner 
+Change icon in top left corner somehow
 
 Run terminal in Browser 
 + start with bookmark 
