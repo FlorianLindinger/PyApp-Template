@@ -1,5 +1,4 @@
 import os
-import sys
 
 #############################
 # variables
@@ -10,6 +9,7 @@ get_dir = lambda x: os.path.dirname(x)  # noqa
 file_dir = get_dir(make_abs(__file__)) + "\\"
 
 developer_settings_path = make_abs("..\\..\\developer_settings.py")
+developer_settings_dir=get_dir(developer_settings_path)
 
 portable_python_installer_path = make_abs("..\\general_scripts\\create_portable_python.bat")
 portable_venv_creator_path = make_abs("..\\general_scripts\\create_portable_venv.bat")
@@ -31,9 +31,6 @@ uncompiled_terminal_path = make_abs("..\\terminal_emulator\\terminal_emulator.py
 
 if python_scripts_folder_path != "" and python_scripts_folder_path[-1] != "\\":
     python_scripts_folder_path += "\\"
-
-sys.path.insert(0, get_dir(developer_settings_path))
-import developer_settings  # noqa
 
 python_dist_path = py_env_folder_path + "\\py_dist"
 venv_dir_path = py_env_folder_path + "\\virt_env"

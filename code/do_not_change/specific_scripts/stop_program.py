@@ -8,14 +8,11 @@ import time
 import traceback
 
 # ==========================================================================
-# import from common_code_and_variables.py
+# import from common variables and developer settings
+from do_not_change.specific_scripts.common_variables import developer_settings_dir, developer_settings_path
 
-file_path = os.path.dirname(os.path.abspath(__file__))
-project_root = os.path.normpath(file_path + "\\..\\..")
-if project_root not in sys.path:
-    sys.path.insert(0, project_root)
-
-from do_not_change.specific_scripts.common_variables import developer_settings, developer_settings_path
+sys.path.insert(0, developer_settings_dir)
+import developer_settings
 
 # ==========================================================================
 # needed functions

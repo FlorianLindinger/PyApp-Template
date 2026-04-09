@@ -1,6 +1,7 @@
 import os
 import re
 import signal
+import sys
 import time
 import unicodedata
 
@@ -18,8 +19,11 @@ file_dir = os.path.dirname(os.path.abspath(__file__)) + "\\"
 
 from do_not_change.specific_scripts.common_variables import (
     backend_python_exe_path,
-    developer_settings,
+    developer_settings_dir,
 )
+
+sys.path.insert(0, developer_settings_dir)
+import developer_settings
 
 # =============================
 
@@ -202,7 +206,8 @@ def main():
         launcher_no_terminl_icon_path,
         launcher_no_terminl_py,
         args=appid,
-        appid=appid+"W",  # add "W" for windowless to allow both launchers to pin to taskbar because different app-id (for same shortcut target)
+        appid=appid
+        + "W",  # add "W" for windowless to allow both launchers to pin to taskbar because different app-id (for same shortcut target)
         description="WIP",
     )
     make_lnk(stop_no_terminal_lnk_name, stop_no_terminal_icon_path, stop_no_terminal_py, description="WIP")
