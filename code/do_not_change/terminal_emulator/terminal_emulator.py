@@ -1284,7 +1284,7 @@ try:
         accent_color_hex = arg_to_str(11, "")
         terminal_needs_input = arg_to_bool(12, True)
         stylesheet_path = arg_to_str(13, "")
-        dark_mode = arg_to_str(14, "1")
+        dark_mode = arg_to_str(14, "1") #no bool because "auto" ... could also be option that should not be turned to True
 
         if app_id != "":
             set_app_id(app_id)
@@ -1328,7 +1328,6 @@ try:
                             f'[Error] Provided accent color ("{accent_color_hex}") is not a valid hex color for PySide6. Falling back to Windows accent color.'
                         )
                     windows_accent_color = app.palette().color(QPalette.ColorRole.Accent).name()
-                    print(windows_accent_color)
                     QSS = default_QSS.replace("%acccent_color_placeholder%", windows_accent_color)
                     INPUT_PRINT = windows_accent_color
             app.setStyleSheet(QSS)

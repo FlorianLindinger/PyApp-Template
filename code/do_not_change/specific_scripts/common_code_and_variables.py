@@ -21,7 +21,6 @@ portable_venv_creator_path = os.path.normpath(file_dir + "..\\general_scripts\\c
 py_env_folder_path = os.path.normpath(file_dir + "..\\..\\py_env")
 
 backend_python_exe_path = os.path.normpath(file_dir + "..\\P\\P.exe")
-backend_pythonw_exe_path = os.path.normpath(file_dir + "..\\P\\Pw.exe")
 
 script_wrapper_path = file_dir + "script_wrapper.py"
 
@@ -386,7 +385,7 @@ def setup_venv():
         # python distribution not found case -> install python and delete venv if exists to renew it
 
         print(
-            "\n" * 3
+            "\n" * 5
         )  # because the batch called in create_portable_python() hides the top of the terminal in between.
         print("[Info] Python distribution not found. Installing portable Python and creating virtual environment:")
 
