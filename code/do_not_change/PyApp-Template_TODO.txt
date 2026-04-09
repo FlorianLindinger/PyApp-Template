@@ -10,6 +10,8 @@ renamed: generate requiremtns to "generate lsit of ...". Add readme that explain
 
 do i have to install pipreqs in venv of portable???? no i guess so install in embeddable
 
+move default packages to "code" folder?
+
 do i somehow want default python_palckages in developers? or even whole env folder??? but then i also move icon to that . maybe yes? at this point i can also move everything there??? including script
 
 add a "save current packages to .txt" script.
