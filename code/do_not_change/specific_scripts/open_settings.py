@@ -13,10 +13,12 @@ if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
 from do_not_change.specific_scripts.common_code_and_variables import (
-    developer_settings,
-    developer_settings_path,
     make_abs_path_relative_to_file,
     open_in_editor,
+)
+from do_not_change.specific_scripts.common_variables import (
+    developer_settings,
+    developer_settings_path,
 )
 
 # ==========================================================================
