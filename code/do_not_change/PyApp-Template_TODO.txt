@@ -6,6 +6,13 @@
 very important
 ===================================
 
+do i somehow want default python_palckages in developers? or even whole env folder??? but then i also move icon to that . maybe yes? at this point i can also move everything there??? including script
+
+add a "save current packages to .txt" script.
+make all to python scripts called by shortcuts i guess
+
+make develper tools fodler to actual folder with structute and shortcuts to call everyrginh
+
 change it to "for_developers" and add developer_setting
 
 re add running of main sript and crash scriopt and error handling
