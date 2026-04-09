@@ -32,7 +32,7 @@ try:
     if project_root not in sys.path:
         sys.path.insert(0, project_root)
 
-    from do_not_change.specific_scripts.common_code_and_variables import (
+    from do_not_change.specific_scripts.common_code import (
         error_print,
         input_red,
         setup_venv,
