@@ -22,7 +22,6 @@ if project_root not in sys.path:
 
 from do_not_change.specific_scripts.common_code_and_variables import (
     backend_python_exe_path,
-    backend_pythonw_exe_path,
     developer_settings,
 )
 
@@ -31,7 +30,6 @@ from do_not_change.specific_scripts.common_code_and_variables import (
 # local settings:
 
 python_exe = backend_python_exe_path
-pythonw_exe = backend_pythonw_exe_path
 
 output_path = os.path.normpath(file_dir + "..\\..\\..") + "\\"
 
@@ -164,7 +162,7 @@ def create_shortcut_with_appid(args, output, target=None, icon_path=None, wdir="
                 print(f"[Warning] Failed to set AppID: {e}")
 
 
-def make_lnk(output_path, icon_path, script_path, args=None, appid=None, description="", terminal=True):
+def make_lnk(output_path, icon_path, script_path, args=None, appid=None, description=""):
 
     print(f"[Info] Generating: {output_path}")
 
@@ -173,26 +171,15 @@ def make_lnk(output_path, icon_path, script_path, args=None, appid=None, descrip
     else:
         shortcut_args = f'"{script_path}"'
 
-    if terminal == True:
-        create_shortcut_with_appid(
-            args=shortcut_args,
-            output=output_path,
-            app_id=appid,
-            icon_path=icon_path,
-            target=python_exe,
-            wdir="",
-            description=description,
-        )
-    else:
-        create_shortcut_with_appid(
-            args=shortcut_args,
-            output=output_path,
-            app_id=appid,
-            icon_path=icon_path,
-            target=pythonw_exe,
-            wdir="",
-            description=description,
-        )
+    create_shortcut_with_appid(
+        args=shortcut_args,
+        output=output_path,
+        app_id=appid,
+        icon_path=icon_path,
+        target=python_exe,
+        wdir="",
+        description=description,
+    )
 
 
 def main():
@@ -219,7 +206,7 @@ def main():
         launcher_no_terminl_icon_path,
         launcher_no_terminl_py,
         args=appid,
-        appid=appid,
+        appid=appid+"W",  # add "W" for windowless to allow both launchers to pin to taskbar because different app-id (for same shortcut target)
         description="WIP",
     )
     make_lnk(stop_no_terminal_lnk_name, stop_no_terminal_icon_path, stop_no_terminal_py, description="WIP")

@@ -6,6 +6,8 @@
 very important
 ===================================
 
+change it to "for_developers" and add developer_setting
+
 re add running of main sript and crash scriopt and error handling
 
 add package install to venv setup!!!!!
@@ -13,9 +15,24 @@ add package install to venv setup!!!!!
 save pid in code folder
 test PID stop
 
+developer_tools:I guess make all to shortcut of P.exe and script? hm i made it like it is at the moment to be able to add or remove at any moment
+
+add logging? for all as options
+
+clean up non-user_settings
+
 ===================================
    Unsorted
 ===================================
+
+does fallback_terminal_icon work for compiled?
+
+make developer_settings.py cliclable. Maybe via shortcut to file in dev_tools? what if i just stopped caring about changes to developer settings folder. It would be noce to not have developer_setting be part of any backend update
+hm maybe i also just add a "additional batch" folder? and pass it to normal folder when where all are shortcuts for next major version update?
+
+imporve spacing of prints for messages that everyone sees at install
+
+maybe not auto closs on done of start_program when venv or dist gets installed
 
 for error in main_script: dont print traceback to runpy I guess.
 
@@ -49,9 +66,6 @@ move out common variables from common functions i guess
             return default
         return sys.argv[index]
 
-clean up non-user_settings
-
-add logging? for all as option 
 
 add as option to have faulthandler? ["-X", "faulthandler"]. Remove all popen and subprocess.run with runpy
 
@@ -84,8 +98,6 @@ how is pysie6 crash handles/catched?
 
 compare what stuff in archive needs to be added to utilitites repo
 
-fix icon generator lnk
-
 add to shortctu descripotion soemtinh like launchers name.py via embedded python P.exe
 
 open setting in vscode by defualt? if available
@@ -98,8 +110,6 @@ make python versions of batches for python/venv install
 
 fidx id_of_currently_running_hidden_program not disappierung and only pappreing for hiddne
 fix id_of_currently_running_hidden_program not having .pid
-
-make extra icon for no terminal mode
 
 is there a good way to disable syncing with setting in dev settings to not sync pillow? fractured framework template tho in production veriosn. but prodcution i guess is fair enough. Maybe only install pillow when needed-> yes. or ask AI to make minimal own version by copying all needed parts->yes, also in utilities repo
 
