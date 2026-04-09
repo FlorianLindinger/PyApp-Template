@@ -6,33 +6,16 @@ import traceback
 from pathlib import Path
 
 #############################
-
-
-#############################
-# local variables (might also be imported by callers)
-
-file_dir = os.path.dirname(os.path.abspath(__file__)) + "\\"
-
-developer_settings_path = os.path.normpath(file_dir + "..\\..\\developer_settings.py")
-
-portable_python_installer_path = os.path.normpath(file_dir + "..\\general_scripts\\create_portable_python.bat")
-portable_venv_creator_path = os.path.normpath(file_dir + "..\\general_scripts\\create_portable_venv.bat")
-
-py_env_folder_path = os.path.normpath(file_dir + "..\\..\\py_env")
-
-backend_python_exe_path = os.path.normpath(file_dir + "..\\P\\P.exe")
-
-script_wrapper_path = file_dir + "script_wrapper.py"
-
-#############################
-# process local variables
-
-sys.path.insert(0, os.path.dirname(developer_settings_path))
-import developer_settings
-
-python_dist_path = py_env_folder_path + "\\py_dist"
-venv_dir_path = py_env_folder_path + "\\virt_env"
-venv_exe_path = venv_dir_path + "\\Portable_Scripts\\python.bat"
+from do_not_change.specific_scripts.common_variables import (
+    developer_settings,
+    file_dir,
+    portable_python_installer_path,
+    portable_venv_creator_path,
+    py_env_folder_path,
+    python_dist_path,
+    venv_dir_path,
+    venv_exe_path,
+)
 
 #############################
 # file related/path related
@@ -170,41 +153,6 @@ def error_print(message, max_wrapper_len=20, wrapper_symbol="=", red=False):
         print(f"{wrapper_symbol * msg_len}\033[0m")
     else:
         print(wrapper_symbol * msg_len)
-
-
-#############################
-# settings related functions
-#############################
-
-
-# def val_is_true(dictionay, key, default=None):
-#     """Returns True if the key exists in dictionay and its value is a truthy string, otherwise returns False or the default."""
-#     if key in dictionay:
-#         if dictionay[key].lower() in ("y", "yes", "true", "1"):
-#             return True
-#         else:
-#             return False
-#     else:
-#         return default
-
-
-# def get_settings(settings_path: str) -> dict:
-#     if not os.path.exists(settings_path):
-#         raise FileNotFoundError(f"[Error] Settings file not found at: {settings_path}")
-#     config = configparser.ConfigParser(interpolation=None)
-#     try:
-#         with open(settings_path, encoding="utf-8") as f:
-#             config.read_string("[DEFAULT]\n" + f.read())
-#         return dict(config["DEFAULT"])
-#     except Exception as e:
-#         raise ValueError(f"[Error] Failed to parse settings: {e}") from e
-
-
-# def get_value(dictionary: dict, key: str, default: str) -> str:
-#     if key in dictionary:
-#         return dictionary[key]
-#     else:
-#         return default
 
 
 #############################
@@ -378,8 +326,8 @@ def create_portable_venv():
 
 def setup_venv():
     """Makes sure the venv exists and has correct version, if not it creates it. It does not activate it as one is expected to run the venv exe"""
-    
-    wanted_python_version=getattr(developer_settings,"python_version","")
+
+    wanted_python_version = getattr(developer_settings, "python_version", "")
 
     if not os.path.exists(python_exe_path):
         # python distribution not found case -> install python and delete venv if exists to renew it

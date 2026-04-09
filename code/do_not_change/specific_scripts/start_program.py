@@ -33,12 +33,14 @@ try:
         sys.path.insert(0, project_root)
 
     from do_not_change.specific_scripts.common_code_and_variables import (
-        backend_python_exe_path,
-        developer_settings,
         error_print,
         input_red,
-        script_wrapper_path,
         setup_venv,
+    )
+    from do_not_change.specific_scripts.common_variables import (
+        backend_python_exe_path,
+        developer_settings,
+        script_wrapper_path,
         venv_exe_path,
     )
 
