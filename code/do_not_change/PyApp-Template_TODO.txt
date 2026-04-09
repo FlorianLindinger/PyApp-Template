@@ -47,6 +47,7 @@ i guess also add fancy_terminal stylesheet to non user settings and remove path 
    Unsorted
 ===================================
 
+is every developer_settings import safe? should be able to warn for changed by other devs that break stuff
 
 make developer_settings.py cliclable. Maybe via shortcut to file in dev_tools? what if i just stopped caring about changes to developer settings folder. It would be noce to not have developer_setting be part of any backend update
 hm maybe i also just add a "additional batch" folder? and pass it to normal folder when where all are shortcuts for next major version update?

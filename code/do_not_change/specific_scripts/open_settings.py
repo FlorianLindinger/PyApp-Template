@@ -8,17 +8,14 @@ import sys
 import traceback
 
 # ==========================================================================
-# import from common_code_and_variables.py
-
-file_path = os.path.dirname(os.path.abspath(__file__))
-project_root = os.path.normpath(file_path + "\\..\\..")
-if project_root not in sys.path:
-    sys.path.insert(0, project_root)
-
+# import from common variables and developer settings
 from do_not_change.specific_scripts.common_variables import (
-    developer_settings,
+    developer_settings_dir,
     developer_settings_path,
 )
+
+sys.path.insert(0, developer_settings_dir)
+import developer_settings
 
 # ==========================================================================
 # needed functions
@@ -37,12 +34,14 @@ def open_in_editor(path):
     except Exception as _e:
         print(traceback.format_exc())
 
+
 def make_abs_path_relative_to_file(path, file):
     """makes a path absolute if relative with respect to the file (as if the file defined it)"""
     if not os.path.isabs(path):
         return os.path.normpath(os.path.dirname(file) + "\\" + path)
     else:
         return path
+
 
 # ==========================================================================
 # code execution
