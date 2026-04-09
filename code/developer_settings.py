@@ -72,8 +72,9 @@ terminal_needs_input = True
 use_uncompiled_terminal_and_run_it_in_global = False
 fancy_terminal_accent_color_hex = "todo"  # leave empty for windows accent color, or provide hex color (e.g. #FF0000 for red). Only used if "use_fancy_terminal" is True.
 
-fancy_terminal_stylesheet_path = "fancy_terminal_stylesheet.py"
-button_settings = ""
+fancy_terminal_stylesheet = """TODO"""
+button_settings = {"TODO":"TODO"}
+
 # ================================
 # -------------------------------------------------
 # Terminal colors (leave empty for windows default. Options:

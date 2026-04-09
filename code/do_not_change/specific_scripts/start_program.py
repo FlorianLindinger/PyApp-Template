@@ -3,30 +3,10 @@
 
 try:
     # =============================
-    # local variables
-    # =============================
-
-    import os
-
-    file_dir = os.path.dirname(os.path.abspath(__file__)) + "\\"
-
-    python_scripts_folder_path = os.path.normpath(file_dir + "..\\..\\")
-    icon_path = os.path.normpath(file_dir + "..\\..\\icons\\icon.ico")
-    stylesheet_path = os.path.normpath(file_dir + "..\\terminal_emulator\\terminal_style.qss")
-    compiled_terminal_path = os.path.normpath(file_dir + "..\\terminal_emulator\\compiled\\run.exe")
-    uncompiled_terminal_path = os.path.normpath(file_dir + "..\\terminal_emulator\\terminal_emulator.py")
-
-    # =============================
-    # process local variables
-    # =============================
-
-    if python_scripts_folder_path != "" and python_scripts_folder_path[-1] != "\\":
-        python_scripts_folder_path += "\\"
-
-    # =============================
     # imports packages and common variables
     # =============================
 
+    import os
     import shutil
     import subprocess
     import sys
@@ -34,14 +14,19 @@ try:
 
     from do_not_change.specific_scripts.common_variables import (
         backend_python_exe_path,
+        compiled_terminal_path,
         developer_settings,
+        file_dir,
+        icon_path,
         portable_python_installer_path,
         portable_venv_creator_path,
         py_env_folder_path,
         python_dist_path,
         python_exe_path,
+        python_scripts_folder_path,
         relative_venv_to_python_dist,
         script_wrapper_path,
+        uncompiled_terminal_path,
         venv_dir_path,
         venv_exe_path,
     )
@@ -376,7 +361,7 @@ try:
         terminal_text_color = getattr(developer_settings, "terminal_text_color", "F")
         terminal_colors = terminal_bg_color + terminal_text_color
 
-        fancy_terminal_stylesheet_path = getattr(developer_settings, "fancy_terminal_stylesheet_path", "")
+        fancy_terminal_stylesheet = getattr(developer_settings, "fancy_terminal_stylesheet", "")
         fancy_terminal_accent_color_hex = getattr(developer_settings, "fancy_terminal_accent_color_hex", "")
         dark_mode = getattr(developer_settings, "dark_mode", "1")
 
@@ -424,7 +409,7 @@ try:
             args += [
                 fancy_terminal_accent_color_hex,
                 "1" if terminal_needs_input else "0",
-                fancy_terminal_stylesheet_path,
+                fancy_terminal_stylesheet,
                 dark_mode,
             ]
 
