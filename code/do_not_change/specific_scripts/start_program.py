@@ -3,7 +3,7 @@
 
 try:
     # =============================
-    # imports packages and common variables
+    # imports packages and common variables and developer settings
     # =============================
 
     import os
@@ -15,7 +15,7 @@ try:
     from do_not_change.specific_scripts.common_variables import (
         backend_python_exe_path,
         compiled_terminal_path,
-        developer_settings,
+        developer_settings_dir,
         file_dir,
         icon_path,
         portable_python_installer_path,
@@ -30,6 +30,9 @@ try:
         venv_dir_path,
         venv_exe_path,
     )
+    
+    sys.path.insert(0, developer_settings_dir)
+    import developer_settings
 
     # =============================
     # needed functions
