@@ -6,7 +6,12 @@
 very important
 ===================================
 
+implement:
+log_even_with_terminal = getattr(developer_settings, "log_even_with_terminal", True)
+restart_main_code_on_crash = getattr(developer_settings, "restart_main_code_on_crash", False)
+
 renamed: generate requiremtns to "generate lsit of ...". Add readme that explains what they do 
+make all to python scripts called by shortcuts i guess
 
 do i have to install pipreqs in venv of portable???? no i guess so install in embeddable
 
@@ -14,14 +19,12 @@ move default packages to "code" folder?
 
 do i somehow want default python_palckages in developers? or even whole env folder??? but then i also move icon to that . maybe yes? at this point i can also move everything there??? including script
 
-add a "save current packages to .txt" script.
-make all to python scripts called by shortcuts i guess
-
 make develper tools fodler to actual folder with structute and shortcuts to call everyrginh
 
 change it to "for_developers" and add developer_setting
 
 re add running of main sript and crash scriopt and error handling
+also addd faulthandler x
 
 add package install to venv setup!!!!!
 
@@ -34,11 +37,14 @@ add logging? for all as options
 
 clean up non-user_settings
 
+developer_settings:add button settings as dict?
+
+i guess also add fancy_terminal stylesheet to non user settings and remove path option
+
 ===================================
    Unsorted
 ===================================
 
-does fallback_terminal_icon work for compiled?
 
 make developer_settings.py cliclable. Maybe via shortcut to file in dev_tools? what if i just stopped caring about changes to developer settings folder. It would be noce to not have developer_setting be part of any backend update
 hm maybe i also just add a "additional batch" folder? and pass it to normal folder when where all are shortcuts for next major version update?
@@ -49,13 +55,7 @@ maybe not auto closs on done of start_program when venv or dist gets installed
 
 for error in main_script: dont print traceback to runpy I guess.
 
-i guess also add fancy_terminal stylesheet to non user settings and remove path option
-
 does python_version="" work?
-
-
-developer_settings:add button settings as dict?
-
 
 i guess i want restart and python_fail script no in same popen since it is kind of only needed if python completely crsahes. i guess i make the after script still for normal error exit? but there could be deliberate non 0 exit and they could always catch if they want
 
