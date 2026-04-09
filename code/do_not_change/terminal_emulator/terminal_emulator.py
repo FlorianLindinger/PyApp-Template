@@ -1283,8 +1283,10 @@ try:
 
         accent_color_hex = arg_to_str(11, "")
         terminal_needs_input = arg_to_bool(12, True)
-        stylesheet_path = arg_to_str(13, "")
-        dark_mode = arg_to_str(14, "1") #no bool because "auto" ... could also be option that should not be turned to True
+        stylesheet = arg_to_str(13, "")
+        dark_mode = arg_to_str(
+            14, "1"
+        )  # no bool because "auto" ... could also be option that should not be turned to True
 
         if app_id != "":
             set_app_id(app_id)
@@ -1316,8 +1318,8 @@ try:
             app.styleHints().setColorScheme(Qt.ColorScheme.Light)
 
         try:
-            if stylesheet_path != "" and os.path.exists(stylesheet_path):
-                QSS = load_variable_from_file(stylesheet_path, "QSS")
+            if stylesheet.strip() != "":
+                QSS = stylesheet
             else:
                 if accent_color_hex != "" and is_valid_hex_color(accent_color_hex):
                     QSS = default_QSS.replace("%acccent_color_placeholder%", accent_color_hex)

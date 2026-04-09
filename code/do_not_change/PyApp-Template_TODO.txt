@@ -6,6 +6,8 @@
 very important
 ===================================
 
+ask AI if code or variable is unused
+
 implement:
 log_even_with_terminal = getattr(developer_settings, "log_even_with_terminal", True)
 restart_main_code_on_crash = getattr(developer_settings, "restart_main_code_on_crash", False)
