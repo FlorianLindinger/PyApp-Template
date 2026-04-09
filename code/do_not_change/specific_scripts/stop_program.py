@@ -5,6 +5,7 @@ import os
 import subprocess
 import sys
 import time
+import traceback
 
 # ==========================================================================
 # import from common_code_and_variables.py
@@ -14,11 +15,36 @@ project_root = os.path.normpath(file_path + "\\..\\..")
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
-from do_not_change.specific_scripts.common_code import (
-    error_print,
-    make_abs_path_relative_to_file,
-)
 from do_not_change.specific_scripts.common_variables import developer_settings, developer_settings_path
+
+# ==========================================================================
+# needed functions
+
+
+def error_print(message, max_wrapper_len=20, wrapper_symbol="=", red=False):
+    msg_len = len(message)
+    if msg_len > max_wrapper_len:
+        msg_len = max_wrapper_len
+    if red == True:
+        print(f"\033[91m{wrapper_symbol * msg_len}")
+    else:
+        print(wrapper_symbol * msg_len)
+    print(message)
+    print(wrapper_symbol * msg_len)
+    print(traceback.format_exc(), end="")
+    if red == True:
+        print(f"{wrapper_symbol * msg_len}\033[0m")
+    else:
+        print(wrapper_symbol * msg_len)
+
+
+def make_abs_path_relative_to_file(path, file):
+    """makes a path absolute if relative with respect to the file (as if the file defined it)"""
+    if not os.path.isabs(path):
+        return os.path.normpath(os.path.dirname(file) + "\\" + path)
+    else:
+        return path
+
 
 # ==========================================================================
 # code execution
