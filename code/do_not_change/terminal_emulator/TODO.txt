@@ -2,6 +2,8 @@
 #current problems
 # #=====================================
 
+add wrap text to next line option
+
 terminal emulator first menu click is slow
 
 make it prompt for closureof "terminal title" in fancy termianl
