@@ -6,6 +6,8 @@
 very important
 ===================================
 
+updated readme in py_env how to hcange packages
+
 fix ins start_program:
     # restart_main_code_on_crash,
     # after_python_crash_code_path
