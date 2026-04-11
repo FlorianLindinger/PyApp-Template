@@ -6,6 +6,27 @@
 very important
 ===================================
 
+fix ins start_program:
+    # restart_main_code_on_crash,
+    # after_python_crash_code_path
+
+is use_global_python working as expected
+
+mkae everything hard requhriement in decveloper settings because  safety
+
+i guess check if "import " is in script. can still fail for edge cases
+update pipres/stdlib
+mabye go down to 3.12 becuase pipreqs support. pigar is 100MB
+
+what if developer_tools scripts just interact with list in its folder?
+->spawn and load a requirements.txt and reflect that in name
+move default packages to "code" folder??
+do i somehow want default python_palckages in developers? or even whole env folder??? but then i also move icon to that . maybe yes? at this point i can also move everything there??? including script
+make develper tools fodler to actual folder with structute and shortcuts to call everyrginh
+developer_tools:I guess make all to shortcut of P.exe and script? hm i made it like it is at the moment to be able to add or remove at any moment
+
+move batches to some kind of folder in utulities repo
+
 ask AI if code or variable is unused
 
 implement:
@@ -15,16 +36,6 @@ restart_main_code_on_crash = getattr(developer_settings, "restart_main_code_on_c
 renamed: generate requiremtns to "generate lsit of ...". Add readme that explains what they do 
 make all to python scripts called by shortcuts i guess
 
-do i have to install pipreqs in venv of portable???? no i guess so install in embeddable
-
-move default packages to "code" folder?
-
-do i somehow want default python_palckages in developers? or even whole env folder??? but then i also move icon to that . maybe yes? at this point i can also move everything there??? including script
-
-make develper tools fodler to actual folder with structute and shortcuts to call everyrginh
-
-change it to "for_developers" and add developer_setting
-
 re add running of main sript and crash scriopt and error handling
 also addd faulthandler x
 
@@ -33,19 +44,26 @@ add package install to venv setup!!!!!
 save pid in code folder
 test PID stop
 
-developer_tools:I guess make all to shortcut of P.exe and script? hm i made it like it is at the moment to be able to add or remove at any moment
-
 add logging? for all as options
 
-clean up non-user_settings
+when do i want or need "os.kill(os.getppid(), signal.SIGTERM)"?
 
-developer_settings:add button settings as dict?
-
-i guess also add fancy_terminal stylesheet to non user settings and remove path option
+clean up developer_settings
+how do i make terminal easliy updateable of defaults while giving user all options easliy accesible to change. maybe only base settings in decveloper_settings and a lot in hidden defaults in terminal.py
+developer_settings:add button settings as dict? or mabye easyer?
 
 ===================================
    Unsorted
 ===================================
+
+# add docsting to terminal_stylesheet
+
+
+add list what was chenage from nomrmal embeedead
+write how to update embedded python
+add script to add something to python_packages folder for do_not_change in python_packages?
+
+allow disabling adding sub icons by deleting sub icons
 
 is every developer_settings import safe? should be able to warn for changed by other devs that break stuff
 
