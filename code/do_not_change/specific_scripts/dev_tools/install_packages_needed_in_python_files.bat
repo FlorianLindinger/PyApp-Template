@@ -79,7 +79,7 @@ if %errorlevel% neq 0 (
 )
 
 :: print start message:
-echo .
+echo.
 echo ==============================================
 echo Scanning python files for needed packages in "%folder_to_search_for_stuff_needing_packages%" 
 echo ==============================================
