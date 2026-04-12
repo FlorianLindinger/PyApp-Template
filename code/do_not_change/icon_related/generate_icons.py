@@ -186,7 +186,7 @@ def _run_powershell(**extra_env: str) -> str:
     env.update(extra_env)
 
     try:
-        completed = subprocess.run( #noqa:S603
+        completed = subprocess.run(  # noqa:S603
             [
                 "powershell.exe",
                 "-NoProfile",
@@ -241,7 +241,7 @@ def _load_image_data(path: str) -> tuple[int, int, bytes]:
 def _render_png_layers(
     base_path: str,
     icon_sizes: tuple[int, ...],
-    overlay_path: str|None = None,
+    overlay_path: str | None = None,
     overlay_scale_factor: float = 0.6,
 ) -> list[tuple[int, bytes]]:
     raw_payload = _run_powershell(
