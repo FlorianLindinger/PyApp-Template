@@ -33,7 +33,7 @@ except Exception as e:
     import sys
     import traceback
 
-    print(f"[Error] Failed before opening settings with error: {e}:")
+    print(f"[Error] Failed before opening settings opener script: {e}:")
     print("=" * 20)
     print(traceback.format_exc())
     print("=" * 20)
