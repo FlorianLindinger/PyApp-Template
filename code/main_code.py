@@ -1,6 +1,11 @@
+# import settings
+import os
+import sys
 import time
 
-# import settings
+print("cwd:", os.getcwd())
+print("paths:", *sys.path, sep="\n")
+
 
 for i in range(50):
     print(i)
@@ -32,7 +37,7 @@ while True:
     elif msg == "sleep":
         time.sleep(4)
         print(msg)
-    elif msg in ["np","numpy"]:
+    elif msg in ["np", "numpy"]:
         import numpy
 
     elif msg == "tv":
@@ -41,7 +46,6 @@ while True:
         print('Terminal_window.toggle_button_clickable_state("stop")')
     else:
         print(msg)
-
 
 
 import sys
