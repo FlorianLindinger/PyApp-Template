@@ -1,13 +1,6 @@
 [project]
-name = ""                             # ADD HERE 
-version = ""                          # ADD HERE 
-description = ""                      # ADD HERE 
-authors = [{ name = "", email = "" }] # ADD HERE
-requires-python = ""                  # ADD HERE 
-dependencies = []                     # ADD REQUIRED PYTHON PACKAGES HERE
-
-readme = "../README.md"
-license = { file = "../LICENSE.md" }
+name = "Project-Name"      # ADD HERE 
+version = "0"              # ADD HERE 
 
 [project.optional-dependencies]
 dev = ["ruff","pyrefly"]
@@ -22,7 +15,7 @@ dev = ["ruff","pyrefly"]
 cache-dir = ".ruff_cache"
 
 include = ["*.py", "*.pyi", "*.pyw", "*.ipynb"] # files to check/correct
-exclude = [".git", ".mypy_cache", ".ruff_cache", "__pycache__", "*.build", "*.dist"] # files to exclude from check/correct
+exclude = [".git", ".mypy_cache", ".ruff_cache", "__pycache__", "*.build", "*.dist","DO_NOT_SYNC","py_env","P","python_packages","compiled"] # files to exclude from check/correct
 line-length = 120  # max line length before wrapping
 [tool.ruff.lint]
 # Rule families to enable:
@@ -157,4 +150,3 @@ ignore = [
 # ================================================
 [tool.pyrefly] # language server and type checker
 # ================================================
-
