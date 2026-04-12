@@ -2,9 +2,51 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+stop vscode adding imports in pyproject
+
 ===================================
 very important
 ===================================
+
+descripbe dieffence beerewwen close_on_failure and crash. does it work in terminal? ask AI if same behaveios as in script wrapper. 
+what is a crash that is not a interpreter crash. THat is just an error in the wrapper which i guess should always appear? or option to backend_crash?
+
+does use_global_python work
+
+clarify that restart on crash only appeas on python crsahj not regular crahs of script
+make it that way
+
+google drawbacks of -u
+
+does terminal -u save it not logging`? maybe too much -u. does it somehow depend on global py test
+
+make time in log independent from print timestamp?
+
+can i add timestamps in regular terminal
+is there more i can give to regular terminal
+
+add append log and teistamp print and add date to log file ending.
+
+make log.txt visible in preview somehow. It is openable
+
+mkae sccent border larger in terminal
+
+chack all log paths work. 
+
+check if all possible errors in dev settings are handled
+
+make user settings different again? re add features?
+
+is there rsomething usefull i can pass in the globals of main_script? crashed varaible? exit code of previouis? icon and name i guess
+
+what path search does the main_script get?
+
+add only usefual stuff to pyproject
+
+add link to settings file button
+
+MAKE ALL RUNPY ONES not print runpy wiht errpr: try except in whole target script
+->see S.py
 
 updated readme in py_env how to hcange packages
 
