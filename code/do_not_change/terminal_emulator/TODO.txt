@@ -2,6 +2,8 @@
 #current problems
 # #=====================================
 
+add bulb for running and stopped and done and failed i guess? and fionished?
+
 does fallback_terminal_icon work for compiled?
 
 add wrap text to next line option
