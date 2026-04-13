@@ -50,6 +50,8 @@ disable somehwo windows button as launch options
 
 add  _ _ _ symobl. "3 bars" to Menu button=?
 
+add bulb for running and stopped and done and failed i guess? and fionished?
+
 does fallback_terminal_icon work for compiled?
 
 add wrap text to next line option
