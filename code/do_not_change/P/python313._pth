@@ -1,7 +1,0 @@
-python313.zip
-.
-..\python_packages
-..\..
-
-# Uncomment to run site.main() automatically
-import site
