@@ -1,15 +1,22 @@
 import os
 
-#############################
-# variables
 
-make_abs = lambda x: os.path.normpath(file_dir + x)  # noqa
-get_dir = lambda x: os.path.dirname(x)  # noqa
+def make_abs(x: str) -> str:
+    return os.path.normpath(_file_dir + x)
 
-file_dir = get_dir(make_abs(__file__)) + "\\"
 
-developer_settings_path = make_abs("..\\..\\developer_settings.py")
-developer_settings_dir=get_dir(developer_settings_path)
+def get_dir(x: str) -> str:
+    return os.path.dirname(x)
+
+
+_file_dir: str = get_dir(os.path.normpath(__file__)) + "\\"
+
+# =======================
+# define variables
+
+developer_settings_path = make_abs(
+    "..\\..\\developer_settings.py"
+)  # kind of unsused since scripts expect developer_settings to be at root for import
 
 portable_python_installer_path = make_abs("..\\general_scripts\\create_portable_python.bat")
 portable_venv_creator_path = make_abs("..\\general_scripts\\create_portable_venv.bat")
@@ -26,8 +33,16 @@ icon_path = make_abs("..\\..\\icons\\icon.ico")
 compiled_terminal_path = make_abs("..\\terminal_emulator\\compiled\\run.exe")
 uncompiled_terminal_path = make_abs("..\\terminal_emulator\\terminal_emulator.py")
 
-#############################
+process_id_file_path = make_abs("..\\..\\..\\currently_running_without_terminal_id.pid")
+
+default_packages_path = make_abs("..\\..\\developer_tools\\!DEFAULT_PYHON_PACKAGES.txt")
+
+excluded_folders_for_package_search = ["do_not_change", "py_env", "icons", "developer_tools", "__pycache__"]
+
+# =======================
 # process variables
+
+developer_settings_dir = get_dir(developer_settings_path)
 
 if python_scripts_folder_path != "" and python_scripts_folder_path[-1] != "\\":
     python_scripts_folder_path += "\\"
