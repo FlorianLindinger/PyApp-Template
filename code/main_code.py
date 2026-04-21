@@ -3,8 +3,11 @@ import os
 import sys
 import time
 
+print("=============")
 print("cwd:", os.getcwd())
 print("paths:", *sys.path, sep="\n")
+print("=============")
+
 
 
 for i in range(50):
@@ -12,23 +15,20 @@ for i in range(50):
     time.sleep(0.05)
 while True:
     msg = input()
-    if msg == "error":
+    if msg == "error1":
         raise Exception("error")
-    elif msg == "crash1":
+    elif msg == "error2":
         raise RuntimeError("intentional crash test")
+    elif msg == "crash1":
+        import os
+        os._exit(1)
     elif msg == "crash2":
         import os
-
-        os._exit(1)
-    elif msg == "crash3":
-        import os
-
         os.abort()
-    elif msg == "crash4":
+    elif msg == "crash3":
         import ctypes
-
         ctypes.string_at(0)  # dereference NULL -> segfault on most platforms
-    elif msg == "crash5":
+    elif msg == "crash4":
         a = []
         while True:
             a.append(b"x" * 10_000_000)
@@ -53,28 +53,28 @@ import sys
 sys.exit()
 
 
-import sys
+# import sys
 
-from PySide6.QtGui import QIcon
-from PySide6.QtWidgets import QApplication, QMainWindow
-
-
-class MainWindow(QMainWindow):
-    def __init__(self):
-        super().__init__()
-
-        if sys.argv[1] != "":
-            self.setWindowIcon(QIcon(sys.argv[1]))
-        if sys.argv[2] != "":
-            self.setWindowTitle(sys.argv[2])
+# from PySide6.QtGui import QIcon
+# from PySide6.QtWidgets import QApplication, QMainWindow
 
 
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
+# class MainWindow(QMainWindow):
+#     def __init__(self):
+#         super().__init__()
 
-    window = MainWindow()
-    window.show()
-    sys.exit(app.exec())
+#         if sys.argv[1] != "":
+#             self.setWindowIcon(QIcon(sys.argv[1]))
+#         if sys.argv[2] != "":
+#             self.setWindowTitle(sys.argv[2])
+
+
+# if __name__ == "__main__":
+#     app = QApplication(sys.argv)
+
+#     window = MainWindow()
+#     window.show()
+#     sys.exit(app.exec())
 
 
 # # # ==============================================================================
