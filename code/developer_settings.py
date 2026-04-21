@@ -7,15 +7,18 @@
 program_name = "PyApp-Template"
 # -------------------------------------------------
 # Python version. Can be in format "x"/"x.y"/"x.y.z". Finds latest (msi-install-available) Python version compatible with this setting. Empty string "" gives latest (not recommended if you want to make sure the code works always the same):
-python_version = "3.13"
+python_version: str = "3.14"
 # -------------------------------------------------
 # Decide if global python (python & packages need to be installed manually on PC) should be used instead of automatic localized download and installation of all.
-use_global_python = False
+use_global_python = True
 # -------------------------------------------------
-# Decide working directory behavior.
+# Decide working directory behavior:
 # True  = Start in the folder where the shortcut is located
-# False = Start in the "code" folder
+# False = Start in the "code" folder where the main scrip is
 start_in_shortcut_folder = False
+# -------------------------------------------------
+print_timestamp_format: str | None = "%H:%M:%S\t"
+# None for no timestamps (else see datetime.datetime.strftime usage: e.g. "%H:%M:%S\t")
 # -------------------------------------------------
 
 # =================================
@@ -23,11 +26,26 @@ start_in_shortcut_folder = False
 # =================================
 
 # -------------------------------------------------
+# success = sys.exit(0) or sys.exit() or no exit line.
+close_on_success = True
+play_sound_on_success = False
+send_Windows_notification_on_success = False
+# ----
+# failure = normal failure exit codes (i.e. exit_code != 0), usually via "sys.exit(exit_code)" or raised error.
+close_on_failure = False
+play_sound_on_failure = False
+send_Windows_notification_on_failure = False
+# ----
+# crash of python interpreter is usually caused by code causing Windows to kill Python and won't be caught by try/except.
+close_on_python_interpreter_crash = False
+play_sound_on_python_interpreter_crash = True
+send_Windows_notification_on_python_interpreter_crash = True
+# -------------------------------------------------
 # Path of user settings file (file can be deleted)
 user_settings_path: str | None = "settings.py"  # set None to not use
 # -------------------------------------------------
 # Decide what parts of vanilla full Python install you actually need (enabling all is ~90 MB, disabling all is ~47 MB):
-# -------------------------------------------------
+# ----
 #   Include Tkinter GUI library? Required for Tk-based GUIs or IDLE and used as default backend for matplotlib.pyplot. (~11 MB):
 install_tkinter = True
 #   Include Python's internal test suite (Lib/test)? Only needed for interpreter testing. (~31 MB):
@@ -35,9 +53,11 @@ install_tests = False
 #   Include Python's "Tools" folder? Needed for: Language translation workflows/Python's code demos/old editors/old exe converters. (~1 MB, some installation time):
 install_tools = False
 # -------------------------------------------------
-# Name of Python code file:
+# Name of Python code file and has to be in "code" folder.
 python_code_name = "main_code.py"
-after_python_crash_code_name = "after_python_crash_code.py"
+# -------------------------------------------------
+script_after_python_interpreter_crash_name: str | None = "after_python_crash_code.py"
+# Script has to be in "code" folder. You can use the same name as python_code_name setting here. Note that the last argument will indicate that it was launched as a after-interpreter-crash script. You can test this in script via sys.argv[-1]=="crash". Set it to None to not launch anything after a interpreter crash.
 # -------------------------------------------------
 # Names of generated shortcuts:
 # (Delte or set =="" to disable generation of specific shortcut)
@@ -46,18 +66,8 @@ start_no_terminal_name = f"{program_name} (with log & no terminal)"  # start pro
 settings_name = f"{program_name} - settings"  # open settings file
 stop_no_terminal_name = f"stop (no-terminal) {program_name}"  # stop program that was started without terminal
 # -------------------------------------------------
-close_on_crash = False
-close_on_failure = False
-close_on_python_interpreter_crash=False
-close_on_success = True
-# -------------------------------------------------
-
-########### acts only if close_on_python_interpreter_crash == False
-# i guess not do -X for close_on_python_interpreter_crash=True
-
-
-# Option to restart main code ("python_code_name" setting) when python crashes (or python returns not 0 with "sys.exit(returned_number)") instead of starting the after python crash script ("after_python_crash_code_path" setting below). It will pass the argument "crashed" to python for the restarts (python can check for that with sys.argv[-1]=="crashed"))
-restart_main_code_on_python_interpreter_crash = False
+# TODO####################
+use_faulthandler = True
 # -------------------------------------------------
 
 # ==========================
@@ -65,36 +75,37 @@ restart_main_code_on_python_interpreter_crash = False
 # ==========================
 
 # -------------------------------------------------
-log_path_rel_to_wdir = "..\\log.txt"  # wdir is influenced by "start_in_shortcut_folder" setting
+log_path_rel_to_wdir: str | None = "..\\log.txt"  # wdir is influenced by "start_in_shortcut_folder" setting
 # -------------------------------------------------
-log_even_with_terminal = True
+log_file_date_append_format: str | None = "_%Y_%m_%d"
+# None for no date added (else see datetime.datetime.strftime usage: e.g. "_%Y_%m_%d")
 # -------------------------------------------------
-print_timestamp_style = "%H:%M:%S\t"
+overwrite_log = True
 # -------------------------------------------------
-log_timestamp_style = "%H:%M:%S\t"
+create_log_for_terminal_start = True
+create_log_for_no_terminal_start = True
 # -------------------------------------------------
-log_file_date_append_style = "_%Y_%m_%d"
-# -------------------------------------------------
-append_log = False
+log_timestamp_format = "%H:%M:%S\t"
+# None for no timestamps (else see datetime.datetime.strftime usage: e.g. "%H:%M:%S\t")
 # -------------------------------------------------
 
 # ====================================
 # ==== terminal (visual) settings ====
 # ====================================
 
+# If True, it will use a fancy Windows terminal emulator that has extra features (see below). If False, it will use the regular Windows terminal but with a wrapper script to handle backend logic that has parts of the functionality of the fancy terminal.
 use_fancy_terminal = True
 
 # --------------------------------------------------
 # settings that apply if use_fancy_terminal = False:
 # --------------------------------------------------
 
-# Terminal colors (leave empty for windows default. Options:
-# Background:
-# 0=Black,1=Blue,2=Green,3=Aqua,4=Red,5=Purple,6=Yellow,8=Gray,7=White,9=LightBlue
-# Text:
-# A=LightGreen,B=LightAqua,C=LightRed,,D=LightPurple,E=LightYellow,F=BrightWhite)
-terminal_bg_color = "9"
-terminal_text_color = "F"
+# Terminal colors (set None for Windows default):
+# Background: 0=Black,1=Blue,2=Green,3=Aqua,4=Red,5=Purple,6=Yellow,8=Gray,7=White,9=LightBlue
+# Text: A=LightGreen,B=LightAqua,C=LightRed,,D=LightPurple,E=LightYellow,F=BrightWhite
+terminal_bg_color: str | None = "9"
+terminal_text_color: str | None = "F"
+# -------------------------------------------------
 
 # -------------------------------------------------
 # settings that apply if use_fancy_terminal = True:
@@ -117,5 +128,6 @@ button_settings: None | list[tuple[str, dict[str, bool]]] = [  # None = default 
     ("to_tray", {"clickable": True}),
     ("open_script", {"pinned": False}),
 ]
+# -------------------------------------------------
 
 # =================================================
