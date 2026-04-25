@@ -10,7 +10,7 @@ program_name = "PyApp-Template"
 python_version: str = "3.14"
 # -------------------------------------------------
 # Decide if global python (python & packages need to be installed manually on PC) should be used instead of automatic localized download and installation of all.
-use_global_python = True
+use_global_python = False
 # -------------------------------------------------
 # Decide working directory behavior:
 # True  = Start in the folder where the shortcut is located
