@@ -137,6 +137,7 @@ ignore = [
   "SIM105",  # don't replace "try ... except: pass"
   "SIM108",  # allow if else in >1 line if one-liner possible
   "SIM110",  # allow "for+if" instead of "any+for"
+  "SIM117",  # allow nested with-blocks
   "T201",    # allow print
   "TRY002",  # allow for "Exception"
   "TRY003",  # allow for long error message
