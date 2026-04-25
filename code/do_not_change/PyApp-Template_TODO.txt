@@ -2,11 +2,146 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+
 stop vscode adding imports in pyproject
+
+mentiona "Could not find name `log_file`" for global for pyrefly. Maybe different warning
+
+use:
+    ANSI_WARN = "\x1b[1;37;41m]"  # white text, red bg, bold
+    ANSI_SUCCESS = "\x1b[1;37;42m]"  # white text, green bg, bold
+also add to pipes
+
+pyrefly does not warn for unused in script_wrapper?
+
+maybe found pyrefly bug that it does not rememeeber terminal_bg_color as string later in functuion when it new before in global
+
+
 
 ===================================
 very important
 ===================================
+
+user pinrt color not vbiislb as accent color potneitally
+
+trigger magic phrase once and leave and tell how to reandable within message
+
+is there stiuff thjat is in fancy termina and in wrapper that i rather have in start_programm i guess?
+
+remove Path from everything
+
+mention colroful tracebac on error
+
+fail foir use global and compiled temrinal
+
+wait. use_global_python uses global also for backend???
+
+fix: it gave e.code = 0 (for outdated compiled terminal)->catch better
+-->
+in  
+    try:
+        runpy.run_path(script_path, run_name="__main__")
+        exit_code = 0
+    except SystemExit as e:
+        
+        print("exit2",e)
+        
+        if isinstance(e.code, int):
+            exit_code = e.code
+        elif e.code is None:
+            exit_code = 0
+        else:
+            # e.code can be something else which is treated as error
+            exit_code = 1
+    
+printing:
+    
+            C:\Users\Flo\Documents\Repositories\PyApp Template\code\do_not_change\P\python312.zip
+            C:\Users\Flo\Documents\Repositories\PyApp Template\code\do_not_change\P
+            C:\Users\Flo\Documents\Repositories\PyApp Template\code\do_not_change\python_packages
+            C:\Users\Flo\Documents\Repositories\PyApp Template\code
+            C:\Users\Flo\AppData\Roaming\Python\Python312\site-packages
+            C:\Users\Flo\AppData\Roaming\Python\Python312\site-packages\win32
+            C:\Users\Flo\AppData\Roaming\Python\Python312\site-packages\win32\lib
+            C:\Users\Flo\AppData\Roaming\Python\Python312\site-packages\Pythonwin
+            exit2 0
+            2[Error] Failed in terminal_emulator script with error: [Errno 22] Invalid argument: '%H:%M:%S\t':
+            ====================
+            Traceback (most recent call last):
+            File "C:\Users\Flo\DOCUME~1\REPOSI~1\PYAPPT~1\code\DO_NOT~1\TERMIN~1\compiled\terminal_emulator.py", line 1350, in <module>
+            File "C:\Users\Flo\DOCUME~1\REPOSI~1\PYAPPT~1\code\DO_NOT~1\TERMIN~1\compiled\terminal_emulator.py", line 1296, in main
+            OSError: [Errno 22] Invalid argument: '%H:%M:%S\t'
+
+            ====================
+            Press enter to exitTraceback (most recent call last):
+            File "C:\Users\Flo\DOCUME~1\REPOSI~1\PYAPPT~1\code\DO_NOT~1\TERMIN~1\compiled\terminal_emulator.py", line 1350, in <module>
+            File "C:\Users\Flo\DOCUME~1\REPOSI~1\PYAPPT~1\code\DO_NOT~1\TERMIN~1\compiled\terminal_emulator.py", line 1296, in main
+            OSError: [Errno 22] Invalid argument: '%H:%M:%S\t'
+
+            During handling of the above exception, another exception occurred:
+
+            Traceback (most recent call last):
+            File "C:\Users\Flo\DOCUME~1\REPOSI~1\PYAPPT~1\code\DO_NOT~1\TERMIN~1\compiled\terminal_emulator.py", line 1360, in <module>
+            EOFError: EOF when reading a line
+
+
+for global python it does not know abput developer settings becaseu not in _path. And it does not handle error for launch. wait that does not make sens
+#woulbd be nice if scripts can be run without backend embedded but then imports don work
+
+ask AI if at every spot it would wait for input on error
+
+i guess i want to deactivae in end if parts are run in terminal. Why even active?
+
+i guess i want asci art back
+
+maybe prompt if reinstall with current packages if verison not match or reinstall with default packages. Check if same i guess to not ask then
+
+make emulator resatrt button restart main not after_crsah script
+
+can i clean ANSI from logs. setting for that? dose error_print work. what if i just send it out as error in error_print?
+
+rename create_log_for_terminal_start to log_prints_in_file_for... check also stirngs for renmae
+
+dont i always handle a interpreter crash by wrapper and emulator? no need for setting?
+
+allways log for log activated in case of backend crash. Or do i create new log for backend? or do i always create new windwo for backend?
+
+i dont log when i run_text_in_new_terminal_and_wait? probably intended? i could just print. thta should do it. But i use "script" at the moment. it would just wait for an input that will never happen. subtract out input i guess. but also terminal changing stuff in therer that was not laoded then. 
+
+chekc overall start time overhead compared to global python. I guess check with batch i have that measurs execution time and jsut a script that exits immediately. maybe mention that overhead in README
+
+test no terminal error print
+
+add error_print to script_base
+
+do i print success to log? might as well i guess
+
+ask AI if behavirour matches emular and wrapper
+
+never close on backend failur. THat should not happen. always open a new terminal to report. I guess no log then.
+
+check if def run_text_in_new_terminal_and_wait needs to be always executed
+
+make ANSI_WARN that changes BG aswell and use everywherer even in emulatro i guess to have safety against bg color? but eiter way not changeable i guess. does the terminal emulator have better options than ansi?
+
+make all error prints on wrapper print in new terminal if needed: see "if app_id != "":" : print(e)
+
+pass log_path=="" if create_log_for_terminal_start=False and create_log_for_no_terminal_start==False
+
+make log logic in emulator. maybe just ask AI to match behavior
+
+remove. restart_main_code_on_crash. just mention that one can name main_script and it will get sys.argv[-1] == "crash"
+
+am i using faulthandler correctly? do i need to print that to a log? ask ai if works
+
+maybe just have faulthandler in call of main_script?? but earlier better might as well i guess
+
+do i need to add faulthandler to terminal script?
+do i need unbuffered flag in nuitka compile? other flag optiopns for nuitka?
+how to have faulthandler in compiled
+dose faulthandler transfer to sub calls?
+i cant catch a python crash if i dont spawn another python in betwenn that is hidden terminal
+->make a setting to do an extra instance in between
 
 descripbe dieffence beerewwen close_on_failure and crash. does it work in terminal? ask AI if same behaveios as in script wrapper. 
 what is a crash that is not a interpreter crash. THat is just an error in the wrapper which i guess should always appear? or option to backend_crash?
@@ -20,43 +155,12 @@ google drawbacks of -u
 
 does terminal -u save it not logging`? maybe too much -u. does it somehow depend on global py test
 
-make time in log independent from print timestamp?
-
-can i add timestamps in regular terminal
-is there more i can give to regular terminal
-
-add append log and teistamp print and add date to log file ending.
-
-make log.txt visible in preview somehow. It is openable
-
-mkae sccent border larger in terminal
-
-chack all log paths work. 
-
-check if all possible errors in dev settings are handled
-
-make user settings different again? re add features?
-
-is there rsomething usefull i can pass in the globals of main_script? crashed varaible? exit code of previouis? icon and name i guess
-
-what path search does the main_script get?
-
-add only usefual stuff to pyproject
-
-add link to settings file button
-
 MAKE ALL RUNPY ONES not print runpy wiht errpr: try except in whole target script
 ->see S.py
-
-updated readme in py_env how to hcange packages
 
 fix ins start_program:
     # restart_main_code_on_crash,
     # after_python_crash_code_path
-
-is use_global_python working as expected
-
-mkae everything hard requhriement in decveloper settings because  safety
 
 i guess check if "import " is in script. can still fail for edge cases
 update pipres/stdlib
@@ -99,6 +203,68 @@ developer_settings:add button settings as dict? or mabye easyer?
 ===================================
    Unsorted
 ===================================
+
+dont dopuble error mesasge for no internet pyhton vresion checm. also fugure out why FULL_VER in batch is " " on no internet
+
+trim pyhton packages folder
+trim again python folder
+
+ask AI if script is efficient. some arguemnt to compile?
+
+there should be parity with logging in emulator and not. ask AI
+
+also option for windows notification: print message ...
+package: win11toast
+can even do clickable lings: "on_click"
+
+can i do hihglighting of terminal also on windwos terminal?
+
+add option good and bad dings sound for finish and failure
+
+
+add setting: success_print=[Program finished successfully]
+failur_print= f"[Program finished with failure] Programm exited with code "{exit_code}"
+and explain that no print if "" and that will 
+
+add option to restart on xyz on normal terminal
+
+add info print if  settings dont make sense together 
+
+
+mention that scroipt can tak to fancy terminal via ....
+add more functions to that
+
+mkae everything hard requhriement in decveloper settings because  safety. Only for future ones i guess we can be flexible
+
+updated readme in py_env how to hcange packages
+
+chack all log paths work. 
+
+is there rsomething usefull i can pass in the globals of main_script? crashed varaible? exit code of previouis? icon and name i guess
+
+check if all possible errors in dev settings are handled
+
+
+make user settings different again? re add convert features?
+
+what path search does the main_script get?
+
+add only usefual stuff to pyproject
+
+add link to settings file button
+-> i guess i need a way to add a new button to terminal_emulator Probavbly just new button spawning if name not in current ones
+
+make log.txt visible in preview somehow. It is openable
+
+mkae accent border larger in terminal
+
+add append log and teistamp print and add date to log file ending.
+
+
+make time in log independent from print timestamp?
+
+can i add timestamps in regular terminal
+is there more i can give to regular terminal
 
 # add docsting to terminal_stylesheet
 
@@ -778,8 +944,5 @@ let AI check every file
 ask AI for speedup and safety and robustness improvmens and also comments and docsttirngs
 
 mention in outer most license what licenses the template backend has
-
-is there a possiblity in having P.lnk to P\P.exe? for shortness
-
 
 ===================================
