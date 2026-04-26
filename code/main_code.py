@@ -3,7 +3,7 @@ import os
 import sys
 import time
 
-for i in range(50):
+for i in range(5):
     print(i)
     time.sleep(0.05)
 while True:

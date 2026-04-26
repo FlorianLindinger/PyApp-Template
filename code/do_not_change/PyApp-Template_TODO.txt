@@ -18,9 +18,21 @@ maybe found pyrefly bug that it does not rememeeber terminal_bg_color as string 
 
 
 
+
 ===================================
 very important
 ===================================
+
+re add print error for not traceback in commoni varables
+
+how do i make long messages better for print_traceback. can it do multiloine?
+
+current kill in print_traceback is too stinrg?
+maybe i only need strenght for cmd terminal generate shrtcuts and dev tools.
+
+how can i determine if pipreqs failed expecteldfdy bc internet?
+
+let it chekc if seomthing looks like a placeholder and unfinsihjesd and nunnnecassy prings
 
 see if windows terminal hadnles all crash and erros.
 not working:
