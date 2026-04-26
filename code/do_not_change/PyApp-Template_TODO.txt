@@ -25,6 +25,8 @@ very important
 
 re add print error for not traceback in commoni varables
 
+better to continue after pipreqs failure i guess. maybe after enter confiramtion
+
 how do i make long messages better for print_traceback. can it do multiloine?
 
 current kill in print_traceback is too stinrg?
