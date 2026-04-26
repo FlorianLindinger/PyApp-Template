@@ -20,6 +20,9 @@ start_in_shortcut_folder = False
 print_timestamp_format: str | None = "%H:%M:%S\t"
 # None for no timestamps (else see datetime.datetime.strftime usage: e.g. "%H:%M:%S\t")
 # -------------------------------------------------
+# If True, it will use a fancy Windows terminal emulator that has extra features and grouping in taskbar (see below). If False, it will use the regular Windows terminal but with a wrapper script to handle backend logic that has parts of the functionality of the fancy terminal.
+use_fancy_terminal = True
+# -------------------------------------------------
 
 # =================================
 # ==== less important settings ====
@@ -93,8 +96,7 @@ log_timestamp_format = "%H:%M:%S\t"
 # ==== terminal (visual) settings ====
 # ====================================
 
-# If True, it will use a fancy Windows terminal emulator that has extra features (see below). If False, it will use the regular Windows terminal but with a wrapper script to handle backend logic that has parts of the functionality of the fancy terminal.
-use_fancy_terminal = True
+
 
 # --------------------------------------------------
 # settings that apply if use_fancy_terminal = False:
@@ -133,4 +135,4 @@ button_settings: None | list[tuple[str, dict[str, bool]]] = [  # None = default 
 # ==== debug options ====
 # =======================
 
-use_uncompiled_terminal_emulator_and_run_it_in_global = True
+use_uncompiled_terminal_emulator_and_run_it_in_global = False
