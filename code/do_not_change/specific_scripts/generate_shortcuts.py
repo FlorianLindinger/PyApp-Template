@@ -234,15 +234,12 @@ def main():
         make_lnk(out, settings_icon_path, settings_py, description="WIP")
 
 
-
 if __name__ == "__main__":
     try:
         main()
         print()
         print(f"Shortcut(s) created in: {output_path}")
         input("[Success] Press enter to exit")
-        os.kill(os.getppid(), signal.SIGTERM) # kill terminal launched by cmd
+        os.kill(os.getppid(), signal.SIGTERM)  # kill terminal launched by cmd
     except Exception as e:
-        print_traceback(f"[Error] {e}",add_press_enter_to_exit=True)
-    
-    
+        print_traceback(f"[Error] {e}", add_press_enter_to_exit=True)

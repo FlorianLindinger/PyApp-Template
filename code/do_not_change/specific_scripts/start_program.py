@@ -587,14 +587,14 @@ try:
 
             if create_terminal == True:  # run in windows terminal and don't wait
                 if use_faulthandler == True:
-                    proc=subprocess.Popen(  # noqa:S603 #type:ignore
+                    proc = subprocess.Popen(  # noqa:S603 #type:ignore
                         [python_exe_for_script_path, "-X", "faulthandler", script_wrapper_path, script_path, *args],
                         creationflags=subprocess.CREATE_NEW_CONSOLE,
                         stderr=subprocess.PIPE,
                         text=True,
                     )
                 else:
-                    proc=subprocess.Popen(  # noqa:S603 #type:ignore
+                    proc = subprocess.Popen(  # noqa:S603 #type:ignore
                         [python_exe_for_script_path, script_wrapper_path, script_path, *args],
                         creationflags=subprocess.CREATE_NEW_CONSOLE,
                         stderr=subprocess.PIPE,
@@ -602,20 +602,20 @@ try:
                     )
             else:  # run without terminal but create one on crash and don't wait
                 if use_faulthandler == True:
-                    proc=process = subprocess.Popen(  # noqa:S603 #type:ignore
+                    proc = process = subprocess.Popen(  # noqa:S603 #type:ignore
                         [python_exe_for_script_path, "-X", "faulthandler", script_wrapper_path, script_path, *args],
                         creationflags=subprocess.CREATE_NO_WINDOW,
                         stderr=subprocess.PIPE,
                         text=True,
                     )
                 else:
-                    proc=process = subprocess.Popen(  # noqa:S603 #type:ignore
+                    proc = process = subprocess.Popen(  # noqa:S603 #type:ignore
                         [python_exe_for_script_path, script_wrapper_path, script_path, *args],
                         creationflags=subprocess.CREATE_NO_WINDOW,
                         stderr=subprocess.PIPE,
                         text=True,
                     )
-                    
+
         # ======================
         # handle .pid file (needed for closing of invisible aka no-terminal program)
 
@@ -623,7 +623,7 @@ try:
             process_id = process.pid  # type:ignore
             with open(process_id_file_path, "w") as f:
                 f.write(str(process_id))
-                
+
         # wait shortly and check & handle if script immediately failed
         time.sleep(0.4)
         error_code = proc.poll()
