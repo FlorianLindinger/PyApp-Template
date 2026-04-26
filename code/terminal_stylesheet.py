@@ -1,13 +1,17 @@
-# "%acccent_color_placeholder%" in QSS below will be replaced by fancy_terminal_accent_color_hex in developer_setting.py if present
+# "%windows%" in QSS and the other variables below will be replaced by the Windows accent color.
+
+# ===============
+
+ACCENT_COLOR = "#F83F6b"
 
 # ===============
 # individually imported settings
 
-INPUT_PREPEND=">>> "
-INPUT_PRINT_BG="%acccent_color_placeholder%" # None for default
-INPUT_PRINT_COLOR="contrast" # None for default. "contrast" for a bg with contrast to INPUT_PRINT_BG
-ERROR_PRINT_COLOR = "#FF5252" # None for default
-ERROR_PRINT_BG = "#FFFFFF" # None for default. "contrast" for a bg with contrast to ERROR_PRINT_COLOR
+INPUT_PREPEND = "> "
+INPUT_PRINT_COLOR: str | None = "#5DADE2"  # None for default
+INPUT_PRINT_BG: str | None = None  # None for invisible
+ERROR_PRINT_COLOR: str | None = "#FFFFFF"  # None for default
+ERROR_PRINT_BG: str | None = "#FF0000"  # None for invisible.
 
 # ===============
 # For QSS below
@@ -56,7 +60,7 @@ QSS = (
     "}"
     "QPushButton:checked, QToolButton:checked {"
     "  background-color: transparent;"
-    "  border: 2px solid %acccent_color_placeholder%;"
+    f"  border: 2px solid {ACCENT_COLOR};"
     f"  color: {BUTTON_TEXT};"
     "}"
     "QPushButton[restarting='true'], QToolButton[restarting='true'] {"
@@ -93,7 +97,7 @@ QSS = (
     "}"
     "QMenu QPushButton:checked, QMenu QToolButton:checked {"
     "   background-color: transparent;"
-    "  border: 1px solid %acccent_color_placeholder%;"
+    f"  border: 1px solid {ACCENT_COLOR};"
     f"  color: {BUTTON_TEXT};"
     "}"
     "QMenu QPushButton[restarting='true'], QMenu QToolButton[restarting='true'] {"
@@ -106,17 +110,17 @@ QSS = (
     f"  border: 1px solid {UNCLICKABLE_BUTTON_BG};"
     "}"
     "QTextEdit {"  # terminal output unselected
-    "  selection-background-color: %acccent_color_placeholder%;"
+    f"  selection-background-color: {ACCENT_COLOR};"
     "   border-radius: 11px;"
     f"  border: 3px solid {DARKEST_GRAY};"
     f"  background-color: {DARK_GRAY};"
     f"  border-bottom: 2px solid {SLIGHTLY_DARK_GRAY};"
     "}"
     "QTextEdit:focus {"  # terminal output selected
-    " border-bottom: 2px solid %acccent_color_placeholder%;"
+    f" border-bottom: 2px solid {ACCENT_COLOR};"
     "}"
     "QLineEdit {"  # terminal input unselected
-    "   selection-background-color: %acccent_color_placeholder%;"
+    f"   selection-background-color: {ACCENT_COLOR};"
     "    border-radius: 7px;"
     f"   border: 1px solid {DARKEST_GRAY};"
     f"   background-color: {DARK_GRAY};"
@@ -124,6 +128,6 @@ QSS = (
     "}"
     "QLineEdit:focus {"  # terminal input selected
     f"  background-color: {DARKER_GRAY};"
-    "  border-bottom: 1px solid %acccent_color_placeholder%;"
+    f"  border-bottom: 1px solid {ACCENT_COLOR};"
     "}"
 )
