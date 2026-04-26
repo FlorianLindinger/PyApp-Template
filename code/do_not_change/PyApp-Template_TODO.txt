@@ -22,6 +22,18 @@ maybe found pyrefly bug that it does not rememeeber terminal_bg_color as string 
 very important
 ===================================
 
+easy way to add buttons i guess
+
+add option for log to be realtive to scriopt and not shrotcut but wdir is shrotctu
+
+should i do setting same as log with rel path. or should i create shortcuts to logs?
+
+open on terminal emulator crash also in new terminal the error message like in wrapper
+
+add uniquer error codes in end
+
+ask ai to make all prints homogneouse. let it ask me whcih way i want
+
 add rich traceback everyhwere
 
 fix no error message for broken terminal_emulator sctip
