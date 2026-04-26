@@ -49,8 +49,8 @@ try:
     # ==================
     # define functons and variables
 
-    ANSI_WARN = "\x1b[1;37;41m]"  # white text, red bg, bold
-    ANSI_SUCCESS = "\x1b[1;37;42m]"  # white text, green bg, bold
+    ANSI_WARN = "\x1b[1;37;41m"  # white text, red bg, bold
+    ANSI_SUCCESS = "\x1b[1;37;42m"  # white text, green bg, bold
     ANSI_RESET = "\033[0m"
 
     WINDOWS_CRASH_CODES = {
@@ -74,10 +74,10 @@ try:
         print(f"{ANSI_WARN}{msg}{ANSI_RESET}", sep=sep, end=end)
 
     def input_warn(msg):
-        return input(f"{ANSI_WARN}{msg}{ANSI_RESET}")
+        input(f"{ANSI_WARN}{msg}{ANSI_RESET}")
 
     def input_success(msg):
-        return input(f"{ANSI_SUCCESS}{msg}{ANSI_RESET}")
+        input(f"{ANSI_SUCCESS}{msg}{ANSI_RESET}")
 
     def set_terminal_name(name: str) -> None:
         try:
@@ -88,7 +88,7 @@ try:
     def run_text_in_new_terminal_and_wait(text):
         import subprocess  # noqa:PLC0415
 
-        subprocess.run( # noqa:S603
+        subprocess.run(  # noqa:S603
             [backend_python_exe_path, "-X", "faulthandler", "-c", text], creationflags=subprocess.CREATE_NEW_CONSOLE
         )
 
@@ -540,38 +540,38 @@ try:
 
     # used to print in new terminal window:
     script_base = r"""
-        import os
+import os
 
-        ANSI_RESET = "\033[0m"
-        ANSI_WARN = "\x1b[1;37;41m]"
-        ANSI_SUCCESS = "\x1b[1;37;42m]"
-        
-        def print_success(msg, sep: str | None = " ", end: str | None = "\n"):
-            print(f"{ANSI_SUCCESS}{msg}{ANSI_RESET}", sep=sep, end=end)
+ANSI_RESET = "\033[0m"
+ANSI_WARN = "\x1b[1;37;41m]"
+ANSI_SUCCESS = "\x1b[1;37;42m]"
 
-        def print_warn(msg, sep: str | None = " ", end: str | None = "\n"):
-            print(f"{ANSI_WARN}{msg}{ANSI_RESET}", sep=sep, end=end)
-        
-        def input_warn(msg):
-            return input(f"{ANSI_WARN}{msg}{ANSI_RESET}")
+def print_success(msg, sep: str | None = " ", end: str | None = "\n"):
+    print(f"{ANSI_SUCCESS}{msg}{ANSI_RESET}", sep=sep, end=end)
 
-        def input_success(msg):
-            return input(f"{ANSI_SUCCESS}{msg}{ANSI_RESET}")
+def print_warn(msg, sep: str | None = " ", end: str | None = "\n"):
+    print(f"{ANSI_WARN}{msg}{ANSI_RESET}", sep=sep, end=end)
 
-        def set_terminal_name(name: str) -> None:
-            try:
-                os.system(f"title {name.replace('r\n', '').replace(r'\r', '')}")
-            except Exception:
-                pass
+def input_warn(msg):
+    return input(f"{ANSI_WARN}{msg}{ANSI_RESET}")
 
-        def get_terminal_name():
-            try:
-                buffer = ctypes.create_unicode_buffer(1024)
-                ctypes.windll.kernel32.GetConsoleTitleW(buffer, len(buffer))
-                return buffer.value
-            except Exception:
-                return "Terminal"
-    """
+def input_success(msg):
+    return input(f"{ANSI_SUCCESS}{msg}{ANSI_RESET}")
+
+def set_terminal_name(name: str) -> None:
+    try:
+        os.system(f"title {name.replace('r\n', '').replace(r'\r', '')}")
+    except Exception:
+        pass
+
+def get_terminal_name():
+    try:
+        buffer = ctypes.create_unicode_buffer(1024)
+        ctypes.windll.kernel32.GetConsoleTitleW(buffer, len(buffer))
+        return buffer.value
+    except Exception:
+        return "Terminal"
+"""
 
     # ==================
     # execute
@@ -645,18 +645,18 @@ try:
             if close_on_python_interpreter_crash:
                 sys.exit(exit_code)
             else:
-                ...  ###################
+                ...  ################### WIP
 
         else:  # regular failure case (includes any string exit_code)
             if close_on_failure:
                 sys.exit(exit_code)
             else:
                 script = f"""
-                    set_terminal_name(f"[Failure] {{get_terminal_name()}}")
-                    print()
-                    print_warn(f"[Python Failure Return] Script exited with code: {exit_code}")
-                    input_warn("[Python Failure Return] Press Enter to exit.")
-                """
+set_terminal_name(rf"[Failure] {{get_terminal_name()}}")
+print()
+print_warn(rf"[Python Failure Return] Script exited with code: {exit_code}")
+input_warn("[Python Failure Return] Press Enter to exit.")
+"""
                 if script_has_terminal:
                     exec(script)  # noqa
                 else:
@@ -669,18 +669,18 @@ try:
 
         try:  # attempt detailed error report
             script = f"""
-                set_terminal_name(f"[Crash] {{get_terminal_name()}}")
-                print()
-                print_red("="*40)
-                print_red(f"CRITICAL LAUNCH ERROR: {e}")
-                print_red("="*40)
-                print({traceback.print_exc()})
-                print_red("="*40)
-                print(f"[Info] Python Exe: {sys.executable}")
-                print(f"[Info] Script: {script_path}")
-                print()
-                input_red("[Python Crash] See above. Press Enter to exit.")
-            """
+set_terminal_name(rf"[Crash] {{get_terminal_name()}}")
+print()
+print_warn("="*40)
+print_warn(r"CRITICAL LAUNCH ERROR: {e}")
+print_warn("-"*40)
+print_warn(r\"""{traceback.format_exc()}\""",end="")
+print_warn("-"*40)
+print_warn(r"[Info] Python Exe: {sys.executable}")
+print_warn(r"[Info] Script: {script_path}")
+print_warn("-"*40)
+input_warn("[Python Crash] See above. Press Enter to exit.")
+"""
             if script_has_terminal:
                 exec(script)  # noqa
             else:
@@ -701,10 +701,11 @@ except Exception as e:
     import sys
     import traceback
 
+    print("=" * 20)
     print(f"[Error] Failed in wrapper script with error: {e}:")
-    print("=" * 20)
+    print("-" * 20)
     print(traceback.format_exc())
-    print("=" * 20)
+    print("-" * 20)
     input("Press enter to exit")
     sys.exit(1)
 
