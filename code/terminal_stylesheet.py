@@ -1,5 +1,17 @@
 # "%acccent_color_placeholder%" in QSS below will be replaced by fancy_terminal_accent_color_hex in developer_setting.py if present
 
+# ===============
+# individually imported settings
+
+INPUT_PREPEND=">>> "
+INPUT_PRINT_BG="%acccent_color_placeholder%" # None for default
+INPUT_PRINT_COLOR="contrast" # None for default. "contrast" for a bg with contrast to INPUT_PRINT_BG
+ERROR_PRINT_COLOR = "#FF5252" # None for default
+ERROR_PRINT_BG = "#FFFFFF" # None for default. "contrast" for a bg with contrast to ERROR_PRINT_COLOR
+
+# ===============
+# For QSS below
+
 LIGHT_GRAY = "#D3D3D3"
 GRAY = "#C0C0C0"
 SLIGHTLY_DARK_GRAY = "#B3B3B3"
@@ -26,6 +38,8 @@ UNCLICKABLE_BUTTON_BORDER = "#808080"
 MENU_BUTTON_BG = BUTTON_BG
 MENU_BUTTON_HOVER_BG = BUTTON_HOVER_BG
 MENU_BUTTON_BORDER = BUTTON_BORDER
+
+# ===============
 
 QSS = (
     "QPushButton, QToolButton {"
