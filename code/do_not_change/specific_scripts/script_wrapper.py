@@ -39,7 +39,6 @@ try:
     terminal_colors = sys.argv[15]
     script_has_terminal = sys.argv[16] == "1"
     # script_has_terminal = "1" means that this window is run in a terminal and False that it is invisible and one needs to create a new terminal to print
-    backend_python_exe_path = sys.argv[17]  # i guess safer for extra terminal print if the user python is broken
 
     # ==================
 
@@ -67,9 +66,6 @@ try:
     def looks_like_interpreter_crash(returncode) -> bool:
         return isinstance(returncode, int) and (unsigned32(returncode) in WINDOWS_CRASH_CODES)
 
-    def print_success(msg, sep: str | None = " ", end: str | None = "\n"):
-        print(f"{ANSI_SUCCESS}{msg}{ANSI_RESET}", sep=sep, end=end)
-
     def print_warn(msg, sep: str | None = " ", end: str | None = "\n"):
         print(f"{ANSI_WARN}{msg}{ANSI_RESET}", sep=sep, end=end)
 
@@ -87,9 +83,10 @@ try:
 
     def run_text_in_new_terminal_and_wait(text):
         import subprocess  # noqa:PLC0415
+        import sys  # noqa
 
         subprocess.run(  # noqa:S603
-            [backend_python_exe_path, "-X", "faulthandler", "-c", text], creationflags=subprocess.CREATE_NEW_CONSOLE
+            [sys.executable, "-X", "faulthandler", "-c", text], creationflags=subprocess.CREATE_NEW_CONSOLE
         )
 
     if script_has_terminal:
@@ -543,11 +540,8 @@ try:
 import os
 
 ANSI_RESET = "\033[0m"
-ANSI_WARN = "\x1b[1;37;41m]"
-ANSI_SUCCESS = "\x1b[1;37;42m]"
-
-def print_success(msg, sep: str | None = " ", end: str | None = "\n"):
-    print(f"{ANSI_SUCCESS}{msg}{ANSI_RESET}", sep=sep, end=end)
+ANSI_WARN = "\x1b[1;37;41m"
+ANSI_SUCCESS = "\x1b[1;37;42m"
 
 def print_warn(msg, sep: str | None = " ", end: str | None = "\n"):
     print(f"{ANSI_WARN}{msg}{ANSI_RESET}", sep=sep, end=end)
@@ -630,10 +624,10 @@ def get_terminal_name():
                 sys.exit(0)
             else:
                 script = """
-                    set_terminal_name(f"[Success] {{get_terminal_name()}}")
-                    print()
-                    input_success("[Program finished successfully] Press Enter to exit.")
-                """
+set_terminal_name(rf"[Success] {{get_terminal_name()}}")
+print()
+input_success("[Program finished successfully] Press Enter to exit.")
+"""
                 if script_has_terminal:
                     exec(script)  # noqa
                 else:
