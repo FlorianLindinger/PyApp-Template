@@ -72,7 +72,7 @@ try:
     # enable colored traceback (needed especially before python 3.13)
     rich.traceback.install(show_locals=False)
 
-    def print_traceback(message="Error", add_press_enter_to_exit=False, exit_code=1) -> None:
+    def print_traceback(message="Error", add_press_enter_to_exit=False) -> None:
         import sys  # noqa
 
         exc_type, exc_value, tb = sys.exc_info()
@@ -105,7 +105,9 @@ try:
 
         if add_press_enter_to_exit:
             input()
-            os._exit(exit_code)  # instead of sys.exit(exit_code) to prevent exception by script calling this script
+            import signal #noqa
+            os.kill(os.getppid(), signal.SIGTERM) # kills even terminal launched by cmd and terminal from script calling this script
+            
 except Exception:
     import sys
 
