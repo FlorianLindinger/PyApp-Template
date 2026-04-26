@@ -15,7 +15,6 @@ try:
     # =============================
 
     from developer_settings import (
-        accent_color_hex,
         close_on_failure,
         close_on_python_interpreter_crash,
         close_on_success,
@@ -48,7 +47,6 @@ try:
     )
     from do_not_change.specific_scripts.common_variables import (
         auto_search_required_packages_output_file_path,
-        backend_python_exe_path,
         compiled_terminal_path,
         default_packages_file_path,
         developer_settings_dir,
@@ -130,8 +128,6 @@ try:
 
     if python_version in [None, False]:
         python_version = ""
-    if accent_color_hex in [False, None]:
-        accent_color_hex = ""
     if log_file_date_append_format in [None, False]:
         log_file_date_append_format = ""
     if log_timestamp_format in [None, False]:
@@ -564,7 +560,6 @@ try:
             args += [
                 "1" if terminal_needs_input else "0",
                 stylesheet_path,
-                accent_color_hex,
                 dark_mode,
                 "1" if use_faulthandler else "0",
             ]
@@ -583,7 +578,7 @@ try:
 
         else:  # run in Windows terminal or no window
             # script_wrapper_path need addition args
-            args += [terminal_bg_color + terminal_text_color, "1" if create_terminal else "0", backend_python_exe_path]  # type:ignore
+            args += [terminal_bg_color + terminal_text_color, "1" if create_terminal else "0"]  # type:ignore
 
             if create_terminal == True:  # run in windows terminal and don't wait
                 proc = subprocess.Popen(  # noqa:S603 #type:ignore
@@ -609,9 +604,16 @@ try:
         error_code = proc.poll()
         if error_code is not None and proc.poll() != 0:
             print("=" * 20)
-            print("[Error] Failed launching terminal-emulator/script-wrapper. Probably a syntax error in the script")
+            print("[Error] Failed launching terminal-emulator/script-wrapper. Probably a syntax error in the script:")
+            if (use_fancy_terminal == True) and (create_terminal == True):
+                if use_uncompiled_terminal_emulator_and_run_it_in_global:
+                    print(uncompiled_terminal_path)
+                else:
+                    print(compiled_terminal_path)
+            else:
+                print(script_wrapper_path)
             print("-" * 20)
-            input("[Error (see above)] Press enter to exit")
+            input("[Error (see above)] Press enter to exit.")
             os._exit(error_code)
 
     # =============================
