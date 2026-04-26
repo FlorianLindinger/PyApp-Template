@@ -1,3 +1,46 @@
+import subprocess
+import sys
+
+# setup error reporting in newly created terminal - logic
+try:
+
+    def run_text_in_new_terminal_and_wait(text):
+        import subprocess  # noqa:PLC0415
+        import sys  # noqa
+
+        subprocess.run(  # noqa:S603
+            [sys.executable, "-X", "faulthandler", "-c", text], creationflags=subprocess.CREATE_NEW_CONSOLE
+        )
+
+    # needed to print an error message in new terminal because this script should not have a Windows terminal.
+    script_base = r"""
+import os
+
+ANSI_RESET = "\033[0m"
+ANSI_WARN = "\x1b[1;37;41m"
+
+def print_warn(msg, sep: str | None = " ", end: str | None = "\n"):
+    print(f"{ANSI_WARN}{msg}{ANSI_RESET}", sep=sep, end=end)
+
+def input_warn(msg):
+    return input(f"{ANSI_WARN}{msg}{ANSI_RESET}")
+
+def set_terminal_name(name: str) -> None:
+    try:
+        os.system(f"title {name.replace('r\n', '').replace(r'\r', '')}")
+    except Exception:
+        pass
+"""
+except Exception as e:
+    import traceback
+
+    # the following error prints will usually not show since this script is usually not called with terminal. A script calling this script can check if this script immediately returns errorcode 1 or just wait for errorcodes
+    print("=" * 20)
+    print(f"Failed to setup error handling in terminal emulator: {e}")
+    print("-" * 20)
+    print(traceback.format_exc())
+    print("=" * 20)
+    sys.exit(1)
 
 
 try:
@@ -44,11 +87,11 @@ try:
     # =============
     # default terminal emulator style sheet
 
-    INPUT_PREPEND=">>> "
-    INPUT_PRINT_BG="%acccent_color_placeholder%" # None for default
-    INPUT_PRINT_COLOR="contrast" # None for default. "contrast" for a bg with contrast to INPUT_PRINT_BG
-    ERROR_PRINT_COLOR = "#FF5252" # None for default
-    ERROR_PRINT_BG = "#FFFFFF" # None for default. "contrast" for a bg with contrast to ERROR_PRINT_COLOR
+    INPUT_PREPEND = ">>> "
+    INPUT_PRINT_BG = "%acccent_color_placeholder%"  # None for default
+    INPUT_PRINT_COLOR = "contrast"  # None for default. "contrast" for a bg with contrast to INPUT_PRINT_BG
+    ERROR_PRINT_COLOR = "#FF5252"  # None for default
+    ERROR_PRINT_BG = "#FFFFFF"  # None for default. "contrast" for a bg with contrast to ERROR_PRINT_COLOR
 
     LIGHT_GRAY = "#D3D3D3"
     GRAY = "#C0C0C0"
@@ -261,7 +304,7 @@ try:
 
             script_path = os.path.abspath(script_path)
             self.script_path = script_path
-            if python_exe.endswith(".bat") or python_exe.endswith(".exe"): # to allow for "py"
+            if python_exe.endswith(".bat") or python_exe.endswith(".exe"):  # to allow for "py"
                 python_exe = os.path.abspath(python_exe)
             self.python_exe = python_exe
             self.close_on_crash = close_on_crash
@@ -649,7 +692,7 @@ try:
         def clear_terminal(self) -> None:
             self._terminal_output_entries.clear()
             self._terminal_output.clear()
-            
+
         def terminal_print(
             self,
             *text,
@@ -659,22 +702,22 @@ try:
             always_go_to_bottom_for_user_input: bool = True,
             error=False,
             end="\n",
-            sep=" "
+            sep=" ",
         ) -> None:
-            
+
             # if isinstance(color,str):
             #     color:QColor=QColor(color) #type:ignore
             # if isinstance(bg_color,str):
             #     bg_color:QColor=QColor(bg_color) #type:ignore
-            
-            if error == True:
-                color=ERROR_PRINT_COLOR 
-                bg_color = ERROR_PRINT_BG
-            
-            text=sep.join(text)
-            text+=end
 
-            self._terminal_output_entries.append((text, color,bg_color, is_user_input))
+            if error == True:
+                color = ERROR_PRINT_COLOR
+                bg_color = ERROR_PRINT_BG
+
+            text = sep.join(text)
+            text += end
+
+            self._terminal_output_entries.append((text, color, bg_color, is_user_input))
 
             if is_user_input and always_go_to_bottom_for_user_input:
                 self.go_to_terminal_bottom()
@@ -685,7 +728,7 @@ try:
                 self._go_to_bottom_on_next_text_print = False
                 return
 
-            self._insert_text(text=text, color=color,bg_color=bg_color)
+            self._insert_text(text=text, color=color, bg_color=bg_color)
 
         def go_to_terminal_bottom(self) -> None:
             sb = self._terminal_output.verticalScrollBar()
@@ -704,7 +747,9 @@ try:
                 return
 
             self.process.write((text).encode())
-            self.terminal_print(INPUT_PREPEND+text,color=INPUT_PRINT_COLOR, is_user_input=True,bg_color=INPUT_PRINT_BG)
+            self.terminal_print(
+                INPUT_PREPEND + text, color=INPUT_PRINT_COLOR, is_user_input=True, bg_color=INPUT_PRINT_BG
+            )
             self.input_line.add_to_history(text)
             self.clear_input()
 
@@ -961,8 +1006,8 @@ try:
             if not self.process.waitForStarted(3000):
                 error_message = self.process.errorString().strip()
                 self.terminal_print("=" * 20, error=True)
-                if error_message:                    
-                    self.terminal_print(f"Failed to start process: {error_message}", error=True)                    
+                if error_message:
+                    self.terminal_print(f"Failed to start process: {error_message}", error=True)
                 else:
                     self.terminal_print("Failed to start process.", error=True)
                 self.terminal_print(f"Python exe: {self.python_exe}", error=True)
@@ -1052,13 +1097,13 @@ try:
             if reason == QSystemTrayIcon.ActivationReason.Trigger:
                 self.undo_set_window_system_tray()
 
-        def _insert_text(self, text: str, color: str| None = None,bg_color: str| None = None) -> None:
-            
-            if isinstance(color,str):
-                color:QColor=QColor(color)  #type:ignore
-            if isinstance(bg_color,str):
-                bg_color:QColor=QColor(bg_color) #type:ignore
-            
+        def _insert_text(self, text: str, color: str | None = None, bg_color: str | None = None) -> None:
+
+            if isinstance(color, str):
+                color: QColor = QColor(color)  # type:ignore
+            if isinstance(bg_color, str):
+                bg_color: QColor = QColor(bg_color)  # type:ignore
+
             if self.get_highlight_on_print_state():
                 self.highlight_in_taskbar()
                 if not self.window_is_active():
@@ -1110,10 +1155,10 @@ try:
 
         def _refresh_terminal_output(self) -> None:
             self._terminal_output.clear()
-            for text, color,bg_color, is_user_input in self._terminal_output_entries:
+            for text, color, bg_color, is_user_input in self._terminal_output_entries:
                 if is_user_input and not self.get_show_input_state():
                     continue
-                self._insert_text(text, color,bg_color)
+                self._insert_text(text, color, bg_color)
 
         def _refresh_menu_controls(self) -> None:
             # Sync pin buttons
@@ -1157,7 +1202,7 @@ try:
                     self.terminal_print(traceback.format_exc(), error=True)
 
             else:
-                self.terminal_print(msg,end="")
+                self.terminal_print(msg, end="")
 
         def _read_stderr(self) -> None:
             data = bytes(self.process.readAllStandardError()).decode(errors="replace")  # type: ignore
@@ -1284,6 +1329,18 @@ try:
 
         return getattr(module, variable_name)
 
+    def get_contrast_grayscale_hex_color(hex_color: str):
+        hex_color = hex_color.lstrip("#")
+        r, g, b = [int(hex_color[i : i + 2], 16) for i in (0, 2, 4)]
+
+        def to_linear(c):
+            c = c / 255
+            return c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4
+
+        L = 0.2126 * to_linear(r) + 0.7152 * to_linear(g) + 0.0722 * to_linear(b)
+        gray = 60 if L > 0.5 else 200  # dark gray for light colors, light gray for dark colors
+        return f"#{gray:02x}{gray:02x}{gray:02x}"
+
     # main
 
     def main() -> int:
@@ -1312,11 +1369,8 @@ try:
 
         terminal_needs_input = arg_to_bool(16, True)
         stylesheet_path = arg_to_str(17, "")
-        accent_color_hex = arg_to_str(18, "")
-        dark_mode = arg_to_str(
-            19, "1"
-        )  # no bool because "auto" ... could also be option that should not be turned to True
-        use_faulthandler = arg_to_str(20, "1")
+        dark_mode = arg_to_str(18, "1")  # no bool because "auto" could also be option that should not be turned to True
+        use_faulthandler = arg_to_str(19, "1")
 
         if log_path != "":
             log_file = open(log_path, "w", encoding="utf-8", buffering=1)  # noqa:SIM115
@@ -1348,41 +1402,51 @@ try:
             app.styleHints().setColorScheme(Qt.ColorScheme.Light)
 
         try:
-            global INPUT_PRINT_COLOR,INPUT_PRINT_BG,ERROR_PRINT_BG,ERROR_PRINT_COLOR
+            global INPUT_PRINT_COLOR, INPUT_PRINT_BG, ERROR_PRINT_BG, ERROR_PRINT_COLOR
             if stylesheet_path != "":
-                
-                
-                
-                from terminal_stylesheet import QSS,INPUT_PRINT_COLOR,INPUT_PRINT_BG,ERROR_PRINT_BG,ERROR_PRINT_COLOR
-                
-                # with open(stylesheet_path, encoding="utf-8") as f:
-                #     QSS = f.read()
+                sys.path.insert(0, os.path.dirname(stylesheet_path))
+
+                from terminal_stylesheet import (  # noqa
+                    ERROR_PRINT_BG,
+                    ERROR_PRINT_COLOR,
+                    INPUT_PRINT_BG,
+                    INPUT_PRINT_COLOR,
+                    QSS,
+                )
             else:
                 QSS = default_QSS
-                
-            if accent_color_hex == "":
-                accent_color_hex = app.palette().color(QPalette.ColorRole.Accent).name() # windows accent color     
-            QSS = QSS.replace("%acccent_color_placeholder%", accent_color_hex)
-            app.setStyleSheet(QSS)
-            
-            if INPUT_PRINT_COLOR.lower() =="%acccent_color_placeholder%":
-                INPUT_PRINT_COLOR=accent_color_hex
-            if INPUT_PRINT_BG.lower() =="%acccent_color_placeholder%":
-                INPUT_PRINT_BG = accent_color_hex
-            elif INPUT_PRINT_BG.lower() =="contrast":
-                
-            if ERROR_PRINT_BG.lower() =="%acccent_color_placeholder%":
-                ERROR_PRINT_BG=accent_color_hex
-            if ERROR_PRINT_COLOR.lower() =="%acccent_color_placeholder%":
-                ERROR_PRINT_COLOR = accent_color_hex
-            elif ERROR_PRINT_COLOR.lower() =="contrast":
 
-            
+            windows_accent_color = app.palette().color(QPalette.ColorRole.Accent).name()
+            QSS = QSS.replace("%windows%", windows_accent_color)
+
+            if INPUT_PRINT_COLOR.lower().strip() == "%windows%":
+                INPUT_PRINT_COLOR = windows_accent_color
+            if ERROR_PRINT_COLOR.lower().strip() == "%windows%":
+                ERROR_PRINT_COLOR = windows_accent_color
+
+            if ERROR_PRINT_BG.lower().strip() == "%windows%":
+                ERROR_PRINT_BG = windows_accent_color
+            elif ERROR_PRINT_BG.lower().strip() == "%contrast%":
+                ERROR_PRINT_BG = get_contrast_grayscale_hex_color(ERROR_PRINT_COLOR)
+
+            if INPUT_PRINT_BG.lower().strip() == "%windows%":
+                INPUT_PRINT_BG = windows_accent_color
+            elif INPUT_PRINT_BG.lower().strip() == "%contrast%":
+                INPUT_PRINT_BG = get_contrast_grayscale_hex_color(INPUT_PRINT_COLOR)
+
+            app.setStyleSheet(QSS)
+
         except Exception as e:
-            print(f"[Error] Terminal emulator failed to load/format/apply stylesheet: {e}")
-            print("=" * 20)
-            print(traceback.format_exc())
-            print("=" * 20)
+            script = f"""
+print_warn(f"[Error] Terminal emulator failed to load/format/apply stylesheet: {e}")
+print_warn("-" * 20)
+print_warn(r\"""{traceback.format_exc()}\""",end="")
+print_warn("-" * 20)
+set_terminal_name("Error (Terminal Emulator)")
+input_warn("[Error] Press enter to exit.")
+"""
+            run_text_in_new_terminal_and_wait(script_base + script)
+            sys.exit(1)
 
         window.show()
         return app.exec()
@@ -1396,11 +1460,15 @@ except Exception as e:
     import sys
     import traceback
 
-    print(f"[Error] Failed in terminal_emulator script: {e}:")
-    print("=" * 20)
-    print(traceback.format_exc())
-    print("=" * 20)
-    input("Press enter to exit")
+    script = f"""
+print_warn(f"[Error] Failed in terminal_emulator script: {e}:")
+print_warn("-" * 20)
+print_warn(r\"""{traceback.format_exc()}\""",end="")
+print_warn("-" * 20)
+set_terminal_name("Error (Terminal Emulator)")
+input_warn("Press enter to exit")
+"""
+    run_text_in_new_terminal_and_wait(script_base + script)
     sys.exit(1)
 
 finally:
