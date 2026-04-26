@@ -3,13 +3,6 @@ import os
 import sys
 import time
 
-print("=============")
-print("cwd:", os.getcwd())
-print("paths:", *sys.path, sep="\n")
-print("=============")
-
-
-
 for i in range(50):
     print(i)
     time.sleep(0.05)
@@ -21,12 +14,15 @@ while True:
         raise RuntimeError("intentional crash test")
     elif msg == "crash1":
         import os
+
         os._exit(1)
     elif msg == "crash2":
         import os
+
         os.abort()
     elif msg == "crash3":
         import ctypes
+
         ctypes.string_at(0)  # dereference NULL -> segfault on most platforms
     elif msg == "crash4":
         a = []
@@ -39,6 +35,7 @@ while True:
         print(msg)
     elif msg in ["np", "numpy"]:
         import numpy
+        print("imported numpy")
 
     elif msg == "tv":
         print('Terminal_window.toggle_button_visible_state("stop")')
