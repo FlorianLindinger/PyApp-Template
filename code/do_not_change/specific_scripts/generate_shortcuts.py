@@ -20,6 +20,7 @@ import developer_settings
 from do_not_change.specific_scripts.common_variables import (
     backend_python_exe_path,
     developer_settings_path,
+    print_traceback,
 )
 
 # =============================
@@ -204,9 +205,7 @@ def main():
 
     # Shortcut: start without terminal
     if hasattr(developer_settings, "start_no_terminal_name") and developer_settings.start_no_terminal_name != "":
-        out = (
-            output_path + sanitize_filename(developer_settings.start_no_terminal_name) + ".lnk"
-        )
+        out = output_path + sanitize_filename(developer_settings.start_no_terminal_name) + ".lnk"
         make_lnk(
             out,
             launcher_no_terminl_icon_path,
@@ -227,18 +226,23 @@ def main():
         hasattr(developer_settings, "user_settings_path")
         and hasattr(developer_settings, "settings_name")
         and developer_settings.settings_name != ""
-        and os.path.exists(make_abs_path_relative_to_file(developer_settings.user_settings_path, developer_settings_path))
+        and os.path.exists(
+            make_abs_path_relative_to_file(developer_settings.user_settings_path, developer_settings_path)
+        )
     ):
         out = output_path + sanitize_filename(developer_settings.settings_name) + ".lnk"
         make_lnk(out, settings_icon_path, settings_py, description="WIP")
 
-    print()
-    print(f"[Success] Shortcut(s) created in: {output_path}")
 
 
 if __name__ == "__main__":
-    main()
-    print()
-    input("Press enter to exit")
-    # force close terminal
-    os.kill(os.getppid(), signal.SIGTERM)
+    try:
+        main()
+        print()
+        print(f"Shortcut(s) created in: {output_path}")
+        input("[Success] Press enter to exit")
+        os.kill(os.getppid(), signal.SIGTERM) # kill terminal launched by cmd
+    except Exception as e:
+        print_traceback(f"[Error] {e}",add_press_enter_to_exit=True)
+    
+    
