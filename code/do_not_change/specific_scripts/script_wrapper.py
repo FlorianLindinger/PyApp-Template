@@ -1,21 +1,18 @@
+# launch script in wrapper that handles:
+#   errors
+#   return
+#   icon setting
+#   terminal-renaming
+#   working dir setting
+#   app-id setting
+#   closer or keep open logic on finish/error/fail
+#   print in additional terminal for final print info if in no-terminal mode
+#   ...
+
 try:
-    # add change icon
-
-    # launch script in wrapper that handles:
-    #   errors
-    #   return
-    #   icon setting
-    #   terminal-renaming
-    #   working dir setting
-    #   app-id setting
-    #   closer or keep open logic on finish/error/fail
-    #   print in additional terminal for final print info if in no-terminal mode
-
     # ==================
     # import
 
-    import atexit
-    import ctypes
     import os
     import runpy
     import sys
@@ -29,34 +26,58 @@ try:
     icon_path = sys.argv[3]
     app_id = sys.argv[4]
     wdir_is_script_dir = sys.argv[5] == "1"
-    close_on_crash = sys.argv[6] == "1"
+    close_on_python_interpreter_crash = sys.argv[6] == "1"
     close_on_failure = sys.argv[7] == "1"
     close_on_success = sys.argv[8] == "1"
-    log_path_rel_to_wdir = sys.argv[9]
+    print_timestamp_format = sys.argv[9]
+    log_path = sys.argv[10]
+    log_timestamp_format = sys.argv[11]
+    overwrite_log = sys.argv[12] == "1"
+    log_file_date_append_format = sys.argv[13]
+    script_after_interpreter_crash_path = sys.argv[14]
 
-    terminal_colors = sys.argv[10]
-    script_has_terminal = sys.argv[11] == "1"
+    terminal_colors = sys.argv[15]
+    script_has_terminal = sys.argv[16] == "1"
     # script_has_terminal = "1" means that this window is run in a terminal and False that it is invisible and one needs to create a new terminal to print
-    backend_python_exe_path = sys.argv[12]  # i guess safer for extra terminal print if the user python is broken
+    backend_python_exe_path = sys.argv[17]  # i guess safer for extra terminal print if the user python is broken
+
+    # ==================
+
+    if app_id != "" or script_has_terminal:
+        import ctypes
 
     # ==================
     # define functons and variables
 
-    ASCI_RED = "\033[91m"
-    ASCI_GREEN = "\033[92m"
-    ASCI_RESET = "\033[0m"
+    ANSI_WARN = "\x1b[1;37;41m]"  # white text, red bg, bold
+    ANSI_SUCCESS = "\x1b[1;37;42m]"  # white text, green bg, bold
+    ANSI_RESET = "\033[0m"
 
-    def print_red(msg, sep=" ", end="\n"):
-        print(f"{ASCI_RED}{msg}{ASCI_RESET}", sep=sep, end=end)
+    WINDOWS_CRASH_CODES = {
+        0xC0000005,  # access violation
+        0xC00000FD,  # stack overflow
+        0xC000001D,  # illegal instruction
+        0xC0000096,  # privileged instruction
+        0xC0000409,  # stack buffer overrun
+    }
 
-    def print_green(msg, sep=" ", end="\n"):
-        print(f"{ASCI_GREEN}{msg}{ASCI_RESET}", sep=sep, end=end)
+    def unsigned32(n: int) -> int:
+        return n & 0xFFFFFFFF
 
-    def input_red(msg):
-        input(f"{ASCI_RED}{msg}{ASCI_RESET}")
+    def looks_like_interpreter_crash(returncode) -> bool:
+        return isinstance(returncode, int) and (unsigned32(returncode) in WINDOWS_CRASH_CODES)
 
-    def input_green(msg):
-        input(f"{ASCI_GREEN}{msg}{ASCI_RESET}")
+    def print_success(msg, sep: str | None = " ", end: str | None = "\n"):
+        print(f"{ANSI_SUCCESS}{msg}{ANSI_RESET}", sep=sep, end=end)
+
+    def print_warn(msg, sep: str | None = " ", end: str | None = "\n"):
+        print(f"{ANSI_WARN}{msg}{ANSI_RESET}", sep=sep, end=end)
+
+    def input_warn(msg):
+        return input(f"{ANSI_WARN}{msg}{ANSI_RESET}")
+
+    def input_success(msg):
+        return input(f"{ANSI_SUCCESS}{msg}{ANSI_RESET}")
 
     def set_terminal_name(name: str) -> None:
         try:
@@ -64,16 +85,23 @@ try:
         except Exception:
             pass
 
-    def get_terminal_name():
-        try:
-            buffer = ctypes.create_unicode_buffer(1024)
-            ctypes.windll.kernel32.GetConsoleTitleW(buffer, len(buffer))
-            return str(buffer.value)
-        except Exception:
-            return "Terminal"
+    def run_text_in_new_terminal_and_wait(text):
+        import subprocess  # noqa:PLC0415
+
+        subprocess.run( # noqa:S603
+            [backend_python_exe_path, "-X", "faulthandler", "-c", text], creationflags=subprocess.CREATE_NEW_CONSOLE
+        )
 
     if script_has_terminal:
         from ctypes import wintypes
+
+        def get_terminal_name():
+            try:
+                buffer = ctypes.create_unicode_buffer(1024)
+                ctypes.windll.kernel32.GetConsoleTitleW(buffer, len(buffer))
+                return str(buffer.value)
+            except Exception:
+                return "Terminal"
 
         def set_terminal_icon(icon_path: str, print_errors: bool = False) -> int:
             """Change the icon of the current terminal window and return the first touched hwnd."""
@@ -365,82 +393,203 @@ try:
 
             return candidate_hwnds[0]
 
-    def run_text_in_new_terminal_and_wait(text):
-        import subprocess  # noqa:PLC0415
+    if log_path != "":
+        import atexit
+        import threading
+        from datetime import datetime, timezone
 
-        subprocess.run([backend_python_exe_path, "-c", text], creationflags=subprocess.CREATE_NEW_CONSOLE)  # noqa:S603
+        class pipe_splitter:
+            """
+            Mirror text output to a console stream and an optional log stream, with:
+            - separate optional timestamp formats for console and log
+            - optional red coloring for console error output only
+            - line-aware prefixing so timestamps appear once per line
 
-    class pipe_splitter:
-        """use like the following example to save prints and errors to log file and print to console at same time:
-        log_file = open(Path("app.log"), "a", encoding="utf-8",buffering=1)
-        sys.stdout = pipe_splitter(sys.__stdout__, log_file)
-        """
+            Timestamp behavior:
+            - if print_timestamp_format is "", None, or False -> no console timestamp
+            - if log_timestamp_format is "", None, or False -> no log timestamp
 
-        def __init__(self, *streams):
-            self.streams = streams
+            Example:
+                import atexit
+                import sys
 
-        def write(self, data):
-            for stream in self.streams:
-                stream.write(data)
-                stream.flush()
+                log_file = open("app.log", "w", encoding="utf-8", buffering=1)
+                atexit.register(log_file.close)
 
-        def flush(self):
-            for stream in self.streams:
-                stream.flush()
+                sys.stdout = pipe_splitter(
+                    print_stream=sys.__stdout__,
+                    log_stream=log_file,
+                    print_timestamp_format="%H:%M:%S",
+                    log_timestamp_format="%Y-%m-%d %H:%M:%S",
+                    print_red=False,
+                )
+
+                sys.stderr = pipe_splitter(
+                    print_stream=sys.__stderr__,
+                    log_stream=log_file,
+                    print_timestamp_format="%H:%M:%S",
+                    log_timestamp_format="%Y-%m-%d %H:%M:%S",
+                    print_red=True,
+                )
+            """
+
+            ANSI_RED = "\x1b[31m"
+            ANSI_RESET = "\x1b[0m"
+
+            def __init__(
+                self,
+                print_stream,  # TextIO object
+                log_stream=None,  # TextIO object or None
+                *,
+                print_timestamp_format: str | None = "[%H:%M:%S] ",
+                log_timestamp_format: str | None = "[%H:%M:%S]\t",
+                print_red: bool = False,
+                auto_flush: bool = True,
+            ) -> None:
+                if print_stream is None:
+                    raise ValueError("print_stream is required")
+
+                self.print_stream = print_stream
+                self.log_stream = log_stream
+                self.print_timestamp_format = print_timestamp_format
+                self.log_timestamp_format = log_timestamp_format
+                self.print_red = print_red
+                self.auto_flush = auto_flush
+
+                self._at_line_start = True
+                self._lock = threading.RLock()  # needed if multiple threads want to print at same time
+
+            def _timestamp_prefix(self, fmt: str | None) -> str:
+                if not fmt:
+                    return ""
+                return datetime.now(tz=timezone.utc).strftime(fmt)
+
+            def _print_supports_color(self) -> bool:
+                return bool(getattr(self.print_stream, "isatty", lambda: False)())
+
+            def write(self, data: str) -> int:
+                if data is None:
+                    data = ""
+                if not isinstance(data, str):
+                    data = str(data)
+                if data == "":
+                    return 0
+
+                with self._lock:
+                    parts = data.splitlines(keepends=True)
+                    if not parts:
+                        parts = [data]
+
+                    for part in parts:
+                        if self._at_line_start:
+                            print_prefix = self._timestamp_prefix(self.print_timestamp_format)
+                            log_prefix = self._timestamp_prefix(self.log_timestamp_format)
+
+                            if print_prefix:
+                                self.print_stream.write(print_prefix)
+                            if self.log_stream is not None and log_prefix:
+                                self.log_stream.write(log_prefix)
+
+                            if self.print_red and self._print_supports_color():
+                                self.print_stream.write(self.ANSI_RED)
+
+                        self.print_stream.write(part)
+                        if self.log_stream is not None:
+                            self.log_stream.write(part)
+
+                        if part.endswith("\n"):
+                            if self.print_red and self._print_supports_color():
+                                self.print_stream.write(self.ANSI_RESET)
+                            self._at_line_start = True
+                        else:
+                            self._at_line_start = False
+
+                    if self.auto_flush:
+                        self.flush()
+
+                return len(data)
+
+            def flush(self) -> None:
+                with self._lock:
+                    if hasattr(self.print_stream, "flush"):
+                        self.print_stream.flush()
+                    if self.log_stream is not None and hasattr(self.log_stream, "flush"):
+                        self.log_stream.flush()
+
+            def isatty(self) -> bool:
+                return bool(getattr(self.print_stream, "isatty", lambda: False)())
+
+            def writable(self) -> bool:
+                return True
+
+            def fileno(self) -> int:
+                if hasattr(self.print_stream, "fileno"):
+                    return self.print_stream.fileno()
+                raise OSError("Underlying print_stream does not support fileno()")
+
+            @property
+            def encoding(self) -> str | None:
+                return getattr(self.print_stream, "encoding", None)
+
+        def log_prints(log_path):
+            global log_file  # type:ignore
+            log_file = open(log_path, "w", encoding="utf-8", buffering=1)  # noqa:SIM115
+            atexit.register(log_file.close)
+            sys.stdout = pipe_splitter(sys.__stdout__, log_file)
+            sys.stderr = pipe_splitter(sys.__stderr__, log_file, print_red=True)
 
     # used to print in new terminal window:
     script_base = r"""
-    imoprt os,mctypes
+        import os
 
-    ASCI_RED = "\033[91m"
-    ASCI_GREEN = "\033[92m"
-    ASCI_RESET = "\033[0m"
+        ANSI_RESET = "\033[0m"
+        ANSI_WARN = "\x1b[1;37;41m]"
+        ANSI_SUCCESS = "\x1b[1;37;42m]"
+        
+        def print_success(msg, sep: str | None = " ", end: str | None = "\n"):
+            print(f"{ANSI_SUCCESS}{msg}{ANSI_RESET}", sep=sep, end=end)
 
-    def print_red(msg, sep=" ", end="\n"):
-        print(f"{ASCI_RED}{msg}{ASCI_RESET}", sep=sep, end=end)
+        def print_warn(msg, sep: str | None = " ", end: str | None = "\n"):
+            print(f"{ANSI_WARN}{msg}{ANSI_RESET}", sep=sep, end=end)
+        
+        def input_warn(msg):
+            return input(f"{ANSI_WARN}{msg}{ANSI_RESET}")
 
-    def print_green(msg, sep=" ", end="\n"):
-        print(f"{ASCI_GREEN}{msg}{ASCI_RESET}", sep=sep, end=end)
+        def input_success(msg):
+            return input(f"{ANSI_SUCCESS}{msg}{ANSI_RESET}")
 
-    def input_red(msg):
-        input(f"{ASCI_RED}{msg}{ASCI_RESET}")
+        def set_terminal_name(name: str) -> None:
+            try:
+                os.system(f"title {name.replace('r\n', '').replace(r'\r', '')}")
+            except Exception:
+                pass
 
-    def input_green(msg):
-        input(f"{ASCI_GREEN}{msg}{ASCI_RESET}")
-
-    def set_terminal_name(name: str) -> None:
-        try:
-            os.system(f"title {name.replace('r\n', '').replace(r'\r', '')}")  # noqa:S605
-        except Exception:
-            pass
-
-    def get_terminal_name():
-        try:
-            buffer = ctypes.create_unicode_buffer(1024)
-            ctypes.windll.kernel32.GetConsoleTitleW(buffer, len(buffer))
-            return buffer.value
-        except Exception:
-            return "Terminal"
+        def get_terminal_name():
+            try:
+                buffer = ctypes.create_unicode_buffer(1024)
+                ctypes.windll.kernel32.GetConsoleTitleW(buffer, len(buffer))
+                return buffer.value
+            except Exception:
+                return "Terminal"
     """
 
     # ==================
     # execute
+    # ==================
 
     try:
         # set working directory
         if wdir_is_script_dir:
             os.chdir(os.path.dirname(script_path))
 
-        if log_path_rel_to_wdir != "":
-            log_file = open(log_path_rel_to_wdir, "w", encoding="utf-8", buffering=1)  # noqa:SIM115
-            atexit.register(log_file.close)
-            sys.stdout = pipe_splitter(sys.__stdout__, log_file)
-            sys.stderr = pipe_splitter(sys.__stderr__, log_file)
+        # setup logging
+        if log_path != "":
+            log_prints(log_path)  # type:ignore
 
         # set app id for taskbar grouping (combining) of (Qt) GUI icon with launcher shortcut icon
         if app_id != "":
             try:
-                ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(app_id)
+                ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(app_id)  # type:ignore
             except Exception as e:
                 print(e)
 
@@ -452,124 +601,100 @@ try:
             if terminal_colors != "":
                 os.system(f"color {terminal_colors}")  # noqa:S605
 
-        # run and wait for finish
+        sys.argv = [
+            script_path,
+            icon_path,
+            title,
+            app_id,
+            log_path,
+            "1" if script_has_terminal else "01" if wdir_is_script_dir else "01" if close_on_failure else "0",
+            "1" if close_on_success else "0",
+        ]
+
+        # change sys.path[0] to be dir of target script and not this script
+        sys.path[0] = os.path.dirname(script_path)
+
+        # run in the current python process and wait for finish
         try:
-            sys.argv = [
-                script_path,
-                icon_path,
-                title,
-                "1" if close_on_crash else "0",
-                "1" if close_on_failure else "0",
-                "1" if close_on_success else "0",
-            ]
             runpy.run_path(script_path, run_name="__main__")
+            # no crash:
             exit_code = 0
-        except SystemExit as e:
-            if isinstance(e.code, int):
-                exit_code = e.code
-            elif e.code is None:
+        except SystemExit as e:  # catch sys.exit
+            exit_code = e.code
+            if exit_code is None:
                 exit_code = 0
-            else:
-                # e.code can be something else which is treated as error
-                exit_code = 1
 
         # change terminal and print depending on exit_code
         if exit_code == 0:
             if close_on_success:
                 sys.exit(0)
             else:
-                if script_has_terminal:
-                    set_terminal_name(f"[Success] {get_terminal_name()}")
+                script = """
+                    set_terminal_name(f"[Success] {{get_terminal_name()}}")
                     print()
-                    print_green("[Program finished successfully] ", end="")
-                    input("Press Enter to exit.")
+                    input_success("[Program finished successfully] Press Enter to exit.")
+                """
+                if script_has_terminal:
+                    exec(script)  # noqa
                 else:
-                    script = (
-                        script_base
-                        + """
-    set_terminal_name(f"[Success] {get_terminal_name()}")
-    print()
-    print_green("[Program finished successfully] ",end="")
-    input("Press Enter to exit.")
-    """
-                    )
-                    run_text_in_new_terminal_and_wait(script)
-        else:
+                    if log_path != "":
+                        print("[Program finished successfully]")
+                    run_text_in_new_terminal_and_wait(script_base + script)
+                sys.exit(0)
+        elif looks_like_interpreter_crash(exit_code):
+            if close_on_python_interpreter_crash:
+                sys.exit(exit_code)
+            else:
+                ...  ###################
+
+        else:  # regular failure case (includes any string exit_code)
             if close_on_failure:
                 sys.exit(exit_code)
             else:
-                if script_has_terminal:
-                    set_terminal_name(f"[Failure] {get_terminal_name()}")
+                script = f"""
+                    set_terminal_name(f"[Failure] {{get_terminal_name()}}")
                     print()
-                    print_red(f"[Python Failure Return] Script exited with code: {exit_code}")
-                    input_red("[Python Failure Return] Press Enter to exit.")
+                    print_warn(f"[Python Failure Return] Script exited with code: {exit_code}")
+                    input_warn("[Python Failure Return] Press Enter to exit.")
+                """
+                if script_has_terminal:
+                    exec(script)  # noqa
                 else:
-                    script = (
-                        script_base
-                        + """
-    set_terminal_name(f"[Failure] {get_terminal_name()}")
-    print()
-    print_red(f"[Python Failure Return] Script exited with code: {result.returncode}")
-    input_red("[Python Failure Return] Press Enter to exit.")
-    """
-                    )
-                    run_text_in_new_terminal_and_wait(script)
+                    run_text_in_new_terminal_and_wait(script_base + script)
+                sys.exit(exit_code)
 
-    except Exception as e:
+    except Exception as e:  # backend crash
+        import sys
         import traceback
 
-        try:
-            if close_on_crash:
-                sys.exit(1)
+        try:  # attempt detailed error report
+            script = f"""
+                set_terminal_name(f"[Crash] {{get_terminal_name()}}")
+                print()
+                print_red("="*40)
+                print_red(f"CRITICAL LAUNCH ERROR: {e}")
+                print_red("="*40)
+                print({traceback.print_exc()})
+                print_red("="*40)
+                print(f"[Info] Python Exe: {sys.executable}")
+                print(f"[Info] Script: {script_path}")
+                print()
+                input_red("[Python Crash] See above. Press Enter to exit.")
+            """
+            if script_has_terminal:
+                exec(script)  # noqa
             else:
-                if script_has_terminal:
-                    try:
-                        set_terminal_name(f"[Crash] {get_terminal_name()}")
-                    except Exception:
-                        pass
-                    print()
-                    print_red("=" * 40)
-                    print_red(f"CRITICAL LAUNCH ERROR: {e}")
-                    print_red("=" * 40)
-                    traceback.print_exc()
-                    print_red("=" * 40)
-                    print(f"[Info] Python Exe: {sys.executable}")
-                    print(f"[Info] Script: {script_path}")
-                    print()
+                run_text_in_new_terminal_and_wait(script_base + script)
+            sys.exit(1)
 
-                    input_red("[Python Crash] See above. Press Enter to exit.")
-                else:
-                    tb = traceback.print_exc()
-                    script = (
-                        script_base
-                        + f"""
-    set_terminal_name(f"[Crash] {{get_terminal_name()}}")
-    print()
-    print_red("="*40)
-    print_red(f"CRITICAL LAUNCH ERROR: {e}")
-    print_red("="*40)
-    print({tb})
-    print_red("="*40)
-    print(f"[Info] Python Exe: {sys.executable}")
-    print(f"[Info] Script: {script_path}")
-    print()
-    input_red("[Python Crash] See above. Press Enter to exit.")
-    """
-                    )
-                    run_text_in_new_terminal_and_wait(script)
-
-        except Exception as inner_e:
-            tb = traceback.format_exc()
-
-            script = (
-                script_base
-                + f"""
-    print(f"[Error] Failed to handle crash: {{{inner_e}}}")
-    print({tb})
-    input("Press Enter to exit.")
-    """
-            )
-            run_text_in_new_terminal_and_wait(script)
+        except Exception as inner_e:  # fallback to minimal error report. Always in new terminal for extra safety
+            script = f"""
+                print(f"[Error] Failed to handle crash: {inner_e}")
+                print({traceback.format_exc()})
+                input("Press Enter to exit.")
+            """
+            run_text_in_new_terminal_and_wait(script_base + script)
+            sys.exit(1)
 
 
 except Exception as e:
