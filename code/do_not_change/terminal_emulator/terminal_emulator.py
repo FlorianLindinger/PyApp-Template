@@ -333,8 +333,7 @@ try:
 
             if not os.path.isfile(script_path):
                 print(f"[Error] File not found: {script_path}")
-                print("Aborting. Press enter to exit.")
-                input()
+                input("Aborting. Press enter to exit.")
                 sys.exit(1)
 
             if icon_path == "":
@@ -746,7 +745,7 @@ try:
             if not self.process or self.process.state() != QProcess.ProcessState.Running:
                 return
 
-            self.process.write((text).encode())
+            self.process.write((text+"\n").encode("utf-8"))
             self.terminal_print(
                 INPUT_PREPEND + text, color=INPUT_PRINT_COLOR, is_user_input=True, bg_color=INPUT_PRINT_BG
             )
@@ -1329,18 +1328,6 @@ try:
 
         return getattr(module, variable_name)
 
-    def get_contrast_grayscale_hex_color(hex_color: str):
-        hex_color = hex_color.lstrip("#")
-        r, g, b = [int(hex_color[i : i + 2], 16) for i in (0, 2, 4)]
-
-        def to_linear(c):
-            c = c / 255
-            return c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4
-
-        L = 0.2126 * to_linear(r) + 0.7152 * to_linear(g) + 0.0722 * to_linear(b)
-        gray = 60 if L > 0.5 else 200  # dark gray for light colors, light gray for dark colors
-        return f"#{gray:02x}{gray:02x}{gray:02x}"
-
     # main
 
     def main() -> int:
@@ -1402,7 +1389,7 @@ try:
             app.styleHints().setColorScheme(Qt.ColorScheme.Light)
 
         try:
-            global INPUT_PRINT_COLOR, INPUT_PRINT_BG, ERROR_PRINT_BG, ERROR_PRINT_COLOR
+            global INPUT_PRINT_COLOR, INPUT_PRINT_BG, ERROR_PRINT_BG, ERROR_PRINT_COLOR,INPUT_PREPEND
             if stylesheet_path != "":
                 sys.path.insert(0, os.path.dirname(stylesheet_path))
 
@@ -1411,6 +1398,7 @@ try:
                     ERROR_PRINT_COLOR,
                     INPUT_PRINT_BG,
                     INPUT_PRINT_COLOR,
+                    INPUT_PREPEND,
                     QSS,
                 )
             else:
@@ -1419,20 +1407,20 @@ try:
             windows_accent_color = app.palette().color(QPalette.ColorRole.Accent).name()
             QSS = QSS.replace("%windows%", windows_accent_color)
 
-            if INPUT_PRINT_COLOR.lower().strip() == "%windows%":
-                INPUT_PRINT_COLOR = windows_accent_color
-            if ERROR_PRINT_COLOR.lower().strip() == "%windows%":
-                ERROR_PRINT_COLOR = windows_accent_color
+            if INPUT_PRINT_COLOR is not None:  # type:ignore
+                if INPUT_PRINT_COLOR.lower().strip() == "%windows%":
+                    INPUT_PRINT_COLOR = windows_accent_color
+            if ERROR_PRINT_COLOR is not None:  # type:ignore
+                if ERROR_PRINT_COLOR.lower().strip() == "%windows%":
+                    ERROR_PRINT_COLOR = windows_accent_color
 
-            if ERROR_PRINT_BG.lower().strip() == "%windows%":
-                ERROR_PRINT_BG = windows_accent_color
-            elif ERROR_PRINT_BG.lower().strip() == "%contrast%":
-                ERROR_PRINT_BG = get_contrast_grayscale_hex_color(ERROR_PRINT_COLOR)
+            if ERROR_PRINT_BG is not None:  # type:ignore
+                if ERROR_PRINT_BG.lower().strip() == "%windows%":
+                    ERROR_PRINT_BG = windows_accent_color
 
-            if INPUT_PRINT_BG.lower().strip() == "%windows%":
-                INPUT_PRINT_BG = windows_accent_color
-            elif INPUT_PRINT_BG.lower().strip() == "%contrast%":
-                INPUT_PRINT_BG = get_contrast_grayscale_hex_color(INPUT_PRINT_COLOR)
+            if INPUT_PRINT_BG is not None: # type:ignore
+                if INPUT_PRINT_BG.lower().strip() == "%windows%":
+                    INPUT_PRINT_BG = windows_accent_color
 
             app.setStyleSheet(QSS)
 
