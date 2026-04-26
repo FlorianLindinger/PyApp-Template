@@ -15,7 +15,7 @@ use_global_python = True
 # Decide working directory behavior:
 # True  = Start in the folder where the shortcut is located
 # False = Start in the "code" folder where the main scrip is
-start_in_shortcut_folder = True
+start_in_shortcut_folder = False
 # -------------------------------------------------
 print_timestamp_format: str | None = "%H:%M:%S\t"
 # None for no timestamps (else see datetime.datetime.strftime usage: e.g. "%H:%M:%S\t")
@@ -75,7 +75,7 @@ use_faulthandler = True
 # ==========================
 
 # -------------------------------------------------
-log_path_rel_to_wdir: str | None = "..\\log.txt"  # wdir is influenced by "start_in_shortcut_folder" setting
+log_path_rel_to_wdir: str | None = "log.txt"  # wdir is influenced by "start_in_shortcut_folder" setting. Can also be an absolute path
 # -------------------------------------------------
 log_file_date_append_format: str | None = "_%Y_%m_%d"
 # None for no date added (else see datetime.datetime.strftime usage: e.g. "_%Y_%m_%d")
@@ -113,7 +113,6 @@ terminal_text_color: str | None = "F"
 
 terminal_needs_input = True
 dark_mode: bool | None = True  # None = Windows dark setting
-accent_color_hex: str | None = "#08306b"  # hex color. None = Windows accent color
 stylesheet_path: str | None = "terminal_stylesheet.py"  # None = default stylesheet settings
 button_settings: None | list[tuple[str, dict[str, bool]]] = [  # None = default button settings
     # ("button_name", {"visible"/"clickable"/"pinned"/"unpin_able"/"starting_state": bool , ...}),
