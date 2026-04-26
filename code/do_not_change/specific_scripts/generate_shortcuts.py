@@ -1,7 +1,6 @@
 import os
 import re
 import signal
-import sys
 import time
 import unicodedata
 
@@ -17,13 +16,11 @@ file_dir = os.path.dirname(os.path.abspath(__file__)) + "\\"
 # import from common_code_and_variables.py
 # =============================
 
+import developer_settings
 from do_not_change.specific_scripts.common_variables import (
     backend_python_exe_path,
-    developer_settings_dir,
+    developer_settings_path,
 )
-
-sys.path.insert(0, developer_settings_dir)
-import developer_settings
 
 # =============================
 
@@ -44,6 +41,14 @@ launcher_no_terminl_icon_path = os.path.normpath(file_dir + "..\\..\\icons\\icon
 stop_no_terminal_icon_path = os.path.normpath(file_dir + "..\\..\\icons\\stop.ico")
 
 # ====================
+
+
+def make_abs_path_relative_to_file(path, file):
+    """makes a path absolute if relative with respect to the file (as if the file defined it)"""
+    if not os.path.isabs(path):
+        return os.path.normpath(os.path.dirname(file) + "\\" + path)
+    else:
+        return path
 
 
 def sanitize_filename(filename, replacement="_"):
@@ -184,36 +189,51 @@ def make_lnk(output_path, icon_path, script_path, args=None, appid=None, descrip
 
 def main():
 
-    launcher_lnk_name = output_path + sanitize_filename(developer_settings.start_name) + ".lnk"
-
-    settings_lnk_name = output_path + sanitize_filename(developer_settings.settings_name) + ".lnk"
-
-    launcher_no_terminl_lnk_name = output_path + sanitize_filename(developer_settings.start_no_terminal_name) + ".lnk"
-
-    stop_no_terminal_lnk_name = output_path + sanitize_filename(developer_settings.stop_no_terminal_name) + ".lnk"
-
-    # Generate the 4 shortcuts
+    # generate app-id
     appid = sanitize_app_id(developer_settings.program_name)
     # replace and shorten if too long which might cause path length limit problems (10 is arbitrary)
     if len(appid) > 15:
         appid.replace("-", "").replace(".", "")
     if len(appid) > 15:
         appid = appid[:7] + appid[-7:]
-    make_lnk(launcher_lnk_name, launcher_icon_path, launcher_py, args=appid, appid=appid, description="WIP")
-    make_lnk(settings_lnk_name, settings_icon_path, settings_py, description="WIP")
-    make_lnk(
-        launcher_no_terminl_lnk_name,
-        launcher_no_terminl_icon_path,
-        launcher_no_terminl_py,
-        args=appid,
-        appid=appid
-        + "W",  # add "W" for windowless to allow both launchers to pin to taskbar because different app-id (for same shortcut target)
-        description="WIP",
-    )
-    make_lnk(stop_no_terminal_lnk_name, stop_no_terminal_icon_path, stop_no_terminal_py, description="WIP")
+
+    # Shortcut: normal start
+    if hasattr(developer_settings, "start_name") and developer_settings.start_name != "":
+        out = output_path + sanitize_filename(developer_settings.start_name) + ".lnk"
+        make_lnk(out, launcher_icon_path, launcher_py, args=appid, appid=appid, description="WIP")
+
+    # Shortcut: start without terminal
+    if hasattr(developer_settings, "start_no_terminal_name") and developer_settings.start_no_terminal_name != "":
+        out = (
+            output_path + sanitize_filename(developer_settings.start_no_terminal_name) + ".lnk"
+        )
+        make_lnk(
+            out,
+            launcher_no_terminl_icon_path,
+            launcher_no_terminl_py,
+            args=appid,
+            appid=appid
+            + "W",  # add "W" for windowless to allow both launchers to pin to taskbar because different app-id (for same shortcut target)
+            description="WIP",
+        )
+
+    # Shortcut: stop program (that is started without terminal)
+    if hasattr(developer_settings, "stop_no_terminal_name") and developer_settings.stop_no_terminal_name != "":
+        out = output_path + sanitize_filename(developer_settings.stop_no_terminal_name) + ".lnk"
+        make_lnk(out, stop_no_terminal_icon_path, stop_no_terminal_py, description="WIP")
+
+    # Shortcut: open settings
+    if (
+        hasattr(developer_settings, "user_settings_path")
+        and hasattr(developer_settings, "settings_name")
+        and developer_settings.settings_name != ""
+        and os.path.exists(make_abs_path_relative_to_file(developer_settings.user_settings_path, developer_settings_path))
+    ):
+        out = output_path + sanitize_filename(developer_settings.settings_name) + ".lnk"
+        make_lnk(out, settings_icon_path, settings_py, description="WIP")
 
     print()
-    print(f"[Success] Shortcuts created in: {output_path}")
+    print(f"[Success] Shortcut(s) created in: {output_path}")
 
 
 if __name__ == "__main__":
