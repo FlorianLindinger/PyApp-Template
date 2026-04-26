@@ -10,12 +10,12 @@ program_name = "PyApp-Template"
 python_version: str = "3.14"
 # -------------------------------------------------
 # Decide if global python (python & packages need to be installed manually on PC) should be used instead of automatic localized download and installation of all.
-use_global_python = False
+use_global_python = True
 # -------------------------------------------------
 # Decide working directory behavior:
 # True  = Start in the folder where the shortcut is located
 # False = Start in the "code" folder where the main scrip is
-start_in_shortcut_folder = False
+start_in_shortcut_folder = True
 # -------------------------------------------------
 print_timestamp_format: str | None = "%H:%M:%S\t"
 # None for no timestamps (else see datetime.datetime.strftime usage: e.g. "%H:%M:%S\t")
@@ -130,4 +130,8 @@ button_settings: None | list[tuple[str, dict[str, bool]]] = [  # None = default 
 ]
 # -------------------------------------------------
 
-# =================================================
+# =======================
+# ==== debug options ====
+# =======================
+
+use_uncompiled_terminal_emulator_and_run_it_in_global = True
