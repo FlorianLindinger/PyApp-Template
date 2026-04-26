@@ -1,25 +1,64 @@
 # todo: docstring
 
+# ====================================
+
+import os
+import shutil
+import subprocess
+import sys
+from pathlib import Path
 
 try:
     # =============================
     # imports packages and common variables and developer settings
     # =============================
 
-    import os
-    import shutil
-    import subprocess
-    import sys
-    from pathlib import Path
-
+    from developer_settings import (
+        accent_color_hex,
+        close_on_failure,
+        close_on_python_interpreter_crash,
+        close_on_success,
+        create_log_for_no_terminal_start,
+        create_log_for_terminal_start,
+        dark_mode,
+        install_tests,
+        install_tkinter,
+        install_tools,
+        log_file_date_append_format,
+        log_path_rel_to_wdir,
+        log_timestamp_format,
+        overwrite_log,
+        print_timestamp_format,
+        python_code_name,
+        python_version,
+        script_after_python_interpreter_crash_name,
+        start_in_shortcut_folder,
+        stylesheet_path,
+        terminal_bg_color,
+        terminal_needs_input,
+        terminal_text_color,
+        use_fancy_terminal,
+        use_faulthandler,
+        use_global_python,
+        use_uncompiled_terminal_emulator_and_run_it_in_global,
+    )
+    from developer_settings import (
+        program_name as title,
+    )
     from do_not_change.specific_scripts.common_variables import (
+        auto_search_required_packages_output_file_path,
         backend_python_exe_path,
         compiled_terminal_path,
+        default_packages_file_path,
         developer_settings_dir,
-        file_dir,
+        developer_settings_path,
+        excluded_folders_for_package_search,
         icon_path,
+        magic_phrase_in_default_packages_path_that_triggers_search,
         portable_python_installer_path,
         portable_venv_creator_path,
+        print_traceback,
+        process_id_file_path,
         py_env_folder_path,
         python_dist_path,
         python_exe_path,
@@ -28,31 +67,84 @@ try:
         script_wrapper_path,
         uncompiled_terminal_path,
         venv_dir_path,
-        venv_exe_path,
+        venv_exe_path
     )
-    
-    sys.path.insert(0, developer_settings_dir)
-    import developer_settings
 
     # =============================
-    # needed functions
+    # process imports
     # =============================
 
-    def error_print(message, max_wrapper_len=20, wrapper_symbol="=", red=False):
-        msg_len = len(message)
-        if msg_len > max_wrapper_len:
-            msg_len = max_wrapper_len
-        if red == True:
-            print(f"\033[91m{wrapper_symbol * msg_len}")
+    if script_after_python_interpreter_crash_name in [None, False]:
+        script_after_interpreter_crash_path = ""
+    else:
+        script_after_interpreter_crash_path = python_scripts_folder_path + script_after_python_interpreter_crash_name
+        if not os.path.exists(script_after_interpreter_crash_path):
+            raise FileNotFoundError(
+                f'[Error] Python after crash script not found at "{script_after_interpreter_crash_path}"'
+            )
+    if close_on_python_interpreter_crash == True and script_after_interpreter_crash_path != "":
+        raise ValueError(
+            f'[Error] Either choose close_on_python_interpreter_crash = False or script_after_interpreter_crash_path not in [None,"",False] in developer settings at "{developer_settings_path}"'
+        )
+
+    script_path: str = python_scripts_folder_path + python_code_name
+    # raise error if script not found
+    if not os.path.exists(script_path):
+        raise FileNotFoundError(f'[Error] Python script not found at "{script_path}"')
+
+    if use_global_python == True:
+        python_exe_for_script_path = "py"
+    else:
+        python_exe_for_script_path = venv_exe_path
+
+    if start_in_shortcut_folder == True:
+        wdir_is_script_dir = False
+    else:
+        wdir_is_script_dir = True
+
+    if log_path_rel_to_wdir in [None, False]:
+        log_path = ""
+    else:
+        if wdir_is_script_dir:
+            log_path = os.path.join(os.path.dirname(script_path), log_path_rel_to_wdir)
         else:
-            print(wrapper_symbol * msg_len)
-        print(message)
-        print(wrapper_symbol * msg_len)
-        print(traceback.format_exc(), end="")
-        if red == True:
-            print(f"{wrapper_symbol * msg_len}\033[0m")
-        else:
-            print(wrapper_symbol * msg_len)
+            log_path = os.path.join(os.getcwd(), log_path_rel_to_wdir)
+    if (create_log_for_terminal_start != False or create_log_for_no_terminal_start != False) and log_path == "":
+        raise ValueError(
+            f'[Error] log_path_rel_to_wdir in [False,None,""] in developer settings at "{developer_settings_path}" prevents log creation which is wanted by the settings create_log_for_terminal_start or create_log_for_no_terminal_start being True.'
+        )
+
+    if dark_mode is None:
+        dark_mode = "auto"
+    elif dark_mode is True:
+        dark_mode = "1"
+    elif dark_mode is False:  # type:ignore
+        dark_mode = "0"
+
+    if stylesheet_path in [False, None]:
+        stylesheet_path = ""
+    else:
+        if not os.path.isabs(stylesheet_path):
+            stylesheet_path = os.path.join(developer_settings_dir, stylesheet_path)
+
+    if python_version in [None, False]:
+        python_version = ""
+    if accent_color_hex in [False, None]:
+        accent_color_hex = ""
+    if log_file_date_append_format in [None, False]:
+        log_file_date_append_format = ""
+    if log_timestamp_format in [None, False]:
+        log_timestamp_format = ""
+    if print_timestamp_format in [None, False]:
+        print_timestamp_format = ""
+    if terminal_bg_color in [None, False]:
+        terminal_bg_color = ""
+    if terminal_text_color in [None, False]:
+        terminal_text_color = ""
+
+    # =============================
+    # helper functions
+    # =============================
 
     def check_python_version(target_version: str | float, exe_path: str = "py") -> bool:
         """
@@ -194,14 +286,6 @@ try:
 
     def create_portable_python():
 
-        python_version = getattr(developer_settings, "python_version", "") or ""
-
-        # find what optional subparts of full python to install
-        install_tkinter = "1" if getattr(developer_settings, "install_tkinter", True) else "0"
-        install_tests = "1" if getattr(developer_settings, "install_tests", False) else "0"
-        install_tools = "1" if getattr(developer_settings, "install_tools", False) else "0"
-        install_docs = "0"
-
         # run a batch file to install portable python and wait for finish
         try:
             subprocess.run(  # noqa:S603
@@ -212,22 +296,21 @@ try:
                     portable_python_installer_path,
                     python_version,
                     py_env_folder_path,  # scripts adds py_dist
-                    install_tkinter,
-                    install_tests,
-                    install_tools,
-                    install_docs,
+                    "1" if install_tkinter else "0",
+                    "1" if install_tests else "0",
+                    "1" if install_tools else "0",
+                    "0",  # don't install docs
                 ],
                 check=True,
             )
         except Exception as e:
-            error_print(f"[Error] Portable Python installation failed: {e}")
-            input("Press Enter to exit.")
-            sys.exit(1)
+            print_traceback(f"[Error] Portable Python installation failed: {e}", add_press_enter_to_exit=True)
 
         if not os.path.exists(python_exe_path):
-            error_print(f'[Error] Portable Python installation did not produce expected file at "{python_exe_path}"')
-            input("Press Enter to exit.")
-            sys.exit(1)
+            print_traceback(
+                f'[Error] Portable Python installation did not produce expected file at "{python_exe_path}"',
+                add_press_enter_to_exit=True,
+            )
 
     def create_portable_venv():
         try:
@@ -244,22 +327,59 @@ try:
                 check=True,
             )
         except Exception as e:
-            error_print(f"[Error] Creation of portable virtual environment failed: {e}")
-            input("Press Enter to exit.")
-            sys.exit(1)
+            print_traceback(
+                f"[Error] Creation of portable virtual environment failed: {e}", add_press_enter_to_exit=True
+            )
 
         if not os.path.exists(venv_exe_path):
-            error_print(
-                f'[Error] Creation of portable virtual environment did not produce expected file at "{venv_exe_path}"'
+            print_traceback(
+                f'[Error] Creation of portable virtual environment did not produce expected file at "{venv_exe_path}"',
+                add_press_enter_to_exit=True,
             )
-            input("Press Enter to exit.")
-            sys.exit(1)
+
+    def install_default_packages():
+
+        if not os.path.exists(default_packages_file_path):
+            raise FileNotFoundError(f'[Error] Deafault packages file not found at "{default_packages_file_path}"')
+
+        # check if default_packages_file_path empty:
+        with open(default_packages_file_path, encoding="utf-8") as f:
+            lines = f.readlines()
+        for l in lines:
+            l = l.strip()
+            if l != "" and not l.startswith("#"):
+                has_package = True
+                break
+        else:
+            has_package = False
+
+        if has_package == True:
+            print()
+            print("=" * 20)
+            print("Installing default packages:")
+            print("-" * 20)
+            subprocess.run(  # noqa
+                [venv_exe_path, "-m", "pip", "install", "-r", default_packages_file_path, "--disable-pip-version-check"],
+                check=True,
+            )
+            print("-" * 20)
+            print("Finished installing default packages")
+            print("=" * 20)
+            print()
+        else:
+            print()
+            print("=" * 20)
+            print("No default packages to install.")
+            print("=" * 20)
+            print()
 
     def delete_venv():
         if os.path.exists(venv_dir_path):
             try:
                 delete_folder_safe(
-                    venv_dir_path, prompt_for_confirmation=False, allowed_base=Path(file_dir).parent.parent
+                    venv_dir_path,
+                    prompt_for_confirmation=False,
+                    allowed_base=python_scripts_folder_path,  # a suitable path that is independent setting to venv_dir_path
                 )
             except Exception as e:
                 print(f"[Error] Failed to delete virtual environment: {e}.")
@@ -271,7 +391,9 @@ try:
         if os.path.exists(python_dist_path):
             try:
                 delete_folder_safe(
-                    python_dist_path, prompt_for_confirmation=False, allowed_base=Path(file_dir).parent.parent
+                    python_dist_path,
+                    prompt_for_confirmation=False,
+                    allowed_base=python_scripts_folder_path,  # a suitable path that is independent setting to python_dist_path
                 )
             except Exception as e:
                 print(f"[Error] Failed to delete Python distribution: {e}.")
@@ -282,9 +404,12 @@ try:
     def setup_venv():
         """Makes sure the venv exists and has correct version, if not it creates it. It does not activate it as one is expected to run the venv exe"""
 
-        wanted_python_version = getattr(developer_settings, "python_version", "")
+        print("WIP1")
 
         if not os.path.exists(python_exe_path):
+            
+            print("WIP2")
+            
             # python distribution not found case -> install python and delete venv if exists to renew it
 
             print(
@@ -297,15 +422,24 @@ try:
             delete_venv()
             print("[Info] Creating virtual environment:")
             create_portable_venv()
+            install_default_packages()
 
         else:  # python distribution existing case
-            match = check_python_version(target_version=wanted_python_version, exe_path=python_exe_path)
+            match = check_python_version(target_version=python_version, exe_path=python_exe_path)
 
             if match:
+                
+                print(venv_exe_path)
+                
                 if not os.path.exists(venv_exe_path):
                     print("[Info] Virtual environment not found. Creating portable virtual environment:")
                     delete_venv()
                     create_portable_venv()
+                    install_default_packages()
+                    
+                else:
+                    print("exists")
+                
             else:
                 print(
                     "\n" * 3
@@ -318,121 +452,127 @@ try:
                 delete_venv()
                 print("[Info] (Re)Creating virtual environment:")
                 create_portable_venv()
+                install_default_packages()
+
+    def get_requirements_of_root_folder(output_path):
+
+        searched_folder = python_scripts_folder_path
+        excluded_folders = excluded_folders_for_package_search
+
+        cmd = [
+            sys.executable,
+            "-m",
+            "pipreqs.pipreqs",
+            searched_folder,  # ".",
+            "--force",
+            "--savepath",
+            output_path,
+            "--ignore",
+            ",".join(excluded_folders),
+            "--encoding",
+            "utf-8",
+            "--no-follow-links",
+        ]
+
+        print()
+        print("=" * 20)
+        print("Start of finding required python packages")
+        print("-" * 20)
+        subprocess.run(cmd, check=True)  # noqa
+        print("-" * 20)
+        print(f'End of finding required python packages. Result: "{output_path}"')
+        print("=" * 20)
+        print()
 
     # =============================
     # main function
     # =============================
 
     def main() -> None:
-
+        global use_uncompiled_terminal_emulator_and_run_it_in_global
+        
+        # ======================
         # process args
 
-        if len(sys.argv) > 1:
-            app_id = sys.argv[1]
-        else:
-            app_id = ""
+        app_id = sys.argv[1]
+        create_terminal = sys.argv[2] == "1"  # inputs are 0 or 1
 
-        if len(sys.argv) > 2:
-            create_terminal = sys.argv[2] == "1"  # inputs are 0 or 1
-        else:
-            create_terminal = True
+        # it overrides use_uncompiled_terminal_emulator_and_run_it_in_global from developer_settings
+        if len(sys.argv) > 3:  # any arg means True. Used for debug before compiling terminal emulator
+            use_uncompiled_terminal_emulator_and_run_it_in_global = True
 
         # ======================
-        # setup venv: install python distribution if not existatant and venv. Also recreate if the target python version is not dist version
+        # potentially auto search for required packages
 
-        setup_venv()
+        if use_global_python == False:
+            # auto find packages if none given and magic phrase present
+            with open(default_packages_file_path) as f:
+                lines = f.readlines()
+            if lines[0] == magic_phrase_in_default_packages_path_that_triggers_search and "".join(lines).strip() != "":
+                if os.path.exists(auto_search_required_packages_output_file_path):
+                    os.remove(auto_search_required_packages_output_file_path)
+                get_requirements_of_root_folder(auto_search_required_packages_output_file_path)
+                if os.path.exists(auto_search_required_packages_output_file_path):
+                    with open(auto_search_required_packages_output_file_path, encoding="utf-8") as src:
+                        with open(default_packages_file_path, "w", encoding="utf-8") as dst:
+                            dst.write(src.read())
+                else:
+                    print_traceback(
+                        "[Error] Failed to auto determine required Python packages", add_press_enter_to_exit=True
+                    )
 
-        # =============================
-        # import and process developer_settings
+        # ======================
+        # setup venv: install python distribution if not existatant and venv. Also recreate if the target python version is not dist version.
 
-        use_fancy_terminal = getattr(developer_settings, "use_fancy_terminal", True)
-        terminal_needs_input = getattr(developer_settings, "terminal_needs_input", True)
-        close_on_success = getattr(developer_settings, "close_on_success", True)
-        close_on_crash = getattr(developer_settings, "close_on_crash", False)
-        close_on_failure = getattr(developer_settings, "close_on_failure", False)
-        use_uncompiled_terminal_and_run_it_in_global = getattr(
-            developer_settings, "use_uncompiled_terminal_and_run_it_in_global", False
-        )
-        wdir_is_script_dir = not getattr(developer_settings, "start_in_shortcut_folder", False)
-        use_global_python = getattr(developer_settings, "use_global_python", False)
-        log_even_with_terminal = getattr(developer_settings, "log_even_with_terminal", True)
-        restart_main_code_on_crash = getattr(developer_settings, "restart_main_code_on_crash", False)
-
-        title = getattr(developer_settings, "program_name", "Terminal")
-        log_path_rel_to_wdir = getattr(developer_settings, "log_path_rel_to_wdir", "..\\log.txt")
-        terminal_bg_color = getattr(developer_settings, "terminal_bg_color", "0")
-        terminal_text_color = getattr(developer_settings, "terminal_text_color", "F")
-        terminal_colors = terminal_bg_color + terminal_text_color
-
-        fancy_terminal_stylesheet = getattr(developer_settings, "fancy_terminal_stylesheet", "")
-        fancy_terminal_accent_color_hex = getattr(developer_settings, "fancy_terminal_accent_color_hex", "")
-        dark_mode = getattr(developer_settings, "dark_mode", "1")
-
-        script_path = python_scripts_folder_path + developer_settings.python_code_name
-        # raise error if script not found
-        if not os.path.exists(script_path):
-            raise FileNotFoundError(f'[Error] Python script not found at "{script_path}"')
-
-        if use_global_python == True:
-            python_exe_for_script_path = "py"
-        else:
-            # raise error if python or script or settings not found
-            if not os.path.exists(venv_exe_path):
-                raise FileNotFoundError(f'[Error] Python executable not found at "{venv_exe_path}"')
-            python_exe_for_script_path = venv_exe_path
-
-        after_python_crash_code_name = getattr(developer_settings, "after_python_crash_code_name", "")
-        if after_python_crash_code_name != "":
-            after_python_crash_code_path = python_scripts_folder_path + after_python_crash_code_name
-            if not os.path.exists(after_python_crash_code_path):
-                after_python_crash_code_path = ""
-        else:
-            after_python_crash_code_path = ""
+        if use_global_python == False:
+            setup_venv()
 
         # ======================
         # launch terminal
 
         args = [
             title,
-            icon_path if icon_path else "",
+            icon_path,
             app_id,
             "1" if wdir_is_script_dir else "0",
-            "1" if close_on_crash else "0",
+            "1" if close_on_python_interpreter_crash else "0",  ########used???WIP
             "1" if close_on_failure else "0",
             "1" if close_on_success else "0",
-            log_path_rel_to_wdir,
-            # restart_main_code_on_crash,
-            # after_python_crash_code_path
+            print_timestamp_format,
+            log_path,
+            log_timestamp_format,
+            "1" if overwrite_log else "0",
+            log_file_date_append_format,
+            script_after_interpreter_crash_path,
         ]
 
         if (use_fancy_terminal == True) and (create_terminal == True):
             # run in termnial emulator
 
-            # terminal emulator need additional arg python_exe_for_script_path
             args += [
-                fancy_terminal_accent_color_hex,
                 "1" if terminal_needs_input else "0",
-                fancy_terminal_stylesheet,
+                stylesheet_path,
+                accent_color_hex,
                 dark_mode,
+                "1" if use_faulthandler else "0",
             ]
 
-            if use_uncompiled_terminal_and_run_it_in_global == True:
-                subprocess.Popen(  # noqa:S603
-                    ["pyw", uncompiled_terminal_path, script_path, python_exe_for_script_path, *args],
+            if use_uncompiled_terminal_emulator_and_run_it_in_global == True:  # Meant for debugging terminal                
+                subprocess.Popen(  # noqa:S603 #type:ignore
+                    ["py", uncompiled_terminal_path, script_path, python_exe_for_script_path, *args],
                     creationflags=subprocess.CREATE_NO_WINDOW,
                 )
             else:
                 # run and wait (using the compiled terminal emulator)
-                subprocess.Popen(  # noqa:S603
+                subprocess.Popen(  # noqa:S603 #type:ignore
                     [compiled_terminal_path, script_path, python_exe_for_script_path, *args],
                     creationflags=subprocess.CREATE_NO_WINDOW,
                 )
 
         else:
             # run in Windows terminal or no window
-
             # script_wrapper_path need addition args
-            args += [terminal_colors, "1" if create_terminal else "0", backend_python_exe_path]
+            args += [terminal_bg_color + terminal_text_color, "1" if create_terminal else "0", backend_python_exe_path]  # type:ignore
 
             # launch script in wrapper that handles:
             #   errors
@@ -443,16 +583,38 @@ try:
             #   app-id setting
             #   closer or keep open logic on finish/error/fail
             #   print in additional terminal for final print info if in no-terminal mode
-            if create_terminal == True:  # run in windows terminal
-                subprocess.Popen(  # noqa:S603
-                    [python_exe_for_script_path, script_wrapper_path, script_path, *args],
-                    creationflags=subprocess.CREATE_NEW_CONSOLE,
-                )
-            else:  # run without terminal but create one on crash.
-                subprocess.Popen(  # noqa:S603
-                    [python_exe_for_script_path, script_wrapper_path, script_path, *args],
-                    creationflags=subprocess.CREATE_NO_WINDOW,
-                )
+            #   ... ?
+
+            if create_terminal == True:  # run in windows terminal and don't wait
+                if use_faulthandler == True:
+                    subprocess.Popen(  # noqa:S603 #type:ignore
+                        [python_exe_for_script_path, "-X", "faulthandler", script_wrapper_path, script_path, *args],
+                        creationflags=subprocess.CREATE_NEW_CONSOLE,
+                    )
+                else:
+                    subprocess.Popen(  # noqa:S603 #type:ignore
+                        [python_exe_for_script_path, script_wrapper_path, script_path, *args],
+                        creationflags=subprocess.CREATE_NEW_CONSOLE,
+                    )
+            else:  # run without terminal but create one on crash and don't wait
+                if use_faulthandler == True:
+                    process = subprocess.Popen(  # noqa:S603 #type:ignore
+                        [python_exe_for_script_path, "-X", "faulthandler", script_wrapper_path, script_path, *args],
+                        creationflags=subprocess.CREATE_NO_WINDOW,
+                    )
+                else:
+                    process = subprocess.Popen(  # noqa:S603 #type:ignore
+                        [python_exe_for_script_path, script_wrapper_path, script_path, *args],
+                        creationflags=subprocess.CREATE_NO_WINDOW,
+                    )
+
+        # ======================
+        # handle .pid file (needed for closing of invisible aka no-terminal program)
+
+        if create_terminal == False:
+            process_id = process.pid  # type:ignore
+            with open(process_id_file_path, "w") as f:
+                f.write(str(process_id))
 
     # =============================
     # execution of main function
@@ -462,19 +624,19 @@ try:
         try:
             main()
             sys.exit(0)
-
         except Exception as e:
-            error_print(f"[Error] Failed to launch the program: {e}", red=True)
-            input_red("Press Enter to exit...")
-            sys.exit(1)
+            print_traceback(f"[Error] Failed to launch the program: {e}", add_press_enter_to_exit=True)
 
 except Exception as e:
-    import sys
+    import os
     import traceback
 
-    print(f"[Error] Failed during start of program with error: {e}:")
+    print()
+    print()
     print("=" * 20)
+    print(f"[Error] Failed during start of program: {e}")
+    print("-" * 20)
     print(traceback.format_exc())
     print("=" * 20)
-    input("Press enter to exit")
-    sys.exit(1)
+    input("[Error (see above)] Press enter to exit")
+    os._exit(1)  # instead of sys.exit(1) to prevent exception by script calling this script
