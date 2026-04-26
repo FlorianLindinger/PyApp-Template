@@ -1,6 +1,7 @@
 import os
 import re
 import signal
+import sys
 import time
 import unicodedata
 
@@ -18,7 +19,6 @@ file_dir = os.path.dirname(os.path.abspath(__file__)) + "\\"
 
 import developer_settings
 from do_not_change.specific_scripts.common_variables import (
-    backend_python_exe_path,
     developer_settings_path,
     print_traceback,
 )
@@ -27,7 +27,7 @@ from do_not_change.specific_scripts.common_variables import (
 
 # local settings:
 
-python_exe = backend_python_exe_path
+python_exe = sys.executable
 
 output_path = os.path.normpath(file_dir + "..\\..\\..") + "\\"
 
