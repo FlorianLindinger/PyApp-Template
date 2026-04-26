@@ -6,6 +6,7 @@ import os
 import shutil
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 try:
@@ -40,7 +41,7 @@ try:
         use_fancy_terminal,
         use_faulthandler,
         use_global_python,
-        use_uncompiled_terminal_emulator_and_run_it_in_global,
+        use_uncompiled_terminal_emulator_and_run_it_in_global,  # noqa
     )
     from developer_settings import (
         program_name as title,
@@ -67,7 +68,7 @@ try:
         script_wrapper_path,
         uncompiled_terminal_path,
         venv_dir_path,
-        venv_exe_path
+        venv_exe_path,
     )
 
     # =============================
@@ -359,7 +360,15 @@ try:
             print("Installing default packages:")
             print("-" * 20)
             subprocess.run(  # noqa
-                [venv_exe_path, "-m", "pip", "install", "-r", default_packages_file_path, "--disable-pip-version-check"],
+                [
+                    venv_exe_path,
+                    "-m",
+                    "pip",
+                    "install",
+                    "-r",
+                    default_packages_file_path,
+                    "--disable-pip-version-check",
+                ],
                 check=True,
             )
             print("-" * 20)
@@ -407,9 +416,8 @@ try:
         print("WIP1")
 
         if not os.path.exists(python_exe_path):
-            
             print("WIP2")
-            
+
             # python distribution not found case -> install python and delete venv if exists to renew it
 
             print(
@@ -428,18 +436,17 @@ try:
             match = check_python_version(target_version=python_version, exe_path=python_exe_path)
 
             if match:
-                
                 print(venv_exe_path)
-                
+
                 if not os.path.exists(venv_exe_path):
                     print("[Info] Virtual environment not found. Creating portable virtual environment:")
                     delete_venv()
                     create_portable_venv()
                     install_default_packages()
-                    
+
                 else:
                     print("exists")
-                
+
             else:
                 print(
                     "\n" * 3
@@ -490,7 +497,7 @@ try:
 
     def main() -> None:
         global use_uncompiled_terminal_emulator_and_run_it_in_global
-        
+
         # ======================
         # process args
 
@@ -557,16 +564,20 @@ try:
                 "1" if use_faulthandler else "0",
             ]
 
-            if use_uncompiled_terminal_emulator_and_run_it_in_global == True:  # Meant for debugging terminal                
-                subprocess.Popen(  # noqa:S603 #type:ignore
+            if use_uncompiled_terminal_emulator_and_run_it_in_global == True:  # Meant for debugging terminal
+                proc = subprocess.Popen(  # noqa:S603 #type:ignore
                     ["py", uncompiled_terminal_path, script_path, python_exe_for_script_path, *args],
                     creationflags=subprocess.CREATE_NO_WINDOW,
+                    stderr=subprocess.PIPE,
+                    text=True,
                 )
             else:
                 # run and wait (using the compiled terminal emulator)
-                subprocess.Popen(  # noqa:S603 #type:ignore
+                proc = subprocess.Popen(  # noqa:S603 #type:ignore
                     [compiled_terminal_path, script_path, python_exe_for_script_path, *args],
                     creationflags=subprocess.CREATE_NO_WINDOW,
+                    stderr=subprocess.PIPE,
+                    text=True,
                 )
 
         else:
@@ -574,40 +585,37 @@ try:
             # script_wrapper_path need addition args
             args += [terminal_bg_color + terminal_text_color, "1" if create_terminal else "0", backend_python_exe_path]  # type:ignore
 
-            # launch script in wrapper that handles:
-            #   errors
-            #   return
-            #   icon setting
-            #   terminal-renaming
-            #   working dir setting
-            #   app-id setting
-            #   closer or keep open logic on finish/error/fail
-            #   print in additional terminal for final print info if in no-terminal mode
-            #   ... ?
-
             if create_terminal == True:  # run in windows terminal and don't wait
                 if use_faulthandler == True:
-                    subprocess.Popen(  # noqa:S603 #type:ignore
+                    proc=subprocess.Popen(  # noqa:S603 #type:ignore
                         [python_exe_for_script_path, "-X", "faulthandler", script_wrapper_path, script_path, *args],
                         creationflags=subprocess.CREATE_NEW_CONSOLE,
+                        stderr=subprocess.PIPE,
+                        text=True,
                     )
                 else:
-                    subprocess.Popen(  # noqa:S603 #type:ignore
+                    proc=subprocess.Popen(  # noqa:S603 #type:ignore
                         [python_exe_for_script_path, script_wrapper_path, script_path, *args],
                         creationflags=subprocess.CREATE_NEW_CONSOLE,
+                        stderr=subprocess.PIPE,
+                        text=True,
                     )
             else:  # run without terminal but create one on crash and don't wait
                 if use_faulthandler == True:
-                    process = subprocess.Popen(  # noqa:S603 #type:ignore
+                    proc=process = subprocess.Popen(  # noqa:S603 #type:ignore
                         [python_exe_for_script_path, "-X", "faulthandler", script_wrapper_path, script_path, *args],
                         creationflags=subprocess.CREATE_NO_WINDOW,
+                        stderr=subprocess.PIPE,
+                        text=True,
                     )
                 else:
-                    process = subprocess.Popen(  # noqa:S603 #type:ignore
+                    proc=process = subprocess.Popen(  # noqa:S603 #type:ignore
                         [python_exe_for_script_path, script_wrapper_path, script_path, *args],
                         creationflags=subprocess.CREATE_NO_WINDOW,
+                        stderr=subprocess.PIPE,
+                        text=True,
                     )
-
+                    
         # ======================
         # handle .pid file (needed for closing of invisible aka no-terminal program)
 
@@ -615,6 +623,20 @@ try:
             process_id = process.pid  # type:ignore
             with open(process_id_file_path, "w") as f:
                 f.write(str(process_id))
+                
+        # wait shortly and check & handle if script immediately failed
+        time.sleep(0.4)
+        error_code = proc.poll()
+        if error_code is not None and proc.poll() != 0:
+            error_msg = proc.communicate()[1]
+            print("=" * 20)
+            print("[Error] Failed launching terminal emulator script")
+            print("-" * 20)
+            if error_msg is not None:
+                print(error_msg, end="")
+                print("-" * 20)
+            input("[Error (see above)] Press enter to exit")
+            os._exit(error_code)
 
     # =============================
     # execution of main function
