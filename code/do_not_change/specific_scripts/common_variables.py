@@ -23,7 +23,6 @@ portable_venv_creator_path = make_abs("..\\general_scripts\\create_portable_venv
 
 py_env_folder_path = make_abs("..\\..\\py_env")
 
-backend_python_exe_path = make_abs("..\\P\\P.exe")
 
 script_wrapper_path = make_abs("script_wrapper.py")
 
