@@ -22,6 +22,8 @@ maybe found pyrefly bug that it does not rememeeber terminal_bg_color as string 
 very important
 ===================================
 
+add rich traceback everyhwere
+
 fix no error message for broken terminal_emulator sctip
 
 in emulatro add:
