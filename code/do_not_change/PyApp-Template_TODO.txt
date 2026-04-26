@@ -22,6 +22,27 @@ maybe found pyrefly bug that it does not rememeeber terminal_bg_color as string 
 very important
 ===================================
 
+fix no error message for broken terminal_emulator sctip
+
+in emulatro add:
+INPUT_PREPEND=">>> "
+    INPUT_PRINT_BG="none" # will be replaced later if accent settings is set
+    INPUT_PRINT_COLOR="none" # will be replaced later if accent settings is set
+    ERROR_PRINT_COLOR = "#FF5252"
+    ERROR_PRINT_BG = "#FFFFFF"
+
+    to stylesheet
+make it read it from stylehseet and replace it. is there a better way than global such that none would not be there by default which does not cause errors
+
+
+fix not starting emualtor from taskbar
+
+can i add INPUT_PREPEND to wrapper?
+
+make terminal emulator input inverse bg and fg. or use accent and pick working bg
+
+add rich traceback to emulator? or compile in 3.13 for better traceback color?
+
 user pinrt color not vbiislb as accent color potneitally
 
 trigger magic phrase once and leave and tell how to reandable within message
