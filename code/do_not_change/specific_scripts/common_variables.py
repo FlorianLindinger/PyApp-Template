@@ -38,7 +38,9 @@ process_id_file_path = make_abs("..\\..\\..\\currently_running_without_terminal_
 default_packages_file_path = make_abs("..\\..\\developer_tools\\!DEFAULT_PYHON_PACKAGES.txt")
 excluded_folders_for_package_search = ["do_not_change", "py_env", "icons", "developer_tools", "__pycache__"]
 # required_packages_output_file_path = make_abs("..\\..\\developer_tools\\found_required_python_packages.txt")
-auto_search_required_packages_output_file_path = make_abs("..\\..\\developer_tools\\auto_found_required_python_packages.txt")
+auto_search_required_packages_output_file_path = make_abs(
+    "..\\..\\developer_tools\\auto_found_required_python_packages.txt"
+)
 magic_phrase_in_default_packages_path_that_triggers_search = "# [Info] If this exact line is ontop and no other packages are defined below, it will automatically determine needed packages for the python code and add results to this file below."
 
 
@@ -105,9 +107,12 @@ try:
 
         if add_press_enter_to_exit:
             input()
-            import signal #noqa
-            os.kill(os.getppid(), signal.SIGTERM) # kills even terminal launched by cmd and terminal from script calling this script
-            
+            import signal  # noqa
+
+            os.kill(
+                os.getppid(), signal.SIGTERM
+            )  # kills even terminal launched by cmd and terminal from script calling this script
+
 except Exception:
     import sys
 
