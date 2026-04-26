@@ -553,6 +553,11 @@ try:
             script_after_interpreter_crash_path,
         ]
 
+        if use_faulthandler == True:
+            extra_args = ["-X", "faulthandler"]
+        else:
+            extra_args = []
+
         if (use_fancy_terminal == True) and (create_terminal == True):
             # run in termnial emulator
 
@@ -566,55 +571,30 @@ try:
 
             if use_uncompiled_terminal_emulator_and_run_it_in_global == True:  # Meant for debugging terminal
                 proc = subprocess.Popen(  # noqa:S603 #type:ignore
-                    ["py", uncompiled_terminal_path, script_path, python_exe_for_script_path, *args],
+                    ["py", *extra_args, uncompiled_terminal_path, script_path, python_exe_for_script_path, *args],
                     creationflags=subprocess.CREATE_NO_WINDOW,
-                    stderr=subprocess.PIPE,
-                    text=True,
                 )
             else:
                 # run and wait (using the compiled terminal emulator)
                 proc = subprocess.Popen(  # noqa:S603 #type:ignore
                     [compiled_terminal_path, script_path, python_exe_for_script_path, *args],
                     creationflags=subprocess.CREATE_NO_WINDOW,
-                    stderr=subprocess.PIPE,
-                    text=True,
                 )
 
-        else:
-            # run in Windows terminal or no window
+        else:  # run in Windows terminal or no window
             # script_wrapper_path need addition args
             args += [terminal_bg_color + terminal_text_color, "1" if create_terminal else "0", backend_python_exe_path]  # type:ignore
 
             if create_terminal == True:  # run in windows terminal and don't wait
-                if use_faulthandler == True:
-                    proc = subprocess.Popen(  # noqa:S603 #type:ignore
-                        [python_exe_for_script_path, "-X", "faulthandler", script_wrapper_path, script_path, *args],
-                        creationflags=subprocess.CREATE_NEW_CONSOLE,
-                        stderr=subprocess.PIPE,
-                        text=True,
-                    )
-                else:
-                    proc = subprocess.Popen(  # noqa:S603 #type:ignore
-                        [python_exe_for_script_path, script_wrapper_path, script_path, *args],
-                        creationflags=subprocess.CREATE_NEW_CONSOLE,
-                        stderr=subprocess.PIPE,
-                        text=True,
-                    )
-            else:  # run without terminal but create one on crash and don't wait
-                if use_faulthandler == True:
-                    proc = process = subprocess.Popen(  # noqa:S603 #type:ignore
-                        [python_exe_for_script_path, "-X", "faulthandler", script_wrapper_path, script_path, *args],
-                        creationflags=subprocess.CREATE_NO_WINDOW,
-                        stderr=subprocess.PIPE,
-                        text=True,
-                    )
-                else:
-                    proc = process = subprocess.Popen(  # noqa:S603 #type:ignore
-                        [python_exe_for_script_path, script_wrapper_path, script_path, *args],
-                        creationflags=subprocess.CREATE_NO_WINDOW,
-                        stderr=subprocess.PIPE,
-                        text=True,
-                    )
+                proc = subprocess.Popen(  # noqa:S603 #type:ignore
+                    [python_exe_for_script_path, *extra_args, script_wrapper_path, script_path, *args],
+                    creationflags=subprocess.CREATE_NEW_CONSOLE,
+                )
+            else: # run without terminal but create one on crash and don't wait
+                proc = process = subprocess.Popen(  # noqa:S603 #type:ignore
+                    [python_exe_for_script_path, *extra_args, script_wrapper_path, script_path, *args],
+                    creationflags=subprocess.CREATE_NO_WINDOW,
+                )
 
         # ======================
         # handle .pid file (needed for closing of invisible aka no-terminal program)
@@ -625,16 +605,12 @@ try:
                 f.write(str(process_id))
 
         # wait shortly and check & handle if script immediately failed
-        time.sleep(0.4)
+        time.sleep(0.8)
         error_code = proc.poll()
         if error_code is not None and proc.poll() != 0:
-            error_msg = proc.communicate()[1]
             print("=" * 20)
-            print("[Error] Failed launching terminal emulator script")
+            print("[Error] Failed launching terminal-emulator/script-wrapper. Probably a syntax error in the script")
             print("-" * 20)
-            if error_msg is not None:
-                print(error_msg, end="")
-                print("-" * 20)
             input("[Error (see above)] Press enter to exit")
             os._exit(error_code)
 
