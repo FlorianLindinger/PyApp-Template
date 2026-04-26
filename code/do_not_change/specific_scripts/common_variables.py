@@ -11,8 +11,9 @@ def get_dir(x: str) -> str:
 
 _file_dir: str = get_dir(os.path.normpath(__file__)) + "\\"
 
-# =======================
-# define variables
+# ========================
+# === define variables ===
+# ========================
 
 developer_settings_path = make_abs(
     "..\\..\\developer_settings.py"
@@ -40,11 +41,14 @@ excluded_folders_for_package_search = ["do_not_change", "py_env", "icons", "deve
 auto_search_required_packages_output_file_path = make_abs(
     "..\\..\\developer_tools\\auto_found_required_python_packages.txt"
 )
-magic_phrase_in_default_packages_path_that_triggers_search = "# [Info] If this exact line is ontop and no other packages are defined below, it will automatically determine needed packages for the python code and add results to this file below."
+variable_in_default_packages_path_that_triggers_search_if_true = (
+    "auto_find_required_packages_here_and_reset_venv_to_them"
+)
 
 
-# =======================
-# process variables
+# =========================
+# === process variables ===
+# =========================
 
 developer_settings_dir = get_dir(developer_settings_path)
 
@@ -58,8 +62,22 @@ venv_exe_path = venv_dir_path + "\\Portable_Scripts\\python.bat"
 python_exe_path = os.path.normpath(python_dist_path + "\\python.exe")
 relative_venv_to_python_dist = os.path.relpath(python_dist_path, get_dir(venv_dir_path))
 
-# =======================
-# common code
+# ====================
+# === common code ====
+# ====================
+
+# colored print and input
+
+ANSI_WARN = "\x1b[1;37;41m"  # white text, red bg, bold
+ANSI_RESET = "\033[0m"
+
+
+def print_warn(msg, sep: str | None = " ", end: str | None = "\n"):
+    print(f"{ANSI_WARN}{msg}{ANSI_RESET}", sep=sep, end=end)
+
+
+def input_warn(msg):
+    input(f"{ANSI_WARN}{msg}{ANSI_RESET}")
 
 
 # colored traceback related

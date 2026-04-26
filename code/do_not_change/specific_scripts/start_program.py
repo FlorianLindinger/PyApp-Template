@@ -53,10 +53,11 @@ try:
         developer_settings_path,
         excluded_folders_for_package_search,
         icon_path,
-        magic_phrase_in_default_packages_path_that_triggers_search,
+        input_warn,
         portable_python_installer_path,
         portable_venv_creator_path,
         print_traceback,
+        print_warn,
         process_id_file_path,
         py_env_folder_path,
         python_dist_path,
@@ -65,6 +66,7 @@ try:
         relative_venv_to_python_dist,
         script_wrapper_path,
         uncompiled_terminal_path,
+        variable_in_default_packages_path_that_triggers_search_if_true,
         venv_dir_path,
         venv_exe_path,
     )
@@ -409,11 +411,7 @@ try:
     def setup_venv():
         """Makes sure the venv exists and has correct version, if not it creates it. It does not activate it as one is expected to run the venv exe"""
 
-        print("WIP1")
-
-        if not os.path.exists(python_exe_path):
-            print("WIP2")
-
+        if not os.path.exists(python_exe_path):  # python distribution not existing case
             # python distribution not found case -> install python and delete venv if exists to renew it
 
             print(
@@ -431,19 +429,14 @@ try:
         else:  # python distribution existing case
             match = check_python_version(target_version=python_version, exe_path=python_exe_path)
 
-            if match:
-                print(venv_exe_path)
-
+            if match:  # correct python version case
                 if not os.path.exists(venv_exe_path):
                     print("[Info] Virtual environment not found. Creating portable virtual environment:")
                     delete_venv()
                     create_portable_venv()
                     install_default_packages()
 
-                else:
-                    print("exists")
-
-            else:
+            else:  # wrong python version case
                 print(
                     "\n" * 3
                 )  # because the batch called in create_portable_python() hides the top of the terminal in between.
@@ -511,18 +504,34 @@ try:
             # auto find packages if none given and magic phrase present
             with open(default_packages_file_path) as f:
                 lines = f.readlines()
-            if lines[0] == magic_phrase_in_default_packages_path_that_triggers_search and "".join(lines).strip() != "":
+            if (
+                variable_in_default_packages_path_that_triggers_search_if_true in lines[0]
+                and lines[0]
+                .replace(variable_in_default_packages_path_that_triggers_search_if_true, "")
+                .replace("=", "")
+                .replace("#", "")
+                .strip()
+                .lower()
+                == "true"
+            ):
                 if os.path.exists(auto_search_required_packages_output_file_path):
                     os.remove(auto_search_required_packages_output_file_path)
-                get_requirements_of_root_folder(auto_search_required_packages_output_file_path)
+                try:
+                    get_requirements_of_root_folder(auto_search_required_packages_output_file_path)
+                except Exception as e:
+                    print_traceback(
+                        f"[Error] Failed to auto determine packages (do you have internet?): {e}",
+                        add_press_enter_to_exit=True,
+                    )
+
                 if os.path.exists(auto_search_required_packages_output_file_path):
                     with open(auto_search_required_packages_output_file_path, encoding="utf-8") as src:
                         with open(default_packages_file_path, "w", encoding="utf-8") as dst:
+                            dst.write(variable_in_default_packages_path_that_triggers_search_if_true + " = False")
                             dst.write(src.read())
                 else:
-                    print_traceback(
-                        "[Error] Failed to auto determine required Python packages", add_press_enter_to_exit=True
-                    )
+                    print_warn("[Error] Failed to auto determine required Python packages.")
+                    input_warn("Aborting. Press enter to exit")
 
         # ======================
         # setup venv: install python distribution if not existatant and venv. Also recreate if the target python version is not dist version.
@@ -585,7 +594,7 @@ try:
                     [python_exe_for_script_path, *extra_args, script_wrapper_path, script_path, *args],
                     creationflags=subprocess.CREATE_NEW_CONSOLE,
                 )
-            else: # run without terminal but create one on crash and don't wait
+            else:  # run without terminal but create one on crash and don't wait
                 proc = process = subprocess.Popen(  # noqa:S603 #type:ignore
                     [python_exe_for_script_path, *extra_args, script_wrapper_path, script_path, *args],
                     creationflags=subprocess.CREATE_NO_WINDOW,
