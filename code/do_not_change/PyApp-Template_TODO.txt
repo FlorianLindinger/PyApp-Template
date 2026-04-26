@@ -22,54 +22,47 @@ maybe found pyrefly bug that it does not rememeeber terminal_bg_color as string 
 very important
 ===================================
 
-easy way to add buttons i guess
+see if windows terminal hadnles all crash and erros.
+not working:
+crash1,2
+NVMD. os._exit and os.abort should just close i guess. So maybe emulator should just close. Or maybe it should be cauot be close_on_failure. is it being caupt be that in emulator? if that can be cought i guess best is to see if it is 0 or 1 .
+os.abort is either way only used to test a crash so i dont have to respect it other than a crasher. So i guess the wrapper should catch it. does emulator trieat is as failure or crash?
 
-add option for log to be realtive to scriopt and not shrotcut but wdir is shrotctu
+fix erorr print in wrapper mode haveing blac kcolor for tiomestapmo
 
+add option for log to be realtive to scriopt and not shrotcut but wdir is shrotctu.
 should i do setting same as log with rel path. or should i create shortcuts to logs?
-
-open on terminal emulator crash also in new terminal the error message like in wrapper
 
 add uniquer error codes in end
 
 ask ai to make all prints homogneouse. let it ask me whcih way i want
 
-add rich traceback everyhwere
+add rich traceback everyhwere. does it work nicely on emulator? waht are alternatives
 
 fix no error message for broken terminal_emulator sctip
 
-in emulatro add:
+in emulatro add defaults:
 INPUT_PREPEND=">>> "
     INPUT_PRINT_BG="none" # will be replaced later if accent settings is set
     INPUT_PRINT_COLOR="none" # will be replaced later if accent settings is set
     ERROR_PRINT_COLOR = "#FF5252"
     ERROR_PRINT_BG = "#FFFFFF"
 
-    to stylesheet
-make it read it from stylehseet and replace it. is there a better way than global such that none would not be there by default which does not cause errors
-
-
-fix not starting emualtor from taskbar
-
 can i add INPUT_PREPEND to wrapper?
 
-make terminal emulator input inverse bg and fg. or use accent and pick working bg
+make terminal emulator input inverse bg and fg. Might be decent option?
 
 add rich traceback to emulator? or compile in 3.13 for better traceback color?
 
-user pinrt color not vbiislb as accent color potneitally
-
-trigger magic phrase once and leave and tell how to reandable within message
+trigger magic phrase once and leave and tell how to reandable within message. for default packages. i guess just always add ontop the magic phrase with = False and true
 
 is there stiuff thjat is in fancy termina and in wrapper that i rather have in start_programm i guess?
+
+ask AI if there are featurs in wrapper or emulator that i can add to otehr
 
 remove Path from everything
 
 mention colroful tracebac on error
-
-fail foir use global and compiled temrinal
-
-wait. use_global_python uses global also for backend???
 
 fix: it gave e.code = 0 (for outdated compiled terminal)->catch better
 -->
@@ -120,10 +113,7 @@ printing:
             EOFError: EOF when reading a line
 
 
-for global python it does not know abput developer settings becaseu not in _path. And it does not handle error for launch. wait that does not make sens
-#woulbd be nice if scripts can be run without backend embedded but then imports don work
-
-ask AI if at every spot it would wait for input on error
+ask AI if at every spot it would wait for input on error and if i genertally catrch every error
 
 i guess i want to deactivae in end if parts are run in terminal. Why even active?
 
@@ -238,6 +228,9 @@ developer_settings:add button settings as dict? or mabye easyer?
 ===================================
    Unsorted
 ===================================
+
+easy way to add buttons i guess
+
 
 dont dopuble error mesasge for no internet pyhton vresion checm. also fugure out why FULL_VER in batch is " " on no internet
 
