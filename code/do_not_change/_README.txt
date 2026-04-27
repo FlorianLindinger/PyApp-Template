@@ -45,7 +45,7 @@ Renamed python.exe to P.exe
 
 Installed packages in python_packages. Commands ran within python_packages folder:
 
-py -3.12 -m pip --upgrade pip
+py -3.12 -m pip install pip --upgrade
 py -3.12 -m pip install --target . --upgrade rich 
 py -3.12 -m pip install --target . --upgrade win11toast
 py -3.12 -m pip install --target . --upgrade yarg 
