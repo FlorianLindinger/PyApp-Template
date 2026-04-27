@@ -16,12 +16,22 @@ pyrefly does not warn for unused in script_wrapper?
 
 maybe found pyrefly bug that it does not rememeeber terminal_bg_color as string later in functuion when it new before in global
 
+===================================
+ASK AI
+===================================
 
+ask AI for ideas for total thing
 
+is there a good way to kill all with app id?
+
+add uniquer error codes in end
+
+ask ai to make all prints homogneouse. let it ask me whcih way i want
 
 ===================================
 very important
 ===================================
+
 
 re add print error for not traceback in commoni varables
 
@@ -47,9 +57,8 @@ fix erorr print in wrapper mode haveing blac kcolor for tiomestapmo
 add option for log to be realtive to scriopt and not shrotcut but wdir is shrotctu.
 should i do setting same as log with rel path. or should i create shortcuts to logs?
 
-add uniquer error codes in end
 
-ask ai to make all prints homogneouse. let it ask me whcih way i want
+
 
 add rich traceback everyhwere. does it work nicely on emulator? waht are alternatives
 
