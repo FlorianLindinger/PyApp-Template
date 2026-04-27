@@ -32,6 +32,7 @@ ask ai to make all prints homogneouse. let it ask me whcih way i want
 very important
 ===================================
 
+add pack aliases for pipres for packages
 
 re add print error for not traceback in commoni varables
 
