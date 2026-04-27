@@ -32,6 +32,8 @@ ask ai to make all prints homogneouse. let it ask me whcih way i want
 very important
 ===================================
 
+get wrapper and emulator at same functionailty such that i can cleanlöy add new featurs there
+
 add pack aliases for pipres for packages
 
 re add print error for not traceback in commoni varables
