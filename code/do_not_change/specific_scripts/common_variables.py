@@ -42,7 +42,7 @@ auto_search_required_packages_output_file_path = make_abs(
     "..\\..\\developer_tools\\auto_found_required_python_packages.txt"
 )
 variable_in_default_packages_path_that_triggers_search_if_true = (
-    "auto_find_required_packages_here_and_reset_venv_to_them"
+    "# auto_find_required_packages_here_and_reset_venv_to_them"
 )
 
 
