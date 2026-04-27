@@ -280,8 +280,13 @@ try:
             answer = input(prompt_message).strip().lower()
             if answer not in {"y", "yes"}:
                 print("Cancelled folder deletion.")
+                return False
 
         shutil.rmtree(target_path)
+        if not target_path.exists():
+            return True
+        else:
+            return False
 
     def create_portable_python():
 
