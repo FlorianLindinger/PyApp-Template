@@ -39,7 +39,11 @@ try:
     # code execution
 
     if not hasattr(developer_settings, "user_settings_path"):
-        print("[Error] Settings file is not implemented in program.")
+        print("[Warning] Settings file is not implemented in program.")
+        input("Press enter to exit.")
+        sys.exit(0)
+    elif developer_settings.user_settings_path in [None, False, ""]:
+        print("[Warning] Settings file disabled in program.")
         input("Press enter to exit.")
         sys.exit(0)
     else:
@@ -47,15 +51,15 @@ try:
             developer_settings.user_settings_path, developer_settings_path
         )
 
-    try:
-        open_settings_in_editor(user_settings_path)
-    except Exception as e:
-        print(f'[Error] Failed to open settings file at "{user_settings_path}": {e}')
-        print("=" * 20)
-        print(traceback.format_exc())
-        print("=" * 20)
-        input("Press Enter to close this window...")
-        sys.exit(1)
+        try:
+            open_settings_in_editor(user_settings_path)
+        except Exception as e:
+            print(f'[Error] Failed to open settings file at "{user_settings_path}": {e}')
+            print("=" * 20)
+            print(traceback.format_exc())
+            print("=" * 20)
+            input("Press Enter to close this window...")
+            sys.exit(1)
 
 except Exception as e:
     import sys
