@@ -1278,4 +1278,22 @@ comtypes:comtypes
 # --- Crypto ---
 bcrypt:bcrypt
 
+# --- Windows / COM ---
+wmi:WMI
+winshell:winshell
+win32com:pywin32
+win32com.client:pywin32
+win32com.server:pywin32
+pythoncom:pywin32
+pywintypes:pywin32
+win32api:pywin32
+win32con:pywin32
+win32gui:pywin32
+win32process:pywin32
+win32event:pywin32
+win32service:pywin32
+win32serviceutil:pywin32
+win32timezone:pywin32
+servicemanager:pywin32
+
 ==================================================
