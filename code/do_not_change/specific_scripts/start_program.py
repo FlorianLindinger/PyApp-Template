@@ -527,8 +527,9 @@ try:
                 if os.path.exists(auto_search_required_packages_output_file_path):
                     with open(auto_search_required_packages_output_file_path, encoding="utf-8") as src:
                         with open(default_packages_file_path, "w", encoding="utf-8") as dst:
-                            dst.write(variable_in_default_packages_path_that_triggers_search_if_true + " = False")
+                            dst.write(variable_in_default_packages_path_that_triggers_search_if_true + " = False\n")
                             dst.write(src.read())
+                    delete_venv()  # delete venv such that auto found packages are installed fresh
                 else:
                     print_warn("[Error] Failed to auto determine required Python packages.")
                     input_warn("Aborting. Press enter to exit")
