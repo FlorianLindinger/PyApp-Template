@@ -56,6 +56,7 @@ try:
     import subprocess
     import sys
     import traceback
+    from datetime import datetime
     from pathlib import Path
 
     try:
@@ -261,6 +262,9 @@ try:
             close_on_success: bool = True,
             wdir_is_script_dir: bool = True,
             terminal_needs_input: bool = True,
+            print_timestamp_format: str = "",
+            log_stream=None,
+            log_timestamp_format: str = "",
             width: int = 900,
             height: int = 600,
             button_settings: dict[str, dict] | None = None,
@@ -312,6 +316,11 @@ try:
             self.close_on_success = close_on_success
             self.wdir_is_script_dir = wdir_is_script_dir
             self.terminal_needs_input = terminal_needs_input
+            self.print_timestamp_format = print_timestamp_format
+            self.log_stream = log_stream
+            self.log_timestamp_format = log_timestamp_format
+            self._print_at_line_start = True
+            self._log_at_line_start = True
 
             # Create the final default settings dictionary (label: settings_dict) with fallback base_default_button_settings if not defined in altered_default_button_settings
             default_button_settings: dict[str, dict[str, bool]] = {
@@ -688,6 +697,34 @@ try:
         #################
         # terminal (output field) related
 
+        def _timestamp_prefix(self, fmt: str | None) -> str:
+            if not fmt:
+                return ""
+            return datetime.now().strftime(fmt)
+
+        def _add_line_timestamps(self, text: str, fmt: str | None, state_attr: str) -> str:
+            if not fmt:
+                return text
+
+            at_line_start = getattr(self, state_attr)
+            timestamped_parts: list[str] = []
+
+            for part in text.splitlines(keepends=True):
+                if at_line_start and part:
+                    timestamped_parts.append(self._timestamp_prefix(fmt))
+                timestamped_parts.append(part)
+                at_line_start = part.endswith("\n")
+
+            setattr(self, state_attr, at_line_start)
+            return "".join(timestamped_parts)
+
+        def _write_log(self, text: str) -> None:
+            if self.log_stream is None:
+                return
+
+            self.log_stream.write(self._add_line_timestamps(text, self.log_timestamp_format, "_log_at_line_start"))
+            self.log_stream.flush()
+
         def clear_terminal(self) -> None:
             self._terminal_output_entries.clear()
             self._terminal_output.clear()
@@ -716,8 +753,6 @@ try:
             text = sep.join(text)
             text += end
 
-            self._terminal_output_entries.append((text, color, bg_color, is_user_input))
-
             if is_user_input and always_go_to_bottom_for_user_input:
                 self.go_to_terminal_bottom()
                 # Only force-follow if we will actually insert text
@@ -727,6 +762,9 @@ try:
                 self._go_to_bottom_on_next_text_print = False
                 return
 
+            self._write_log(text)
+            text = self._add_line_timestamps(text, self.print_timestamp_format, "_print_at_line_start")
+            self._terminal_output_entries.append((text, color, bg_color, is_user_input))
             self._insert_text(text=text, color=color, bg_color=bg_color)
 
         def go_to_terminal_bottom(self) -> None:
@@ -1286,10 +1324,35 @@ try:
         sys.stdout = pipe_splitter(sys.__stdout__, log_file)
         """
 
-        def __init__(self, *streams):
+        def __init__(self, *streams, timestamp_format: str = ""):
             self.streams = streams
+            self.timestamp_format = timestamp_format
+            self._at_line_start = True
+
+        def _timestamp_prefix(self) -> str:
+            if not self.timestamp_format:
+                return ""
+            return datetime.now().strftime(self.timestamp_format)
+
+        def _add_line_timestamps(self, data: str) -> str:
+            if data is None:
+                data = ""
+            if not isinstance(data, str):
+                data = str(data)
+
+            if not self.timestamp_format:
+                return data
+
+            timestamped_parts: list[str] = []
+            for part in data.splitlines(keepends=True):
+                if self._at_line_start and part:
+                    timestamped_parts.append(self._timestamp_prefix())
+                timestamped_parts.append(part)
+                self._at_line_start = part.endswith("\n")
+            return "".join(timestamped_parts)
 
         def write(self, data):
+            data = self._add_line_timestamps(data)
             for stream in self.streams:
                 stream.write(data)
                 stream.flush()
@@ -1297,6 +1360,18 @@ try:
         def flush(self):
             for stream in self.streams:
                 stream.flush()
+
+    def prepare_log_path(path: str, date_append_format: str) -> str:
+        if date_append_format:
+            folder, filename = os.path.split(path)
+            stem, suffix = os.path.splitext(filename)
+            path = os.path.join(folder, f"{stem}{datetime.now().strftime(date_append_format)}{suffix}")
+
+        folder = os.path.dirname(path)
+        if folder:
+            os.makedirs(folder, exist_ok=True)
+
+        return path
 
     def set_app_id(app_id) -> None:
         """Needed for grouping behavor in taskbar. Seems to only work for QT GUI windows"""
@@ -1360,10 +1435,12 @@ try:
         use_faulthandler = arg_to_str(19, "1")
 
         if log_path != "":
-            log_file = open(log_path, "w", encoding="utf-8", buffering=1)  # noqa:SIM115
+            global log_file
+            log_path = prepare_log_path(log_path, log_file_date_append_format)
+            log_file = open(log_path, "w" if overwrite_log else "a", encoding="utf-8", buffering=1)  # noqa:SIM115
             atexit.register(log_file.close)
-            sys.stdout = pipe_splitter(sys.__stdout__, log_file)
-            sys.stderr = pipe_splitter(sys.__stderr__, log_file)
+            sys.stdout = pipe_splitter(sys.__stdout__, log_file, timestamp_format=log_timestamp_format)
+            sys.stderr = pipe_splitter(sys.__stderr__, log_file, timestamp_format=log_timestamp_format)
 
         if app_id != "":
             set_app_id(app_id)
@@ -1380,6 +1457,9 @@ try:
             close_on_success=close_on_success,
             wdir_is_script_dir=wdir_is_script_dir,
             terminal_needs_input=terminal_needs_input,
+            print_timestamp_format=print_timestamp_format,
+            log_stream=log_file if log_path != "" else None,
+            log_timestamp_format=log_timestamp_format,
         )
 
         # set dark mode. For neither "1" or "0" case it will choose Windows settings
