@@ -20,6 +20,8 @@ maybe found pyrefly bug that it does not rememeeber terminal_bg_color as string 
 ASK AI
 ===================================
 
+ask for generall improivements and comments and oragnaizing and docstrings
+
 ask AI for ideas for total thing
 
 is there a good way to kill all with app id?
