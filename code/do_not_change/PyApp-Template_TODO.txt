@@ -20,6 +20,8 @@ maybe found pyrefly bug that it does not rememeeber terminal_bg_color as string 
 ASK AI
 ===================================
 
+do i have os._exit(1) at ecvery input exit?
+
 ask for generall improivements and comments and oragnaizing and docstrings
 
 ask AI for ideas for total thing
@@ -35,6 +37,8 @@ finish compile_terminal_and_override.bat
 ===================================
 very important
 ===================================
+
+maybe add back toml support for user settings. no fancy stuff.
 
 make even more visible less noisey icon
 
