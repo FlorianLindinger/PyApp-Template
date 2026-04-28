@@ -103,7 +103,7 @@ try:
     else:
         wdir_is_script_dir = True
 
-    if log_path_rel_to_wdir in [None, False]:
+    if log_path_rel_to_wdir in [None, False, ""]:
         log_path = ""
     else:
         if wdir_is_script_dir:
@@ -548,6 +548,11 @@ try:
         # ======================
         # launch terminal
 
+        if create_terminal:
+            effective_log_path = log_path if create_log_for_terminal_start else ""
+        else:
+            effective_log_path = log_path if create_log_for_no_terminal_start else ""
+
         args = [
             title,
             icon_path,
@@ -557,7 +562,7 @@ try:
             "1" if close_on_failure else "0",
             "1" if close_on_success else "0",
             print_timestamp_format,
-            log_path,
+            effective_log_path,
             log_timestamp_format,
             "1" if overwrite_log else "0",
             log_file_date_append_format,
