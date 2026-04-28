@@ -28,9 +28,15 @@ add uniquer error codes in end
 
 ask ai to make all prints homogneouse. let it ask me whcih way i want
 
+finish compile_terminal_and_override.bat
+
 ===================================
 very important
 ===================================
+
+fix pywin32 installation for generate shortcuts
+
+chekc if all packages allow wiht lincense
 
 get wrapper and emulator at same functionailty such that i can cleanlöy add new featurs there
 
