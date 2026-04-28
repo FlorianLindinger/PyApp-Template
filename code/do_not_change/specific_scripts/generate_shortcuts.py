@@ -226,6 +226,7 @@ def main():
         hasattr(developer_settings, "user_settings_path")
         and hasattr(developer_settings, "settings_name")
         and developer_settings.settings_name != ""
+        and developer_settings.user_settings_path not in [None, False, ""]
         and os.path.exists(
             make_abs_path_relative_to_file(developer_settings.user_settings_path, developer_settings_path)
         )
