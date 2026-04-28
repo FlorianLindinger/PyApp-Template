@@ -14,7 +14,7 @@
 - Ready to use: **Just insert your python code file** and optionally quickly change settings like python version or app name.
 - **Ready-to-use settings file** (many file formats available) for user interaction with shortcuts to the settings file and improved string conversion to floats (simple math operations and scientific notations).
 - **Runs fully accessible source code**. This template makes python files behave effectively as if they were compiled with an included python environment while remaining 100% accessible, avoiding compilation time, and not making user modifications more complex.
-- **Quality of life features for python environment managment** (under code/dev_tools: Environment reset, pip-install-launcher, saving of current packages, auto-installing packages needed in python files,...)
+- **Quality of life features for python environment management** (under `code/developer_tools`: environment reset, pip-install launcher, saving current packages, auto-installing packages needed in Python files, ...)
 - Instructions and **utilities to generate proper icon files** from images and automatic inclusion in the shortcuts
 - Option to **change icon, title, and colors** of the python-launched **terminal**.
 - Automatic generation of **shortcuts** with icons that **can be added to the taskbar**. Usually it is not possible to have multiple shortcuts on the taskbar with **custom icons** that launch python/batch files.
@@ -33,11 +33,10 @@
 
 1. Clone/download/copy this repository
 2. Add the python code you want to execute to `code/main_code.py`
-3. Run `code/dev_tools/install_packages_needed_in_python_files.lnk` to install all packages your python file needs
-4. (Optional: Change program-settings like Python version or program name under `code/non-user_settings.ini`)
-5. (Optional: Add user-settings under `code/python.{file-ending}`)
-6. Execute `RUN BEFORE FIRST START TO GENERATE SHORTCUTS.lnk` to generate shortcuts
-7. Run program via the generated shortcuts
+3. (Optional: Change program settings like Python version or program name under `code/developer_settings.py`)
+4. (Optional: Add user settings under `code/settings.py`)
+5. Execute `RUN BEFORE FIRST START AND AFTER FOLDER MOVE TO GENERATE SHORTCUTS.lnk` to generate shortcuts
+6. Run program via the generated shortcuts
 
 ---
 
