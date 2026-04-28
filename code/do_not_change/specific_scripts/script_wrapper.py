@@ -393,7 +393,19 @@ try:
     if log_path != "":
         import atexit
         import threading
-        from datetime import datetime, timezone
+        from datetime import datetime
+
+        def prepare_log_path(path: str, date_append_format: str) -> str:
+            if date_append_format:
+                folder, filename = os.path.split(path)
+                stem, suffix = os.path.splitext(filename)
+                path = os.path.join(folder, f"{stem}{datetime.now().strftime(date_append_format)}{suffix}")
+
+            folder = os.path.dirname(path)
+            if folder:
+                os.makedirs(folder, exist_ok=True)
+
+            return path
 
         class pipe_splitter:
             """
@@ -459,7 +471,7 @@ try:
             def _timestamp_prefix(self, fmt: str | None) -> str:
                 if not fmt:
                     return ""
-                return datetime.now(tz=timezone.utc).strftime(fmt)
+                return datetime.now().strftime(fmt)
 
             def _print_supports_color(self) -> bool:
                 return bool(getattr(self.print_stream, "isatty", lambda: False)())
@@ -528,12 +540,24 @@ try:
             def encoding(self) -> str | None:
                 return getattr(self.print_stream, "encoding", None)
 
-        def log_prints(log_path):
+        def setup_log_prints(log_path, overwrite_log=True, log_file_date_append_format=""):
             global log_file  # type:ignore
-            log_file = open(log_path, "w", encoding="utf-8", buffering=1)  # noqa:SIM115
+            log_path = prepare_log_path(log_path, log_file_date_append_format)
+            log_file = open(log_path, "w" if overwrite_log else "a", encoding="utf-8", buffering=1)  # noqa:SIM115
             atexit.register(log_file.close)
-            sys.stdout = pipe_splitter(sys.__stdout__, log_file)
-            sys.stderr = pipe_splitter(sys.__stderr__, log_file, print_red=True)
+            sys.stdout = pipe_splitter(
+                sys.__stdout__,
+                log_file,
+                print_timestamp_format=print_timestamp_format,
+                log_timestamp_format=log_timestamp_format,
+            )
+            sys.stderr = pipe_splitter(
+                sys.__stderr__,
+                log_file,
+                print_timestamp_format=print_timestamp_format,
+                log_timestamp_format=log_timestamp_format,
+                print_red=True,
+            )
 
     # used to print in new terminal window:
     script_base = r"""
@@ -578,7 +602,7 @@ def get_terminal_name():
 
         # setup logging
         if log_path != "":
-            log_prints(log_path)  # type:ignore
+            setup_log_prints(log_path, overwrite_log, log_file_date_append_format)  # type:ignore
 
         # set app id for taskbar grouping (combining) of (Qt) GUI icon with launcher shortcut icon
         if app_id != "":
