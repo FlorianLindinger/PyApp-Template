@@ -34,6 +34,8 @@ finish compile_terminal_and_override.bat
 very important
 ===================================
 
+make even more visible less noisey icon
+
 fix pywin32 installation for generate shortcuts
 
 chekc if all packages allow wiht lincense
