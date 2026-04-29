@@ -23,6 +23,7 @@ try:
         install_tests,
         install_tkinter,
         install_tools,
+        input_prepend,
         log_file_date_append_format,
         log_path_rel_to_wdir,
         log_timestamp_format,
@@ -135,6 +136,8 @@ try:
         log_timestamp_format = ""
     if print_timestamp_format in [None, False]:
         print_timestamp_format = ""
+    if input_prepend in [None, False]:
+        input_prepend = ""
     if terminal_bg_color in [None, False]:
         terminal_bg_color = ""
     if terminal_text_color in [None, False]:
@@ -578,6 +581,7 @@ try:
             "1" if overwrite_log else "0",
             log_file_date_append_format,
             script_after_interpreter_crash_path,
+            input_prepend,
         ]
 
         if use_faulthandler == True:
