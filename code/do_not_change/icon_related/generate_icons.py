@@ -6,7 +6,7 @@ import struct
 import subprocess
 import sys
 import zlib
-from pathlib import Path
+from urllib.parse import quote
 
 # settings
 user_png_folder_path = "../../icons/"
@@ -211,7 +211,11 @@ def _run_powershell(**extra_env: str) -> str:
 
 
 def _path_to_uri(path: str) -> str:
-    return Path(path).resolve().as_uri()
+    absolute_path = os.path.abspath(path)
+    uri_path = quote(absolute_path.replace("\\", "/"), safe="/:")
+    if absolute_path.startswith("\\\\"):
+        return f"file:{uri_path}"
+    return f"file:///{uri_path}"
 
 
 def _bgra_to_rgba(bgra_bytes: bytes) -> bytes:
@@ -301,7 +305,8 @@ def create_icon(
 
     _ = background_color
     layers = _render_png_layers(image_path, tuple(icon_sizes))
-    Path(output_path).write_bytes(_build_ico(layers))
+    with open(output_path, "wb") as output_file:
+        output_file.write(_build_ico(layers))
 
 
 def create_composite_icon(
@@ -329,7 +334,8 @@ def create_composite_icon(
         overlay_path=overlay_path,
         overlay_scale_factor=overlay_scale_factor,
     )
-    Path(output_path).write_bytes(_build_ico(layers))
+    with open(output_path, "wb") as output_file:
+        output_file.write(_build_ico(layers))
 
 
 def image_id(path: str) -> str:
