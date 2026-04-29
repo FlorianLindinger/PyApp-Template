@@ -21,7 +21,7 @@ print_timestamp_format: str | None = "%H:%M:%S\t"
 # None for no timestamps (else see datetime.datetime.strftime usage: e.g. "%H:%M:%S\t")
 # -------------------------------------------------
 # If True, it will use a fancy Windows terminal emulator that has extra features and grouping in taskbar (see below). If False, it will use the regular Windows terminal but with a wrapper script to handle backend logic that has parts of the functionality of the fancy terminal.
-use_fancy_terminal = True
+use_fancy_terminal = False
 # -------------------------------------------------
 
 # =================================
@@ -69,7 +69,6 @@ start_no_terminal_name = f"{program_name} (no terminal)"  # start program withou
 settings_name = f"{program_name} - settings"  # open settings file
 stop_no_terminal_name = f"stop (no-terminal) {program_name}"  # stop program that was started without terminal
 # -------------------------------------------------
-# TODO####################
 use_faulthandler = True
 # -------------------------------------------------
 
