@@ -58,7 +58,6 @@ try:
     import sys
     import traceback
     from datetime import datetime
-    from pathlib import Path
 
     try:
         from typing import override  # Python 3.12+
@@ -1325,7 +1324,7 @@ try:
 
     class pipe_splitter:
         """use like the following example to save prints and errors to log file and print to console at same time:
-        log_file = open(Path("app.log"), "a", encoding="utf-8",buffering=1)
+        log_file = open(os.path.abspath("app.log"), "a", encoding="utf-8", buffering=1)
         sys.stdout = pipe_splitter(sys.__stdout__, log_file)
         """
 
@@ -1397,9 +1396,10 @@ try:
         return sys.argv[index]
 
     def load_variable_from_file(file_path: str, variable_name: str):
-        path = Path(file_path).resolve()
+        path = os.path.abspath(file_path)
+        module_name = os.path.splitext(os.path.basename(path))[0]
 
-        spec = importlib.util.spec_from_file_location(path.stem, path)
+        spec = importlib.util.spec_from_file_location(module_name, path)
         if spec is None or spec.loader is None:
             raise ImportError(f"Cannot load module from {path}")
 
