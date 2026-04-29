@@ -10,7 +10,7 @@
 - **Portable** folder that can be shared offline after first setup execution.
 - **100%-isolated**. Usually full python uses a globally installed python.exe, even for virtual environments. This template avoids that and doesn't mess with anything global.
 - **No prior Python installation required**. Python and packages are automatically installed.
-- **Minimal size** (~10 MB) and **git-shareable** with .gitignore files that prevents sharing of (unlicensed) python distribution and package files, that are auto downloaded at user end.
+- **Pretty small size** (~120 MB) and **git-shareable** with .gitignore files that prevents sharing of (unlicensed) python distribution and package files, that are auto downloaded at user end.
 - Ready to use: **Just insert your python code file** and optionally quickly change settings like python version or app name.
 - **Ready-to-use settings file** (many file formats available) for user interaction with shortcuts to the settings file and improved string conversion to floats (simple math operations and scientific notations).
 - **Runs fully accessible source code**. This template makes python files behave effectively as if they were compiled with an included python environment while remaining 100% accessible, avoiding compilation time, and not making user modifications more complex.
