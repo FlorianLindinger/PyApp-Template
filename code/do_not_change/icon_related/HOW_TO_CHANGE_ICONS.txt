@@ -2,162 +2,240 @@
 ==== HOW TO CORRECTLY MAKE AN ICON ====
 =======================================
 
-TLDR: Replace icon.png (and optionally settings.png,stop.png) with images that you want (keep name) and run regenerate_icons.lnk.
+TLDR:
+Replace icon.png in code/icons/ with the image you want and run:
 
-The code creates 3 icon files which the program then uses: 
-	- Icon version of icon.png
-	- Icon version of icon.png with settings.png in the bottom right corner
-	- Icon version of icon.png with stop.png in the bottom right corner
+    code/icons/regenerate icons.lnk
 
-Icons have to be generated properly (more than a quick online converter) to nicely scale with mulitple sizes in a .ico file.
-regenerate_icons.lnk is a compiled version of the python script below. 
-Compiled in order to not require a installation of Python and specific packages.
-Alternatively you can manually run and change the code below.
+You can also replace settings.png and stop.png in code/icons/ if you want custom overlay icons.
+
+The icon generator creates these .ico files in code/icons/:
+
+    icon.ico
+        Icon version of icon.png.
+
+    settings.ico
+        Icon version of icon.png with settings.png overlaid in the bottom-right corner.
+
+    stop.ico
+        Icon version of icon.png with stop.png overlaid in the bottom-right corner.
+
+The shortcut generator uses those .ico files for the generated program shortcuts.
 
 =======================================
+==== INPUT FILES ======================
+=======================================
 
+User-editable input images:
+
+    code/icons/icon.png
+    code/icons/settings.png
+    code/icons/stop.png
+
+Keep the file names unchanged.
+
+If icon.png, settings.png, or stop.png is missing, the generator uses the fallback images from:
+
+    code/do_not_change/icon_related/default_icon.png
+    code/do_not_change/icon_related/default_settings.png
+    code/do_not_change/icon_related/default_stop.png
+
+If a user image is still exactly the template fallback image, the generator also treats it as fallback.
+
+=======================================
+==== GENERATION =======================
+=======================================
+
+Run this shortcut:
+
+    code/icons/regenerate icons.lnk
+
+That shortcut currently launches:
+
+    code/do_not_change/P/P.exe code/do_not_change/icon_related/generate_icons.py
+
+The generator script is:
+
+    code/do_not_change/icon_related/generate_icons.py
+
+It uses Windows PowerShell/WPF rendering to resize images cleanly, preserve aspect ratio,
+add transparent padding, and write a multi-resolution .ico file with these sizes:
+
+    256, 128, 64, 48, 32, 16
+
+The optional first command-line argument is the overlay scale factor.
+Default:
+
+    0.6
+
+Manual example:
+
+    code/do_not_change/P/P.exe code/do_not_change/icon_related/generate_icons.py 0.6
+
+Icons should be generated this way instead of with a quick online converter, because Windows
+icons need multiple embedded sizes to scale well in shortcuts, taskbar entries, and Explorer.
+
+=======================================
+==== PILLOW / PIL ALTERNATIVE =========
+=======================================
+
+The current generator above does not need Pillow. If you prefer a shorter script that is easier
+to edit manually, this Pillow version has virtually identical behavior:
+
+    - reads icon.png, settings.png, and stop.png from code/icons/
+    - falls back to the default images when user images are missing or unchanged from the template
+    - writes icon.ico, settings.ico, and stop.ico to code/icons/
+    - keeps aspect ratio, transparent padding, and the same icon sizes
+    - uses the same bottom-right overlay behavior and overlay scale factor
+
+This version requires Pillow:
+
+    pip install pillow
+
+Alternative script:
+
+import os
 import sys
+import zlib
+from pathlib import Path
 
 from PIL import Image
 
 
-def create_icon(
-    image_path,
-    output_path,
-    icon_sizes=(256, 128, 64, 48, 32, 16),
-    background_color=(0, 0, 0, 0),  # transparent
-):
-    """
-    Convert an image into a multi-resolution .ico file with padding
-    to preserve aspect ratio (no distortion).
+ICON_SIZES = (256, 128, 64, 48, 32, 16)
+DEFAULT_OVERLAY_SCALE_FACTOR = 0.6
 
-    background_color=(0, 0, 0, 0) means transparent background
-    """
+SCRIPT_DIR = Path(__file__).resolve().parent
+USER_ICON_DIR = (SCRIPT_DIR / "../../icons").resolve()
+FALLBACK_ICON_DIR = SCRIPT_DIR
+OUTPUT_DIR = USER_ICON_DIR
 
-    src = Image.open(image_path).convert("RGBA")
-    src_w, src_h = src.size
+FALLBACK_IMAGE_IDS = {
+    "base": "200x200:82f0d3c0",
+    "settings": "200x200:71db6cbb",
+    "stop": "200x200:83248fd0",
+}
 
-    layers = []
 
-    for size in icon_sizes:
-        # scale factor: fit longest side into "size"
-        scale = size / max(src_w, src_h)
-        new_w = round(src_w * scale)
-        new_h = round(src_h * scale)
+def image_id(path: Path) -> str:
+    image = Image.open(path).convert("RGBA")
+    rgba_bytes = image.tobytes()
+    crc = zlib.crc32(rgba_bytes) & 0xFFFFFFFF
+    return f"{image.width}x{image.height}:{crc:08x}"
 
-        resized = src.resize((new_w, new_h), Image.Resampling.LANCZOS)
 
-        # create square canvas and center the resized image
-        canvas = Image.new("RGBA", (size, size), background_color)
-        offset_x = (size - new_w) // 2
-        offset_y = (size - new_h) // 2
-        canvas.paste(resized, (offset_x, offset_y), resized)
+def pick_icon_path(user_path: Path, fallback_path: Path, fallback_image_id: str, label: str) -> Path:
+    if user_path.exists():
+        if image_id(user_path) == fallback_image_id:
+            print(f"Using fallback {label} icon.")
+            return fallback_path
+        return user_path
 
-        layers.append(canvas)
+    print(f"Using fallback {label} icon because {user_path.name} is missing.")
+    return fallback_path
 
-    # save as multi-size ICO
+
+def square_layer(image: Image.Image, size: int, background_color=(0, 0, 0, 0)) -> Image.Image:
+    src = image.convert("RGBA")
+    scale = size / max(src.width, src.height)
+    new_width = max(1, round(src.width * scale))
+    new_height = max(1, round(src.height * scale))
+
+    resized = src.resize((new_width, new_height), Image.Resampling.LANCZOS)
+    canvas = Image.new("RGBA", (size, size), background_color)
+    offset_x = (size - new_width) // 2
+    offset_y = (size - new_height) // 2
+    canvas.paste(resized, (offset_x, offset_y), resized)
+    return canvas
+
+
+def save_ico(layers: list[Image.Image], output_path: Path) -> None:
     layers[0].save(
         output_path,
         format="ICO",
-        sizes=[(s, s) for s in icon_sizes],
+        sizes=[(size, size) for size in ICON_SIZES],
         append_images=layers[1:],
     )
+
+
+def create_icon(image_path: Path, output_path: Path) -> None:
+    image = Image.open(image_path).convert("RGBA")
+    layers = [square_layer(image, size) for size in ICON_SIZES]
+    save_ico(layers, output_path)
 
 
 def create_composite_icon(
-    base_path,
-    overlay_path,
-    output_path,
-    overlay_scale_factor=0.6,
-    icon_sizes=(256, 128, 64, 48, 32, 16),
-    background_color=(0, 0, 0, 0),  # transparent padding
-):
-    """
-    Create a composite icon:
-    - Place overlay on the bottom-right of base.
-    - Preserve aspect ratio.
-    - Pad to square for each icon size (no distortion).
-
-    background_color=(0, 0, 0, 0) means transparent background
-    """
-
-    # Load images
+    base_path: Path,
+    overlay_path: Path,
+    output_path: Path,
+    overlay_scale_factor: float = DEFAULT_OVERLAY_SCALE_FACTOR,
+) -> None:
     base = Image.open(base_path).convert("RGBA")
     overlay = Image.open(overlay_path).convert("RGBA")
 
-    base_w, base_h = base.size
-    base_max = max(base_w, base_h)
+    scale = max(base.width, base.height) / max(overlay.width, overlay.height) * overlay_scale_factor
+    overlay_width = max(1, round(overlay.width * scale))
+    overlay_height = max(1, round(overlay.height * scale))
+    overlay = overlay.resize((overlay_width, overlay_height), Image.Resampling.LANCZOS)
 
-    # Scale overlay relative to base's max dimension
-    overlay_w, overlay_h = overlay.size
-    overlay_max = max(overlay_w, overlay_h)
-
-    scale = base_max / overlay_max * overlay_scale_factor
-    new_ov_w = round(overlay_w * scale)
-    new_ov_h = round(overlay_h * scale)
-
-    overlay = overlay.resize((new_ov_w, new_ov_h), Image.Resampling.LANCZOS)
-
-    # Position overlay: bottom-right (southeast)
-    pos_x = base_w - new_ov_w
-    pos_y = base_h - new_ov_h
-
-    # Composite base + overlay
     composite = base.copy()
+    pos_x = base.width - overlay_width
+    pos_y = base.height - overlay_height
     composite.paste(overlay, (pos_x, pos_y), overlay)
 
-    comp_w, comp_h = composite.size
-    comp_max = max(comp_w, comp_h)
-
-    layers = []
-
-    # For each icon size: scale with aspect, then pad to square
-    for size in icon_sizes:
-        scale = size / comp_max
-        new_w = round(comp_w * scale)
-        new_h = round(comp_h * scale)
-
-        resized = composite.resize((new_w, new_h), Image.Resampling.LANCZOS)
-
-        canvas = Image.new("RGBA", (size, size), background_color)
-        offset_x = (size - new_w) // 2
-        offset_y = (size - new_h) // 2
-        canvas.paste(resized, (offset_x, offset_y), resized)
-
-        layers.append(canvas)
-
-    # Save multi-size ICO
-    layers[0].save(
-        output_path,
-        format="ICO",
-        sizes=[(s, s) for s in icon_sizes],
-        append_images=layers[1:],
-    )
+    layers = [square_layer(composite, size) for size in ICON_SIZES]
+    save_ico(layers, output_path)
 
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         overlay_scale_factor = float(sys.argv[1])
     else:
-        overlay_scale_factor = 0.6
+        overlay_scale_factor = DEFAULT_OVERLAY_SCALE_FACTOR
 
-    # Create the standard icon
+    base_icon_path = pick_icon_path(
+        USER_ICON_DIR / "icon.png",
+        FALLBACK_ICON_DIR / "default_icon.png",
+        FALLBACK_IMAGE_IDS["base"],
+        "base",
+    )
+    settings_icon_path = pick_icon_path(
+        USER_ICON_DIR / "settings.png",
+        FALLBACK_ICON_DIR / "default_settings.png",
+        FALLBACK_IMAGE_IDS["settings"],
+        "settings",
+    )
+    stop_icon_path = pick_icon_path(
+        USER_ICON_DIR / "stop.png",
+        FALLBACK_ICON_DIR / "default_stop.png",
+        FALLBACK_IMAGE_IDS["stop"],
+        "stop",
+    )
+
     try:
-        create_icon("icon.png", "icon.ico")
+        create_icon(base_icon_path, OUTPUT_DIR / "icon.ico")
         print("Generated: icon.ico")
-    except Exception as e:
-        print(f"Error creating icon.ico: {e}")
+    except Exception as error:
+        print(f"Error creating icon.ico: {error}")
 
-    # Create the composite icons
-    # The overlay will scale to fit the bottom-right corner without squishing
     try:
-        create_composite_icon("icon.png", "settings.png", "settings.ico", overlay_scale_factor)
+        create_composite_icon(
+            base_icon_path,
+            settings_icon_path,
+            OUTPUT_DIR / "settings.ico",
+            overlay_scale_factor,
+        )
         print("Generated: settings.ico")
-    except Exception as e:
-        print(f"Error creating settings.ico: {e}")
+    except Exception as error:
+        print(f"Error creating settings.ico: {error}")
 
     try:
-        create_composite_icon("icon.png", "stop.png", "stop.ico", overlay_scale_factor)
+        create_composite_icon(
+            base_icon_path,
+            stop_icon_path,
+            OUTPUT_DIR / "stop.ico",
+            overlay_scale_factor,
+        )
         print("Generated: stop.ico")
-    except Exception as e:
-        print(f"Error creating stop.ico: {e}")
+    except Exception as error:
+        print(f"Error creating stop.ico: {error}")
