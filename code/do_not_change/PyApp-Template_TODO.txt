@@ -17,6 +17,11 @@ pyrefly does not warn for unused in script_wrapper?
 ASK AI
 ===================================
 
+ask again if grouping for terminal works
+
+add minimal windwos like terminal that does gropuing
+
+
 ask AI if there are featurs in wrapper or emulator that i can add to otehr
 
 does anything require admin
@@ -98,8 +103,6 @@ INPUT_PREPEND=">>> "
     INPUT_PRINT_COLOR="none" # will be replaced later if accent settings is set
     ERROR_PRINT_COLOR = "#FF5252"
     ERROR_PRINT_BG = "#FFFFFF"
-
-can i add INPUT_PREPEND to wrapper?
 
 make terminal emulator input inverse bg and fg. Might be decent option?
 
@@ -734,6 +737,7 @@ check if i can add stoppping of closing terminal for non pyqt5
 ===================================
 new script related & ideas related
 ===================================
+
 
 add time to logging. maybe with "logging" package
 
