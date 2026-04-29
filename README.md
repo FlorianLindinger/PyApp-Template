@@ -23,7 +23,7 @@
 - **Small launch overhead** of all features: ~+0.2 s (global python start is ~0.15 s)
 - Plug and play **license template**, where all backend template code parts fall under the **permissive licenses**.
 - Avoids opaque executables to minimize antivirus false positives that compiled python code can suffer from.
-- Option for fancy modern professional looking terminal emulator with many features (like minimization to system tray or eixt confirmation prompt).
+- Option for fancy modern professional looking terminal emulator with many features like minimization to system tray or eixt confirmation prompt (see below).
 - Option to save prints/errors in log files.
 - Option to add timestamps to prints and logging.
 - Feel free to suggest more :)
@@ -38,6 +38,12 @@
 4. (Optional: Add user settings under `code/settings.py`)
 5. Execute `RUN BEFORE FIRST START AND AFTER FOLDER MOVE TO GENERATE SHORTCUTS.lnk` to generate shortcuts
 6. Run program via the generated shortcuts (it will auto install needed packages)
+
+---
+
+## Optional Terminal Emulator - Features
+
+- TODO
 
 ---
 
