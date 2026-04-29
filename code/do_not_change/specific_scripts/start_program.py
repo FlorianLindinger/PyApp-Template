@@ -17,9 +17,9 @@ try:
         close_on_failure,
         close_on_python_interpreter_crash,
         close_on_success,
-        create_log_for_no_terminal_start,
-        create_log_for_terminal_start,
         dark_mode,
+        enable_log_for_no_terminal_start,
+        enable_log_for_terminal_start,
         input_prepend,
         install_tests,
         install_tkinter,
@@ -110,9 +110,9 @@ try:
             log_path = os.path.join(os.path.dirname(script_path), log_path_rel_to_wdir)
         else:
             log_path = os.path.join(os.getcwd(), log_path_rel_to_wdir)
-    if (create_log_for_terminal_start != False or create_log_for_no_terminal_start != False) and log_path == "":
+    if (enable_log_for_terminal_start != False or enable_log_for_no_terminal_start != False) and log_path == "":
         raise ValueError(
-            f'[Error] log_path_rel_to_wdir in [False,None,""] in developer settings at "{developer_settings_path}" prevents log creation which is wanted by the settings create_log_for_terminal_start or create_log_for_no_terminal_start being True.'
+            f'[Error] log_path_rel_to_wdir in [False,None,""] in developer settings at "{developer_settings_path}" prevents log creation which is wanted by the settings enable_log_for_terminal_start or enable_log_for_no_terminal_start being True.'
         )
 
     if dark_mode is None:
@@ -563,9 +563,9 @@ try:
         # launch terminal
 
         if create_terminal:
-            effective_log_path = log_path if create_log_for_terminal_start else ""
+            effective_log_path = log_path if enable_log_for_terminal_start else ""
         else:
-            effective_log_path = log_path if create_log_for_no_terminal_start else ""
+            effective_log_path = log_path if enable_log_for_no_terminal_start else ""
 
         args = [
             title,
