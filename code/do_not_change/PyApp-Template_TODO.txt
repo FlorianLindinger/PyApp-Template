@@ -17,8 +17,6 @@ pyrefly does not warn for unused in script_wrapper?
 ASK AI
 ===================================
 
-is HOW_TO_CHANGE_ICONS uptodatew
-
 ask AI if there are featurs in wrapper or emulator that i can add to otehr
 
 remove Path from everything
@@ -37,21 +35,15 @@ add uniquer error codes in end
 
 ask ai to make all prints homogneouse. let it ask me whcih way i want
 
-finish compile_terminal_and_override.bat
-
 wrapper and emulator same functionality as far as possible?
 
 convert protablbe batch to python
 
-is append_log option implemented? if not do it
+done: append_log option implemented
 
 ===================================
 very important
 ===================================
-
-From names alone, the main missing functionality I’d add is a non-mutating “check/diff environment” tool: compare current packages vs default packages vs detected-needed packages before resetting/installing. Also, several intended tools are currently empty placeholders, especially current/no-package reset, strict/no-version default-package setters, and needed-packages-without-version.
-
-shortcuts can fail if properties open. am i deletingand checking afterwars if succesfully deleted?
 
 in wrapper add a try except for module not found error. should i offer piperes or run pipreqs mapping over the name and offer to install and offer to add to default. maybe via "0" "1" "2". also offer 4 to manually install via opened terminal and 5 to open defualt settings ...
 
