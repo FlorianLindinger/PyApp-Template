@@ -40,14 +40,6 @@
 
 ---
 
-## Work in Progress
-
-- Fancy terminal replacement based on tkinter for maximal availability
-- Template and boilerplate code for a GUI using PyQt5.
-- Many small improvements and feature ideas.
-
----
-
 ## Notes
 
 Tested to work in current Windows 11 Home/Pro and Python 3.13. This repository was originally built by Florian Lindinger and can be accessed under https://github.com/FlorianLindinger/PyApp-Template
