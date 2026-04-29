@@ -330,7 +330,7 @@ try:
                 add_press_enter_to_exit=True,
             )
 
-    def create_portable_venv():
+    def recreate_portable_venv():
         try:
             # run a batch file to install portable python and wait for finish
             subprocess.run(  # noqa:S603
@@ -462,7 +462,7 @@ try:
                 print("Pressed Enter to exit.")
                 input()
 
-    def delete_python_dist():
+    def delete_python_distro():
         if os.path.exists(python_dist_path):
             try:
                 delete_folder_safe(
@@ -476,8 +476,8 @@ try:
                 print("Pressed Enter to exit.")
                 input()
 
-    def setup_venv():
-        """Makes sure the venv exists and has correct version, if not it creates it. It does not activate it as one is expected to run the venv exe"""
+
+    def reinstall_python_distro_if_nonexistent_or_incorrect_version():
 
         if not os.path.exists(python_exe_path):  # python distribution not existing case
             # python distribution not found case -> install python and delete venv if exists to renew it
@@ -487,13 +487,9 @@ try:
             )  # because the batch called in create_portable_python() hides the top of the terminal in between.
             print("[Info] Python distribution not found. Installing portable Python and creating virtual environment:")
 
-            delete_python_dist()
+            delete_python_distro()
             create_portable_python()
             delete_venv()
-            print("[Info] Creating virtual environment:")
-            create_portable_venv()
-            install_packages(default_packages_file_path)
-
         else:  # python distribution existing case
             match = check_python_version(target_version=python_version, exe_path=python_exe_path)
 
@@ -501,9 +497,6 @@ try:
                 if not os.path.exists(venv_exe_path):
                     print("[Info] Virtual environment not found. Creating portable virtual environment:")
                     delete_venv()
-                    create_portable_venv()
-                    install_packages(default_packages_file_path)
-
             else:  # wrong python version case
                 print(
                     "\n" * 3
@@ -511,12 +504,9 @@ try:
                 print(
                     "Installed Python version does not match target version. Reinstalling Python distribution and recreating virtual environment:"
                 )
-                delete_python_dist()
+                delete_python_distro()
                 create_portable_python()
                 delete_venv()
-                print("[Info] (Re)Creating virtual environment:")
-                create_portable_venv()
-                install_packages(default_packages_file_path)
 
     def save_requirements_of_root_folder_noVersion(output_path):
 
@@ -588,7 +578,8 @@ try:
 
                 if os.path.exists(auto_search_required_packages_output_file_path):
                     delete_venv()
-                    create_portable_venv()
+                    reinstall_python_distro_if_nonexistent_or_incorrect_version()
+                    recreate_portable_venv()
                     install_packages(auto_search_required_packages_output_file_path)
                     save_current_packages_as_default(search_phrase_state=False)
                 else:
@@ -599,8 +590,11 @@ try:
         # setup venv: install python distribution if not existatant and venv. Also recreate if the target python version is not dist version.
 
         if use_global_python == False:
-            setup_venv()
-
+            reinstall_python_distro_if_nonexistent_or_incorrect_version() #deletes venv for change/creation of distro
+            if not os.path.exists(venv_dir_path):
+                recreate_portable_venv()
+                install_packages(default_packages_file_path)
+            
         # ======================
         # launch terminal
 
