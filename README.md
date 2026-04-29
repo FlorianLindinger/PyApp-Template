@@ -7,7 +7,7 @@
 ## Main Features
 
 - **Full-version Python**: Usually portable Python entails the embeddable version which lacks some vanilla Python features (which are for example needed for default matplotlib). This template avoids that by making the full version and the virtual environment portable without bloated third party solutions.
-- **Portable** folder that can be shared offline after a setup execution.
+- **Portable** folder that can be shared offline after first setup execution.
 - **100%-isolated**. Usually full python uses a globally installed python.exe, even for virtual environments. This template avoids that and doesn't mess with anything global.
 - **No prior Python installation required**. Python and packages are automatically installed.
 - **Minimal size** (~10 MB) and **git-shareable** with .gitignore files that prevents sharing of (unlicensed) python distribution and package files, that are auto downloaded at user end.
