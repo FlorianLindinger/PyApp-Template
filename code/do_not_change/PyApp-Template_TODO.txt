@@ -17,16 +17,34 @@ pyrefly does not warn for unused in script_wrapper?
 ASK AI
 ===================================
 
+[Info] Python distribution not found. Installing portable Python and creating virtual environment:
+Found (msi-install-available) Python version 3.14.4
+Download URL: https://www.python.org/ftp/python/3.14.4/amd64/
+Downloading  core.msi
+Downloading  dev.msi
+Downloading  exe.msi
+Downloading  freethreaded.msi
+Downloading  lib.msi
+Downloading  tcltk.msi
+Downloading  ucrt.msi
+Installing core.msi
+Installing dev.msi
+Installing exe.msi
+Installing freethreaded.msi
+Installing lib.msi
+Installing tcltk.msi
+Installing ucrt.msi
+WARNING: Cache entry deserialization failed, entry ignored
+
+any way to avoid asking if turst for starting
+
+any way to safe space
+
 add script_after_interpreter_crash_path
 
-is there still "WIP" somehwer
+is there still "WIP" somehwer?
 
 google drawbacks of -u
-
-ask again if grouping for terminal works
-
-add minimal windwos like terminal that does gropuing
-
 
 ask AI if there are featurs in wrapper or emulator that i can add to otehr
 
@@ -54,6 +72,10 @@ let it chekc if seomthing looks like a placeholder and unfinsihjesd and nunnneca
 very important
 ===================================
 
+remove desktop.ini and random log*.txt
+
+test what faulthandler changes
+
 it does not add timestap on answer by program input
 
 in wrapper add a try except for module not found error. should i offer piperes or run pipreqs mapping over the name and offer to install and offer to add to default. maybe via "0" "1" "2". also offer 4 to manually install via opened terminal and 5 to open defualt settings ...
@@ -76,8 +98,6 @@ unsorted #2
 ===================================
 
 i guess check if "import " is in script. can still fail for edge cases. is woth it?
-
-maybe add back toml support for user settings. no fancy stuff.
 
 re add print error for not traceback in commoni varables
 
@@ -183,7 +203,7 @@ make emulator resatrt button restart main not after_crsah script
 
 can i clean ANSI from logs. setting for that? dose error_print work. what if i just send it out as error in error_print?
 
-rename create_log_for_terminal_start to log_prints_in_file_for... check also stirngs for renmae
+rename enable_log_for_terminal_start to log_prints_in_file_for... check also stirngs for renmae
 
 dont i always handle a interpreter crash by wrapper and emulator? no need for setting?
 
@@ -209,7 +229,7 @@ make ANSI_WARN that changes BG aswell and use everywherer even in emulatro i gue
 
 make all error prints on wrapper print in new terminal if needed: see "if app_id != "":" : print(e)
 
-pass log_path=="" if create_log_for_terminal_start=False and create_log_for_no_terminal_start==False
+pass log_path=="" if enable_log_for_terminal_start=False and enable_log_for_no_terminal_start==False
 
 make log logic in emulator. maybe just ask AI to match behavior
 

@@ -18,7 +18,7 @@ use_global_python = False
 start_in_shortcut_folder = False
 # -------------------------------------------------
 print_timestamp_format: str | None = "%H:%M:%S | "
-# None for no timestamps (else see datetime.datetime.strftime usage: e.g. "%H:%M:%S\t")
+# None for no timestamps (else see datetime.datetime.strftime usage: e.g. "%H:%M:%S | ")
 # -------------------------------------------------
 # If True, it will use a fancy Windows terminal emulator that has extra features and grouping in taskbar (see below). If False, it will use the regular Windows terminal but with a wrapper script to handle backend logic that has parts of the functionality of the fancy terminal.
 use_fancy_terminal = False
@@ -28,6 +28,9 @@ use_fancy_terminal = False
 # ==== less important settings ====
 # =================================
 
+# -------------------------------------------------
+# Text shown before user input when input is echoed in the terminal.
+input_prepend: str | None = "> "
 # -------------------------------------------------
 # success = sys.exit(0) or sys.exit() or no exit line.
 close_on_success = True
@@ -45,7 +48,7 @@ play_sound_on_python_interpreter_crash = True
 send_Windows_notification_on_python_interpreter_crash = True
 # -------------------------------------------------
 # Path of user settings file (file can be deleted)
-user_settings_path: str | None = "settings.py"  # set None to not use
+user_settings_path: str | None = "settings.py"  # set None to not use. Can also be not python file.
 # -------------------------------------------------
 # Decide what parts of vanilla full Python install you actually need (enabling all is ~90 MB, disabling all is ~47 MB):
 # ----
@@ -77,26 +80,25 @@ use_faulthandler = True
 # ==========================
 
 # -------------------------------------------------
-log_path_rel_to_wdir: str | None = "log.txt"  # wdir is influenced by "start_in_shortcut_folder" setting. Can also be an absolute path
+log_path_rel_to_wdir: str | None = (
+    "log.txt"  # wdir is influenced by "start_in_shortcut_folder" setting. Can also be an absolute path
+)
 # -------------------------------------------------
 log_file_date_append_format: str | None = "_%Y_%m_%d"
 # None for no date added (else see datetime.datetime.strftime usage: e.g. "_%Y_%m_%d")
 # -------------------------------------------------
 overwrite_log = True
 # -------------------------------------------------
-create_log_for_terminal_start = True
-create_log_for_no_terminal_start = True
+enable_log_for_terminal_start = True
+enable_log_for_no_terminal_start = True
 # -------------------------------------------------
 log_timestamp_format = "%H:%M:%S | "
-# None for no timestamps (else see datetime.datetime.strftime usage: e.g. "%H:%M:%S\t")
+# None for no timestamps (else see datetime.datetime.strftime usage: e.g. "%H:%M:%S | ")
 # -------------------------------------------------
 
 # ====================================
 # ==== terminal (visual) settings ====
 # ====================================
-
-# Text shown before user input when input is echoed in the terminal.
-input_prepend: str | None = "> "
 
 # --------------------------------------------------
 # settings that apply if use_fancy_terminal = False:
