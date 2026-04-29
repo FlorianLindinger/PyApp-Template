@@ -19,6 +19,8 @@ maybe found pyrefly bug that it does not rememeeber terminal_bg_color as string 
 ASK AI
 ===================================
 
+remove Path from everything
+
 does anything require admin
 
 do i have os._exit(1) at ecvery input exit?
@@ -41,7 +43,22 @@ wrapper and emulator same functionality as far as possible?
 very important
 ===================================
 
+shortcuts can fail if properties open. am i deletingand checking afterwars if succesfully deleted?
 
+in wrapper add a try except for module not found error. should i offer piperes or run pipreqs mapping over the name and offer to install and offer to add to default. maybe via "0" "1" "2". also offer 4 to manually install via opened terminal and 5 to open defualt settings ...
+
+even notepad.exe for dev_tools required confirmation i guess? better ways? maybe also same embeddded python
+
+ does it still do that???:make somehow shortcut generation lnk not require admin. Maybe icon is ont worth it and batch would do.. Maybe change icon of P.exe and call directly? do i bake a icon into P.exe?
+ add comment to that shortcut
+
+update good settings for pyrefly for pyproject.toml
+
+add placeholder batches or at least the lnks
+
+update git topics and order
+Fix Release in git
+update README
 
 
 
@@ -50,13 +67,9 @@ very important
 unsorted #2
 ===================================
 
-cahnge icon blue tone
-
 delete icons at beginning in in regneraite icon and check for deletion
 
 maybe add back toml support for user settings. no fancy stuff.
-
-chekc if all packages allow wiht lincense
 
 get wrapper and emulator at same functionailty such that i can cleanlöy add new featurs there
 
@@ -107,7 +120,7 @@ is there stiuff thjat is in fancy termina and in wrapper that i rather have in s
 
 ask AI if there are featurs in wrapper or emulator that i can add to otehr
 
-remove Path from everything
+
 
 mention colroful tracebac on error
 
@@ -505,35 +518,8 @@ add log mode to only append. What is limit here????
 renamed to DONT_CHANGE bc shorter
 
 ===================================
-important
-===================================
-
-sanastize app name before using in shortcuts tarrget and shortuct name and appid
-
-shortcuts can fail if properties open. am i deletingand chekcing afterwars?
-
-how to katch module not found error? maybe ahve minimum open time of main_script? ->At least if it restarts forever->sleep?mention that. somehow python should be in charge and able to fail. maybe only catch if defualt_packages.txt still has its default "trigger text"-> have default text in defualt_packages.txt to indicate that it was not chagned and inform user by call and fail for modeul not foiund that they have to isntall via "xyz" and link to that.
-
-even notepad.exe for dev_tools required confirmation i guess? better ways? maybe also same embeddded python
-
- does it still do that???:make somehow shortcut generation lnk not require admin. Maybe icon is ont worth it and batch would do.. Maybe change icon of P.exe and call directly? do i bake a icon into P.exe?
- add comment to that shortcut
-
-add good settings for pyrefly for pyproject.toml
-
-add placeholder batches
-
-update git topics and order
-Fix Release in git
-update README
-
-make install packages needed in python files batch seach in code and in .py scripts and not in env
-
-===================================
 unrealated
 ===================================
-
-syncrhonize extensions vscode antigraivy
 
 add venv to "python->exe" (see folder compiler)
 test if 
@@ -960,8 +946,6 @@ explain renamed needed for terminal cmd separation
 
 fix readme for icons.
 
-explain GitHub desktop easily?
-
 make clear relative paths are allowid in settings and what settings are allowed fro non-user-setrtigns
 
  explain that you could just use poython for settings
@@ -986,7 +970,7 @@ fix color in python part of terminal
 license related
 ===================================
 
-checlk if licensing of new folder exe "generate icons" is correct
+add do_not_Change license info to main license?
 
 mention what the effective license allows and difference to MIT
 
