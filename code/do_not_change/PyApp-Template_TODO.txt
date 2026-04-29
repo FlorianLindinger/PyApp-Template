@@ -13,11 +13,13 @@ also add to pipes
 
 pyrefly does not warn for unused in script_wrapper?
 
-maybe found pyrefly bug that it does not rememeeber terminal_bg_color as string later in functuion when it new before in global
-
 ===================================
 ASK AI
 ===================================
+
+is HOW_TO_CHANGE_ICONS uptodatew
+
+ask AI if there are featurs in wrapper or emulator that i can add to otehr
 
 remove Path from everything
 
@@ -39,9 +41,15 @@ finish compile_terminal_and_override.bat
 
 wrapper and emulator same functionality as far as possible?
 
+convert protablbe batch to python
+
+is append_log option implemented? if not do it
+
 ===================================
 very important
 ===================================
+
+From names alone, the main missing functionality I’d add is a non-mutating “check/diff environment” tool: compare current packages vs default packages vs detected-needed packages before resetting/installing. Also, several intended tools are currently empty placeholders, especially current/no-package reset, strict/no-version default-package setters, and needed-packages-without-version.
 
 shortcuts can fail if properties open. am i deletingand checking afterwars if succesfully deleted?
 
@@ -60,18 +68,15 @@ update git topics and order
 Fix Release in git
 update README
 
-
-
-
 ===================================
 unsorted #2
 ===================================
 
+i guess check if "import " is in script. can still fail for edge cases. is woth it?
+
 delete icons at beginning in in regneraite icon and check for deletion
 
 maybe add back toml support for user settings. no fancy stuff.
-
-get wrapper and emulator at same functionailty such that i can cleanlöy add new featurs there
 
 re add print error for not traceback in commoni varables
 
@@ -117,10 +122,6 @@ add rich traceback to emulator? or compile in 3.13 for better traceback color?
 trigger magic phrase once and leave and tell how to reandable within message. for default packages. i guess just always add ontop the magic phrase with = False and true
 
 is there stiuff thjat is in fancy termina and in wrapper that i rather have in start_programm i guess?
-
-ask AI if there are featurs in wrapper or emulator that i can add to otehr
-
-
 
 mention colroful tracebac on error
 
@@ -240,16 +241,10 @@ google drawbacks of -u
 
 does terminal -u save it not logging`? maybe too much -u. does it somehow depend on global py test
 
-MAKE ALL RUNPY ONES not print runpy wiht errpr: try except in whole target script
-->see S.py
 
 fix ins start_program:
     # restart_main_code_on_crash,
     # after_python_crash_code_path
-
-i guess check if "import " is in script. can still fail for edge cases
-update pipres/stdlib
-mabye go down to 3.12 becuase pipreqs support. pigar is 100MB
 
 what if developer_tools scripts just interact with list in its folder?
 ->spawn and load a requirements.txt and reflect that in name
@@ -461,17 +456,13 @@ check if embedded python works for multiple app for taskbar adding
 
 chekc what functions to copy to fun_flo in terminal scriopt
 
-update HOW_TO_CHANGE_ICONS
 
 test if still portable
 
 mkae clickable link to script for main_script crash. or at least press enter "y" to open 
 
-handle modeule not foiund errror better. maybe link to script atht installs
-
 i guess i dont want to reinstall same packages for changes in python version? warn that if changed it will reset venv to defauölt in dev settings?
 
-does pyhon have better options to checl waht packages are needed in main_script + its imports
 make a determine_requiremnets.txt.bat
 make a installed_packages_to_requirements.txt.bat
 make different version for not fixed package versions
@@ -500,8 +491,6 @@ if %errorlevel% equ 0 (
     echo Final clean requirements list created.
 )
 """
-
-add pipreqs mappigns to all
 
 print lsit of packages whenever they are install from list
 print apps that will be installed with [Info] Installing packages (see below):
@@ -859,7 +848,7 @@ make pyqt5 interface available and easy to use with example.
 
 generate shrotcut to log output
 
-confirmation question via windows popup?
+confirmation question via windows popup? fragile?
 
 auto fork option? hm maybe just actually copy via a batch file (new folder and copy (dont overwrite at all), and delete .git)
 But fork allows for contributing changes back to original template. Git remplate does not but allows for own forking
@@ -979,10 +968,6 @@ add explanation for pyqt6 license
 ===================================
 small improvements related
 ===================================
-
-move the batches for peortable python to python i guess
-
-improve icon of do_not_change
 
 print script name and path when error possible?
 
