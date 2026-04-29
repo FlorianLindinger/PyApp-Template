@@ -36,8 +36,7 @@
 3. (Optional: Change program settings like Python version or program name under `code/developer_settings.py`)
 4. (Optional: Add user settings under `code/settings.py`)
 5. Execute `RUN BEFORE FIRST START AND AFTER FOLDER MOVE TO GENERATE SHORTCUTS.lnk` to generate shortcuts
-6. Run program via the generated shortcuts
-7. For the first execution via shortcuts it will auto install packages needed for the code
+6. Run program via the generated shortcuts (it will auto install needed packages)
 
 ---
 
