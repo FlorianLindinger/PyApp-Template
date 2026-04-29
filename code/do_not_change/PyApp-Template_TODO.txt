@@ -19,6 +19,8 @@ maybe found pyrefly bug that it does not rememeeber terminal_bg_color as string 
 ASK AI
 ===================================
 
+does anything require admin
+
 do i have os._exit(1) at ecvery input exit?
 
 ask for generall improivements and comments and oragnaizing and docstrings
@@ -33,23 +35,30 @@ ask ai to make all prints homogneouse. let it ask me whcih way i want
 
 finish compile_terminal_and_override.bat
 
+wrapper and emulator same functionality as far as possible?
+
 ===================================
 very important
 ===================================
 
-delete icons at mgeinning in in regneraite icon and check for deletion
+
+
+
+
+
+===================================
+unsorted #2
+===================================
+
+cahnge icon blue tone
+
+delete icons at beginning in in regneraite icon and check for deletion
 
 maybe add back toml support for user settings. no fancy stuff.
-
-make even more visible less noisey icon
-
-fix pywin32 installation for generate shortcuts
 
 chekc if all packages allow wiht lincense
 
 get wrapper and emulator at same functionailty such that i can cleanlöy add new featurs there
-
-add pack aliases for pipres for packages
 
 re add print error for not traceback in commoni varables
 
@@ -74,9 +83,6 @@ fix erorr print in wrapper mode haveing blac kcolor for tiomestapmo
 
 add option for log to be realtive to scriopt and not shrotcut but wdir is shrotctu.
 should i do setting same as log with rel path. or should i create shortcuts to logs?
-
-
-
 
 add rich traceback everyhwere. does it work nicely on emulator? waht are alternatives
 
@@ -892,10 +898,6 @@ reload imports settings function?
 ===================================
 git related
 ===================================
-
-mabye more genera *log*.txt for gitignore.
-# log files:
-log.txt
 
 make only drop in verisons that change only changd stuff and one can drop in
 
