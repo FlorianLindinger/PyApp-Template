@@ -103,7 +103,7 @@ try:
             except Exception:
                 return "Terminal"
 
-        def set_terminal_icon(icon_path: str, print_errors: bool = False) -> int:
+        def set_terminal_icon(icon_path: str, print_errors: bool = False, app_id: str = "") -> int:
             """Change the icon of the current terminal window and return the first touched hwnd."""
 
             WM_SETICON = 0x0080
@@ -347,6 +347,178 @@ try:
                     SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED,
                 )
 
+            def set_terminal_window_app_id(candidate_hwnds: list[int], app_id: str, print_errors: bool = False) -> int:
+                """Try to set System.AppUserModel.ID on the terminal window itself."""
+
+                if app_id == "":
+                    return 0
+
+                import uuid
+
+                HRESULT = ctypes.c_long
+                VT_LPWSTR = 31
+                S_OK = 0
+                S_FALSE = 1
+                RPC_E_CHANGED_MODE = 0x80010106
+
+                class GUID(ctypes.Structure):
+                    _fields_ = [
+                        ("Data1", ctypes.c_ulong),
+                        ("Data2", ctypes.c_ushort),
+                        ("Data3", ctypes.c_ushort),
+                        ("Data4", ctypes.c_ubyte * 8),
+                    ]
+
+                class PROPERTYKEY(ctypes.Structure):
+                    _fields_ = [("fmtid", GUID), ("pid", wintypes.DWORD)]
+
+                class PROPVARIANT(ctypes.Structure):
+                    _fields_ = [
+                        ("vt", ctypes.c_ushort),
+                        ("wReserved1", ctypes.c_ushort),
+                        ("wReserved2", ctypes.c_ushort),
+                        ("wReserved3", ctypes.c_ushort),
+                        ("pwszVal", ctypes.c_wchar_p),
+                    ]
+
+                class IPropertyStore(ctypes.Structure):
+                    pass
+
+                IPropertyStorePtr = ctypes.POINTER(IPropertyStore)
+
+                class IPropertyStoreVtbl(ctypes.Structure):
+                    _fields_ = [
+                        (
+                            "QueryInterface",
+                            ctypes.WINFUNCTYPE(
+                                HRESULT,
+                                IPropertyStorePtr,
+                                ctypes.POINTER(GUID),
+                                ctypes.POINTER(ctypes.c_void_p),
+                            ),
+                        ),
+                        ("AddRef", ctypes.WINFUNCTYPE(ctypes.c_ulong, IPropertyStorePtr)),
+                        ("Release", ctypes.WINFUNCTYPE(ctypes.c_ulong, IPropertyStorePtr)),
+                        ("GetCount", ctypes.WINFUNCTYPE(HRESULT, IPropertyStorePtr, ctypes.POINTER(wintypes.DWORD))),
+                        (
+                            "GetAt",
+                            ctypes.WINFUNCTYPE(
+                                HRESULT,
+                                IPropertyStorePtr,
+                                wintypes.DWORD,
+                                ctypes.POINTER(PROPERTYKEY),
+                            ),
+                        ),
+                        (
+                            "GetValue",
+                            ctypes.WINFUNCTYPE(
+                                HRESULT,
+                                IPropertyStorePtr,
+                                ctypes.POINTER(PROPERTYKEY),
+                                ctypes.POINTER(PROPVARIANT),
+                            ),
+                        ),
+                        (
+                            "SetValue",
+                            ctypes.WINFUNCTYPE(
+                                HRESULT,
+                                IPropertyStorePtr,
+                                ctypes.POINTER(PROPERTYKEY),
+                                ctypes.POINTER(PROPVARIANT),
+                            ),
+                        ),
+                        ("Commit", ctypes.WINFUNCTYPE(HRESULT, IPropertyStorePtr)),
+                    ]
+
+                IPropertyStore._fields_ = [("lpVtbl", ctypes.POINTER(IPropertyStoreVtbl))]
+
+                def make_guid(value: str) -> GUID:
+                    parsed = uuid.UUID(value)
+                    return GUID(
+                        parsed.time_low,
+                        parsed.time_mid,
+                        parsed.time_hi_version,
+                        (ctypes.c_ubyte * 8)(*parsed.bytes[8:]),
+                    )
+
+                def format_hresult(hr: int) -> str:
+                    code = hr & 0xFFFFFFFF
+                    try:
+                        message = ctypes.FormatError(code).strip()
+                    except Exception:
+                        message = "unknown error"
+                    return f"0x{code:08X}: {message}"
+
+                def check_hresult(hr: int, action: str) -> None:
+                    if hr < 0:
+                        raise OSError(f"{action} failed with HRESULT {format_hresult(hr)}")
+
+                shell32 = ctypes.WinDLL("shell32", use_last_error=True)
+                ole32 = ctypes.WinDLL("ole32", use_last_error=True)
+
+                shell32.SHGetPropertyStoreForWindow.argtypes = [
+                    wintypes.HWND,
+                    ctypes.POINTER(GUID),
+                    ctypes.POINTER(IPropertyStorePtr),
+                ]
+                shell32.SHGetPropertyStoreForWindow.restype = HRESULT
+
+                ole32.CoInitialize.argtypes = [ctypes.c_void_p]
+                ole32.CoInitialize.restype = HRESULT
+                ole32.CoUninitialize.argtypes = []
+                ole32.CoUninitialize.restype = None
+
+                iid_property_store = make_guid("886D8EEB-8CF2-4446-8D02-CDBA1DBDCF99")
+                pkey_app_user_model_id = PROPERTYKEY(
+                    make_guid("9F4C2855-9F79-4B39-A8D0-E1D42DE1D5F3"),
+                    5,
+                )
+                prop_var = PROPVARIANT()
+                prop_var.vt = VT_LPWSTR
+                prop_var.pwszVal = app_id
+
+                coinitialize_result = ole32.CoInitialize(None)
+                should_uninitialize = coinitialize_result in {S_OK, S_FALSE}
+                if coinitialize_result < 0 and (coinitialize_result & 0xFFFFFFFF) != RPC_E_CHANGED_MODE:
+                    raise OSError(f"CoInitialize failed with HRESULT {format_hresult(coinitialize_result)}")
+
+                changed_count = 0
+                try:
+                    for hwnd in candidate_hwnds:
+                        try:
+                            property_store = IPropertyStorePtr()
+                            hr = shell32.SHGetPropertyStoreForWindow(
+                                wintypes.HWND(hwnd),
+                                ctypes.byref(iid_property_store),
+                                ctypes.byref(property_store),
+                            )
+                            check_hresult(hr, f"SHGetPropertyStoreForWindow for hwnd 0x{hwnd:016X}")
+
+                            try:
+                                hr = property_store.contents.lpVtbl.contents.SetValue(
+                                    property_store,
+                                    ctypes.byref(pkey_app_user_model_id),
+                                    ctypes.byref(prop_var),
+                                )
+                                check_hresult(hr, f"SetValue System.AppUserModel.ID for hwnd 0x{hwnd:016X}")
+
+                                hr = property_store.contents.lpVtbl.contents.Commit(property_store)
+                                check_hresult(hr, f"Commit System.AppUserModel.ID for hwnd 0x{hwnd:016X}")
+
+                                refresh_nonclient_area(hwnd)
+                                changed_count += 1
+                            finally:
+                                if property_store:
+                                    property_store.contents.lpVtbl.contents.Release(property_store)
+                        except Exception as error:
+                            if print_errors:
+                                print(f"[Info] AppID update skipped for hwnd 0x{hwnd:016X}: {error}")
+                finally:
+                    if should_uninitialize:
+                        ole32.CoUninitialize()
+
+                return changed_count
+
             normalized_icon_path = os.path.abspath(os.path.expanduser(icon_path))
             if not os.path.isfile(normalized_icon_path):
                 raise FileNotFoundError(f'Icon file not found: "{normalized_icon_path}"')
@@ -390,6 +562,15 @@ try:
 
             if print_errors:
                 print(f"[Info] Attempted icon update on {len(candidate_hwnds)} window(s).")
+
+            if app_id != "":
+                try:
+                    changed_count = set_terminal_window_app_id(candidate_hwnds, app_id, print_errors=print_errors)
+                    if print_errors:
+                        print(f"[Info] Attempted AppID update on {changed_count} terminal window(s).")
+                except Exception as error:
+                    if print_errors:
+                        print(f"[Info] Terminal AppID update skipped: {error}")
 
             return candidate_hwnds[0]
 
@@ -619,7 +800,7 @@ def get_terminal_name():
         # set terminal name
         if script_has_terminal:
             set_terminal_name(title)  # type:ignore
-            set_terminal_icon(icon_path)  # type:ignore
+            set_terminal_icon(icon_path, app_id=app_id)  # type:ignore
 
             if terminal_colors != "":
                 os.system(f"color {terminal_colors}")  # noqa:S605
