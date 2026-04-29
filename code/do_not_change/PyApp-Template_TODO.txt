@@ -19,8 +19,6 @@ ASK AI
 
 ask AI if there are featurs in wrapper or emulator that i can add to otehr
 
-remove Path from everything
-
 does anything require admin
 
 do i have os._exit(1) at ecvery input exit?
@@ -39,8 +37,6 @@ wrapper and emulator same functionality as far as possible?
 
 convert protablbe batch to python
 
-done: append_log option implemented
-
 ===================================
 very important
 ===================================
@@ -54,7 +50,7 @@ even notepad.exe for dev_tools required confirmation i guess? better ways? maybe
 
 update good settings for pyrefly for pyproject.toml
 
-add placeholder batches or at least the lnks
+add placeholder batches
 
 update git topics and order
 Fix Release in git
@@ -66,7 +62,7 @@ unsorted #2
 
 i guess check if "import " is in script. can still fail for edge cases. is woth it?
 
-delete icons at beginning in in regneraite icon and check for deletion
+done: delete icons at beginning in regenerate icon and check for deletion
 
 maybe add back toml support for user settings. no fancy stuff.
 
