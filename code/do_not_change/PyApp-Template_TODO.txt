@@ -2,7 +2,6 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
-
 stop vscode adding imports in pyproject
 
 mentiona "Could not find name `log_file`" for global for pyrefly. Maybe different warning
@@ -37,6 +36,8 @@ finish compile_terminal_and_override.bat
 ===================================
 very important
 ===================================
+
+delete icons at mgeinning in in regneraite icon and check for deletion
 
 maybe add back toml support for user settings. no fancy stuff.
 
