@@ -72,6 +72,14 @@ let it chekc if seomthing looks like a placeholder and unfinsihjesd and nunnneca
 very important
 ===================================
 
+mention that one can delete compiled folder and pipresqs folder: hm maybe automate and also allow code to fail and mention that not enabled?
+
+underline in readme better visibile?
+
+is user launched GUI already app id?
+
+udpate main readme. and mentaion fancy terminal. maybe in extra sub secitpn
+
 remove desktop.ini and random log*.txt
 
 test what faulthandler changes
