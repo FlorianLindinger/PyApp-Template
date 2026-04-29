@@ -7,7 +7,6 @@ import shutil
 import subprocess
 import sys
 import time
-from pathlib import Path
 
 try:
     # =============================
@@ -208,22 +207,27 @@ try:
             size /= 1024
         return f"{num_bytes} B"
 
-    def get_folder_size(folder: Path) -> int:
+    def get_folder_size(folder: str | os.PathLike[str]) -> int:
         total = 0
-        for p in folder.rglob("*"):
-            try:
-                if p.is_file():
-                    total += p.stat().st_size
-            except (OSError, PermissionError):
-                # Skip unreadable files when estimating size.
-                pass
+        for root, _dirs, files in os.walk(folder):
+            for filename in files:
+                path = os.path.join(root, filename)
+                try:
+                    if os.path.isfile(path):
+                        total += os.path.getsize(path)
+                except (OSError, PermissionError):
+                    # Skip unreadable files when estimating size.
+                    pass
         return total
 
+    def is_filesystem_root(path: str) -> bool:
+        return os.path.abspath(path) == os.path.abspath(os.path.join(path, os.pardir))
+
     def delete_folder_safe(
-        target: str | Path,
+        target: str | os.PathLike[str],
         *,
         prompt_message="Delete this folder? [y/n]: ",
-        allowed_base: str | Path,
+        allowed_base: str | os.PathLike[str],
         prompt_for_confirmation=True,
     ):
         """
@@ -241,28 +245,35 @@ try:
         - asks for confirmation
         """
 
-        target_path = Path(target).resolve()
-        base_path = Path(allowed_base).resolve()
+        target_path = os.path.realpath(os.path.abspath(os.fspath(target)))
+        base_path = os.path.realpath(os.path.abspath(os.fspath(allowed_base)))
 
-        if not base_path.exists():
+        if not os.path.exists(base_path):
             raise FileNotFoundError(f"Allowed base does not exist: {base_path}")
 
-        if not base_path.is_dir():
+        if not os.path.isdir(base_path):
             raise NotADirectoryError(f"Allowed base is not a directory: {base_path}")
 
-        if not target_path.exists():
+        if not os.path.exists(target_path):
             raise FileNotFoundError(f"Target does not exist: {target_path}")
 
-        if not target_path.is_dir():
+        if not os.path.isdir(target_path):
             raise NotADirectoryError(f"Target is not a directory: {target_path}")
 
-        if target_path == target_path.anchor:
+        if is_filesystem_root(target_path):
             raise ValueError(f"Refusing to delete filesystem root: {target_path}")
 
-        if target_path == base_path:
+        if os.path.normcase(target_path) == os.path.normcase(base_path):
             raise ValueError("Refusing to delete the allowed base directory itself")
 
-        if base_path not in target_path.parents:
+        try:
+            common_path = os.path.commonpath([base_path, target_path])
+        except ValueError as exc:
+            raise ValueError(
+                f"Refusing to delete directory outside allowed base.\nTarget: {target_path}\nAllowed base: {base_path}"
+            ) from exc
+
+        if os.path.normcase(common_path) != os.path.normcase(base_path):
             raise ValueError(
                 f"Refusing to delete directory outside allowed base.\nTarget: {target_path}\nAllowed base: {base_path}"
             )
@@ -283,7 +294,7 @@ try:
                 return False
 
         shutil.rmtree(target_path)
-        if not target_path.exists():
+        if not os.path.exists(target_path):
             return True
         else:
             return False
