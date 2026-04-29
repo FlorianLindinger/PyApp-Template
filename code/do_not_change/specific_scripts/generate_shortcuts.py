@@ -41,6 +41,10 @@ settings_icon_path = os.path.normpath(file_dir + "..\\..\\icons\\settings.ico")
 launcher_no_terminl_icon_path = os.path.normpath(file_dir + "..\\..\\icons\\icon.ico")
 stop_no_terminal_icon_path = os.path.normpath(file_dir + "..\\..\\icons\\stop.ico")
 
+SHORTCUT_DELETE_TIMEOUT_SECONDS = 5.0
+SHORTCUT_CREATE_TIMEOUT_SECONDS = 5.0
+SHORTCUT_RETRY_DELAY_SECONDS = 0.1
+
 # ====================
 
 
@@ -111,6 +115,46 @@ def sanitize_app_id(input_string):
     return name
 
 
+def delete_existing_shortcut(output):
+    if not os.path.exists(output):
+        return
+
+    deadline = time.monotonic() + SHORTCUT_DELETE_TIMEOUT_SECONDS
+    last_error = None
+
+    while os.path.exists(output):
+        try:
+            os.remove(output)
+        except FileNotFoundError:
+            return
+        except OSError as e:
+            last_error = e
+
+        if not os.path.exists(output):
+            return
+
+        if time.monotonic() >= deadline:
+            detail = f" Last Windows error: {last_error}" if last_error else ""
+            raise RuntimeError(
+                f'Failed to delete existing shortcut within {SHORTCUT_DELETE_TIMEOUT_SECONDS:.1f} seconds: "{output}". '
+                f"Close the shortcut Properties window or any program using the file and try again.{detail}"
+            )
+
+        time.sleep(SHORTCUT_RETRY_DELAY_SECONDS)
+
+
+def check_shortcut_was_created(output):
+    deadline = time.monotonic() + SHORTCUT_CREATE_TIMEOUT_SECONDS
+
+    while not os.path.exists(output):
+        if time.monotonic() >= deadline:
+            raise RuntimeError(
+                f'Failed to create shortcut within {SHORTCUT_CREATE_TIMEOUT_SECONDS:.1f} seconds: "{output}".'
+            )
+
+        time.sleep(SHORTCUT_RETRY_DELAY_SECONDS)
+
+
 def create_shortcut_with_appid(args, output, target=None, icon_path=None, wdir="", app_id=None, description=""):
 
     if (icon_path is not None) and (not os.path.exists(icon_path)):
@@ -124,11 +168,8 @@ def create_shortcut_with_appid(args, output, target=None, icon_path=None, wdir="
     if wdir != "" and not os.path.isabs(wdir):
         wdir = os.path.abspath(wdir)
 
-    # delete existing shortcut if it exists
-    if os.path.exists(output):
-        os.remove(output)
-    while os.path.exists(output):
-        time.sleep(0.1)
+    # Delete first so a locked shortcut fails with a clear timeout instead of hanging.
+    delete_existing_shortcut(output)
 
     # 1. Create the shortcut file via WScript.Shell (Standard)
     shell = Dispatch("WScript.Shell")
@@ -139,7 +180,14 @@ def create_shortcut_with_appid(args, output, target=None, icon_path=None, wdir="
     shortcut.Description = description
     if icon_path:
         shortcut.IconLocation = icon_path
-    shortcut.Save()
+    try:
+        shortcut.Save()
+    except Exception as e:
+        raise RuntimeError(
+            f'Failed to save shortcut: "{output}". Close the shortcut Properties window or any program using the file '
+            f"and try again. Windows error: {e}"
+        ) from e
+    check_shortcut_was_created(output)
 
     # 2. Add AppUserModelID via IPropertyStore (Advanced)
     if app_id is not None:
