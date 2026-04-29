@@ -16,6 +16,7 @@ try:
     import os
     import runpy
     import sys
+    import faulthandler
 
     # ==================
     # handle args
@@ -558,6 +559,8 @@ try:
                 log_timestamp_format=log_timestamp_format,
                 print_red=True,
             )
+            if faulthandler.is_enabled():
+                faulthandler.enable(file=log_file, all_threads=True)
 
     # used to print in new terminal window:
     script_base = r"""

@@ -50,6 +50,7 @@ try:
     import atexit
     import ctypes
     import ctypes.wintypes
+    import faulthandler
     import importlib.util
     import os
     import shutil
@@ -265,6 +266,7 @@ try:
             print_timestamp_format: str = "",
             log_stream=None,
             log_timestamp_format: str = "",
+            use_faulthandler: bool = True,
             width: int = 900,
             height: int = 600,
             button_settings: dict[str, dict] | None = None,
@@ -319,6 +321,7 @@ try:
             self.print_timestamp_format = print_timestamp_format
             self.log_stream = log_stream
             self.log_timestamp_format = log_timestamp_format
+            self.use_faulthandler = use_faulthandler
             self._print_at_line_start = True
             self._log_at_line_start = True
 
@@ -1035,9 +1038,11 @@ try:
             else:
                 self.process.setWorkingDirectory("")
 
-            self.process.start(
-                self.python_exe, ["-u", self.script_path]
-            )  # -u makes the prints not be buffered aka delayed
+            python_args = ["-u"]  # -u makes prints unbuffered, so terminal output is not delayed.
+            if self.use_faulthandler:
+                python_args += ["-X", "faulthandler"]
+            python_args.append(self.script_path)
+            self.process.start(self.python_exe, python_args)
             self._set_input_enabled(True)
             self.set_button_clickable_state("stop", True)
             if not self.process.waitForStarted(3000):
@@ -1432,7 +1437,7 @@ try:
         terminal_needs_input = arg_to_bool(16, True)
         stylesheet_path = arg_to_str(17, "")
         dark_mode = arg_to_str(18, "1")  # no bool because "auto" could also be option that should not be turned to True
-        use_faulthandler = arg_to_str(19, "1")
+        use_faulthandler = arg_to_bool(19, True)
 
         if log_path != "":
             global log_file
@@ -1441,6 +1446,10 @@ try:
             atexit.register(log_file.close)
             sys.stdout = pipe_splitter(sys.__stdout__, log_file, timestamp_format=log_timestamp_format)
             sys.stderr = pipe_splitter(sys.__stderr__, log_file, timestamp_format=log_timestamp_format)
+            if use_faulthandler:
+                faulthandler.enable(file=log_file, all_threads=True)
+        elif use_faulthandler:
+            faulthandler.enable(all_threads=True)
 
         if app_id != "":
             set_app_id(app_id)
@@ -1460,6 +1469,7 @@ try:
             print_timestamp_format=print_timestamp_format,
             log_stream=log_file if log_path != "" else None,
             log_timestamp_format=log_timestamp_format,
+            use_faulthandler=use_faulthandler,
         )
 
         # set dark mode. For neither "1" or "0" case it will choose Windows settings
