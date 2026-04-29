@@ -88,7 +88,6 @@ try:
     # =============
     # default terminal emulator style sheet
 
-    INPUT_PREPEND = ">>> "
     INPUT_PRINT_BG = "%acccent_color_placeholder%"  # None for default
     INPUT_PRINT_COLOR = "contrast"  # None for default. "contrast" for a bg with contrast to INPUT_PRINT_BG
     ERROR_PRINT_COLOR = "#FF5252"  # None for default
@@ -1435,7 +1434,7 @@ try:
         overwrite_log = arg_to_bool(13, True)
         log_file_date_append_format = arg_to_str(14, "")
         script_after_interpreter_crash_path = arg_to_str(15, "")
-        input_prepend = arg_to_str(16,"")
+        INPUT_PREPEND = arg_to_str(16,"> ")
         
         terminal_needs_input = arg_to_bool(17, True)
         stylesheet_path = arg_to_str(18, "")
@@ -1490,7 +1489,6 @@ try:
                     ERROR_PRINT_COLOR,
                     INPUT_PRINT_BG,
                     INPUT_PRINT_COLOR,
-                    INPUT_PREPEND,
                     QSS,
                 )
             else:

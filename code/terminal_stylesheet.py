@@ -1,4 +1,9 @@
-# "%windows%" in QSS and the other variables below will be replaced by the Windows accent color.
+"""Optional terminal emulator style overrides.
+
+The terminal emulator imports the color variables and ``QSS`` from this file when
+``developer_settings.stylesheet_path`` points here. Use ``%windows%`` in color
+values to substitute the current Windows accent color at runtime.
+"""
 
 # ===============
 
