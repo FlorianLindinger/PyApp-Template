@@ -62,8 +62,6 @@ unsorted #2
 
 i guess check if "import " is in script. can still fail for edge cases. is woth it?
 
-done: delete icons at beginning in regenerate icon and check for deletion
-
 maybe add back toml support for user settings. no fancy stuff.
 
 re add print error for not traceback in commoni varables
