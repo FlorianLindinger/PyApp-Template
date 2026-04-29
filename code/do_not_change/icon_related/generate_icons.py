@@ -5,6 +5,7 @@ import signal
 import struct
 import subprocess
 import sys
+import time
 import zlib
 from urllib.parse import quote
 
@@ -15,6 +16,9 @@ output_path = "../../icons/"
 fallback_base_png_id = "200x200:82f0d3c0"
 fallback_settings_png_id = "200x200:71db6cbb"
 fallback_stop_png_id = "200x200:83248fd0"
+ICON_DELETE_TIMEOUT_SECONDS = 5.0
+ICON_RETRY_DELAY_SECONDS = 0.1
+GENERATED_ICON_FILENAMES = ("icon.ico", "settings.ico", "stop.ico")
 
 file_path = os.path.dirname(os.path.abspath(__file__))
 os.chdir(file_path)
@@ -368,11 +372,54 @@ def _pause_before_exit() -> None:
         pass
 
 
+def _delete_existing_icon(path: str) -> None:
+    if not os.path.exists(path):
+        return
+
+    deadline = time.monotonic() + ICON_DELETE_TIMEOUT_SECONDS
+    last_error = None
+
+    while os.path.exists(path):
+        try:
+            os.remove(path)
+        except FileNotFoundError:
+            return
+        except OSError as error:
+            last_error = error
+
+        if not os.path.exists(path):
+            return
+
+        if time.monotonic() >= deadline:
+            detail = f" Last Windows error: {last_error}" if last_error else ""
+            raise RuntimeError(
+                f'Failed to delete existing icon within {ICON_DELETE_TIMEOUT_SECONDS:.1f} seconds: "{path}". '
+                f"Close any program using the file and try again.{detail}"
+            )
+
+        time.sleep(ICON_RETRY_DELAY_SECONDS)
+
+
+def delete_existing_generated_icons() -> None:
+    for filename in GENERATED_ICON_FILENAMES:
+        path = os.path.join(output_path, filename)
+        _delete_existing_icon(path)
+        if os.path.exists(path):
+            raise RuntimeError(f'Icon still exists after deletion attempt: "{path}"')
+
+
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         overlay_scale_factor = float(sys.argv[1])
     else:
         overlay_scale_factor = 0.6
+
+    try:
+        delete_existing_generated_icons()
+    except Exception as e:
+        print(f"Error deleting old icon files: {e}")
+        _pause_before_exit()
+        sys.exit(1)
 
     base_icon_path = _pick_icon_path(
         user_png_folder_path + "icon.png",
