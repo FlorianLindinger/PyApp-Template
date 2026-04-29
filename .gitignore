@@ -10,7 +10,7 @@ __pycache__
 # whitelist sync of realitve-path-shortcut:
 !RUN BEFORE FIRST START AND AFTER FOLDER MOVE TO GENERATE SHORTCUTS.lnk
 # log files:
-log.txt
+log*.txt
 # temporary id files for no-terminal start:
 *.pid
 # list of python packages that gets generated:
@@ -24,6 +24,3 @@ auto_found_required_python_packages.txt
 # ADD YOUR GITIGNORES HERE
 
 # ==============================
-
-
-

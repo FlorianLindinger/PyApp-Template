@@ -65,7 +65,7 @@ script_after_python_interpreter_crash_name: str | None = "after_python_crash_cod
 # Names of generated shortcuts:
 # (Delte or set =="" to disable generation of specific shortcut)
 start_name = f"{program_name}"  # start program
-start_no_terminal_name = f"{program_name} (with log & no terminal)"  # start program without terminal
+start_no_terminal_name = f"{program_name} (no terminal)"  # start program without terminal
 settings_name = f"{program_name} - settings"  # open settings file
 stop_no_terminal_name = f"stop (no-terminal) {program_name}"  # stop program that was started without terminal
 # -------------------------------------------------
