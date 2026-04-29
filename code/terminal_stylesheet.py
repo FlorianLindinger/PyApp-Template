@@ -7,7 +7,6 @@ ACCENT_COLOR = "#F83F6b"
 # ===============
 # individually imported settings
 
-INPUT_PREPEND = "> "
 INPUT_PRINT_COLOR: str | None = "#5DADE2"  # None for default
 INPUT_PRINT_BG: str | None = None  # None for invisible
 ERROR_PRINT_COLOR: str | None = "#FFFFFF"  # None for default

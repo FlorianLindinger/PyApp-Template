@@ -96,7 +96,8 @@ log_timestamp_format = "%H:%M:%S\t"
 # ==== terminal (visual) settings ====
 # ====================================
 
-
+# Text shown before user input when input is echoed in the terminal.
+input_prepend: str | None = "> "
 
 # --------------------------------------------------
 # settings that apply if use_fancy_terminal = False:
