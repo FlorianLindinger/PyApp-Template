@@ -17,7 +17,7 @@ use_global_python = False
 # False = Start in the "code" folder where the main scrip is
 start_in_shortcut_folder = False
 # -------------------------------------------------
-print_timestamp_format: str | None = "%H:%M:%S\t"
+print_timestamp_format: str | None = "%H:%M:%S | "
 # None for no timestamps (else see datetime.datetime.strftime usage: e.g. "%H:%M:%S\t")
 # -------------------------------------------------
 # If True, it will use a fancy Windows terminal emulator that has extra features and grouping in taskbar (see below). If False, it will use the regular Windows terminal but with a wrapper script to handle backend logic that has parts of the functionality of the fancy terminal.
@@ -87,7 +87,7 @@ overwrite_log = True
 create_log_for_terminal_start = True
 create_log_for_no_terminal_start = True
 # -------------------------------------------------
-log_timestamp_format = "%H:%M:%S\t"
+log_timestamp_format = "%H:%M:%S | "
 # None for no timestamps (else see datetime.datetime.strftime usage: e.g. "%H:%M:%S\t")
 # -------------------------------------------------
 

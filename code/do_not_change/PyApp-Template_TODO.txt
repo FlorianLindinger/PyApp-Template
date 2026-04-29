@@ -17,6 +17,10 @@ pyrefly does not warn for unused in script_wrapper?
 ASK AI
 ===================================
 
+add script_after_interpreter_crash_path
+
+is there still "WIP" somehwer
+
 google drawbacks of -u
 
 ask again if grouping for terminal works
@@ -49,6 +53,8 @@ let it chekc if seomthing looks like a placeholder and unfinsihjesd and nunnneca
 ===================================
 very important
 ===================================
+
+it does not add timestap on answer by program input
 
 in wrapper add a try except for module not found error. should i offer piperes or run pipreqs mapping over the name and offer to install and offer to add to default. maybe via "0" "1" "2". also offer 4 to manually install via opened terminal and 5 to open defualt settings ...
 

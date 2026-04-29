@@ -57,7 +57,7 @@ try:
     import subprocess
     import sys
     import traceback
-    from datetime import datetime
+    from datetime import datetime, timezone
 
     try:
         from typing import override  # Python 3.12+
@@ -308,7 +308,7 @@ try:
 
             script_path = os.path.abspath(script_path)
             self.script_path = script_path
-            if python_exe.endswith(".bat") or python_exe.endswith(".exe"):  # to allow for "py"
+            if python_exe.endswith((".bat", ".exe")):  # to allow for "py"
                 python_exe = os.path.abspath(python_exe)
             self.python_exe = python_exe
             self.close_on_crash = close_on_crash
@@ -701,7 +701,7 @@ try:
         def _timestamp_prefix(self, fmt: str | None) -> str:
             if not fmt:
                 return ""
-            return datetime.now().strftime(fmt)
+            return datetime.now(timezone.utc).strftime(fmt)
 
         def _add_line_timestamps(self, text: str, fmt: str | None, state_attr: str) -> str:
             if not fmt:
@@ -784,9 +784,12 @@ try:
             if not self.process or self.process.state() != QProcess.ProcessState.Running:
                 return
 
-            self.process.write((text+"\n").encode("utf-8"))
+            self.process.write((text + "\n").encode("utf-8"))
             self.terminal_print(
-                INPUT_PREPEND + text, color=INPUT_PRINT_COLOR, is_user_input=True, bg_color=INPUT_PRINT_BG
+                INPUT_PREPEND + text,  # type:ignore
+                color=INPUT_PRINT_COLOR,
+                is_user_input=True,
+                bg_color=INPUT_PRINT_BG,
             )
             self.input_line.add_to_history(text)
             self.clear_input()
@@ -1237,8 +1240,8 @@ try:
             if msg.startswith("Terminal_window."):
                 rest = msg[len("Terminal_window.") :]
                 try:
-                    eval(f"self.{rest}")
-                except Exception as m:
+                    eval(f"self.{rest}") #noqa
+                except Exception:
                     self.terminal_print(traceback.format_exc(), error=True)
 
             else:
@@ -1335,7 +1338,7 @@ try:
         def _timestamp_prefix(self) -> str:
             if not self.timestamp_format:
                 return ""
-            return datetime.now().strftime(self.timestamp_format)
+            return datetime.now(timezone.utc).strftime(self.timestamp_format)
 
         def _add_line_timestamps(self, data: str) -> str:
             if data is None:
@@ -1368,7 +1371,7 @@ try:
         if date_append_format:
             folder, filename = os.path.split(path)
             stem, suffix = os.path.splitext(filename)
-            path = os.path.join(folder, f"{stem}{datetime.now().strftime(date_append_format)}{suffix}")
+            path = os.path.join(folder, f"{stem}{datetime.now(timezone.utc).strftime(date_append_format)}{suffix}")
 
         folder = os.path.dirname(path)
         if folder:
@@ -1410,7 +1413,7 @@ try:
     # main
 
     def main() -> int:
-        global INPUT_PRINT_COLOR, INPUT_PRINT_BG, ERROR_PRINT_BG, ERROR_PRINT_COLOR
+        global INPUT_PRINT_COLOR, INPUT_PRINT_BG, ERROR_PRINT_BG, ERROR_PRINT_COLOR, INPUT_PREPEND  # type:ignore
 
         # process args
         if len(sys.argv) < 2:
@@ -1434,15 +1437,16 @@ try:
         overwrite_log = arg_to_bool(13, True)
         log_file_date_append_format = arg_to_str(14, "")
         script_after_interpreter_crash_path = arg_to_str(15, "")
-        INPUT_PREPEND = arg_to_str(16,"> ")
-        
+        INPUT_PREPEND = arg_to_str(16, "> ")
+
         terminal_needs_input = arg_to_bool(17, True)
         stylesheet_path = arg_to_str(18, "")
         dark_mode = arg_to_str(19, "1")  # no bool because "auto" could also be option that should not be turned to True
         use_faulthandler = arg_to_bool(20, True)
 
+        global log_file  # type:ignore
+        log_file = ""
         if log_path != "":
-            global log_file
             log_path = prepare_log_path(log_path, log_file_date_append_format)
             log_file = open(log_path, "w" if overwrite_log else "a", encoding="utf-8", buffering=1)  # noqa:SIM115
             atexit.register(log_file.close)
@@ -1469,7 +1473,7 @@ try:
             wdir_is_script_dir=wdir_is_script_dir,
             terminal_needs_input=terminal_needs_input,
             print_timestamp_format=print_timestamp_format,
-            log_stream=log_file if log_path != "" else None,
+            log_stream=log_file,
             log_timestamp_format=log_timestamp_format,
             use_faulthandler=use_faulthandler,
         )
@@ -1508,7 +1512,7 @@ try:
                 if ERROR_PRINT_BG.lower().strip() == "%windows%":
                     ERROR_PRINT_BG = windows_accent_color
 
-            if INPUT_PRINT_BG is not None: # type:ignore
+            if INPUT_PRINT_BG is not None:  # type:ignore
                 if INPUT_PRINT_BG.lower().strip() == "%windows%":
                     INPUT_PRINT_BG = windows_accent_color
 
@@ -1551,7 +1555,7 @@ input_warn("Press enter to exit")
 
 finally:
     try:
-        log_file.close()  # type:ignore #noqa
+        log_file.close()  # type:ignore
     except Exception:
         pass
     # sys.exit(number) is not altered by this "finally" block
