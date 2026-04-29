@@ -17,6 +17,8 @@ pyrefly does not warn for unused in script_wrapper?
 ASK AI
 ===================================
 
+google drawbacks of -u
+
 ask again if grouping for terminal works
 
 add minimal windwos like terminal that does gropuing
@@ -41,6 +43,8 @@ ask ai to make all prints homogneouse. let it ask me whcih way i want
 wrapper and emulator same functionality as far as possible?
 
 convert protablbe batch to python
+
+let it chekc if seomthing looks like a placeholder and unfinsihjesd and nunnnecassy prings
 
 ===================================
 very important
@@ -78,9 +82,7 @@ how do i make long messages better for print_traceback. can it do multiloine?
 current kill in print_traceback is too stinrg?
 maybe i only need strenght for cmd terminal generate shrtcuts and dev tools.
 
-how can i determine if pipreqs failed expecteldfdy bc internet?
 
-let it chekc if seomthing looks like a placeholder and unfinsihjesd and nunnnecassy prings
 
 see if windows terminal hadnles all crash and erros.
 not working:
@@ -226,8 +228,6 @@ does use_global_python work
 clarify that restart on crash only appeas on python crsahj not regular crahs of script
 make it that way
 
-google drawbacks of -u
-
 does terminal -u save it not logging`? maybe too much -u. does it somehow depend on global py test
 
 
@@ -337,9 +337,6 @@ make time in log independent from print timestamp?
 
 can i add timestamps in regular terminal
 is there more i can give to regular terminal
-
-# add docsting to terminal_stylesheet
-
 
 add list what was chenage from nomrmal embeedead
 write how to update embedded python
