@@ -17,6 +17,10 @@ pyrefly does not warn for unused in script_wrapper?
 ASK AI
 ===================================
 
+ask if there is possiblity for maore fail ehcks and error prints and input exits
+
+ask if more prints somewhere usefull
+
 [Info] Python distribution not found. Installing portable Python and creating virtual environment:
 Found (msi-install-available) Python version 3.14.4
 Download URL: https://www.python.org/ftp/python/3.14.4/amd64/
