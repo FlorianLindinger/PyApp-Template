@@ -355,13 +355,13 @@ try:
                 add_press_enter_to_exit=True,
             )
 
-    def install_default_packages():
+    def install_packages(path):
 
-        if not os.path.exists(default_packages_file_path):
-            raise FileNotFoundError(f'[Error] Deafault packages file not found at "{default_packages_file_path}"')
+        if not os.path.exists(path):
+            raise FileNotFoundError(f'[Error] Packages file not found at "{path}"')
 
         # check if default_packages_file_path empty:
-        with open(default_packages_file_path, encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             lines = f.readlines()
         for l in lines:
             l = l.strip()
@@ -374,7 +374,7 @@ try:
         if has_package == True:
             print()
             print("=" * 20)
-            print("Installing default packages:")
+            print("Installing packages:")
             print("-" * 20)
             subprocess.run(  # noqa
                 [
@@ -383,21 +383,70 @@ try:
                     "pip",
                     "install",
                     "-r",
-                    default_packages_file_path,
+                    path,
                     "--disable-pip-version-check",
                 ],
                 check=True,
             )
             print("-" * 20)
-            print("Finished installing default packages")
+            print("Finished installing packages")
             print("=" * 20)
             print()
         else:
             print()
             print("=" * 20)
-            print("No default packages to install.")
+            print("No packages to install.")
             print("=" * 20)
             print()
+
+    def read_search_phrase_state() -> bool | None:
+        with open(default_packages_file_path) as f:
+            lines = f.readlines()
+        if (
+            variable_in_default_packages_path_that_triggers_search_if_true in lines[0]
+            and lines[0]
+            .replace(variable_in_default_packages_path_that_triggers_search_if_true, "")
+            .replace("=", "")
+            .replace("#", "")
+            .strip()
+            .lower()
+            == "true"
+        ):
+            return True
+        elif (
+            variable_in_default_packages_path_that_triggers_search_if_true in lines[0]
+            and lines[0]
+            .replace(variable_in_default_packages_path_that_triggers_search_if_true, "")
+            .replace("=", "")
+            .replace("#", "")
+            .strip()
+            .lower()
+            == "false"
+        ):
+            return False
+        else:
+            return None
+
+    def save_current_packages_as_default(search_phrase_state=None):
+        """search_phrase_state==None means that is leaves the current state in the default packages file."""
+
+        with open(default_packages_file_path, "w", encoding="utf-8") as file:  # override default packages file
+            if search_phrase_state is None:
+                search_phrase_state = read_search_phrase_state()
+            file.write(f"# {variable_in_default_packages_path_that_triggers_search_if_true} = {search_phrase_state}")
+            subprocess.run(  # noqa
+                [
+                    venv_exe_path,
+                    "-m",
+                    "pip",
+                    "freeze",
+                    "--local",
+                ],
+                stdout=file,
+                stderr=subprocess.PIPE,
+                text=True,
+                check=True,
+            )
 
     def delete_venv():
         if os.path.exists(venv_dir_path):
@@ -443,7 +492,7 @@ try:
             delete_venv()
             print("[Info] Creating virtual environment:")
             create_portable_venv()
-            install_default_packages()
+            install_packages(default_packages_file_path)
 
         else:  # python distribution existing case
             match = check_python_version(target_version=python_version, exe_path=python_exe_path)
@@ -453,7 +502,7 @@ try:
                     print("[Info] Virtual environment not found. Creating portable virtual environment:")
                     delete_venv()
                     create_portable_venv()
-                    install_default_packages()
+                    install_packages(default_packages_file_path)
 
             else:  # wrong python version case
                 print(
@@ -467,9 +516,9 @@ try:
                 delete_venv()
                 print("[Info] (Re)Creating virtual environment:")
                 create_portable_venv()
-                install_default_packages()
+                install_packages(default_packages_file_path)
 
-    def get_requirements_of_root_folder(output_path):
+    def save_requirements_of_root_folder_noVersion(output_path):
 
         searched_folder = python_scripts_folder_path
         excluded_folders = excluded_folders_for_package_search
@@ -478,7 +527,7 @@ try:
             sys.executable,
             "-m",
             "pipreqs.pipreqs",
-            searched_folder,  # ".",
+            searched_folder,
             "--force",
             "--savepath",
             output_path,
@@ -486,6 +535,8 @@ try:
             ",".join(excluded_folders),
             "--encoding",
             "utf-8",
+            "--mode",
+            "no-pin",
             "--no-follow-links",
         ]
 
@@ -495,7 +546,10 @@ try:
         print("-" * 20)
         subprocess.run(cmd, check=True)  # noqa
         print("-" * 20)
-        print(f'End of finding required python packages. Result: "{output_path}"')
+        print(f'End of finding required python packages. Result: "{output_path}":\n')
+        with open(output_path, encoding="utf-8") as file:
+            contents = file.read()
+        print(contents)
         print("=" * 20)
         print()
 
@@ -521,22 +575,11 @@ try:
 
         if use_global_python == False:
             # auto find packages if none given and magic phrase present
-            with open(default_packages_file_path) as f:
-                lines = f.readlines()
-            if (
-                variable_in_default_packages_path_that_triggers_search_if_true in lines[0]
-                and lines[0]
-                .replace(variable_in_default_packages_path_that_triggers_search_if_true, "")
-                .replace("=", "")
-                .replace("#", "")
-                .strip()
-                .lower()
-                == "true"
-            ):
+            if read_search_phrase_state():
                 if os.path.exists(auto_search_required_packages_output_file_path):
                     os.remove(auto_search_required_packages_output_file_path)
                 try:
-                    get_requirements_of_root_folder(auto_search_required_packages_output_file_path)
+                    save_requirements_of_root_folder_noVersion(auto_search_required_packages_output_file_path)
                 except Exception as e:
                     print_traceback(
                         f"[Error] Failed to auto determine packages (do you have internet?): {e}",
@@ -544,11 +587,10 @@ try:
                     )
 
                 if os.path.exists(auto_search_required_packages_output_file_path):
-                    with open(auto_search_required_packages_output_file_path, encoding="utf-8") as src:
-                        with open(default_packages_file_path, "w", encoding="utf-8") as dst:
-                            dst.write(variable_in_default_packages_path_that_triggers_search_if_true + " = False\n")
-                            dst.write(src.read())
-                    delete_venv()  # delete venv such that auto found packages are installed fresh
+                    delete_venv()
+                    create_portable_venv()
+                    install_packages(auto_search_required_packages_output_file_path)
+                    save_current_packages_as_default(search_phrase_state=False)
                 else:
                     print_warn("[Error] Failed to auto determine required Python packages.")
                     input_warn("Aborting. Press enter to exit")
