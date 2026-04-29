@@ -13,10 +13,11 @@ try:
     # ==================
     # import
 
+    import builtins
+    import faulthandler
     import os
     import runpy
     import sys
-    import faulthandler
 
     # ==================
     # handle args
@@ -36,9 +37,10 @@ try:
     overwrite_log = sys.argv[12] == "1"
     log_file_date_append_format = sys.argv[13]
     script_after_interpreter_crash_path = sys.argv[14]
+    input_prepend = sys.argv[15]
 
-    terminal_colors = sys.argv[15]
-    script_has_terminal = sys.argv[16] == "1"
+    terminal_colors = sys.argv[16]
+    script_has_terminal = sys.argv[17] == "1"
     # script_has_terminal = "1" means that this window is run in a terminal and False that it is invisible and one needs to create a new terminal to print
 
     # ==================
@@ -636,6 +638,12 @@ def get_terminal_name():
         sys.path[0] = os.path.dirname(script_path)
 
         # run in the current python process and wait for finish
+        original_input = builtins.input
+        if input_prepend != "":
+            def input_with_prepend(prompt=""):
+                return original_input(f"{prompt}{input_prepend}")
+
+            builtins.input = input_with_prepend
         try:
             runpy.run_path(script_path, run_name="__main__")
             # no crash:
@@ -644,6 +652,8 @@ def get_terminal_name():
             exit_code = e.code
             if exit_code is None:
                 exit_code = 0
+        finally:
+            builtins.input = original_input
 
         # change terminal and print depending on exit_code
         if exit_code == 0:
