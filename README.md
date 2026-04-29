@@ -1,6 +1,6 @@
 # 🐍 PyApp-Template
 
-**Template for a Windows-only, offline portable & git-shareable, source-code-running, 100%-isolated, ready-to-use (just insert Python file), full-version (aka. non-embedded) Python (3.7+) application**
+**Template for a Windows-only, offline portable & git-shareable, source-code-running, 100%-isolated, ready-to-use (just insert Python file/code), full-version (aka. non-embedded) Python (3.7+) application**
 
 ---
 
