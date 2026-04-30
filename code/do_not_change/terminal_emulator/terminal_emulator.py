@@ -1397,6 +1397,26 @@ try:
             return default
         return sys.argv[index]
 
+    def remove_own_process_id_file(path: str, process_id: int) -> None:
+        try:
+            with open(path, encoding="utf-8") as pid_file:
+                stored_process_id = pid_file.read().strip()
+            if stored_process_id == str(process_id):
+                os.remove(path)
+        except FileNotFoundError:
+            pass
+        except Exception:
+            pass
+
+    def write_own_process_id_file(path: str) -> None:
+        if path == "":
+            return
+
+        process_id = os.getpid()
+        with open(path, "w", encoding="utf-8") as pid_file:
+            pid_file.write(str(process_id))
+        atexit.register(remove_own_process_id_file, path, process_id)
+
     def load_variable_from_file(file_path: str, variable_name: str):
         path = os.path.abspath(file_path)
         module_name = os.path.splitext(os.path.basename(path))[0]
@@ -1418,7 +1438,7 @@ try:
         # process args
         if len(sys.argv) < 2:
             raise ValueError(
-                "terminal_emulator.py needs at least the Python script path as argument. Usage: terminal_emulator.py script_path [python_exe] [title] [icon_path] [app_id] [wdir_is_script_dir] [close_on_crash] [close_on_failure] [close_on_success] [print_timestamp_format] [log_path] [log_timestamp_format] [overwrite_log] [log_file_date_append_format] [script_after_interpreter_crash_path] [terminal_needs_input] [stylesheet_path] [dark_mode] [use_faulthandler] [input_prepend]"
+                "terminal_emulator.py needs at least the Python script path as argument. Usage: terminal_emulator.py script_path [python_exe] [title] [icon_path] [app_id] [wdir_is_script_dir] [close_on_crash] [close_on_failure] [close_on_success] [print_timestamp_format] [log_path] [log_timestamp_format] [overwrite_log] [log_file_date_append_format] [script_after_interpreter_crash_path] [input_prepend] [process_id_file_path] [terminal_needs_input] [stylesheet_path] [dark_mode] [use_faulthandler] "
             )
 
         script_path = sys.argv[1]
@@ -1438,11 +1458,18 @@ try:
         log_file_date_append_format = arg_to_str(14, "")
         script_after_interpreter_crash_path = arg_to_str(15, "")
         INPUT_PREPEND = arg_to_str(16, "> ")
+        process_id_file_path = arg_to_str(17, "")
 
-        terminal_needs_input = arg_to_bool(17, True)
-        stylesheet_path = arg_to_str(18, "")
-        dark_mode = arg_to_str(19, "1")  # no bool because "auto" could also be option that should not be turned to True
-        use_faulthandler = arg_to_bool(20, True)
+        terminal_needs_input = arg_to_bool(18, True)
+        stylesheet_path = arg_to_str(19, "")
+        dark_mode = arg_to_str(20, "1")  # no bool because "auto" could also be option that should not be turned to True
+        use_faulthandler = arg_to_bool(21, True)
+        
+
+        try:
+            write_own_process_id_file(process_id_file_path)
+        except Exception as e:
+            print(f"[Warning] Failed to write terminal-emulator PID file: {e}")
 
         global log_file  # type:ignore
         log_file = ""

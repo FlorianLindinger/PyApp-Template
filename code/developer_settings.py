@@ -66,11 +66,11 @@ script_after_python_interpreter_crash_name: str | None = "after_python_crash_cod
 # Script has to be in "code" folder. You can use the same name as python_code_name setting here. Note that the last argument will indicate that it was launched as a after-interpreter-crash script. You can test this in script via sys.argv[-1]=="crash". Set it to None to not launch anything after a interpreter crash.
 # -------------------------------------------------
 # Names of generated shortcuts:
-# (Delte or set =="" to disable generation of specific shortcut)
-start_name = f"{program_name}"  # start program
-start_no_terminal_name = f"{program_name} (no terminal)"  # start program without terminal
-settings_name = f"{program_name} - settings"  # open settings file
-stop_no_terminal_name = f"stop (no-terminal) {program_name}"  # stop program that was started without terminal
+# (set to None to disable generation of specific shortcut)
+start_shortcut_name: str | None = f"{program_name}"  # start program with terminal
+start_no_terminal_shortcut_name: str | None = f"{program_name} (no terminal)"  # start program without terminal
+settings_shortcut_name: str | None = f"{program_name} - settings"  # open settings file
+stop_shortcut_name: str | None = f"stop {program_name}"  # stop all started programs
 # -------------------------------------------------
 use_faulthandler = True
 # -------------------------------------------------
