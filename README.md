@@ -23,7 +23,8 @@
 - **Small launch overhead** of all features: ~+0.2 s (global python start is ~0.15 s)
 - Plug and play **license template**, where all backend template code parts fall under the **permissive licenses**.
 - Avoids opaque executables to minimize antivirus false positives that compiled python code can suffer from.
-- Option for fancy modern professional looking terminal emulator with many features like minimization to system tray or eixt confirmation prompt (see below).
+- Option for fancy modern professional looking terminal emulator with many features like minimization to system tray or exit confirmation prompt (see below).
+- Choice to have the working directory be the script folder or the shortcut folder.
 - Option to save prints/errors in log files.
 - Option to add timestamps to prints and logging.
 - Feel free to suggest more :)
@@ -41,9 +42,18 @@
 
 ---
 
-## Optional Terminal Emulator - Features
+## Optional Terminal Emulator - Addition Features
 
-- TODO
+- More modern, app-like feeling that avoids accidental confusion with different terminal
+- Lets the user show or hide input lines in print history
+- Control over autoscroll
+- Ability to stop/restart Python script
+- Ability to minimize to system tray
+- Control over foreground on print
+- Control to alter in taskbar on print
+- Control over prompt for confirmation on close
+- Button to open Python script
+- Fine control over design including abiltiy to use Windows dark-mode setting and color of user input
 
 ---
 
