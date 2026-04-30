@@ -52,11 +52,23 @@ try:
         import ctypes
 
     if process_id_file_path != "":
-        def remove_own_process_id_file(path: str, process_id: int) -> None:
+        def remove_own_process_id_file_entries(path: str, process_id: int) -> None:
             try:
                 with open(path, encoding="utf-8") as pid_file:
-                    stored_process_id = pid_file.read().strip()
-                if stored_process_id == str(process_id):
+                    lines = pid_file.readlines()
+
+                own_process_id = str(process_id)
+                remaining_lines = []
+                for line in lines:
+                    parts = line.strip().split(maxsplit=1)
+                    if parts and parts[0] == own_process_id:
+                        continue
+                    remaining_lines.append(line)
+
+                if any(line.strip() for line in remaining_lines):
+                    with open(path, "w", encoding="utf-8") as pid_file:
+                        pid_file.writelines(remaining_lines)
+                else:
                     os.remove(path)
             except FileNotFoundError:
                 pass
@@ -64,11 +76,16 @@ try:
                 pass
 
         try:
-            with open(process_id_file_path, "w", encoding="utf-8") as pid_file:
-                pid_file.write(str(os.getpid()))
-            atexit.register(remove_own_process_id_file, process_id_file_path, os.getpid())
+            own_process_id = os.getpid()
+            with open(process_id_file_path, "a", encoding="utf-8") as pid_file:
+                pid_file.write(f"{own_process_id}\n")
+            atexit.register(
+                remove_own_process_id_file_entries,
+                process_id_file_path,
+                own_process_id,
+            )
         except Exception as e:
-            print(f"[Warning] Failed to write no-terminal PID file: {e}")
+            print(f"[Warning] Failed to write script-wrapper PID file: {e}")
 
     # ==================
     # define functons and variables

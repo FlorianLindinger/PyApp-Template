@@ -110,6 +110,37 @@ def stop_process_tree(pid: int) -> str:
     raise RuntimeError(f"taskkill failed with exit code {forced_result.returncode}")
 
 
+def parse_process_id_line(line: str) -> tuple[int, str] | None:
+    stripped_line = line.strip()
+    if stripped_line == "":
+        return None
+
+    process_id_text = stripped_line.split(maxsplit=1)[0]
+    try:
+        return int(process_id_text), line
+    except ValueError:
+        return None
+
+
+def read_process_id_entries(path: str) -> list[tuple[int, str]]:
+    entries = []
+    with open(path, encoding="utf-8") as pid_file:
+        for line in pid_file:
+            entry = parse_process_id_line(line)
+            if entry is not None:
+                entries.append(entry)
+    return entries
+
+
+def write_process_id_lines(path: str, lines: list[str]) -> None:
+    non_empty_lines = [line if line.endswith("\n") else line + "\n" for line in lines if line.strip()]
+    if non_empty_lines:
+        with open(path, "w", encoding="utf-8") as pid_file:
+            pid_file.writelines(non_empty_lines)
+    elif os.path.exists(path):
+        os.remove(path)
+
+
 # ==========================================================================
 # code execution
 
@@ -122,19 +153,36 @@ if not os.path.exists(pid_path):
     sys.exit(0)
 
 try:
-    with open(pid_path, encoding="utf-8") as f:
-        pid = int(f.read().strip())
-    try:
-        stop_process_tree(pid)
-        if os.path.exists(pid_path):
-            os.remove(pid_path)
-        print("[Success] Process stopped.")
-        time.sleep(1)
+    process_id_entries = read_process_id_entries(pid_path)
+    if not process_id_entries:
+        os.remove(pid_path)
+        print(f"[Info] No valid PID entries found at {pid_path}.")
+        input("Press enter to exit")
         sys.exit(0)
-    except PermissionError:
-        print("PermissionError when trying to kill process. This could mean the program is no longer running anyway.")
-        input("Press enter to exit.")
-        sys.exit(0)
-        
+
+    lines_by_process_id: dict[int, list[str]] = {}
+    for process_id, line in process_id_entries:
+        lines_by_process_id.setdefault(process_id, []).append(line)
+
+    failed_lines = []
+    failed_messages = []
+    stopped_count = 0
+    for process_id, lines in lines_by_process_id.items():
+        try:
+            stop_process_tree(process_id)
+            stopped_count += 1
+        except Exception as process_error:
+            failed_lines.extend(lines)
+            failed_messages.append(f"{process_id}: {process_error}")
+
+    write_process_id_lines(pid_path, failed_lines)
+
+    if failed_messages:
+        raise RuntimeError("Failed to stop these PID(s):\n" + "\n".join(failed_messages))
+
+    print(f"[Success] Stopped {stopped_count} process(es).")
+    time.sleep(1)
+    sys.exit(0)
+
 except Exception as e:
     print_traceback(f"[Error] Failed to stop process: {e}", add_press_enter_to_exit=True)
