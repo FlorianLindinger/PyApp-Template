@@ -33,7 +33,7 @@ icon_path = make_abs("..\\..\\icons\\icon.ico")
 compiled_terminal_path = make_abs("..\\terminal_emulator\\compiled\\run.exe")
 uncompiled_terminal_path = make_abs("..\\terminal_emulator\\terminal_emulator.py")
 
-process_id_file_path = make_abs("..\\..\\..\\currently_running_without_terminal_id.pid")
+process_id_file_path = make_abs("..\\..\\..\\currently_running.pid")
 
 default_packages_file_path = make_abs("..\\..\\developer_tools\\!DEFAULT_PYHON_PACKAGES.txt")
 excluded_folders_for_package_search = ["do_not_change", "py_env", "icons", "developer_tools", "__pycache__"]
