@@ -17,6 +17,13 @@ pyrefly does not warn for unused in script_wrapper?
 ASK AI
 ===================================
 
+ask AI for speedup and safety and robustness improvmens and also comments and docsttirngs
+
+
+
+ask AI if code or variable is unused
+
+
 ask if there is possiblity for maore fail ehcks and error prints and input exits
 
 ask if more prints somewhere usefull
@@ -74,19 +81,19 @@ let it chekc if seomthing looks like a placeholder and unfinsihjesd and nunnneca
 
 update pip after pyrgoin download or venv?
 
+make suire first prints which everyone will see are most nice. aks AI for ideas
+
 ===================================
 very important
 ===================================
+
+do i want stop to stop emulatror and normal? probalby yes
 
 mention that one can delete compiled folder and pipresqs folder: hm maybe automate and also allow code to fail and mention that not enabled?
 
 underline in readme better visibile?
 
-is user launched GUI already app id?
-
 udpate main readme. and mentaion fancy terminal. maybe in extra sub secitpn
-
-remove desktop.ini and random log*.txt
 
 test what faulthandler changes
 
@@ -111,6 +118,36 @@ update README
 unsorted #2
 ===================================
 
+i guess save multiple and kill all:
+Support multiple running instances intentionally. The PID-file model currently points to one process. If multiple launches are possible, store a small registry keyed by app id/shortcut mode and verify the PID command line before killing.
+make them only delete their own line
+
+Reduce lint ignores over time. pyproject.toml (line 64) enables a strong Ruff rule set but then disables many important checks. Keep the pragmatic ignores, but shrink them around the backend code once the crash/logging paths are stable.
+
+Fix repo hygiene first. git status shows a huge dirty state from tracked files under code/do_not_change/python_packages. Since README claims package files should not be shared, make that true: ignore/untrack generated package folders, keep only a manifest/installer, and add a clean bootstrap path. Right now .gitignore (line 17) does not cover that.
+
+Finish crash handling parity. script_wrapper.py (line 881) still has a real WIP branch for interpreter crashes. Also script_after_interpreter_crash_path is parsed but not really used consistently between wrapper and terminal emulator.
+
+Replace the terminal control eval. terminal_emulator.py (line 1243) executes text printed by the child process via eval. A small explicit command protocol would be much safer, e.g. JSON lines like {"command": "set_button_visible", "name": "stop", "value": false}.
+
+Make settings typed and validated. developer_settings.py is user-friendly, but validation is spread around runtime code. A Settings dataclass plus validate_settings() would catch conflicts early: missing scripts, invalid app names, bad colors, impossible log paths, incompatible crash settings.
+
+Unify wrapper and emulator behavior. Logging, timestamps, close-on-success/failure/crash, PID handling, faulthandler, and “after crash” behavior should be specified once and shared. There are currently separate implementations in script_wrapper.py, terminal_emulator.py, and start_program.py.
+
+Improve the first-run package flow. Catch ModuleNotFoundError from user code and offer: install once, add to default packages, open manual install terminal, or abort. This would be a big usability win for the template.
+
+Add smoke tests. The best test matrix would cover: fresh clone, path with spaces, moved folder, no internet, wrong Python version, missing package, no-terminal stop button, normal terminal crash, fancy terminal crash, and shortcut regeneration. Syntax currently passes with code/do_not_change/P/P.exe -m py_compile on the main scripts.
+
+Tighten batch safety. The Python installer batch downloads via Invoke-WebRequest, extracts MSI files, and deletes folders with rmdir /s /q. Add unique temp dirs, hash/size verification where possible, clearer network failure messages, and maybe move the installer logic to Python for testability.
+
+Clean README/onboarding. README.md (line 46) still has a terminal-emulator TODO, and the repo currently has encoding/typo polish issues. Add “what happens on first run”, “what files are generated”, “what can be deleted”, and “how to update backend/template code safely”.
+
+Replace placeholder shortcut descriptions. generate_shortcuts.py (line 252) still writes description="WIP". Put useful descriptions there so Windows properties explain what each shortcut does.
+
+Support multiple running instances intentionally. The PID-file model currently points to one process. If multiple launches are possible, store a small registry keyed by app id/shortcut mode and verify the PID command line before killing.
+
+Reduce lint ignores over time. pyproject.toml (line 64) enables a strong Ruff rule set but then disables many important checks. Keep the pragmatic ignores, but shrink them around the backend code once the crash/logging paths are stable.
+
 i guess check if "import " is in script. can still fail for edge cases. is woth it?
 
 re add print error for not traceback in commoni varables
@@ -121,8 +158,6 @@ how do i make long messages better for print_traceback. can it do multiloine?
 
 current kill in print_traceback is too stinrg?
 maybe i only need strenght for cmd terminal generate shrtcuts and dev tools.
-
-
 
 see if windows terminal hadnles all crash and erros.
 not working:
@@ -283,8 +318,6 @@ make develper tools fodler to actual folder with structute and shortcuts to call
 developer_tools:I guess make all to shortcut of P.exe and script? hm i made it like it is at the moment to be able to add or remove at any moment
 
 move batches to some kind of folder in utulities repo
-
-ask AI if code or variable is unused
 
 implement:
 log_even_with_terminal = getattr(developer_settings, "log_even_with_terminal", True)
@@ -944,16 +977,6 @@ small improvements related
 print script name and path when error possible?
 
 dont print installation if requirements.txt is empty
-
-make it not genrate shrotcut for no settings availagle. mention no settings posible
-
-dont print installing packages if None
-print that it instally python for first exectiun. maybe less spam?
-maybe print ===========================
-
-let AI check every file
-
-ask AI for speedup and safety and robustness improvmens and also comments and docsttirngs
 
 mention in outer most license what licenses the template backend has
 

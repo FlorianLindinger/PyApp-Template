@@ -247,13 +247,15 @@ def main():
         appid = appid[:7] + appid[-7:]
 
     # Shortcut: normal start
-    if hasattr(developer_settings, "start_name") and developer_settings.start_name != "":
-        out = output_path + sanitize_filename(developer_settings.start_name) + ".lnk"
+    start_shortcut_name = getattr(developer_settings, "start_shortcut_name", "")
+    if start_shortcut_name not in [None, False, ""]:
+        out = output_path + sanitize_filename(start_shortcut_name) + ".lnk"
         make_lnk(out, launcher_icon_path, launcher_py, args=appid, appid=appid, description="WIP")
 
     # Shortcut: start without terminal
-    if hasattr(developer_settings, "start_no_terminal_name") and developer_settings.start_no_terminal_name != "":
-        out = output_path + sanitize_filename(developer_settings.start_no_terminal_name) + ".lnk"
+    start_no_terminal_shortcut_name = getattr(developer_settings, "start_no_terminal_shortcut_name", "")
+    if start_no_terminal_shortcut_name not in [False, None, ""]:
+        out = output_path + sanitize_filename(start_no_terminal_shortcut_name) + ".lnk"
         make_lnk(
             out,
             launcher_no_terminl_icon_path,
@@ -264,24 +266,22 @@ def main():
             description="WIP",
         )
 
-    # Shortcut: stop program (that is started without terminal)
-    if hasattr(developer_settings, "stop_no_terminal_name") and developer_settings.stop_no_terminal_name != "":
-        out = output_path + sanitize_filename(developer_settings.stop_no_terminal_name) + ".lnk"
+    # Shortcut: stop program started by any generated launcher mode
+    stop_shortcut_name = getattr(developer_settings, "stop_shortcut_name", "")
+    if stop_shortcut_name not in ["", False, None]:
+        out = output_path + sanitize_filename(stop_shortcut_name) + ".lnk"
         make_lnk(out, stop_no_terminal_icon_path, stop_no_terminal_py, description="WIP")
 
     # Shortcut: open settings
-    if (
-        hasattr(developer_settings, "user_settings_path")
-        and hasattr(developer_settings, "settings_name")
-        and developer_settings.settings_name != ""
-        and developer_settings.user_settings_path not in [None, False, ""]
-        and os.path.exists(
-            make_abs_path_relative_to_file(developer_settings.user_settings_path, developer_settings_path)
-        )
-    ):
-        out = output_path + sanitize_filename(developer_settings.settings_name) + ".lnk"
-        make_lnk(out, settings_icon_path, settings_py, description="WIP")
-
+    user_settings_path=getattr(developer_settings, "user_settings_path","")   
+    settings_shortcut_name=getattr(developer_settings, "settings_shortcut_name","")
+    if user_settings_path not in [None,False,""] and settings_shortcut_name not in [None,False,""]:
+        settings_file_path_abs=make_abs_path_relative_to_file(user_settings_path, developer_settings_path)
+        if not os.path.exists(settings_file_path_abs):
+            print(f'[Warning] User settings file does not exist at "{settings_file_path_abs}", and therefore no shortcut for it will be created. Disable the settings file by setting user_settings_path = None in "{developer_settings_path}".')
+        else:
+            out = output_path + sanitize_filename(settings_shortcut_name) + ".lnk"
+            make_lnk(out, settings_icon_path, settings_py, description="WIP")
 
 if __name__ == "__main__":
     try:

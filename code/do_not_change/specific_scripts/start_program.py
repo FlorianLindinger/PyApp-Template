@@ -147,6 +147,27 @@ try:
     # helper functions
     # =============================
 
+    def remove_process_id_file_if_present() -> None:
+        try:
+            os.remove(process_id_file_path)
+        except FileNotFoundError:
+            pass
+        except Exception:
+            pass
+
+    def write_launcher_process_id_file_if_missing(proc: subprocess.Popen, wait_seconds: float = 0.8) -> None:
+        deadline = time.monotonic() + wait_seconds
+        while time.monotonic() < deadline:
+            if os.path.exists(process_id_file_path) or proc.poll() is not None:
+                break
+            time.sleep(0.05)
+        if not os.path.exists(process_id_file_path) and proc.poll() is None:
+            try:
+                with open(process_id_file_path, "w", encoding="utf-8") as f:
+                    f.write(str(proc.pid))
+            except Exception as e:
+                print(f"[Warning] Failed to write launcher PID file: {e}")
+
     def check_python_version(target_version: str | float, exe_path: str = "py") -> bool:
         """
         Return whether the Python executable at ``exe_path`` matches ``target_version``.
@@ -476,7 +497,6 @@ try:
                 print("Pressed Enter to exit.")
                 input()
 
-
     def reinstall_python_distro_if_nonexistent_or_incorrect_version():
 
         if not os.path.exists(python_exe_path):  # python distribution not existing case
@@ -590,11 +610,11 @@ try:
         # setup venv: install python distribution if not existatant and venv. Also recreate if the target python version is not dist version.
 
         if use_global_python == False:
-            reinstall_python_distro_if_nonexistent_or_incorrect_version() #deletes venv for change/creation of distro
+            reinstall_python_distro_if_nonexistent_or_incorrect_version()  # deletes venv for change/creation of distro
             if not os.path.exists(venv_dir_path):
                 recreate_portable_venv()
                 install_packages(default_packages_file_path)
-            
+
         # ======================
         # launch terminal
 
@@ -618,12 +638,15 @@ try:
             log_file_date_append_format,
             script_after_interpreter_crash_path,
             input_prepend,
+            process_id_file_path,
         ]
 
         if use_faulthandler == True:
             extra_args = ["-X", "faulthandler"]
         else:
             extra_args = []
+
+        remove_process_id_file_if_present()
 
         if (use_fancy_terminal == True) and (create_terminal == True):
             # run in termnial emulator
@@ -648,8 +671,11 @@ try:
                 )
 
         else:  # run in Windows terminal or no window
-            # script_wrapper_path need addition args
-            args += [terminal_bg_color + terminal_text_color, "1" if create_terminal else "0"]  # type:ignore
+            # script_wrapper_path need additional args
+            args += [
+                terminal_bg_color + terminal_text_color,  # type:ignore
+                "1" if create_terminal else "0",
+            ]
 
             if create_terminal == True:  # run in windows terminal and don't wait
                 proc = subprocess.Popen(  # noqa:S603 #type:ignore
@@ -657,18 +683,14 @@ try:
                     creationflags=subprocess.CREATE_NEW_CONSOLE,
                 )
             else:  # run without terminal but create one on crash and don't wait
-                proc = process = subprocess.Popen(  # noqa:S603 #type:ignore
+                proc = subprocess.Popen(  # noqa:S603 #type:ignore
                     [python_exe_for_script_path, *extra_args, script_wrapper_path, script_path, *args],
                     creationflags=subprocess.CREATE_NO_WINDOW,
                 )
 
         # ======================
-        # handle .pid file (needed for closing of invisible aka no-terminal program)
-
-        if create_terminal == False:
-            process_id = process.pid  # type:ignore
-            with open(process_id_file_path, "w") as f:
-                f.write(str(process_id))
+        # handle .pid file (needed for stopping the program from the generated stop shortcut)
+        write_launcher_process_id_file_if_missing(proc)
 
         # wait shortly and check & handle if script immediately failed
         time.sleep(0.8)
