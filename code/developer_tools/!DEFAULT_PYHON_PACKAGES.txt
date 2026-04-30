@@ -1,2 +1,1 @@
-# auto_find_required_packages_here_and_reset_venv_to_them = False
-numpy==2.4.4
+# auto_find_required_packages_here_and_reset_venv_to_them = True
