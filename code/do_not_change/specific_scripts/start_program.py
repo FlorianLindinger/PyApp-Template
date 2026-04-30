@@ -147,27 +147,6 @@ try:
     # helper functions
     # =============================
 
-    def remove_process_id_file_if_present() -> None:
-        try:
-            os.remove(process_id_file_path)
-        except FileNotFoundError:
-            pass
-        except Exception:
-            pass
-
-    def write_launcher_process_id_file_if_missing(proc: subprocess.Popen, wait_seconds: float = 0.8) -> None:
-        deadline = time.monotonic() + wait_seconds
-        while time.monotonic() < deadline:
-            if os.path.exists(process_id_file_path) or proc.poll() is not None:
-                break
-            time.sleep(0.05)
-        if not os.path.exists(process_id_file_path) and proc.poll() is None:
-            try:
-                with open(process_id_file_path, "w", encoding="utf-8") as f:
-                    f.write(str(proc.pid))
-            except Exception as e:
-                print(f"[Warning] Failed to write launcher PID file: {e}")
-
     def check_python_version(target_version: str | float, exe_path: str = "py") -> bool:
         """
         Return whether the Python executable at ``exe_path`` matches ``target_version``.
@@ -423,28 +402,21 @@ try:
     def read_search_phrase_state() -> bool | None:
         with open(default_packages_file_path) as f:
             lines = f.readlines()
-        if (
-            variable_in_default_packages_path_that_triggers_search_if_true in lines[0]
-            and lines[0]
-            .replace(variable_in_default_packages_path_that_triggers_search_if_true, "")
-            .replace("=", "")
-            .replace("#", "")
-            .strip()
-            .lower()
-            == "true"
-        ):
-            return True
-        elif (
-            variable_in_default_packages_path_that_triggers_search_if_true in lines[0]
-            and lines[0]
-            .replace(variable_in_default_packages_path_that_triggers_search_if_true, "")
-            .replace("=", "")
-            .replace("#", "")
-            .strip()
-            .lower()
-            == "false"
-        ):
-            return False
+        if variable_in_default_packages_path_that_triggers_search_if_true in lines[0]:
+            val = (
+                lines[0]
+                .replace(variable_in_default_packages_path_that_triggers_search_if_true, "")
+                .replace("=", "")
+                .replace("#", "")
+                .strip()
+                .lower()
+            )
+            if val == "true":
+                return True
+            elif val == "false":
+                return False
+            else:
+                return None
         else:
             return None
 
@@ -454,7 +426,8 @@ try:
         with open(default_packages_file_path, "w", encoding="utf-8") as file:  # override default packages file
             if search_phrase_state is None:
                 search_phrase_state = read_search_phrase_state()
-            file.write(f"# {variable_in_default_packages_path_that_triggers_search_if_true} = {search_phrase_state}")
+            file.write(f"{variable_in_default_packages_path_that_triggers_search_if_true} = {search_phrase_state}\n\n")
+            file.flush() # otherwise this line appears after subprocess output
             subprocess.run(  # noqa
                 [
                     venv_exe_path,
@@ -646,8 +619,6 @@ try:
         else:
             extra_args = []
 
-        remove_process_id_file_if_present()
-
         if (use_fancy_terminal == True) and (create_terminal == True):
             # run in termnial emulator
 
@@ -687,10 +658,6 @@ try:
                     [python_exe_for_script_path, *extra_args, script_wrapper_path, script_path, *args],
                     creationflags=subprocess.CREATE_NO_WINDOW,
                 )
-
-        # ======================
-        # handle .pid file (needed for stopping the program from the generated stop shortcut)
-        write_launcher_process_id_file_if_missing(proc)
 
         # wait shortly and check & handle if script immediately failed
         time.sleep(0.8)

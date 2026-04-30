@@ -1397,25 +1397,37 @@ try:
             return default
         return sys.argv[index]
 
-    def remove_own_process_id_file(path: str, process_id: int) -> None:
+    def remove_own_process_id_file_entries(path: str, process_id: int) -> None:
         try:
             with open(path, encoding="utf-8") as pid_file:
-                stored_process_id = pid_file.read().strip()
-            if stored_process_id == str(process_id):
+                lines = pid_file.readlines()
+
+            own_process_id = str(process_id)
+            remaining_lines = []
+            for line in lines:
+                parts = line.strip().split(maxsplit=1)
+                if parts and parts[0] == own_process_id:
+                    continue
+                remaining_lines.append(line)
+
+            if any(line.strip() for line in remaining_lines):
+                with open(path, "w", encoding="utf-8") as pid_file:
+                    pid_file.writelines(remaining_lines)
+            else:
                 os.remove(path)
         except FileNotFoundError:
             pass
         except Exception:
             pass
 
-    def write_own_process_id_file(path: str) -> None:
+    def write_own_process_id_file_entry(path: str) -> None:
         if path == "":
             return
 
         process_id = os.getpid()
-        with open(path, "w", encoding="utf-8") as pid_file:
-            pid_file.write(str(process_id))
-        atexit.register(remove_own_process_id_file, path, process_id)
+        with open(path, "a", encoding="utf-8") as pid_file:
+            pid_file.write(f"{process_id}\n")
+        atexit.register(remove_own_process_id_file_entries, path, process_id)
 
     def load_variable_from_file(file_path: str, variable_name: str):
         path = os.path.abspath(file_path)
@@ -1467,7 +1479,7 @@ try:
         
 
         try:
-            write_own_process_id_file(process_id_file_path)
+            write_own_process_id_file_entry(process_id_file_path)
         except Exception as e:
             print(f"[Warning] Failed to write terminal-emulator PID file: {e}")
 
