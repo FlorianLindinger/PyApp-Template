@@ -19,8 +19,6 @@ ASK AI
 
 ask AI for speedup and safety and robustness improvmens and also comments and docsttirngs
 
-
-
 ask AI if code or variable is unused
 
 
@@ -84,8 +82,18 @@ update pip after pyrgoin download or venv?
 make suire first prints which everyone will see are most nice. aks AI for ideas
 
 ===================================
+terminal emulator
+===================================
+
+add always foregorind option
+is cls implemetned?
+
+===================================
 very important
 ===================================
+
+is expceioptn handline mentioned in readem
+
 
 do i want stop to stop emulatror and normal? probalby yes
 

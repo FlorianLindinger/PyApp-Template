@@ -133,7 +133,9 @@ try:
 except Exception:
     import os
 
-    print(r'Failed during setup of rich traceback. Is "rich" package installed in the code\do_not_change\python_packages folder?')
+    print(
+        r'Failed during setup of rich traceback. Is "rich" package installed in the code\do_not_change\python_packages folder?'
+    )
     print("Press enter to exit")
     input()
     os._exit(1)
