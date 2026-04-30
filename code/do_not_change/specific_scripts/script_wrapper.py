@@ -13,6 +13,7 @@ try:
     # ==================
     # import
 
+    import atexit
     import builtins
     import faulthandler
     import os
@@ -38,15 +39,36 @@ try:
     log_file_date_append_format = sys.argv[13]
     script_after_interpreter_crash_path = sys.argv[14]
     input_prepend = sys.argv[15]
+    process_id_file_path = sys.argv[16]
 
-    terminal_colors = sys.argv[16]
-    script_has_terminal = sys.argv[17] == "1"
+    terminal_colors = sys.argv[17]
+    script_has_terminal = sys.argv[18] == "1"
     # script_has_terminal = "1" means that this window is run in a terminal and False that it is invisible and one needs to create a new terminal to print
+    
 
     # ==================
 
     if app_id != "" or script_has_terminal:
         import ctypes
+
+    if process_id_file_path != "":
+        def remove_own_process_id_file(path: str, process_id: int) -> None:
+            try:
+                with open(path, encoding="utf-8") as pid_file:
+                    stored_process_id = pid_file.read().strip()
+                if stored_process_id == str(process_id):
+                    os.remove(path)
+            except FileNotFoundError:
+                pass
+            except Exception:
+                pass
+
+        try:
+            with open(process_id_file_path, "w", encoding="utf-8") as pid_file:
+                pid_file.write(str(os.getpid()))
+            atexit.register(remove_own_process_id_file, process_id_file_path, os.getpid())
+        except Exception as e:
+            print(f"[Warning] Failed to write no-terminal PID file: {e}")
 
     # ==================
     # define functons and variables
@@ -575,7 +597,6 @@ try:
             return candidate_hwnds[0]
 
     if log_path != "":
-        import atexit
         import threading
         from datetime import datetime
 
