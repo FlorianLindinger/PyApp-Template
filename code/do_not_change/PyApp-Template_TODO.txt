@@ -17,6 +17,8 @@ pyrefly does not warn for unused in script_wrapper?
 ASK AI
 ===================================
 
+ask for cleanup simplification and sorting idaes
+
 ask AI for speedup and safety and robustness improvmens and also comments and docsttirngs
 
 ask AI if code or variable is unused
