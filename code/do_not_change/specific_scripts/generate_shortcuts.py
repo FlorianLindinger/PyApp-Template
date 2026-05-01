@@ -18,10 +18,8 @@ file_dir = os.path.dirname(os.path.abspath(__file__)) + "\\"
 # =============================
 
 import developer_settings
-from do_not_change.specific_scripts.common_variables import (
-    developer_settings_path,
-    print_traceback,
-)
+from do_not_change.specific_scripts.common_code import print_traceback
+from do_not_change.specific_scripts.common_variables import developer_settings_path
 
 # =============================
 
@@ -273,15 +271,18 @@ def main():
         make_lnk(out, stop_no_terminal_icon_path, stop_no_terminal_py, description="WIP")
 
     # Shortcut: open settings
-    user_settings_path=getattr(developer_settings, "user_settings_path","")   
-    settings_shortcut_name=getattr(developer_settings, "settings_shortcut_name","")
-    if user_settings_path not in [None,False,""] and settings_shortcut_name not in [None,False,""]:
-        settings_file_path_abs=make_abs_path_relative_to_file(user_settings_path, developer_settings_path)
+    user_settings_path = getattr(developer_settings, "user_settings_path", "")
+    settings_shortcut_name = getattr(developer_settings, "settings_shortcut_name", "")
+    if user_settings_path not in [None, False, ""] and settings_shortcut_name not in [None, False, ""]:
+        settings_file_path_abs = make_abs_path_relative_to_file(user_settings_path, developer_settings_path)
         if not os.path.exists(settings_file_path_abs):
-            print(f'[Warning] User settings file does not exist at "{settings_file_path_abs}", and therefore no shortcut for it will be created. Disable the settings file by setting user_settings_path = None in "{developer_settings_path}".')
+            print(
+                f'[Warning] User settings file does not exist at "{settings_file_path_abs}", and therefore no shortcut for it will be created. Disable the settings file by setting user_settings_path = None in "{developer_settings_path}".'
+            )
         else:
             out = output_path + sanitize_filename(settings_shortcut_name) + ".lnk"
             make_lnk(out, settings_icon_path, settings_py, description="WIP")
+
 
 if __name__ == "__main__":
     try:
