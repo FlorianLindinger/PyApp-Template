@@ -46,7 +46,6 @@ try:
         program_name as title,
     )
     from do_not_change.specific_scripts.common_variables import (
-        auto_search_required_packages_output_file_path,
         compiled_terminal_path,
         default_packages_file_path,
         developer_settings_dir,
@@ -54,6 +53,7 @@ try:
         excluded_folders_for_package_search,
         icon_path,
         input_warn,
+        needed_packages_output_file_path,
         portable_python_installer_path,
         portable_venv_creator_path,
         print_traceback,
@@ -427,7 +427,7 @@ try:
             if search_phrase_state is None:
                 search_phrase_state = read_search_phrase_state()
             file.write(f"{variable_in_default_packages_path_that_triggers_search_if_true} = {search_phrase_state}\n\n")
-            file.flush() # otherwise this line appears after subprocess output
+            file.flush()  # otherwise this line appears after subprocess output
             subprocess.run(  # noqa
                 [
                     venv_exe_path,
@@ -559,21 +559,21 @@ try:
         if use_global_python == False:
             # auto find packages if none given and magic phrase present
             if read_search_phrase_state():
-                if os.path.exists(auto_search_required_packages_output_file_path):
-                    os.remove(auto_search_required_packages_output_file_path)
+                if os.path.exists(needed_packages_output_file_path):
+                    os.remove(needed_packages_output_file_path)
                 try:
-                    save_requirements_of_root_folder_noVersion(auto_search_required_packages_output_file_path)
+                    save_requirements_of_root_folder_noVersion(needed_packages_output_file_path)
                 except Exception as e:
                     print_traceback(
                         f"[Error] Failed to auto determine packages (do you have internet?): {e}",
                         add_press_enter_to_exit=True,
                     )
 
-                if os.path.exists(auto_search_required_packages_output_file_path):
+                if os.path.exists(needed_packages_output_file_path):
                     delete_venv()
                     reinstall_python_distro_if_nonexistent_or_incorrect_version()
                     recreate_portable_venv()
-                    install_packages(auto_search_required_packages_output_file_path)
+                    install_packages(needed_packages_output_file_path)
                     save_current_packages_as_default(search_phrase_state=False)
                 else:
                     print_warn("[Error] Failed to auto determine required Python packages.")
