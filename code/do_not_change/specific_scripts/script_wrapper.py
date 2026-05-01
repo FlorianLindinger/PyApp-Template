@@ -44,7 +44,6 @@ try:
     terminal_colors = sys.argv[17]
     script_has_terminal = sys.argv[18] == "1"
     # script_has_terminal = "1" means that this window is run in a terminal and False that it is invisible and one needs to create a new terminal to print
-    
 
     # ==================
 
@@ -52,6 +51,7 @@ try:
         import ctypes
 
     if process_id_file_path != "":
+
         def remove_own_process_id_file_entries(path: str, process_id: int) -> None:
             try:
                 with open(path, encoding="utf-8") as pid_file:
@@ -859,6 +859,7 @@ def get_terminal_name():
         # run in the current python process and wait for finish
         original_input = builtins.input
         if input_prepend != "":
+
             def input_with_prepend(prompt=""):
                 return original_input(f"{prompt}{input_prepend}")
 
