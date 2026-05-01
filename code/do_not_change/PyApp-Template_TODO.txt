@@ -83,8 +83,24 @@ add always foregorind option
 is cls implemetned?
 
 ===================================
+browser emulator
+===================================
+
+should i merge script_wrapper and browser since mostly same need. but also does not have windwos temrinal featues like histoy ...
+
+add all buttons form fancy temrinal to browser. maybe more
+
+
+===================================
 very important
 ===================================
+
+i kind of dont need reame in dev tools and shoudl then also nto whitelist it i guess in gitignoer
+
+maybe change from arg="1" for tmerinal in start_progmra
+
+do i want shortcut or dev setting for browser
+same for fancy terminal. but that might be unimpemented to dev must be able to prevent spawn. buit by defautl fancy will be on so eitehr way that
 
 mention browser
 add features to browser. maybe mkae it into full feathure thing like emualtr
