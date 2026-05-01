@@ -24,7 +24,6 @@ portable_venv_creator_path = make_abs("..\\general_scripts\\create_portable_venv
 
 py_env_folder_path = make_abs("..\\..\\py_env")
 
-
 script_wrapper_path = make_abs("script_wrapper.py")
 
 python_scripts_folder_path = make_abs("..\\..\\")
@@ -45,6 +44,7 @@ variable_in_default_packages_path_that_triggers_search_if_true = (
     "# auto_find_required_packages_here_and_reset_venv_to_them"
 )
 
+developer_tools_folder_path = make_abs("..\\..\\..\\developer_tools\\")
 
 # =========================
 # === process variables ===
@@ -69,6 +69,7 @@ relative_venv_to_python_dist = os.path.relpath(python_dist_path, get_dir(venv_di
 # colored print and input
 
 ANSI_WARN = "\x1b[1;37;41m"  # white text, red bg, bold
+ANSI_SUCCESS = "\x1b[1;37;42m"  # white text, green bg, bold
 ANSI_RESET = "\033[0m"
 
 
@@ -78,6 +79,9 @@ def print_warn(msg, sep: str | None = " ", end: str | None = "\n"):
 
 def input_warn(msg):
     input(f"{ANSI_WARN}{msg}{ANSI_RESET}")
+    
+def input_success(msg):
+    input(f"{ANSI_SUCCESS}{msg}{ANSI_RESET}")
 
 
 # colored traceback related

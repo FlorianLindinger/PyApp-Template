@@ -15,6 +15,11 @@ log*.txt
 *.pid
 # list of python packages that gets generated:
 auto_found_required_python_packages.txt
+# output files of developer tools:
+developer_tools/*.txt
+# whitelist specific files in developer tools folder:
+!developer_tools/_README.txt
+!developer_tools/!DEFAULT_PYHON_PACKAGES.txt
 # ===================================================
 
 # =============================
