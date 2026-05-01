@@ -1,21 +1,18 @@
-"""Run a Python script behind a localhost browser terminal.
+"""Run a Python script in a real browser terminal using xterm.js and pywinpty."""
 
-This is intentionally dependency-free. It supports normal line-based input such
-as ``input()`` by writing submitted browser lines to the child process stdin.
-It is not a full PTY, so raw keyboard apps and advanced ANSI terminal features
-are outside its scope.
-"""
+from __future__ import annotations
 
 import atexit
 import html
 import json
-import locale
+import mimetypes
 import os
 import secrets
 import subprocess
 import sys
 import threading
 import time
+import traceback
 import webbrowser
 from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -24,6 +21,10 @@ from urllib.parse import parse_qs, urlparse
 
 MAX_STORED_EVENTS = 10000
 SHUTDOWN_AFTER_CLOSE_SECONDS = 0.4
+DEFAULT_ROWS = 30
+DEFAULT_COLS = 100
+
+ASSET_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "browser_terminal_assets"))
 
 
 class ProcessIdRegistry:
@@ -83,29 +84,12 @@ class ProcessIdRegistry:
             self.remove(process_id)
 
 
-class LinePrefixer:
-    def __init__(self, timestamp_format: str) -> None:
-        self.timestamp_format = timestamp_format
-        self._at_line_start = True
-
-    def apply(self, text: str) -> str:
-        if text == "":
-            return ""
-
-        output: list[str] = []
-        for char in text:
-            if self._at_line_start and self.timestamp_format:
-                output.append(datetime.now().strftime(self.timestamp_format))
-            output.append(char)
-            self._at_line_start = char == "\n"
-        return "".join(output)
-
-
 class TerminalLogger:
     def __init__(self, path: str, overwrite: bool, date_append_format: str, timestamp_format: str) -> None:
         self.path = self._prepare_log_path(path, date_append_format) if path else ""
+        self.timestamp_format = timestamp_format
+        self._at_line_start = True
         self._lock = threading.RLock()
-        self._prefixer = LinePrefixer(timestamp_format)
         self._log_file = None
         if self.path:
             self._log_file = open(self.path, "w" if overwrite else "a", encoding="utf-8", buffering=1)
@@ -123,12 +107,24 @@ class TerminalLogger:
             os.makedirs(folder, exist_ok=True)
         return path
 
+    def _add_timestamps(self, text: str) -> str:
+        if not self.timestamp_format or text == "":
+            return text
+
+        output: list[str] = []
+        for char in text:
+            if self._at_line_start:
+                output.append(datetime.now().strftime(self.timestamp_format))
+            output.append(char)
+            self._at_line_start = char == "\n"
+        return "".join(output)
+
     def write(self, text: str) -> None:
         if self._log_file is None or text == "":
             return
 
         with self._lock:
-            self._log_file.write(self._prefixer.apply(text))
+            self._log_file.write(self._add_timestamps(text))
             self._log_file.flush()
 
     def close(self) -> None:
@@ -144,46 +140,38 @@ class BrowserTerminalState:
     def __init__(
         self,
         *,
-        input_prepend: str,
-        print_timestamp_format: str,
         close_on_success: bool,
         close_on_failure: bool,
         logger: TerminalLogger,
         registry: ProcessIdRegistry,
     ) -> None:
-        self.input_prepend = input_prepend
         self.close_on_success = close_on_success
         self.close_on_failure = close_on_failure
         self.logger = logger
         self.registry = registry
-        self.process: subprocess.Popen[str] | None = None
+        self.pty_process: Any = None
+        self.child_process_id: int | None = None
         self.exit_code: int | None = None
         self.shutdown_server: Any = None
 
         self._events: list[dict[str, Any]] = []
         self._next_event_id = 1
         self._condition = threading.Condition()
-        self._display_prefixers = {
-            "stdout": LinePrefixer(print_timestamp_format),
-            "stderr": LinePrefixer(print_timestamp_format),
-        }
+        self._pty_lock = threading.RLock()
 
     @property
     def process_running(self) -> bool:
-        return self.process is not None and self.process.poll() is None
+        return self.pty_process is not None and self.pty_process.isalive()
 
-    def add_event(self, stream: str, text: str, *, prefix: bool = False, log: bool = True) -> None:
+    def add_output(self, text: str, *, log: bool = True) -> None:
         if text == "":
             return
-
-        if prefix and stream in self._display_prefixers:
-            text = self._display_prefixers[stream].apply(text)
 
         if log:
             self.logger.write(text)
 
         with self._condition:
-            event = {"id": self._next_event_id, "stream": stream, "text": text}
+            event = {"id": self._next_event_id, "text": text}
             self._next_event_id += 1
             self._events.append(event)
             if len(self._events) > MAX_STORED_EVENTS:
@@ -203,24 +191,42 @@ class BrowserTerminalState:
             return [event for event in self._events if event["id"] > event_id]
 
     def send_input(self, text: str) -> None:
-        if not self.process_running or self.process is None or self.process.stdin is None:
-            self.add_event("system", "[input ignored: process is not running]\n", log=False)
+        if not self.process_running:
             return
 
-        self.add_event("stdin", f"{self.input_prepend}{text}\n")
-        self.process.stdin.write(text + "\n")
-        self.process.stdin.flush()
+        try:
+            with self._pty_lock:
+                self.pty_process.write(text)
+        except Exception as error:
+            self.add_output(f"\r\n[failed sending input: {error}]\r\n", log=False)
+
+    def resize(self, cols: int, rows: int) -> None:
+        if cols <= 0 or rows <= 0 or not self.process_running:
+            return
+
+        try:
+            with self._pty_lock:
+                self.pty_process.setwinsize(rows, cols)
+        except Exception as error:
+            self.add_output(f"\r\n[failed resizing terminal: {error}]\r\n", log=False)
 
     def stop_process(self) -> None:
-        process = self.process
-        if process is None or process.poll() is not None:
+        process = self.pty_process
+        if process is None or not process.isalive():
             return
 
-        self.add_event("system", "[stopping process]\n")
-        if os.name == "nt":
-            subprocess.run(["taskkill", "/PID", str(process.pid), "/T"], check=False, capture_output=True, text=True)
-        else:
-            process.terminate()
+        self.add_output("\r\n[stopping process]\r\n")
+        try:
+            process.terminate(force=True)
+        except Exception:
+            if self.child_process_id is not None and os.name == "nt":
+                subprocess.run(
+                    ["taskkill", "/PID", str(self.child_process_id), "/T", "/F"],
+                    check=False,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    text=True,
+                )
 
     def request_shutdown(self, delay_seconds: float = 0.0) -> None:
         if self.shutdown_server is None:
@@ -234,9 +240,20 @@ class BrowserTerminalState:
         threading.Thread(target=shutdown_later, daemon=True).start()
 
 
+def resolve_pty_python_exe(python_exe: str) -> str:
+    if os.path.basename(python_exe).lower() != "python.bat":
+        return python_exe
+
+    venv_dir = os.path.normpath(os.path.join(os.path.dirname(python_exe), ".."))
+    resolved_python_exe = os.path.join(venv_dir, "Scripts", "python.exe")
+    if os.path.exists(resolved_python_exe):
+        return resolved_python_exe
+    return python_exe
+
+
 def make_handler(state: BrowserTerminalState, title: str, token: str, icon_path: str):
     class BrowserTerminalHandler(BaseHTTPRequestHandler):
-        server_version = "PyAppBrowserTerminal/1.0"
+        server_version = "PyAppBrowserTerminal/2.0"
 
         def log_message(self, _format: str, *args: Any) -> None:
             return
@@ -263,21 +280,37 @@ def make_handler(state: BrowserTerminalState, title: str, token: str, icon_path:
             body = self.rfile.read(content_length)
             return json.loads(body.decode("utf-8"))
 
+        def _send_file(self, path: str, fallback_content_type: str) -> None:
+            if not self._token_ok() or not os.path.isfile(path):
+                self._send(404, "text/plain; charset=utf-8", b"")
+                return
+
+            try:
+                with open(path, "rb") as file:
+                    data = file.read()
+            except OSError:
+                self._send(404, "text/plain; charset=utf-8", b"")
+                return
+
+            content_type = mimetypes.guess_type(path)[0] or fallback_content_type
+            self._send(200, content_type, data)
+
         def do_GET(self) -> None:
             parsed = urlparse(self.path)
             if parsed.path == "/favicon.ico":
-                if not self._token_ok() or not os.path.isfile(icon_path):
-                    self._send(404, "text/plain; charset=utf-8", b"")
-                    return
+                self._send_file(icon_path, "image/x-icon")
+                return
 
-                try:
-                    with open(icon_path, "rb") as icon_file:
-                        icon_data = icon_file.read()
-                except OSError:
-                    self._send(404, "text/plain; charset=utf-8", b"")
-                    return
+            if parsed.path == "/assets/xterm.js":
+                self._send_file(os.path.join(ASSET_DIR, "xterm.js"), "text/javascript; charset=utf-8")
+                return
 
-                self._send(200, "image/x-icon", icon_data)
+            if parsed.path == "/assets/xterm.css":
+                self._send_file(os.path.join(ASSET_DIR, "xterm.css"), "text/css; charset=utf-8")
+                return
+
+            if parsed.path == "/assets/addon-fit.js":
+                self._send_file(os.path.join(ASSET_DIR, "addon-fit.js"), "text/javascript; charset=utf-8")
                 return
 
             if not self._token_ok():
@@ -313,8 +346,20 @@ def make_handler(state: BrowserTerminalState, title: str, token: str, icon_path:
 
             if parsed.path == "/input":
                 data = self._read_json()
-                state.send_input(str(data.get("text", "")))
+                state.send_input(str(data.get("data", "")))
                 self._send_json({"ok": True, "running": state.process_running})
+                return
+
+            if parsed.path == "/resize":
+                data = self._read_json()
+                try:
+                    cols = int(data.get("cols", DEFAULT_COLS))
+                    rows = int(data.get("rows", DEFAULT_ROWS))
+                except (TypeError, ValueError):
+                    cols = DEFAULT_COLS
+                    rows = DEFAULT_ROWS
+                state.resize(cols, rows)
+                self._send_json({"ok": True})
                 return
 
             if parsed.path == "/stop":
@@ -323,7 +368,7 @@ def make_handler(state: BrowserTerminalState, title: str, token: str, icon_path:
                 return
 
             if parsed.path == "/shutdown":
-                state.add_event("system", "[closing browser terminal server]\n", log=False)
+                state.add_output("\r\n[closing browser terminal server]\r\n", log=False)
                 state.request_shutdown(SHUTDOWN_AFTER_CLOSE_SECONDS)
                 self._send_json({"ok": True})
                 return
@@ -344,36 +389,41 @@ def render_html(title: str, token: str) -> str:
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{safe_title}</title>
 <link rel="icon" href="{html.escape(favicon_url)}">
+<link rel="stylesheet" href="/assets/xterm.css?token={token}">
 <style>
-:root {{
-  color-scheme: dark;
-  font-family: Consolas, "Cascadia Mono", "Lucida Console", monospace;
-}}
 * {{ box-sizing: border-box; }}
+html, body {{
+  height: 100%;
+}}
 body {{
   margin: 0;
-  height: 100vh;
   display: grid;
-  grid-template-rows: auto 1fr auto;
+  grid-template-rows: auto 1fr;
   background: #0b0f14;
   color: #d8dee9;
+  font-family: "Segoe UI", Arial, sans-serif;
 }}
 header {{
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 10px 12px;
+  min-height: 42px;
+  padding: 8px 10px;
   background: #141a22;
   border-bottom: 1px solid #253041;
 }}
 h1 {{
   margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: 14px;
   font-weight: 600;
 }}
 .actions {{
   display: flex;
+  flex: 0 0 auto;
   gap: 8px;
 }}
 button {{
@@ -382,7 +432,8 @@ button {{
   background: #1c2531;
   color: #eef2f7;
   font: inherit;
-  padding: 6px 10px;
+  font-size: 13px;
+  padding: 5px 9px;
   cursor: pointer;
 }}
 button:hover {{ background: #263244; }}
@@ -391,33 +442,16 @@ button:disabled {{
   cursor: default;
 }}
 #terminal {{
-  margin: 0;
-  padding: 12px;
-  overflow: auto;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  font-size: 13px;
-  line-height: 1.45;
+  min-height: 0;
+  width: 100%;
+  height: 100%;
+  padding: 8px;
 }}
-.stderr {{ color: #ff7676; }}
-.stdin {{ color: #8fd694; }}
-.system {{ color: #8ab4f8; }}
-form {{
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 8px;
-  padding: 10px 12px;
-  background: #141a22;
-  border-top: 1px solid #253041;
+.xterm {{
+  height: 100%;
 }}
-#input {{
-  min-width: 0;
-  border: 1px solid #3a4657;
-  border-radius: 4px;
-  background: #071018;
-  color: #f4f7fb;
-  font: inherit;
-  padding: 8px 10px;
+.xterm .xterm-viewport {{
+  overflow-y: auto;
 }}
 </style>
 </head>
@@ -429,36 +463,71 @@ form {{
     <button id="close" type="button">Close server</button>
   </div>
 </header>
-<pre id="terminal" aria-live="polite"></pre>
-<form id="form">
-  <input id="input" autocomplete="off" spellcheck="false" autofocus>
-  <button id="send" type="submit">Send</button>
-</form>
+<div id="terminal"></div>
+<script src="/assets/xterm.js?token={token}"></script>
+<script src="/assets/addon-fit.js?token={token}"></script>
 <script>
 const TOKEN = {token_json};
-const terminal = document.getElementById("terminal");
-const form = document.getElementById("form");
-const input = document.getElementById("input");
-const send = document.getElementById("send");
 const stopButton = document.getElementById("stop");
 const closeButton = document.getElementById("close");
+const termElement = document.getElementById("terminal");
+const term = new Terminal({{
+  cursorBlink: true,
+  convertEol: false,
+  fontFamily: 'Consolas, "Cascadia Mono", "Lucida Console", monospace',
+  fontSize: 13,
+  scrollback: 5000,
+  theme: {{
+    background: "#0b0f14",
+    foreground: "#d8dee9",
+    cursor: "#f8f8f2",
+    selectionBackground: "#31415a"
+  }}
+}});
+const fitAddon = new FitAddon.FitAddon();
+term.loadAddon(fitAddon);
+term.open(termElement);
+fitAddon.fit();
+term.focus();
+
 let lastEventId = 0;
 let running = true;
-
-function appendEvent(event) {{
-  const span = document.createElement("span");
-  span.className = event.stream;
-  span.textContent = event.text;
-  terminal.appendChild(span);
-  terminal.scrollTop = terminal.scrollHeight;
-}}
+let lastResize = {{cols: term.cols, rows: term.rows}};
 
 function setRunning(value) {{
   running = value;
-  input.disabled = !value;
-  send.disabled = !value;
   stopButton.disabled = !value;
 }}
+
+async function postJson(path, payload) {{
+  return fetch(`${{path}}?token=${{encodeURIComponent(TOKEN)}}`, {{
+    method: "POST",
+    headers: {{"Content-Type": "application/json"}},
+    body: JSON.stringify(payload || {{}})
+  }});
+}}
+
+function scheduleResize() {{
+  fitAddon.fit();
+  if (term.cols === lastResize.cols && term.rows === lastResize.rows) return;
+  lastResize = {{cols: term.cols, rows: term.rows}};
+  postJson("/resize", lastResize);
+}}
+
+term.onData(data => {{
+  if (!running) return;
+  postJson("/input", {{data}});
+}});
+
+term.onResize(size => {{
+  lastResize = {{cols: size.cols, rows: size.rows}};
+  postJson("/resize", lastResize);
+}});
+
+window.addEventListener("resize", () => {{
+  window.clearTimeout(window.__resizeTimer);
+  window.__resizeTimer = window.setTimeout(scheduleResize, 80);
+}});
 
 async function poll() {{
   while (true) {{
@@ -468,41 +537,30 @@ async function poll() {{
       const payload = await response.json();
       for (const event of payload.events) {{
         lastEventId = Math.max(lastEventId, event.id);
-        appendEvent(event);
+        term.write(event.text);
       }}
       setRunning(payload.running);
       if (!payload.running && payload.exitCode !== null) {{
-        appendEvent({{stream: "system", text: `[browser terminal server may close now]\\n`}});
+        term.write(`\\r\\n[browser terminal server may close now]\\r\\n`);
         return;
       }}
     }} catch (error) {{
       setRunning(false);
-      appendEvent({{stream: "system", text: `[disconnected from browser terminal server]\\n`}});
+      term.write(`\\r\\n[disconnected from browser terminal server]\\r\\n`);
       return;
     }}
   }}
 }}
 
-form.addEventListener("submit", async (event) => {{
-  event.preventDefault();
-  if (!running) return;
-  const text = input.value;
-  input.value = "";
-  await fetch(`/input?token=${{encodeURIComponent(TOKEN)}}`, {{
-    method: "POST",
-    headers: {{"Content-Type": "application/json"}},
-    body: JSON.stringify({{text}})
-  }});
-}});
-
 stopButton.addEventListener("click", async () => {{
-  await fetch(`/stop?token=${{encodeURIComponent(TOKEN)}}`, {{method: "POST"}});
+  await postJson("/stop");
 }});
 
 closeButton.addEventListener("click", async () => {{
-  await fetch(`/shutdown?token=${{encodeURIComponent(TOKEN)}}`, {{method: "POST"}});
+  await postJson("/shutdown");
 }});
 
+scheduleResize();
 poll();
 </script>
 </body>
@@ -510,58 +568,92 @@ poll();
 """
 
 
-def read_stream(pipe: Any, stream: str, state: BrowserTerminalState) -> None:
-    try:
-        while True:
-            chunk = pipe.read(1)
-            if chunk == "":
-                break
-            state.add_event(stream, chunk, prefix=True)
-    except Exception as error:
-        state.add_event("system", f"[failed reading {stream}: {error}]\n", log=False)
+def read_pty_output(state: BrowserTerminalState) -> None:
+    process = state.pty_process
+    if process is None:
+        return
+
+    while True:
+        try:
+            data = process.read(4096)
+        except EOFError:
+            break
+        except OSError:
+            break
+        except Exception as error:
+            if state.process_running:
+                state.add_output(f"\r\n[failed reading terminal output: {error}]\r\n", log=False)
+            break
+
+        if data:
+            state.add_output(data)
+        elif not state.process_running:
+            break
+        else:
+            time.sleep(0.01)
 
 
 def wait_for_process(state: BrowserTerminalState) -> None:
-    process = state.process
+    process = state.pty_process
     if process is None:
         return
 
     exit_code = process.wait()
     state.exit_code = exit_code
-    state.registry.remove(process.pid)
-    state.add_event("system", f"\n[process exited with code {exit_code}]\n")
+    if state.child_process_id is not None:
+        state.registry.remove(state.child_process_id)
+    state.add_output(f"\r\n[process exited with code {exit_code}]\r\n")
     if (exit_code == 0 and state.close_on_success) or (exit_code != 0 and state.close_on_failure):
         state.request_shutdown(2.0)
 
 
-def start_process(
+def start_pty_process(
     *,
     state: BrowserTerminalState,
     script_path: str,
     python_exe: str,
     wdir_is_script_dir: bool,
 ) -> None:
-    cwd = os.path.dirname(script_path) if wdir_is_script_dir else None
-    encoding = locale.getpreferredencoding(False)
-    creationflags = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
-    process = subprocess.Popen(  # noqa:S603
-        [python_exe, "-u", script_path],
-        cwd=cwd,
-        stdin=subprocess.PIPE,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-        encoding=encoding,
-        errors="replace",
-        bufsize=0,
-        creationflags=creationflags,
-    )
-    state.process = process
-    state.registry.add(process.pid)
-    state.add_event("system", f"[started process {process.pid}]\n", log=False)
+    try:
+        from winpty import PtyProcess
+    except Exception:
+        state.exit_code = 1
+        state.add_output(
+            "\r\n[Error] pywinpty is required for browser terminal mode.\r\n"
+            "Install pywinpty into code\\do_not_change\\python_packages for the backend Python.\r\n\r\n"
+            f"{traceback.format_exc()}\r\n",
+            log=False,
+        )
+        return
 
-    threading.Thread(target=read_stream, args=(process.stdout, "stdout", state), daemon=True).start()
-    threading.Thread(target=read_stream, args=(process.stderr, "stderr", state), daemon=True).start()
+    cwd = os.path.dirname(script_path) if wdir_is_script_dir else os.getcwd()
+    resolved_python_exe = resolve_pty_python_exe(python_exe)
+    env = os.environ.copy()
+    env["PYTHONUNBUFFERED"] = "1"
+
+    try:
+        process = PtyProcess.spawn(
+            [resolved_python_exe, "-u", script_path],
+            cwd=cwd,
+            env=env,
+            dimensions=(DEFAULT_ROWS, DEFAULT_COLS),
+        )
+    except Exception:
+        state.exit_code = 1
+        state.add_output(
+            "\r\n[Error] Failed to start browser terminal process.\r\n"
+            f"Python exe: {resolved_python_exe}\r\n"
+            f"Python script: {script_path}\r\n\r\n"
+            f"{traceback.format_exc()}\r\n",
+            log=False,
+        )
+        return
+
+    state.pty_process = process
+    state.child_process_id = int(process.pid)
+    state.registry.add(process.pid)
+
+    threading.Thread(target=read_pty_output, args=(state,), daemon=True).start()
     threading.Thread(target=wait_for_process, args=(state,), daemon=True).start()
 
 
@@ -581,12 +673,10 @@ def main() -> None:
     wdir_is_script_dir = sys.argv[6] == "1"
     close_on_failure = sys.argv[8] == "1"
     close_on_success = sys.argv[9] == "1"
-    print_timestamp_format = sys.argv[10]
     log_path = sys.argv[11]
     log_timestamp_format = sys.argv[12]
     overwrite_log = sys.argv[13] == "1"
     log_file_date_append_format = sys.argv[14]
-    input_prepend = sys.argv[16]
     process_id_file_path = sys.argv[17]
 
     registry = ProcessIdRegistry(process_id_file_path)
@@ -595,8 +685,6 @@ def main() -> None:
 
     logger = TerminalLogger(log_path, overwrite_log, log_file_date_append_format, log_timestamp_format)
     state = BrowserTerminalState(
-        input_prepend=input_prepend,
-        print_timestamp_format=print_timestamp_format,
         close_on_success=close_on_success,
         close_on_failure=close_on_failure,
         logger=logger,
@@ -608,7 +696,7 @@ def main() -> None:
     state.shutdown_server = server.shutdown
     url = f"http://127.0.0.1:{server.server_port}/?token={token}"
 
-    start_process(
+    start_pty_process(
         state=state,
         script_path=script_path,
         python_exe=python_exe,
