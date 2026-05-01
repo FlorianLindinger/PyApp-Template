@@ -620,7 +620,7 @@ try:
         if create_browser_terminal == True:
             proc = subprocess.Popen(  # noqa:S603 #type:ignore
                 [
-                    python_exe_for_script_path,
+                    sys.executable,
                     *extra_args,
                     browser_terminal_path,
                     script_path,
