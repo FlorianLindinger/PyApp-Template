@@ -82,14 +82,33 @@ terminal emulator
 add always foregorind option
 is cls implemetned?
 
+can i somehow process ansi codes?
+
 ===================================
 browser emulator
 ===================================
+
+is cls implemetned?
+
+install stuff needed in backend
 
 should i merge script_wrapper and browser since mostly same need. but also does not have windwos temrinal featues like histoy ...
 
 add all buttons form fancy temrinal to browser. maybe more
 
+
+Behavior	Current browser terminal	xterm.js + pywinpty
+print() output	Works	Works
+input()	Works line-by-line	Works like terminal
+Arrow keys	Browser text box only	Sent to program
+Ctrl+C	Not real Ctrl+C	Real terminal interrupt
+ANSI colors	Printed as raw escape codes unless parsed	Rendered by xterm.js
+Progress bars	Often messy	Usually correct
+Interactive CLIs	Mostly bad	Good
+sys.stdin.isatty()	Usually False	Usually terminal-like
+Resize behavior	No real terminal resize	Can resize PTY cols/rows
+Complexity	Low	Medium
+Dependencies	None	pywinpty + bundled xterm.js
 
 ===================================
 very important
