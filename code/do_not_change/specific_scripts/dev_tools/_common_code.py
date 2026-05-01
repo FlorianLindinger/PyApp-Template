@@ -4,6 +4,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 import tempfile
 from collections.abc import Iterable
 
@@ -29,43 +30,6 @@ def abs_norm(path: str) -> str:
 
 def join_path(*parts: str) -> str:
     return os.path.normpath(os.path.join(*parts))
-
-
-PIPREQS_MAPPING_OVERRIDES = {
-    "cv2": "opencv-python",
-    "PIL": "Pillow",
-    "skimage": "scikit-image",
-    "skvideo": "scikit-video",
-    "fitz": "PyMuPDF",
-    "pywt": "PyWavelets",
-    "qrcode": "qrcode",
-    "sklearn": "scikit-learn",
-    "yaml": "PyYAML",
-    "graphviz": "python-graphviz",
-    "msgpack": "msgpack",
-    "dotenv": "python-dotenv",
-    "dateutil": "python-dateutil",
-    "googleapiclient": "google-api-python-client",
-    "github": "PyGithub",
-    "telegram": "python-telegram-bot",
-    "jwt": "PyJWT",
-    "websocket": "websocket-client",
-    "paho": "paho-mqtt",
-    "OpenSSL": "pyOpenSSL",
-    "flask_sqlalchemy": "Flask-SQLAlchemy",
-    "flask_cors": "flask-cors",
-    "serial": "pyserial",
-    "sounddevice": "sounddevice",
-    "librosa": "librosa",
-    "MySQLdb": "mysqlclient",
-    "psycopg2": "psycopg2-binary",
-    "sqlalchemy": "SQLAlchemy",
-    "redis": "redis",
-    "pymongo": "pymongo",
-    "comtypes": "comtypes",
-    "bcrypt": "bcrypt",
-    "Crypto": "pycryptodome",
-}
 
 
 class DevToolError(RuntimeError):
@@ -385,64 +349,32 @@ def get_temp_python(temp_venv: str) -> str:
     return join_path(temp_venv, "Scripts", "python.exe")
 
 
-def create_temp_pipreqs_environment(python_executable: str) -> tuple[str, str]:
-    temp_venv = tempfile.mkdtemp(prefix="pyapp_template_pipreqs_")
+def create_temp_package_install_environment(python_executable: str) -> tuple[str, str]:
+    temp_venv = tempfile.mkdtemp(prefix="pyapp_template_package_pin_")
     try:
         run_python_exe(python_executable, "-m", "venv", temp_venv)
         temp_python = get_temp_python(temp_venv)
         if not os.path.exists(temp_python):
             raise DevToolError(f'Temporary environment did not create "{temp_python}"')
-        run_python_exe(temp_python, "-m", "pip", "install", "pipreqs", "--disable-pip-version-check")
-        update_pipreqs_mapping(temp_venv)
         return temp_venv, temp_python
     except Exception:
         shutil.rmtree(temp_venv, ignore_errors=True)
         raise
 
 
-def update_pipreqs_mapping(temp_venv: str) -> None:
-    mapping_path = join_path(temp_venv, "Lib", "site-packages", "pipreqs", "mapping")
-    if not os.path.exists(mapping_path):
-        print(f'[Warning] pipreqs mapping file not found: "{mapping_path}"')
-        return
-
-    existing_lines = read_text(mapping_path).splitlines()
-    mapping = {}
-    order = []
-    for line in existing_lines:
-        if ":" not in line:
-            continue
-        key, value = line.split(":", 1)
-        key = key.strip()
-        if key not in mapping:
-            order.append(key)
-        mapping[key] = value.strip()
-
-    changed = False
-    for import_name, package_name in PIPREQS_MAPPING_OVERRIDES.items():
-        if mapping.get(import_name) != package_name:
-            if import_name not in mapping:
-                order.append(import_name)
-            mapping[import_name] = package_name
-            changed = True
-
-    if not changed:
-        return
-
-    write_text(mapping_path, "\n".join(f"{key}:{mapping[key]}" for key in order) + "\n")
-    print(f'[Info] Updated pipreqs mapping at "{mapping_path}"')
-
-
 def run_pipreqs(
-    temp_python: str,
+    python_executable: str,
     *,
     folder: str,
     output_path: str,
     ignored_folders: Iterable[str],
 ) -> None:
+    if not os.path.exists(python_executable):
+        raise FileNotFoundError(f'Python executable not found: "{python_executable}"')
+
     ignore_value = ",".join([*ignored_folders, ".git", ".hg", ".svn"])
     run_python_exe(
-        temp_python,
+        python_executable,
         "-m",
         "pipreqs.pipreqs",
         folder,
@@ -493,22 +425,28 @@ def save_required_packages(
     folder: str = python_scripts_folder_path,
     ignored_folders: Iterable[str] = excluded_folders_for_package_search,
 ) -> None:
-    ensure_python_distribution()
     output_path = abs_norm(output_path)
     ensure_parent(output_path)
-    temp_venv, temp_python = create_temp_pipreqs_environment(python_exe_path)
-    try:
-        print(f'[Info] Scanning Python imports in "{folder}"')
-        run_pipreqs(temp_python, folder=abs_norm(folder), output_path=output_path, ignored_folders=ignored_folders)
-        if with_versions:
+    print(f'[Info] Scanning Python imports in "{folder}"')
+    run_pipreqs(
+        sys.executable,
+        folder=abs_norm(folder),
+        output_path=output_path,
+        ignored_folders=ignored_folders,
+    )
+
+    if with_versions:
+        ensure_python_distribution()
+        temp_venv, temp_python = create_temp_package_install_environment(python_exe_path)
+        try:
             print("[Info] Installing detected packages in a temporary environment to pin versions.")
             pin_requirements_to_installed_versions(output_path, temp_python)
-        else:
-            lines = [
-                line.strip()
-                for line in read_text(output_path).splitlines()
-                if line.strip() and not line.strip().startswith("#")
-            ]
-            write_lines(output_path, lines)
-    finally:
-        shutil.rmtree(temp_venv, ignore_errors=True)
+        finally:
+            shutil.rmtree(temp_venv, ignore_errors=True)
+    else:
+        lines = [
+            line.strip()
+            for line in read_text(output_path).splitlines()
+            if line.strip() and not line.strip().startswith("#")
+        ]
+        write_lines(output_path, lines)
