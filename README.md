@@ -23,6 +23,7 @@
 - **Small launch overhead** of all features: ~+0.2 s (global python start is ~0.15 s)
 - Plug and play **license template**, where all backend template code parts fall under the **permissive licenses**.
 - Avoids opaque executables to minimize antivirus false positives that compiled python code can suffer from.
+- Option to launch in a browser tab.
 - Option for fancy modern professional looking terminal emulator with many features like minimization to system tray or exit confirmation prompt (see below).
 - Choice to have the working directory be the script folder or the shortcut folder.
 - Option to save prints/errors in log files.
