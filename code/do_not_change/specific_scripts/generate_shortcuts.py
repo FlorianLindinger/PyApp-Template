@@ -31,11 +31,13 @@ output_path = os.path.normpath(file_dir + "..\\..\\..") + "\\"
 
 launcher_py = os.path.normpath(file_dir + "..\\T.py")
 settings_py = os.path.normpath(file_dir + "..\\S.py")
+launcher_browser_py = os.path.normpath(file_dir + "..\\B.py")
 launcher_no_terminl_py = os.path.normpath(file_dir + "..\\N.py")
 stop_no_terminal_py = os.path.normpath(file_dir + "..\\Q.py")
 
 launcher_icon_path = os.path.normpath(file_dir + "..\\..\\icons\\icon.ico")
 settings_icon_path = os.path.normpath(file_dir + "..\\..\\icons\\settings.ico")
+launcher_browser_icon_path = os.path.normpath(file_dir + "..\\..\\icons\\icon.ico")
 launcher_no_terminl_icon_path = os.path.normpath(file_dir + "..\\..\\icons\\icon.ico")
 stop_no_terminal_icon_path = os.path.normpath(file_dir + "..\\..\\icons\\stop.ico")
 
@@ -249,6 +251,20 @@ def main():
     if start_shortcut_name not in [None, False, ""]:
         out = output_path + sanitize_filename(start_shortcut_name) + ".lnk"
         make_lnk(out, launcher_icon_path, launcher_py, args=appid, appid=appid, description="WIP")
+
+    # Shortcut: start in browser terminal
+    start_browser_shortcut_name = getattr(developer_settings, "start_browser_shortcut_name", "")
+    if start_browser_shortcut_name not in [None, False, ""]:
+        out = output_path + sanitize_filename(start_browser_shortcut_name) + ".lnk"
+        make_lnk(
+            out,
+            launcher_browser_icon_path,
+            launcher_browser_py,
+            args=appid,
+            appid=appid
+            + "B",  # use a separate AppID so the browser launcher can be pinned separately from terminal mode
+            description="WIP",
+        )
 
     # Shortcut: start without terminal
     start_no_terminal_shortcut_name = getattr(developer_settings, "start_no_terminal_shortcut_name", "")
