@@ -25,6 +25,7 @@ portable_venv_creator_path = make_abs("..\\general_scripts\\create_portable_venv
 py_env_folder_path = make_abs("..\\..\\py_env")
 
 script_wrapper_path = make_abs("script_wrapper.py")
+browser_terminal_path = make_abs("browser_terminal.py")
 
 python_scripts_folder_path = make_abs("..\\..\\")
 icon_path = make_abs("..\\..\\icons\\icon.ico")

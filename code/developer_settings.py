@@ -68,6 +68,7 @@ script_after_python_interpreter_crash_name: str | None = "after_python_crash_cod
 # Names of generated shortcuts:
 # (set to None to disable generation of specific shortcut)
 start_shortcut_name: str | None = f"{program_name}"  # start program with terminal
+start_browser_shortcut_name: str | None = f"{program_name} (browser)"  # start program in default browser
 start_no_terminal_shortcut_name: str | None = f"{program_name} (no terminal)"  # start program without terminal
 settings_shortcut_name: str | None = f"{program_name} - settings"  # open settings file
 stop_shortcut_name: str | None = f"stop {program_name}"  # stop all started programs
