@@ -45,6 +45,7 @@ try:
     from developer_settings import (
         program_name as title,
     )
+    from do_not_change.specific_scripts.common_code import input_warn, print_traceback, print_warn
     from do_not_change.specific_scripts.common_variables import (
         compiled_terminal_path,
         default_packages_file_path,
@@ -52,12 +53,9 @@ try:
         developer_settings_path,
         excluded_folders_for_package_search,
         icon_path,
-        input_warn,
         needed_packages_output_file_path,
         portable_python_installer_path,
         portable_venv_creator_path,
-        print_traceback,
-        print_warn,
         process_id_file_path,
         py_env_folder_path,
         python_dist_path,
@@ -194,9 +192,6 @@ try:
             )
 
         return actual_parts[: len(target_parts)] == target_parts
-
-    def input_red(msg):
-        input(f"\033[91m{msg}\033[0m")
 
     def format_bytes(num_bytes) -> str:
         units = ["B", "KB", "MB", "GB", "TB"]
