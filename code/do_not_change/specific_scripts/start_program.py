@@ -47,6 +47,7 @@ try:
     )
     from do_not_change.specific_scripts.common_code import input_warn, print_traceback, print_warn
     from do_not_change.specific_scripts.common_variables import (
+        browser_terminal_path,
         compiled_terminal_path,
         default_packages_file_path,
         developer_settings_dir,
@@ -542,7 +543,9 @@ try:
         # process args
 
         app_id = sys.argv[1]
-        create_terminal = sys.argv[2] == "1"  # inputs are 0 or 1
+        launch_mode = sys.argv[2]
+        create_terminal = launch_mode == "1"  # inputs are 0 or 1
+        create_browser_terminal = launch_mode == "browser"
 
         # it overrides use_uncompiled_terminal_emulator_and_run_it_in_global from developer_settings
         if len(sys.argv) > 3:  # any arg means True. Used for debug before compiling terminal emulator
@@ -586,7 +589,7 @@ try:
         # ======================
         # launch terminal
 
-        if create_terminal:
+        if create_terminal or create_browser_terminal:
             effective_log_path = log_path if enable_log_for_terminal_start else ""
         else:
             effective_log_path = log_path if enable_log_for_no_terminal_start else ""
@@ -614,7 +617,20 @@ try:
         else:
             extra_args = []
 
-        if (use_fancy_terminal == True) and (create_terminal == True):
+        if create_browser_terminal == True:
+            proc = subprocess.Popen(  # noqa:S603 #type:ignore
+                [
+                    python_exe_for_script_path,
+                    *extra_args,
+                    browser_terminal_path,
+                    script_path,
+                    python_exe_for_script_path,
+                    *args,
+                ],
+                creationflags=subprocess.CREATE_NO_WINDOW,
+            )
+
+        elif (use_fancy_terminal == True) and (create_terminal == True):
             # run in termnial emulator
 
             args += [
