@@ -36,15 +36,16 @@ process_id_file_path = make_abs("..\\..\\..\\currently_running.pid")
 
 default_packages_file_path = make_abs("..\\..\\developer_tools\\!DEFAULT_PYHON_PACKAGES.txt")
 excluded_folders_for_package_search = ["do_not_change", "py_env", "icons", "developer_tools", "__pycache__"]
-# required_packages_output_file_path = make_abs("..\\..\\developer_tools\\found_required_python_packages.txt")
-auto_search_required_packages_output_file_path = make_abs(
-    "..\\..\\developer_tools\\auto_found_required_python_packages.txt"
-)
+
 variable_in_default_packages_path_that_triggers_search_if_true = (
     "# auto_find_required_packages_here_and_reset_venv_to_them"
 )
 
-developer_tools_folder_path = make_abs("..\\..\\..\\developer_tools\\")
+developer_tools_folder_path = make_abs("..\\..\\developer_tools\\")
+
+determined_current_packages_file_path = make_abs(developer_tools_folder_path + "determined_current_packages.txt")
+
+needed_packages_output_file_path = make_abs(developer_tools_folder_path + "auto_found_required_packages.txt")
 
 # =========================
 # === process variables ===
@@ -54,6 +55,8 @@ developer_settings_dir = get_dir(developer_settings_path)
 
 if python_scripts_folder_path != "" and python_scripts_folder_path[-1] != "\\":
     python_scripts_folder_path += "\\"
+if developer_tools_folder_path != "" and developer_tools_folder_path[-1] != "\\":
+    developer_tools_folder_path += "\\"
 
 python_dist_path = py_env_folder_path + "\\py_dist"
 venv_dir_path = py_env_folder_path + "\\virt_env"
@@ -79,7 +82,8 @@ def print_warn(msg, sep: str | None = " ", end: str | None = "\n"):
 
 def input_warn(msg):
     input(f"{ANSI_WARN}{msg}{ANSI_RESET}")
-    
+
+
 def input_success(msg):
     input(f"{ANSI_SUCCESS}{msg}{ANSI_RESET}")
 
