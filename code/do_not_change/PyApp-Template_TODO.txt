@@ -2,17 +2,6 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
-stop vscode adding imports in pyproject
-
-mentiona "Could not find name `log_file`" for global for pyrefly. Maybe different warning
-
-use:
-    ANSI_WARN = "\x1b[1;37;41m]"  # white text, red bg, bold
-    ANSI_SUCCESS = "\x1b[1;37;42m]"  # white text, green bg, bold
-also add to pipes
-
-pyrefly does not warn for unused in script_wrapper?
-
 ===================================
 ASK AI
 ===================================
@@ -94,10 +83,9 @@ is cls implemetned?
 very important
 ===================================
 
+make allö variables iwhtout \\ at end in common_variable: like python_scripts_folder_path = make_abs("..\\..\\")
+
 is expceioptn handline mentioned in readem
-
-
-do i want stop to stop emulatror and normal? probalby yes
 
 mention that one can delete compiled folder and pipresqs folder: hm maybe automate and also allow code to fail and mention that not enabled?
 
@@ -127,6 +115,11 @@ update README
 ===================================
 unsorted #2
 ===================================
+
+maybe long term install backend packges at user end
+maybe download python embeddible at user end
+should be quite safe for specfiying specific versions
+how do i get pip then for local
 
 i guess save multiple and kill all:
 Support multiple running instances intentionally. The PID-file model currently points to one process. If multiple launches are possible, store a small registry keyed by app id/shortcut mode and verify the PID command line before killing.
