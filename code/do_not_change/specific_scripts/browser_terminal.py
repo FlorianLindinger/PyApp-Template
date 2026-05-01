@@ -234,7 +234,7 @@ class BrowserTerminalState:
         threading.Thread(target=shutdown_later, daemon=True).start()
 
 
-def make_handler(state: BrowserTerminalState, title: str, token: str):
+def make_handler(state: BrowserTerminalState, title: str, token: str, icon_path: str):
     class BrowserTerminalHandler(BaseHTTPRequestHandler):
         server_version = "PyAppBrowserTerminal/1.0"
 
@@ -266,7 +266,18 @@ def make_handler(state: BrowserTerminalState, title: str, token: str):
         def do_GET(self) -> None:
             parsed = urlparse(self.path)
             if parsed.path == "/favicon.ico":
-                self._send(404, "text/plain; charset=utf-8", b"")
+                if not self._token_ok() or not os.path.isfile(icon_path):
+                    self._send(404, "text/plain; charset=utf-8", b"")
+                    return
+
+                try:
+                    with open(icon_path, "rb") as icon_file:
+                        icon_data = icon_file.read()
+                except OSError:
+                    self._send(404, "text/plain; charset=utf-8", b"")
+                    return
+
+                self._send(200, "image/x-icon", icon_data)
                 return
 
             if not self._token_ok():
@@ -325,12 +336,14 @@ def make_handler(state: BrowserTerminalState, title: str, token: str):
 def render_html(title: str, token: str) -> str:
     safe_title = html.escape(title)
     token_json = json.dumps(token)
+    favicon_url = f"/favicon.ico?token={token}"
     return f"""<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{safe_title}</title>
+<link rel="icon" href="{html.escape(favicon_url)}">
 <style>
 :root {{
   color-scheme: dark;
@@ -564,6 +577,7 @@ def main() -> None:
     script_path = sys.argv[1]
     python_exe = sys.argv[2]
     title = sys.argv[3]
+    icon_path = sys.argv[4]
     wdir_is_script_dir = sys.argv[6] == "1"
     close_on_failure = sys.argv[8] == "1"
     close_on_success = sys.argv[9] == "1"
@@ -590,7 +604,7 @@ def main() -> None:
     )
 
     token = secrets.token_urlsafe(24)
-    server = ThreadingHTTPServer(("127.0.0.1", 0), make_handler(state, title, token))
+    server = ThreadingHTTPServer(("127.0.0.1", 0), make_handler(state, title, token, icon_path))
     state.shutdown_server = server.shutdown
     url = f"http://127.0.0.1:{server.server_port}/?token={token}"
 
