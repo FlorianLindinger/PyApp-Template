@@ -6,6 +6,7 @@ import os
 import subprocess
 import sys
 import time
+from datetime import datetime
 
 try:
     # =============================
@@ -20,7 +21,6 @@ try:
         enable_log_for_no_terminal_start,
         enable_log_for_terminal_start,
         input_prepend,
-        log_file_date_append_format,
         log_path_rel_to_wdir,
         log_timestamp_format,
         overwrite_log,
@@ -108,6 +108,7 @@ try:
             log_path = os.path.join(os.path.dirname(script_path), log_path_rel_to_wdir)
         else:
             log_path = os.path.join(os.getcwd(), log_path_rel_to_wdir)
+        log_path = datetime.now().strftime(log_path)
     if (enable_log_for_terminal_start != False or enable_log_for_no_terminal_start != False) and log_path == "":
         raise ValueError(
             f'[Error] log_path_rel_to_wdir in [False,None,""] in developer settings at "{developer_settings_path}" prevents log creation which is wanted by the settings enable_log_for_terminal_start or enable_log_for_no_terminal_start being True.'
@@ -128,8 +129,6 @@ try:
 
     if python_version in [None, False]:
         python_version = ""
-    if log_file_date_append_format in [None, False]:
-        log_file_date_append_format = ""
     if log_timestamp_format in [None, False]:
         log_timestamp_format = ""
     if print_timestamp_format in [None, False]:
@@ -215,7 +214,6 @@ try:
             effective_log_path,
             log_timestamp_format,
             "1" if overwrite_log else "0",
-            log_file_date_append_format,
             script_after_interpreter_crash_path,
             input_prepend,
             process_id_file_path,

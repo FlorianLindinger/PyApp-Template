@@ -36,13 +36,12 @@ try:
     log_path = sys.argv[10]
     log_timestamp_format = sys.argv[11]
     overwrite_log = sys.argv[12] == "1"
-    log_file_date_append_format = sys.argv[13]
-    script_after_interpreter_crash_path = sys.argv[14]
-    input_prepend = sys.argv[15]
-    process_id_file_path = sys.argv[16]
+    script_after_interpreter_crash_path = sys.argv[13]
+    input_prepend = sys.argv[14]
+    process_id_file_path = sys.argv[15]
 
-    terminal_colors = sys.argv[17]
-    script_has_terminal = sys.argv[18] == "1"
+    terminal_colors = sys.argv[16]
+    script_has_terminal = sys.argv[17] == "1"
     # script_has_terminal = "1" means that this window is run in a terminal and False that it is invisible and one needs to create a new terminal to print
 
     # ==================
@@ -617,12 +616,8 @@ try:
         import threading
         from datetime import datetime
 
-        def prepare_log_path(path: str, date_append_format: str) -> str:
-            if date_append_format:
-                folder, filename = os.path.split(path)
-                stem, suffix = os.path.splitext(filename)
-                path = os.path.join(folder, f"{stem}{datetime.now().strftime(date_append_format)}{suffix}")
-
+        def prepare_log_path(path: str) -> str:
+            path = datetime.now().strftime(path)
             folder = os.path.dirname(path)
             if folder:
                 os.makedirs(folder, exist_ok=True)
@@ -762,9 +757,9 @@ try:
             def encoding(self) -> str | None:
                 return getattr(self.print_stream, "encoding", None)
 
-        def setup_log_prints(log_path, overwrite_log=True, log_file_date_append_format=""):
+        def setup_log_prints(log_path, overwrite_log=True):
             global log_file  # type:ignore
-            log_path = prepare_log_path(log_path, log_file_date_append_format)
+            log_path = prepare_log_path(log_path)
             log_file = open(log_path, "w" if overwrite_log else "a", encoding="utf-8", buffering=1)  # noqa:SIM115
             atexit.register(log_file.close)
             sys.stdout = pipe_splitter(
@@ -826,7 +821,7 @@ def get_terminal_name():
 
         # setup logging
         if log_path != "":
-            setup_log_prints(log_path, overwrite_log, log_file_date_append_format)  # type:ignore
+            setup_log_prints(log_path, overwrite_log)  # type:ignore
 
         # set app id for taskbar grouping (combining) of (Qt) GUI icon with launcher shortcut icon
         if app_id != "":
