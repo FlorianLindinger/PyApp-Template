@@ -17,7 +17,7 @@ _file_dir: str = get_dir(os.path.normpath(__file__)) + "\\"
 
 developer_settings_path = make_abs(
     "..\\..\\developer_settings.py"
-)  # kind of unsused since scripts expect developer_settings to be at root for import
+)
 
 portable_python_installer_path = make_abs("..\\general_scripts\\create_portable_python.bat")
 portable_venv_creator_path = make_abs("..\\general_scripts\\create_portable_venv.bat")
@@ -48,9 +48,9 @@ determined_current_packages_file_path = make_abs(developer_tools_folder_path + "
 
 needed_packages_output_file_path = make_abs(developer_tools_folder_path + "auto_found_required_packages.txt")
 
-# =========================
-# === process variables ===
-# =========================
+# =============================
+# === process the variables ===
+# =============================
 
 developer_settings_dir = get_dir(developer_settings_path)
 
