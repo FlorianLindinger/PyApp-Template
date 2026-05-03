@@ -6,7 +6,7 @@ import os
 import subprocess
 import sys
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 
 try:
     # =============================
@@ -14,6 +14,7 @@ try:
     # =============================
 
     from developer_settings import (
+        button_settings,
         close_on_failure,
         close_on_python_interpreter_crash,
         close_on_success,
@@ -24,10 +25,16 @@ try:
         log_path_rel_to_wdir,
         log_timestamp_format,
         overwrite_log,
+        play_sound_on_failure,
+        play_sound_on_python_interpreter_crash,
+        play_sound_on_success,
         print_timestamp_format,
         python_code_name,
         python_version,
         script_after_python_interpreter_crash_name,
+        send_Windows_notification_on_failure,
+        send_Windows_notification_on_python_interpreter_crash,
+        send_Windows_notification_on_success,
         start_in_shortcut_folder,
         stylesheet_path,
         terminal_bg_color,
@@ -108,7 +115,7 @@ try:
             log_path = os.path.join(os.path.dirname(script_path), log_path_rel_to_wdir)
         else:
             log_path = os.path.join(os.getcwd(), log_path_rel_to_wdir)
-        log_path = datetime.now().strftime(log_path)
+        log_path = datetime.now(tz=timezone.utc).strftime(log_path)
     if (enable_log_for_terminal_start != False or enable_log_for_no_terminal_start != False) and log_path == "":
         raise ValueError(
             f'[Error] log_path_rel_to_wdir in [False,None,""] in developer settings at "{developer_settings_path}" prevents log creation which is wanted by the settings enable_log_for_terminal_start or enable_log_for_no_terminal_start being True.'
@@ -217,6 +224,12 @@ try:
             script_after_interpreter_crash_path,
             input_prepend,
             process_id_file_path,
+            "1" if play_sound_on_success else "0",
+            "1" if send_Windows_notification_on_success else "0",
+            "1" if play_sound_on_failure else "0",
+            "1" if send_Windows_notification_on_failure else "0",
+            "1" if play_sound_on_python_interpreter_crash else "0",
+            "1" if send_Windows_notification_on_python_interpreter_crash else "0",
         ]
 
         if use_faulthandler == True:
@@ -239,12 +252,25 @@ try:
 
         elif (use_fancy_terminal == True) and (create_terminal == True):
             # run in termnial emulator
+            import json  # noqa:PLC0415
+
+            # pass button settings via json
+            if button_settings in [None, False]:
+                button_settings_path = ""
+            else:
+                try:
+                    button_settings_path = json.dumps(button_settings)
+                except TypeError as e:
+                    raise TypeError(
+                        f'[Error] button_settings in developer settings at "{developer_settings_path}" must be JSON serializable.'
+                    ) from e
 
             args += [
                 "1" if terminal_needs_input else "0",
                 stylesheet_path,
                 dark_mode,
                 "1" if use_faulthandler else "0",
+                button_settings_path,
             ]
 
             if use_uncompiled_terminal_emulator_and_run_it_in_global == True:  # Meant for debugging terminal
