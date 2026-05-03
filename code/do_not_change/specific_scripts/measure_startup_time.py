@@ -20,6 +20,10 @@ DEVELOPER_SETTINGS_PATH = CODE_DIR / "developer_settings.py"
 SCRIPT_WRAPPER_PATH = SCRIPT_DIR / "script_wrapper.py"
 VENV_PYTHON = CODE_DIR / "py_env" / "virt_env" / "Portable_Scripts" / "python.bat"
 PY_DIST_PYTHON = CODE_DIR / "py_env" / "py_dist" / "python.exe"
+VERSION_SCRIPT = (
+    "import platform, sys; "
+    "print(f'{platform.python_implementation()} {sys.version.split()[0]} ({sys.executable})')"
+)
 
 
 def parse_args() -> argparse.Namespace:
@@ -56,6 +60,27 @@ def python_command(python_path: Path | str, args: list[str]) -> list[str]:
     if python_text.lower().endswith((".bat", ".cmd")):
         return ["cmd.exe", "/d", "/c", "call", python_text, *args]
     return [python_text, *args]
+
+
+def describe_python(python_path: Path | str) -> str:
+    try:
+        result = subprocess.run(
+            python_command(python_path, ["-c", VERSION_SCRIPT]),
+            cwd=CODE_DIR,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            timeout=5.0,
+            check=False,
+        )
+    except Exception as error:
+        return f"unavailable ({error})"
+
+    output = (result.stdout or "").strip()
+    if result.returncode != 0:
+        detail = f": {output}" if output else ""
+        return f"unavailable, exit {result.returncode}{detail}"
+    return output
 
 
 def parse_marker(marker_path: Path) -> dict[str, str]:
@@ -122,7 +147,7 @@ def run_one(label: str, command: list[str], marker_path: Path, timeout: float) -
         command,
         cwd=CODE_DIR,
         env=env,
-        stdin=subprocess.DEVNULL,
+        stdin=subprocess.PIPE,
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
         creationflags=creationflags,
@@ -169,8 +194,6 @@ def print_marker_help(target_script: Path) -> None:
     print(
         """
 from do_not_change.specific_scripts.startup_benchmark_marker import mark_startup_time
-
-mark_startup_time()
 """.strip()
     )
     print(f"\nCurrent target script: {target_script}")
@@ -232,7 +255,13 @@ def main() -> int:
 
     print(f"Target script: {target_script}")
     print(f"Runs per mode: {args.runs}")
-    print("Timing point: first PYAPP_STARTUP_BENCHMARK_MARKER write in target script.")
+    print("PyApp path: direct script_wrapper.py call; this does not use .lnk files, shortcut stubs, or start_program.py.")
+    print("Timing point: import of startup_benchmark_marker in the target script.")
+    print(f"py_dist Python: {describe_python(PY_DIST_PYTHON)}")
+    if shutil.which("py") is None:
+        print("global py: unavailable (not on PATH)")
+    else:
+        print(f"global py: {describe_python('py')}")
 
     results: dict[str, list[float]] = {}
     for label, command in measurements:

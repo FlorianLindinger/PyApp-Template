@@ -1,11 +1,11 @@
 # ==============================
 
-import sys
-import time
-
 from do_not_change.specific_scripts.startup_benchmark_marker import mark_startup_time
 
-mark_startup_time()
+# ==============================
+
+import sys
+import time
 
 for i in range(5):
     print(i)
