@@ -10,14 +10,10 @@ from do_not_change.specific_scripts.common_code import (
     abs_norm,
     ensure_parent,
     ensure_python_distribution,
-    ensure_venv,
     get_freeze_lines,
-    install_requirements,
     join_path,
     read_text,
-    recreate_venv,
     run_python_exe,
-    write_default_packages,
     write_lines,
 )
 from do_not_change.specific_scripts.common_variables import (
