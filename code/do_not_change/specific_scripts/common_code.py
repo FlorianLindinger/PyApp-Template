@@ -273,7 +273,7 @@ def check_python_version(target_version: str | float | int, exe_path: str = "py"
     ).strip()
 
     actual_parts = output.split(".")
-    target_parts = str(target_version).strip().split(".")
+    target_parts = target_version.strip().split(".")
 
     if (len(actual_parts) != 3) or (any(not part.isdigit() for part in actual_parts)):
         raise ValueError(f"Could not determine Python version from output: {output}. Expected format like '3.13.2'.")
