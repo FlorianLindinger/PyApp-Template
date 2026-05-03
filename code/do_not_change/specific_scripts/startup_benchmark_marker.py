@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import sys
 import time
 
 
@@ -19,4 +20,8 @@ def mark_startup_time() -> None:
             marker_file.write(f"start_ns={os.environ.get('PYAPP_STARTUP_BENCHMARK_START_NS', '')}\n")
             marker_file.write(f"pid={os.getpid()}\n")
     except Exception:
-        pass
+        sys.exit(1)
+    sys.exit(0)
+
+
+mark_startup_time()
