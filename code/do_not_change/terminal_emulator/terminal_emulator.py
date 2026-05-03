@@ -1367,12 +1367,8 @@ try:
             for stream in self.streams:
                 stream.flush()
 
-    def prepare_log_path(path: str, date_append_format: str) -> str:
-        if date_append_format:
-            folder, filename = os.path.split(path)
-            stem, suffix = os.path.splitext(filename)
-            path = os.path.join(folder, f"{stem}{datetime.now(timezone.utc).strftime(date_append_format)}{suffix}")
-
+    def prepare_log_path(path: str) -> str:
+        path = datetime.now().strftime(path)
         folder = os.path.dirname(path)
         if folder:
             os.makedirs(folder, exist_ok=True)
@@ -1450,7 +1446,7 @@ try:
         # process args
         if len(sys.argv) < 2:
             raise ValueError(
-                "terminal_emulator.py needs at least the Python script path as argument. Usage: terminal_emulator.py script_path [python_exe] [title] [icon_path] [app_id] [wdir_is_script_dir] [close_on_crash] [close_on_failure] [close_on_success] [print_timestamp_format] [log_path] [log_timestamp_format] [overwrite_log] [log_file_date_append_format] [script_after_interpreter_crash_path] [input_prepend] [process_id_file_path] [terminal_needs_input] [stylesheet_path] [dark_mode] [use_faulthandler] "
+                "terminal_emulator.py needs at least the Python script path as argument. Usage: terminal_emulator.py script_path [python_exe] [title] [icon_path] [app_id] [wdir_is_script_dir] [close_on_crash] [close_on_failure] [close_on_success] [print_timestamp_format] [log_path] [log_timestamp_format] [overwrite_log] [script_after_interpreter_crash_path] [input_prepend] [process_id_file_path] [terminal_needs_input] [stylesheet_path] [dark_mode] [use_faulthandler] "
             )
 
         script_path = sys.argv[1]
@@ -1467,15 +1463,14 @@ try:
         log_path = arg_to_str(11, "")
         log_timestamp_format = arg_to_str(12, "")
         overwrite_log = arg_to_bool(13, True)
-        log_file_date_append_format = arg_to_str(14, "")
-        script_after_interpreter_crash_path = arg_to_str(15, "")
-        INPUT_PREPEND = arg_to_str(16, "> ")
-        process_id_file_path = arg_to_str(17, "")
+        script_after_interpreter_crash_path = arg_to_str(14, "")
+        INPUT_PREPEND = arg_to_str(15, "> ")
+        process_id_file_path = arg_to_str(16, "")
 
-        terminal_needs_input = arg_to_bool(18, True)
-        stylesheet_path = arg_to_str(19, "")
-        dark_mode = arg_to_str(20, "1")  # no bool because "auto" could also be option that should not be turned to True
-        use_faulthandler = arg_to_bool(21, True)
+        terminal_needs_input = arg_to_bool(17, True)
+        stylesheet_path = arg_to_str(18, "")
+        dark_mode = arg_to_str(19, "1")  # no bool because "auto" could also be option that should not be turned to True
+        use_faulthandler = arg_to_bool(20, True)
         
 
         try:
@@ -1486,7 +1481,7 @@ try:
         global log_file  # type:ignore
         log_file = ""
         if log_path != "":
-            log_path = prepare_log_path(log_path, log_file_date_append_format)
+            log_path = prepare_log_path(log_path)
             log_file = open(log_path, "w" if overwrite_log else "a", encoding="utf-8", buffering=1)  # noqa:SIM115
             atexit.register(log_file.close)
             sys.stdout = pipe_splitter(sys.__stdout__, log_file, timestamp_format=log_timestamp_format)
