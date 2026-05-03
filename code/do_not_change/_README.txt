@@ -86,7 +86,6 @@ Kittens:astro_kittens
 Levenshtein:python_Levenshtein
 Lifetime:Zope2
 MethodObject:ExtensionClass
-# MySQLdb:MySQL-python
 OFS:Zope2
 OpenGL:PyOpenGL
 OpenSSL:pyOpenSSL
@@ -645,7 +644,6 @@ curator:elasticsearch_curator
 curl:pycurl
 daemon:python_daemon
 dare:DARE
-# dateutil:python_dateutil
 dawg:DAWG
 deb822:python_debian
 debian:python_debian
@@ -746,7 +744,6 @@ github3:github3.py
 gitpy:git_py
 globusonline:globusonline_transfer_api_client
 google:protobuf
-# googleapiclient:google_api_python_client
 grace-dizmo:grace_dizmo
 grammar:anovelmous_grammar
 grapheneapi:graphenelib
@@ -863,7 +860,6 @@ mopytools:MoPyTools
 mptt:django_mptt
 mpv:python-mpv
 mrbob:mr.bob
-# msgpack:msgpack_python
 mutations:aino_mutations
 mws:amazon_mws
 mysql:mysql_connector_repackaged
@@ -890,7 +886,6 @@ oss:aliyunoss
 output:cashew
 owslib:OWSLib
 packetdiag:nwdiag
-# paho:paho_mqtt
 paintstore:django_paintstore
 parler:django_parler
 past:future
@@ -1090,7 +1085,6 @@ sika:ahonya_sika
 singleton:pysingleton
 sittercommon:cerebrod
 skbio:scikit_bio
-# sklearn:scikit_learn
 slack:slackclient
 slugify:unicode_slugify
 slugify:python-slugify
@@ -1177,7 +1171,6 @@ vyatta:brocade_plugins
 webdav:Zope2
 weblogolib:weblogo
 webob:WebOb
-# websocket:websocket_client
 webtest:WebTest
 werkzeug:Werkzeug
 wheezy:wheezy.caching
@@ -1211,19 +1204,13 @@ z3c:z3c.traverser
 z3c:z3c.zcmlhook
 zmq:pyzmq
 zopyx:zopyx.textindexng3
-
-# --- Computer Vision / Imaging ---
 cv2:opencv-python
 fitz:PyMuPDF
 skimage:scikit-image
 pywt:PyWavelets
 qrcode:qrcode
 graphviz:graphviz
-
-# --- ML / Data ---
 sklearn:scikit-learn
-
-# --- Config / Serialization ---
 toml:toml
 tomli:tomli
 tomli_w:tomli-w
@@ -1231,29 +1218,21 @@ tomlkit:tomlkit
 dateutil:python-dateutil
 msgpack:msgpack
 orjson:orjson
-
-# --- Web / API ---
 httpx:httpx
 aiohttp:aiohttp
 websocket:websocket-client
 paho:paho-mqtt
 googleapiclient:google-api-python-client
-
-# --- Web Frameworks ---
 flask_sqlalchemy:Flask-SQLAlchemy
 flask_cors:flask-cors
 fastapi:fastapi
 starlette:starlette
 uvicorn:uvicorn
-
-# --- Database / Backend ---
 MySQLdb:mysqlclient
 psycopg2:psycopg2-binary
 redis:redis
 pymongo:pymongo
 alembic:alembic
-
-# --- CLI / Utilities ---
 rich:rich
 typer:typer
 click:click
@@ -1261,8 +1240,6 @@ tqdm:tqdm
 colorama:colorama
 platformdirs:platformdirs
 pydantic:pydantic
-
-# --- Testing / Tooling ---
 pytest:pytest
 hypothesis:hypothesis
 ruff:ruff
@@ -1270,16 +1247,10 @@ black:black
 mypy:mypy
 tox:tox
 nox:nox
-
-# --- Hardware / Audio ---
 sounddevice:sounddevice
 librosa:librosa
 comtypes:comtypes
-
-# --- Crypto ---
 bcrypt:bcrypt
-
-# --- Windows / COM ---
 wmi:WMI
 winshell:winshell
 win32com:pywin32
