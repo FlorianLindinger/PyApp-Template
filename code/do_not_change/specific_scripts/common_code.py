@@ -1,6 +1,5 @@
 import importlib.util
 import os
-import shutil
 import subprocess
 import sys
 from collections.abc import Iterable
@@ -373,6 +372,7 @@ def delete_folder_safe(
             return False
 
     print(f'[Info] Deleting "{target_path}"')
+    import shutil # lazy import because takes 0.2 s
     shutil.rmtree(target_path)
     if os.path.exists(target_path):
         raise CommonCodeError(f'Failed to delete "{target_path}"')
