@@ -35,12 +35,12 @@ input_prepend: str | None = "> "
 # success = sys.exit(0) or sys.exit() or no exit line.
 close_on_success = True
 play_sound_on_success = False
-send_Windows_notification_on_success = False
+send_Windows_notification_on_success = True
 # ----
 # failure = normal failure exit codes (i.e. exit_code != 0), usually via "sys.exit(exit_code)" or raised error.
 close_on_failure = False
 play_sound_on_failure = False
-send_Windows_notification_on_failure = False
+send_Windows_notification_on_failure = True
 # ----
 # crash of python interpreter is usually caused by code causing Windows to kill Python and won't be caught by try/except.
 close_on_python_interpreter_crash = False
