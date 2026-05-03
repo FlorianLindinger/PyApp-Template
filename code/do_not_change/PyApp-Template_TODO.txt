@@ -8,6 +8,11 @@ how much do i really need to catch externally seomthing. is eems like windwos te
 ASK AI
 ===================================
 
+make windows sound on ... into SystemAsterisk instead of bool and play if not None,"",False,  
+make it cleanrer in script_wrapper
+
+make stuf in start_program to lazy import where it is only used in one spot and not always executed
+
 update _README.txt
 
 implemement the play windwos sound and windows nottification from dev settings. make it also into tolggle buttons for the temrinal
