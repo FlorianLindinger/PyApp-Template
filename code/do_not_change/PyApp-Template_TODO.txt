@@ -2,18 +2,15 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
-how much do i really need to catch externally seomthing. is eems like windwos terminal anyway ycatches taht. mabye dont auto close soemhow and do wihtt pyrgon closing temrianl
+how much do i really need to catch externally seomthing. is eems like windwos terminal anyway ycatches taht. mabye dont auto close soemhow and do wihtt pyrgon closing temrianl. what was reason there again?
 
-have a logs folder
-
-add temrinal emuilatr image
-
+add temrinal emuilatr image to readme
 split reamde into main features and additional features
+maybe also meantion in readme of windows notifacation ...
 
-implemem,tn the play windwos sound from dev settings
-maybe also meantion in readme
+implememn the play windwos sound and windows nottification from dev settings. make it also into tolggle buttons for the temrinal
 
-addd pre commit hooks and actions. is there seomething like check wtih AI?
+addd pre commit hooks and actions. is there seomething like check wtih AI? ask for AI setup
 
 ===================================
 ASK AI
