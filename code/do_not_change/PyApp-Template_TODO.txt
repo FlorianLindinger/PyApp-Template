@@ -19,8 +19,6 @@ addd pre commit hooks and actions. is there seomething like check wtih AI?
 ASK AI
 ===================================
 
-merge log_file_date_append_format into log_path_rel_to_wdir
-
 add option to start minimized
 
 

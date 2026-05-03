@@ -81,7 +81,7 @@ use_faulthandler = True
 # ==========================
 
 # -------------------------------------------------
-log_path_rel_to_wdir: str | None = "log\log_%Y_%m_%d.txt" 
+log_path_rel_to_wdir: str | None = r"logs\log_%Y_%m_%d.txt"
 # wdir is influenced by "start_in_shortcut_folder" setting. Can also be an absolute path and can accept datetime formatting (see datetime.datetime.strftime usage: e.g. "log_%Y_%m_%d.txt"). Set to None to disable logging to file.
 # -------------------------------------------------
 overwrite_log = True

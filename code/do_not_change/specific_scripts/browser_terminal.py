@@ -85,8 +85,8 @@ class ProcessIdRegistry:
 
 
 class TerminalLogger:
-    def __init__(self, path: str, overwrite: bool, date_append_format: str, timestamp_format: str) -> None:
-        self.path = self._prepare_log_path(path, date_append_format) if path else ""
+    def __init__(self, path: str, overwrite: bool, timestamp_format: str) -> None:
+        self.path = self._prepare_log_path(path) if path else ""
         self.timestamp_format = timestamp_format
         self._at_line_start = True
         self._lock = threading.RLock()
@@ -96,12 +96,8 @@ class TerminalLogger:
             atexit.register(self.close)
 
     @staticmethod
-    def _prepare_log_path(path: str, date_append_format: str) -> str:
-        if date_append_format:
-            folder, filename = os.path.split(path)
-            stem, suffix = os.path.splitext(filename)
-            path = os.path.join(folder, f"{stem}{datetime.now().strftime(date_append_format)}{suffix}")
-
+    def _prepare_log_path(path: str) -> str:
+        path = datetime.now().strftime(path)
         folder = os.path.dirname(path)
         if folder:
             os.makedirs(folder, exist_ok=True)
@@ -658,11 +654,11 @@ def start_pty_process(
 
 
 def main() -> None:
-    if len(sys.argv) < 18:
+    if len(sys.argv) < 17:
         raise ValueError(
             "Usage: browser_terminal.py script_path python_exe title icon_path app_id wdir_is_script_dir "
             "close_on_crash close_on_failure close_on_success print_timestamp_format log_path "
-            "log_timestamp_format overwrite_log log_file_date_append_format script_after_crash "
+            "log_timestamp_format overwrite_log script_after_crash "
             "input_prepend process_id_file_path"
         )
 
@@ -676,14 +672,13 @@ def main() -> None:
     log_path = sys.argv[11]
     log_timestamp_format = sys.argv[12]
     overwrite_log = sys.argv[13] == "1"
-    log_file_date_append_format = sys.argv[14]
-    process_id_file_path = sys.argv[17]
+    process_id_file_path = sys.argv[16]
 
     registry = ProcessIdRegistry(process_id_file_path)
     registry.add(os.getpid())
     atexit.register(registry.cleanup)
 
-    logger = TerminalLogger(log_path, overwrite_log, log_file_date_append_format, log_timestamp_format)
+    logger = TerminalLogger(log_path, overwrite_log, log_timestamp_format)
     state = BrowserTerminalState(
         close_on_success=close_on_success,
         close_on_failure=close_on_failure,
