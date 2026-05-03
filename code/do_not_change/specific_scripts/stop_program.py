@@ -11,11 +11,8 @@ from ctypes import wintypes
 
 # ==========================================================================
 # import from common variables and developer settings
-from do_not_change.specific_scripts.common_variables import (
-    developer_settings_path,
-    print_traceback,
-    process_id_file_path,
-)
+from do_not_change.specific_scripts.common_code import print_traceback
+from do_not_change.specific_scripts.common_variables import developer_settings_path, process_id_file_path
 
 # ==========================================================================
 # needed functions
