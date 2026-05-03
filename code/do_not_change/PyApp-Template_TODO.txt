@@ -8,7 +8,7 @@ add temrinal emuilatr image to readme
 split reamde into main features and additional features
 maybe also meantion in readme of windows notifacation ...
 
-implememn the play windwos sound and windows nottification from dev settings. make it also into tolggle buttons for the temrinal
+implemement the play windwos sound and windows nottification from dev settings. make it also into tolggle buttons for the temrinal
 
 addd pre commit hooks and actions. is there seomething like check wtih AI? ask for AI setup
 
