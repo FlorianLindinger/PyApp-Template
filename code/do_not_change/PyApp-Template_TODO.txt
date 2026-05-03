@@ -16,8 +16,7 @@ addd pre commit hooks and actions. is there seomething like check wtih AI? ask f
 ASK AI
 ===================================
 
-add option to start minimized
-
+add option to start minimized in all modes
 
 ask for cleanup simplification and sorting idaes
 
@@ -25,33 +24,11 @@ ask AI for speedup and safety and robustness improvmens and also comments and do
 
 ask AI if code or variable is unused
 
-
 ask if there is possiblity for maore fail ehcks and error prints and input exits
 
 ask if more prints somewhere usefull
 
-[Info] Python distribution not found. Installing portable Python and creating virtual environment:
-Found (msi-install-available) Python version 3.14.4
-Download URL: https://www.python.org/ftp/python/3.14.4/amd64/
-Downloading  core.msi
-Downloading  dev.msi
-Downloading  exe.msi
-Downloading  freethreaded.msi
-Downloading  lib.msi
-Downloading  tcltk.msi
-Downloading  ucrt.msi
-Installing core.msi
-Installing dev.msi
-Installing exe.msi
-Installing freethreaded.msi
-Installing lib.msi
-Installing tcltk.msi
-Installing ucrt.msi
-WARNING: Cache entry deserialization failed, entry ignored
-
-any way to avoid asking if turst for starting
-
-any way to safe space
+any way to safe space-> i gues downloading python embeded and backend packages. maybe as option?
 
 add script_after_interpreter_crash_path
 
