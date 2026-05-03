@@ -12,12 +12,12 @@ from do_not_change.specific_scripts.common_variables import (
     portable_venv_creator_path,
     py_env_folder_path,
     python_dist_path,
+    python_exe_path,
     python_scripts_folder_path,
     relative_venv_to_python_dist,
     variable_in_default_packages_path_that_triggers_search_if_true,
     venv_dir_path,
     venv_exe_path,
-    python_exe_path,
 )
 
 # colored print and input
@@ -148,7 +148,7 @@ def run_command(
     stderr=None,
 ) -> subprocess.CompletedProcess[str]:
     print(f"[Run] {format_command(command)}")
-    return subprocess.run(
+    return subprocess.run( #noqa:S603
         command,
         cwd=cwd,
         check=check,
@@ -262,7 +262,7 @@ def check_python_version(target_version: str | float | int, exe_path: str = "py"
     if isinstance(target_version, (float, int)):
         target_version = str(target_version)
 
-    output = subprocess.check_output(
+    output = subprocess.check_output( #noqa:S603
         [
             exe_path,
             "-c",
@@ -324,6 +324,8 @@ def delete_folder_safe(
     expected_name: str | None = None,
     prompt_for_confirmation=True,
 ) -> bool:
+    import shutil  # lazy import because takes 0.2 s #noqa:PLC0415
+    
     target_path = os.path.realpath(os.path.abspath(os.fspath(target)))
     base_path = os.path.realpath(os.path.abspath(os.fspath(allowed_base)))
 
@@ -372,7 +374,6 @@ def delete_folder_safe(
             return False
 
     print(f'[Info] Deleting "{target_path}"')
-    import shutil # lazy import because takes 0.2 s
     shutil.rmtree(target_path)
     if os.path.exists(target_path):
         raise CommonCodeError(f'Failed to delete "{target_path}"')

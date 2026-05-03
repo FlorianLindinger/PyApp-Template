@@ -4,17 +4,18 @@
 
 how much do i really need to catch externally seomthing. is eems like windwos terminal anyway ycatches taht. mabye dont auto close soemhow and do wihtt pyrgon closing temrianl. what was reason there again?
 
-add temrinal emuilatr image to readme
-split reamde into main features and additional features
-maybe also meantion in readme of windows notifacation ...
+===================================
+ASK AI
+===================================
+
+update _README.txt
 
 implemement the play windwos sound and windows nottification from dev settings. make it also into tolggle buttons for the temrinal
 
 addd pre commit hooks and actions. is there seomething like check wtih AI? ask for AI setup
 
-===================================
-ASK AI
-===================================
+
+log_path_rel_to_wdir seeem to get wrongly parsed. SError: [WinError 123] Die Syntax für den Dateinamen, Verzeichnisnamen oder die Datenträgerbezeichnung ist falsch: 'C:\\Users\\Flo\\Documents\\Repositories\\PyApp Template\\code\\..\\logs\\log_2026_05_03C:'
 
 add option to start minimized in all modes
 
@@ -70,6 +71,10 @@ add always foregorind option
 is cls implemetned?
 
 can i somehow process ansi codes?
+
+add temrinal emuilatr image to readme
+split reamde into main features and additional features
+maybe also meantion in readme of windows notifacation ...
 
 ===================================
 browser emulator
