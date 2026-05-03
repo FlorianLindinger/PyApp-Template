@@ -18,8 +18,8 @@ from do_not_change.specific_scripts.common_code import (
 )
 from do_not_change.specific_scripts.common_variables import (
     excluded_folders_for_package_search,
-    python_scripts_folder_path,
     python_exe_path,
+    python_scripts_folder_path,
 )
 
 
