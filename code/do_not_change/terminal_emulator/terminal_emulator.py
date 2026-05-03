@@ -52,6 +52,7 @@ try:
     import ctypes.wintypes
     import faulthandler
     import importlib.util
+    import json
     import os
     import shutil
     import subprocess
@@ -84,6 +85,74 @@ try:
         QWidget,
         QWidgetAction,
     )
+
+    def play_windows_sound(kind: str) -> None:
+        if os.name != "nt":
+            return
+
+        try:
+            import winsound  # noqa:PLC0415
+
+            aliases = {
+                "success": "SystemAsterisk",
+                "failure": "SystemHand",
+                "crash": "SystemHand",
+            }
+            winsound.PlaySound(
+                aliases.get(kind, "SystemAsterisk"),
+                winsound.SND_ALIAS | winsound.SND_ASYNC | winsound.SND_NODEFAULT,
+            )
+        except Exception:
+            pass
+
+    def send_windows_notification(notification_title: str, message: str, app_id: str) -> None:
+        if os.name != "nt":
+            return
+
+        powershell_script = r"""
+$titleText = if ($args.Count -gt 0) { $args[0] } else { "Python script" }
+$messageText = if ($args.Count -gt 1) { $args[1] } else { "" }
+$appId = if ($args.Count -gt 2 -and $args[2]) { $args[2] } else { "PyAppTemplate" }
+[Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType=WindowsRuntime] | Out-Null
+[Windows.Data.Xml.Dom.XmlDocument, Windows.Data.Xml.Dom.XmlDocument, ContentType=WindowsRuntime] | Out-Null
+$titleXml = [System.Security.SecurityElement]::Escape($titleText)
+$messageXml = [System.Security.SecurityElement]::Escape($messageText)
+$xml = @"
+<toast>
+  <visual>
+    <binding template="ToastGeneric">
+      <text>$titleXml</text>
+      <text>$messageXml</text>
+    </binding>
+  </visual>
+  <audio silent="true"/>
+</toast>
+"@
+$doc = [Windows.Data.Xml.Dom.XmlDocument]::new()
+$doc.LoadXml($xml)
+$toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
+[Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier($appId).Show($toast)
+"""
+        try:
+            subprocess.Popen(  # noqa:S603
+                [
+                    "powershell.exe",
+                    "-NoProfile",
+                    "-ExecutionPolicy",
+                    "Bypass",
+                    "-Command",
+                    powershell_script,
+                    notification_title,
+                    message,
+                    app_id,
+                ],
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+            )
+        except Exception:
+            pass
 
     # =============
     # default terminal emulator style sheet
@@ -256,9 +325,16 @@ try:
             icon_path: str = "",
             python_exe="py",
             title: str = "",
+            app_id: str = "",
             close_on_crash: bool = False,
             close_on_failure: bool = False,
             close_on_success: bool = True,
+            play_sound_on_success: bool = False,
+            send_Windows_notification_on_success: bool = False,
+            play_sound_on_failure: bool = False,
+            send_Windows_notification_on_failure: bool = False,
+            play_sound_on_python_interpreter_crash: bool = False,
+            send_Windows_notification_on_python_interpreter_crash: bool = False,
             wdir_is_script_dir: bool = True,
             terminal_needs_input: bool = True,
             print_timestamp_format: str = "",

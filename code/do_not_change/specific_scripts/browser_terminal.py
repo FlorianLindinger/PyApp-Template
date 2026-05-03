@@ -1,7 +1,5 @@
 """Run a Python script in a real browser terminal using xterm.js and pywinpty."""
 
-from __future__ import annotations
-
 import atexit
 import html
 import json
@@ -25,6 +23,98 @@ DEFAULT_ROWS = 30
 DEFAULT_COLS = 100
 
 ASSET_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "browser_terminal_assets"))
+
+WINDOWS_CRASH_CODES = {
+    0xC0000005,  # access violation
+    0xC00000FD,  # stack overflow
+    0xC000001D,  # illegal instruction
+    0xC0000096,  # privileged instruction
+    0xC0000409,  # stack buffer overrun
+}
+
+
+def arg_to_bool(index: int, default: bool = False) -> bool:
+    if len(sys.argv) <= index:
+        return default
+    return sys.argv[index].strip().lower() in {"1", "true", "yes", "on"}
+
+
+def unsigned32(n: int) -> int:
+    return n & 0xFFFFFFFF
+
+
+def looks_like_interpreter_crash(returncode) -> bool:
+    return isinstance(returncode, int) and (unsigned32(returncode) in WINDOWS_CRASH_CODES)
+
+
+def play_windows_sound(kind: str) -> None:
+    if os.name != "nt":
+        return
+
+    try:
+        import winsound
+
+        aliases = {
+            "success": "SystemAsterisk",
+            "failure": "SystemHand",
+            "crash": "SystemHand",
+        }
+        winsound.PlaySound(
+            aliases.get(kind, "SystemAsterisk"),
+            winsound.SND_ALIAS | winsound.SND_NODEFAULT,
+        )
+    except Exception:
+        pass
+
+
+def send_windows_notification(notification_title: str, message: str, app_id: str) -> None:
+    if os.name != "nt":
+        return
+
+    powershell_script = r"""
+$titleText = if ($args.Count -gt 0) { $args[0] } else { "Python script" }
+$messageText = if ($args.Count -gt 1) { $args[1] } else { "" }
+$appId = if ($args.Count -gt 2 -and $args[2]) { $args[2] } else { "PyAppTemplate" }
+[Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType=WindowsRuntime] | Out-Null
+[Windows.Data.Xml.Dom.XmlDocument, Windows.Data.Xml.Dom.XmlDocument, ContentType=WindowsRuntime] | Out-Null
+$titleXml = [System.Security.SecurityElement]::Escape($titleText)
+$messageXml = [System.Security.SecurityElement]::Escape($messageText)
+$xml = @"
+<toast>
+  <visual>
+    <binding template="ToastGeneric">
+      <text>$titleXml</text>
+      <text>$messageXml</text>
+    </binding>
+  </visual>
+  <audio silent="true"/>
+</toast>
+"@
+$doc = [Windows.Data.Xml.Dom.XmlDocument]::new()
+$doc.LoadXml($xml)
+$toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
+[Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier($appId).Show($toast)
+"""
+    try:
+        subprocess.Popen(  # noqa:S603
+            [
+                "powershell.exe",
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-Command",
+                powershell_script,
+                notification_title,
+                message,
+                app_id,
+            ],
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+        )
+    except Exception:
+        pass
 
 
 class ProcessIdRegistry:
@@ -136,13 +226,33 @@ class BrowserTerminalState:
     def __init__(
         self,
         *,
+        title: str,
+        app_id: str,
         close_on_success: bool,
         close_on_failure: bool,
+        play_sound_on_success: bool,
+        send_Windows_notification_on_success: bool,
+        play_sound_on_failure: bool,
+        send_Windows_notification_on_failure: bool,
+        play_sound_on_python_interpreter_crash: bool,
+        send_Windows_notification_on_python_interpreter_crash: bool,
         logger: TerminalLogger,
         registry: ProcessIdRegistry,
     ) -> None:
+        self.title = title
+        self.app_id = app_id
         self.close_on_success = close_on_success
         self.close_on_failure = close_on_failure
+        self.play_sound_by_kind = {
+            "success": play_sound_on_success,
+            "failure": play_sound_on_failure,
+            "crash": play_sound_on_python_interpreter_crash,
+        }
+        self.notification_by_kind = {
+            "success": send_Windows_notification_on_success,
+            "failure": send_Windows_notification_on_failure,
+            "crash": send_Windows_notification_on_python_interpreter_crash,
+        }
         self.logger = logger
         self.registry = registry
         self.pty_process: Any = None
@@ -234,6 +344,21 @@ class BrowserTerminalState:
             self.shutdown_server()
 
         threading.Thread(target=shutdown_later, daemon=True).start()
+
+    def run_completion_alerts(self, kind: str, exit_code: int) -> None:
+        messages = {
+            "success": "Script finished successfully.",
+            "failure": f"Script exited with code {exit_code}.",
+            "crash": f"Python process crashed with code {exit_code}.",
+        }
+        if self.notification_by_kind.get(kind, False):
+            send_windows_notification(
+                f"{self.title}: {kind.title()}",
+                messages.get(kind, f"Script ended with code {exit_code}."),
+                self.app_id,
+            )
+        if self.play_sound_by_kind.get(kind, False):
+            play_windows_sound(kind)
 
 
 def resolve_pty_python_exe(python_exe: str) -> str:
@@ -599,6 +724,12 @@ def wait_for_process(state: BrowserTerminalState) -> None:
     if state.child_process_id is not None:
         state.registry.remove(state.child_process_id)
     state.add_output(f"\r\n[process exited with code {exit_code}]\r\n")
+    if exit_code == 0:
+        state.run_completion_alerts("success", exit_code)
+    elif looks_like_interpreter_crash(exit_code):
+        state.run_completion_alerts("crash", exit_code)
+    else:
+        state.run_completion_alerts("failure", exit_code)
     if (exit_code == 0 and state.close_on_success) or (exit_code != 0 and state.close_on_failure):
         state.request_shutdown(2.0)
 
@@ -659,13 +790,17 @@ def main() -> None:
             "Usage: browser_terminal.py script_path python_exe title icon_path app_id wdir_is_script_dir "
             "close_on_crash close_on_failure close_on_success print_timestamp_format log_path "
             "log_timestamp_format overwrite_log script_after_crash "
-            "input_prepend process_id_file_path"
+            "input_prepend process_id_file_path "
+            "[play_sound_on_success send_Windows_notification_on_success "
+            "play_sound_on_failure send_Windows_notification_on_failure "
+            "play_sound_on_python_interpreter_crash send_Windows_notification_on_python_interpreter_crash]"
         )
 
     script_path = sys.argv[1]
     python_exe = sys.argv[2]
     title = sys.argv[3]
     icon_path = sys.argv[4]
+    app_id = sys.argv[5]
     wdir_is_script_dir = sys.argv[6] == "1"
     close_on_failure = sys.argv[8] == "1"
     close_on_success = sys.argv[9] == "1"
@@ -673,6 +808,12 @@ def main() -> None:
     log_timestamp_format = sys.argv[12]
     overwrite_log = sys.argv[13] == "1"
     process_id_file_path = sys.argv[16]
+    play_sound_on_success = arg_to_bool(17)
+    send_Windows_notification_on_success = arg_to_bool(18)
+    play_sound_on_failure = arg_to_bool(19)
+    send_Windows_notification_on_failure = arg_to_bool(20)
+    play_sound_on_python_interpreter_crash = arg_to_bool(21)
+    send_Windows_notification_on_python_interpreter_crash = arg_to_bool(22)
 
     registry = ProcessIdRegistry(process_id_file_path)
     registry.add(os.getpid())
@@ -680,8 +821,16 @@ def main() -> None:
 
     logger = TerminalLogger(log_path, overwrite_log, log_timestamp_format)
     state = BrowserTerminalState(
+        title=title,
+        app_id=app_id,
         close_on_success=close_on_success,
         close_on_failure=close_on_failure,
+        play_sound_on_success=play_sound_on_success,
+        send_Windows_notification_on_success=send_Windows_notification_on_success,
+        play_sound_on_failure=play_sound_on_failure,
+        send_Windows_notification_on_failure=send_Windows_notification_on_failure,
+        play_sound_on_python_interpreter_crash=play_sound_on_python_interpreter_crash,
+        send_Windows_notification_on_python_interpreter_crash=send_Windows_notification_on_python_interpreter_crash,
         logger=logger,
         registry=registry,
     )

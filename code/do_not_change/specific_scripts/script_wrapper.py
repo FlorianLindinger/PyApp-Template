@@ -39,9 +39,15 @@ try:
     script_after_interpreter_crash_path = sys.argv[13]
     input_prepend = sys.argv[14]
     process_id_file_path = sys.argv[15]
+    play_sound_on_success = sys.argv[16]  == "1"
+    send_Windows_notification_on_success = sys.argv[17] == "1"
+    play_sound_on_failure = sys.argv[18] == "1"
+    send_Windows_notification_on_failure = sys.argv[19] == "1"
+    play_sound_on_python_interpreter_crash = sys.argv[20]  == "1"
+    send_Windows_notification_on_python_interpreter_crash = sys.argv[21]  == "1"
 
-    terminal_colors = sys.argv[16]
-    script_has_terminal = sys.argv[17] == "1"
+    terminal_colors = sys.argv[22]
+    script_has_terminal = sys.argv[23] == "1"
     # script_has_terminal = "1" means that this window is run in a terminal and False that it is invisible and one needs to create a new terminal to print
 
     # ==================
@@ -129,6 +135,91 @@ try:
         subprocess.run(  # noqa:S603
             [sys.executable, "-X", "faulthandler", "-c", text], creationflags=subprocess.CREATE_NEW_CONSOLE
         )
+
+    def play_windows_sound(kind: str) -> None:
+        try:
+            import winsound  # noqa:PLC0415
+
+            aliases = {
+                "success": "SystemAsterisk",
+                "failure": "SystemHand",
+                "crash": "SystemHand",
+            }
+            winsound.PlaySound(
+                aliases.get(kind, "SystemAsterisk"),
+                winsound.SND_ALIAS | winsound.SND_NODEFAULT,
+            )
+        except Exception:
+            pass
+
+    def send_windows_notification(notification_title: str, message: str) -> None:
+        import subprocess  # noqa:PLC0415
+        powershell_script = r"""
+$titleText = if ($args.Count -gt 0) { $args[0] } else { "Python script" }
+$messageText = if ($args.Count -gt 1) { $args[1] } else { "" }
+$appId = if ($args.Count -gt 2 -and $args[2]) { $args[2] } else { "PyAppTemplate" }
+[Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType=WindowsRuntime] | Out-Null
+[Windows.Data.Xml.Dom.XmlDocument, Windows.Data.Xml.Dom.XmlDocument, ContentType=WindowsRuntime] | Out-Null
+$titleXml = [System.Security.SecurityElement]::Escape($titleText)
+$messageXml = [System.Security.SecurityElement]::Escape($messageText)
+$xml = @"
+<toast>
+  <visual>
+    <binding template="ToastGeneric">
+      <text>$titleXml</text>
+      <text>$messageXml</text>
+    </binding>
+  </visual>
+  <audio silent="true"/>
+</toast>
+"@
+$doc = [Windows.Data.Xml.Dom.XmlDocument]::new()
+$doc.LoadXml($xml)
+$toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
+[Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier($appId).Show($toast)
+"""
+        try:
+            subprocess.Popen(  # noqa:S603
+                [
+                    "powershell.exe",
+                    "-NoProfile",
+                    "-ExecutionPolicy",
+                    "Bypass",
+                    "-Command",
+                    powershell_script,
+                    notification_title,
+                    message,
+                    app_id,
+                ],
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+            )
+        except Exception:
+            pass
+
+    def run_completion_alerts(kind: str, exit_code) -> None:
+        play_sound_by_kind = {
+            "success": play_sound_on_success,
+            "failure": play_sound_on_failure,
+            "crash": play_sound_on_python_interpreter_crash,
+        }
+        notification_by_kind = {
+            "success": send_Windows_notification_on_success,
+            "failure": send_Windows_notification_on_failure,
+            "crash": send_Windows_notification_on_python_interpreter_crash,
+        }
+        messages = {
+            "success": "Script finished successfully.",
+            "failure": f"Script exited with code {exit_code}.",
+            "crash": f"Python process crashed with code {exit_code}.",
+        }
+
+        if notification_by_kind.get(kind, False):
+            send_windows_notification(f"{title}: {kind.title()}", messages.get(kind, f"Script ended with {exit_code}."))
+        if play_sound_by_kind.get(kind, False):
+            play_windows_sound(kind)
 
     if script_has_terminal:
         from ctypes import wintypes
@@ -302,7 +393,7 @@ try:
                     return 0
                 process_id = wintypes.DWORD()
                 user32.GetWindowThreadProcessId(hwnd, ctypes.byref(process_id))
-                return int(process_id.value)
+                return int(process_id.value)  # type:ignore
 
             def get_process_image_path(process_id: int) -> str:
                 if process_id == 0:
@@ -387,11 +478,10 @@ try:
 
             def set_terminal_window_app_id(candidate_hwnds: list[int], app_id: str, print_errors: bool = False) -> int:
                 """Try to set System.AppUserModel.ID on the terminal window itself."""
+                import uuid  # noqa:PLC0415
 
                 if app_id == "":
                     return 0
-
-                import uuid
 
                 HRESULT = ctypes.c_long
                 VT_LPWSTR = 31
@@ -614,10 +704,10 @@ try:
 
     if log_path != "":
         import threading
-        from datetime import datetime
+        from datetime import datetime, timezone
 
         def prepare_log_path(path: str) -> str:
-            path = datetime.now().strftime(path)
+            path = datetime.now(timezone.utc).strftime(path)
             folder = os.path.dirname(path)
             if folder:
                 os.makedirs(folder, exist_ok=True)
@@ -688,7 +778,7 @@ try:
             def _timestamp_prefix(self, fmt: str | None) -> str:
                 if not fmt:
                     return ""
-                return datetime.now().strftime(fmt)
+                return datetime.now(timezone.utc).strftime(fmt)
 
             def _print_supports_color(self) -> bool:
                 return bool(getattr(self.print_stream, "isatty", lambda: False)())
