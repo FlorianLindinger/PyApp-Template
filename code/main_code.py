@@ -1,9 +1,8 @@
 # ==============================
 
-from do_not_change.specific_scripts.startup_benchmark_marker import mark_startup_time
+from do_not_change.specific_scripts.startup_benchmark_marker import mark_startup_time  # noqa
 
 # ==============================
-
 import sys
 import time
 
@@ -38,7 +37,8 @@ while True:
         time.sleep(4)
         print(msg)
     elif msg in ["np", "numpy"]:
-        import numpy
+        import numpy  # noqa
+
         print("imported numpy")
 
     elif msg == "tv":
@@ -80,13 +80,11 @@ sys.exit()
 # ==============================
 
 
-
-
 # # # ==============================================================================
 # # # Add code at the bottom that runs with the start of the program.
 # # # ==============================================================================
 # # # Optional: Imports and converts user variables (e.g., name: value) in settings.yaml (access value via dictionary: s["name"]). Alternatively use settings.py directly.
-# # from settings import s # <-needs pyyaml package # noqa isort: skip type: ignore fmt: off
+# # from settings import s # <-needs pyyaml package
 # # # ==============================================================================
 
 # # import time
