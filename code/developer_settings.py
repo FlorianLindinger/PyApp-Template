@@ -21,7 +21,7 @@ print_timestamp_format: str | None = "%H:%M:%S | "
 # None for no timestamps (else see datetime.datetime.strftime usage: e.g. "%H:%M:%S | ")
 # -------------------------------------------------
 # If True, it will use a fancy Windows terminal emulator that has extra features and grouping in taskbar (see below). If False, it will use the regular Windows terminal but with a wrapper script to handle backend logic that has parts of the functionality of the fancy terminal.
-use_fancy_terminal = False
+use_fancy_terminal = True
 # -------------------------------------------------
 
 # =================================
@@ -47,7 +47,7 @@ close_on_python_interpreter_crash = False
 play_sound_on_python_interpreter_crash = True
 send_Windows_notification_on_python_interpreter_crash = True
 # -------------------------------------------------
-# Path of user settings file (file can be deleted)
+# Path of end-user settings file (file can be deleted)
 user_settings_path: str | None = "settings.py"  # set None to not use. Can also be not python file.
 # -------------------------------------------------
 # Decide what parts of vanilla full Python install you actually need (enabling all is ~90 MB, disabling all is ~47 MB):
@@ -81,12 +81,8 @@ use_faulthandler = True
 # ==========================
 
 # -------------------------------------------------
-log_path_rel_to_wdir: str | None = (
-    "log.txt"  # wdir is influenced by "start_in_shortcut_folder" setting. Can also be an absolute path
-)
-# -------------------------------------------------
-log_file_date_append_format: str | None = "_%Y_%m_%d"
-# None for no date added (else see datetime.datetime.strftime usage: e.g. "_%Y_%m_%d")
+log_path_rel_to_wdir: str | None = "log\log_%Y_%m_%d.txt" 
+# wdir is influenced by "start_in_shortcut_folder" setting. Can also be an absolute path and can accept datetime formatting (see datetime.datetime.strftime usage: e.g. "log_%Y_%m_%d.txt"). Set to None to disable logging to file.
 # -------------------------------------------------
 overwrite_log = True
 # -------------------------------------------------
