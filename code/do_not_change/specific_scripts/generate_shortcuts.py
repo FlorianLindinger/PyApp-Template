@@ -30,7 +30,7 @@ python_exe = sys.executable
 
 output_path = os.path.normpath(file_dir + "..\\..\\..") + "\\"
 
-launcher_terminal = os.path.normpath(file_dir + "..\\T.py")
+launcher_terminal = os.path.normpath(file_dir + "..\\W.py")
 launcher_emulator = os.path.normpath(file_dir + "..\\E.py")
 launcher_settings = os.path.normpath(file_dir + "..\\S.py")
 launcher_browser = os.path.normpath(file_dir + "..\\B.py")
@@ -250,9 +250,9 @@ def main():
         appid = appid[:7] + appid[-7:]
 
     # Shortcut: normal start
-    start_shortcut_name = getattr(developer_settings, "start_shortcut_name", "")
-    if start_shortcut_name not in [None, False, ""]:
-        out = output_path + sanitize_filename(start_shortcut_name) + ".lnk"
+    start_windows_terminal_shortcut_name = getattr(developer_settings, "start_windows_terminal_shortcut_name", "")
+    if start_windows_terminal_shortcut_name not in [None, False, ""]:
+        out = output_path + sanitize_filename(start_windows_terminal_shortcut_name) + ".lnk"
         make_lnk(out, launcher_terminal_icon_path, launcher_terminal, args=appid, appid=appid, description="WIP")
 
     # Shortcut: start in terminal emulator
@@ -290,7 +290,7 @@ def main():
         make_lnk(
             out,
             launcher_no_terminl_icon_path,
-            launcher_no_terminl_py,
+            launcher_no_terminal,
             args=appid,
             appid=appid
             + "W",  # add "W" for windowless to allow both launchers to pin to taskbar because different app-id (for same shortcut target)
