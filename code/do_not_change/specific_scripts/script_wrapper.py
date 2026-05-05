@@ -23,32 +23,37 @@ try:
     # ==================
     # handle args
 
+    def arg_to_bool(index: int, default: bool = False) -> bool:
+        if len(sys.argv) <= index:
+            return default
+        return sys.argv[index].strip().lower() in {"1", "true", "yes", "on"}
+
     script_path = sys.argv[1]
 
     title = sys.argv[2]
     icon_path = sys.argv[3]
     app_id = sys.argv[4]
-    wdir_is_script_dir = sys.argv[5] == "1"
-    close_on_python_interpreter_crash = sys.argv[6] == "1"
-    close_on_failure = sys.argv[7] == "1"
-    close_on_success = sys.argv[8] == "1"
+    wdir_is_script_dir = arg_to_bool(5)
+    close_on_python_interpreter_crash = arg_to_bool(6)
+    close_on_failure = arg_to_bool(7)
+    close_on_success = arg_to_bool(8)
     print_timestamp_format = sys.argv[9]
     log_path = sys.argv[10]
     log_timestamp_format = sys.argv[11]
-    overwrite_log = sys.argv[12] == "1"
+    overwrite_log = arg_to_bool(12)
     script_after_interpreter_crash_path = sys.argv[13]
     input_prepend = sys.argv[14]
     process_id_file_path = sys.argv[15]
-    play_sound_on_success = sys.argv[16]  == "1"
-    send_Windows_notification_on_success = sys.argv[17] == "1"
-    play_sound_on_failure = sys.argv[18] == "1"
-    send_Windows_notification_on_failure = sys.argv[19] == "1"
-    play_sound_on_python_interpreter_crash = sys.argv[20]  == "1"
-    send_Windows_notification_on_python_interpreter_crash = sys.argv[21]  == "1"
+    play_sound_on_success = arg_to_bool(16)
+    send_Windows_notification_on_success = arg_to_bool(17)
+    play_sound_on_failure = arg_to_bool(18)
+    send_Windows_notification_on_failure = arg_to_bool(19)
+    play_sound_on_python_interpreter_crash = arg_to_bool(20)
+    send_Windows_notification_on_python_interpreter_crash = arg_to_bool(21)
 
     terminal_colors = sys.argv[22]
-    script_has_terminal = sys.argv[23] == "1"
-    # script_has_terminal = "1" means that this window is run in a terminal and False that it is invisible and one needs to create a new terminal to print
+    script_has_terminal = arg_to_bool(23)
+    # script_has_terminal = true means that this window is run in a terminal and False that it is invisible and one needs to create a new terminal to print
 
     # ==================
 
@@ -124,7 +129,8 @@ try:
 
     def set_terminal_name(name: str) -> None:
         try:
-            os.system(f"title {name.replace('r\n', '').replace(r'\r', '')}")  # noqa:S605
+            clean_name = name.replace("\r\n", "").replace("\r", "")
+            os.system(f"title {clean_name}")  # noqa:S605
         except Exception:
             pass
 

@@ -158,13 +158,18 @@ try:
 
         app_id = sys.argv[1]
         launch_mode = sys.argv[2]
-        create_terminal = launch_mode == "1"  # inputs are 0 or 1
-        create_terminal_emulator = launch_mode == "terminal_emulator"
-        create_browser_terminal = launch_mode == "browser"
+        valid_launch_modes = ["terminal", "no_terminal", "terminal_emulator", "browser"]
+        if launch_mode not in valid_launch_modes:
+            raise ValueError(
+                f'[Error] Unknown launch_mode "{launch_mode}". Expected one of: {", ".join(valid_launch_modes)}'
+            )
 
         # it overrides use_uncompiled_terminal_emulator_and_run_it_in_global from developer_settings
         if len(sys.argv) > 3:  # any arg means True. Used for debug before compiling terminal emulator
             use_uncompiled_terminal_emulator_and_run_it_in_global = True
+
+        def bool_arg(value: bool) -> str:
+            return "true" if value else "false"
 
         # ======================
         # potentially auto search for required packages
@@ -204,7 +209,7 @@ try:
         # ======================
         # launch terminal
 
-        if create_terminal or create_terminal_emulator or create_browser_terminal:
+        if launch_mode != "no_terminal":
             effective_log_path = log_path if enable_log_for_terminal_start else ""
         else:
             effective_log_path = log_path if enable_log_for_no_terminal_start else ""
@@ -213,23 +218,23 @@ try:
             title,
             icon_path,
             app_id,
-            "1" if wdir_is_script_dir else "0",
-            "1" if close_on_python_interpreter_crash else "0",
-            "1" if close_on_failure else "0",
-            "1" if close_on_success else "0",
+            bool_arg(wdir_is_script_dir),
+            bool_arg(close_on_python_interpreter_crash),
+            bool_arg(close_on_failure),
+            bool_arg(close_on_success),
             print_timestamp_format,
             effective_log_path,
             log_timestamp_format,
-            "1" if overwrite_log else "0",
+            bool_arg(overwrite_log),
             script_after_interpreter_crash_path,
             input_prepend,
             process_id_file_path,
-            "1" if play_sound_on_success else "0",
-            "1" if send_Windows_notification_on_success else "0",
-            "1" if play_sound_on_failure else "0",
-            "1" if send_Windows_notification_on_failure else "0",
-            "1" if play_sound_on_python_interpreter_crash else "0",
-            "1" if send_Windows_notification_on_python_interpreter_crash else "0",
+            play_sound_on_success,
+            bool_arg(send_Windows_notification_on_success),
+            play_sound_on_failure,
+            bool_arg(send_Windows_notification_on_failure),
+            play_sound_on_python_interpreter_crash,
+            bool_arg(send_Windows_notification_on_python_interpreter_crash),
         ]
 
         if use_faulthandler == True:
@@ -237,7 +242,7 @@ try:
         else:
             extra_args = []
 
-        if create_browser_terminal == True:
+        if launch_mode == "browser":
             proc = subprocess.Popen(  # noqa:S603 #type:ignore
                 [
                     sys.executable,
@@ -250,7 +255,7 @@ try:
                 creationflags=subprocess.CREATE_NO_WINDOW,
             )
 
-        elif create_terminal_emulator == True:
+        elif launch_mode == "terminal_emulator":
             # run in terminal emulator
             import json
 
@@ -266,10 +271,10 @@ try:
                     ) from e
 
             args += [
-                "1" if terminal_needs_input else "0",
+                bool_arg(terminal_needs_input),
                 stylesheet_path,
                 dark_mode,
-                "1" if use_faulthandler else "0",
+                bool_arg(use_faulthandler),
                 button_settings_path,
             ]
 
@@ -289,10 +294,10 @@ try:
             # script_wrapper_path need additional args
             args += [
                 terminal_bg_color + terminal_text_color,  # type:ignore
-                "1" if create_terminal else "0",
+                bool_arg(launch_mode == "terminal"),
             ]
 
-            if create_terminal == True:  # run in terminal and don't wait
+            if launch_mode == "terminal":  # run in terminal and don't wait
                 proc = subprocess.Popen(  # noqa:S603 #type:ignore
                     [python_exe_for_script_path, *extra_args, script_wrapper_path, script_path, *args],
                     creationflags=subprocess.CREATE_NEW_CONSOLE,
@@ -309,7 +314,7 @@ try:
         if error_code is not None and proc.poll() != 0:
             print("=" * 20)
             print("[Error] Failed launching terminal-emulator/script-wrapper. Probably a syntax error in the script:")
-            if create_terminal_emulator == True:
+            if launch_mode == "terminal_emulator":
                 if use_uncompiled_terminal_emulator_and_run_it_in_global:
                     print(uncompiled_terminal_path)
                 else:

@@ -801,12 +801,12 @@ def main() -> None:
     title = sys.argv[3]
     icon_path = sys.argv[4]
     app_id = sys.argv[5]
-    wdir_is_script_dir = sys.argv[6] == "1"
-    close_on_failure = sys.argv[8] == "1"
-    close_on_success = sys.argv[9] == "1"
+    wdir_is_script_dir = arg_to_bool(6, True)
+    close_on_failure = arg_to_bool(8)
+    close_on_success = arg_to_bool(9, True)
     log_path = sys.argv[11]
     log_timestamp_format = sys.argv[12]
-    overwrite_log = sys.argv[13] == "1"
+    overwrite_log = arg_to_bool(13, True)
     process_id_file_path = sys.argv[16]
     play_sound_on_success = arg_to_bool(17)
     send_Windows_notification_on_success = arg_to_bool(18)
