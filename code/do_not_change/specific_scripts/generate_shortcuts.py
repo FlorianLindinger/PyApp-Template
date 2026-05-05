@@ -242,7 +242,8 @@ def make_lnk(output_path, icon_path, script_path, args=None, appid=None, descrip
 def main():
 
     # generate app-id
-    appid = sanitize_app_id(developer_settings.program_name)
+    program_name = developer_settings.program_name
+    appid = sanitize_app_id(program_name)
     # replace and shorten if too long which might cause path length limit problems (10 is arbitrary)
     if len(appid) > 15:
         appid.replace("-", "").replace(".", "")
@@ -253,7 +254,14 @@ def main():
     start_windows_terminal_shortcut_name = getattr(developer_settings, "start_windows_terminal_shortcut_name", "")
     if start_windows_terminal_shortcut_name not in [None, False, ""]:
         out = output_path + sanitize_filename(start_windows_terminal_shortcut_name) + ".lnk"
-        make_lnk(out, launcher_terminal_icon_path, launcher_terminal, args=appid, appid=appid, description="WIP")
+        make_lnk(
+            out,
+            launcher_terminal_icon_path,
+            launcher_terminal,
+            args=appid,
+            appid=appid,
+            description=f"Start {program_name} in Windows Terminal.",
+        )
 
     # Shortcut: start in terminal emulator
     start_terminal_emulator_shortcut_name = getattr(developer_settings, "start_terminal_emulator_shortcut_name", "")
@@ -266,7 +274,7 @@ def main():
             args=appid,
             appid=appid
             + "E",  # use a separate AppID so the terminal emulator can be pinned separately
-            description="WIP",
+            description=f"Start {program_name} in the bundled terminal emulator.",
         )
 
     # Shortcut: start in browser terminal
@@ -280,7 +288,7 @@ def main():
             args=appid,
             appid=appid
             + "B",  # use a separate AppID so the browser launcher can be pinned separately from terminal mode
-            description="WIP",
+            description=f"Start {program_name} with the browser terminal.",
         )
 
     # Shortcut: start without terminal
@@ -294,14 +302,14 @@ def main():
             args=appid,
             appid=appid
             + "W",  # add "W" for windowless to allow both launchers to pin to taskbar because different app-id (for same shortcut target)
-            description="WIP",
+            description=f"Start {program_name} without opening a terminal window.",
         )
 
     # Shortcut: stop program started by any generated launcher mode
     stop_shortcut_name = getattr(developer_settings, "stop_shortcut_name", "")
     if stop_shortcut_name not in ["", False, None]:
         out = output_path + sanitize_filename(stop_shortcut_name) + ".lnk"
-        make_lnk(out, launcher_stop_icon_path, launcher_stop, description="WIP")
+        make_lnk(out, launcher_stop_icon_path, launcher_stop, description=f"Stop running {program_name} processes.")
 
     # Shortcut: open settings
     user_settings_path = getattr(developer_settings, "user_settings_path", "")
@@ -314,7 +322,7 @@ def main():
             )
         else:
             out = output_path + sanitize_filename(settings_shortcut_name) + ".lnk"
-            make_lnk(out, launcher_settings_icon_path, launcher_settings, description="WIP")
+            make_lnk(out, launcher_settings_icon_path, launcher_settings, description=f"Open the {program_name} settings file.")
 
 
 if __name__ == "__main__":
