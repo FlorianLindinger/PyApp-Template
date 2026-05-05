@@ -2,10 +2,6 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
-fix play_sound_on_python_interpreter_crash not being handled in start _prtogrm adefautls?
-
-in measure start time: :: TODO: Dont requrie code in main_sciprt. test all 3 mode via shortcut always. add settings in batch
-
 optimize startup times: especially wrapper by setting incon and so on afterwards- problabsy need non stopping execution for that and paus eafterwards.
 
 how much do i really need to catch externally seomthing. is eems like windwos terminal anyway ycatches taht. mabye dont auto close soemhow and do wihtt pyrgon closing temrianl. what was reason there again?
@@ -32,11 +28,9 @@ clean git after commiting backend
 
 maybe a ship terminal option? and recreate if requested 
 
-test play sounds
+test play sounds and start time
 
 make it do ruff auto for git commits?
-
-rename T to W
 
 simplify logic flor in start_program. and fix it such that one can launc from there with flags? maybe it should offer help and five setrtings and maybe feuadflt windwos temrinal
 
@@ -63,8 +57,6 @@ make stuf in start_program to lazy import where it is only used in one spot and 
 update _README.txt
 
 addd pre commit hooks and actions. is there seomething like check wtih AI? ask for AI setup
-
-log_path_rel_to_wdir seeem to get wrongly parsed. SError: [WinError 123] Die Syntax für den Dateinamen, Verzeichnisnamen oder die Datenträgerbezeichnung ist falsch: 'C:\\Users\\Flo\\Documents\\Repositories\\PyApp Template\\code\\..\\logs\\log_2026_05_03C:'
 
 add option to start minimized in all modes
 

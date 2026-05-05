@@ -171,6 +171,22 @@ try:
         def bool_arg(value: bool) -> str:
             return "true" if value else "false"
 
+        def sound_arg(value: str | bool | None, default_wav: str) -> str:
+            if value in [None, False, ""]:
+                return ""
+            if value is True:
+                return default_wav
+
+            sound_path = str(value).strip()
+            if sound_path.lower() in {"", "0", "false", "no", "off", "none"}:
+                return ""
+            extension = os.path.splitext(sound_path)[1]
+            if not extension:
+                sound_path += ".wav"
+            elif extension.lower() != ".wav":
+                raise ValueError(f'[Error] Sound setting must be False, None, "", True, or a .wav file: "{sound_path}"')
+            return sound_path
+
         # ======================
         # potentially auto search for required packages
 
@@ -229,11 +245,11 @@ try:
             script_after_interpreter_crash_path,
             input_prepend,
             process_id_file_path,
-            play_sound_on_success,
+            sound_arg(play_sound_on_success, "notify.wav"),
             bool_arg(send_Windows_notification_on_success),
-            play_sound_on_failure,
+            sound_arg(play_sound_on_failure, "Windows Critical Stop.wav"),
             bool_arg(send_Windows_notification_on_failure),
-            play_sound_on_python_interpreter_crash,
+            sound_arg(play_sound_on_python_interpreter_crash, "Windows Critical Stop.wav"),
             bool_arg(send_Windows_notification_on_python_interpreter_crash),
         ]
 
