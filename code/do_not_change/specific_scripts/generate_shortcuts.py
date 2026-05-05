@@ -30,17 +30,19 @@ python_exe = sys.executable
 
 output_path = os.path.normpath(file_dir + "..\\..\\..") + "\\"
 
-launcher_py = os.path.normpath(file_dir + "..\\T.py")
-settings_py = os.path.normpath(file_dir + "..\\S.py")
-launcher_browser_py = os.path.normpath(file_dir + "..\\B.py")
-launcher_no_terminl_py = os.path.normpath(file_dir + "..\\N.py")
-stop_no_terminal_py = os.path.normpath(file_dir + "..\\Q.py")
+launcher_terminal = os.path.normpath(file_dir + "..\\T.py")
+launcher_emulator = os.path.normpath(file_dir + "..\\E.py")
+launcher_settings = os.path.normpath(file_dir + "..\\S.py")
+launcher_browser = os.path.normpath(file_dir + "..\\B.py")
+launcher_no_terminal = os.path.normpath(file_dir + "..\\N.py")
+launcher_stop = os.path.normpath(file_dir + "..\\Q.py")
 
-launcher_icon_path = os.path.normpath(file_dir + "..\\..\\icons\\icon.ico")
-settings_icon_path = os.path.normpath(file_dir + "..\\..\\icons\\settings.ico")
+launcher_terminal_icon_path = os.path.normpath(file_dir + "..\\..\\icons\\icon.ico")
+launcher_emulator_icon_path = os.path.normpath(file_dir + "..\\..\\icons\\icon.ico")
+launcher_settings_icon_path = os.path.normpath(file_dir + "..\\..\\icons\\settings.ico")
 launcher_browser_icon_path = os.path.normpath(file_dir + "..\\..\\icons\\icon.ico")
 launcher_no_terminl_icon_path = os.path.normpath(file_dir + "..\\..\\icons\\icon.ico")
-stop_no_terminal_icon_path = os.path.normpath(file_dir + "..\\..\\icons\\stop.ico")
+launcher_stop_icon_path = os.path.normpath(file_dir + "..\\..\\icons\\stop.ico")
 
 SHORTCUT_DELETE_TIMEOUT_SECONDS = 5.0
 SHORTCUT_CREATE_TIMEOUT_SECONDS = 5.0
@@ -251,7 +253,21 @@ def main():
     start_shortcut_name = getattr(developer_settings, "start_shortcut_name", "")
     if start_shortcut_name not in [None, False, ""]:
         out = output_path + sanitize_filename(start_shortcut_name) + ".lnk"
-        make_lnk(out, launcher_icon_path, launcher_py, args=appid, appid=appid, description="WIP")
+        make_lnk(out, launcher_terminal_icon_path, launcher_terminal, args=appid, appid=appid, description="WIP")
+
+    # Shortcut: start in terminal emulator
+    start_terminal_emulator_shortcut_name = getattr(developer_settings, "start_terminal_emulator_shortcut_name", "")
+    if start_terminal_emulator_shortcut_name not in [None, False, ""]:
+        out = output_path + sanitize_filename(start_terminal_emulator_shortcut_name) + ".lnk"
+        make_lnk(
+            out,
+            launcher_emulator_icon_path,
+            launcher_emulator,
+            args=appid,
+            appid=appid
+            + "E",  # use a separate AppID so the terminal emulator can be pinned separately
+            description="WIP",
+        )
 
     # Shortcut: start in browser terminal
     start_browser_shortcut_name = getattr(developer_settings, "start_browser_shortcut_name", "")
@@ -260,7 +276,7 @@ def main():
         make_lnk(
             out,
             launcher_browser_icon_path,
-            launcher_browser_py,
+            launcher_browser,
             args=appid,
             appid=appid
             + "B",  # use a separate AppID so the browser launcher can be pinned separately from terminal mode
@@ -285,7 +301,7 @@ def main():
     stop_shortcut_name = getattr(developer_settings, "stop_shortcut_name", "")
     if stop_shortcut_name not in ["", False, None]:
         out = output_path + sanitize_filename(stop_shortcut_name) + ".lnk"
-        make_lnk(out, stop_no_terminal_icon_path, stop_no_terminal_py, description="WIP")
+        make_lnk(out, launcher_stop_icon_path, launcher_stop, description="WIP")
 
     # Shortcut: open settings
     user_settings_path = getattr(developer_settings, "user_settings_path", "")
@@ -298,7 +314,7 @@ def main():
             )
         else:
             out = output_path + sanitize_filename(settings_shortcut_name) + ".lnk"
-            make_lnk(out, settings_icon_path, settings_py, description="WIP")
+            make_lnk(out, launcher_settings_icon_path, launcher_settings, description="WIP")
 
 
 if __name__ == "__main__":
