@@ -26,3 +26,4 @@ winrt-Windows.Storage==3.2.1
 winrt-Windows.Storage.Streams==3.2.1
 winrt-Windows.UI.Notifications==3.2.1
 yarg==0.1.10
+pywinpty==3.0.3
