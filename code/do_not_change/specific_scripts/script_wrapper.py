@@ -28,6 +28,14 @@ try:
             return default
         return sys.argv[index].strip().lower() in {"1", "true", "yes", "on"}
 
+    def arg_to_wav_path(index: int) -> str:
+        if len(sys.argv) <= index:
+            return ""
+        wav_path = sys.argv[index].strip()
+        if wav_path != "" and os.path.splitext(wav_path)[1].lower() != ".wav":
+            raise ValueError(f'[Error] Sound argument must be empty or a .wav file: "{wav_path}"')
+        return wav_path
+
     script_path = sys.argv[1]
 
     title = sys.argv[2]
@@ -44,11 +52,11 @@ try:
     script_after_interpreter_crash_path = sys.argv[13]
     input_prepend = sys.argv[14]
     process_id_file_path = sys.argv[15]
-    play_sound_on_success = arg_to_bool(16)
+    play_sound_on_success = arg_to_wav_path(16)
     send_Windows_notification_on_success = arg_to_bool(17)
-    play_sound_on_failure = arg_to_bool(18)
+    play_sound_on_failure = arg_to_wav_path(18)
     send_Windows_notification_on_failure = arg_to_bool(19)
-    play_sound_on_python_interpreter_crash = arg_to_bool(20)
+    play_sound_on_python_interpreter_crash = arg_to_wav_path(20)
     send_Windows_notification_on_python_interpreter_crash = arg_to_bool(21)
 
     terminal_colors = sys.argv[22]
@@ -142,18 +150,16 @@ try:
             [sys.executable, "-X", "faulthandler", "-c", text], creationflags=subprocess.CREATE_NEW_CONSOLE
         )
 
-    def play_windows_sound(kind: str) -> None:
+    def play_windows_sound(wav_path: str) -> None:
         try:
-            import winsound  # noqa:PLC0415
+            import winsound
 
-            aliases = {
-                "success": "SystemAsterisk",
-                "failure": "SystemHand",
-                "crash": "SystemHand",
-            }
+            sound = wav_path
+            if not os.path.isabs(sound):
+                sound = os.path.join(r"C:\Windows\Media", sound)
             winsound.PlaySound(
-                aliases.get(kind, "SystemAsterisk"),
-                winsound.SND_ALIAS | winsound.SND_NODEFAULT,
+                sound,
+                winsound.SND_FILENAME | winsound.SND_NODEFAULT,
             )
         except Exception:
             pass
@@ -224,8 +230,9 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
 
         if notification_by_kind.get(kind, False):
             send_windows_notification(f"{title}: {kind.title()}", messages.get(kind, f"Script ended with {exit_code}."))
-        if play_sound_by_kind.get(kind, False):
-            play_windows_sound(kind)
+        sound_setting = play_sound_by_kind.get(kind)
+        if sound_setting:
+            play_windows_sound(sound_setting)
 
     if script_has_terminal:
         from ctypes import wintypes
