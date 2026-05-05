@@ -2,6 +2,16 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+add shortcut to log? 
+
+
+setting to make old terminal closing when launchging new. in case it is important that only one eixst. or might as well setting to stop lainch if olöd exist and somehow chekc that pid exists
+prompt to close old opened
+
+ auto open log on interpreter crash and mention that with link in newly opened tjhing?
+
+is use_global_python used everywhere and als ohandles iof modeule not present?
+
 
 input print echo dioes not timestamp
 
@@ -580,35 +590,12 @@ compare what stuff in archive needs to be added to utilitites repo
 
 add to shortctu descripotion soemtinh like launchers name.py via embedded python P.exe
 
-open setting in vscode by defualt? if available
-
 add vscode settigns to pyproject.toml?
-
 update pyproject.toml but not enable the D
-
-make python versions of batches for python/venv install
-
-fidx id_of_currently_running_hidden_program not disappierung and only pappreing for hiddne
-fix id_of_currently_running_hidden_program not having .pid
 
 is there a good way to disable syncing with setting in dev settings to not sync pillow? fractured framework template tho in production veriosn. but prodcution i guess is fair enough. Maybe only install pillow when needed-> yes. or ask AI to make minimal own version by copying all needed parts->yes, also in utilities repo
 
-install pip for first installs:
-"""
-[Info] Installing default packages...
-
-[notice] A new release of pip is available: 25.3 -> 26.0.1
-[notice] To update, run: C:\Users\Flo\Documents\Repositories\PyApp Template\code\py_env\virt_env\Scripts\python.exe -m pip install --upgrade pip
-"""
-
-move general_utilties stuff into utilities repo
-
-???:make double click thing in root also into python
-
-check if embedded python works for multiple app for taskbar adding
-
 chekc what functions to copy to fun_flo in terminal scriopt
-
 
 test if still portable
 
@@ -628,7 +615,6 @@ add prints to install_packages_needed_in_python_files.bat
 
 are there ways to make embeded python more trusted so it does not prompt for first time?
 
-add shortcut to log? 
 
 add log mode to only append. What is limit here????
 
@@ -684,8 +670,6 @@ Mention that paths have to be relative to work as portable. On other hand it wil
 checks related
 ===================================
 
-need close of setting lnk? check
-
 does it accept and warn if log is not accessible?
 
 test if it works for 3.6 and update min in github text
@@ -737,15 +721,6 @@ test if error of batch forward for log
 check if existance checks needed. ask AI to add existnace chekc and handling 
 
 ===================================
-settings ideas
-===================================
-
-setting to make old terminal closing when launchging new. in case it is important that only one eixst. or might as well setting to stop lainch if olöd exist and somehow chekc that pid exists
-prompt to close old opened
-
- auto open log on interpreter crash and mention that with link in newly opened tjhing?
-
-===================================
 new script related & ideas related
 ===================================
 
@@ -753,7 +728,7 @@ ask AI oif logging package useful here
 
 git does not exist for donwload in git?->create batch that create git for devs?
 
-Maybe add 4 normal launchers that then don't need recreation for offline sharing. Can I fix icon for that?
+Maybe add 4 normal launchers that then don't need recreation for offline sharing. Can I fix icon for that? maybe have genrally local launchger sitting in code?
 
 asci art only for initial run? maybe shortcut gen? or whenenve it has to reset the venv? somehow only for first time. maybe via file. maybe jsut also add setting in dev_setting to print alwys
 add asci character previcew of name for every batch that is not for normal start after setup. add space for unknow character? or also add äöü? add - and _ and numbers. maybe full printable ascii chars
