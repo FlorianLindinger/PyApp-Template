@@ -1,3 +1,5 @@
+::This script likely requires "Build Tools for Visual Studio 2022" to be installed
+
 @echo off
 setlocal enableextensions enabledelayedexpansion
 
@@ -37,7 +39,7 @@ if not exist "%VENV_DIR%" (
     exit /b 1
   )
   echo Installing build dependencies...
-  call "%VENV_DIR%\Scripts\python.exe" -m pip install ^
+  call "%VENV_DIR%\Scripts\python.exe" -m pip --disable-pip-version-check install ^
     nuitka ^
     PySide6-Essentials
   if errorlevel 1 (
@@ -63,6 +65,23 @@ if exist "DO_NOT_SYNC\build" (
     rmdir /s /q "DO_NOT_SYNC\build"
 )
 
+:: check for compiler
+set "VCVARS=%ProgramFiles%\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvars64.bat"
+if not exist "%VCVARS%" (
+  echo Build Tools for Visual Studio 2022 not found.
+  echo Aborting. Press any key to exit.
+  pause > nul
+  exit /b 1
+)
+call "%VCVARS%"
+where cl >nul 2>nul
+if errorlevel 1 (
+  echo MSVC compiler not available.
+  echo Aborting. Press any key to exit.
+  pause > nul
+  exit /b 1
+)
+
 REM ============================
 REM  Compile (MINIMAL SIZE + SPEED)
 REM  - one-folder (standalone), NOT onefile
@@ -77,6 +96,8 @@ set "CMD=!CMD! --output-dir=DO_NOT_SYNC\build"
 set "CMD=!CMD! --output-filename=%EXE_NAME%"
 set "CMD=!CMD! --enable-plugin=pyside6"
 set "CMD=!CMD! --windows-console-mode=%WINDOWS_CONSOLE_MODE%"
+set "CMD=!CMD! --assume-yes-for-downloads"
+
 
 if not "%ICON%"=="" ( set "CMD=!CMD! --windows-icon-from-ico=%ICON%" )
 
@@ -121,7 +142,9 @@ echo Build started at !STR_START!
 echo.
 call !CMD!
 if errorlevel 1 (
-  echo Build failed. Press any key to exit.
+  echo Build failed. Press any key to exit. If it complains about missing modules, try to delete DO_NOT_SYNC folder in: 
+  echo "%CD%"
+  echo Aborting. Press any key to exit.
   pause > nul
   exit /b 1
 )
