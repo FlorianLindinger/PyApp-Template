@@ -228,7 +228,9 @@ echo.
 echo Compilation Duration: !DURATION!
 echo.
 
-echo Press any key to exit.
-pause > nul
+if /i not "%COMPILE_TERMINAL_NO_PAUSE%"=="yes" (
+  echo Press any key to exit.
+  pause > nul
+)
 
 endlocal
