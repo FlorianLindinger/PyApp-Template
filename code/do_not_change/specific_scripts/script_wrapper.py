@@ -731,6 +731,14 @@ try:
 
                 return len(data)
 
+            def complete_input_line(self, text: str) -> None:
+                with self._lock:
+                    if self.log_stream is not None and not self._at_line_start:
+                        self.log_stream.write(f"{text}\n")
+                    self._at_line_start = True
+                    if self.auto_flush:
+                        self.flush()
+
             def flush(self) -> None:
                 with self._lock:
                     if hasattr(self.print_stream, "flush"):
@@ -858,10 +866,13 @@ def get_terminal_name():
 
         # run in the current python process and wait for finish
         original_input = builtins.input
-        if input_prepend != "":
+        if input_prepend != "" or print_timestamp_format != "":
 
             def input_with_prepend(prompt=""):
-                return original_input(f"{prompt}{input_prepend}")
+                text = original_input(f"{prompt}{input_prepend}")
+                if hasattr(sys.stdout, "complete_input_line"):
+                    sys.stdout.complete_input_line(text)
+                return text
 
             builtins.input = input_with_prepend
         try:
