@@ -3,7 +3,7 @@
 # ============================
 
 # -------------------------------------------------
-# Name of the this program, the terminal, and shortcuts (white space allowed):
+# Name of this program:
 program_name = "PyApp-Template"
 # -------------------------------------------------
 # Python version. Can be in format "x"/"x.y"/"x.y.z". Finds latest (msi-install-available) Python version compatible with this setting. Empty string "" gives latest (not recommended if you want to make sure the code works always the same):
@@ -20,10 +20,6 @@ start_in_shortcut_folder = False
 print_timestamp_format: str | None = "%H:%M:%S | "
 # None for no timestamps (else see datetime.datetime.strftime usage: e.g. "%H:%M:%S | ")
 # -------------------------------------------------
-# If True, it will use a fancy Windows terminal emulator that has extra features and grouping in taskbar (see below). If False, it will use the regular Windows terminal but with a wrapper script to handle backend logic that has parts of the functionality of the fancy terminal.
-use_fancy_terminal = True
-# -------------------------------------------------
-
 # =================================
 # ==== less important settings ====
 # =================================
@@ -31,7 +27,8 @@ use_fancy_terminal = True
 # -------------------------------------------------
 # Names of generated shortcuts:
 # (set to None to disable generation of specific shortcut)
-start_shortcut_name: str | None = f"{program_name}"  # start program with terminal
+start_windows_terminal_shortcut_name: str | None = f"{program_name}"  # start program with terminal
+start_terminal_emulator_shortcut_name: str | None = f"{program_name} (Terminal Emulator)"  # start program with terminal emulator
 start_browser_shortcut_name: str | None = f"{program_name} (Browser)"  # start program in default browser
 start_no_terminal_shortcut_name: str | None = f"{program_name} (no Terminal)"  # start program without terminal
 settings_shortcut_name: str | None = f"{program_name} - Settings"  # open settings file
@@ -44,7 +41,7 @@ send_Windows_notification_on_success = True
 # ----
 # failure = normal failure exit codes (i.e. exit_code != 0), usually via "sys.exit(exit_code)" or raised error.
 close_on_failure = False
-play_sound_on_failure: str | bool  = False # False for no sound, True for default sound ("Windows Critical Stop.wav") or a path to a wav file relative to C:\Windows\Media\.
+play_sound_on_failure: str | bool  = True # False for no sound, True for default sound ("Windows Critical Stop.wav") or a path to a wav file relative to C:\Windows\Media\.
 send_Windows_notification_on_failure = True
 # ----
 # crash of python interpreter is usually caused by code causing Windows to kill Python and won't be caught by try/except.
@@ -91,7 +88,7 @@ log_timestamp_format = "%H:%M:%S | "
 # ====================================
 
 # --------------------------------------------------
-# settings that apply if use_fancy_terminal = False:
+# settings that apply to the Windows Terminal shortcut:
 # --------------------------------------------------
 
 # Terminal colors (set None for Windows default):
@@ -102,7 +99,7 @@ terminal_text_color: str | None = "F"
 # -------------------------------------------------
 
 # -------------------------------------------------
-# settings that apply if use_fancy_terminal = True:
+# settings that apply to the terminal emulator shortcut:
 # -------------------------------------------------
 
 terminal_needs_input = True
