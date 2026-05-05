@@ -4,6 +4,12 @@ test all settings for all modes
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+remopve temrinal appearing for temrinal emulator
+
+fix all starters.
+
+add print timestmp to browser all thats missing
+
 mname if backend_common_code and launcher_common_code,
 backend_common_variables
 
