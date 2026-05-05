@@ -122,6 +122,12 @@ import site""")
         check=True,
     )
 
+    # Console entry points are generated into python_packages\bin by pip --target.
+    # The embedded runtime imports packages directly and does not use those scripts.
+    generated_bin_folder = os.path.join(packages_folder, "bin")
+    if os.path.isdir(generated_bin_folder):
+        shutil.rmtree(generated_bin_folder)
+
     # # generate requirements.txt
     # with open(backend_packages_requirements, "w", encoding="utf-8") as f:
     #     subprocess.run(  # noqa:S603
