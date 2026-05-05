@@ -31,8 +31,11 @@ Deleted to safe space:
 Changed python312._pth to:
 	python312.zip
 	.
-	..\python_packages
 	..\..
+	..\python_packages
+	..\python_packages\win32
+	..\python_packages\win32\lib
+	..\python_packages\Pythonwin
 
 	# Uncomment to run site.main() automatically
 	# import site
