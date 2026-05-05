@@ -6,3 +6,7 @@ tmp.txt
 DO_NOT_SYNC
 # python cache folders:
 __pycache__
+# package installation records:
+python_packages/*/RECORD
+# generated console entry points from pip --target:
+python_packages/bin/
