@@ -53,6 +53,9 @@ try:
         input_prepend,
         log_path_rel_to_wdir,
         log_timestamp_format,
+        open_log_file_after_failure,
+        open_log_file_after_python_interpreter_crash,
+        open_log_file_after_success,
         overwrite_log,
         play_sound_on_failure,
         play_sound_on_python_interpreter_crash,
@@ -65,6 +68,7 @@ try:
         send_Windows_notification_on_python_interpreter_crash,
         send_Windows_notification_on_success,
         start_in_shortcut_folder,
+        start_minimized,
         stylesheet_path,
         terminal_bg_color,
         terminal_needs_input,
@@ -298,6 +302,10 @@ try:
             bool_arg(send_Windows_notification_on_failure),
             sound_arg(play_sound_on_python_interpreter_crash, "Windows Critical Stop.wav"),
             bool_arg(send_Windows_notification_on_python_interpreter_crash),
+            bool_arg(open_log_file_after_success),
+            bool_arg(open_log_file_after_failure),
+            bool_arg(open_log_file_after_python_interpreter_crash),
+            bool_arg(start_minimized),
         ]
 
         if use_faulthandler == True:

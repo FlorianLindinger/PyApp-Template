@@ -1611,7 +1611,7 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
         # process args
         if len(sys.argv) < 2:
             raise ValueError(
-                "terminal_emulator.py needs at least the Python script path as argument. Usage: terminal_emulator.py script_path [python_exe] [title] [icon_path] [app_id] [wdir_is_script_dir] [close_on_crash] [close_on_failure] [close_on_success] [print_timestamp_format] [log_path] [log_timestamp_format] [overwrite_log] [script_after_interpreter_crash_path] [input_prepend] [process_id_file_path] [play_sound_on_success] [send_Windows_notification_on_success] [play_sound_on_failure] [send_Windows_notification_on_failure] [play_sound_on_python_interpreter_crash] [send_Windows_notification_on_python_interpreter_crash] [terminal_needs_input] [stylesheet_path] [dark_mode] [use_faulthandler] [button_settings] [open_log_file_after_success] [open_log_file_after_failure] [open_log_file_after_python_interpreter_crash] [start_minimized]"
+                "terminal_emulator.py needs at least the Python script path as argument. Usage: terminal_emulator.py script_path [python_exe] [title] [icon_path] [app_id] [wdir_is_script_dir] [close_on_crash] [close_on_failure] [close_on_success] [print_timestamp_format] [log_path] [log_timestamp_format] [overwrite_log] [script_after_interpreter_crash_path] [input_prepend] [process_id_file_path] [play_sound_on_success] [send_Windows_notification_on_success] [play_sound_on_failure] [send_Windows_notification_on_failure] [play_sound_on_python_interpreter_crash] [send_Windows_notification_on_python_interpreter_crash] [open_log_file_after_success] [open_log_file_after_failure] [open_log_file_after_python_interpreter_crash] [start_minimized] [terminal_needs_input] [stylesheet_path] [dark_mode] [use_faulthandler] [button_settings]"
             )
 
         script_path = sys.argv[1]
@@ -1639,16 +1639,16 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
         send_Windows_notification_on_failure = arg_to_bool(20, False)
         play_sound_on_python_interpreter_crash = arg_to_wav_path(21)
         send_Windows_notification_on_python_interpreter_crash = arg_to_bool(22, False)
-        open_log_file_after_success = arg_to_bool(28, False)
-        open_log_file_after_failure = arg_to_bool(29, False)
-        open_log_file_after_python_interpreter_crash = arg_to_bool(30, False)
-        start_minimized = arg_to_bool(31, False)
+        open_log_file_after_success = arg_to_bool(23, False)
+        open_log_file_after_failure = arg_to_bool(24, False)
+        open_log_file_after_python_interpreter_crash = arg_to_bool(25, False)
+        start_minimized = arg_to_bool(26, False)
 
-        terminal_needs_input = arg_to_bool(23, True)
-        stylesheet_path = arg_to_str(24, "")
-        dark_mode = arg_to_str(25, "1")  # no bool because "auto" could also be option that should not be turned to True
-        use_faulthandler = arg_to_bool(26, True)
-        button_settings_arg = arg_to_str(27, "")
+        terminal_needs_input = arg_to_bool(27, True)
+        stylesheet_path = arg_to_str(28, "")
+        dark_mode = arg_to_str(29, "1")  # no bool because "auto" could also be option that should not be turned to True
+        use_faulthandler = arg_to_bool(30, True)
+        button_settings_arg = arg_to_str(31, "")
         button_settings = (
             normalize_button_settings(json.loads(button_settings_arg)) if button_settings_arg != "" else None
         )
