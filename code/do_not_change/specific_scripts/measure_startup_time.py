@@ -1,14 +1,10 @@
-from __future__ import annotations
-
 import argparse
 import ctypes
 import json
 import os
-import shlex
 import shutil
 import statistics
 import subprocess
-import sys
 import time
 from pathlib import Path
 
@@ -28,7 +24,7 @@ VERSION_SCRIPT = (
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Measure PyApp startup time to the marker in the main script.")
-    parser.add_argument("--runs", type=int, default=5, help="Runs per startup mode. Default: 5.")
+    parser.add_argument("--runs", type=int, default=10, help="Runs per startup mode. Default: 10.")
     parser.add_argument("--timeout", type=float, default=20.0, help="Seconds to wait for the startup marker.")
     parser.add_argument("--skip-launcher", action="store_true", help="Skip the PyApp-Template.lnk measurement.")
     parser.add_argument("--skip-global", action="store_true", help="Skip direct global 'py' measurement.")
@@ -61,8 +57,6 @@ def python_command(python_path: Path | str, args: list[str]) -> list[str]:
 def split_command_line_arguments(arguments: str) -> list[str]:
     if arguments.strip() == "":
         return []
-    if os.name != "nt":
-        return shlex.split(arguments)
 
     command_line_to_argv = ctypes.windll.shell32.CommandLineToArgvW
     command_line_to_argv.argtypes = [ctypes.c_wchar_p, ctypes.POINTER(ctypes.c_int)]
@@ -100,7 +94,7 @@ def resolve_shortcut(shortcut_path: Path) -> tuple[list[str], Path]:
     )
     env = os.environ.copy()
     env["PYAPP_SHORTCUT_TO_RESOLVE"] = str(shortcut_path)
-    result = subprocess.run(
+    result = subprocess.run(  # noqa:S603
         ["powershell", "-NoProfile", "-Command", command],
         cwd=REPO_DIR,
         env=env,
@@ -127,7 +121,7 @@ def resolve_shortcut(shortcut_path: Path) -> tuple[list[str], Path]:
 
 def describe_python(python_path: Path | str) -> str:
     try:
-        result = subprocess.run(
+        result = subprocess.run( #noqa:S603
             python_command(python_path, ["-c", VERSION_SCRIPT]),
             cwd=CODE_DIR,
             stdout=subprocess.PIPE,
@@ -159,7 +153,7 @@ def kill_process_tree(pid: int) -> None:
     if pid <= 0:
         return
     if os.name == "nt":
-        subprocess.run(
+        subprocess.run( #noqa:S603
             ["taskkill", "/PID", str(pid), "/T", "/F"],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
@@ -201,7 +195,7 @@ def wait_for_marker(
     raise TimeoutError(f'No startup marker was written to "{marker_path}" within {timeout:.1f}s.')
 
 
-def run_one(label: str, command: list[str], marker_path: Path, timeout: float) -> float:
+def run_one(command: list[str], marker_path: Path, timeout: float) -> float:
     if marker_path.exists():
         marker_path.unlink()
 
@@ -212,7 +206,7 @@ def run_one(label: str, command: list[str], marker_path: Path, timeout: float) -
     env["PYTHONPATH"] = str(CODE_DIR) + os.pathsep + env.get("PYTHONPATH", "")
 
     creationflags = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
-    proc = subprocess.Popen(
+    proc = subprocess.Popen( #noqa:S603
         command,
         cwd=CODE_DIR,
         env=env,
@@ -234,8 +228,6 @@ def run_one(label: str, command: list[str], marker_path: Path, timeout: float) -
 
 
 def run_one_shortcut(
-    label: str,
-    shortcut_path: Path,
     shortcut_launch_command: list[str],
     shortcut_cwd: Path,
     marker_path: Path,
@@ -251,7 +243,7 @@ def run_one_shortcut(
     env["PYTHONPATH"] = str(CODE_DIR) + os.pathsep + env.get("PYTHONPATH", "")
 
     creationflags = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
-    starter_proc = subprocess.Popen(
+    starter_proc = subprocess.Popen( #noqa:S603
         shortcut_launch_command,
         cwd=shortcut_cwd,
         env=env,
@@ -277,7 +269,7 @@ def measure(label: str, command: list[str], runs: int, timeout: float) -> list[f
     print(f"\n{label}")
     for run_index in range(1, runs + 1):
         marker_path = WORK_DIR / f"startup_marker_{label.lower().replace(' ', '_')}_{run_index}.txt"
-        elapsed_ms = run_one(label, command, marker_path, timeout)
+        elapsed_ms = run_one(command, marker_path, timeout)
         results.append(elapsed_ms)
         print(f"  run {run_index}: {elapsed_ms:.1f} ms")
     return results
@@ -285,7 +277,6 @@ def measure(label: str, command: list[str], runs: int, timeout: float) -> list[f
 
 def measure_shortcut(
     label: str,
-    shortcut_path: Path,
     shortcut_launch_command: list[str],
     shortcut_cwd: Path,
     runs: int,
@@ -296,8 +287,6 @@ def measure_shortcut(
     for run_index in range(1, runs + 1):
         marker_path = WORK_DIR / f"startup_marker_{label.lower().replace(' ', '_')}_{run_index}.txt"
         elapsed_ms = run_one_shortcut(
-            label,
-            shortcut_path,
             shortcut_launch_command,
             shortcut_cwd,
             marker_path,
@@ -337,7 +326,7 @@ def main() -> int:
     if args.runs < 1:
         raise ValueError("--runs must be at least 1")
 
-    python_code_name = load_developer_setting("python_code_name", "main_code.py")
+    python_code_name= load_developer_setting("python_code_name", "main_code.py")
     target_script = CODE_DIR / python_code_name
     shortcut_path = Path(args.shortcut).expanduser()
     if not shortcut_path.is_absolute():
@@ -383,7 +372,6 @@ def main() -> int:
             assert shortcut_launch_command is not None
             results[shortcut_path.name] = measure_shortcut(
                 shortcut_path.name,
-                shortcut_path,
                 shortcut_launch_command,
                 shortcut_cwd,
                 args.runs,
