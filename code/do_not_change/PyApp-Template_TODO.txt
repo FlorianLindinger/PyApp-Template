@@ -2,6 +2,8 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+in measure start time: :: TODO: Dont requrie code in main_sciprt. test all 3 mode via shortcut always. add settings in batch
+
 how much do i really need to catch externally seomthing. is eems like windwos terminal anyway ycatches taht. mabye dont auto close soemhow and do wihtt pyrgon closing temrianl. what was reason there again?
 
 test startup time measruemtn
