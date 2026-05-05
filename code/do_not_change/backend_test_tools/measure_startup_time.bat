@@ -1,6 +1,3 @@
-
-
-
 @echo off
 setlocal
 
@@ -16,8 +13,8 @@ rem ==========================
 rem ==== benchmark settings ====
 rem ==========================
 
-set "RUNS=10"
-set "TIMEOUT_SECONDS=10"
+set "RUNS=5"
+set "TIMEOUT_SECONDS=5"
 
 rem 1 = measure, 0 = skip
 set "MEASURE_WINDOWS_TERMINAL_SHORTCUT=1"
