@@ -6,21 +6,18 @@ cd /d "%~dp0"
 
 set "python_exe=..\P\P.exe"
 set "shortcut_generator_script=generate_shortcuts.py"
+set "terminal_title=Generating Shortcuts"
 
 :: ===========================
 
+::change title
+title %terminal_title%
+
 :: install backend python if not already installed. This will also install pip and the packages
 if not exist "%python_exe%" (
+    :: error handling and exit is inside
     call "install_backend_python.bat"
 ) 
-
-:: abort if error
-if errorlevel 1 (
-    del "%python_exe%" > nul 2>&1
-    echo [Error] Backend Python installation failed. Aborting. Press any key to exit.
-    pause > nul
-    exit 1
-)
 
 :: generate shortcuts
 "%python_exe%" "%shortcut_generator_script%"

@@ -2,6 +2,8 @@
 setlocal
 cd /d "%~dp0"
 
+:: ===========================
+
 set "VERSION=3.12.10" @REM 3.12.11+ don't have a Windows embeddable zip available
 set "INSTALL_DIR=%cd%\..\P"
 set "ZIP=%INSTALL_DIR%\tmp.zip"
@@ -21,14 +23,12 @@ if not exist "%INSTALL_DIR%" mkdir "%INSTALL_DIR%"
 for %%I in ("%INSTALL_DIR%") do set "INSTALL_DIR_FULL=%%~fI"
 if /i "%INSTALL_DIR_FULL%"=="%cd%\" (
     echo Refusing to delete current directory.
-    pause
-    exit /b 1
+    goto :error_exit
 )
 if not "%INSTALL_DIR_FULL:~-2%"=="\P" (
     echo Refusing to delete unexpected install dir:
     echo %INSTALL_DIR_FULL%
-    pause
-    exit /b 1
+    goto :error_exit
 )
 if exist "%INSTALL_DIR_FULL%" (
     rmdir /s /q "%INSTALL_DIR_FULL%"
@@ -46,37 +46,19 @@ echo.
 curl -L --fail -o "%ZIP%" "%URL%"
 if errorlevel 1 (
     echo Download failed.
-    pause
-    exit /b 1
+    goto :error_exit
 )
+echo.
 
 :: Unzip the downloaded file to the installation directory. The -Force flag will overwrite existing files without prompting.
 powershell -NoProfile -ExecutionPolicy Bypass -Command "Expand-Archive -LiteralPath '%ZIP%' -DestinationPath '%INSTALL_DIR%' -Force"
 if errorlevel 1 (
     echo Extraction failed.
-    pause
-    exit /b 1
-)
-
-:: Install pip
-curl -L --fail -o "%INSTALL_DIR%\get-pip.py" https://bootstrap.pypa.io/get-pip.py
-if errorlevel 1 (
-    echo get-pip.py download failed.
-    pause
-    exit /b 1
-)
-
-:: Run the get-pip.py script using the installed Python interpreter to install pip.
-"%INSTALL_DIR%\python.exe" "%INSTALL_DIR%\get-pip.py" --no-warn-script-location
-if errorlevel 1 (
-    echo pip installation failed.
-    pause
-    exit /b 1
+    goto :error_exit
 )
 
 :: Cleanup temporary installer files
 if exist "%ZIP%" del "%ZIP%"
-if exist "%INSTALL_DIR%\get-pip.py" del "%INSTALL_DIR%\get-pip.py"
 
 :: rename python.exe to P.exe
 ren "%INSTALL_DIR%\python.exe" "P.exe"
@@ -85,8 +67,18 @@ ren "%INSTALL_DIR%\python.exe" "P.exe"
 "%INSTALL_DIR%\P.exe" "%cd%\finish_backend_installation.py"
 if errorlevel 1 (
     :: delete the python exe to indicate that installation needs to be retried
-    del "%INSTALL_DIR%\P.exe" > nul 2>&1
-    echo [Error] Backend Python installation failed during finalization step. Press any key to exit.
-    pause > nul
-    exit /b 1
+    echo Backend Python installation failed during finalization step.
+    goto :error_exit
 )
+
+:: normal exit
+exit /b 0
+
+:: ===========================
+
+:error_exit
+:: python_exe missing indicated that not installed -> delete
+del "%python_exe%" > nul 2>&1
+echo [Error] Backend Python installation failed. Aborting. Press any key to exit.
+pause > nul
+exit 1

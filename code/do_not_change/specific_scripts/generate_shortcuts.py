@@ -306,6 +306,8 @@ if __name__ == "__main__":
         main()
         print()
         print(f"Shortcut(s) created in: {output_path}")
+        print()
+        print("=============================")
         input("[Success] Press enter to exit")
         os.kill(os.getppid(), signal.SIGTERM)  # kill terminal launched by cmd
     except Exception as e:
