@@ -5,9 +5,9 @@ import sys
 try:
 
     def run_text_in_new_terminal_and_wait(text):
-        import subprocess  # noqa:PLC0415
-        import sys  # noqa
-
+        import subprocess
+        import sys
+        
         subprocess.run(  # noqa:S603
             [sys.executable, "-X", "faulthandler", "-c", text], creationflags=subprocess.CREATE_NEW_CONSOLE
         )
@@ -1326,7 +1326,7 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
             if msg.startswith("Terminal_window."):
                 rest = msg[len("Terminal_window.") :]
                 try:
-                    eval(f"self.{rest}") #noqa
+                    eval(f"self.{rest}")  # noqa
                 except Exception:
                     self.terminal_print(traceback.format_exc(), error=True)
 
@@ -1473,7 +1473,7 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
                 stream.flush()
 
     def prepare_log_path(path: str) -> str:
-        path = datetime.now().strftime(path)
+        path = datetime.now(tz=timezone.utc).strftime(path)
         folder = os.path.dirname(path)
         if folder:
             os.makedirs(folder, exist_ok=True)
@@ -1650,7 +1650,7 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
             if stylesheet_path != "":
                 sys.path.insert(0, os.path.dirname(stylesheet_path))
 
-                from terminal_stylesheet import (  # noqa
+                from terminal_stylesheet import (
                     ERROR_PRINT_BG,
                     ERROR_PRINT_COLOR,
                     INPUT_PRINT_BG,
