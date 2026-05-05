@@ -87,21 +87,19 @@ try:
         QWidgetAction,
     )
 
-    def play_windows_sound(kind: str) -> None:
+    def play_windows_sound(wav_path: str) -> None:
         if os.name != "nt":
             return
 
         try:
-            import winsound  # noqa:PLC0415
+            import winsound
 
-            aliases = {
-                "success": "SystemAsterisk",
-                "failure": "SystemHand",
-                "crash": "SystemHand",
-            }
+            sound = wav_path
+            if not os.path.isabs(sound):
+                sound = os.path.join(r"C:\Windows\Media", sound)
             winsound.PlaySound(
-                aliases.get(kind, "SystemAsterisk"),
-                winsound.SND_ALIAS | winsound.SND_ASYNC | winsound.SND_NODEFAULT,
+                sound,
+                winsound.SND_FILENAME | winsound.SND_ASYNC | winsound.SND_NODEFAULT,
             )
         except Exception:
             pass
@@ -330,11 +328,11 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
             close_on_crash: bool = False,
             close_on_failure: bool = False,
             close_on_success: bool = True,
-            play_sound_on_success: bool = False,
+            play_sound_on_success: str = "",
             send_Windows_notification_on_success: bool = False,
-            play_sound_on_failure: bool = False,
+            play_sound_on_failure: str = "",
             send_Windows_notification_on_failure: bool = False,
-            play_sound_on_python_interpreter_crash: bool = False,
+            play_sound_on_python_interpreter_crash: str = "",
             send_Windows_notification_on_python_interpreter_crash: bool = False,
             wdir_is_script_dir: bool = True,
             terminal_needs_input: bool = True,
@@ -391,6 +389,16 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
             self.close_on_crash = close_on_crash
             self.close_on_failure = close_on_failure
             self.close_on_success = close_on_success
+            self.play_sound_by_kind = {
+                "success": play_sound_on_success,
+                "failure": play_sound_on_failure,
+                "crash": play_sound_on_python_interpreter_crash,
+            }
+            self.notification_by_kind = {
+                "success": send_Windows_notification_on_success,
+                "failure": send_Windows_notification_on_failure,
+                "crash": send_Windows_notification_on_python_interpreter_crash,
+            }
             self.wdir_is_script_dir = wdir_is_script_dir
             self.terminal_needs_input = terminal_needs_input
             self.print_timestamp_format = print_timestamp_format
@@ -438,6 +446,7 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
             if title == "":
                 title = f"{os.path.basename(script_path)}"
             self.start_title = title
+            self.start_app_id = app_id
             self.set_title(title)
 
             self.start_width = width
@@ -1344,6 +1353,7 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
             if _exit_status == QProcess.ExitStatus.CrashExit:
                 crash_code = exit_code if exit_code != 0 else 1
                 self.terminal_print(f"\n\n[process crashed with code {crash_code}]", error=True)
+                self._run_completion_alerts("crash", crash_code)
                 self._set_completion_title("Crash")
                 self._set_input_enabled(False)
                 self.set_button_clickable_state("stop", False)
@@ -1356,12 +1366,30 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
             self.set_button_clickable_state("stop", False)
             if exit_code == 0:
                 self._set_completion_title("Success")
+                self._run_completion_alerts("success", exit_code)
                 if self.close_on_success:
                     QTimer.singleShot(0, lambda: self._close_automatically(0))
             else:
                 self._set_completion_title("Failure")
+                self._run_completion_alerts("failure", exit_code)
                 if self.close_on_failure:
                     QTimer.singleShot(0, lambda: self._close_automatically(exit_code))
+
+        def _run_completion_alerts(self, kind: str, exit_code: int) -> None:
+            messages = {
+                "success": "Script finished successfully.",
+                "failure": f"Script exited with code {exit_code}.",
+                "crash": f"Python process crashed with code {exit_code}.",
+            }
+            if self.notification_by_kind.get(kind, False):
+                send_windows_notification(
+                    f"{self.start_title}: {kind.title()}",
+                    messages.get(kind, f"Script ended with code {exit_code}."),
+                    self.start_app_id,
+                )
+            sound_setting = self.play_sound_by_kind.get(kind)
+            if sound_setting:
+                play_windows_sound(sound_setting)
 
         def _cleanup(self) -> None:
             if self._window_is_closing:
@@ -1470,6 +1498,14 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
             return default
         return sys.argv[index]
 
+    def arg_to_wav_path(index: int) -> str:
+        if len(sys.argv) <= index:
+            return ""
+        wav_path = sys.argv[index].strip()
+        if wav_path != "" and os.path.splitext(wav_path)[1].lower() != ".wav":
+            raise ValueError(f'[Error] Sound argument must be empty or a .wav file: "{wav_path}"')
+        return wav_path
+
     def remove_own_process_id_file_entries(path: str, process_id: int) -> None:
         try:
             with open(path, encoding="utf-8") as pid_file:
@@ -1523,7 +1559,7 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
         # process args
         if len(sys.argv) < 2:
             raise ValueError(
-                "terminal_emulator.py needs at least the Python script path as argument. Usage: terminal_emulator.py script_path [python_exe] [title] [icon_path] [app_id] [wdir_is_script_dir] [close_on_crash] [close_on_failure] [close_on_success] [print_timestamp_format] [log_path] [log_timestamp_format] [overwrite_log] [script_after_interpreter_crash_path] [input_prepend] [process_id_file_path] [terminal_needs_input] [stylesheet_path] [dark_mode] [use_faulthandler] "
+                "terminal_emulator.py needs at least the Python script path as argument. Usage: terminal_emulator.py script_path [python_exe] [title] [icon_path] [app_id] [wdir_is_script_dir] [close_on_crash] [close_on_failure] [close_on_success] [print_timestamp_format] [log_path] [log_timestamp_format] [overwrite_log] [script_after_interpreter_crash_path] [input_prepend] [process_id_file_path] [play_sound_on_success] [send_Windows_notification_on_success] [play_sound_on_failure] [send_Windows_notification_on_failure] [play_sound_on_python_interpreter_crash] [send_Windows_notification_on_python_interpreter_crash] [terminal_needs_input] [stylesheet_path] [dark_mode] [use_faulthandler] "
             )
 
         script_path = sys.argv[1]
@@ -1544,11 +1580,19 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
         INPUT_PREPEND = arg_to_str(15, "> ")
         process_id_file_path = arg_to_str(16, "")
 
-        terminal_needs_input = arg_to_bool(17, True)
-        stylesheet_path = arg_to_str(18, "")
-        dark_mode = arg_to_str(19, "1")  # no bool because "auto" could also be option that should not be turned to True
-        use_faulthandler = arg_to_bool(20, True)
-        
+        play_sound_on_success = arg_to_wav_path(17)
+        send_Windows_notification_on_success = arg_to_bool(18, False)
+        play_sound_on_failure = arg_to_wav_path(19)
+        send_Windows_notification_on_failure = arg_to_bool(20, False)
+        play_sound_on_python_interpreter_crash = arg_to_wav_path(21)
+        send_Windows_notification_on_python_interpreter_crash = arg_to_bool(22, False)
+
+        terminal_needs_input = arg_to_bool(23, True)
+        stylesheet_path = arg_to_str(24, "")
+        dark_mode = arg_to_str(25, "1")  # no bool because "auto" could also be option that should not be turned to True
+        use_faulthandler = arg_to_bool(26, True)
+        button_settings_arg = arg_to_str(27, "")
+        button_settings = json.loads(button_settings_arg) if button_settings_arg != "" else None
 
         try:
             write_own_process_id_file_entry(process_id_file_path)
@@ -1581,12 +1625,19 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
             close_on_crash=close_on_crash,
             close_on_failure=close_on_failure,
             close_on_success=close_on_success,
+            play_sound_on_success=play_sound_on_success,
+            send_Windows_notification_on_success=send_Windows_notification_on_success,
+            play_sound_on_failure=play_sound_on_failure,
+            send_Windows_notification_on_failure=send_Windows_notification_on_failure,
+            play_sound_on_python_interpreter_crash=play_sound_on_python_interpreter_crash,
+            send_Windows_notification_on_python_interpreter_crash=send_Windows_notification_on_python_interpreter_crash,
             wdir_is_script_dir=wdir_is_script_dir,
             terminal_needs_input=terminal_needs_input,
             print_timestamp_format=print_timestamp_format,
             log_stream=log_file,
             log_timestamp_format=log_timestamp_format,
             use_faulthandler=use_faulthandler,
+            button_settings=button_settings,
         )
 
         # set dark mode. For any other value it will choose Windows settings.
