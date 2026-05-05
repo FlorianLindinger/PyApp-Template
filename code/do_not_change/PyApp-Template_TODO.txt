@@ -2,6 +2,9 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+mname if backend_common_code and launcher_common_code,
+backend_common_variables
+
 test if logging work for all
 
 add shortcut to log? make it open the log if only one in folder and the foldfer if multiple. that some how requires rthere to alawy  be a fodler
