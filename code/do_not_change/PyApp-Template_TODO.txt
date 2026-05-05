@@ -6,6 +6,9 @@ how much do i really need to catch externally seomthing. is eems like windwos te
 
 test startup time measruemtn
 
+is git pre push synced? for do not ship backend
+how do i not sync
+
 ===================================
 ASK AI
 ===================================

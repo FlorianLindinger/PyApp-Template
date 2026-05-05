@@ -2,6 +2,7 @@ import os
 import shutil
 import subprocess
 import sys
+import urllib.request
 from pathlib import Path
 
 # ===========================
@@ -15,8 +16,12 @@ os.chdir(os.path.dirname(os.path.realpath(__file__)))
 python_folder = r"..\P"
 python_exe = python_folder + r"\P.exe"
 packages_folder = python_folder + r"\..\python_packages"
-pipreqs_mapping_path = packages_folder + r"\pipreqs\mapping"
 pth_file_path = python_folder + r"\python312._pth"
+get_pip_url = "https://bootstrap.pypa.io/get-pip.py"
+requirements_file = packages_folder + r"\requirements.txt"
+pipreqs_mapping_path = packages_folder + r"\pipreqs\mapping"
+get_pip_path = python_folder + r"\get-pip.py"
+backend_packages_requirements = r"..\backend_packages_requirements.txt"
 
 # ===========================
 
@@ -26,6 +31,19 @@ try:
         f.write(r"""python312.zip
 .
 import site""")
+    
+    # install pip
+    try:
+        urllib.request.urlretrieve(get_pip_url, get_pip_path)  # noqa:S310
+        subprocess.run(  # noqa:S603
+            [python_exe, get_pip_path, "--no-warn-script-location"],
+            check=True,
+        )
+        if os.path.exists(get_pip_path):
+            os.remove(get_pip_path)
+    except Exception as e:
+        print("[Error] pip installation failed:", e)
+        raise
 
     # remove unneeded files to save space
     if os.path.exists(python_folder + r"\sqlite3.dll"):
@@ -63,38 +81,60 @@ import site""")
     else:
         os.makedirs(packages_folder)
 
-    # install backend packages
+    # print
     print()
     print("=" * 20)
     print("Installing backend packages...")
     print("=" * 20)
     print()
-    commands = [
-        [python_exe, "-m", "pip", "install", "pip", "--upgrade"],
+
+    # install "setuptools" and its dependency "wheel" for "docopt" package installation
+    subprocess.run(  # noqa:S603
         [
             python_exe,
             "-m",
             "pip",
             "install",
-            "setuptools",
-            "wheel",
+            "packaging==26.2",
+            "setuptools==82.0.1",
+            "wheel==0.47.0",
             "--upgrade",
             "--no-warn-script-location",
-        ],  # needed for "docopt" package installation
-        [python_exe, "-m", "pip", "install", "--target", packages_folder, "--upgrade", "pywin32"],
-        [python_exe, "-m", "pip", "install", "--target", packages_folder, "--upgrade", "rich"],
-        [python_exe, "-m", "pip", "install", "--target", packages_folder, "--upgrade", "win11toast"],
-        [python_exe, "-m", "pip", "install", "--target", packages_folder, "--upgrade", "yarg"],
-        [python_exe, "-m", "pip", "install", "--target", packages_folder, "--upgrade", "docopt"],
-        [python_exe, "-m", "pip", "install", "--target", packages_folder, "--upgrade", "pipreqs", "--no-deps"],
-        [python_exe, "-m", "pip", "uninstall", "pip", "setuptools", "wheel", "-y"],
-    ]
-    for cmd in commands:
-        try:
-            subprocess.run([*cmd], check=True)
-        except subprocess.CalledProcessError as e:
-            print(f"Error occurred while running command: {' '.join(cmd)}")
-            raise subprocess.CalledProcessError(e.returncode, e.cmd, e.output)
+            "--no-deps",
+        ],
+        check=True,
+    )
+
+    # install backend packages
+    subprocess.run(  # noqa:S603
+        [
+            python_exe,
+            "-m",
+            "pip",
+            "install",
+            "-r",
+            backend_packages_requirements,
+            "--target",
+            packages_folder,
+            "--upgrade",
+            "--no-deps",
+        ],
+        check=True,
+    )
+
+    # # generate requirements.txt
+    # with open(backend_packages_requirements, "w", encoding="utf-8") as f:
+    #     subprocess.run(  # noqa:S603
+    #         [python_exe, "-m", "pip", "freeze", "--path", packages_folder],
+    #         stdout=f,
+    #         check=True,
+    #         text=True,
+    #     )
+
+    # uninstall pip, setuptools and wheel from the embedded python to save space
+    subprocess.run(  # noqa:S603
+        [python_exe, "-m", "pip", "uninstall", "pip", "packaging", "setuptools", "wheel", "-y"], check=True
+    )
 
     # update python312._pth
     with open(pth_file_path, "w", encoding="utf-8") as f:
