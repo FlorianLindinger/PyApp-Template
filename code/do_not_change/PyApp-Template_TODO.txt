@@ -259,6 +259,8 @@ ask AI if features missing form old fancy_terminl in tkinter
 
 can python somehow plot in terminal
 
+implement options to ship backend. ship venv packages and not ship termial.
+
 #Does progressbars work? Maybe build one in
 
 #Give option to change color of taskbar icon during runtime and before. tell user how to change icon and name during runtime and also color
