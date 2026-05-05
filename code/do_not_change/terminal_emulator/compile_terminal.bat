@@ -233,4 +233,4 @@ if /i not "%COMPILE_TERMINAL_NO_PAUSE%"=="yes" (
   pause > nul
 )
 
-endlocal
+endlocal & exit /b 0
