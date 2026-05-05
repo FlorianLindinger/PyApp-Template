@@ -12,6 +12,7 @@ from win32com.shell import shellcon  # type:ignore
 
 # move to folder of this file for correct relative paths and ensure it's in path
 file_dir = os.path.dirname(os.path.abspath(__file__)) + "\\"
+os.chdir(file_dir)
 
 # =============================
 # import from common_code_and_variables.py
