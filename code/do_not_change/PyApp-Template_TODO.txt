@@ -8,6 +8,14 @@ test startup time measruemtn
 
 is git pre push synced? for do not ship backend
 how do i not sync
+maybe just for app start change .gitignore in do_not_change? maybe all start should chekc that so also generator i guess.
+do o ahve to kill historty
+git rm --cached path/to/file
+git add .gitignore
+git commit -m "Stop tracking ignored files"
+git push
+maybe just have a backend ish folder outside and people can delete that. worse for changes in backend. also shorter path than do_not_change
+                       backend
 
 ===================================
 ASK AI

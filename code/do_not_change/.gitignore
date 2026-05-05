@@ -1,10 +1,8 @@
-# tmp.txt files being created as part of a batch file
-tmp.exe
-# file generated that lists packages the python files need
-python_file_requirements.txt
-# compilation build folder
+# tmp.txt files being created as part of a batch file:
+tmp.txt
+# compilation build folder:
 *.build
-# DO_NOT_SYNC folders
+# DO_NOT_SYNC folders:
 DO_NOT_SYNC
 # python cache folders:
 __pycache__
