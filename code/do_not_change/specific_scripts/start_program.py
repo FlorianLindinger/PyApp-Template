@@ -225,6 +225,15 @@ try:
                 raise ValueError(f'[Error] Sound setting must be False, None, "", True, or a .wav file: "{sound_path}"')
             return sound_path
 
+        def generate_minimized_startupinfo():
+            if not start_minimized:
+                return None
+
+            startupinfo = subprocess.STARTUPINFO()
+            startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+            startupinfo.wShowWindow = getattr(subprocess, "SW_SHOWMINIMIZED", 2)
+            return startupinfo
+
         # ======================
         # potentially auto search for required packages
 
@@ -355,6 +364,7 @@ try:
                 proc = subprocess.Popen(  # noqa:S603 #type:ignore
                     [compiled_terminal_path, script_path, python_exe_for_script_path, *args],
                     creationflags=subprocess.CREATE_NO_WINDOW,
+                    startupinfo=generate_minimized_startupinfo(),
                     stdout=subprocess.PIPE,
                     stderr=subprocess.STDOUT,
                     text=True,
@@ -372,6 +382,7 @@ try:
                 proc = subprocess.Popen(  # noqa:S603 #type:ignore
                     [python_exe_for_script_path, *extra_args, script_wrapper_path, script_path, *args],
                     creationflags=subprocess.CREATE_NEW_CONSOLE,
+                    startupinfo=generate_minimized_startupinfo(),
                 )
             else:  # run without terminal but create one on crash and don't wait
                 proc = subprocess.Popen(  # noqa:S603 #type:ignore

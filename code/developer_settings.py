@@ -37,6 +37,16 @@ start_no_terminal_shortcut_name: str | None = f"{program_name} (no Terminal)"  #
 settings_shortcut_name: str | None = f"{program_name} - Settings"  # open settings file
 stop_shortcut_name: str | None = f"Stop {program_name}"  # stop all started programs
 # -------------------------------------------------
+# Close all tracked instances of this program before launching a new one.
+close_existing_instances_on_start = False
+# -------------------------------------------------
+# Prevent launching a second instance while another tracked instance is running.
+# If prompt_to_close_existing_instances is True, the launcher asks whether to close
+# the old instance(s) and continue. If False, it only prints a message and exits.
+# Ignored when close_existing_instances_on_start is True.
+prevent_launch_if_existing_instances_running = False
+prompt_to_close_existing_instances = True
+# -------------------------------------------------
 # success = sys.exit(0) or sys.exit() or no exit line.
 close_on_success = True
 play_sound_on_success: str | bool = False # False for no sound, True for default sound (notify.wav) or a path to a wav file relative to C:\Windows\Media\.
@@ -66,6 +76,7 @@ script_after_python_interpreter_crash_name: str | None = "after_python_crash_cod
 # -------------------------------------------------
 ship_backend_python_and_backend_packages = True
 # -------------------------------------------------
+# Start launch windows minimized where supported
 start_minimized = False
 # -------------------------------------------------
 
@@ -81,6 +92,11 @@ overwrite_log = True
 # -------------------------------------------------
 enable_log_for_terminal_start = True
 enable_log_for_no_terminal_start = True
+# -------------------------------------------------
+# Opens the log file (if enabled) after the script finishes
+open_log_file_after_success = False
+open_log_file_after_failure = False
+open_log_file_after_python_interpreter_crash = False
 # -------------------------------------------------
 log_timestamp_format = "%H:%M:%S | "
 # None for no timestamps (else see datetime.datetime.strftime usage: e.g. "%H:%M:%S | ")
