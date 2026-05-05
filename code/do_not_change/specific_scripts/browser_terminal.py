@@ -16,7 +16,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any
 from urllib.parse import parse_qs, urlparse
 
-from launcher_common import (
+from do_not_change.specific_scripts.launcher_common import (
     CompletionAlerts,
     ProcessIdRegistry,
     TerminalLogger,
