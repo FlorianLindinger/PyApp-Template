@@ -833,20 +833,6 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
             self.log_stream.write(self._add_line_timestamps(text, self.log_timestamp_format, "_log_at_line_start"))
             self.log_stream.flush()
 
-        def _finish_pending_input_prompt_line(self, input_echo_text: str) -> None:
-            if not input_echo_text.endswith("\n"):
-                return
-
-            if not self._print_at_line_start:
-                self._terminal_output_entries.append(("\n", None, None, False))
-                self._insert_text(text="\n", color=None, bg_color=None)
-                self._print_at_line_start = True
-
-            if self.log_stream is not None and not self._log_at_line_start:
-                self.log_stream.write("\n")
-                self.log_stream.flush()
-                self._log_at_line_start = True
-
         def clear_terminal(self) -> None:
             self._terminal_output_entries.clear()
             self._terminal_output.clear()
@@ -879,9 +865,6 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
                 self.go_to_terminal_bottom()
                 # Only force-follow if we will actually insert text
                 self._go_to_bottom_on_next_text_print = self.get_show_input_state()
-
-            if is_user_input:
-                self._finish_pending_input_prompt_line(text)
 
             if is_user_input and not self.get_show_input_state():
                 self._go_to_bottom_on_next_text_print = False
