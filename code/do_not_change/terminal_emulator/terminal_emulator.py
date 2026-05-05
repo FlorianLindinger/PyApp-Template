@@ -1,15 +1,17 @@
 import subprocess
 import sys
 
+BACKEND_PYTHON_EXE = "py"
+
 # setup error reporting in newly created terminal - logic
 try:
 
-    def run_text_in_new_terminal_and_wait(text):
+    def run_text_in_new_terminal_and_wait(text, python_exe: str = "py"):
         import subprocess
-        import sys
-        
+
         subprocess.run(  # noqa:S603
-            [sys.executable, "-X", "faulthandler", "-c", text], creationflags=subprocess.CREATE_NEW_CONSOLE
+            [python_exe, "-X", "faulthandler", "-c", text],
+            creationflags=subprocess.CREATE_NEW_CONSOLE,
         )
 
     # needed to print an error message in new terminal because this script should not have a Windows terminal.
@@ -1551,10 +1553,20 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
 
         return getattr(module, variable_name)
 
+    def normalize_button_settings(button_settings):
+        if button_settings is None:
+            return None
+        if isinstance(button_settings, dict):
+            return button_settings
+        try:
+            return dict(button_settings)
+        except (TypeError, ValueError) as error:
+            raise TypeError("button_settings must be a dict or an iterable of (button_name, settings) pairs") from error
+
     # main
 
     def main() -> int:
-        global INPUT_PRINT_COLOR, INPUT_PRINT_BG, ERROR_PRINT_BG, ERROR_PRINT_COLOR, INPUT_PREPEND  # type:ignore
+        global BACKEND_PYTHON_EXE, INPUT_PRINT_COLOR, INPUT_PRINT_BG, ERROR_PRINT_BG, ERROR_PRINT_COLOR, INPUT_PREPEND  # type:ignore
 
         # process args
         if len(sys.argv) < 2:
@@ -1564,6 +1576,7 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
 
         script_path = sys.argv[1]
         python_exe = arg_to_str(2, "py")
+        BACKEND_PYTHON_EXE = python_exe
 
         title = arg_to_str(3, "")
         icon_path = arg_to_str(4, "")
@@ -1592,7 +1605,9 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
         dark_mode = arg_to_str(25, "1")  # no bool because "auto" could also be option that should not be turned to True
         use_faulthandler = arg_to_bool(26, True)
         button_settings_arg = arg_to_str(27, "")
-        button_settings = json.loads(button_settings_arg) if button_settings_arg != "" else None
+        button_settings = (
+            normalize_button_settings(json.loads(button_settings_arg)) if button_settings_arg != "" else None
+        )
 
         try:
             write_own_process_id_file_entry(process_id_file_path)
@@ -1689,7 +1704,7 @@ print_warn("-" * 20)
 set_terminal_name("Error (Terminal Emulator)")
 input_warn("[Error] Press enter to exit.")
 """
-            run_text_in_new_terminal_and_wait(script_base + script)
+            run_text_in_new_terminal_and_wait(script_base + script, python_exe)
             sys.exit(1)
 
         window.show()
@@ -1712,7 +1727,9 @@ print_warn("-" * 20)
 set_terminal_name("Error (Terminal Emulator)")
 input_warn("Press enter to exit")
 """
-    run_text_in_new_terminal_and_wait(script_base + script)
+    if len(sys.argv) > 2 and sys.argv[2].strip():
+        BACKEND_PYTHON_EXE = sys.argv[2]
+    run_text_in_new_terminal_and_wait(script_base + script, BACKEND_PYTHON_EXE)
     sys.exit(1)
 
 finally:
