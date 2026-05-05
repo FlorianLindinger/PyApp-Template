@@ -13,8 +13,6 @@ __pycache__
 log*.txt
 # temporary id files for no-terminal start:
 *.pid
-# list of python packages that gets generated:
-auto_found_required_python_packages.txt
 # output files of developer tools:
 developer_tools/*.txt
 # whitelist specific files in developer tools folder:

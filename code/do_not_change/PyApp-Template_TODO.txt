@@ -2,7 +2,7 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
-spawm lnk for fany termninal and normal and remove setting
+fix play_sound_on_python_interpreter_crash not being handled in start _prtogrm adefautls?
 
 in measure start time: :: TODO: Dont requrie code in main_sciprt. test all 3 mode via shortcut always. add settings in batch
 
