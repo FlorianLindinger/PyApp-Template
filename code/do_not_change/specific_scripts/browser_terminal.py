@@ -33,6 +33,29 @@ WINDOWS_CRASH_CODES = {
 }
 
 
+def run_text_in_new_terminal(text: str) -> None:
+    subprocess.Popen(  # noqa:S603
+        [sys.executable, "-X", "faulthandler", "-c", text],
+        creationflags=getattr(subprocess, "CREATE_NEW_CONSOLE", 0),
+    )
+
+
+def show_browser_open_failure(url: str, error: BaseException | None = None) -> None:
+    error_text = "" if error is None else f"\nAutomatic browser opening failed:\n{error!r}\n"
+    script = f"""
+print({error_text!r})
+print("Browser terminal is running at:")
+print({url!r})
+print()
+input("Copy/open the URL above, then press Enter to close this helper window.")
+"""
+    try:
+        run_text_in_new_terminal(script)
+    except Exception:
+        print(error_text)
+        print(f"Browser terminal is running at: {url}")
+
+
 def arg_to_bool(index: int, default: bool = False) -> bool:
     if len(sys.argv) <= index:
         return default
@@ -749,26 +772,25 @@ def start_pty_process(
     python_exe: str,
     wdir_is_script_dir: bool,
 ) -> None:
-    try:
-        from winpty import PtyProcess
-    except Exception:
-        state.exit_code = 1
-        state.add_output(
-            "\r\n[Error] pywinpty is required for browser terminal mode.\r\n"
-            "Install pywinpty into code\\do_not_change\\python_packages for the backend Python.\r\n\r\n"
-            f"{traceback.format_exc()}\r\n",
-            log=False,
-        )
-        return
-
     cwd = os.path.dirname(script_path) if wdir_is_script_dir else os.getcwd()
     resolved_python_exe = resolve_pty_python_exe(python_exe)
     env = os.environ.copy()
     env["PYTHONUNBUFFERED"] = "1"
+    command = [resolved_python_exe, "-u", script_path]
+
+    try:
+        from winpty import PtyProcess
+    except Exception as error:
+        raise RuntimeError(
+            "[Error] pywinpty is required for browser terminal mode.\n"
+            "Install/reinstall backend packages so the 'winpty' module is complete and exposes PtyProcess in "
+            "code\\do_not_change\\python_packages.\n"
+            "Expected requirement: pywinpty==3.0.3"
+        ) from error
 
     try:
         process = PtyProcess.spawn(
-            [resolved_python_exe, "-u", script_path],
+            command,
             cwd=cwd,
             env=env,
             dimensions=(DEFAULT_ROWS, DEFAULT_COLS),
@@ -855,7 +877,13 @@ def main() -> None:
         wdir_is_script_dir=wdir_is_script_dir,
     )
 
-    webbrowser.open(url)
+    try:
+        opened = webbrowser.open(url)
+    except Exception as error:
+        opened = False
+        show_browser_open_failure(url, error)
+    if not opened:
+        show_browser_open_failure(url)
     try:
         server.serve_forever()
     finally:
