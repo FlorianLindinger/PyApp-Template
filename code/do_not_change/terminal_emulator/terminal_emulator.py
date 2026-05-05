@@ -155,6 +155,15 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
         except Exception:
             pass
 
+    def open_file_in_default_app(path: str) -> None:
+        if path == "":
+            return
+
+        try:
+            os.startfile(path)  # type: ignore[attr-defined]  # noqa:S606
+        except Exception:
+            pass
+
     # =============
     # default terminal emulator style sheet
 
@@ -336,9 +345,13 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
             send_Windows_notification_on_failure: bool = False,
             play_sound_on_python_interpreter_crash: str = "",
             send_Windows_notification_on_python_interpreter_crash: bool = False,
+            open_log_file_after_success: bool = False,
+            open_log_file_after_failure: bool = False,
+            open_log_file_after_python_interpreter_crash: bool = False,
             wdir_is_script_dir: bool = True,
             terminal_needs_input: bool = True,
             print_timestamp_format: str = "",
+            log_path: str = "",
             log_stream=None,
             log_timestamp_format: str = "",
             use_faulthandler: bool = True,
@@ -401,9 +414,15 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
                 "failure": send_Windows_notification_on_failure,
                 "crash": send_Windows_notification_on_python_interpreter_crash,
             }
+            self.open_log_file_by_kind = {
+                "success": open_log_file_after_success,
+                "failure": open_log_file_after_failure,
+                "crash": open_log_file_after_python_interpreter_crash,
+            }
             self.wdir_is_script_dir = wdir_is_script_dir
             self.terminal_needs_input = terminal_needs_input
             self.print_timestamp_format = print_timestamp_format
+            self.log_path = log_path
             self.log_stream = log_stream
             self.log_timestamp_format = log_timestamp_format
             self.use_faulthandler = use_faulthandler
@@ -814,6 +833,20 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
             self.log_stream.write(self._add_line_timestamps(text, self.log_timestamp_format, "_log_at_line_start"))
             self.log_stream.flush()
 
+        def _finish_pending_input_prompt_line(self, input_echo_text: str) -> None:
+            if not input_echo_text.endswith("\n"):
+                return
+
+            if not self._print_at_line_start:
+                self._terminal_output_entries.append(("\n", None, None, False))
+                self._insert_text(text="\n", color=None, bg_color=None)
+                self._print_at_line_start = True
+
+            if self.log_stream is not None and not self._log_at_line_start:
+                self.log_stream.write("\n")
+                self.log_stream.flush()
+                self._log_at_line_start = True
+
         def clear_terminal(self) -> None:
             self._terminal_output_entries.clear()
             self._terminal_output.clear()
@@ -846,6 +879,9 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
                 self.go_to_terminal_bottom()
                 # Only force-follow if we will actually insert text
                 self._go_to_bottom_on_next_text_print = self.get_show_input_state()
+
+            if is_user_input:
+                self._finish_pending_input_prompt_line(text)
 
             if is_user_input and not self.get_show_input_state():
                 self._go_to_bottom_on_next_text_print = False
@@ -1392,6 +1428,10 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
             sound_setting = self.play_sound_by_kind.get(kind)
             if sound_setting:
                 play_windows_sound(sound_setting)
+            if self.open_log_file_by_kind.get(kind, False):
+                if self.log_stream is not None:
+                    self.log_stream.flush()
+                open_file_in_default_app(self.log_path)
 
         def _cleanup(self) -> None:
             if self._window_is_closing:
@@ -1571,7 +1611,7 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
         # process args
         if len(sys.argv) < 2:
             raise ValueError(
-                "terminal_emulator.py needs at least the Python script path as argument. Usage: terminal_emulator.py script_path [python_exe] [title] [icon_path] [app_id] [wdir_is_script_dir] [close_on_crash] [close_on_failure] [close_on_success] [print_timestamp_format] [log_path] [log_timestamp_format] [overwrite_log] [script_after_interpreter_crash_path] [input_prepend] [process_id_file_path] [play_sound_on_success] [send_Windows_notification_on_success] [play_sound_on_failure] [send_Windows_notification_on_failure] [play_sound_on_python_interpreter_crash] [send_Windows_notification_on_python_interpreter_crash] [terminal_needs_input] [stylesheet_path] [dark_mode] [use_faulthandler] "
+                "terminal_emulator.py needs at least the Python script path as argument. Usage: terminal_emulator.py script_path [python_exe] [title] [icon_path] [app_id] [wdir_is_script_dir] [close_on_crash] [close_on_failure] [close_on_success] [print_timestamp_format] [log_path] [log_timestamp_format] [overwrite_log] [script_after_interpreter_crash_path] [input_prepend] [process_id_file_path] [play_sound_on_success] [send_Windows_notification_on_success] [play_sound_on_failure] [send_Windows_notification_on_failure] [play_sound_on_python_interpreter_crash] [send_Windows_notification_on_python_interpreter_crash] [terminal_needs_input] [stylesheet_path] [dark_mode] [use_faulthandler] [button_settings] [open_log_file_after_success] [open_log_file_after_failure] [open_log_file_after_python_interpreter_crash] [start_minimized]"
             )
 
         script_path = sys.argv[1]
@@ -1599,6 +1639,10 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
         send_Windows_notification_on_failure = arg_to_bool(20, False)
         play_sound_on_python_interpreter_crash = arg_to_wav_path(21)
         send_Windows_notification_on_python_interpreter_crash = arg_to_bool(22, False)
+        open_log_file_after_success = arg_to_bool(28, False)
+        open_log_file_after_failure = arg_to_bool(29, False)
+        open_log_file_after_python_interpreter_crash = arg_to_bool(30, False)
+        start_minimized = arg_to_bool(31, False)
 
         terminal_needs_input = arg_to_bool(23, True)
         stylesheet_path = arg_to_str(24, "")
@@ -1646,9 +1690,13 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
             send_Windows_notification_on_failure=send_Windows_notification_on_failure,
             play_sound_on_python_interpreter_crash=play_sound_on_python_interpreter_crash,
             send_Windows_notification_on_python_interpreter_crash=send_Windows_notification_on_python_interpreter_crash,
+            open_log_file_after_success=open_log_file_after_success,
+            open_log_file_after_failure=open_log_file_after_failure,
+            open_log_file_after_python_interpreter_crash=open_log_file_after_python_interpreter_crash,
             wdir_is_script_dir=wdir_is_script_dir,
             terminal_needs_input=terminal_needs_input,
             print_timestamp_format=print_timestamp_format,
+            log_path=log_path,
             log_stream=log_file,
             log_timestamp_format=log_timestamp_format,
             use_faulthandler=use_faulthandler,
@@ -1707,7 +1755,10 @@ input_warn("[Error] Press enter to exit.")
             run_text_in_new_terminal_and_wait(script_base + script, python_exe)
             sys.exit(1)
 
-        window.show()
+        if start_minimized:
+            window.showMinimized()
+        else:
+            window.show()
         return app.exec()
 
     # =============
