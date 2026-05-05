@@ -66,21 +66,33 @@ if exist "DO_NOT_SYNC\build" (
 )
 
 :: check for compiler
-set "VCVARS=%ProgramFiles%\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvars64.bat"
+set "VSWHERE=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
+if not exist "%VSWHERE%" (
+  echo vswhere not found. Visual Studio Build Tools may not be installed.
+  pause
+  exit /b 1
+)
+for /f "usebackq tokens=*" %%I in (`"%VSWHERE%" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath`) do set "VSINSTALL=%%I"
+if not defined VSINSTALL (
+  echo Visual Studio C++ Build Tools not found.
+  pause
+  exit /b 1
+)
+set "VCVARS=%VSINSTALL%\VC\Auxiliary\Build\vcvars64.bat"
 if not exist "%VCVARS%" (
-  echo Build Tools for Visual Studio 2022 not found.
-  echo Aborting. Press any key to exit.
-  pause > nul
+  echo vcvars64.bat not found:
+  echo "%VCVARS%"
+  pause
   exit /b 1
 )
 call "%VCVARS%"
 where cl >nul 2>nul
 if errorlevel 1 (
   echo MSVC compiler not available.
-  echo Aborting. Press any key to exit.
-  pause > nul
+  pause
   exit /b 1
 )
+echo MSVC ready.
 
 REM ============================
 REM  Compile (MINIMAL SIZE + SPEED)
