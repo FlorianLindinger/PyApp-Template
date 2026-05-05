@@ -1,3 +1,5 @@
+test all settings for all modes
+
 ======================================
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
@@ -5,19 +7,7 @@
 mname if backend_common_code and launcher_common_code,
 backend_common_variables
 
-test if logging work for all
-
 add shortcut to log? make it open the log if only one in folder and the foldfer if multiple. that some how requires rthere to alawy  be a fodler
-
-setting to make old terminal closing when launchging new. in case it is important that only one eixst. or might as well setting to stop lainch if olöd exist and somehow chekc that pid exists
-prompt to close old opened
-
- auto open log on interpreter crash and mention that with link in newly opened tjhing?
-
-is use_global_python used everywhere and als ohandles iof modeule not present?
-
-
-input print echo dioes not timestamp
 
 in wrapper:
         elif looks_like_interpreter_crash(exit_code):
@@ -25,8 +15,6 @@ in wrapper:
                 sys.exit(exit_code)
             else:
                 ...  ################### WIP
-
-done: shared script_wrapper/browser launch behavior moved into launcher_common.py; browser PTY/server code stays separate
 
 i have to ship emualtreo since craetion needs vscdoe tools . so disable somehow via settings but no guaranteed rebiulding
 
@@ -67,6 +55,8 @@ any way to detect no emulator and not spawn shortcut.? add print to shortcut why
 ===================================
 ASK AI
 ===================================
+
+is use_global_python used everywhere and als ohandles iof modeule not present?
 
 is the file organication somewher unconventuional? should i renomea seom sutff?
 
@@ -125,6 +115,8 @@ make suire first prints which everyone will see are most nice. aks AI for ideas
 ===================================
 terminal emulator
 ===================================
+
+add opne log button to emulator
 
 show input is not working. add timestamp at same time. how to deal iwth prints that dont have \n?
 
