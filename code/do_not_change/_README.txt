@@ -4,7 +4,7 @@ Code in this folder is from PyApp-Template (https://github.com/FlorianLindinger/
 === Folder content explanation ===
 ==================================
 
-T.py, N.py, Q.py, and S.py are shortcuts to scripts in the specific_scripts folder which are needed to have a short path in the Windows shortcuts that calls them.
+W.py, N.py, Q.py, and S.py are shortcuts to scripts in the specific_scripts folder which are needed to have a short path in the Windows shortcuts that calls them.
 
 The file called "!DO NOT CHANGE STUFF IN THIS FOLDER" is just an extra warning not to change stuff.
 

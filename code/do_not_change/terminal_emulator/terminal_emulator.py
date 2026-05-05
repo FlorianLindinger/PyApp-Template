@@ -27,7 +27,8 @@ def input_warn(msg):
 
 def set_terminal_name(name: str) -> None:
     try:
-        os.system(f"title {name.replace('r\n', '').replace(r'\r', '')}")
+        clean_name = name.replace("\r\n", "").replace("\r", "")
+        os.system(f"title {clean_name}")
     except Exception:
         pass
 """
@@ -1588,10 +1589,10 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
             use_faulthandler=use_faulthandler,
         )
 
-        # set dark mode. For neither "1" or "0" case it will choose Windows settings
-        if dark_mode == "1":
+        # set dark mode. For any other value it will choose Windows settings.
+        if dark_mode in ["1", "dark", "true", "yes", "on"]:
             app.styleHints().setColorScheme(Qt.ColorScheme.Dark)
-        elif dark_mode == "0":
+        elif dark_mode in ["0", "light", "false", "no", "off"]:
             app.styleHints().setColorScheme(Qt.ColorScheme.Light)
 
         try:

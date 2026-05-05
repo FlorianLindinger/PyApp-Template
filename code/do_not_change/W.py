@@ -18,7 +18,7 @@ try:
     sys.argv = [
         script_path,
         sys.argv[1],  # app id
-        "1",  # create_terminal: 1" = create, "0" = not
+        "terminal",  # launch mode
     ]
     
     # ===============
