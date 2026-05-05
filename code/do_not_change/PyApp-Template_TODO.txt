@@ -4,7 +4,7 @@
 
 test if logging work for all
 
-add shortcut to log? 
+add shortcut to log? make it open the log if only one in folder and the foldfer if multiple. that some how requires rthere to alawy  be a fodler
 
 setting to make old terminal closing when launchging new. in case it is important that only one eixst. or might as well setting to stop lainch if olöd exist and somehow chekc that pid exists
 prompt to close old opened
@@ -23,7 +23,7 @@ in wrapper:
             else:
                 ...  ################### WIP
 
-should i merge script_wrapper and browser since mostly same need. but also does not have windwos temrinal featues like histoy ... but lazy imports
+done: shared script_wrapper/browser launch behavior moved into launcher_common.py; browser PTY/server code stays separate
 
 i have to ship emualtreo since craetion needs vscdoe tools . so disable somehow via settings but no guaranteed rebiulding
 
@@ -439,11 +439,6 @@ unsorted #2
 is there an option to not ship temrinal_emulatro if dev setting say no. like maaybe a batch that deletes that or a way to auto sync that settign wiht gitignore?
 kind of same with pipreqs and size . kind of want to keep backend together tho
 
-maybe long term install backend packges at user end
-maybe download python embeddible at user end
-should be quite safe for specfiying specific versions
-how do i get pip then for local
-
 Reduce lint ignores over time. pyproject.toml (line 64) enables a strong Ruff rule set but then disables many important checks. Keep the pragmatic ignores, but shrink them around the backend code once the crash/logging paths are stable.
 
 Fix repo hygiene first. git status shows a huge dirty state from tracked files under code/do_not_change/python_packages. Since README claims package files should not be shared, make that true: ignore/untrack generated package folders, keep only a manifest/installer, and add a clean bootstrap path. Right now .gitignore (line 17) does not cover that.
@@ -469,8 +464,6 @@ Replace placeholder shortcut descriptions. generate_shortcuts.py (line 252) stil
 Support multiple running instances intentionally. The PID-file model currently points to one process. If multiple launches are possible, store a small registry keyed by app id/shortcut mode and verify the PID command line before killing.
 
 Reduce lint ignores over time. pyproject.toml (line 64) enables a strong Ruff rule set but then disables many important checks. Keep the pragmatic ignores, but shrink them around the backend code once the crash/logging paths are stable.
-
-i guess check if "import " is in script. can still fail for edge cases. is woth it?
 
 re add print error for not traceback in commoni varables
 
