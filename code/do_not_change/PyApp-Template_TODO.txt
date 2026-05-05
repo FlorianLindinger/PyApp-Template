@@ -4,21 +4,29 @@
 
 how much do i really need to catch externally seomthing. is eems like windwos terminal anyway ycatches taht. mabye dont auto close soemhow and do wihtt pyrgon closing temrianl. what was reason there again?
 
+test startup time measruemtn
+
 ===================================
 ASK AI
 ===================================
 
+impleemt ship_backend_python_and_packages = True and add all comnmets in dev settings
+
+is there a wy to optimize porject size for AI usage. or tell it to use gititnoerr or something
+
 make windows sound on ... into SystemAsterisk instead of bool and play if not None,"",False,  
-make it cleanrer in script_wrapper
+make it cleanrer in script_wrapper.
+append .wav if not there.
+windows_sounds_path=r"C:\Windows\Media\\"
+use winsound.PlaySound(windows_sounds_path+"Windows Critical Stop.wav", winsound.SND_FILENAME | 0 | winsound.SND_NODEFAULT)
 
 make stuf in start_program to lazy import where it is only used in one spot and not always executed
 
 update _README.txt
 
-implemement the play windwos sound and windows nottification from dev settings. make it also into tolggle buttons for the temrinal
+fix play soinds
 
 addd pre commit hooks and actions. is there seomething like check wtih AI? ask for AI setup
-
 
 log_path_rel_to_wdir seeem to get wrongly parsed. SError: [WinError 123] Die Syntax für den Dateinamen, Verzeichnisnamen oder die Datenträgerbezeichnung ist falsch: 'C:\\Users\\Flo\\Documents\\Repositories\\PyApp Template\\code\\..\\logs\\log_2026_05_03C:'
 
@@ -34,7 +42,7 @@ ask if there is possiblity for maore fail ehcks and error prints and input exits
 
 ask if more prints somewhere usefull
 
-any way to safe space-> i gues downloading python embeded and backend packages. maybe as option?
+any way to safe space-> i gues downloading python embeded and backend packages. maybe as option? but for that i would need the shortcut generator to be batch that checks if python installed. Or maybe just install pyackages ~50mb
 
 add script_after_interpreter_crash_path
 

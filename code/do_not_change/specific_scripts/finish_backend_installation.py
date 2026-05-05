@@ -1,4 +1,117 @@
-AFQ:pyAFQ
+import os
+import shutil
+import subprocess
+import sys
+from pathlib import Path
+
+# ===========================
+
+# go to folder of this script
+os.chdir(os.path.dirname(os.path.realpath(__file__)))
+
+# ===========================
+
+# variables
+python_folder = r"..\P"
+python_exe = python_folder + r"\P.exe"
+packages_folder = python_folder + r"\..\python_packages"
+pipreqs_mapping_path = packages_folder + r"\pipreqs\mapping"
+pth_file_path = python_folder + r"\python312._pth"
+
+# ===========================
+
+try:
+    # update pth_file_path temporily to include packages folder for pip installation
+    with open(pth_file_path, "w", encoding="utf-8") as f:
+        f.write(r"""python312.zip
+.
+import site""")
+
+    # remove unneeded files to save space
+    if os.path.exists(python_folder + r"\sqlite3.dll"):
+        os.remove(python_folder + r"\sqlite3.dll")
+    else:
+        print("sqlite3.dll not found to remove.")
+    if os.path.exists(python_folder + r"\python.cat"):
+        os.remove(python_folder + r"\python.cat")
+    else:
+        print("python.cat not found to remove.")
+
+    # clear packages folder
+    def clear_folder_contents(folder):
+        forced_name = "python_packages"
+
+        folder = Path(folder).resolve()
+
+        if not folder.exists():
+            raise FileNotFoundError(folder)
+
+        if not folder.is_dir():
+            raise NotADirectoryError(folder)
+
+        if folder.name != forced_name:
+            raise ValueError(f"Refusing to delete: expected folder named {forced_name!r}, got {folder.name!r}")
+
+        for item in folder.iterdir():
+            if item.is_file() or item.is_symlink():
+                item.unlink()
+            elif item.is_dir():
+                shutil.rmtree(item)
+
+    if os.path.exists(packages_folder):
+        clear_folder_contents(packages_folder)
+    else:
+        os.makedirs(packages_folder)
+
+    # install backend packages
+    print()
+    print("=" * 20)
+    print("Installing backend packages...")
+    print("=" * 20)
+    print()
+    commands = [
+        [python_exe, "-m", "pip", "install", "pip", "--upgrade"],
+        [
+            python_exe,
+            "-m",
+            "pip",
+            "install",
+            "setuptools",
+            "wheel",
+            "--upgrade",
+            "--no-warn-script-location",
+        ],  # needed for "docopt" package installation
+        [python_exe, "-m", "pip", "install", "--target", packages_folder, "--upgrade", "pywin32"],
+        [python_exe, "-m", "pip", "install", "--target", packages_folder, "--upgrade", "rich"],
+        [python_exe, "-m", "pip", "install", "--target", packages_folder, "--upgrade", "win11toast"],
+        [python_exe, "-m", "pip", "install", "--target", packages_folder, "--upgrade", "yarg"],
+        [python_exe, "-m", "pip", "install", "--target", packages_folder, "--upgrade", "docopt"],
+        [python_exe, "-m", "pip", "install", "--target", packages_folder, "--upgrade", "pipreqs", "--no-deps"],
+        [python_exe, "-m", "pip", "uninstall", "pip", "setuptools", "wheel", "-y"],
+    ]
+    for cmd in commands:
+        try:
+            subprocess.run([*cmd], check=True)
+        except subprocess.CalledProcessError as e:
+            print(f"Error occurred while running command: {' '.join(cmd)}")
+            raise subprocess.CalledProcessError(e.returncode, e.cmd, e.output)
+
+    # update python312._pth
+    with open(pth_file_path, "w", encoding="utf-8") as f:
+        f.write(r"""python312.zip
+.
+..\..
+..\python_packages
+..\python_packages\win32
+..\python_packages\win32\lib
+..\python_packages\Pythonwin
+
+# Uncomment to run site.main() automatically
+# import site""")
+
+    # update pipreqs mappings
+    with open(pipreqs_mapping_path, "w", encoding="utf-8") as f:
+        f.write(r"""AFQ:pyAFQ
     AG_fft_tools:agpy
     ANSI:pexpect
     Adafruit:Adafruit_Libraries
@@ -1205,4 +1318,14 @@ AFQ:pyAFQ
     win32service:pywin32
     win32serviceutil:pywin32
     win32timezone:pywin32
-    servicemanager:pywin32
+    servicemanager:pywin32""")
+
+    print()
+    print("=" * 20)
+    print("End of backend installation")
+    print("=" * 20)
+    print()
+    sys.exit(0)
+
+except Exception:
+    sys.exit(1)
