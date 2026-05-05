@@ -40,6 +40,8 @@ rename T to W
 
 simplify logic flor in start_program. and fix it such that one can launc from there with flags? maybe it should offer help and five setrtings and maybe feuadflt windwos temrinal
 
+any way to detect no emulator and not spawn shortcut.? add print to shortcut why it was skipped
+
 ===================================
 ASK AI
 ===================================

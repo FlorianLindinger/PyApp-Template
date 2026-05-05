@@ -26,7 +26,7 @@ print_timestamp_format: str | None = "%H:%M:%S | "
 
 # -------------------------------------------------
 # Names of generated shortcuts:
-# (set to None to disable generation of specific shortcut)
+# (set to None to disable generation of specific shortcut. You can use program_name variable like since this is a python script)
 start_windows_terminal_shortcut_name: str | None = f"{program_name}"  # start program with terminal
 start_terminal_emulator_shortcut_name: str | None = f"{program_name} (Terminal Emulator)"  # start program with terminal emulator
 start_browser_shortcut_name: str | None = f"{program_name} (Browser)"  # start program in default browser
