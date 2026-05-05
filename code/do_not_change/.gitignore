@@ -10,3 +10,5 @@ __pycache__
 python_packages/*/RECORD
 # generated console entry points from pip --target:
 python_packages/bin/
+# terminal compilation error report:
+terminal_emulator/nuitka-crash-report.xml

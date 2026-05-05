@@ -2,6 +2,20 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+
+input print echo dioes not timestamp
+
+in wrapper:
+        elif looks_like_interpreter_crash(exit_code):
+            if close_on_python_interpreter_crash:
+                sys.exit(exit_code)
+            else:
+                ...  ################### WIP
+
+should i merge script_wrapper and browser since mostly same need. but also does not have windwos temrinal featues like histoy ... but lazy imports
+
+i have to ship emualtreo since craetion needs vscdoe tools . so disable somehow via settings but no guaranteed rebiulding
+
 optimize startup times: especially wrapper by setting incon and so on afterwards- problabsy need non stopping execution for that and paus eafterwards.
 
 how much do i really need to catch externally seomthing. is eems like windwos terminal anyway ycatches taht. mabye dont auto close soemhow and do wihtt pyrgon closing temrianl. what was reason there again?
@@ -74,8 +88,6 @@ any way to safe space-> i gues downloading python embeded and backend packages. 
 
 add script_after_interpreter_crash_path
 
-is there still "WIP" somehwer?
-
 google drawbacks of -u
 
 ask AI if there are featurs in wrapper or emulator that i can add to otehr
@@ -122,10 +134,6 @@ browser emulator
 ===================================
 
 is cls implemetned?
-
-install stuff needed in backend
-
-should i merge script_wrapper and browser since mostly same need. but also does not have windwos temrinal featues like histoy ...
 
 add all buttons form fancy temrinal to browser. maybe more
 
