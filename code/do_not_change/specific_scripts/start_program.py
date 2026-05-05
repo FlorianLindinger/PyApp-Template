@@ -40,7 +40,6 @@ try:
         terminal_bg_color,
         terminal_needs_input,
         terminal_text_color,
-        use_fancy_terminal,
         use_faulthandler,
         use_global_python,
         use_uncompiled_terminal_emulator_and_run_it_in_global,  # noqa
@@ -160,6 +159,7 @@ try:
         app_id = sys.argv[1]
         launch_mode = sys.argv[2]
         create_terminal = launch_mode == "1"  # inputs are 0 or 1
+        create_terminal_emulator = launch_mode == "terminal_emulator"
         create_browser_terminal = launch_mode == "browser"
 
         # it overrides use_uncompiled_terminal_emulator_and_run_it_in_global from developer_settings
@@ -204,7 +204,7 @@ try:
         # ======================
         # launch terminal
 
-        if create_terminal or create_browser_terminal:
+        if create_terminal or create_terminal_emulator or create_browser_terminal:
             effective_log_path = log_path if enable_log_for_terminal_start else ""
         else:
             effective_log_path = log_path if enable_log_for_no_terminal_start else ""
@@ -250,9 +250,9 @@ try:
                 creationflags=subprocess.CREATE_NO_WINDOW,
             )
 
-        elif (use_fancy_terminal == True) and (create_terminal == True):
-            # run in termnial emulator
-            import json  # noqa:PLC0415
+        elif create_terminal_emulator == True:
+            # run in terminal emulator
+            import json
 
             # pass button settings via json
             if button_settings in [None, False]:
@@ -285,14 +285,14 @@ try:
                     creationflags=subprocess.CREATE_NO_WINDOW,
                 )
 
-        else:  # run in Windows terminal or no window
+        else:  # run in terminal or no window
             # script_wrapper_path need additional args
             args += [
                 terminal_bg_color + terminal_text_color,  # type:ignore
                 "1" if create_terminal else "0",
             ]
 
-            if create_terminal == True:  # run in windows terminal and don't wait
+            if create_terminal == True:  # run in terminal and don't wait
                 proc = subprocess.Popen(  # noqa:S603 #type:ignore
                     [python_exe_for_script_path, *extra_args, script_wrapper_path, script_path, *args],
                     creationflags=subprocess.CREATE_NEW_CONSOLE,
@@ -309,7 +309,7 @@ try:
         if error_code is not None and proc.poll() != 0:
             print("=" * 20)
             print("[Error] Failed launching terminal-emulator/script-wrapper. Probably a syntax error in the script:")
-            if (use_fancy_terminal == True) and (create_terminal == True):
+            if create_terminal_emulator == True:
                 if use_uncompiled_terminal_emulator_and_run_it_in_global:
                     print(uncompiled_terminal_path)
                 else:

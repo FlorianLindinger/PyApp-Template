@@ -2,11 +2,15 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+spawm lnk for fany termninal and normal and remove setting
+
 in measure start time: :: TODO: Dont requrie code in main_sciprt. test all 3 mode via shortcut always. add settings in batch
+
+optimize startup times: especially wrapper by setting incon and so on afterwards- problabsy need non stopping execution for that and paus eafterwards.
 
 how much do i really need to catch externally seomthing. is eems like windwos terminal anyway ycatches taht. mabye dont auto close soemhow and do wihtt pyrgon closing temrianl. what was reason there again?
 
-test startup time measruemtn
+make it smarter print for no compiled terminal present. amybe mention compilation script. also make compilation go via venv of default python
 
 # overkill:
 is git pre push synced? for do not ship backend
@@ -28,6 +32,14 @@ clean git after commiting backend
 
 maybe a ship terminal option? and recreate if requested 
 
+test play sounds
+
+make it do ruff auto for git commits?
+
+rename T to W
+
+simplify logic flor in start_program. and fix it such that one can launc from there with flags? maybe it should offer help and five setrtings and maybe feuadflt windwos temrinal
+
 ===================================
 ASK AI
 ===================================
@@ -47,8 +59,6 @@ use winsound.PlaySound(windows_sounds_path+"Windows Critical Stop.wav", winsound
 make stuf in start_program to lazy import where it is only used in one spot and not always executed
 
 update _README.txt
-
-fix play soinds
 
 addd pre commit hooks and actions. is there seomething like check wtih AI? ask for AI setup
 
