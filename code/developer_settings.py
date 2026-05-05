@@ -19,7 +19,10 @@ start_in_shortcut_folder = False
 # -------------------------------------------------
 print_timestamp_format: str | None = "%H:%M:%S | "
 # None for no timestamps (else see datetime.datetime.strftime usage: e.g. "%H:%M:%S | ")
-# -------------------------------------------------
+# ------------------------------------------------
+ship_compiled_fancy_terminal_emulator = True
+# ------------------------------------------------
+#
 # =================================
 # ==== less important settings ====
 # =================================
@@ -61,7 +64,7 @@ python_code_name = "main_code.py"
 script_after_python_interpreter_crash_name: str | None = "after_python_crash_code.py"
 # Script has to be in "code" folder. You can use the same name as python_code_name setting here. Note that the last argument will indicate that it was launched as a after-interpreter-crash script. You can test this in script via sys.argv[-1]=="crash". Set it to None to not launch anything after a interpreter crash.
 # -------------------------------------------------
-ship_backend_python_and_packages = True
+ship_backend_python_and_backend_packages = True
 # -------------------------------------------------
 start_minimized = False
 # -------------------------------------------------
