@@ -20,21 +20,13 @@ try:
     import runpy
     import sys
 
-    # ==================
-    # handle args
-
-    def arg_to_bool(index: int, default: bool = False) -> bool:
-        if len(sys.argv) <= index:
-            return default
-        return sys.argv[index].strip().lower() in {"1", "true", "yes", "on"}
-
-    def arg_to_wav_path(index: int) -> str:
-        if len(sys.argv) <= index:
-            return ""
-        wav_path = sys.argv[index].strip()
-        if wav_path != "" and os.path.splitext(wav_path)[1].lower() != ".wav":
-            raise ValueError(f'[Error] Sound argument must be empty or a .wav file: "{wav_path}"')
-        return wav_path
+    from launcher_common import (
+        CompletionAlerts,
+        ProcessIdRegistry,
+        arg_to_bool,
+        arg_to_wav_path,
+        looks_like_interpreter_crash,
+    )
 
     script_path = sys.argv[1]
 
@@ -58,10 +50,27 @@ try:
     send_Windows_notification_on_failure = arg_to_bool(19)
     play_sound_on_python_interpreter_crash = arg_to_wav_path(20)
     send_Windows_notification_on_python_interpreter_crash = arg_to_bool(21)
-
-    terminal_colors = sys.argv[22]
-    script_has_terminal = arg_to_bool(23)
+    open_log_file_after_success = arg_to_bool(22)
+    open_log_file_after_failure = arg_to_bool(23)
+    open_log_file_after_python_interpreter_crash = arg_to_bool(24)
+    start_minimized = arg_to_bool(25)
+    terminal_colors = sys.argv[26]
+    script_has_terminal = arg_to_bool(27)
     # script_has_terminal = true means that this window is run in a terminal and False that it is invisible and one needs to create a new terminal to print
+    completion_alerts = CompletionAlerts(
+        title=title,
+        app_id=app_id,
+        log_path=log_path,
+        play_sound_on_success=play_sound_on_success,
+        send_windows_notification_on_success=send_Windows_notification_on_success,
+        play_sound_on_failure=play_sound_on_failure,
+        send_windows_notification_on_failure=send_Windows_notification_on_failure,
+        play_sound_on_python_interpreter_crash=play_sound_on_python_interpreter_crash,
+        send_windows_notification_on_python_interpreter_crash=send_Windows_notification_on_python_interpreter_crash,
+        open_log_file_after_success=open_log_file_after_success,
+        open_log_file_after_failure=open_log_file_after_failure,
+        open_log_file_after_python_interpreter_crash=open_log_file_after_python_interpreter_crash,
+    )
 
     # ==================
 
@@ -69,39 +78,10 @@ try:
         import ctypes
 
     if process_id_file_path != "":
-
-        def remove_own_process_id_file_entries(path: str, process_id: int) -> None:
-            try:
-                with open(path, encoding="utf-8") as pid_file:
-                    lines = pid_file.readlines()
-
-                own_process_id = str(process_id)
-                remaining_lines = []
-                for line in lines:
-                    parts = line.strip().split(maxsplit=1)
-                    if parts and parts[0] == own_process_id:
-                        continue
-                    remaining_lines.append(line)
-
-                if any(line.strip() for line in remaining_lines):
-                    with open(path, "w", encoding="utf-8") as pid_file:
-                        pid_file.writelines(remaining_lines)
-                else:
-                    os.remove(path)
-            except FileNotFoundError:
-                pass
-            except Exception:
-                pass
-
         try:
-            own_process_id = os.getpid()
-            with open(process_id_file_path, "a", encoding="utf-8") as pid_file:
-                pid_file.write(f"{own_process_id}\n")
-            atexit.register(
-                remove_own_process_id_file_entries,
-                process_id_file_path,
-                own_process_id,
-            )
+            process_id_registry = ProcessIdRegistry(process_id_file_path)
+            process_id_registry.add(os.getpid())
+            atexit.register(process_id_registry.cleanup)
         except Exception as e:
             print(f"[Warning] Failed to write script-wrapper PID file: {e}")
 
@@ -111,20 +91,6 @@ try:
     ANSI_WARN = "\x1b[1;37;41m"  # white text, red bg, bold
     ANSI_SUCCESS = "\x1b[1;37;42m"  # white text, green bg, bold
     ANSI_RESET = "\033[0m"
-
-    WINDOWS_CRASH_CODES = {
-        0xC0000005,  # access violation
-        0xC00000FD,  # stack overflow
-        0xC000001D,  # illegal instruction
-        0xC0000096,  # privileged instruction
-        0xC0000409,  # stack buffer overrun
-    }
-
-    def unsigned32(n: int) -> int:
-        return n & 0xFFFFFFFF
-
-    def looks_like_interpreter_crash(returncode) -> bool:
-        return isinstance(returncode, int) and (unsigned32(returncode) in WINDOWS_CRASH_CODES)
 
     def print_warn(msg, sep: str | None = " ", end: str | None = "\n"):
         print(f"{ANSI_WARN}{msg}{ANSI_RESET}", sep=sep, end=end)
@@ -149,90 +115,6 @@ try:
         subprocess.run(  # noqa:S603
             [sys.executable, "-X", "faulthandler", "-c", text], creationflags=subprocess.CREATE_NEW_CONSOLE
         )
-
-    def play_windows_sound(wav_path: str) -> None:
-        try:
-            import winsound
-
-            sound = wav_path
-            if not os.path.isabs(sound):
-                sound = os.path.join(r"C:\Windows\Media", sound)
-            winsound.PlaySound(
-                sound,
-                winsound.SND_FILENAME | winsound.SND_NODEFAULT,
-            )
-        except Exception:
-            pass
-
-    def send_windows_notification(notification_title: str, message: str) -> None:
-        import subprocess
-        powershell_script = r"""
-$titleText = if ($args.Count -gt 0) { $args[0] } else { "Python script" }
-$messageText = if ($args.Count -gt 1) { $args[1] } else { "" }
-$appId = if ($args.Count -gt 2 -and $args[2]) { $args[2] } else { "PyAppTemplate" }
-[Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType=WindowsRuntime] | Out-Null
-[Windows.Data.Xml.Dom.XmlDocument, Windows.Data.Xml.Dom.XmlDocument, ContentType=WindowsRuntime] | Out-Null
-$titleXml = [System.Security.SecurityElement]::Escape($titleText)
-$messageXml = [System.Security.SecurityElement]::Escape($messageText)
-$xml = @"
-<toast>
-  <visual>
-    <binding template="ToastGeneric">
-      <text>$titleXml</text>
-      <text>$messageXml</text>
-    </binding>
-  </visual>
-  <audio silent="true"/>
-</toast>
-"@
-$doc = [Windows.Data.Xml.Dom.XmlDocument]::new()
-$doc.LoadXml($xml)
-$toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
-[Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier($appId).Show($toast)
-"""
-        try:
-            subprocess.Popen(  # noqa:S603
-                [
-                    "powershell.exe",
-                    "-NoProfile",
-                    "-ExecutionPolicy",
-                    "Bypass",
-                    "-Command",
-                    powershell_script,
-                    notification_title,
-                    message,
-                    app_id,
-                ],
-                stdin=subprocess.DEVNULL,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-                creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
-            )
-        except Exception:
-            pass
-
-    def run_completion_alerts(kind: str, exit_code) -> None:
-        play_sound_by_kind = {
-            "success": play_sound_on_success,
-            "failure": play_sound_on_failure,
-            "crash": play_sound_on_python_interpreter_crash,
-        }
-        notification_by_kind = {
-            "success": send_Windows_notification_on_success,
-            "failure": send_Windows_notification_on_failure,
-            "crash": send_Windows_notification_on_python_interpreter_crash,
-        }
-        messages = {
-            "success": "Script finished successfully.",
-            "failure": f"Script exited with code {exit_code}.",
-            "crash": f"Python process crashed with code {exit_code}.",
-        }
-
-        if notification_by_kind.get(kind, False):
-            send_windows_notification(f"{title}: {kind.title()}", messages.get(kind, f"Script ended with {exit_code}."))
-        sound_setting = play_sound_by_kind.get(kind)
-        if sound_setting:
-            play_windows_sound(sound_setting)
 
     if script_has_terminal:
         from ctypes import wintypes
@@ -367,6 +249,17 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
                 wintypes.UINT,
             ]
             user32.SetWindowPos.restype = wintypes.BOOL
+
+            user32.ShowWindow.argtypes = [wintypes.HWND, ctypes.c_int]
+            user32.ShowWindow.restype = wintypes.BOOL
+
+            def minimize_current_console() -> None:
+                try:
+                    hwnd = kernel32.GetConsoleWindow()
+                    if hwnd:
+                        user32.ShowWindow(hwnd, 2)
+                except Exception:
+                    pass
 
             def format_last_error(prefix: str) -> str:
                 error_code = ctypes.get_last_error()
@@ -974,6 +867,8 @@ def get_terminal_name():
         try:
             if terminal_appearance_thread is not None:
                 terminal_appearance_thread.start()
+            if script_has_terminal and start_minimized:
+                minimize_current_console()  # type:ignore[name-defined]
             runpy.run_path(script_path, run_name="__main__")
             # no crash:
             exit_code = 0
@@ -988,6 +883,7 @@ def get_terminal_name():
 
         # change terminal and print depending on exit_code
         if exit_code == 0:
+            completion_alerts.run("success", exit_code)
             if close_on_success:
                 sys.exit(0)
             else:
@@ -1004,12 +900,14 @@ input_success("[Program finished successfully] Press Enter to exit.")
                     run_text_in_new_terminal_and_wait(script_base + script)
                 sys.exit(0)
         elif looks_like_interpreter_crash(exit_code):
+            completion_alerts.run("crash", exit_code)
             if close_on_python_interpreter_crash:
                 sys.exit(exit_code)
             else:
                 ...  ################### WIP
 
         else:  # regular failure case (includes any string exit_code)
+            completion_alerts.run("failure", exit_code)
             if close_on_failure:
                 sys.exit(exit_code)
             else:

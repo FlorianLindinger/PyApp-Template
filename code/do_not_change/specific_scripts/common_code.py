@@ -182,6 +182,206 @@ def run_python_exe(
     )
 
 
+def make_abs_path_relative_to_file(path: str, file: str) -> str:
+    if not os.path.isabs(path):
+        return os.path.normpath(os.path.dirname(file) + "\\" + path)
+    return path
+
+
+def process_is_running(pid: int) -> bool:
+    if pid <= 0:
+        return False
+
+    if os.name != "nt":
+        try:
+            os.kill(pid, 0)
+        except OSError:
+            return False
+        return True
+
+    try:
+        import ctypes
+        from ctypes import wintypes
+
+        PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
+        STILL_ACTIVE = 259
+
+        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        kernel32.OpenProcess.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]
+        kernel32.OpenProcess.restype = wintypes.HANDLE
+        kernel32.GetExitCodeProcess.argtypes = [wintypes.HANDLE, ctypes.POINTER(wintypes.DWORD)]
+        kernel32.GetExitCodeProcess.restype = wintypes.BOOL
+        kernel32.CloseHandle.argtypes = [wintypes.HANDLE]
+        kernel32.CloseHandle.restype = wintypes.BOOL
+
+        process_handle = kernel32.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, False, pid)
+        if not process_handle:
+            return ctypes.get_last_error() == 5  # ERROR_ACCESS_DENIED means the process still exists.
+        try:
+            exit_code = wintypes.DWORD()
+            if not kernel32.GetExitCodeProcess(process_handle, ctypes.byref(exit_code)):
+                return False
+            return exit_code.value == STILL_ACTIVE
+        finally:
+            kernel32.CloseHandle(process_handle)
+    except Exception:
+        return False
+
+
+def wait_until_process_stops(pid: int, timeout_seconds: float) -> bool:
+    import time
+
+    deadline = time.monotonic() + timeout_seconds
+    while time.monotonic() < deadline:
+        if not process_is_running(pid):
+            return True
+        time.sleep(0.1)
+    return not process_is_running(pid)
+
+
+def taskkill(pid: int, *, force: bool) -> subprocess.CompletedProcess[str]:
+    cmd = ["taskkill", "/PID", str(pid), "/T"]
+    if force:
+        cmd.append("/F")
+    return subprocess.run(  # noqa:S603
+        cmd,
+        check=False,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+    )
+
+
+def stop_process_tree(pid: int) -> str:
+    if not process_is_running(pid):
+        return ""
+
+    if os.name != "nt":
+        import signal
+
+        os.kill(pid, signal.SIGTERM)
+        return ""
+
+    try:
+        graceful_result = taskkill(pid, force=False)
+    except FileNotFoundError:
+        import signal
+
+        os.kill(pid, signal.SIGTERM)
+        return ""
+
+    graceful_output = (graceful_result.stdout or "").strip()
+    if graceful_result.returncode == 0 and wait_until_process_stops(pid, 2.0):
+        return graceful_output
+
+    if not process_is_running(pid):
+        return graceful_output
+
+    forced_result = taskkill(pid, force=True)
+    forced_output = (forced_result.stdout or "").strip()
+    if forced_result.returncode == 0 or wait_until_process_stops(pid, 2.0):
+        return "\n".join(output for output in [graceful_output, forced_output] if output)
+
+    detail = forced_output or graceful_output
+    if detail:
+        raise RuntimeError(detail)
+    raise RuntimeError(f"taskkill failed with exit code {forced_result.returncode}")
+
+
+def parse_process_id_line(line: str) -> tuple[int, str] | None:
+    stripped_line = line.strip()
+    if stripped_line == "":
+        return None
+
+    process_id_text = stripped_line.split(maxsplit=1)[0]
+    try:
+        return int(process_id_text), line
+    except ValueError:
+        return None
+
+
+def read_process_id_entries(path: str) -> list[tuple[int, str]]:
+    entries = []
+    with open(path, encoding="utf-8") as pid_file:
+        for line in pid_file:
+            entry = parse_process_id_line(line)
+            if entry is not None:
+                entries.append(entry)
+    return entries
+
+
+def write_process_id_lines(path: str, lines: list[str]) -> None:
+    non_empty_lines = [line if line.endswith("\n") else line + "\n" for line in lines if line.strip()]
+    if non_empty_lines:
+        with open(path, "w", encoding="utf-8") as pid_file:
+            pid_file.writelines(non_empty_lines)
+    elif os.path.exists(path):
+        os.remove(path)
+
+
+def get_running_processes_from_pid_file(pid_path: str) -> dict[str, object]:
+    if pid_path == "" or not os.path.exists(pid_path):
+        return {"running_process_ids": [], "stale_count": 0}
+
+    process_id_entries = read_process_id_entries(pid_path)
+    if not process_id_entries:
+        os.remove(pid_path)
+        return {"running_process_ids": [], "stale_count": 0}
+
+    running_process_ids = []
+    stale_count = 0
+    seen_process_ids: set[int] = set()
+    for process_id, _line in process_id_entries:
+        if process_id in seen_process_ids:
+            continue
+        seen_process_ids.add(process_id)
+
+        if process_is_running(process_id):
+            running_process_ids.append(process_id)
+        else:
+            stale_count += 1
+
+    write_process_id_lines(pid_path, [f"{process_id}\n" for process_id in running_process_ids])
+    return {"running_process_ids": running_process_ids, "stale_count": stale_count}
+
+
+def stop_processes_from_pid_file(pid_path: str) -> dict[str, object]:
+    if pid_path == "" or not os.path.exists(pid_path):
+        return {"stopped_count": 0, "stale_count": 0, "failed_messages": []}
+
+    process_id_entries = read_process_id_entries(pid_path)
+    if not process_id_entries:
+        os.remove(pid_path)
+        return {"stopped_count": 0, "stale_count": 0, "failed_messages": []}
+
+    lines_by_process_id: dict[int, list[str]] = {}
+    for process_id, line in process_id_entries:
+        lines_by_process_id.setdefault(process_id, []).append(line)
+
+    failed_lines = []
+    failed_messages = []
+    stopped_count = 0
+    stale_count = 0
+    for process_id, lines in lines_by_process_id.items():
+        if not process_is_running(process_id):
+            stale_count += 1
+            continue
+
+        try:
+            stop_process_tree(process_id)
+            stopped_count += 1
+        except Exception as process_error:
+            failed_lines.extend(lines)
+            failed_messages.append(f"{process_id}: {process_error}")
+
+    write_process_id_lines(pid_path, failed_lines)
+    return {
+        "stopped_count": stopped_count,
+        "stale_count": stale_count,
+        "failed_messages": failed_messages,
+    }
+
+
 def venv_python_path() -> str:
     candidates = [
         venv_exe_path,
