@@ -44,6 +44,7 @@ try:
 
     from developer_settings import (
         button_settings,
+        close_existing_instances_on_start,
         close_on_failure,
         close_on_python_interpreter_crash,
         close_on_success,
@@ -60,7 +61,9 @@ try:
         play_sound_on_failure,
         play_sound_on_python_interpreter_crash,
         play_sound_on_success,
+        prevent_launch_if_existing_instances_running,
         print_timestamp_format,
+        prompt_to_close_existing_instances,
         python_code_name,
         python_version,
         script_after_python_interpreter_crash_name,
@@ -82,6 +85,7 @@ try:
     )
     from do_not_change.specific_scripts.common_code import (
         delete_venv,
+        get_running_processes_from_pid_file,
         input_warn,
         install_packages,
         print_traceback,
@@ -91,6 +95,7 @@ try:
         reinstall_python_distro_if_nonexistent_or_incorrect_version,
         save_current_packages_as_default,
         save_requirements_of_root_folder_noVersion,
+        stop_processes_from_pid_file,
     )
     from do_not_change.specific_scripts.common_variables import (
         browser_terminal_path,
@@ -209,6 +214,42 @@ try:
         # it overrides use_uncompiled_terminal_emulator_and_run_it_in_global from developer_settings
         if len(sys.argv) > 3:  # any arg means True. Used for debug before compiling terminal emulator
             use_uncompiled_terminal_emulator_and_run_it_in_global = True
+
+        if close_existing_instances_on_start:
+            stop_result = stop_processes_from_pid_file(process_id_file_path)
+            failed_messages = list(stop_result["failed_messages"])
+            if failed_messages:
+                raise RuntimeError(
+                    "Failed to close existing program instance(s):\n" + "\n".join(failed_messages)
+                )
+            stopped_count = int(stop_result["stopped_count"])
+            if stopped_count:
+                print(f"[Info] Closed {stopped_count} existing program instance(s).")
+        elif prevent_launch_if_existing_instances_running:
+            running_result = get_running_processes_from_pid_file(process_id_file_path)
+            running_process_ids = list(running_result["running_process_ids"])
+            if running_process_ids:
+                print(
+                    f"[Info] {len(running_process_ids)} existing program instance(s) are still running: "
+                    + ", ".join(str(process_id) for process_id in running_process_ids)
+                )
+
+                if not prompt_to_close_existing_instances:
+                    input("[Info] New launch cancelled. Press Enter to exit.")
+                    sys.exit(0)
+
+                answer = input("Close the existing instance(s) and launch a new one? [y/N] ").strip().lower()
+                if answer not in {"y", "yes"}:
+                    print("[Info] New launch cancelled.")
+                    sys.exit(0)
+
+                stop_result = stop_processes_from_pid_file(process_id_file_path)
+                failed_messages = list(stop_result["failed_messages"])
+                if failed_messages:
+                    raise RuntimeError(
+                        "Failed to close existing program instance(s):\n" + "\n".join(failed_messages)
+                    )
+                print(f"[Info] Closed {int(stop_result['stopped_count'])} existing program instance(s).")
 
         def bool_arg(value: bool) -> str:
             return "true" if value else "false"
