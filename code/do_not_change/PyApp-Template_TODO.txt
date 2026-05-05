@@ -2,6 +2,8 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+test if logging work for all
+
 add shortcut to log? 
 
 setting to make old terminal closing when launchging new. in case it is important that only one eixst. or might as well setting to stop lainch if olöd exist and somehow chekc that pid exists
