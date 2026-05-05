@@ -6,6 +6,7 @@ how much do i really need to catch externally seomthing. is eems like windwos te
 
 test startup time measruemtn
 
+# overkill:
 is git pre push synced? for do not ship backend
 how do i not sync
 maybe just for app start change .gitignore in do_not_change? maybe all start should chekc that so also generator i guess.
@@ -14,12 +15,22 @@ git rm --cached path/to/file
 git add .gitignore
 git commit -m "Stop tracking ignored files"
 git push
-maybe just have a backend ish folder outside and people can delete that. worse for changes in backend. also shorter path than do_not_change
+maybe just have a backend ish folder outside and people can delete that. worse for changes in backend and clarity in code folder. also shorter path than do_not_change
                        backend
+->better to explain in readme that one can delte P and or packages
+->just add detection for emtpy paclages or no packages folder...
+->tool in dev tools to make script smalles size->del P, packages, py_env, also terminal emutlar do not sync
+i guess i dont kill terminal emulator since nuitka is not guarantted to be found. mabye i jsut comile wiht backend? option would be kind of nice
+
+clean git after commiting backend
+
+maybe a ship terminal option? and recreate if requested 
 
 ===================================
 ASK AI
 ===================================
+
+is the file organication somewher unconventuional? should i renomea seom sutff?
 
 impleemt ship_backend_python_and_packages = True and add all comnmets in dev settings
 
