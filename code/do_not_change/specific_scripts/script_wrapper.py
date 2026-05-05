@@ -143,8 +143,8 @@ try:
             pass
 
     def run_text_in_new_terminal_and_wait(text):
-        import subprocess  # noqa:PLC0415
-        import sys  # noqa
+        import subprocess
+        import sys
 
         subprocess.run(  # noqa:S603
             [sys.executable, "-X", "faulthandler", "-c", text], creationflags=subprocess.CREATE_NEW_CONSOLE
@@ -165,7 +165,7 @@ try:
             pass
 
     def send_windows_notification(notification_title: str, message: str) -> None:
-        import subprocess  # noqa:PLC0415
+        import subprocess
         powershell_script = r"""
 $titleText = if ($args.Count -gt 0) { $args[0] } else { "Python script" }
 $messageText = if ($args.Count -gt 1) { $args[1] } else { "" }
@@ -491,7 +491,7 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
 
             def set_terminal_window_app_id(candidate_hwnds: list[int], app_id: str, print_errors: bool = False) -> int:
                 """Try to set System.AppUserModel.ID on the terminal window itself."""
-                import uuid  # noqa:PLC0415
+                import uuid
 
                 if app_id == "":
                     return 0
@@ -933,13 +933,22 @@ def get_terminal_name():
             except Exception as e:
                 print(e)
 
-        # set terminal name
+        terminal_appearance_thread = None
         if script_has_terminal:
-            set_terminal_name(title)  # type:ignore
-            set_terminal_icon(icon_path, app_id=app_id)  # type:ignore
 
-            if terminal_colors != "":
-                os.system(f"color {terminal_colors}")  # noqa:S605
+            def apply_terminal_appearance() -> None:
+                try:
+                    set_terminal_name(title)  # type:ignore
+                    set_terminal_icon(icon_path, app_id=app_id)  # type:ignore
+
+                    if terminal_colors != "":
+                        os.system(f"color {terminal_colors}")  # noqa:S605
+                except Exception as error:
+                    print(f"[Info] Terminal appearance update skipped: {error}")
+
+            import threading
+
+            terminal_appearance_thread = threading.Thread(target=apply_terminal_appearance)
 
         sys.argv = [
             script_path,
@@ -963,6 +972,8 @@ def get_terminal_name():
 
             builtins.input = input_with_prepend
         try:
+            if terminal_appearance_thread is not None:
+                terminal_appearance_thread.start()
             runpy.run_path(script_path, run_name="__main__")
             # no crash:
             exit_code = 0
@@ -972,6 +983,8 @@ def get_terminal_name():
                 exit_code = 0
         finally:
             builtins.input = original_input
+            if terminal_appearance_thread is not None:
+                terminal_appearance_thread.join()
 
         # change terminal and print depending on exit_code
         if exit_code == 0:
