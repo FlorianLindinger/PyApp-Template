@@ -8,6 +8,35 @@ import sys
 import time
 from datetime import datetime, timezone
 
+# ====================================
+# setup for start without backend python (eg for debug)
+do_not_change_dir = os.path.normpath(os.path.join(os.path.dirname(__file__), ".."))
+code_dir = os.path.normpath(os.path.join(do_not_change_dir, ".."))
+bundled_packages_dir = os.path.join(do_not_change_dir, "python_packages")
+
+for path in reversed(
+    [
+        code_dir,
+        bundled_packages_dir,
+        os.path.join(bundled_packages_dir, "win32"),
+        os.path.join(bundled_packages_dir, "win32", "lib"),
+        os.path.join(bundled_packages_dir, "Pythonwin"),
+    ]
+):
+    if path not in sys.path:
+        sys.path.insert(0, path)
+
+if hasattr(os, "add_dll_directory"):
+    for path in [
+        bundled_packages_dir,
+        os.path.join(bundled_packages_dir, "pywin32_system32"),
+    ]:
+        if os.path.exists(path):
+            os.add_dll_directory(path)
+# end of setup for start without backend python (eg for debug)
+# ====================================
+
+
 try:
     # =============================
     # imports packages and common variables and developer settings
@@ -156,9 +185,18 @@ try:
         # ======================
         # process args
 
-        app_id = sys.argv[1]
-        launch_mode = sys.argv[2]
         valid_launch_modes = ["terminal", "no_terminal", "terminal_emulator", "browser"]
+
+        if len(sys.argv) >= 3:
+            app_id = sys.argv[1]
+            launch_mode = sys.argv[2]
+        elif len(sys.argv) == 2:
+            app_id = ""
+            launch_mode = sys.argv[1]
+        else:
+            app_id = ""
+            launch_mode = "terminal"
+
         if launch_mode not in valid_launch_modes:
             raise ValueError(
                 f'[Error] Unknown launch_mode "{launch_mode}". Expected one of: {", ".join(valid_launch_modes)}'
@@ -259,6 +297,7 @@ try:
             extra_args = []
 
         if launch_mode == "browser":
+            launched_backend_path = browser_terminal_path
             proc = subprocess.Popen(  # noqa:S603 #type:ignore
                 [
                     sys.executable,
@@ -269,6 +308,9 @@ try:
                     *args,
                 ],
                 creationflags=subprocess.CREATE_NO_WINDOW,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
             )
 
         elif launch_mode == "terminal_emulator":
@@ -280,10 +322,14 @@ try:
                 button_settings_path = ""
             else:
                 try:
-                    button_settings_path = json.dumps(button_settings)
+                    button_settings_path = json.dumps(dict(button_settings))
                 except TypeError as e:
                     raise TypeError(
-                        f'[Error] button_settings in developer settings at "{developer_settings_path}" must be JSON serializable.'
+                        f'[Error] button_settings in developer settings at "{developer_settings_path}" must be JSON serializable and convertible to a dict.'
+                    ) from e
+                except ValueError as e:
+                    raise ValueError(
+                        f'[Error] button_settings in developer settings at "{developer_settings_path}" must be a dict or an iterable of (button_name, settings) pairs.'
                     ) from e
 
             args += [
@@ -295,19 +341,28 @@ try:
             ]
 
             if use_uncompiled_terminal_emulator_and_run_it_in_global == True:  # Meant for debugging terminal
+                launched_backend_path = uncompiled_terminal_path
                 proc = subprocess.Popen(  # noqa:S603 #type:ignore
                     ["py", *extra_args, uncompiled_terminal_path, script_path, python_exe_for_script_path, *args],
                     creationflags=subprocess.CREATE_NO_WINDOW,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    text=True,
                 )
             else:
                 # run and wait (using the compiled terminal emulator)
+                launched_backend_path = compiled_terminal_path
                 proc = subprocess.Popen(  # noqa:S603 #type:ignore
                     [compiled_terminal_path, script_path, python_exe_for_script_path, *args],
                     creationflags=subprocess.CREATE_NO_WINDOW,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    text=True,
                 )
 
         else:  # run in terminal or no window
             # script_wrapper_path need additional args
+            launched_backend_path = script_wrapper_path
             args += [
                 terminal_bg_color + terminal_text_color,  # type:ignore
                 bool_arg(launch_mode == "terminal"),
@@ -329,15 +384,16 @@ try:
         error_code = proc.poll()
         if error_code is not None and proc.poll() != 0:
             print("=" * 20)
-            print("[Error] Failed launching terminal-emulator/script-wrapper. Probably a syntax error in the script:")
-            if launch_mode == "terminal_emulator":
-                if use_uncompiled_terminal_emulator_and_run_it_in_global:
-                    print(uncompiled_terminal_path)
-                else:
-                    print(compiled_terminal_path)
-            else:
-                print(script_wrapper_path)
+            print(f"[Error] Failed launching {launch_mode} backend:")
+            print(launched_backend_path)
             print("-" * 20)
+            try:
+                child_output, _ = proc.communicate(timeout=0.2)
+            except Exception:
+                child_output = ""
+            if child_output:
+                print(child_output.rstrip())
+                print("-" * 20)
             input("[Error (see above)] Press enter to exit.")
             os._exit(error_code)
 
