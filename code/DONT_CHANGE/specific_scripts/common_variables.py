@@ -45,8 +45,7 @@ variable_in_default_packages_path_that_triggers_search_if_true = (
 developer_settings_dir = os.path.dirname(developer_settings_path)
 
 python_dist_path = py_env_dir + "\\py_dist"
+python_exe_path = os.path.normpath(python_dist_path + "\\python.exe")
 venv_dir_path = py_env_dir + "\\virt_env"
 venv_exe_path = venv_dir_path + "\\Portable_Scripts\\python.bat"
-
-python_exe_path = os.path.normpath(python_dist_path + "\\python.exe")
 relative_venv_to_python_dist = os.path.relpath(python_dist_path, venv_dir_path)
