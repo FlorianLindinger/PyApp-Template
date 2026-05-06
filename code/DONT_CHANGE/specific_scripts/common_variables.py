@@ -2,14 +2,8 @@ import os
 
 
 def make_abs(x: str) -> str:
-    return os.path.normpath(_file_dir + x)
+    return os.path.normpath(os.path.dirname(os.path.normpath(__file__)) + "\\" + x)
 
-
-def get_dir(x: str) -> str:
-    return os.path.dirname(x)
-
-
-_file_dir: str = get_dir(os.path.normpath(__file__)) + "\\"
 
 # ========================
 # === define variables ===
@@ -48,14 +42,11 @@ variable_in_default_packages_path_that_triggers_search_if_true = (
 # === process the variables ===
 # =============================
 
-developer_settings_dir = get_dir(developer_settings_path)
-
-if python_scripts_dir != "" and python_scripts_dir[-1] != "\\":
-    python_scripts_dir += "\\"
+developer_settings_dir = os.path.dirname(developer_settings_path)
 
 python_dist_path = py_env_dir + "\\py_dist"
 venv_dir_path = py_env_dir + "\\virt_env"
 venv_exe_path = venv_dir_path + "\\Portable_Scripts\\python.bat"
 
 python_exe_path = os.path.normpath(python_dist_path + "\\python.exe")
-relative_venv_to_python_dist = os.path.relpath(python_dist_path, get_dir(venv_dir_path))
+relative_venv_to_python_dist = os.path.relpath(python_dist_path, venv_dir_path)

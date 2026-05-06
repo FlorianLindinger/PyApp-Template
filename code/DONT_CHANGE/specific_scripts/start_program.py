@@ -150,7 +150,7 @@ try:
         stylesheet_path = ""
     else:
         if not os.path.isabs(stylesheet_path):
-            stylesheet_path = os.path.join(developer_settings_dir, stylesheet_path)
+            stylesheet_path = developer_settings_dir + "\\" + stylesheet_path
 
     if python_version in [None, False]:
         python_version = ""
