@@ -6,9 +6,8 @@ import sys
 root_dir = os.path.dirname(__file__) + "\\..\\..\\.."
 sys.path.insert(0, root_dir)
 
-from DONT_CHANGE.specific_scripts.common_code import input_success, print_traceback
+from DONT_CHANGE.specific_scripts.common_code import ensure_venv, input_success, print_traceback
 from DONT_CHANGE.specific_scripts.common_variables import venv_exe_path
-from DONT_CHANGE.specific_scripts.dev_tools.dev_tools_common_code import ensure_venv
 
 ensure_venv()
 
