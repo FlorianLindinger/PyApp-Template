@@ -10,7 +10,7 @@ This repository may contain, after execution of any of its codes, newly generate
 
 1. Ensure the main licenses described in Section 2 and 3 allow for your way of distribution
 2. - When distributing via Git:
-   If the files in `code/do_not_change` are unaltered, `.gitignore` files are added which auto-exclude files licensed as described in Sections 4 and 5 from distribution via git. If you alter anything in `code/do_not_change`, make sure this behavior does not change and/or alter this license file accordingly.
+   If the files in `code/DONT_CHANGE` are unaltered, `.gitignore` files are added which auto-exclude files licensed as described in Sections 4 and 5 from distribution via git. If you alter anything in `code/DONT_CHANGE`, make sure this behavior does not change and/or alter this license file accordingly.
    - When distributing by any other method:
    Ensure that the licenses described in Sections 4 and 5 allow for your mode of distribution.
 
@@ -28,7 +28,7 @@ All files in this repository, **except for files in the folders described in Sec
 
 ## Section 3: Original Template - License (Composite License)
 
-This App is based on the template from https://github.com/FlorianLindinger/PyApp-Template by Florian Lindinger. This backend code is located in the **`code/do_not_change`** folder and falls under the composite license described in the `LICENSE.md` file within that folder.
+This App is based on the template from https://github.com/FlorianLindinger/PyApp-Template by Florian Lindinger. This backend code is located in the **`code/DONT_CHANGE`** folder and falls under the composite license described in the `LICENSE.md` file within that folder.
 
 ---
 

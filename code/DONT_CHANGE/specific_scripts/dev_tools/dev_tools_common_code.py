@@ -6,7 +6,7 @@ import sys
 import tempfile
 from collections.abc import Iterable
 
-from do_not_change.specific_scripts.common_code import (
+from DONT_CHANGE.specific_scripts.common_code import (
     abs_norm,
     ensure_parent,
     ensure_python_distribution,
@@ -16,7 +16,7 @@ from do_not_change.specific_scripts.common_code import (
     run_python_exe,
     write_lines,
 )
-from do_not_change.specific_scripts.common_variables import (
+from DONT_CHANGE.specific_scripts.common_variables import (
     excluded_folders_for_package_search,
     python_exe_path,
     python_scripts_folder_path,

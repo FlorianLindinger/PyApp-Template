@@ -1,6 +1,6 @@
 # ==============================
 
-from do_not_change.specific_scripts.startup_benchmark_marker import mark_startup_time  # noqa
+from DONT_CHANGE.specific_scripts.startup_benchmark_marker import mark_startup_time  # noqa
 
 # ==============================
 import sys

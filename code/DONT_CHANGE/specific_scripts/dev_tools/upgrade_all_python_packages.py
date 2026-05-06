@@ -1,8 +1,8 @@
 import subprocess
 
-from do_not_change.specific_scripts.common_code import input_success, print_traceback
-from do_not_change.specific_scripts.common_variables import venv_exe_path
-from do_not_change.specific_scripts.dev_tools.dev_tools_common_code import ensure_venv
+from DONT_CHANGE.specific_scripts.common_code import input_success, print_traceback
+from DONT_CHANGE.specific_scripts.common_variables import venv_exe_path
+from DONT_CHANGE.specific_scripts.dev_tools.dev_tools_common_code import ensure_venv
 
 ensure_venv()
 
