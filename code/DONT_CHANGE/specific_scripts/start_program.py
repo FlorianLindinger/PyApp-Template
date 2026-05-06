@@ -9,33 +9,10 @@ import time
 from datetime import datetime, timezone
 
 # ====================================
-# setup for start without backend python (eg for debug)
-DONT_CHANGE_dir = os.path.normpath(os.path.join(os.path.dirname(__file__), ".."))
-code_dir = os.path.normpath(os.path.join(DONT_CHANGE_dir, ".."))
-bundled_packages_dir = os.path.join(DONT_CHANGE_dir, "python_packages")
-
-for path in reversed(
-    [
-        code_dir,
-        bundled_packages_dir,
-        os.path.join(bundled_packages_dir, "win32"),
-        os.path.join(bundled_packages_dir, "win32", "lib"),
-        os.path.join(bundled_packages_dir, "Pythonwin"),
-    ]
-):
-    if path not in sys.path:
-        sys.path.insert(0, path)
-
-if hasattr(os, "add_dll_directory"):
-    for path in [
-        bundled_packages_dir,
-        os.path.join(bundled_packages_dir, "pywin32_system32"),
-    ]:
-        if os.path.exists(path):
-            os.add_dll_directory(path)
-# end of setup for start without backend python (eg for debug)
+# add root dir for debug cases where this script is called on its own:
+root_dir = os.path.dirname(__file__) + "\\..\\.."
+sys.path.insert(0, root_dir)
 # ====================================
-
 
 try:
     # =============================
@@ -63,10 +40,10 @@ try:
         play_sound_on_success,
         prevent_launch_if_existing_instances_running,
         print_timestamp_format,
+        program_name,
         prompt_to_close_existing_instances,
         python_code_name,
         python_version,
-        script_after_python_interpreter_crash_name,
         send_Windows_notification_on_failure,
         send_Windows_notification_on_python_interpreter_crash,
         send_Windows_notification_on_success,
@@ -79,9 +56,6 @@ try:
         use_faulthandler,
         use_global_python,
         use_uncompiled_terminal_emulator_and_run_it_in_global,  # noqa
-    )
-    from developer_settings import (
-        program_name as title,
     )
     from DONT_CHANGE.specific_scripts.common_code import (
         delete_venv,
@@ -98,6 +72,7 @@ try:
         stop_processes_from_pid_file,
     )
     from DONT_CHANGE.specific_scripts.common_variables import (
+        backend_packages_dir,
         browser_terminal_path,
         compiled_terminal_path,
         default_packages_file_path,
@@ -106,31 +81,37 @@ try:
         icon_path,
         needed_packages_output_file_path,
         process_id_file_path,
-        python_scripts_folder_path,
+        python_scripts_dir,
         script_wrapper_path,
         uncompiled_terminal_path,
         venv_dir_path,
         venv_exe_path,
     )
 
+    # needed for pywin32 to find its modules
+    for path in reversed(
+        [
+            backend_packages_dir,
+            os.path.join(backend_packages_dir, "win32"),
+            os.path.join(backend_packages_dir, "win32", "lib"),
+            os.path.join(backend_packages_dir, "Pythonwin"),
+        ]
+    ):
+        if path not in sys.path:
+            sys.path.insert(0, path)
+    if hasattr(os, "add_dll_directory"):
+        for path in [
+            backend_packages_dir,
+            os.path.join(backend_packages_dir, "pywin32_system32"),
+        ]:
+            if os.path.exists(path):
+                os.add_dll_directory(path)
+
     # =============================
     # process imports
     # =============================
 
-    if script_after_python_interpreter_crash_name in [None, False]:
-        script_after_interpreter_crash_path = ""
-    else:
-        script_after_interpreter_crash_path = python_scripts_folder_path + script_after_python_interpreter_crash_name
-        if not os.path.exists(script_after_interpreter_crash_path):
-            raise FileNotFoundError(
-                f'[Error] Python after crash script not found at "{script_after_interpreter_crash_path}"'
-            )
-    if close_on_python_interpreter_crash == True and script_after_interpreter_crash_path != "":
-        raise ValueError(
-            f'[Error] Either choose close_on_python_interpreter_crash = False or script_after_interpreter_crash_path not in [None,"",False] in developer settings at "{developer_settings_path}"'
-        )
-
-    script_path: str = python_scripts_folder_path + python_code_name
+    script_path: str = python_scripts_dir + "\\" + python_code_name
     # raise error if script not found
     if not os.path.exists(script_path):
         raise FileNotFoundError(f'[Error] Python script not found at "{script_path}"')
@@ -216,18 +197,13 @@ try:
             use_uncompiled_terminal_emulator_and_run_it_in_global = True
 
         if close_existing_instances_on_start:
-            stop_result = stop_processes_from_pid_file(process_id_file_path)
-            failed_messages = list(stop_result["failed_messages"])
+            stopped_count, _stale_count, failed_messages = stop_processes_from_pid_file(process_id_file_path)
             if failed_messages:
-                raise RuntimeError(
-                    "Failed to close existing program instance(s):\n" + "\n".join(failed_messages)
-                )
-            stopped_count = int(stop_result["stopped_count"])
+                raise RuntimeError("Failed to close existing program instance(s):\n" + "\n".join(failed_messages))
             if stopped_count:
                 print(f"[Info] Closed {stopped_count} existing program instance(s).")
         elif prevent_launch_if_existing_instances_running:
-            running_result = get_running_processes_from_pid_file(process_id_file_path)
-            running_process_ids = list(running_result["running_process_ids"])
+            running_process_ids, _stale_count = get_running_processes_from_pid_file(process_id_file_path)
             if running_process_ids:
                 print(
                     f"[Info] {len(running_process_ids)} existing program instance(s) are still running: "
@@ -243,13 +219,10 @@ try:
                     print("[Info] New launch cancelled.")
                     sys.exit(0)
 
-                stop_result = stop_processes_from_pid_file(process_id_file_path)
-                failed_messages = list(stop_result["failed_messages"])
+                stopped_count, _stale_count, failed_messages = stop_processes_from_pid_file(process_id_file_path)
                 if failed_messages:
-                    raise RuntimeError(
-                        "Failed to close existing program instance(s):\n" + "\n".join(failed_messages)
-                    )
-                print(f"[Info] Closed {int(stop_result['stopped_count'])} existing program instance(s).")
+                    raise RuntimeError("Failed to close existing program instance(s):\n" + "\n".join(failed_messages))
+                print(f"[Info] Closed {stopped_count} existing program instance(s).")
 
         def bool_arg(value: bool) -> str:
             return "true" if value else "false"
@@ -260,7 +233,7 @@ try:
             if value is True:
                 return default_wav
 
-            sound_path = str(value).strip()
+            sound_path = value.strip()
             if sound_path.lower() in {"", "0", "false", "no", "off", "none"}:
                 return ""
             extension = os.path.splitext(sound_path)[1]
@@ -323,7 +296,7 @@ try:
             effective_log_path = log_path if enable_log_for_no_terminal_start else ""
 
         args = [
-            title,
+            program_name,
             icon_path,
             app_id,
             bool_arg(wdir_is_script_dir),
@@ -334,7 +307,6 @@ try:
             effective_log_path,
             log_timestamp_format,
             bool_arg(overwrite_log),
-            script_after_interpreter_crash_path,
             input_prepend,
             process_id_file_path,
             sound_arg(play_sound_on_success, "notify.wav"),
