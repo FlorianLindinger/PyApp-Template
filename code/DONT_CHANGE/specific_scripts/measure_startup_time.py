@@ -343,6 +343,7 @@ def run_one(command: list[str], marker_path: Path, timeout: float) -> float:
         return (detected_at - (start_ns / 1_000_000_000)) * 1000
     finally:
         cleanup_process(proc, marker_values)
+        cleanup_marker(marker_path)
 
 
 def run_one_shortcut(
@@ -380,6 +381,21 @@ def run_one_shortcut(
         return (detected_at - (start_ns / 1_000_000_000)) * 1000
     finally:
         cleanup_process(starter_proc, marker_values)
+        cleanup_marker(marker_path)
+
+
+def cleanup_marker(marker_path: Path) -> None:
+    try:
+        marker_path.unlink(missing_ok=True)
+    except OSError as error:
+        print(f'[Warning] Could not remove startup marker "{marker_path}": {error}')
+
+
+def cleanup_stale_markers() -> None:
+    if not WORK_DIR.exists():
+        return
+    for marker_path in WORK_DIR.glob("startup_marker_*.txt"):
+        cleanup_marker(marker_path)
 
 
 def measure(label: str, command: list[str], runs: int, timeout: float) -> list[float]:
@@ -463,6 +479,7 @@ def main() -> int:
         raise FileNotFoundError(f'Python distro exe not found: "{PY_DIST_PYTHON}"')
 
     WORK_DIR.mkdir(parents=True, exist_ok=True)
+    cleanup_stale_markers()
     shortcut_measurements: list[tuple[Path, list[str], Path]] = []
     missing_shortcuts = [shortcut for shortcut in shortcut_specs if not shortcut.path.exists()]
     if missing_shortcuts:
