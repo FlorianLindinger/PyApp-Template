@@ -14,9 +14,9 @@ also make lazy imports for wrapper
 lazy import pywin32 module path setup
 # needed ? # needed for pywin32 to find its modules
 
-renamed python_packages to backend_packages
+renamed python_packages to backend_python_packages
 
-check for todos
+check for "todos" in code
 
 clean startup time spam in DO_NOT_CAHNGE IN DO_NOT SYNC
 
