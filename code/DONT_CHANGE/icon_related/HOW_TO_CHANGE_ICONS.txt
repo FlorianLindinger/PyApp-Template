@@ -36,9 +36,9 @@ Keep the file names unchanged.
 
 If icon.png, settings.png, or stop.png is missing, the generator uses the fallback images from:
 
-    code/do_not_change/icon_related/default_icon.png
-    code/do_not_change/icon_related/default_settings.png
-    code/do_not_change/icon_related/default_stop.png
+    code/DONT_CHANGE/icon_related/default_icon.png
+    code/DONT_CHANGE/icon_related/default_settings.png
+    code/DONT_CHANGE/icon_related/default_stop.png
 
 If a user image is still exactly the template fallback image, the generator also treats it as fallback.
 
@@ -52,11 +52,11 @@ Run this shortcut:
 
 That shortcut currently launches:
 
-    code/do_not_change/P/P.exe code/do_not_change/icon_related/generate_icons.py
+    code/DONT_CHANGE/P/P.exe code/DONT_CHANGE/icon_related/generate_icons.py
 
 The generator script is:
 
-    code/do_not_change/icon_related/generate_icons.py
+    code/DONT_CHANGE/icon_related/generate_icons.py
 
 It uses Windows PowerShell/WPF rendering to resize images cleanly, preserve aspect ratio,
 add transparent padding, and write a multi-resolution .ico file with these sizes:
@@ -70,7 +70,7 @@ Default:
 
 Manual example:
 
-    code/do_not_change/P/P.exe code/do_not_change/icon_related/generate_icons.py 0.6
+    code/DONT_CHANGE/P/P.exe code/DONT_CHANGE/icon_related/generate_icons.py 0.6
 
 Icons should be generated this way instead of with a quick online converter, because Windows
 icons need multiple embedded sizes to scale well in shortcuts, taskbar entries, and Explorer.

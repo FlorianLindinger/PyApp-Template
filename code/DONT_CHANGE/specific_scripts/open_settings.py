@@ -11,7 +11,7 @@ try:
     # ==========================================================================
     # import from common variables and developer settings
     import developer_settings
-    from do_not_change.specific_scripts.common_variables import developer_settings_path
+    from DONT_CHANGE.specific_scripts.common_variables import developer_settings_path
 
     # ==========================================================================
     # needed functions

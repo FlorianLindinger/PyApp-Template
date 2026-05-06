@@ -1,10 +1,10 @@
-from do_not_change.specific_scripts.common_code import input_success, print_traceback
-from do_not_change.specific_scripts.common_variables import (
+from DONT_CHANGE.specific_scripts.common_code import input_success, print_traceback
+from DONT_CHANGE.specific_scripts.common_variables import (
     excluded_folders_for_package_search,
     needed_packages_output_file_path,
     python_scripts_folder_path,
 )
-from do_not_change.specific_scripts.dev_tools.dev_tools_common_code import (
+from DONT_CHANGE.specific_scripts.dev_tools.dev_tools_common_code import (
     install_requirements,
     recreate_venv,
     save_required_packages,
