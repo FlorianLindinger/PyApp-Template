@@ -7,6 +7,10 @@
 ==== Must do before release ====
 ================================
 
+clean startup time spam in DO_NOT_CAHNGE IN DO_NOT SYNC
+
+bump to version 1.0 afterwards
+
 add after pyton crash in next release
 stuff will either way change in dev_settings->delay maximally
 
@@ -203,6 +207,8 @@ ask AI for better reliably
 ================
 ==== Future ====
 ================
+
+meniton that one can add package to backaPODNE_PACKAGES_REQUIREMNT:RT AND DELTE p NAD PYTHON_PACVKGES
 
 print script name and path when error possible?
 
