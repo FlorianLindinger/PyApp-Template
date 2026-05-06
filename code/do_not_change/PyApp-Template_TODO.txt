@@ -11,9 +11,6 @@ clean startup time spam in DO_NOT_CAHNGE IN DO_NOT SYNC
 
 bump to version 1.0 afterwards
 
-add after pyton crash in next release
-stuff will either way change in dev_settings->delay maximally
-
 fix all ruff/pyrefly suggestions
 
 is use_global_python used everywhere and als ohandles iof modeule not present?
@@ -24,17 +21,7 @@ ask AI for speedup and safety and robustness improvmens and also comments and do
 
 ask AI if code or variable is unused
 
-ask if there is possiblity for maore fail ehcks and error prints and input exits
-
-add script_after_interpreter_crash_path
-
-ask AI if there are featurs in wrapper or emulator that i can add to otehr
-
-does anything require admin
-
-ask for generall improivements and comments and oragnaizing and docstrings
-
-wrapper and emulator same functionality as far as possible?
+script_after_interpreter_crash_path dlete from dev_settings and ifle? and delte code relating
 
 let it chekc if seomthing looks like a placeholder and unfinsihjesd and nunnnecassy prings
 
@@ -55,9 +42,7 @@ test all settings for all modes
 
 ask AI for problems and imporovemnts
 
-
-remopve temrinal appearing for temrinal emulator
-
+fix temrinal appearing for temrinal emulator
 
 fix all starters.
 
@@ -76,13 +61,9 @@ in wrapper:
             else:
                 ...  ################### WIP
 
-fix after python cript crash
-
-what am i catching that windwos temrinal does noit?
 
 is logging saving the color things???
 
-is expceioptn handline mentioned in readem
 
 underline in readme better visibile?
 udpate main readme
@@ -92,13 +73,10 @@ update good settings for pyrefly for pyproject.toml
 
 update git topics and order
 Fix Release in git
-update README
 
 test dev_tools
 
 Fix repo hygiene first. git status shows a huge dirty state from tracked files under code/do_not_change/python_packages. Since README claims package files should not be shared, make that true: ignore/untrack generated package folders, keep only a manifest/installer, and add a clean bootstrap path. Right now .gitignore (line 17) does not cover that.
-
-Finish crash handling parity. script_wrapper.py (line 881) still has a real WIP branch for interpreter crashes. Also script_after_interpreter_crash_path is parsed but not really used consistently between wrapper and terminal emulator.
 
 see if windows terminal hadnles all crash and erros.
 not working:
@@ -120,52 +98,25 @@ chekc overall start time overhead compared to global python. I guess check with 
 
 test no terminal error print
 
-do i print success to log? might as well i guess
-
-
 never close on backend failur. THat should not happen. always open a new terminal to report. I guess no log then.
-
-menation color ptins and traceback rich in readme
 
 am i using faulthandler correctly? do i need to print that to a log? ask ai if works
 
-remove. restart_main_code_on_crash. just mention that one can name main_script and it will get 
-sys.argv[-1] == "crash"
-
-clarify that restart on crash only appeas on python crsahj not regular crahs of script
-make it that way
-
 renamed: generate requiremtns to "generate lsit of ...". Add readme that explains what they do 
-make all to python scripts called by shortcuts i guess
 
-fix ins start_program:
+thjinbk if all tool names appear nice
+
+rem,ove ins start_program:
     # restart_main_code_on_crash,
     # after_python_crash_code_path
 
-implement:
-log_even_with_terminal = getattr(developer_settings, "log_even_with_terminal", True)
-restart_main_code_on_crash = getattr(developer_settings, "restart_main_code_on_crash", False)
-
 look at google notes
 
-when do i want or need "os.kill(os.getppid(), signal.SIGTERM)"?
-
-
 clean up developer_settings
-how do i make terminal easliy updateable of defaults while giving user all options easliy accesible to change. maybe only base settings in decveloper_settings and a lot in hidden defaults in terminal.py
-developer_settings:add button settings as dict? or mabye easyer?
 
 read whole main workflow for terminal laucn and setting and stop and setupo
 
-impl,ment wdinows nmotifiartion already? 
-
-on otherh hand the script can easily do that. porobabloy no:
-add setting: success_print=[Program finished successfully]
-failur_print= f"[Program finished with failure] Programm exited with code "{exit_code}"
-and explain that no print if "" and that will 
-
-
-updated readme in py_env how to hcange packages. or maybe not there and menion that on can delete py_env
+remove wdinows nmotifiartion already if there
 
 does python_version="" work?
 
@@ -198,15 +149,58 @@ mayor version: remove stuff outside do_not_change
 minor version: replacement or added outside do_not_change
 min version: replace do_not_change enough
 
-add to notes that you can delete after_python_crash_code.py
-what happens for emopty sciptr? should be same as no scipt
+================
+==== Future ====
+================
+
+ask ai if safe right now or if i want t oforce classicterminal for safety
 
 fix color in python part of terminal
 ask AI for better reliably
 
-================
-==== Future ====
-================
+add to notes that you can delete after_python_crash_code.py
+what happens for emopty sciptr? should be same as no scipt
+
+updated readme in py_env how to hcange packages. or maybe not there and menion that on can delete py_env
+
+on otherh hand the script can easily do that. porobabloy no:
+add setting: success_print=[Program finished successfully]
+failur_print= f"[Program finished with failure] Programm exited with code "{exit_code}"
+and explain that no print if "" and that will 
+
+impl,ment wdinows nmotifiartion
+
+how do i make terminal easliy updateable of defaults while giving user all options easliy accesible to change. maybe only base settings in decveloper_settings and a lot in hidden defaults in terminal.py
+developer_settings:add button settings as dict? or mabye easyer?
+
+when do i want or need "os.kill(os.getppid(), signal.SIGTERM)"?
+
+add,ove ins start_program:
+    # restart_main_code_on_crash,
+    # after_python_crash_code_path
+
+remove. restart_main_code_on_crash. just mention that one can name main_script and it will get 
+sys.argv[-1] == "crash"
+clarify that restart on crash only appeas on python crsahj not regular crahs of script
+make it that way
+
+Finish crash handling parity. script_wrapper.py (line 881) still has a real WIP branch for interpreter crashes. Also script_after_interpreter_crash_path is parsed but not really used consistently between wrapper and terminal emulator.
+
+what am i catching that windwos temrinal does noit?
+
+is expceioptn handline mentioned in readem
+
+ask for generall improivements and comments and oragnaizing and docstrings
+
+does anything require admin
+
+ask AI if there are featurs in wrapper or emulator that i can add to otehr
+
+add script_after_interpreter_crash_path
+
+ask if there is possiblity for maore fail ehcks and error prints and input exits
+
+add after pyton crash in next release
 
 meniton that one can add package to backaPODNE_PACKAGES_REQUIREMNT:RT AND DELTE p NAD PYTHON_PACVKGES
 
