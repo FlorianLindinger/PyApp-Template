@@ -5,8 +5,8 @@ import sys
 root_dir = os.path.dirname(__file__) + "\\..\\..\\.."
 sys.path.insert(0, root_dir)
 
-from DONT_CHANGE.specific_scripts.common_code import input_success, print_traceback
-from DONT_CHANGE.specific_scripts.dev_tools.dev_tools_common_code import get_freeze_lines, write_default_packages
+from DONT_CHANGE.specific_scripts.common_code import input_success, print_traceback, write_default_packages
+from DONT_CHANGE.specific_scripts.dev_tools.dev_tools_common_code import get_freeze_lines
 
 try:
     write_default_packages(get_freeze_lines())

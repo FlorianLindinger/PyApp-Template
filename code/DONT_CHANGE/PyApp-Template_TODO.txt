@@ -182,6 +182,8 @@ min version: replace DONT_CHANGE enough
 ==== Future ====
 ================
 
+is anything in common_code slow that should be other scirpt or lazy import?
+
 i have 2 terminal at some point? i guess one get converted to app id. problaby must be. maybe make all fasrter
 
 re add browser:

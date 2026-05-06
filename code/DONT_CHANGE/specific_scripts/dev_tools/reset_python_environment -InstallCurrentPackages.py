@@ -5,15 +5,18 @@ import sys
 root_dir = os.path.dirname(__file__) + "\\..\\..\\.."
 sys.path.insert(0, root_dir)
 
-from DONT_CHANGE.specific_scripts.common_code import input_success, print_traceback
+from DONT_CHANGE.specific_scripts.common_code import (
+    ensure_venv,
+    input_success,
+    install_requirements,
+    print_traceback,
+    recreate_venv,
+)
 from DONT_CHANGE.specific_scripts.common_variables import (
     determined_current_packages_file_path,
 )
 from DONT_CHANGE.specific_scripts.dev_tools.dev_tools_common_code import (
-    ensure_venv,
     get_freeze_lines,
-    install_requirements,
-    recreate_venv,
     write_lines,
 )
 
