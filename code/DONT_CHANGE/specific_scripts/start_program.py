@@ -10,9 +10,9 @@ from datetime import datetime, timezone
 
 # ====================================
 # setup for start without backend python (eg for debug)
-do_not_change_dir = os.path.normpath(os.path.join(os.path.dirname(__file__), ".."))
-code_dir = os.path.normpath(os.path.join(do_not_change_dir, ".."))
-bundled_packages_dir = os.path.join(do_not_change_dir, "python_packages")
+DONT_CHANGE_dir = os.path.normpath(os.path.join(os.path.dirname(__file__), ".."))
+code_dir = os.path.normpath(os.path.join(DONT_CHANGE_dir, ".."))
+bundled_packages_dir = os.path.join(DONT_CHANGE_dir, "python_packages")
 
 for path in reversed(
     [
@@ -83,7 +83,7 @@ try:
     from developer_settings import (
         program_name as title,
     )
-    from do_not_change.specific_scripts.common_code import (
+    from DONT_CHANGE.specific_scripts.common_code import (
         delete_venv,
         get_running_processes_from_pid_file,
         input_warn,
@@ -97,7 +97,7 @@ try:
         save_requirements_of_root_folder_noVersion,
         stop_processes_from_pid_file,
     )
-    from do_not_change.specific_scripts.common_variables import (
+    from DONT_CHANGE.specific_scripts.common_variables import (
         browser_terminal_path,
         compiled_terminal_path,
         default_packages_file_path,

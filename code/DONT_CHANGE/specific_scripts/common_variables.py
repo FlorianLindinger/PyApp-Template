@@ -36,7 +36,7 @@ uncompiled_terminal_path = make_abs("..\\terminal_emulator\\terminal_emulator.py
 process_id_file_path = make_abs("..\\..\\..\\currently_running.pid")
 
 default_packages_file_path = make_abs("..\\..\\developer_tools\\!DEFAULT_PYHON_PACKAGES.txt")
-excluded_folders_for_package_search = ["do_not_change", "py_env", "icons", "developer_tools", "__pycache__"]
+excluded_folders_for_package_search = ["DONT_CHANGE", "py_env", "icons", "developer_tools", "__pycache__"]
 
 variable_in_default_packages_path_that_triggers_search_if_true = (
     "# auto_find_required_packages_here_and_reset_venv_to_them"

@@ -6,12 +6,12 @@ import time
 
 # ==========================================================================
 # import from common variables and developer settings
-from do_not_change.specific_scripts.common_code import (
+from DONT_CHANGE.specific_scripts.common_code import (
     make_abs_path_relative_to_file,
     print_traceback,
     stop_processes_from_pid_file,
 )
-from do_not_change.specific_scripts.common_variables import developer_settings_path, process_id_file_path
+from DONT_CHANGE.specific_scripts.common_variables import developer_settings_path, process_id_file_path
 
 # ==========================================================================
 # code execution

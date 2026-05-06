@@ -19,8 +19,8 @@ os.chdir(file_dir)
 # =============================
 
 import developer_settings
-from do_not_change.specific_scripts.common_code import print_traceback
-from do_not_change.specific_scripts.common_variables import developer_settings_path
+from DONT_CHANGE.specific_scripts.common_code import print_traceback
+from DONT_CHANGE.specific_scripts.common_variables import developer_settings_path
 
 # =============================
 

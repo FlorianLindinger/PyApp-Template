@@ -16,7 +16,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any
 from urllib.parse import parse_qs, urlparse
 
-from do_not_change.specific_scripts.launcher_common import (
+from DONT_CHANGE.specific_scripts.launcher_common import (
     CompletionAlerts,
     ProcessIdRegistry,
     TerminalLogger,
@@ -596,7 +596,7 @@ def start_pty_process(
         raise RuntimeError(
             "[Error] pywinpty is required for browser terminal mode.\n"
             "Install/reinstall backend packages so the 'winpty' module is complete and exposes PtyProcess in "
-            "code\\do_not_change\\python_packages.\n"
+            "code\\DONT_CHANGE\\python_packages.\n"
             "Expected requirement: pywinpty==3.0.3"
         ) from error
 

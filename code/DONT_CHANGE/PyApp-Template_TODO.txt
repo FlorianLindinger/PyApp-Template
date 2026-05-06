@@ -76,7 +76,7 @@ Fix Release in git
 
 test dev_tools
 
-Fix repo hygiene first. git status shows a huge dirty state from tracked files under code/do_not_change/python_packages. Since README claims package files should not be shared, make that true: ignore/untrack generated package folders, keep only a manifest/installer, and add a clean bootstrap path. Right now .gitignore (line 17) does not cover that.
+Fix repo hygiene first. git status shows a huge dirty state from tracked files under code/DONT_CHANGE/python_packages. Since README claims package files should not be shared, make that true: ignore/untrack generated package folders, keep only a manifest/installer, and add a clean bootstrap path. Right now .gitignore (line 17) does not cover that.
 
 see if windows terminal hadnles all crash and erros.
 not working:
@@ -130,7 +130,7 @@ update pyproject.toml but not enable the D
 test if still portable/downlaodnable
 
 renamed to DONT_CHANGE bc shorter
-           DO_NOT_CHANGE
+           DONT_CHANGE
 
 cehck diff of git to local with code.
 
@@ -145,9 +145,9 @@ integrate settings.py in emulator
 mention that windows might ask for permissions for start since it is code from online. any alternatives?
 
 mention:
-mayor version: remove stuff outside do_not_change
-minor version: replacement or added outside do_not_change
-min version: replace do_not_change enough
+mayor version: remove stuff outside DONT_CHANGE
+minor version: replacement or added outside DONT_CHANGE
+min version: replace DONT_CHANGE enough
 
 ================
 ==== Future ====
@@ -206,7 +206,7 @@ meniton that one can add package to backaPODNE_PACKAGES_REQUIREMNT:RT AND DELTE 
 
 print script name and path when error possible?
 
-add do_not_Change license summary info to main license
+add DONT_CHANGE license summary info to main license
 mention what the effective license allows and difference to MIT
 
 add doctrings to scripts
@@ -253,10 +253,10 @@ install needed packages did not work for pyboson
 add confirmation to all folder removal?
 
 fix warniong for following after git clone. maybe fix needed for derivative repos:
-  'code/do_not_change/PyApp-Template_VERSION.txt'
-  'code/do_not_change/PyApp-Template_version.txt'
-  'code/do_not_change/README.txt'
-  'code/do_not_change/readme.txt'
+  'code/DONT_CHANGE/PyApp-Template_VERSION.txt'
+  'code/DONT_CHANGE/PyApp-Template_version.txt'
+  'code/DONT_CHANGE/README.txt'
+  'code/DONT_CHANGE/readme.txt'
   'code/VERSION.txt'
   'code/version.txt'
 
@@ -416,9 +416,9 @@ in
     
 printing:
     
-            C:\Users\Flo\Documents\Repositories\PyApp Template\code\do_not_change\P\python312.zip
-            C:\Users\Flo\Documents\Repositories\PyApp Template\code\do_not_change\P
-            C:\Users\Flo\Documents\Repositories\PyApp Template\code\do_not_change\python_packages
+            C:\Users\Flo\Documents\Repositories\PyApp Template\code\DONT_CHANGE\P\python312.zip
+            C:\Users\Flo\Documents\Repositories\PyApp Template\code\DONT_CHANGE\P
+            C:\Users\Flo\Documents\Repositories\PyApp Template\code\DONT_CHANGE\python_packages
             C:\Users\Flo\Documents\Repositories\PyApp Template\code
             C:\Users\Flo\AppData\Roaming\Python\Python312\site-packages
             C:\Users\Flo\AppData\Roaming\Python\Python312\site-packages\win32
@@ -480,7 +480,7 @@ Clean README/onboarding. README.md (line 46) still has a terminal-emulator TODO,
 
 Tighten batch safety. The Python installer batch downloads via Invoke-WebRequest, extracts MSI files, and deletes folders with rmdir /s /q. Add unique temp dirs, hash/size verification where possible, clearer network failure messages, and maybe move the installer logic to Python for testability.
 
-Add smoke tests. The best test matrix would cover: fresh clone, path with spaces, moved folder, no internet, wrong Python version, missing package, no-terminal stop button, normal terminal crash, fancy terminal crash, and shortcut regeneration. Syntax currently passes with code/do_not_change/P/P.exe -m py_compile on the main scripts.
+Add smoke tests. The best test matrix would cover: fresh clone, path with spaces, moved folder, no internet, wrong Python version, missing package, no-terminal stop button, normal terminal crash, fancy terminal crash, and shortcut regeneration. Syntax currently passes with code/DONT_CHANGE/P/P.exe -m py_compile on the main scripts.
 
 Improve the first-run package flow. Catch ModuleNotFoundError from user code and offer: install once, add to default packages, open manual install terminal, or abort. This would be a big usability win for the template.
 
@@ -497,7 +497,7 @@ Reduce lint ignores over time. pyproject.toml (line 64) enables a strong Ruff ru
 is there an option to not ship temrinal_emulatro if dev setting say no. like maaybe a batch that deletes that or a way to auto sync that settign wiht gitignore?
 kind of same with pipreqs and size . kind of want to keep backend together tho
 
-add explanation for pyqt6 license. do i even mention that in license of do_not_change
+add explanation for pyqt6 license. do i even mention that in license of DONT_CHANGE
 
  does it still do that???:make somehow shortcut generation lnk not require admin. Maybe icon is ont worth it and batch would do.. maybe a safe fallback version for no admin pcs
 
@@ -530,13 +530,13 @@ make it smarter print for no compiled terminal present. amybe mention compilatio
 # overkill:
 is git pre push synced? for do not ship backend
 how do i not sync
-maybe just for app start change .gitignore in do_not_change? maybe all start should chekc that so also generator i guess.
+maybe just for app start change .gitignore in DONT_CHANGE? maybe all start should chekc that so also generator i guess.
 do o ahve to kill historty
 git rm --cached path/to/file
 git add .gitignore
 git commit -m "Stop tracking ignored files"
 git push
-maybe just have a backend ish folder outside and people can delete that. worse for changes in backend and clarity in code folder. also shorter path than do_not_change
+maybe just have a backend ish folder outside and people can delete that. worse for changes in backend and clarity in code folder. also shorter path than DONT_CHANGE
                        backend
 ->better to explain in readme that one can delte P and or packages
 ->just add detection for emtpy paclages or no packages folder...
@@ -604,7 +604,7 @@ change color of taskbar app bar. Makes easy option to change the main backgound 
 add always ontop button. ->alllow for "allow minimize button". 
 
 add button (restart with last button settings: "Remember Buttons") and save in file
-save last button state and pos and size in file and try to reload. maybe safe in DO_NOT_CHANGE
+save last button state and pos and size in file and try to reload. maybe safe in DONT_CHANGE
 
 log to file as option and clickable link i guess
 
@@ -877,7 +877,7 @@ make side grouvps in vscode smaller for scolling over. or add maximize button
 combine stuff from PyBoson and rest in GUI folder in utilites
 
 in create venv batch for no rg make better print:
- [Error] "C:\Users\Flo\Documents\Repositories\PyApp-Template\code\do_not_change\general_utilities\python_environment\portable_python\python.exe" does not exist. Aborting. Press any key to exit.
+ [Error] "C:\Users\Flo\Documents\Repositories\PyApp-Template\code\DONT_CHANGE\general_utilities\python_environment\portable_python\python.exe" does not exist. Aborting. Press any key to exit.
 
 make robust against pople deleting python_enviroment parent folder. does portavle batch already do that
 
