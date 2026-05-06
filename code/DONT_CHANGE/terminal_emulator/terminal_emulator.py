@@ -1020,7 +1020,7 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
 
             # Windows-specific force focus
             try:
-                hwnd = int(self.winId())
+                hwnd = self.winId()
                 # SW_RESTORE = 9
                 ctypes.windll.user32.ShowWindow(hwnd, 9)
                 ctypes.windll.user32.SetForegroundWindow(hwnd)
@@ -1047,7 +1047,7 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
                 QApplication.alert(self)
                 return
 
-            hwnd = int(self.winId())
+            hwnd = self.winId()
             user32 = ctypes.windll.user32
 
             FLASHW_TRAY = 0x00000002
@@ -1068,14 +1068,14 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
                 count = 0  # ignored when TIMERNOFG is used
             else:
                 flags = FLASHW_TRAY
-                count = max(1, int(flashes))
+                count = max(1, flashes)
 
             info = FLASHWINFO(
                 cbSize=ctypes.sizeof(FLASHWINFO),
                 hwnd=hwnd,
                 dwFlags=flags,
                 uCount=count,
-                dwTimeout=max(0, int(timeout_ms)),
+                dwTimeout=max(0, timeout_ms),
             )
             user32.FlashWindowEx(ctypes.byref(info))
 
@@ -1084,7 +1084,7 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
             if os.name != "nt":
                 return
 
-            hwnd = int(self.winId())
+            hwnd = self.winId()
             user32 = ctypes.windll.user32
 
             FLASHW_STOP = 0
@@ -1594,7 +1594,7 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
         # process args
         if len(sys.argv) < 2:
             raise ValueError(
-                "terminal_emulator.py needs at least the Python script path as argument. Usage: terminal_emulator.py script_path [python_exe] [title] [icon_path] [app_id] [wdir_is_script_dir] [close_on_crash] [close_on_failure] [close_on_success] [print_timestamp_format] [log_path] [log_timestamp_format] [overwrite_log] [script_after_interpreter_crash_path] [input_prepend] [process_id_file_path] [play_sound_on_success] [send_Windows_notification_on_success] [play_sound_on_failure] [send_Windows_notification_on_failure] [play_sound_on_python_interpreter_crash] [send_Windows_notification_on_python_interpreter_crash] [open_log_file_after_success] [open_log_file_after_failure] [open_log_file_after_python_interpreter_crash] [start_minimized] [terminal_needs_input] [stylesheet_path] [dark_mode] [use_faulthandler] [button_settings]"
+                "terminal_emulator.py needs at least the Python script path as argument. Usage: terminal_emulator.py script_path [python_exe] [title] [icon_path] [app_id] [wdir_is_script_dir] [close_on_crash] [close_on_failure] [close_on_success] [print_timestamp_format] [log_path] [log_timestamp_format] [overwrite_log] [input_prepend] [process_id_file_path] [play_sound_on_success] [send_Windows_notification_on_success] [play_sound_on_failure] [send_Windows_notification_on_failure] [play_sound_on_python_interpreter_crash] [send_Windows_notification_on_python_interpreter_crash] [open_log_file_after_success] [open_log_file_after_failure] [open_log_file_after_python_interpreter_crash] [start_minimized] [terminal_needs_input] [stylesheet_path] [dark_mode] [use_faulthandler] [button_settings]"
             )
 
         script_path = sys.argv[1]
@@ -1612,26 +1612,25 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
         log_path = arg_to_str(11, "")
         log_timestamp_format = arg_to_str(12, "")
         overwrite_log = arg_to_bool(13, True)
-        script_after_interpreter_crash_path = arg_to_str(14, "")
-        INPUT_PREPEND = arg_to_str(15, "> ")
-        process_id_file_path = arg_to_str(16, "")
+        INPUT_PREPEND = arg_to_str(14, "> ")
+        process_id_file_path = arg_to_str(15, "")
 
-        play_sound_on_success = arg_to_wav_path(17)
-        send_Windows_notification_on_success = arg_to_bool(18, False)
-        play_sound_on_failure = arg_to_wav_path(19)
-        send_Windows_notification_on_failure = arg_to_bool(20, False)
-        play_sound_on_python_interpreter_crash = arg_to_wav_path(21)
-        send_Windows_notification_on_python_interpreter_crash = arg_to_bool(22, False)
-        open_log_file_after_success = arg_to_bool(23, False)
-        open_log_file_after_failure = arg_to_bool(24, False)
-        open_log_file_after_python_interpreter_crash = arg_to_bool(25, False)
-        start_minimized = arg_to_bool(26, False)
+        play_sound_on_success = arg_to_wav_path(16)
+        send_Windows_notification_on_success = arg_to_bool(17, False)
+        play_sound_on_failure = arg_to_wav_path(18)
+        send_Windows_notification_on_failure = arg_to_bool(19, False)
+        play_sound_on_python_interpreter_crash = arg_to_wav_path(20)
+        send_Windows_notification_on_python_interpreter_crash = arg_to_bool(21, False)
+        open_log_file_after_success = arg_to_bool(22, False)
+        open_log_file_after_failure = arg_to_bool(23, False)
+        open_log_file_after_python_interpreter_crash = arg_to_bool(24, False)
+        start_minimized = arg_to_bool(25, False)
 
-        terminal_needs_input = arg_to_bool(27, True)
-        stylesheet_path = arg_to_str(28, "")
-        dark_mode = arg_to_str(29, "1")  # no bool because "auto" could also be option that should not be turned to True
-        use_faulthandler = arg_to_bool(30, True)
-        button_settings_arg = arg_to_str(31, "")
+        terminal_needs_input = arg_to_bool(26, True)
+        stylesheet_path = arg_to_str(27, "")
+        dark_mode = arg_to_str(28, "1")  # no bool because "auto" could also be option that should not be turned to True
+        use_faulthandler = arg_to_bool(29, True)
+        button_settings_arg = arg_to_str(30, "")
         button_settings = (
             normalize_button_settings(json.loads(button_settings_arg)) if button_settings_arg != "" else None
         )
