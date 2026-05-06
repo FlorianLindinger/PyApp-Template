@@ -6,6 +6,10 @@ import sys
 import tempfile
 from collections.abc import Iterable
 
+# add root dir for imports:
+root_dir = os.path.dirname(__file__) + "\\..\\..\\.."
+sys.path.insert(0, root_dir)
+
 from DONT_CHANGE.specific_scripts.common_code import (
     abs_norm,
     ensure_parent,
