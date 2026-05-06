@@ -1,5 +1,4 @@
 import os
-import shutil
 import subprocess
 import sys
 import urllib.request
@@ -57,6 +56,7 @@ import site""")
 
     # clear packages folder
     def clear_folder_contents(folder):
+        import shutil  # lazy import because slow
         forced_name = "python_packages"
 
         folder = Path(folder).resolve()
@@ -126,16 +126,8 @@ import site""")
     # The embedded runtime imports packages directly and does not use those scripts.
     generated_bin_folder = os.path.join(packages_folder, "bin")
     if os.path.isdir(generated_bin_folder):
+        import shutil  # lazy import because slow
         shutil.rmtree(generated_bin_folder)
-
-    # # generate requirements.txt
-    # with open(backend_packages_requirements, "w", encoding="utf-8") as f:
-    #     subprocess.run(  # noqa:S603
-    #         [python_exe, "-m", "pip", "freeze", "--path", packages_folder],
-    #         stdout=f,
-    #         check=True,
-    #         text=True,
-    #     )
 
     # uninstall pip, setuptools and wheel from the embedded python to save space
     subprocess.run(  # noqa:S603
