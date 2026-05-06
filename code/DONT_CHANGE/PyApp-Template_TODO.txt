@@ -7,6 +7,17 @@
 ==== Must do before release ====
 ================================
 
+does it set all terminals ot that icon eg also from differnet opened apps form framework???
+
+also make lazy imports for wrapper
+
+lazy import pywin32 module path setup
+# needed ? # needed for pywin32 to find its modules
+
+renamed python_packages to backend_packages
+
+check for todos
+
 clean startup time spam in DO_NOT_CAHNGE IN DO_NOT SYNC
 
 bump to version 1.0 afterwards
@@ -149,9 +160,40 @@ mayor version: remove stuff outside DONT_CHANGE
 minor version: replacement or added outside DONT_CHANGE
 min version: replace DONT_CHANGE enough
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ================
 ==== Future ====
 ================
+
+i have 2 terminal at some point? i guess one get converted to app id. problaby must be. maybe make all fasrter
+
+re add browser:
+start_browser_shortcut_name: str | None = f"{program_name} (Browser)"  # start program in default browser
+
+print:
+    ====================
+    [Error] Failed launching terminal_emulator backend:
+    C:\Users\Flo\Documents\Repositories\PyApp Template\code\DONT_CHANGE\terminal_emulator\compiled\run.exe
+    --------------------
+    [Error (see above)] Press enter to exit. 
+it opened a window but closed opened temrinal immediataly afterwads. probalby exe just got wrong amount of args. maybe make safer genrally the exe. test by deliberatly gvigin it crap or soemtihn
 
 ask ai if safe right now or if i want t oforce classicterminal for safety
 
