@@ -57,7 +57,6 @@ try:
     import importlib.util
     import json
     import os
-    import shutil
     import subprocess
     import sys
     import traceback
@@ -1112,6 +1111,7 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
 
         def open_python_script_in_editor(self):
             try:
+                import shutil  # lazy import because slow
                 if not os.path.exists(self.script_path):
                     print(f"Could not find file at path: {self.script_path}")
 

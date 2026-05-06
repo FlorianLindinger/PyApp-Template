@@ -1,7 +1,6 @@
 import json
 import os
 import re
-import shutil
 import sys
 import tempfile
 from collections.abc import Iterable
@@ -83,6 +82,8 @@ def get_temp_python(temp_venv: str) -> str:
 
 
 def create_temp_package_install_environment(python_executable: str) -> tuple[str, str]:
+    import shutil  # lazy import because slow
+
     temp_venv = tempfile.mkdtemp(prefix="pyapp_template_package_pin_")
     try:
         run_python_exe(python_executable, "-m", "venv", temp_venv)
@@ -169,6 +170,8 @@ def save_required_packages(
     )
 
     if with_versions:
+        import shutil  # lazy import because slow
+
         ensure_python_distribution()
         temp_venv, temp_python = create_temp_package_install_environment(python_exe_path)
         try:
