@@ -32,7 +32,6 @@ ship_compiled_fancy_terminal_emulator = True
 # (set to None to disable generation of specific shortcut. You can use program_name variable like since this is a python script)
 start_windows_terminal_shortcut_name: str | None = f"{program_name}"  # start program with terminal
 start_terminal_emulator_shortcut_name: str | None = f"{program_name} (Terminal Emulator)"  # start program with terminal emulator
-start_browser_shortcut_name: str | None = f"{program_name} (Browser)"  # start program in default browser
 start_no_terminal_shortcut_name: str | None = f"{program_name} (no Terminal)"  # start program without terminal
 settings_shortcut_name: str | None = f"{program_name} - Settings"  # open settings file
 stop_shortcut_name: str | None = f"Stop {program_name}"  # stop all started programs
@@ -70,9 +69,6 @@ input_prepend: str | None = "> "
 # -------------------------------------------------
 # Name of Python code file and has to be in "code" folder.
 python_code_name = "main_code.py"
-# -------------------------------------------------
-script_after_python_interpreter_crash_name: str | None = "after_python_crash_code.py"
-# Script has to be in "code" folder. You can use the same name as python_code_name setting here. Note that the last argument will indicate that it was launched as a after-interpreter-crash script. You can test this in script via sys.argv[-1]=="crash". Set it to None to not launch anything after a interpreter crash.
 # -------------------------------------------------
 ship_backend_python_and_backend_packages = True
 # -------------------------------------------------
