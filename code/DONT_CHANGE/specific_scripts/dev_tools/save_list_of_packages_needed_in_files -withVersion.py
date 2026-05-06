@@ -1,19 +1,26 @@
+import os
+import sys
+
+# add root dir for imports:
+root_dir = os.path.dirname(__file__) + "\\..\\..\\.."
+sys.path.insert(0, root_dir)
+
 from DONT_CHANGE.specific_scripts.common_code import input_success, print_traceback
 from DONT_CHANGE.specific_scripts.common_variables import (
-    developer_tools_folder_path,
+    developer_tools_dir,
     excluded_folders_for_package_search,
-    python_scripts_folder_path,
+    python_scripts_dir,
 )
 from DONT_CHANGE.specific_scripts.dev_tools.dev_tools_common_code import (
     save_required_packages,
 )
 
 try:
-    path = developer_tools_folder_path + "packages_needed_in_files -withVersion.txt"
+    path = developer_tools_dir + "\\packages_needed_in_files -withVersion.txt"
     save_required_packages(
         path,
         with_versions=True,
-        folder=python_scripts_folder_path,
+        folder=python_scripts_dir,
         ignored_folders=excluded_folders_for_package_search,
     )
     print()
