@@ -10,10 +10,10 @@ from dataclasses import dataclass
 from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-DO_NOT_CHANGE_DIR = SCRIPT_DIR.parent
-CODE_DIR = DO_NOT_CHANGE_DIR.parent
+DONT_CHANGE_DIR = SCRIPT_DIR.parent
+CODE_DIR = DONT_CHANGE_DIR.parent
 REPO_DIR = CODE_DIR.parent
-WORK_DIR = DO_NOT_CHANGE_DIR / "DO_NOT_SYNC" / "startup_time"
+WORK_DIR = DONT_CHANGE_DIR / "DO_NOT_SYNC" / "startup_time"
 DEVELOPER_SETTINGS_PATH = CODE_DIR / "developer_settings.py"
 VENV_PYTHON = CODE_DIR / "py_env" / "virt_env" / "Portable_Scripts" / "python.bat"
 PY_DIST_PYTHON = CODE_DIR / "py_env" / "py_dist" / "python.exe"
@@ -154,7 +154,7 @@ def warn_missing_shortcuts(missing_shortcuts: list[ShortcutSpec]) -> None:
     print()
     print("[Warning] Missing generated shortcut link(s).")
     print("You may need to regenerate shortcuts so the .lnk files match the names in developer_settings.py.")
-    print(f"Shortcut generator: {DO_NOT_CHANGE_DIR / 'specific_scripts' / 'generate_shortcuts.py'}")
+    print(f"Shortcut generator: {DONT_CHANGE_DIR / 'specific_scripts' / 'generate_shortcuts.py'}")
     print()
     print("Missing:")
     for shortcut in missing_shortcuts:
@@ -437,7 +437,7 @@ def print_marker_help(target_script: Path) -> None:
     print("\nThe target script must write the startup marker. Add or move this near the startup point to measure:")
     print(
         """
-from do_not_change.specific_scripts.startup_benchmark_marker import mark_startup_time
+from DONT_CHANGE.specific_scripts.startup_benchmark_marker import mark_startup_time
 """.strip()
     )
     print(f"\nCurrent target script: {target_script}")

@@ -20,7 +20,7 @@ try:
     import runpy
     import sys
 
-    from do_not_change.specific_scripts.launcher_common import (
+    from DONT_CHANGE.specific_scripts.launcher_common import (
         CompletionAlerts,
         ProcessIdRegistry,
         arg_to_bool,

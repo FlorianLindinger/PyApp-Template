@@ -4,7 +4,7 @@ import subprocess
 import sys
 from collections.abc import Iterable
 
-from do_not_change.specific_scripts.common_variables import (
+from DONT_CHANGE.specific_scripts.common_variables import (
     default_packages_file_path,
     developer_settings_path,
     excluded_folders_for_package_search,
@@ -93,7 +93,7 @@ try:
 
 except Exception:
     print(
-        r'Failed during setup of rich traceback. Is "rich" package installed in the code\do_not_change\python_packages folder?'
+        r'Failed during setup of rich traceback. Is "rich" package installed in the code\DONT_CHANGE\python_packages folder?'
     )
     print("Press enter to exit")
     input()
