@@ -1,14 +1,16 @@
 
 ======================================
 ==== TODO LIST FOR PyApp-Template ====
-======================
-
-======================================
-==== Must do befoer release ====
 ======================================
 
-do i have os._exit(1) at ecvery input exit?
+=================================
+==== Must do before release ====
+================================
 
+add after pyton crash in next release
+stuff will either way change in dev_settings->delay maximally
+
+fix all ruff/pyrefly suggestions
 
 is use_global_python used everywhere and als ohandles iof modeule not present?
 
@@ -26,7 +28,6 @@ ask AI if there are featurs in wrapper or emulator that i can add to otehr
 
 does anything require admin
 
-
 ask for generall improivements and comments and oragnaizing and docstrings
 
 wrapper and emulator same functionality as far as possible?
@@ -36,7 +37,6 @@ let it chekc if seomthing looks like a placeholder and unfinsihjesd and nunnneca
 make suire first prints which everyone will see are most nice. aks AI for ideas
 
 ask for cleanup simplification and sorting idaes
-
 
 test option to start minimized in all modes
 
@@ -160,17 +160,81 @@ add setting: success_print=[Program finished successfully]
 failur_print= f"[Program finished with failure] Programm exited with code "{exit_code}"
 and explain that no print if "" and that will 
 
-add option to restart on xyz on normal terminal already?
 
 updated readme in py_env how to hcange packages. or maybe not there and menion that on can delete py_env
 
-chekc what path search does the main_script get
+does python_version="" work?
 
 add only usefual stuff to pyproject
 
-=================================
+does the settings.py import even work for non same wdir? mention?
+
+add vscode settigns to pyproject.toml?
+update pyproject.toml but not enable the D
+
+test if still portable/downlaodnable
+
+renamed to DONT_CHANGE bc shorter
+           DO_NOT_CHANGE
+
+================
 ==== Future ====
-======================================
+================
+
+are there ways to make embeded python more trusted so it does not prompt for first time?
+
+check tools scitps and heir ptrint
+
+print lsit of packages whenever they are install from list
+print apps that will be installed with [Info] Installing packages (see below):
+
+mkae clickable link to script for main_script crash. or at least press enter "y" to open 
+
+i guess i dont want to reinstall same packages for changes in python version? warn that if changed it will reset venv to defauölt in dev settings? version change is only as developer so shuld be not to bad if prompted
+
+chgeck that all prints in start_program are in new terminal
+
+how is pysie6 crash handles/catched?
+
+check that:disable all the terminal name settin when unneded in wrapper?
+
+do i even want setting for faulthandler?
+
+# move over arg_to_str,arg_to_bool
+    def arg_to_bool(index: int, default: bool) -> bool:
+        if len(sys.argv) <= index:
+            return default
+
+        return sys.argv[index].strip().lower() in {"1", "true", "yes", "on"}
+
+    def arg_to_str(index: int, default: str="") -> str:
+        if len(sys.argv) <= index:
+            return default
+        return sys.argv[index]
+
+
+mention that args get passed to called script:
+  sys.argv=[script_path,icon_path,title,close_on_crash,close_on_failure,close_on_success]
+          runpy.run_path(script_path, run_name="__main__")
+
+add option to restart on xyz on normal terminal already?
+
+chekc what path search does the main_script get
+
+do i have os._exit(1) at ecvery input exit?
+
+i guess i want restart and python_fail script no in same popen since it is kind of only needed if python completely crsahes. i guess i make the after script still for normal error exit? but there could be deliberate non 0 exit and they could always catch if they want
+
+setting to open log on crash
+
+is every developer_settings import safe? should be able to warn for changed by other devs that break stuff
+
+allow disabling adding sub icons by deleting sub icons. add print that missing 
+
+make log.txt visible in windwos preview somehow. It is openable
+
+add link to settings file button
+-> i guess i need a way to add a new button to terminal_emulator Probavbly just new button spawning if name not in current ones
 
 make user settings different again? re add convert features?
 
@@ -686,135 +750,10 @@ Complexity	Low	Medium
 Dependencies	None	pywinpty + bundled xterm.js
 
 ===================================
-unsorted
-===================================
-
-
-
-
-add link to settings file button
--> i guess i need a way to add a new button to terminal_emulator Probavbly just new button spawning if name not in current ones
-
-make log.txt visible in preview somehow. It is openable
-
-mkae accent border larger in terminal
-
-add append log and teistamp print and add date to log file ending.
-
-
-make time in log independent from print timestamp?
-
-can i add timestamps in regular terminal
-is there more i can give to regular terminal
-
-add list what was chenage from nomrmal embeedead
-write how to update embedded python
-add script to add something to python_packages folder for do_not_change in python_packages?
-
-allow disabling adding sub icons by deleting sub icons
-
-is every developer_settings import safe? should be able to warn for changed by other devs that break stuff
-
-make developer_settings.py cliclable. Maybe via shortcut to file in dev_tools? what if i just stopped caring about changes to developer settings folder. It would be noce to not have developer_setting be part of any backend update
-hm maybe i also just add a "additional batch" folder? and pass it to normal folder when where all are shortcuts for next major version update?
-
-imporve spacing of prints for messages that everyone sees at install
-
-maybe not auto closs on done of start_program when venv or dist gets installed
-
-for error in main_script: dont print traceback to runpy I guess.
-
-does python_version="" work?
-
-i guess i want restart and python_fail script no in same popen since it is kind of only needed if python completely crsahes. i guess i make the after script still for normal error exit? but there could be deliberate non 0 exit and they could always catch if they want
-
-setting to open log on crash for no terminal?
-
-mention that args get passed to called script:
-  sys.argv=[script_path,icon_path,title,close_on_crash,close_on_failure,close_on_success]
-          runpy.run_path(script_path, run_name="__main__")
-
-move out common variables from common functions i guess
-
-# move over arg_to_str,arg_to_bool
-    def arg_to_bool(index: int, default: bool) -> bool:
-        if len(sys.argv) <= index:
-            return default
-
-        return sys.argv[index].strip().lower() in {"1", "true", "yes", "on"}
-
-    def arg_to_str(index: int, default: str="") -> str:
-        if len(sys.argv) <= index:
-            return default
-        return sys.argv[index]
-
-
-add as option to have faulthandler? ["-X", "faulthandler"]. Remove all popen and subprocess.run with runpy
-
-fix 2 main shortcuts not beaing allowed on taskbar by differnt app_id? not copy of P.exe because grouping should match launcher
-
-check that:disable all the terminal name settin when unneded in wrapper?
-
-does the settings.py import even work for non same wdir
-
-move out stuff that isnt reused from common_code...? at least if it does an import or leads to unnecessary common_code import
-
-re-add faulthandler like: -> what does faulthandler for popen. do i need a wrapepr to add faulthandler
-    # def run_python(python_exe: str, script_path: str, args: list, use_faulthandler: bool = True) -> int:
-    #     cmd = [python_exe]
-    #     if use_faulthandler:
-    #         cmd += ["-X", "faulthandler"]
-    #     cmd += [script_path] + args
-    #     try:
-    #         return subprocess.run(cmd).returncode  # noqa:S603
-    #     except Exception as e:
-    #         print(f"[Error] Python execution failed: {e}")
-    #         return 1
-
-make a batch in do_not_change instead of use_uncompiled_terminal_and_run_it_in_global
-how can i force it on the spot to be terminal or not. maybe another arg in start_program.- > make more batches to simulate shortcut press but use_uncompiled_terminal_and_run_it_in_global=true
-
-chgeck that all prints in start_program are in new terminal
-
-how is pysie6 crash handles/catched?
-
-compare what stuff in archive needs to be added to utilitites repo
-
-add to shortctu descripotion soemtinh like launchers name.py via embedded python P.exe
-
-add vscode settigns to pyproject.toml?
-update pyproject.toml but not enable the D
-
-is there a good way to disable syncing with setting in dev settings to not sync pillow? fractured framework template tho in production veriosn. but prodcution i guess is fair enough. Maybe only install pillow when needed-> yes. or ask AI to make minimal own version by copying all needed parts->yes, also in utilities repo
-
-chekc what functions to copy to fun_flo in terminal scriopt
-
-test if still portable
-
-mkae clickable link to script for main_script crash. or at least press enter "y" to open 
-
-i guess i dont want to reinstall same packages for changes in python version? warn that if changed it will reset venv to defauölt in dev settings?
-
-make a determine_requiremnets.txt.bat
-make a installed_packages_to_requirements.txt.bat
-make different version for not fixed package versions
-
-print lsit of packages whenever they are install from list
-print apps that will be installed with [Info] Installing packages (see below):
-
-add prints to install_packages_needed_in_python_files.bat
-. maybe also what was before nad what is now and maybe diff
-
-are there ways to make embeded python more trusted so it does not prompt for first time?
-
-
-add log mode to only append. What is limit here????
-
-renamed to DONT_CHANGE bc shorter
-
-===================================
 unrealated
 ===================================
+
+chekc what functions to copy to fun_flo in terminal scriopt
 
 add venv to "python->exe" (see folder compiler)
 test if 
