@@ -10,10 +10,10 @@ from DONT_CHANGE.specific_scripts.common_variables import (
     excluded_folders_for_package_search,
     portable_python_installer_path,
     portable_venv_creator_path,
-    py_env_folder_path,
+    py_env_dir,
     python_dist_path,
     python_exe_path,
-    python_scripts_folder_path,
+    python_scripts_dir,
     relative_venv_to_python_dist,
     variable_in_default_packages_path_that_triggers_search_if_true,
     venv_dir_path,
@@ -85,7 +85,7 @@ try:
 
         if add_press_enter_to_exit:
             input()
-            import signal  # noqa
+            import signal
 
             os.kill(
                 os.getppid(), signal.SIGTERM
@@ -148,7 +148,7 @@ def run_command(
     stderr=None,
 ) -> subprocess.CompletedProcess[str]:
     print(f"[Run] {format_command(command)}")
-    return subprocess.run( #noqa:S603
+    return subprocess.run(  # noqa:S603
         command,
         cwd=cwd,
         check=check,
@@ -319,14 +319,16 @@ def write_process_id_lines(path: str, lines: list[str]) -> None:
         os.remove(path)
 
 
-def get_running_processes_from_pid_file(pid_path: str) -> dict[str, object]:
+def get_running_processes_from_pid_file(pid_path: str) -> tuple[list[int], int]:
+    """returns (running_process_ids, stale_count)"""
+    
     if pid_path == "" or not os.path.exists(pid_path):
-        return {"running_process_ids": [], "stale_count": 0}
+        return [], 0
 
     process_id_entries = read_process_id_entries(pid_path)
     if not process_id_entries:
         os.remove(pid_path)
-        return {"running_process_ids": [], "stale_count": 0}
+        return [], 0
 
     running_process_ids = []
     stale_count = 0
@@ -342,17 +344,18 @@ def get_running_processes_from_pid_file(pid_path: str) -> dict[str, object]:
             stale_count += 1
 
     write_process_id_lines(pid_path, [f"{process_id}\n" for process_id in running_process_ids])
-    return {"running_process_ids": running_process_ids, "stale_count": stale_count}
+    return running_process_ids, stale_count
 
 
-def stop_processes_from_pid_file(pid_path: str) -> dict[str, object]:
+def stop_processes_from_pid_file(pid_path: str) -> tuple[int, int, list[str]]:
+    """returns (stopped_count, stale_count, failed_messages)"""
     if pid_path == "" or not os.path.exists(pid_path):
-        return {"stopped_count": 0, "stale_count": 0, "failed_messages": []}
+        return 0, 0, []
 
     process_id_entries = read_process_id_entries(pid_path)
     if not process_id_entries:
         os.remove(pid_path)
-        return {"stopped_count": 0, "stale_count": 0, "failed_messages": []}
+        return 0, 0, []
 
     lines_by_process_id: dict[int, list[str]] = {}
     for process_id, line in process_id_entries:
@@ -375,11 +378,7 @@ def stop_processes_from_pid_file(pid_path: str) -> dict[str, object]:
             failed_messages.append(f"{process_id}: {process_error}")
 
     write_process_id_lines(pid_path, failed_lines)
-    return {
-        "stopped_count": stopped_count,
-        "stale_count": stale_count,
-        "failed_messages": failed_messages,
-    }
+    return stopped_count, stale_count, failed_messages
 
 
 def venv_python_path() -> str:
@@ -462,7 +461,7 @@ def check_python_version(target_version: str | float | int, exe_path: str = "py"
     if isinstance(target_version, (float, int)):
         target_version = str(target_version)
 
-    output = subprocess.check_output( #noqa:S603
+    output = subprocess.check_output(  # noqa:S603
         [
             exe_path,
             "-c",
@@ -524,8 +523,8 @@ def delete_folder_safe(
     expected_name: str | None = None,
     prompt_for_confirmation=True,
 ) -> bool:
-    import shutil  # lazy import because takes 0.2 s #noqa:PLC0415
-    
+    import shutil  # lazy import because takes 0.2 s
+
     target_path = os.path.realpath(os.path.abspath(os.fspath(target)))
     base_path = os.path.realpath(os.path.abspath(os.fspath(allowed_base)))
 
@@ -584,7 +583,7 @@ def delete_venv() -> bool:
     return delete_folder_safe(
         venv_dir_path,
         prompt_for_confirmation=False,
-        allowed_base=python_scripts_folder_path,
+        allowed_base=python_scripts_dir,
         expected_name=os.path.basename(venv_dir_path),
     )
 
@@ -593,7 +592,7 @@ def delete_python_distro() -> bool:
     return delete_folder_safe(
         python_dist_path,
         prompt_for_confirmation=False,
-        allowed_base=python_scripts_folder_path,
+        allowed_base=python_scripts_dir,
         expected_name=os.path.basename(python_dist_path),
     )
 
@@ -613,7 +612,7 @@ def create_portable_python(
     run_batch(
         portable_python_installer_path,
         python_version,
-        py_env_folder_path,
+        py_env_dir,
         "1" if install_tkinter else "0",
         "1" if install_tests else "0",
         "1" if install_tools else "0",
@@ -625,7 +624,7 @@ def create_portable_python(
 
 
 def create_portable_venv() -> None:
-    run_batch(portable_venv_creator_path, py_env_folder_path, relative_venv_to_python_dist)
+    run_batch(portable_venv_creator_path, py_env_dir, relative_venv_to_python_dist)
 
     if not os.path.exists(venv_python_path()):
         raise CommonCodeError(f'Portable virtual environment creator did not produce "{venv_python_path()}"')
@@ -814,7 +813,7 @@ def save_current_packages_as_default(search_phrase_state=None):
 
 
 def save_requirements_of_root_folder_noVersion(output_path):
-    searched_folder = python_scripts_folder_path
+    searched_folder = python_scripts_dir
     excluded_folders = excluded_folders_for_package_search
 
     cmd = [

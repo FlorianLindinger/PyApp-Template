@@ -19,7 +19,7 @@ from DONT_CHANGE.specific_scripts.common_code import (
 from DONT_CHANGE.specific_scripts.common_variables import (
     excluded_folders_for_package_search,
     python_exe_path,
-    python_scripts_folder_path,
+    python_scripts_dir,
 )
 
 
@@ -151,7 +151,7 @@ def save_required_packages(
     output_path: str,
     *,
     with_versions: bool,
-    folder: str = python_scripts_folder_path,
+    folder: str = python_scripts_dir,
     ignored_folders: Iterable[str] = excluded_folders_for_package_search,
 ) -> None:
     output_path = abs_norm(output_path)
