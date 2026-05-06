@@ -1,4 +1,10 @@
+import os
 import subprocess
+import sys
+
+# add root dir for imports:
+root_dir = os.path.dirname(__file__) + "\\..\\..\\.."
+sys.path.insert(0, root_dir)
 
 from DONT_CHANGE.specific_scripts.common_code import input_success, print_traceback
 from DONT_CHANGE.specific_scripts.common_variables import venv_exe_path
