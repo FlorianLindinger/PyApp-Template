@@ -17,6 +17,7 @@ try:
     import builtins
     import faulthandler
     import os
+    import re
     import runpy
     import sys
 
@@ -94,6 +95,16 @@ try:
     ANSI_WARN = "\x1b[1;37;41m"  # white text, red bg, bold
     ANSI_SUCCESS = "\x1b[1;37;42m"  # white text, green bg, bold
     ANSI_RESET = "\033[0m"
+    ANSI_ESCAPE_RE = re.compile(
+        r"\x1b(?:"
+        r"\[[0-?]*[ -/]*[@-~]"
+        r"|\][^\x07]*(?:\x07|\x1b\\)"
+        r"|[@-Z\\-_]"
+        r")"
+    )
+
+    def strip_ansi_escape_sequences(text: str) -> str:
+        return ANSI_ESCAPE_RE.sub("", text)
 
     def print_warn(msg, sep: str | None = " ", end: str | None = "\n"):
         print(f"{ANSI_WARN}{msg}{ANSI_RESET}", sep=sep, end=end)
@@ -701,7 +712,7 @@ try:
 
                         self.print_stream.write(part)
                         if self.log_stream is not None:
-                            self.log_stream.write(part)
+                            self.log_stream.write(strip_ansi_escape_sequences(part))
 
                         if part.endswith("\n"):
                             if self.print_red and self._print_supports_color():
