@@ -14,7 +14,7 @@ from DONT_CHANGE.specific_scripts.common_variables import (
     python_dist_path,
     python_exe_path,
     python_scripts_dir,
-    relative_venv_to_python_dist,
+    relative_py_env_to_python_dist,
     variable_in_default_packages_path_that_triggers_search_if_true,
     venv_dir_path,
     venv_exe_path,
@@ -624,7 +624,7 @@ def create_portable_python(
 
 
 def create_portable_venv() -> None:
-    run_batch(portable_venv_creator_path, py_env_dir, relative_venv_to_python_dist)
+    run_batch(portable_venv_creator_path, py_env_dir, relative_py_env_to_python_dist)
 
     if not os.path.exists(venv_python_path()):
         raise CommonCodeError(f'Portable virtual environment creator did not produce "{venv_python_path()}"')
