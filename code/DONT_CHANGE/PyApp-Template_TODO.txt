@@ -13,6 +13,8 @@ cleanup git
 ==== Must do before release ====
 ================================
 
+stay in dev after release for develeopemnt otehr than quick bug fix
+
 Make shortcuts target batch so less path length. And probably more av safe . 
 
 renamed python_packages to backend_python_packages
