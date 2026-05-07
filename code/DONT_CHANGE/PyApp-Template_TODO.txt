@@ -23,30 +23,19 @@ backend_common_variables
 
 
 
-
+test option to start minimized in all modes
+test play sounds and start time
 does it set all terminals ot that icon eg also from differnet opened apps form framework???
 
 check for "todos" in code
-
-is use_global_python used everywhere and als ohandles iof modeule not present?
-
-is the file organication somewher unconventuional? should i renomea seom sutff?
-
-ask AI for speedup and safety and robustness improvmens and also comments and docsttirngs
-
 ask AI if code or variable is unused
-
 let it chekc if seomthing looks like a placeholder and unfinsihjesd and nunnnecassy prings
-
-make suire first prints which everyone will see are most nice. aks AI for ideas
-
+is the file organication somewher unconventuional? should i renomea seom sutff? 
+ask AI for imporovemnts
+ask AI for safety and robustness improvmens
 ask for cleanup simplification and sorting idaes
 
-test option to start minimized in all modes
-
-test play sounds and start time
-
-ask AI for imporovemnts
+make suire first prints which everyone will see are most nice. aks AI for ideas
 
 cleanup readme. addd browersser is WIP
 
@@ -118,6 +107,8 @@ mayor version: remove stuff outside DONT_CHANGE
 minor version: replacement or added outside DONT_CHANGE
 min version: replace DONT_CHANGE enough
 
+is use_global_python used everywhere and als ohandles iof modeule not present?
+
 =========================================
 ==== Must do before release (in end) ====
 =========================================
@@ -158,14 +149,11 @@ test dev tools
 
 
 
-
-
-
-
-
 ================
 ==== Future ====
 ================
+
+ask AI for speedup and safety and robustness improvmens and also comments and docsttirngs
 
 is there way way to make compile faster for repeeated compile
 
