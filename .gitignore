@@ -13,6 +13,8 @@ __pycache__
 log*.txt
 # temporary id files for no-terminal start:
 *.pid
+# generated portable Python environment:
+/code/py_env/
 # output files of developer tools:
 developer_tools/*.txt
 # whitelist specific files in developer tools folder:

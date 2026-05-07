@@ -48,4 +48,4 @@ python_dist_path = py_env_dir + "\\py_dist"
 python_exe_path = os.path.normpath(python_dist_path + "\\python.exe")
 venv_dir_path = py_env_dir + "\\virt_env"
 venv_exe_path = venv_dir_path + "\\Portable_Scripts\\python.bat"
-relative_venv_to_python_dist = os.path.relpath(python_dist_path, venv_dir_path)
+relative_py_env_to_python_dist = os.path.relpath(python_dist_path, py_env_dir)
