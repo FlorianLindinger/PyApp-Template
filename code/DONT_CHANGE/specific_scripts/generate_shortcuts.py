@@ -1,6 +1,5 @@
 import os
 import re
-import signal
 import time
 import unicodedata
 
@@ -18,7 +17,7 @@ os.chdir(file_dir)
 # =============================
 
 import developer_settings
-from DONT_CHANGE.specific_scripts.common_code import print_traceback
+from DONT_CHANGE.specific_scripts.common_code import print_traceback, terminate_parent_console_launcher_if_safe
 from DONT_CHANGE.specific_scripts.common_variables import developer_settings_path
 
 # =============================
@@ -327,6 +326,6 @@ if __name__ == "__main__":
         print()
         print("=============================")
         input("[Success] Press enter to exit")
-        os.kill(os.getppid(), signal.SIGTERM)  # kill terminal launched by cmd
+        terminate_parent_console_launcher_if_safe()
     except Exception as e:
         print_traceback(f"[Error] {e}", add_press_enter_to_exit=True)

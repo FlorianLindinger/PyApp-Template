@@ -1,13 +1,17 @@
 import base64
 import json
 import os
-import signal
 import struct
 import subprocess
 import sys
 import time
 import zlib
 from urllib.parse import quote
+
+root_dir = os.path.normpath(os.path.dirname(os.path.abspath(__file__)) + "\\..\\..")
+sys.path.insert(0, root_dir)
+
+from DONT_CHANGE.specific_scripts.common_code import terminate_parent_console_launcher_if_safe
 
 # settings
 user_png_folder_path = "../../icons/"
@@ -366,10 +370,7 @@ def _pause_before_exit() -> None:
 
     print()
     input("Press enter to exit.")
-    try:
-        os.kill(os.getppid(), signal.SIGTERM)
-    except (AttributeError, OSError, PermissionError):
-        pass
+    terminate_parent_console_launcher_if_safe()
 
 
 def _delete_existing_icon(path: str) -> None:
