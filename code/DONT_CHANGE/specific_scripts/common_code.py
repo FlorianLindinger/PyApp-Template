@@ -42,6 +42,56 @@ def input_warn(msg):
 def input_success(msg):
     input(f"{ANSI_SUCCESS}{msg}{ANSI_RESET}")
 
+def get_process_image_path(pid: int) -> str:
+    if os.name != "nt" or pid <= 0:
+        return ""
+
+    try:
+        import ctypes
+        from ctypes import wintypes
+
+        PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
+
+        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        kernel32.OpenProcess.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]
+        kernel32.OpenProcess.restype = wintypes.HANDLE
+        kernel32.QueryFullProcessImageNameW.argtypes = [
+            wintypes.HANDLE,
+            wintypes.DWORD,
+            wintypes.LPWSTR,
+            ctypes.POINTER(wintypes.DWORD),
+        ]
+        kernel32.QueryFullProcessImageNameW.restype = wintypes.BOOL
+        kernel32.CloseHandle.argtypes = [wintypes.HANDLE]
+        kernel32.CloseHandle.restype = wintypes.BOOL
+
+        process_handle = kernel32.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, False, pid)
+        if not process_handle:
+            return ""
+        try:
+            buffer_length = wintypes.DWORD(32768)
+            buffer = ctypes.create_unicode_buffer(buffer_length.value)
+            if not kernel32.QueryFullProcessImageNameW(process_handle, 0, buffer, ctypes.byref(buffer_length)):
+                return ""
+            return buffer.value
+        finally:
+            kernel32.CloseHandle(process_handle)
+    except Exception:
+        return ""
+
+
+def terminate_parent_console_launcher_if_safe() -> bool:
+    parent_pid = os.getppid()
+    parent_image_path = get_process_image_path(parent_pid)
+    parent_name = os.path.basename(parent_image_path).lower()
+    if parent_name not in ("cmd.exe", "powershell.exe", "pwsh.exe"):
+        return False
+
+    import signal
+
+    os.kill(parent_pid, signal.SIGTERM)
+    return True
+
 
 # colored traceback related
 try:
@@ -85,11 +135,7 @@ try:
 
         if add_press_enter_to_exit:
             input()
-            import signal
-
-            os.kill(
-                os.getppid(), signal.SIGTERM
-            )  # kills even terminal launched by cmd and terminal from script calling this script
+            terminate_parent_console_launcher_if_safe()
 
 except Exception:
     print(
