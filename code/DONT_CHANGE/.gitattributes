@@ -2,3 +2,9 @@
 * text=auto
 # Force git to use CRLF for batch files to not break them:
 *.bat text eol=crlf
+# In oder that GitHub treats these as vendored and Git does not try to diff binaries:
+code/DONT_CHANGE/python_packages/** linguist-vendored
+code/DONT_CHANGE/python_packages/**/*.dll binary
+code/DONT_CHANGE/python_packages/**/*.pyd binary
+code/DONT_CHANGE/python_packages/**/*.exe binary
+code/DONT_CHANGE/python_packages/**/*.chm binary
