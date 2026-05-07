@@ -1,7 +1,6 @@
 import os
 import re
 import signal
-import sys
 import time
 import unicodedata
 
@@ -26,16 +25,14 @@ from DONT_CHANGE.specific_scripts.common_variables import developer_settings_pat
 
 # local settings:
 
-python_exe = sys.executable
-
 output_path = os.path.normpath(file_dir + "..\\..\\..") + "\\"
 
-launcher_terminal = os.path.normpath(file_dir + "..\\W.py")
-launcher_emulator = os.path.normpath(file_dir + "..\\E.py")
-launcher_settings = os.path.normpath(file_dir + "..\\S.py")
-launcher_browser = os.path.normpath(file_dir + "..\\B.py")
-launcher_no_terminal = os.path.normpath(file_dir + "..\\N.py")
-launcher_stop = os.path.normpath(file_dir + "..\\Q.py")
+launcher_terminal = os.path.normpath(file_dir + "..\\W.bat")
+launcher_emulator = os.path.normpath(file_dir + "..\\E.bat")
+launcher_settings = os.path.normpath(file_dir + "..\\S.bat")
+launcher_browser = os.path.normpath(file_dir + "..\\B.bat")
+launcher_no_terminal = os.path.normpath(file_dir + "..\\N.bat")
+launcher_stop = os.path.normpath(file_dir + "..\\Q.bat")
 
 launcher_terminal_icon_path = os.path.normpath(file_dir + "..\\..\\icons\\icon.ico")
 launcher_emulator_icon_path = os.path.normpath(file_dir + "..\\..\\icons\\icon.ico")
@@ -158,7 +155,7 @@ def check_shortcut_was_created(output):
         time.sleep(SHORTCUT_RETRY_DELAY_SECONDS)
 
 
-def create_shortcut_with_appid(args, output, target=None, icon_path=None, wdir="", app_id=None, description=""):
+def create_shortcut_with_appid(output, target,args="",  icon_path=None, wdir="", app_id=None, description=""):
 
     if (icon_path is not None) and (not os.path.exists(icon_path)):
         print('[Warning] icon not existing at "{icon_path}"')
@@ -219,21 +216,18 @@ def create_shortcut_with_appid(args, output, target=None, icon_path=None, wdir="
                 print(f"[Warning] Failed to set AppID: {e}")
 
 
-def make_lnk(output_path, icon_path, script_path, args=None, appid=None, description=""):
+def make_lnk(output_path, icon_path, launcher_path, args="", appid=None, description=""):
 
     print(f"[Info] Generating: {output_path}")
 
-    if args is not None:
-        shortcut_args = f'"{script_path}" {args}'
-    else:
-        shortcut_args = f'"{script_path}"'
+
 
     create_shortcut_with_appid(
-        args=shortcut_args,
+        args=args,
         output=output_path,
         app_id=appid,
         icon_path=icon_path,
-        target=python_exe,
+        target=launcher_path,
         wdir="",
         description=description,
     )

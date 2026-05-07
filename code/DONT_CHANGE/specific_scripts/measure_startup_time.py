@@ -234,6 +234,8 @@ def resolve_shortcut(shortcut_path: Path) -> tuple[list[str], Path]:
     arguments = split_command_line_arguments(shortcut_data.get("Arguments", ""))
     working_directory = shortcut_data.get("WorkingDirectory", "")
     cwd = Path(working_directory) if working_directory else REPO_DIR
+    if target_path.lower().endswith((".bat", ".cmd")):
+        return ["cmd.exe", "/d", "/c", "call", target_path, *arguments], cwd
     return [target_path, *arguments], cwd
 
 
