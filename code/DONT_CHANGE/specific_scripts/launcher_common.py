@@ -2,6 +2,7 @@
 
 import atexit
 import os
+import re
 import subprocess
 import sys
 import threading
@@ -14,6 +15,18 @@ WINDOWS_CRASH_CODES = {
     0xC0000096,  # privileged instruction
     0xC0000409,  # stack buffer overrun
 }
+
+ANSI_ESCAPE_RE = re.compile(
+    r"\x1b(?:"
+    r"\[[0-?]*[ -/]*[@-~]"
+    r"|\][^\x07]*(?:\x07|\x1b\\)"
+    r"|[@-Z\\-_]"
+    r")"
+)
+
+
+def strip_ansi_escape_sequences(text: str) -> str:
+    return ANSI_ESCAPE_RE.sub("", text)
 
 
 def arg_to_bool(index: int, default: bool = False, argv: list[str] | None = None) -> bool:
@@ -136,6 +149,7 @@ class TerminalLogger:
             return
 
         with self._lock:
+            text = strip_ansi_escape_sequences(text)
             self._log_file.write(self._add_timestamps(text))
             self._log_file.flush()
 
