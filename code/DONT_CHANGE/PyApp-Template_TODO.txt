@@ -159,6 +159,8 @@ test dev tools
 ==== Future ====
 ================
 
+mkae closing terminals less long open
+
 does temrinal icon change have to be so complicated. how was it before?
 
 i get double error for protable batches-> maybe fix by making python verions or add no wait option in batch
