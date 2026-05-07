@@ -5,6 +5,9 @@
 
 fix temrinal appearing for temrinal emulator
 
+conside making it not temmplate
+
+cleanup git
 
 ================================
 ==== Must do before release ====
@@ -12,9 +15,16 @@ fix temrinal appearing for temrinal emulator
 
 Make shortcuts target batch so less path length. And probably more av safe . 
 
-does it set all terminals ot that icon eg also from differnet opened apps form framework???
-
 renamed python_packages to backend_python_packages
+
+mname if backend_common_code and launcher_common_code,
+backend_common_variables
+
+
+
+
+
+does it set all terminals ot that icon eg also from differnet opened apps form framework???
 
 check for "todos" in code
 
@@ -38,9 +48,6 @@ test play sounds and start time
 
 ask AI for imporovemnts
 
-mname if backend_common_code and launcher_common_code,
-backend_common_variables
-
 cleanup readme. addd browersser is WIP
 
 in wrapper:
@@ -60,8 +67,6 @@ update good settings for pyrefly for pyproject.toml
 
 update git topics and order
 Fix Release in git
-
-test dev_tools
 
 Fix repo hygiene first. git status shows a huge dirty state from tracked files under code/DONT_CHANGE/python_packages. Since README claims package files should not be shared, make that true: ignore/untrack generated package folders, keep only a manifest/installer, and add a clean bootstrap path. Right now .gitignore (line 17) does not cover that.
 
@@ -93,7 +98,7 @@ renamed: generate requiremtns to "generate lsit of ...". Add readme that explain
 
 think if all tool names appear nice
 
-clean up developer_settings
+clean up developer_settings. ask AI maybe for improvemtns
 
 read whole main workflow for terminal laucn and setting and stop and setupo
 
@@ -103,8 +108,6 @@ does the settings.py import even work for non same wdir? mention?
 
 add vscode settigns to pyproject.toml?
 update pyproject.toml but not enable the D
-
-conside making it not temmplate
 
 integrate settings.py in emulator
 
@@ -143,7 +146,7 @@ clean git after commiting backend
 
 ask AI for problems 
 
-
+test dev tools
 
 
 
