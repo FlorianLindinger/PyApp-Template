@@ -13,6 +13,10 @@ cleanup git
 ==== Must do before release ====
 ================================
 
+the terminal closing thing teriggered by fail in venv creation is too strong. it kills explorer. chagne all occurances
+
+change terminaol icon before venv setup
+
 stay in dev after release for develeopemnt otehr than quick bug fix
 
 Make shortcuts target batch so less path length. And probably more av safe . 
@@ -154,6 +158,10 @@ test dev tools
 ================
 ==== Future ====
 ================
+
+does temrinal icon change have to be so complicated. how was it before?
+
+i get double error for protable batches-> maybe fix by making python verions or add no wait option in batch
 
 ask AI for speedup and safety and robustness improvmens and also comments and docsttirngs
 
