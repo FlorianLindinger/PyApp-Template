@@ -4,7 +4,7 @@ Code in this folder is from PyApp-Template (https://github.com/FlorianLindinger/
 === Folder content explanation ===
 ==================================
 
-W.py, N.py, Q.py, and S.py are shortcuts to scripts in the specific_scripts folder which are needed to have a short path in the Windows shortcuts that calls them.
+W.bat, E.bat, B.bat, N.bat, Q.bat, and S.bat are shortcuts to scripts in the specific_scripts folder. Generated Windows shortcuts target these batch files directly so the .lnk does not launch Python with a .py stub argument. The matching .py files are kept for compatibility with older shortcuts.
 
 The file called "!DO NOT CHANGE STUFF IN THIS FOLDER" is just an extra warning not to change stuff.
 
