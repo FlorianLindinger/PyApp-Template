@@ -21,8 +21,12 @@ if not exist "%python_exe%" (
 
 :: generate shortcuts
 "%python_exe%" "%shortcut_generator_script%"
+set "exit_code=%ERRORLEVEL%"
 
-:: THIS PART OF THE CODE SHOULD NOT BE REACHED SINCE shortcut_generator_script SHOULD KILL THE TERMINAL
+if "%exit_code%"=="0" (
+    exit /b 0
+)
+
 echo [Error] Shortcut generation failed. Aborting. Press any key to exit.
 pause > nul
-exit 1
+exit /b %exit_code%
