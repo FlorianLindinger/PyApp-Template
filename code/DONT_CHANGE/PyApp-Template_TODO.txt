@@ -3,26 +3,20 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
-=================================
+fix temrinal appearing for temrinal emulator
+
+
+================================
 ==== Must do before release ====
 ================================
 
+Make shortcuts target batch so less path length. And probably more av safe . 
+
 does it set all terminals ot that icon eg also from differnet opened apps form framework???
-
-also make lazy imports for wrapper
-
-lazy import pywin32 module path setup
-# needed ? # needed for pywin32 to find its modules
 
 renamed python_packages to backend_python_packages
 
 check for "todos" in code
-
-clean startup time spam in DO_NOT_CAHNGE IN DO_NOT SYNC
-
-bump to version 1.0 afterwards
-
-fix all ruff/pyrefly suggestions
 
 is use_global_python used everywhere and als ohandles iof modeule not present?
 
@@ -31,8 +25,6 @@ is the file organication somewher unconventuional? should i renomea seom sutff?
 ask AI for speedup and safety and robustness improvmens and also comments and docsttirngs
 
 ask AI if code or variable is unused
-
-script_after_interpreter_crash_path dlete from dev_settings and ifle? and delte code relating
 
 let it chekc if seomthing looks like a placeholder and unfinsihjesd and nunnnecassy prings
 
@@ -44,26 +36,12 @@ test option to start minimized in all modes
 
 test play sounds and start time
 
-clean git after commiting backend
-
-
-swich to batch targets bc will break later for shortcutsd
-
-test all settings for all modes
-
-ask AI for problems and imporovemnts
-
-fix temrinal appearing for temrinal emulator
-
-fix all starters.
+ask AI for imporovemnts
 
 mname if backend_common_code and launcher_common_code,
 backend_common_variables
 
-fix imports everywhere
-
 cleanup readme. addd browersser is WIP
-
 
 in wrapper:
         elif looks_like_interpreter_crash(exit_code):
@@ -75,12 +53,10 @@ in wrapper:
 
 is logging saving the color things???
 
-
 underline in readme better visibile?
 udpate main readme
 
 update good settings for pyrefly for pyproject.toml
-
 
 update git topics and order
 Fix Release in git
@@ -115,21 +91,11 @@ am i using faulthandler correctly? do i need to print that to a log? ask ai if w
 
 renamed: generate requiremtns to "generate lsit of ...". Add readme that explains what they do 
 
-thjinbk if all tool names appear nice
-
-rem,ove ins start_program:
-    # restart_main_code_on_crash,
-    # after_python_crash_code_path
-
-look at google notes
+think if all tool names appear nice
 
 clean up developer_settings
 
 read whole main workflow for terminal laucn and setting and stop and setupo
-
-remove wdinows nmotifiartion already if there
-
-does python_version="" work?
 
 add only usefual stuff to pyproject
 
@@ -138,18 +104,7 @@ does the settings.py import even work for non same wdir? mention?
 add vscode settigns to pyproject.toml?
 update pyproject.toml but not enable the D
 
-test if still portable/downlaodnable
-
-renamed to DONT_CHANGE bc shorter
-           DONT_CHANGE
-
-cehck diff of git to local with code.
-
 conside making it not temmplate
-
-cehck verson change
-
-test if all proimts are forward to log
 
 integrate settings.py in emulator
 
@@ -160,6 +115,33 @@ mayor version: remove stuff outside DONT_CHANGE
 minor version: replacement or added outside DONT_CHANGE
 min version: replace DONT_CHANGE enough
 
+=========================================
+==== Must do before release (in end) ====
+=========================================
+
+test all starters
+
+cehck py verson change works
+
+test if all proimts are forward to log
+
+cehck diff of git to local with code.
+
+test if still portable/downlaodnable
+
+does python_version="" work?
+
+test wdinows nmotifiartion
+
+bump to version 1.0 afterwards
+
+test all settings for all modes
+
+fix all ruff/pyrefly suggestions
+
+clean git after commiting backend
+
+ask AI for problems 
 
 
 
@@ -181,6 +163,47 @@ min version: replace DONT_CHANGE enough
 ================
 ==== Future ====
 ================
+
+is there way way to make compile faster for repeeated compile
+
+Check for module missing error and prompt install script
+
+Make terminal output searchable .maybe search box
+
+Typewriter effect
+
+Transparency button: prompt for alpja. Maybe slicer. 
+
+Also add transparency to Windows termianl
+
+Compile via GitHub action for proof of exe content
+
+Setuptools for av safe args passing?
+
+Make the crash script only run on literal python crash. Not crash within python 
+https://gemini.google.com/share/1db513bda7c4
+
+Make txt which tells what's minimally needed to keep 
+
+Move gitatrivutes to code
+
+learn gitlens and make settings
+
+Add a bullet point list of what devs have to do:
+
+Install Python at generate shortcuts?
+
+Reorder features in readme. Also tags. And add description
+
+Mentioned all settings file tpyes supported without need for packages download 
+
+Test for all versions . Maybe write auto tester 
+
+spawn batch shortcuts such that one can pass args.
+
+ask AI if more lazy imports are usefull
+lazy import pywin32 module path setup
+# needed ? # needed for pywin32 to find its modules
 
 is anything in common_code slow that should be other scirpt or lazy import?
 
