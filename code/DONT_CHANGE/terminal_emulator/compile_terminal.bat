@@ -13,7 +13,7 @@ set "EXE_NAME=run"
 set "DO_PRUNE=yes"
 REM WINDOWS_CONSOLE_MODE options: attach, force, disable.
 REM "attach" means that it will print to console if called via console but not open one if called by double click
-set "WINDOWS_CONSOLE_MODE=attach"
+set "WINDOWS_CONSOLE_MODE=disable"
 
 REM Metadata
 set "COMPANY_NAME=Private Project"
