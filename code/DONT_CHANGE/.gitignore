@@ -4,11 +4,13 @@ tmp.txt
 *.build
 # DO_NOT_SYNC folders:
 DO_NOT_SYNC
-# python cache folders:
-__pycache__
 # package installation records:
 python_packages/*/RECORD
 # generated console entry points from pip --target:
 python_packages/bin/
 # terminal compilation error report:
 terminal_emulator/nuitka-crash-report.xml
+# generated caches:
+__pycache__
+*.pyc
+*.pyo
