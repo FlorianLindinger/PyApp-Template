@@ -5,17 +5,15 @@
 
 conside making it not temmplate
 
-Make shortcuts target batch so less path length. And probably more av safe . 
+the terminal closing thing teriggered by fail in venv creation is too strong. it kills explorer. chagne all occurances
+
+change terminaol icon before venv setup
 
 ================================
 ==== Must do before release ====
 ================================
 
 clean up developer_settings. ask AI maybe for improvemtns
-
-the terminal closing thing teriggered by fail in venv creation is too strong. it kills explorer. chagne all occurances
-
-change terminaol icon before venv setup
 
 test option to start minimized in all modes
 test play sounds and start time
@@ -39,7 +37,6 @@ in wrapper:
                 ...  ################### WIP
 
 
-is logging saving the color things???
 
 underline in readme better visibile?
 udpate main readme
