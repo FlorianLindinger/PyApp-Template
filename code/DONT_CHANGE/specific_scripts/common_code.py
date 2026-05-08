@@ -208,7 +208,7 @@ def run_command(
 def run_batch(batch_file: str, *args: object, check: bool = True) -> subprocess.CompletedProcess[str]:
     if not os.path.exists(batch_file):
         raise FileNotFoundError(f'Batch helper not found: "{batch_file}"')
-    return run_command(["cmd", "/c", "call", batch_file, *[os.fspath(str(arg)) for arg in args]], check=check)
+    return run_command(["cmd.exe", "/d", "/c", "call", batch_file, *[os.fspath(str(arg)) for arg in args]], check=check)
 
 
 def run_python_exe(
@@ -450,7 +450,7 @@ def run_venv_python(
     if not os.path.exists(python_bat):
         raise FileNotFoundError(f'Virtual environment Python not found: "{python_bat}"')
     return run_command(
-        ["cmd", "/c", "call", python_bat, *[os.fspath(str(arg)) for arg in args]],
+        ["cmd.exe", "/d", "/c", "call", python_bat, *[os.fspath(str(arg)) for arg in args]],
         check=check,
         capture_output=capture_output,
         stdout=stdout,
