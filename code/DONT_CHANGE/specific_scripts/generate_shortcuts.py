@@ -47,6 +47,11 @@ SHORTCUT_RETRY_DELAY_SECONDS = 0.1
 # ====================
 
 
+def quote_cmd_argument(value):
+    text = os.fspath(value)
+    return '"' + text.replace('"', '""') + '"'
+
+
 def make_abs_path_relative_to_file(path, file):
     """makes a path absolute if relative with respect to the file (as if the file defined it)"""
     if not os.path.isabs(path):
@@ -219,14 +224,16 @@ def make_lnk(output_path, icon_path, launcher_path, args="", appid=None, descrip
 
     print(f"[Info] Generating: {output_path}")
 
-
+    launcher_args = ["/d", "/c", "call", quote_cmd_argument(launcher_path)]
+    if args not in ["", None]:
+        launcher_args.append(quote_cmd_argument(args))
 
     create_shortcut_with_appid(
-        args=args,
+        args=" ".join(launcher_args),
         output=output_path,
         app_id=appid,
         icon_path=icon_path,
-        target=launcher_path,
+        target=os.environ.get("ComSpec", "cmd.exe"),
         wdir="",
         description=description,
     )
