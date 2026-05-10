@@ -367,7 +367,6 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
                 "visible": True,
                 "clickable": True,
                 "pinned": True,
-                "unpin_able": True,
                 "starting_state": False,  # For checkable buttons
             }
 
@@ -565,16 +564,15 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
                 menu_row_layout.addWidget(menu_row_button, 1)
                 self._menu_buttons[label] = menu_row_button
 
-                if button_settings[label]["unpin_able"] == True:
-                    menu_row_pin_button = QToolButton()
-                    menu_row_pin_button.setCheckable(True)
-                    menu_row_pin_button.setChecked(button_settings[label]["pinned"])
-                    menu_row_pin_button.clicked.connect(
-                        lambda checked, button_label=label: self.set_button_pinned_state(button_label, checked)
-                    )
-                    menu_row_pin_button.setToolTip("Pin or unpin from top bar")
-                    self._menu_pin_buttons[label] = menu_row_pin_button
-                    menu_row_layout.addWidget(menu_row_pin_button)
+                menu_row_pin_button = QToolButton()
+                menu_row_pin_button.setCheckable(True)
+                menu_row_pin_button.setChecked(button_settings[label]["pinned"])
+                menu_row_pin_button.clicked.connect(
+                    lambda checked, button_label=label: self.set_button_pinned_state(button_label, checked)
+                )
+                menu_row_pin_button.setToolTip("Pin or unpin from top bar")
+                self._menu_pin_buttons[label] = menu_row_pin_button
+                menu_row_layout.addWidget(menu_row_pin_button)
 
                 menu_row_action = QWidgetAction(self._menu_dropdown)
                 menu_row_action.setDefaultWidget(menu_row_widget)
