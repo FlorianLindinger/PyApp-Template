@@ -17,7 +17,7 @@ os.chdir(file_dir)
 # =============================
 
 import developer_settings
-from DONT_CHANGE.specific_scripts.common_code import print_traceback, terminate_parent_console_launcher_if_safe
+from DONT_CHANGE.specific_scripts.common_code import close_terminal, print_traceback
 from DONT_CHANGE.specific_scripts.common_variables import developer_settings_path
 
 # =============================
@@ -159,7 +159,7 @@ def check_shortcut_was_created(output):
         time.sleep(SHORTCUT_RETRY_DELAY_SECONDS)
 
 
-def create_shortcut_with_appid(output, target,args="",  icon_path=None, wdir="", app_id=None, description=""):
+def create_shortcut_with_appid(output, target, args="", icon_path=None, wdir="", app_id=None, description=""):
 
     if (icon_path is not None) and (not os.path.exists(icon_path)):
         print('[Warning] icon not existing at "{icon_path}"')
@@ -224,7 +224,7 @@ def make_lnk(output_path, icon_path, launcher_path, args="", appid=None, descrip
 
     print(f"[Info] Generating: {output_path}")
 
-    launcher_args = ["/d", "/c", "call", quote_cmd_argument(launcher_path)]
+    launcher_args = ["/d", "/k", "call", quote_cmd_argument(launcher_path)]
     if args not in ["", None]:
         launcher_args.append(quote_cmd_argument(args))
 
@@ -272,8 +272,7 @@ def main():
             launcher_emulator_icon_path,
             launcher_emulator,
             args=appid,
-            appid=appid
-            + "E",  # use a separate AppID so the terminal emulator can be pinned separately
+            appid=appid + "E",  # use a separate AppID so the terminal emulator can be pinned separately
             description=f"Start {program_name} in the bundled terminal emulator.",
         )
 
@@ -333,6 +332,6 @@ if __name__ == "__main__":
         print()
         print("=============================")
         input("[Success] Press enter to exit")
-        terminate_parent_console_launcher_if_safe()
+        close_terminal()
     except Exception as e:
         print_traceback(f"[Error] {e}", add_press_enter_to_exit=True)

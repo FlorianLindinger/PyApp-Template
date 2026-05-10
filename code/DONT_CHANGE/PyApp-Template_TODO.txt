@@ -5,15 +5,41 @@
 
 conside making it not temmplate
 
-the terminal closing thing teriggered by fail in venv creation is too strong. it kills explorer. chagne all occurances
+change terminaol icon before venv setup. hm is it faster if i allow pywin32 usage. if fast enough maybe always do?
 
-change terminaol icon before venv setup
+clean up developer_settings. ask AI maybe for improvemtns
+
+make everything forced terminal for future safety and /k and check if hard enpiuhg exits
+
+implement enable_log_for_terminal_start for browser and emulator
+
+warn for seetngs file not present
+
+make input prepend independnat from print prepend
+
+does log_prepend accept None?
+
+is checked?:
+    prevent_launch_if_existing_instances_running = False
+    close_existing_instances_on_start = False
+    prompt_to_close_existing_instances = True
+
+any point in use_faulthandler setting?
+
+what file types work for user_settings_path setting
 
 ================================
 ==== Must do before release ====
 ================================
 
-clean up developer_settings. ask AI maybe for improvemtns
+
+it does not stay open for start failur? is batch safe`?
+
+do i still want msi thing. does winget able to install locally. look at my git requests
+
+remove unpin_able?
+
+test open_log_file_after_success
 
 test option to start minimized in all modes
 test play sounds and start time
@@ -36,8 +62,6 @@ in wrapper:
             else:
                 ...  ################### WIP
 
-
-
 underline in readme better visibile?
 udpate main readme
 cleanup readme. addd browersser is WIP
@@ -54,10 +78,7 @@ os.abort is either way only used to test a crash so i dont have to respect it ot
 
 fix erorr print in wrapper mode haveing blac kcolor for tiomestapmo
 
-
 ask AI if at every spot it would wait for input on error and if i genertally catrch every error
-
-can i clean ANSI from logs. setting for that? dose error_print work. what if i just send it out as error in error_print?
 
 dont i always handle a interpreter crash by wrapper and emulator? no need for setting?
 
@@ -132,6 +153,13 @@ stay in dev after release for develeopemnt otehr than quick bug fix
 ================
 ==== Future ====
 ================
+
+add asci font print
+
+some kind of setting for global python version choice?
+
+ship_compiled_fancy_terminal_emulator = True
+ship_backend_python_and_backend_packages = True
 
 read whole main workflow for terminal laucn and setting and stop and setupo
 
