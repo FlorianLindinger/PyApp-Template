@@ -72,13 +72,13 @@ use_global_python = False
 # Start launch windows minimized where supported:
 start_minimized = False
 # -------------------------------------------------
-# Decide what parts of vanilla full Python install you actually need (enabling all is ~90 MB, disabling all is ~47 MB):
-# ----
-#   Include Tkinter GUI library? Required for Tk-based GUIs or IDLE and used as default backend for matplotlib.pyplot. (~11 MB):
+# Decide what parts of vanilla full Python to install:
+# --
+#   Tkinter (Required for Tk-based GUIs or IDLE and used as default backend for matplotlib.pyplot. ~11 MB):
 install_tkinter = True
-#   Include Python's internal test suite (Lib/test)? Only needed for interpreter testing. (~31 MB):
+#   Test suite (Needed for interpreter testing. ~31 MB):
 install_tests = False
-#   Include Python's "Tools" folder? Needed for: Language translation workflows/Python's code demos/old editors/old exe converters. (~1 MB, some installation time):
+#   Tools folder: Needed for: Language translation workflows/Python's code demos/old editors/old exe converters. (~1 MB, some installation time):
 install_tools = False
 # -------------------------------------------------
 
@@ -103,7 +103,7 @@ terminal_needs_input = True  # to en/disable the input box
 dark_mode: bool | None = True  # None = Windows dark setting
 stylesheet_path: str | None = "terminal_stylesheet.py"  # None = default stylesheet settings
 button_settings: None | list[tuple[str, dict[str, bool]]] = [  # None = default button settings
-    # ("button_name", {"visible"/"clickable"/"pinned"/"unpin_able"/"starting_state": bool , ...}),
+    # ("button_name", {"visible"/"clickable"/"pinned"/"starting_state": bool , ...}),
     ("show_input", {"pinned": False, "starting_state": True}),
     ("autoscroll", {"starting_state": True}),
     ("foreground_on_print", {"pinned": False}),
