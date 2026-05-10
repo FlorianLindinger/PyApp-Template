@@ -17,8 +17,24 @@ os.chdir(file_dir)
 # =============================
 
 import developer_settings
+from developer_settings import (
+    no_terminal_shortcut_name,
+    open_settings_shortcut_name,
+    program_name,
+    stop_running_shortcut_name,
+    terminal_emulator_shortcut_name,
+    user_settings_path,
+    windows_terminal_shortcut_name,
+)
+
+browser_shortcut_name = getattr(developer_settings, "browser_shortcut_name", "")
 from DONT_CHANGE.specific_scripts.common_code import close_terminal, print_traceback
-from DONT_CHANGE.specific_scripts.common_variables import developer_settings_path
+from DONT_CHANGE.specific_scripts.common_variables import (
+    developer_settings_path,
+    icon_path,
+    settings_icon_path,
+    stop_icon_path,
+)
 
 # =============================
 
@@ -32,13 +48,6 @@ launcher_settings = os.path.normpath(file_dir + "..\\S.bat")
 launcher_browser = os.path.normpath(file_dir + "..\\B.bat")
 launcher_no_terminal = os.path.normpath(file_dir + "..\\N.bat")
 launcher_stop = os.path.normpath(file_dir + "..\\Q.bat")
-
-launcher_terminal_icon_path = os.path.normpath(file_dir + "..\\..\\icons\\icon.ico")
-launcher_emulator_icon_path = os.path.normpath(file_dir + "..\\..\\icons\\icon.ico")
-launcher_settings_icon_path = os.path.normpath(file_dir + "..\\..\\icons\\settings.ico")
-launcher_browser_icon_path = os.path.normpath(file_dir + "..\\..\\icons\\icon.ico")
-launcher_no_terminl_icon_path = os.path.normpath(file_dir + "..\\..\\icons\\icon.ico")
-launcher_stop_icon_path = os.path.normpath(file_dir + "..\\..\\icons\\stop.ico")
 
 SHORTCUT_DELETE_TIMEOUT_SECONDS = 5.0
 SHORTCUT_CREATE_TIMEOUT_SECONDS = 5.0
@@ -233,7 +242,7 @@ def make_lnk(output_path, icon_path, launcher_path, args="", appid=None, descrip
         output=output_path,
         app_id=appid,
         icon_path=icon_path,
-        target=os.environ.get("ComSpec", "cmd.exe"),
+        target=os.environ.get("COMSPEC", "cmd.exe"),
         wdir="",
         description=description,
     )
@@ -242,7 +251,6 @@ def make_lnk(output_path, icon_path, launcher_path, args="", appid=None, descrip
 def main():
 
     # generate app-id
-    program_name = developer_settings.program_name
     appid = sanitize_app_id(program_name)
     # replace and shorten if too long which might cause path length limit problems (10 is arbitrary)
     if len(appid) > 15:
@@ -251,12 +259,11 @@ def main():
         appid = appid[:7] + appid[-7:]
 
     # Shortcut: normal start
-    start_windows_terminal_shortcut_name = getattr(developer_settings, "start_windows_terminal_shortcut_name", "")
-    if start_windows_terminal_shortcut_name not in [None, False, ""]:
-        out = output_path + sanitize_filename(start_windows_terminal_shortcut_name) + ".lnk"
+    if windows_terminal_shortcut_name not in [None, False, ""]:
+        out = output_path + sanitize_filename(windows_terminal_shortcut_name) + ".lnk"
         make_lnk(
             out,
-            launcher_terminal_icon_path,
+            icon_path,
             launcher_terminal,
             args=appid,
             appid=appid,
@@ -264,12 +271,11 @@ def main():
         )
 
     # Shortcut: start in terminal emulator
-    start_terminal_emulator_shortcut_name = getattr(developer_settings, "start_terminal_emulator_shortcut_name", "")
-    if start_terminal_emulator_shortcut_name not in [None, False, ""]:
-        out = output_path + sanitize_filename(start_terminal_emulator_shortcut_name) + ".lnk"
+    if terminal_emulator_shortcut_name not in [None, False, ""]:
+        out = output_path + sanitize_filename(terminal_emulator_shortcut_name) + ".lnk"
         make_lnk(
             out,
-            launcher_emulator_icon_path,
+            icon_path,
             launcher_emulator,
             args=appid,
             appid=appid + "E",  # use a separate AppID so the terminal emulator can be pinned separately
@@ -277,12 +283,11 @@ def main():
         )
 
     # Shortcut: start in browser terminal
-    start_browser_shortcut_name = getattr(developer_settings, "start_browser_shortcut_name", "")
-    if start_browser_shortcut_name not in [None, False, ""]:
-        out = output_path + sanitize_filename(start_browser_shortcut_name) + ".lnk"
+    if browser_shortcut_name not in [None, False, ""]:
+        out = output_path + sanitize_filename(browser_shortcut_name) + ".lnk"
         make_lnk(
             out,
-            launcher_browser_icon_path,
+            icon_path,
             launcher_browser,
             args=appid,
             appid=appid
@@ -291,12 +296,11 @@ def main():
         )
 
     # Shortcut: start without terminal
-    start_no_terminal_shortcut_name = getattr(developer_settings, "start_no_terminal_shortcut_name", "")
-    if start_no_terminal_shortcut_name not in [False, None, ""]:
-        out = output_path + sanitize_filename(start_no_terminal_shortcut_name) + ".lnk"
+    if no_terminal_shortcut_name not in [False, None, ""]:
+        out = output_path + sanitize_filename(no_terminal_shortcut_name) + ".lnk"
         make_lnk(
             out,
-            launcher_no_terminl_icon_path,
+            icon_path,
             launcher_no_terminal,
             args=appid,
             appid=appid
@@ -305,15 +309,12 @@ def main():
         )
 
     # Shortcut: stop program started by any generated launcher mode
-    stop_shortcut_name = getattr(developer_settings, "stop_shortcut_name", "")
-    if stop_shortcut_name not in ["", False, None]:
-        out = output_path + sanitize_filename(stop_shortcut_name) + ".lnk"
-        make_lnk(out, launcher_stop_icon_path, launcher_stop, description=f"Stop running {program_name} processes.")
+    if stop_running_shortcut_name not in ["", False, None]:
+        out = output_path + sanitize_filename(stop_running_shortcut_name) + ".lnk"
+        make_lnk(out, stop_icon_path, launcher_stop, description=f"Stop running {program_name} processes.")
 
     # Shortcut: open settings
-    user_settings_path = getattr(developer_settings, "user_settings_path", "")
-    settings_shortcut_name = getattr(developer_settings, "open_settings_shortcut_name", "")
-    if user_settings_path not in [None, False, ""] and settings_shortcut_name not in [None, False, ""]:
+    if user_settings_path not in [None, False, ""] and open_settings_shortcut_name not in [None, False, ""]:
         settings_file_path_abs = make_abs_path_relative_to_file(user_settings_path, developer_settings_path)
         if not os.path.exists(settings_file_path_abs):
             print(
@@ -321,10 +322,10 @@ def main():
                 f"The settings shortcut will still be created, but it will show an error until the file exists. "
                 f'Disable the settings shortcut by setting user_settings_path = None in "{developer_settings_path}".'
             )
-        out = output_path + sanitize_filename(settings_shortcut_name) + ".lnk"
+        out = output_path + sanitize_filename(open_settings_shortcut_name) + ".lnk"
         make_lnk(
             out,
-            launcher_settings_icon_path,
+            settings_icon_path,
             launcher_settings,
             description=f"Open the {program_name} settings file.",
         )
