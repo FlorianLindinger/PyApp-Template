@@ -7,6 +7,7 @@ import time
 # ==========================================================================
 # import from common variables and developer settings
 from DONT_CHANGE.specific_scripts.common_code import (
+    close_terminal,
     make_abs_path_relative_to_file,
     print_traceback,
     stop_processes_from_pid_file,
@@ -37,6 +38,7 @@ try:
     if stale_count:
         print(f"[Info] Removed {stale_count} stale PID entries.")
     time.sleep(1)
+    close_terminal()
     sys.exit(0)
 
 except Exception as e:

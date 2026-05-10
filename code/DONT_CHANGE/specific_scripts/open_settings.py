@@ -11,6 +11,7 @@ try:
     # ==========================================================================
     # import from common variables and developer settings
     import developer_settings
+    from DONT_CHANGE.specific_scripts.common_code import close_terminal
     from DONT_CHANGE.specific_scripts.common_variables import developer_settings_path
 
     # ==========================================================================
@@ -53,6 +54,7 @@ try:
 
         try:
             open_settings_in_editor(user_settings_path)
+            close_terminal()
         except Exception as e:
             print(f'[Error] Failed to open settings file at "{user_settings_path}": {e}')
             print("=" * 20)
