@@ -17,6 +17,7 @@ DONT_CHANGE_dir = make_abs("..")
 backend_packages_dir = make_abs("..\\..\\python_packages")
 
 # scripts
+python_code_path = make_abs("..\\..\\main_code.py")
 portable_python_installer_path = make_abs("..\\general_scripts\\create_portable_python.bat")
 portable_venv_creator_path = make_abs("..\\general_scripts\\create_portable_venv.bat")
 script_wrapper_path = make_abs("script_wrapper.py")
