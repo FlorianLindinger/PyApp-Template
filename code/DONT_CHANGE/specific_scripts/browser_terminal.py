@@ -16,6 +16,10 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any
 from urllib.parse import parse_qs, urlparse
 
+# add root dir for debug cases where this script is called on its own:
+root_dir = os.path.dirname(__file__) + "\\..\\.."
+sys.path.insert(0, root_dir)
+
 from DONT_CHANGE.specific_scripts.launcher_common import (
     CompletionAlerts,
     ProcessIdRegistry,
