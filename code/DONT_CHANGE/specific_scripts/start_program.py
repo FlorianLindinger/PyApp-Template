@@ -181,7 +181,7 @@ try:
         # ======================
         # process args
 
-        valid_launch_modes = ["terminal", "no_terminal", "terminal_emulator", "browser"]
+        valid_launch_modes = ["terminal", "no_terminal", "terminal_emulator", "uncompiled_terminal_emulator", "browser"]
 
         if len(sys.argv) >= 3:
             app_id = sys.argv[1]
@@ -345,7 +345,7 @@ try:
                 text=True,
             )
 
-        elif launch_mode == "terminal_emulator":
+        elif launch_mode in ["terminal_emulator", "uncompiled_terminal_emulator"]:
             # run in terminal emulator
             import json
 
@@ -372,7 +372,7 @@ try:
                 log_input_prepend,
             ]
 
-            if use_uncompiled_terminal_emulator == True:  # Meant for debugging terminal
+            if launch_mode == "uncompiled_terminal_emulator":
                 launched_backend_path = uncompiled_terminal_path
                 proc = subprocess.Popen(  # noqa:S603 #type:ignore
                     ["py", "-X", "faulthandler", uncompiled_terminal_path, script_path, python_exe_for_script_path, *args],
