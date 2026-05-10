@@ -23,10 +23,10 @@ VERSION_SCRIPT = (
     "import platform, sys; print(f'{platform.python_implementation()} {sys.version.split()[0]} ({sys.executable})')"
 )
 SHORTCUT_SETTINGS = [
-    ("windows_terminal", "start_windows_terminal_shortcut_name"),
-    ("terminal_emulator", "start_terminal_emulator_shortcut_name"),
-    ("browser", "start_browser_shortcut_name"),
-    ("no_terminal", "start_no_terminal_shortcut_name"),
+    ("windows_terminal", ("windows_terminal_shortcut_name", "start_windows_terminal_shortcut_name")),
+    ("terminal_emulator", ("terminal_emulator_shortcut_name", "start_terminal_emulator_shortcut_name")),
+    ("browser", ("browser_shortcut_name", "start_browser_shortcut_name")),
+    ("no_terminal", ("no_terminal_shortcut_name", "start_no_terminal_shortcut_name")),
 ]
 
 
@@ -61,7 +61,7 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def load_developer_setting(name: str, default):
+def load_developer_setting(names: str | tuple[str, ...], default):
     import importlib.util
 
     spec = importlib.util.spec_from_file_location("developer_settings", DEVELOPER_SETTINGS_PATH)
@@ -69,7 +69,13 @@ def load_developer_setting(name: str, default):
         return default
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
-    return getattr(module, name, default)
+    if isinstance(names, str):
+        names = (names,)
+    for name in names:
+        value = getattr(module, name, None)
+        if value is not None:
+            return value
+    return default
 
 
 def sanitize_filename(filename, replacement="_"):
@@ -117,10 +123,10 @@ def shortcut_specs_from_developer_settings(args: argparse.Namespace) -> list[Sho
         "no_terminal": args.skip_no_terminal_shortcut,
     }
     shortcut_specs: list[ShortcutSpec] = []
-    for mode, setting_name in SHORTCUT_SETTINGS:
+    for mode, setting_names in SHORTCUT_SETTINGS:
         if skip_args_by_mode[mode]:
             continue
-        shortcut_name = load_developer_setting(setting_name, "")
+        shortcut_name = load_developer_setting(setting_names, "")
         if shortcut_name in [None, False, ""]:
             continue
         shortcut_name_text = str(shortcut_name)
@@ -128,7 +134,7 @@ def shortcut_specs_from_developer_settings(args: argparse.Namespace) -> list[Sho
             ShortcutSpec(
                 path=REPO_DIR / f"{sanitize_filename(shortcut_name_text)}.lnk",
                 mode=mode,
-                setting_name=setting_name,
+                setting_name=setting_names[0],
                 shortcut_name=shortcut_name_text,
             )
         )
