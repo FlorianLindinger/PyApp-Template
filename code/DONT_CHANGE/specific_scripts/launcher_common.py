@@ -6,7 +6,7 @@ import re
 import subprocess
 import sys
 import threading
-from datetime import datetime
+from datetime import datetime, timezone
 
 WINDOWS_CRASH_CODES = {
     0xC0000005,  # access violation
@@ -121,12 +121,12 @@ class TerminalLogger:
         self._lock = threading.RLock()
         self._log_file = None
         if self.path:
-            self._log_file = open(self.path, "w" if overwrite else "a", encoding="utf-8", buffering=1)
+            self._log_file = open(self.path, "w" if overwrite else "a", encoding="utf-8", buffering=1)  # noqa
             atexit.register(self.close)
 
     @staticmethod
     def _prepare_log_path(path: str) -> str:
-        path = datetime.now().strftime(path)
+        path = datetime.now(tz=timezone.utc).strftime(path)
         folder = os.path.dirname(path)
         if folder:
             os.makedirs(folder, exist_ok=True)
@@ -139,7 +139,7 @@ class TerminalLogger:
         output: list[str] = []
         for char in text:
             if self._at_line_start:
-                output.append(datetime.now().strftime(self.timestamp_format))
+                output.append(datetime.now(tz=timezone.utc).strftime(self.timestamp_format))
             output.append(char)
             self._at_line_start = char == "\n"
         return "".join(output)
