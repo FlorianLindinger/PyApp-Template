@@ -64,7 +64,7 @@ log_path_rel_to_start_folder: str | None = r"..\logs\log_%Y_%m_%d.txt"
 # How to treat alredy running program instances:
 prevent_launch_if_existing_instances_running = False
 close_existing_instances_on_start = False
-prompt_to_close_existing_instances = True
+prompt_to_close_existing_instances = False
 # -------------------------------------------------
 # Decide if global default (any version) Python should be used instead of automatic localized download and installation of Python/packages:
 use_global_python = False
@@ -99,7 +99,7 @@ terminal_text_color: str | None = "F"
 # ---- Terminal Emulator ----
 # ---------------------------
 
-terminal_needs_input = True
+terminal_needs_input = True  # to en/disable the input box
 dark_mode: bool | None = True  # None = Windows dark setting
 stylesheet_path: str | None = "terminal_stylesheet.py"  # None = default stylesheet settings
 button_settings: None | list[tuple[str, dict[str, bool]]] = [  # None = default button settings
