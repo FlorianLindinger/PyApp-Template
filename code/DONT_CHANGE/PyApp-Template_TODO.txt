@@ -32,6 +32,8 @@ what file types work for user_settings_path setting
 ==== Must do before release ====
 ================================
 
+add root everywhere
+
 more specfic chekc if shportctus exist by shorctut name:
 . no wait. baý launch mode
 if (
