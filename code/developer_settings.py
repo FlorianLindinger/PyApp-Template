@@ -1,121 +1,103 @@
 # ============================
-# ==== important settings ====
+# ==== Important Settings ====
 # ============================
 
 # -------------------------------------------------
 # Name of this program:
 program_name = "PyApp-Template"
 # -------------------------------------------------
-# Python version. Can be in format "x"/"x.y"/"x.y.z". Finds latest (msi-install-available) Python version compatible with this setting. Empty string "" gives latest (not recommended if you want to make sure the code works always the same):
+# Python version ("x"/"x.y"/"x.y.z"). Finds latest matching(msi-install-available) Python version. "" -> latest:
 python_version: str = "3.14"
 # -------------------------------------------------
-# Decide if global python (python & packages need to be installed manually on PC) should be used instead of automatic localized download and installation of all.
-use_global_python = False
+# Path to end-user settings file (None to disable). File type can be anything openable by vscode/editor:
+user_settings_path: str | None = "settings.py"
 # -------------------------------------------------
-# Decide working directory behavior:
-# True  = Start in the folder where the shortcut is located
-# False = Start in the "code" folder where the main scrip is
-start_in_shortcut_folder = False
+# Names of created shortcuts (None to disable). Accepts for example f"{program_name}":
+windows_terminal_shortcut_name: str | None = f"{program_name}"
+terminal_emulator_shortcut_name: str | None = f"{program_name} (Terminal Emulator)"
+no_terminal_shortcut_name: str | None = f"{program_name} (no Terminal)"
+open_settings_shortcut_name: str | None = f"{program_name} - Settings"
+stop_running_shortcut_name: str | None = f"Stop {program_name}"
 # -------------------------------------------------
-print_timestamp_format: str | None = "%H:%M:%S | "
-# None for no timestamps (else see datetime.datetime.strftime usage: e.g. "%H:%M:%S | ")
-# ------------------------------------------------
-ship_compiled_fancy_terminal_emulator = True
-# ------------------------------------------------
-#
-# =================================
-# ==== less important settings ====
-# =================================
-
+# String added before prints/inputs. Accepts datetime.datetime.strftime usage: e.g. "%H:%M:%S | ". None to turn off:
+print_prepend: str | None = "%H:%M:%S | "
+input_prepend: str | None = "%H:%M:%S > "
+log_print_prepend: str | None = "%H:%M:%S | "
+log_input_prepend: str | None = "%H:%M:%S > "
 # -------------------------------------------------
-# Names of generated shortcuts:
-# (set to None to disable generation of specific shortcut. You can use program_name variable like since this is a python script)
-start_windows_terminal_shortcut_name: str | None = f"{program_name}"  # start program with terminal
-start_terminal_emulator_shortcut_name: str | None = f"{program_name} (Terminal Emulator)"  # start program with terminal emulator
-start_no_terminal_shortcut_name: str | None = f"{program_name} (no Terminal)"  # start program without terminal
-settings_shortcut_name: str | None = f"{program_name} - Settings"  # open settings file
-stop_shortcut_name: str | None = f"Stop {program_name}"  # stop all started programs
-# -------------------------------------------------
-# Close all tracked instances of this program before launching a new one.
-close_existing_instances_on_start = False
-# -------------------------------------------------
-# Prevent launching a second instance while another tracked instance is running.
-# If prompt_to_close_existing_instances is True, the launcher asks whether to close
-# the old instance(s) and continue. If False, it only prints a message and exits.
-# Ignored when close_existing_instances_on_start is True.
-prevent_launch_if_existing_instances_running = False
-prompt_to_close_existing_instances = True
-# -------------------------------------------------
-# success = sys.exit(0) or sys.exit() or no exit line.
+# Program exit behavior:
+# success = sys.exit(0)/sys.exit()/file end.
+# failure = sys.exit(not-a-zero) e.g. raised Exception.Exception.
+# crash   = python interpreter crash (where even try/except fails).
 close_on_success = True
-play_sound_on_success: str | bool = False # False for no sound, True for default sound (notify.wav) or a path to a wav file relative to C:\Windows\Media\.
-send_Windows_notification_on_success = True
-# ----
-# failure = normal failure exit codes (i.e. exit_code != 0), usually via "sys.exit(exit_code)" or raised error.
 close_on_failure = False
-play_sound_on_failure: str | bool  = True # False for no sound, True for default sound ("Windows Critical Stop.wav") or a path to a wav file relative to C:\Windows\Media\.
+close_on_crash = False
+send_Windows_notification_on_success = False
 send_Windows_notification_on_failure = True
-# ----
-# crash of python interpreter is usually caused by code causing Windows to kill Python and won't be caught by try/except.
-close_on_python_interpreter_crash = False
-play_sound_on_python_interpreter_crash:str|bool  = True # False for no sound, True for default sound ("Windows Critical Stop.wav") or a path to a wav file relative to C:\Windows\Media\.
-send_Windows_notification_on_python_interpreter_crash = True
-# -------------------------------------------------
-# Path of end-user settings file (file can be deleted)
-user_settings_path: str | None = "settings.py"  # set None to not use. Can also be not python file.
-# -------------------------------------------------
-# Text shown before user input when input is echoed in the terminal.
-input_prepend: str | None = "> "
-# -------------------------------------------------
-# Name of Python code file and has to be in "code" folder.
-python_code_name = "main_code.py"
-# -------------------------------------------------
-ship_backend_python_and_backend_packages = True
-# -------------------------------------------------
-# Start launch windows minimized where supported
-start_minimized = False
-# -------------------------------------------------
-
-# ==========================
-# ==== logging settings ====
-# ==========================
-
-# -------------------------------------------------
-log_path_rel_to_wdir: str | None = r"..\logs\log_%Y_%m_%d.txt"
-# wdir is influenced by "start_in_shortcut_folder" setting. Can also be an absolute path and can accept datetime formatting (see datetime.datetime.strftime usage: e.g. "log_%Y_%m_%d.txt"). Set to None to disable logging to file.
-# -------------------------------------------------
-overwrite_log = True
-# -------------------------------------------------
-enable_log_for_terminal_start = True
-enable_log_for_no_terminal_start = True
-# -------------------------------------------------
-# Opens the log file (if enabled) after the script finishes
+send_Windows_notification_on_crash = True
 open_log_file_after_success = False
 open_log_file_after_failure = False
-open_log_file_after_python_interpreter_crash = False
+open_log_file_after_crash = False
+# False for off. True for default. String for rel. path to .wav in C:\Windows\Media:
+play_sound_on_success: str | bool = False
+play_sound_on_failure: str | bool = True
+play_sound_on_crash: str | bool = True
 # -------------------------------------------------
-log_timestamp_format = "%H:%M:%S | "
-# None for no timestamps (else see datetime.datetime.strftime usage: e.g. "%H:%M:%S | ")
+# Start script in scipt folder or folder of the starting shortcut. (affects log_path_rel_to_start_folder setting below):
+start_in_shortcut_folder = False
+# -------------------------------------------------
+# Logging behavior:
+enable_log_for_Windows_terminal_start = True
+enable_log_for_terminal_emulator_start = True
+enable_log_for_browser_start = True
+enable_log_for_no_terminal_start = True
+overwrite_log = True
+# Accepts datetime.datetime.strftime usage: e.g. "log_%Y_%m_%d". Affected by start_in_shortcut_folder setting above. None to disable:
+log_path_rel_to_start_folder: str | None = r"..\logs\log_%Y_%m_%d.txt"
+# ------------------------------------------------
+
+# =================================
+# ==== Less Important Settings ====
+# =================================
+
+# -------------------------------------------------
+# How to treat alredy running program instances:
+prevent_launch_if_existing_instances_running = False
+close_existing_instances_on_start = False
+prompt_to_close_existing_instances = True
+# -------------------------------------------------
+# Decide if global default (any version) Python should be used instead of automatic localized download and installation of Python/packages:
+use_global_python = False
+# -------------------------------------------------
+# Start launch windows minimized where supported:
+start_minimized = False
+# -------------------------------------------------
+# Decide what parts of vanilla full Python install you actually need (enabling all is ~90 MB, disabling all is ~47 MB):
+# ----
+#   Include Tkinter GUI library? Required for Tk-based GUIs or IDLE and used as default backend for matplotlib.pyplot. (~11 MB):
+install_tkinter = True
+#   Include Python's internal test suite (Lib/test)? Only needed for interpreter testing. (~31 MB):
+install_tests = False
+#   Include Python's "Tools" folder? Needed for: Language translation workflows/Python's code demos/old editors/old exe converters. (~1 MB, some installation time):
+install_tools = False
 # -------------------------------------------------
 
-# ====================================
-# ==== terminal (visual) settings ====
-# ====================================
+# =========================================
+# ==== Launcher Mode Specific Settings ====
+# =========================================
 
-# --------------------------------------------------
-# settings that apply to the Windows Terminal shortcut:
-# --------------------------------------------------
+# --------------------------
+# ---- Windows Terminal ----
+# --------------------------
 
-# Terminal colors (set None for Windows default):
-# Background: 0=Black,1=Blue,2=Green,3=Aqua,4=Red,5=Purple,6=Yellow,8=Gray,7=White,9=LightBlue
-# Text: A=LightGreen,B=LightAqua,C=LightRed,,D=LightPurple,E=LightYellow,F=BrightWhite
+# Background color: 0=Black,1=Blue,2=Green,3=Aqua,4=Red,5=Purple,6=Yellow,8=Gray,7=White,9=LightBlue:
 terminal_bg_color: str | None = "9"
+# Text color: A=LightGreen,B=LightAqua,C=LightRed,,D=LightPurple,E=LightYellow,F=BrightWhite:
 terminal_text_color: str | None = "F"
-# -------------------------------------------------
 
-# -------------------------------------------------
-# settings that apply to the terminal emulator shortcut:
-# -------------------------------------------------
+# ---------------------------
+# ---- Terminal Emulator ----
+# ---------------------------
 
 terminal_needs_input = True
 dark_mode: bool | None = True  # None = Windows dark setting
@@ -133,27 +115,9 @@ button_settings: None | list[tuple[str, dict[str, bool]]] = [  # None = default 
     ("to_tray", {"clickable": True}),
     ("open_script", {"pinned": False}),
 ]
-# -------------------------------------------------
 
-# ==================================
-# ==== least important settings ====
-# ==================================
+# -----------------
+# ---- Browser ----
+# -----------------
 
-# -------------------------------------------------
-use_faulthandler = True
-# -------------------------------------------------
-# Decide what parts of vanilla full Python install you actually need (enabling all is ~90 MB, disabling all is ~47 MB):
-# ----
-#   Include Tkinter GUI library? Required for Tk-based GUIs or IDLE and used as default backend for matplotlib.pyplot. (~11 MB):
-install_tkinter = True
-#   Include Python's internal test suite (Lib/test)? Only needed for interpreter testing. (~31 MB):
-install_tests = False
-#   Include Python's "Tools" folder? Needed for: Language translation workflows/Python's code demos/old editors/old exe converters. (~1 MB, some installation time):
-install_tools = False
-# -------------------------------------------------
-
-# =======================
-# ==== debug options ====
-# =======================
-
-use_uncompiled_terminal_emulator_and_run_it_in_global = False
+# =========================================
