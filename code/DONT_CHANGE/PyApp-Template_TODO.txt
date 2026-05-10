@@ -7,31 +7,6 @@ conside making it not temmplate
 
 change terminaol icon before venv setup. hm is it faster if i allow pywin32 usage. if fast enough maybe always do?
 
-clean up developer_settings. ask AI maybe for improvemtns
-
-make everything forced terminal for future safety and /k and check if hard enpiuhg exits
-
-implement enable_log_for_terminal_start for browser and emulator
-
-warn for seetngs file not present
-
-make input prepend independnat from print prepend
-
-does log_prepend accept None?
-
-is checked?:
-    prevent_launch_if_existing_instances_running = False
-    close_existing_instances_on_start = False
-    prompt_to_close_existing_instances = True
-
-any point in use_faulthandler setting?
-
-what file types work for user_settings_path setting
-
-================================
-==== Must do before release ====
-================================
-
 add root everywhere
 
 more specfic chekc if shportctus exist by shorctut name:
@@ -46,11 +21,15 @@ if (
             f'[Error] log_path_rel_to_start_folder in [False,None,""] in developer settings at "{developer_settings_path}" prevents log creation which is wanted by at least one enable_log_for_*_start setting being True.'
         )
 
-it does not stay open for start failur? is batch safe`?
+it does not stay open for start failure? is it most batch safe for any mistake in python scripts?
+
+================================
+==== Must do before release ====
+================================
+
+
 
 do i still want msi thing. does winget able to install locally. look at my git requests
-
-remove unpin_able?
 
 test open_log_file_after_success
 
@@ -166,6 +145,13 @@ stay in dev after release for develeopemnt otehr than quick bug fix
 ================
 ==== Future ====
 ================
+
+make tmerinual emumaltr fully self sufficient
+
+is checked?:
+    prevent_launch_if_existing_instances_running = False
+    close_existing_instances_on_start = False
+    prompt_to_close_existing_instances = True
 
 add asci font print
 

@@ -1,5 +1,6 @@
 import os
 import re
+import sys
 import time
 import unicodedata
 
@@ -11,6 +12,10 @@ from win32com.shell import shellcon  # type:ignore
 # move to folder of this file for correct relative paths and ensure it's in path
 file_dir = os.path.dirname(os.path.abspath(__file__)) + "\\"
 os.chdir(file_dir)
+
+# add root dir for debug cases where this script is called on its own:
+root_dir = os.path.dirname(__file__) + "\\..\\.."
+sys.path.insert(0, root_dir)
 
 # =============================
 # import from common_code_and_variables.py
