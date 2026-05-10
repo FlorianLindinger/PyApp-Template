@@ -28,6 +28,8 @@ uncompiled_terminal_path = make_abs("..\\terminal_emulator\\terminal_emulator.py
 # files
 developer_settings_path = make_abs("..\\..\\developer_settings.py")
 icon_path = make_abs("..\\..\\icons\\icon.ico")
+settings_icon_path = make_abs("..\\..\\icons\\settings.ico")
+stop_icon_path = make_abs("..\\..\\icons\\stop.ico")
 process_id_file_path = make_abs("..\\..\\..\\currently_running.pid")
 default_packages_file_path = make_abs("..\\..\\developer_tools\\!DEFAULT_PYHON_PACKAGES.txt")
 determined_current_packages_file_path = make_abs(developer_tools_dir + "\\determined_current_packages.txt")
