@@ -60,6 +60,7 @@ try:
     start_minimized = arg_to_bool(24)
     terminal_colors = sys.argv[25]
     script_has_terminal = arg_to_bool(26)
+    log_input_prepend = sys.argv[27] if len(sys.argv) > 27 else log_timestamp_format
     # script_has_terminal = true means that this window is run in a terminal and False that it is invisible and one needs to create a new terminal to print
     completion_alerts = CompletionAlerts(
         title=title,
@@ -660,6 +661,8 @@ try:
                 *,
                 print_timestamp_format: str | None = "[%H:%M:%S] ",
                 log_timestamp_format: str | None = "[%H:%M:%S]\t",
+                input_timestamp_format: str | None = "",
+                log_input_timestamp_format: str | None = "",
                 print_red: bool = False,
                 auto_flush: bool = True,
             ) -> None:
@@ -670,6 +673,8 @@ try:
                 self.log_stream = log_stream
                 self.print_timestamp_format = print_timestamp_format
                 self.log_timestamp_format = log_timestamp_format
+                self.input_timestamp_format = input_timestamp_format
+                self.log_input_timestamp_format = log_input_timestamp_format
                 self.print_red = print_red
                 self.auto_flush = auto_flush
 
@@ -726,6 +731,24 @@ try:
 
                 return len(data)
 
+            def write_input_prompt(self, prompt: str) -> None:
+                if prompt is None:
+                    prompt = ""
+                if not isinstance(prompt, str):
+                    prompt = str(prompt)
+
+                with self._lock:
+                    print_prefix = self._timestamp_prefix(self.input_timestamp_format)
+                    log_prefix = self._timestamp_prefix(self.log_input_timestamp_format)
+
+                    self.print_stream.write(f"{print_prefix}{prompt}")
+                    if self.log_stream is not None:
+                        self.log_stream.write(f"{log_prefix}{strip_ansi_escape_sequences(prompt)}")
+
+                    self._at_line_start = prompt.endswith("\n")
+                    if self.auto_flush:
+                        self.flush()
+
             def complete_input_line(self, text: str) -> None:
                 with self._lock:
                     if self.log_stream is not None and not self._at_line_start:
@@ -766,12 +789,16 @@ try:
                 log_file,
                 print_timestamp_format=print_timestamp_format,
                 log_timestamp_format=log_timestamp_format,
+                input_timestamp_format=input_prepend,
+                log_input_timestamp_format=log_input_prepend,
             )
             sys.stderr = pipe_splitter(
                 sys.__stderr__,
                 log_file,
                 print_timestamp_format=print_timestamp_format,
                 log_timestamp_format=log_timestamp_format,
+                input_timestamp_format=input_prepend,
+                log_input_timestamp_format=log_input_prepend,
                 print_red=True,
             )
             if faulthandler.is_enabled():
@@ -867,10 +894,14 @@ def get_terminal_name():
 
         # run in the current python process and wait for finish
         original_input = builtins.input
-        if input_prepend != "" or print_timestamp_format != "":
+        if input_prepend != "" or log_input_prepend != "" or hasattr(sys.stdout, "complete_input_line"):
 
             def input_with_prepend(prompt=""):
-                text = original_input(f"{prompt}{input_prepend}")
+                if hasattr(sys.stdout, "write_input_prompt"):
+                    sys.stdout.write_input_prompt(prompt)
+                    text = original_input("")
+                else:
+                    text = original_input(f"{input_prepend}{prompt}")
                 if hasattr(sys.stdout, "complete_input_line"):
                     sys.stdout.complete_input_line(text)
                 return text
