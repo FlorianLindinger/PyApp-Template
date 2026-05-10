@@ -168,6 +168,7 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
 
     INPUT_PRINT_BG = "%acccent_color_placeholder%"  # None for default
     INPUT_PRINT_COLOR = "contrast"  # None for default. "contrast" for a bg with contrast to INPUT_PRINT_BG
+    LOG_INPUT_PREPEND = "> "
     ERROR_PRINT_COLOR = "#FF5252"  # None for default
     ERROR_PRINT_BG = "#FFFFFF"  # None for default. "contrast" for a bg with contrast to ERROR_PRINT_COLOR
 
@@ -353,7 +354,7 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
             log_path: str = "",
             log_stream=None,
             log_timestamp_format: str = "",
-            use_faulthandler: bool = True,
+            log_input_timestamp_format: str = "",
             width: int = 900,
             height: int = 600,
             button_settings: dict[str, dict] | None = None,
@@ -424,9 +425,10 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
             self.log_path = log_path
             self.log_stream = log_stream
             self.log_timestamp_format = log_timestamp_format
-            self.use_faulthandler = use_faulthandler
+            self.log_input_timestamp_format = log_input_timestamp_format
             self._print_at_line_start = True
             self._log_at_line_start = True
+            self._log_input_at_line_start = True
 
             # Create the final default settings dictionary (label: settings_dict) with fallback base_default_button_settings if not defined in altered_default_button_settings
             default_button_settings: dict[str, dict[str, bool]] = {
@@ -811,6 +813,8 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
 
         def _add_line_timestamps(self, text: str, fmt: str | None, state_attr: str) -> str:
             if not fmt:
+                if text:
+                    setattr(self, state_attr, text.endswith("\n"))
                 return text
 
             at_line_start = getattr(self, state_attr)
@@ -825,11 +829,18 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
             setattr(self, state_attr, at_line_start)
             return "".join(timestamped_parts)
 
-        def _write_log(self, text: str) -> None:
+        def _write_log(
+            self,
+            text: str,
+            timestamp_format: str | None = None,
+            state_attr: str = "_log_at_line_start",
+        ) -> None:
             if self.log_stream is None:
                 return
 
-            self.log_stream.write(self._add_line_timestamps(text, self.log_timestamp_format, "_log_at_line_start"))
+            if timestamp_format is None:
+                timestamp_format = self.log_timestamp_format
+            self.log_stream.write(self._add_line_timestamps(text, timestamp_format, state_attr))
             self.log_stream.flush()
 
         def clear_terminal(self) -> None:
@@ -844,6 +855,7 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
             is_user_input: bool = False,
             always_go_to_bottom_for_user_input: bool = True,
             error=False,
+            log_text: str | None = None,
             end="\n",
             sep=" ",
         ) -> None:
@@ -869,8 +881,16 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
                 self._go_to_bottom_on_next_text_print = False
                 return
 
-            self._write_log(text)
-            text = self._add_line_timestamps(text, self.print_timestamp_format, "_print_at_line_start")
+            self._write_log(
+                text if log_text is None else log_text,
+                self.log_input_timestamp_format if is_user_input else self.log_timestamp_format,
+                "_log_input_at_line_start" if is_user_input else "_log_at_line_start",
+            )
+            text = self._add_line_timestamps(
+                text,
+                "" if is_user_input else self.print_timestamp_format,
+                "_print_at_line_start",
+            )
             self._terminal_output_entries.append((text, color, bg_color, is_user_input))
             self._insert_text(text=text, color=color, bg_color=bg_color)
 
@@ -896,6 +916,7 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
                 color=INPUT_PRINT_COLOR,
                 is_user_input=True,
                 bg_color=INPUT_PRINT_BG,
+                log_text=text + "\n",
             )
             self.input_line.add_to_history(text)
             self.clear_input()
@@ -1147,8 +1168,7 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
                 self.process.setWorkingDirectory("")
 
             python_args = ["-u"]  # -u makes prints unbuffered, so terminal output is not delayed.
-            if self.use_faulthandler:
-                python_args += ["-X", "faulthandler"]
+            python_args += ["-X", "faulthandler"]
             python_args.append(self.script_path)
             self.process.start(self.python_exe, python_args)
             self._set_input_enabled(True)
@@ -1589,12 +1609,12 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
     # main
 
     def main() -> int:
-        global BACKEND_PYTHON_EXE, INPUT_PRINT_COLOR, INPUT_PRINT_BG, ERROR_PRINT_BG, ERROR_PRINT_COLOR, INPUT_PREPEND  # type:ignore
+        global BACKEND_PYTHON_EXE, INPUT_PRINT_COLOR, INPUT_PRINT_BG, ERROR_PRINT_BG, ERROR_PRINT_COLOR, INPUT_PREPEND, LOG_INPUT_PREPEND  # type:ignore
 
         # process args
         if len(sys.argv) < 2:
             raise ValueError(
-                "terminal_emulator.py needs at least the Python script path as argument. Usage: terminal_emulator.py script_path [python_exe] [title] [icon_path] [app_id] [wdir_is_script_dir] [close_on_crash] [close_on_failure] [close_on_success] [print_timestamp_format] [log_path] [log_timestamp_format] [overwrite_log] [input_prepend] [process_id_file_path] [play_sound_on_success] [send_Windows_notification_on_success] [play_sound_on_failure] [send_Windows_notification_on_failure] [play_sound_on_python_interpreter_crash] [send_Windows_notification_on_python_interpreter_crash] [open_log_file_after_success] [open_log_file_after_failure] [open_log_file_after_python_interpreter_crash] [start_minimized] [terminal_needs_input] [stylesheet_path] [dark_mode] [use_faulthandler] [button_settings]"
+                "terminal_emulator.py needs at least the Python script path as argument. Usage: terminal_emulator.py script_path [python_exe] [title] [icon_path] [app_id] [wdir_is_script_dir] [close_on_crash] [close_on_failure] [close_on_success] [print_timestamp_format] [log_path] [log_timestamp_format] [overwrite_log] [input_prepend] [process_id_file_path] [play_sound_on_success] [send_Windows_notification_on_success] [play_sound_on_failure] [send_Windows_notification_on_failure] [play_sound_on_python_interpreter_crash] [send_Windows_notification_on_python_interpreter_crash] [open_log_file_after_success] [open_log_file_after_failure] [open_log_file_after_python_interpreter_crash] [start_minimized] [terminal_needs_input] [stylesheet_path] [dark_mode] [faulthandler_always_on] [button_settings] [log_input_prepend]"
             )
 
         script_path = sys.argv[1]
@@ -1629,8 +1649,8 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
         terminal_needs_input = arg_to_bool(26, True)
         stylesheet_path = arg_to_str(27, "")
         dark_mode = arg_to_str(28, "1")  # no bool because "auto" could also be option that should not be turned to True
-        use_faulthandler = arg_to_bool(29, True)
-        button_settings_arg = arg_to_str(30, "")
+        button_settings_arg = arg_to_str(29, "")
+        LOG_INPUT_PREPEND = arg_to_str(30, log_timestamp_format)
         button_settings = (
             normalize_button_settings(json.loads(button_settings_arg)) if button_settings_arg != "" else None
         )
@@ -1648,9 +1668,8 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
             atexit.register(log_file.close)
             sys.stdout = pipe_splitter(sys.__stdout__, log_file, timestamp_format=log_timestamp_format)
             sys.stderr = pipe_splitter(sys.__stderr__, log_file, timestamp_format=log_timestamp_format)
-            if use_faulthandler:
-                faulthandler.enable(file=log_file, all_threads=True)
-        elif use_faulthandler:
+            faulthandler.enable(file=log_file, all_threads=True)
+        else:
             faulthandler.enable(all_threads=True)
 
         if app_id != "":
@@ -1681,7 +1700,7 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
             log_path=log_path,
             log_stream=log_file,
             log_timestamp_format=log_timestamp_format,
-            use_faulthandler=use_faulthandler,
+            log_input_timestamp_format=LOG_INPUT_PREPEND,
             button_settings=button_settings,
         )
 
