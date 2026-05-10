@@ -312,16 +312,22 @@ def main():
 
     # Shortcut: open settings
     user_settings_path = getattr(developer_settings, "user_settings_path", "")
-    settings_shortcut_name = getattr(developer_settings, "settings_shortcut_name", "")
+    settings_shortcut_name = getattr(developer_settings, "open_settings_shortcut_name", "")
     if user_settings_path not in [None, False, ""] and settings_shortcut_name not in [None, False, ""]:
         settings_file_path_abs = make_abs_path_relative_to_file(user_settings_path, developer_settings_path)
         if not os.path.exists(settings_file_path_abs):
             print(
-                f'[Warning] User settings file does not exist at "{settings_file_path_abs}", and therefore no shortcut for it will be created. Disable the settings file by setting user_settings_path = None in "{developer_settings_path}".'
+                f'[Warning] User settings file does not exist at "{settings_file_path_abs}". '
+                f"The settings shortcut will still be created, but it will show an error until the file exists. "
+                f'Disable the settings shortcut by setting user_settings_path = None in "{developer_settings_path}".'
             )
-        else:
-            out = output_path + sanitize_filename(settings_shortcut_name) + ".lnk"
-            make_lnk(out, launcher_settings_icon_path, launcher_settings, description=f"Open the {program_name} settings file.")
+        out = output_path + sanitize_filename(settings_shortcut_name) + ".lnk"
+        make_lnk(
+            out,
+            launcher_settings_icon_path,
+            launcher_settings,
+            description=f"Open the {program_name} settings file.",
+        )
 
 
 if __name__ == "__main__":
