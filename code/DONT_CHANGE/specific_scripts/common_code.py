@@ -42,6 +42,7 @@ def input_warn(msg):
 def input_success(msg):
     input(f"{ANSI_SUCCESS}{msg}{ANSI_RESET}")
 
+
 def get_process_image_path(pid: int) -> str:
     if os.name != "nt" or pid <= 0:
         return ""
@@ -80,7 +81,7 @@ def get_process_image_path(pid: int) -> str:
         return ""
 
 
-def terminate_parent_console_launcher_if_safe() -> bool:
+def close_terminal() -> bool:
     parent_pid = os.getppid()
     parent_image_path = get_process_image_path(parent_pid)
     parent_name = os.path.basename(parent_image_path).lower()
@@ -135,7 +136,7 @@ try:
 
         if add_press_enter_to_exit:
             input()
-            terminate_parent_console_launcher_if_safe()
+            close_terminal()
 
 except Exception:
     print(
@@ -367,7 +368,7 @@ def write_process_id_lines(path: str, lines: list[str]) -> None:
 
 def get_running_processes_from_pid_file(pid_path: str) -> tuple[list[int], int]:
     """returns (running_process_ids, stale_count)"""
-    
+
     if pid_path == "" or not os.path.exists(pid_path):
         return [], 0
 
