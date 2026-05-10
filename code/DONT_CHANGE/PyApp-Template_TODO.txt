@@ -32,6 +32,17 @@ what file types work for user_settings_path setting
 ==== Must do before release ====
 ================================
 
+more specfic chekc if shportctus exist by shorctut name:
+. no wait. baý launch mode
+if (
+        enable_log_for_Windows_terminal_start != False
+        or enable_log_for_terminal_emulator_start != False
+        or enable_log_for_browser_start != False
+        or enable_log_for_no_terminal_start != False
+    ) and log_path == "":
+        raise ValueError(
+            f'[Error] log_path_rel_to_start_folder in [False,None,""] in developer settings at "{developer_settings_path}" prevents log creation which is wanted by at least one enable_log_for_*_start setting being True.'
+        )
 
 it does not stay open for start failur? is batch safe`?
 

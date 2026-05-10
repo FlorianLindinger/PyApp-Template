@@ -22,30 +22,32 @@ try:
     from developer_settings import (
         button_settings,
         close_existing_instances_on_start,
+        close_on_crash,
         close_on_failure,
-        close_on_python_interpreter_crash,
         close_on_success,
         dark_mode,
+        enable_log_for_browser_start,
         enable_log_for_no_terminal_start,
-        enable_log_for_terminal_start,
+        enable_log_for_terminal_emulator_start,
+        enable_log_for_Windows_terminal_start,
         input_prepend,
-        log_path_rel_to_wdir,
-        log_timestamp_format,
+        log_input_prepend,
+        log_path_rel_to_start_folder,
+        log_print_prepend,
+        open_log_file_after_crash,
         open_log_file_after_failure,
-        open_log_file_after_python_interpreter_crash,
         open_log_file_after_success,
         overwrite_log,
+        play_sound_on_crash,
         play_sound_on_failure,
-        play_sound_on_python_interpreter_crash,
         play_sound_on_success,
         prevent_launch_if_existing_instances_running,
-        print_timestamp_format,
+        print_prepend,
         program_name,
         prompt_to_close_existing_instances,
-        python_code_name,
         python_version,
+        send_Windows_notification_on_crash,
         send_Windows_notification_on_failure,
-        send_Windows_notification_on_python_interpreter_crash,
         send_Windows_notification_on_success,
         start_in_shortcut_folder,
         start_minimized,
@@ -53,11 +55,10 @@ try:
         terminal_bg_color,
         terminal_needs_input,
         terminal_text_color,
-        use_faulthandler,
         use_global_python,
-        use_uncompiled_terminal_emulator_and_run_it_in_global,  # noqa
     )
     from DONT_CHANGE.specific_scripts.common_code import (
+        close_terminal,
         delete_venv,
         get_running_processes_from_pid_file,
         input_warn,
@@ -81,7 +82,7 @@ try:
         icon_path,
         needed_packages_output_file_path,
         process_id_file_path,
-        python_scripts_dir,
+        python_code_path,
         script_wrapper_path,
         uncompiled_terminal_path,
         venv_dir_path,
@@ -111,7 +112,7 @@ try:
     # process imports
     # =============================
 
-    script_path: str = python_scripts_dir + "\\" + python_code_name
+    script_path: str = python_code_path
     # raise error if script not found
     if not os.path.exists(script_path):
         raise FileNotFoundError(f'[Error] Python script not found at "{script_path}"')
@@ -126,17 +127,22 @@ try:
     else:
         wdir_is_script_dir = True
 
-    if log_path_rel_to_wdir in [None, False, ""]:
+    if log_path_rel_to_start_folder in [None, False, ""]:
         log_path = ""
     else:
         if wdir_is_script_dir:
-            log_path = os.path.join(os.path.dirname(script_path), log_path_rel_to_wdir)
+            log_path = os.path.join(os.path.dirname(script_path), log_path_rel_to_start_folder)
         else:
-            log_path = os.path.join(os.getcwd(), log_path_rel_to_wdir)
+            log_path = os.path.join(os.getcwd(), log_path_rel_to_start_folder)
         log_path = datetime.now(tz=timezone.utc).strftime(log_path)
-    if (enable_log_for_terminal_start != False or enable_log_for_no_terminal_start != False) and log_path == "":
+    if (
+        enable_log_for_Windows_terminal_start != False
+        or enable_log_for_terminal_emulator_start != False
+        or enable_log_for_browser_start != False
+        or enable_log_for_no_terminal_start != False
+    ) and log_path == "":
         raise ValueError(
-            f'[Error] log_path_rel_to_wdir in [False,None,""] in developer settings at "{developer_settings_path}" prevents log creation which is wanted by the settings enable_log_for_terminal_start or enable_log_for_no_terminal_start being True.'
+            f'[Error] log_path_rel_to_start_folder in [False,None,""] in developer settings at "{developer_settings_path}" prevents log creation which is wanted by at least one enable_log_for_*_start setting being True.'
         )
 
     if dark_mode is None:
@@ -154,10 +160,12 @@ try:
 
     if python_version in [None, False]:
         python_version = ""
-    if log_timestamp_format in [None, False]:
-        log_timestamp_format = ""
-    if print_timestamp_format in [None, False]:
-        print_timestamp_format = ""
+    if log_print_prepend in [None, False]:
+        log_print_prepend = ""
+    if log_input_prepend in [None, False]:
+        log_input_prepend = ""
+    if print_prepend in [None, False]:
+        print_prepend = ""
     if input_prepend in [None, False]:
         input_prepend = ""
     if terminal_bg_color in [None, False]:
@@ -170,8 +178,6 @@ try:
     # =============================
 
     def main() -> None:
-        global use_uncompiled_terminal_emulator_and_run_it_in_global
-
         # ======================
         # process args
 
@@ -278,8 +284,8 @@ try:
                     print_warn("[Error] Failed to auto determine required Python packages.")
                     input_warn("Aborting. Press enter to exit")
 
-        # ======================
-        # setup venv: install python distribution if not existatant and venv. Also recreate if the target python version is not dist version.
+            # ======================
+            # setup venv: install python distribution if not existatant and venv. Also recreate if the target python version is not dist version.
 
         if use_global_python == False:
             reinstall_python_distro_if_nonexistent_or_incorrect_version()  # deletes venv for change/creation of distro
@@ -300,12 +306,12 @@ try:
             icon_path,
             app_id,
             bool_arg(wdir_is_script_dir),
-            bool_arg(close_on_python_interpreter_crash),
+            bool_arg(close_on_crash),
             bool_arg(close_on_failure),
             bool_arg(close_on_success),
-            print_timestamp_format,
+            print_prepend,
             effective_log_path,
-            log_timestamp_format,
+            log_print_prepend,
             bool_arg(overwrite_log),
             input_prepend,
             process_id_file_path,
@@ -313,25 +319,21 @@ try:
             bool_arg(send_Windows_notification_on_success),
             sound_arg(play_sound_on_failure, "Windows Critical Stop.wav"),
             bool_arg(send_Windows_notification_on_failure),
-            sound_arg(play_sound_on_python_interpreter_crash, "Windows Critical Stop.wav"),
-            bool_arg(send_Windows_notification_on_python_interpreter_crash),
+            sound_arg(play_sound_on_crash, "Windows Critical Stop.wav"),
+            bool_arg(send_Windows_notification_on_crash),
             bool_arg(open_log_file_after_success),
             bool_arg(open_log_file_after_failure),
-            bool_arg(open_log_file_after_python_interpreter_crash),
+            bool_arg(open_log_file_after_crash),
             bool_arg(start_minimized),
         ]
-
-        if use_faulthandler == True:
-            extra_args = ["-X", "faulthandler"]
-        else:
-            extra_args = []
 
         if launch_mode == "browser":
             launched_backend_path = browser_terminal_path
             proc = subprocess.Popen(  # noqa:S603 #type:ignore
                 [
                     sys.executable,
-                    *extra_args,
+                    "-X",
+                    "faulthandler",
                     browser_terminal_path,
                     script_path,
                     python_exe_for_script_path,
@@ -366,14 +368,14 @@ try:
                 bool_arg(terminal_needs_input),
                 stylesheet_path,
                 dark_mode,
-                bool_arg(use_faulthandler),
                 button_settings_path,
+                log_input_prepend,
             ]
 
-            if use_uncompiled_terminal_emulator_and_run_it_in_global == True:  # Meant for debugging terminal
+            if use_uncompiled_terminal_emulator == True:  # Meant for debugging terminal
                 launched_backend_path = uncompiled_terminal_path
                 proc = subprocess.Popen(  # noqa:S603 #type:ignore
-                    ["py", *extra_args, uncompiled_terminal_path, script_path, python_exe_for_script_path, *args],
+                    ["py", "-X", "faulthandler", uncompiled_terminal_path, script_path, python_exe_for_script_path, *args],
                     creationflags=subprocess.CREATE_NO_WINDOW,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.STDOUT,
@@ -397,17 +399,18 @@ try:
             args += [
                 terminal_bg_color + terminal_text_color,  # type:ignore
                 bool_arg(launch_mode == "terminal"),
+                log_input_prepend,
             ]
 
             if launch_mode == "terminal":  # run in terminal and don't wait
                 proc = subprocess.Popen(  # noqa:S603 #type:ignore
-                    [python_exe_for_script_path, *extra_args, script_wrapper_path, script_path, *args],
+                    [python_exe_for_script_path, "-X", "faulthandler", script_wrapper_path, script_path, *args],
                     creationflags=subprocess.CREATE_NEW_CONSOLE,
                     startupinfo=generate_minimized_startupinfo(),
                 )
             else:  # run without terminal but create one on crash and don't wait
                 proc = subprocess.Popen(  # noqa:S603 #type:ignore
-                    [python_exe_for_script_path, *extra_args, script_wrapper_path, script_path, *args],
+                    [python_exe_for_script_path, "-X", "faulthandler", script_wrapper_path, script_path, *args],
                     creationflags=subprocess.CREATE_NO_WINDOW,
                 )
 
@@ -428,6 +431,8 @@ try:
                 print("-" * 20)
             input("[Error (see above)] Press enter to exit.")
             os._exit(error_code)
+
+        close_terminal()
 
     # =============================
     # execution of main function
