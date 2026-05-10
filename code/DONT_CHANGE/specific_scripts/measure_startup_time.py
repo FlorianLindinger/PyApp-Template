@@ -9,6 +9,8 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 
+from DONT_CHANGE.specific_scripts.common_variables import python_code_path
+
 SCRIPT_DIR = Path(__file__).resolve().parent
 DONT_CHANGE_DIR = SCRIPT_DIR.parent
 CODE_DIR = DONT_CHANGE_DIR.parent
@@ -158,7 +160,7 @@ def warn_missing_shortcuts(missing_shortcuts: list[ShortcutSpec]) -> None:
     print()
     print("Missing:")
     for shortcut in missing_shortcuts:
-        print(f'  mode: {shortcut.mode}')
+        print(f"  mode: {shortcut.mode}")
         print(f'  developer_settings.py setting: {shortcut.setting_name} = "{shortcut.shortcut_name}"')
         print(f'  expected .lnk: "{shortcut.path}"')
         print()
@@ -241,7 +243,7 @@ def resolve_shortcut(shortcut_path: Path) -> tuple[list[str], Path]:
 
 def describe_python(python_path: Path | str) -> str:
     try:
-        result = subprocess.run( #noqa:S603
+        result = subprocess.run(  # noqa:S603
             python_command(python_path, ["-c", VERSION_SCRIPT]),
             cwd=CODE_DIR,
             stdout=subprocess.PIPE,
@@ -273,7 +275,7 @@ def kill_process_tree(pid: int) -> None:
     if pid <= 0:
         return
     if os.name == "nt":
-        subprocess.run( #noqa:S603
+        subprocess.run(  # noqa:S603
             ["taskkill", "/PID", str(pid), "/T", "/F"],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
@@ -326,7 +328,7 @@ def run_one(command: list[str], marker_path: Path, timeout: float) -> float:
     env["PYTHONPATH"] = str(CODE_DIR) + os.pathsep + env.get("PYTHONPATH", "")
 
     creationflags = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
-    proc = subprocess.Popen( #noqa:S603
+    proc = subprocess.Popen(  # noqa:S603
         command,
         cwd=CODE_DIR,
         env=env,
@@ -364,7 +366,7 @@ def run_one_shortcut(
     env["PYTHONPATH"] = str(CODE_DIR) + os.pathsep + env.get("PYTHONPATH", "")
 
     creationflags = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
-    starter_proc = subprocess.Popen( #noqa:S603
+    starter_proc = subprocess.Popen(  # noqa:S603
         shortcut_launch_command,
         cwd=shortcut_cwd,
         env=env,
@@ -466,8 +468,7 @@ def main() -> int:
     if args.runs < 1:
         raise ValueError("--runs must be at least 1")
 
-    python_code_name = load_developer_setting("python_code_name", "main_code.py")
-    target_script = CODE_DIR / python_code_name
+    target_script = Path(python_code_path)
     shortcut_specs: list[ShortcutSpec] = []
     if not args.skip_launcher:
         if args.shortcut:
