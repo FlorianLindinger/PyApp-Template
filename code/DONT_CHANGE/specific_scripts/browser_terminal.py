@@ -588,7 +588,7 @@ def start_pty_process(
     resolved_python_exe = resolve_pty_python_exe(python_exe)
     env = os.environ.copy()
     env["PYTHONUNBUFFERED"] = "1"
-    command = [resolved_python_exe, "-u", script_path]
+    command = [resolved_python_exe, "-u", "-X", "faulthandler", script_path]
 
     try:
         from winpty import PtyProcess
