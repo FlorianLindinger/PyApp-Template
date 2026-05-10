@@ -4,6 +4,10 @@ import subprocess
 import sys
 from collections.abc import Iterable
 
+# add root dir for debug cases where this script is called on its own:
+root_dir = os.path.dirname(__file__) + "\\..\\.."
+sys.path.insert(0, root_dir)
+
 from DONT_CHANGE.specific_scripts.common_variables import (
     default_packages_file_path,
     developer_settings_path,
