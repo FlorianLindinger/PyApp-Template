@@ -10,14 +10,11 @@ root_dir = os.path.dirname(__file__) + "\\..\\..\\.."
 sys.path.insert(0, root_dir)
 
 from DONT_CHANGE.specific_scripts.common_code import (
-    abs_norm,
+    _run_python_exe,
     ensure_parent,
-    ensure_python_distribution,
-    get_freeze_lines,
-    join_path,
-    read_text,
-    run_python_exe,
-    write_lines,
+    ensure_python_distro_and_venv,
+    save_current_packages_withVersion,
+    save_current_packages_noVersion
 )
 from DONT_CHANGE.specific_scripts.common_variables import (
     excluded_folders_for_package_search,
@@ -34,9 +31,9 @@ def resolve_output_path(raw_path: str | None, default_path: str) -> str:
     if raw_path:
         path = raw_path.strip('"')
         if not os.path.isabs(path):
-            path = join_path(os.getcwd(), path)
-        return abs_norm(path)
-    return abs_norm(default_path)
+            path = os.getcwd()+"\\"+ path
+        return os.path.normpath(os.path.abspath(path))
+    return os.path.normpath(os.path.abspath(default_path))
 
 
 def normalize_package_name(name: str) -> str:
@@ -71,14 +68,14 @@ def requirement_names_without_versions(requirements: Iterable[str]) -> list[str]
 
 
 def save_current_packages(output_path: str, *, with_versions: bool) -> None:
-    lines = get_freeze_lines()
-    if not with_versions:
-        lines = requirement_names_without_versions(lines)
-    write_lines(output_path, lines)
+    if with_versions:
+        save_current_packages_withVersion(output_path)
+    else:
+        save_current_packages_noVersion(output_path)
 
 
 def get_temp_python(temp_venv: str) -> str:
-    return join_path(temp_venv, "Scripts", "python.exe")
+    return temp_venv+ "\\Scripts\\python.exe"
 
 
 def create_temp_package_install_environment(python_executable: str) -> tuple[str, str]:
@@ -86,7 +83,7 @@ def create_temp_package_install_environment(python_executable: str) -> tuple[str
 
     temp_venv = tempfile.mkdtemp(prefix="pyapp_template_package_pin_")
     try:
-        run_python_exe(python_executable, "-m", "venv", temp_venv)
+        _run_python_exe(python_executable, "-m", "venv", temp_venv)
         temp_python = get_temp_python(temp_venv)
         if not os.path.exists(temp_python):
             raise DevToolError(f'Temporary environment did not create "{temp_python}"')
@@ -107,7 +104,7 @@ def run_pipreqs(
         raise FileNotFoundError(f'Python executable not found: "{python_executable}"')
 
     ignore_value = ",".join([*ignored_folders, ".git", ".hg", ".svn"])
-    run_python_exe(
+    _run_python_exe(
         python_executable,
         "-m",
         "pipreqs.pipreqs",
@@ -130,26 +127,29 @@ def installed_versions(temp_python: str) -> dict[str, tuple[str, str]]:
         "import importlib.metadata as m, json; "
         "print(json.dumps({d.metadata['Name']: d.version for d in m.distributions()}))"
     )
-    result = run_python_exe(temp_python, "-c", script, capture_output=True)
+    result = _run_python_exe(temp_python, "-c", script, capture_output=True)
     data = json.loads(result.stdout or "{}")
     return {normalize_package_name(name): (name, version) for name, version in data.items()}
 
 
 def pin_requirements_to_installed_versions(path: str, temp_python: str) -> None:
-    requirements = [
-        line.strip() for line in read_text(path).splitlines() if line.strip() and not line.strip().startswith("#")
+    with open(path,"r",encoding="utf8") as f:
+        lines=f.readlines()
+    requirements =[
+        line.strip() for line in lines if line.strip() and not line.strip().startswith("#")
     ]
     if not requirements:
         return
 
-    run_python_exe(temp_python, "-m", "pip", "install", "-r", path, "--disable-pip-version-check")
+    _run_python_exe(temp_python, "-m", "pip", "install", "-r", path, "--disable-pip-version-check")
     versions = installed_versions(temp_python)
     pinned = []
     for requirement in requirements:
         name = requirement_name(requirement)
         installed = versions.get(normalize_package_name(name))
         pinned.append(f"{installed[0]}=={installed[1]}" if installed else requirement)
-    write_lines(path, pinned)
+    with open(path,"w",encoding="utf8") as f:
+        f.writelines(pinned)
 
 
 def save_required_packages(
@@ -159,12 +159,12 @@ def save_required_packages(
     folder: str = python_scripts_dir,
     ignored_folders: Iterable[str] = excluded_folders_for_package_search,
 ) -> None:
-    output_path = abs_norm(output_path)
+    output_path = os.path.normpath(os.path.abspath(output_path))
     ensure_parent(output_path)
     print(f'[Info] Scanning Python imports in "{folder}"')
     run_pipreqs(
         sys.executable,
-        folder=abs_norm(folder),
+        folder=os.path.normpath(os.path.abspath(folder)),
         output_path=output_path,
         ignored_folders=ignored_folders,
     )
@@ -172,7 +172,7 @@ def save_required_packages(
     if with_versions:
         import shutil  # lazy import because slow
 
-        ensure_python_distribution()
+        ensure_python_distro_and_venv()
         temp_venv, temp_python = create_temp_package_install_environment(python_exe_path)
         try:
             print("[Info] Installing detected packages in a temporary environment to pin versions.")
@@ -180,9 +180,14 @@ def save_required_packages(
         finally:
             shutil.rmtree(temp_venv, ignore_errors=True)
     else:
+        with open(output_path) as f:
+            lines=f.readlines()
+        
+        
         lines = [
             line.strip()
-            for line in read_text(output_path).splitlines()
+            for line in lines
             if line.strip() and not line.strip().startswith("#")
         ]
-        write_lines(output_path, lines)
+        with open(output_path,"w",encoding="utf8") as f:
+            f.writelines(lines)
