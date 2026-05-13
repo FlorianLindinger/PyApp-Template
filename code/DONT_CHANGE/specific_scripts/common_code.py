@@ -1,29 +1,36 @@
-import importlib.util
 import os
 import subprocess
 import sys
-from collections.abc import Iterable
 
 # add root dir for debug cases where this script is called on its own:
 root_dir = os.path.dirname(__file__) + "\\..\\.."
 sys.path.insert(0, root_dir)
 
+from developer_settings import install_tests, install_tkinter, install_tools, program_name, python_version
 from DONT_CHANGE.specific_scripts.common_variables import (
     default_packages_file_path,
-    developer_settings_path,
+    determined_current_packages_file_path_noVersion,
+    determined_current_packages_file_path_withVersion,
+    determined_needed_packages_output_file_path,
     excluded_folders_for_package_search,
+    icon_path,
     portable_python_installer_path,
     portable_venv_creator_path,
     py_env_dir,
     python_dist_path,
     python_exe_path,
     python_scripts_dir,
+    python_version_indicator_file_path,
     relative_py_env_to_python_dist,
     variable_in_default_packages_path_that_triggers_search_if_true,
     venv_dir_path,
     venv_exe_path,
 )
 
+ICON_WAS_SET = False
+APP_ID_IS_SET = False
+
+# =========================
 # colored print and input
 
 ANSI_WARN = "\x1b[1;37;41m"  # white text, red bg, bold
@@ -31,26 +38,23 @@ ANSI_SUCCESS = "\x1b[1;37;42m"  # white text, green bg, bold
 ANSI_RESET = "\033[0m"
 
 
-class CommonCodeError(RuntimeError):
-    pass
-
-
 def print_warn(msg, sep: str | None = " ", end: str | None = "\n"):
     print(f"{ANSI_WARN}{msg}{ANSI_RESET}", sep=sep, end=end)
 
 
 def input_warn(msg):
-    input(f"{ANSI_WARN}{msg}{ANSI_RESET}")
+    return input(f"{ANSI_WARN}{msg}{ANSI_RESET}")
 
 
 def input_success(msg):
-    input(f"{ANSI_SUCCESS}{msg}{ANSI_RESET}")
+    return input(f"{ANSI_SUCCESS}{msg}{ANSI_RESET}")
 
 
-def get_process_image_path(pid: int) -> str:
-    if os.name != "nt" or pid <= 0:
-        return ""
+# =========================
 
+
+def close_terminal() -> bool:
+    parent_pid = os.getppid()
     try:
         import ctypes
         from ctypes import wintypes
@@ -70,24 +74,19 @@ def get_process_image_path(pid: int) -> str:
         kernel32.CloseHandle.argtypes = [wintypes.HANDLE]
         kernel32.CloseHandle.restype = wintypes.BOOL
 
-        process_handle = kernel32.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, False, pid)
+        process_handle = kernel32.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, False, parent_pid)
         if not process_handle:
-            return ""
+            parent_image_path = ""
         try:
             buffer_length = wintypes.DWORD(32768)
             buffer = ctypes.create_unicode_buffer(buffer_length.value)
             if not kernel32.QueryFullProcessImageNameW(process_handle, 0, buffer, ctypes.byref(buffer_length)):
-                return ""
-            return buffer.value
+                parent_image_path = ""
+            parent_image_path = buffer.value
         finally:
             kernel32.CloseHandle(process_handle)
     except Exception:
-        return ""
-
-
-def close_terminal() -> bool:
-    parent_pid = os.getppid()
-    parent_image_path = get_process_image_path(parent_pid)
+        parent_image_path = ""
     parent_name = os.path.basename(parent_image_path).lower()
     if parent_name not in ("cmd.exe", "powershell.exe", "pwsh.exe"):
         return False
@@ -98,65 +97,45 @@ def close_terminal() -> bool:
     return True
 
 
-# colored traceback related
-try:
+# colored traceback
+def print_traceback(message="Error", add_press_enter_to_exit=False) -> None:
     import rich.box
     import rich.console
     import rich.panel
     import rich.text
     import rich.traceback
 
-    # enable colored traceback (needed especially before python 3.13)
-    rich.traceback.install(show_locals=False)
-
-    def print_traceback(message="Error", add_press_enter_to_exit=False) -> None:
-        exc_type, exc_value, tb = sys.exc_info()
-        if exc_type is None or exc_value is None:
-            rich.console.Console().print(
-                "[yellow][Warning] Running print_traceback function without active exception.[/yellow]"
-            )
-            if add_press_enter_to_exit:
-                rich.console.Console().print("[red]Press enter to exit[/red]")
-        else:
-            panel = rich.panel.Panel(
-                rich.traceback.Traceback.from_exception(
-                    exc_type,
-                    exc_value,
-                    tb,
-                    show_locals=False,
-                ),
-                title=rich.text.Text(message, style="bold red on white"),
-                title_align="left",
-                subtitle=rich.text.Text("Press Enter to exit", style="bold red on white")
-                if add_press_enter_to_exit
-                else None,
-                subtitle_align="left",
-                box=rich.box.HEAVY,
-                border_style="bold red",
-                padding=(1, 2),
-                expand=False,
-            )
-            rich.console.Console().print(panel)
-
+    exc_type, exc_value, tb = sys.exc_info()
+    if exc_type is None or exc_value is None:
+        rich.console.Console().print(
+            "[yellow][Warning] Running print_traceback function without active exception.[/yellow]"
+        )
         if add_press_enter_to_exit:
-            input()
-            close_terminal()
+            rich.console.Console().print("[red]Press enter to exit[/red]")
+    else:
+        panel = rich.panel.Panel(
+            rich.traceback.Traceback.from_exception(
+                exc_type,
+                exc_value,
+                tb,
+                show_locals=False,
+            ),
+            title=rich.text.Text(message, style="bold red on white"),
+            title_align="left",
+            subtitle=rich.text.Text("Press Enter to exit", style="bold red on white")
+            if add_press_enter_to_exit
+            else None,
+            subtitle_align="left",
+            box=rich.box.HEAVY,
+            border_style="bold red",
+            padding=(1, 2),
+            expand=False,
+        )
+        rich.console.Console().print(panel)
 
-except Exception:
-    print(
-        r'Failed during setup of rich traceback. Is "rich" package installed in the code\DONT_CHANGE\python_packages folder?'
-    )
-    print("Press enter to exit")
-    input()
-    os._exit(1)
-
-
-def abs_norm(path: str) -> str:
-    return os.path.normpath(os.path.abspath(path))
-
-
-def join_path(*parts: str) -> str:
-    return os.path.normpath(os.path.join(*parts))
+    if add_press_enter_to_exit:
+        input()
+        close_terminal()
 
 
 def ensure_parent(path: str) -> None:
@@ -165,31 +144,7 @@ def ensure_parent(path: str) -> None:
         os.makedirs(parent, exist_ok=True)
 
 
-def read_text(path: str) -> str:
-    with open(path, encoding="utf-8", errors="replace") as file:
-        return file.read()
-
-
-def write_text(path: str, text: str) -> None:
-    ensure_parent(path)
-    with open(path, "w", encoding="utf-8") as file:
-        file.write(text)
-
-
-def format_command(command) -> str:
-    if isinstance(command, (str, bytes)):
-        return os.fsdecode(command)
-
-    parts = []
-    for part in command:
-        text = os.fspath(part)
-        if any(char.isspace() for char in text):
-            text = f'"{text}"'
-        parts.append(text)
-    return " ".join(parts)
-
-
-def run_command(
+def _run_command(
     command: list[str],
     *,
     cwd: str | None = None,
@@ -198,7 +153,17 @@ def run_command(
     stdout=None,
     stderr=None,
 ) -> subprocess.CompletedProcess[str]:
-    print(f"[Run] {format_command(command)}")
+    if isinstance(command, (str, bytes)):
+        command_fmt = os.fsdecode(command)
+    else:
+        parts = []
+        for part in command:
+            text = os.fspath(part)
+            if any(char.isspace() for char in text):
+                text = f'"{text}"'
+            parts.append(text)
+        command_fmt = " ".join(parts)
+    print(f"[Run] {command_fmt}")
     return subprocess.run(  # noqa:S603
         command,
         cwd=cwd,
@@ -210,13 +175,15 @@ def run_command(
     )
 
 
-def run_batch(batch_file: str, *args: object, check: bool = True) -> subprocess.CompletedProcess[str]:
+def _run_batch(batch_file: str, *args: object, check: bool = True) -> subprocess.CompletedProcess[str]:
     if not os.path.exists(batch_file):
         raise FileNotFoundError(f'Batch helper not found: "{batch_file}"')
-    return run_command(["cmd.exe", "/d", "/c", "call", batch_file, *[os.fspath(str(arg)) for arg in args]], check=check)
+    return _run_command(
+        ["cmd.exe", "/d", "/c", "call", batch_file, *[os.fspath(str(arg)) for arg in args]], check=check
+    )
 
 
-def run_python_exe(
+def _run_python_exe(
     python_executable: str,
     *args: object,
     check: bool = True,
@@ -224,7 +191,7 @@ def run_python_exe(
     stdout=None,
     stderr=None,
 ) -> subprocess.CompletedProcess[str]:
-    return run_command(
+    return _run_command(
         [python_executable, *[os.fspath(str(arg)) for arg in args]],
         check=check,
         capture_output=capture_output,
@@ -239,16 +206,9 @@ def make_abs_path_relative_to_file(path: str, file: str) -> str:
     return path
 
 
-def process_is_running(pid: int) -> bool:
+def _process_is_running(pid: int) -> bool:
     if pid <= 0:
         return False
-
-    if os.name != "nt":
-        try:
-            os.kill(pid, 0)
-        except OSError:
-            return False
-        return True
 
     try:
         import ctypes
@@ -279,42 +239,30 @@ def process_is_running(pid: int) -> bool:
         return False
 
 
-def wait_until_process_stops(pid: int, timeout_seconds: float) -> bool:
+def _wait_until_process_stops(pid: int, timeout_seconds: float) -> bool:
     import time
 
     deadline = time.monotonic() + timeout_seconds
     while time.monotonic() < deadline:
-        if not process_is_running(pid):
+        if not _process_is_running(pid):
             return True
         time.sleep(0.1)
-    return not process_is_running(pid)
+    return not _process_is_running(pid)
 
 
-def taskkill(pid: int, *, force: bool) -> subprocess.CompletedProcess[str]:
+def _stop_process_tree(pid: int) -> str:
+    if not _process_is_running(pid):
+        return ""
     cmd = ["taskkill", "/PID", str(pid), "/T"]
-    if force:
-        cmd.append("/F")
-    return subprocess.run(  # noqa:S603
-        cmd,
-        check=False,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        text=True,
-    )
-
-
-def stop_process_tree(pid: int) -> str:
-    if not process_is_running(pid):
-        return ""
-
-    if os.name != "nt":
-        import signal
-
-        os.kill(pid, signal.SIGTERM)
-        return ""
-
     try:
-        graceful_result = taskkill(pid, force=False)
+        graceful_result = subprocess.run(  # noqa:S603
+            cmd,
+            check=False,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+        )
+
     except FileNotFoundError:
         import signal
 
@@ -322,13 +270,18 @@ def stop_process_tree(pid: int) -> str:
         return ""
 
     graceful_output = (graceful_result.stdout or "").strip()
-    if graceful_result.returncode == 0 and wait_until_process_stops(pid, 2.0):
+    if graceful_result.returncode == 0 and _wait_until_process_stops(pid, 2.0):
         return graceful_output
 
-    if not process_is_running(pid):
+    if not _process_is_running(pid):
         return graceful_output
-
-    forced_result = taskkill(pid, force=True)
+    forced_result = subprocess.run(  # noqa:S603
+        cmd + ["/F"],  # force
+        check=False,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+    )
     forced_output = (forced_result.stdout or "").strip()
     if forced_result.returncode == 0 or wait_until_process_stops(pid, 2.0):
         return "\n".join(output for output in [graceful_output, forced_output] if output)
@@ -339,29 +292,21 @@ def stop_process_tree(pid: int) -> str:
     raise RuntimeError(f"taskkill failed with exit code {forced_result.returncode}")
 
 
-def parse_process_id_line(line: str) -> tuple[int, str] | None:
-    stripped_line = line.strip()
-    if stripped_line == "":
-        return None
-
-    process_id_text = stripped_line.split(maxsplit=1)[0]
-    try:
-        return int(process_id_text), line
-    except ValueError:
-        return None
-
-
-def read_process_id_entries(path: str) -> list[tuple[int, str]]:
+def _read_process_id_entries(path: str) -> list[tuple[int, str]]:
     entries = []
     with open(path, encoding="utf-8") as pid_file:
         for line in pid_file:
-            entry = parse_process_id_line(line)
-            if entry is not None:
-                entries.append(entry)
+            stripped_line = line.strip()
+            if stripped_line != "":
+                process_id_text = stripped_line.split(maxsplit=1)[0]
+                try:
+                    entries.append((int(process_id_text), line))
+                except ValueError:
+                    pass
     return entries
 
 
-def write_process_id_lines(path: str, lines: list[str]) -> None:
+def _write_process_id_lines(path: str, lines: list[str]) -> None:
     non_empty_lines = [line if line.endswith("\n") else line + "\n" for line in lines if line.strip()]
     if non_empty_lines:
         with open(path, "w", encoding="utf-8") as pid_file:
@@ -376,7 +321,7 @@ def get_running_processes_from_pid_file(pid_path: str) -> tuple[list[int], int]:
     if pid_path == "" or not os.path.exists(pid_path):
         return [], 0
 
-    process_id_entries = read_process_id_entries(pid_path)
+    process_id_entries = _read_process_id_entries(pid_path)
     if not process_id_entries:
         os.remove(pid_path)
         return [], 0
@@ -389,12 +334,12 @@ def get_running_processes_from_pid_file(pid_path: str) -> tuple[list[int], int]:
             continue
         seen_process_ids.add(process_id)
 
-        if process_is_running(process_id):
+        if _process_is_running(process_id):
             running_process_ids.append(process_id)
         else:
             stale_count += 1
 
-    write_process_id_lines(pid_path, [f"{process_id}\n" for process_id in running_process_ids])
+    _write_process_id_lines(pid_path, [f"{process_id}\n" for process_id in running_process_ids])
     return running_process_ids, stale_count
 
 
@@ -403,7 +348,7 @@ def stop_processes_from_pid_file(pid_path: str) -> tuple[int, int, list[str]]:
     if pid_path == "" or not os.path.exists(pid_path):
         return 0, 0, []
 
-    process_id_entries = read_process_id_entries(pid_path)
+    process_id_entries = _read_process_id_entries(pid_path)
     if not process_id_entries:
         os.remove(pid_path)
         return 0, 0, []
@@ -417,18 +362,18 @@ def stop_processes_from_pid_file(pid_path: str) -> tuple[int, int, list[str]]:
     stopped_count = 0
     stale_count = 0
     for process_id, lines in lines_by_process_id.items():
-        if not process_is_running(process_id):
+        if not _process_is_running(process_id):
             stale_count += 1
             continue
 
         try:
-            stop_process_tree(process_id)
+            _stop_process_tree(process_id)
             stopped_count += 1
         except Exception as process_error:
             failed_lines.extend(lines)
             failed_messages.append(f"{process_id}: {process_error}")
 
-    write_process_id_lines(pid_path, failed_lines)
+    _write_process_id_lines(pid_path, failed_lines)
     return stopped_count, stale_count, failed_messages
 
 
