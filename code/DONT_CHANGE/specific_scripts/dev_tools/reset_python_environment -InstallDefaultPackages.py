@@ -5,12 +5,17 @@ import sys
 root_dir = os.path.dirname(__file__) + "\\..\\..\\.."
 sys.path.insert(0, root_dir)
 
-from DONT_CHANGE.specific_scripts.common_code import input_success, install_requirements, print_traceback, recreate_venv
+from DONT_CHANGE.specific_scripts.common_code import (
+    input_success,
+    install_packages_from_file,
+    print_traceback,
+    recreate_venv,
+)
 from DONT_CHANGE.specific_scripts.common_variables import default_packages_file_path
 
 try:
     recreate_venv()
-    install_requirements(default_packages_file_path)
+    install_packages_from_file(default_packages_file_path)
     print()
     input_success("[Success] Press enter to exit")
 except Exception as e:
