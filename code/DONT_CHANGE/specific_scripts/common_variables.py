@@ -32,8 +32,14 @@ settings_icon_path = make_abs("..\\..\\icons\\settings.ico")
 stop_icon_path = make_abs("..\\..\\icons\\stop.ico")
 process_id_file_path = make_abs("..\\..\\..\\currently_running.pid")
 default_packages_file_path = make_abs("..\\..\\developer_tools\\!DEFAULT_PYHON_PACKAGES.txt")
-determined_current_packages_file_path = make_abs(developer_tools_dir + "\\determined_current_packages.txt")
-needed_packages_output_file_path = make_abs(developer_tools_dir + "\\auto_found_required_packages.txt")
+determined_current_packages_file_path_withVersion = make_abs(
+    developer_tools_dir + "\\determined_current_packages_withVersion.txt"
+)
+determined_current_packages_file_path_noVersion = make_abs(
+    developer_tools_dir + "\\determined_current_packages_noVersion.txt"
+)
+determined_needed_packages_output_file_path = make_abs(developer_tools_dir + "\\auto_found_required_packages.txt")
+
 
 # variables
 excluded_folders_for_package_search = ["DONT_CHANGE", "py_env", "icons", "developer_tools", "__pycache__"]
@@ -48,6 +54,7 @@ variable_in_default_packages_path_that_triggers_search_if_true = (
 developer_settings_dir = os.path.dirname(developer_settings_path)
 
 python_dist_path = py_env_dir + "\\py_dist"
+python_version_indicator_file_path = developer_tools_dir + "\\current_python_version.txt"
 python_exe_path = os.path.normpath(python_dist_path + "\\python.exe")
 venv_dir_path = py_env_dir + "\\virt_env"
 venv_exe_path = venv_dir_path + "\\Portable_Scripts\\python.bat"
