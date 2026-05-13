@@ -37,6 +37,8 @@ instlling rich traceback is slwo? do i want it maybe only in wrapper? no error s
 ==== Must do before release ====
 ================================
 
+since print_traceback is now lazy import. do i have fallback?. -> add insdie functiokn
+
 maybe remove pyhton verison settings? or mention that one has to manually reinstall. dont male it chekc which costs 40ms. kind of does not matter but seems useless
 
 do i still want msi thing. does winget able to install locally. look at my git requests
@@ -135,6 +137,7 @@ do i want a wrapper_common_code? wither way start and wrapper should be fast and
 =========================================
 
 
+
 ask if i muss seom print_warn soemwher
 
 test all starters
@@ -177,6 +180,9 @@ crate a wrapper launch cost scrtipt
 ================
 ==== Future ====
 ================
+
+chekck if something does nto need to be extra function in common code
+
 
 how much can i reducte time.sleep(0.8). or can wrapper soemhow indicate egferything is working?
 
