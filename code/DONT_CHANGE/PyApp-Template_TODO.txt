@@ -7,8 +7,6 @@ conside making it not temmplate
 
 change terminaol icon before venv setup. hm is it faster if i allow pywin32 usage. if fast enough maybe always do?
 
-add root everywhere
-
 more specfic chekc if shportctus exist by shorctut name:
 . no wait. baý launch mode
 if (
@@ -23,11 +21,23 @@ if (
 
 it does not stay open for start failure? is it most batch safe for any mistake in python scripts?
 
+chekc if something in common code and common_lauincher code is actually not common
+
+wrapper should also rely on common code? or do i leave it fully independent-> common code
+ask ai if somethign is slow in common_code
+but why do i pass so mutch into args if i could importer itself in wrapper. i mean a lot duplicate to other launch mode
+
+probalby merge launcehr common into common. unless seomthing is slwo because dobule slow donwlaode then
+
+test how slow to set icon and app id with print time
+
+instlling rich traceback is slwo? do i want it maybe only in wrapper? no error should usualyl occur in backend and when it occurs i delibertate do traceback
+
 ================================
 ==== Must do before release ====
 ================================
 
-
+maybe remove pyhton verison settings? or mention that one has to manually reinstall. dont male it chekc which costs 40ms. kind of does not matter but seems useless
 
 do i still want msi thing. does winget able to install locally. look at my git requests
 
@@ -101,9 +111,31 @@ min version: replace DONT_CHANGE enough
 
 is use_global_python used everywhere and als ohandles iof modeule not present?
 
+cehck for fail of install_packages_from_file and hadnle error
+
+
+chekc "--disable-pip-version-check", everyhwerhe
+
+
+when do i want no cache or no upgrade for pip sintall
+
+
+remove _run_command and similar
+
+sort common_code
+
+do some scripts want  ensure_python_distro_and_venv?
+
+shouild i use set_terminal_icon from wrapper or starter?
+what if i either way need for app id stuff. can i make that simpler?
+do i want a wrapper_common_code? wither way start and wrapper should be fast and no unncecresasy imports
+
 =========================================
 ==== Must do before release (in end) ====
 =========================================
+
+
+ask if i muss seom print_warn soemwher
 
 test all starters
 
@@ -133,18 +165,39 @@ test dev tools
 
 stay in dev after release for develeopemnt otehr than quick bug fix
 
+ask for spelling mistakes
+
+ask it to double chec ensuer_venv
 
 
+make all file accesses try except that are used in normal start
 
-
-
-
-
-
+crate a wrapper launch cost scrtipt
 
 ================
 ==== Future ====
 ================
+
+how much can i reducte time.sleep(0.8). or can wrapper soemhow indicate egferything is working?
+
+mabye avoid overhead in Portable_Scripts/python.bat for app process:      ~60 ms extra vs Scripts/python.exe
+by checking in python?
+Best approach: use a fast validity check, then direct .exe on the normal path, and only fall back to .bat repair when needed.
+also better printing that way
+maybe better to have separate repair scritpt insteaf of alternate launcehr. i guess add a file to DONT_CHANGE that indicates the path of isntallation. but dont sync that.
+
+add nogil option with chekc if veriosn compatible adn warn if not 
+
+
+also set app id for slow
+
+how much does it cost to check python vertison. do i want setting to not check?
+
+remove function overkill in commin code
+
+read all codes
+
+can set_terminal_icon work wihtouzt terminal name?
 
 make tmerinual emumaltr fully self sufficient
 
