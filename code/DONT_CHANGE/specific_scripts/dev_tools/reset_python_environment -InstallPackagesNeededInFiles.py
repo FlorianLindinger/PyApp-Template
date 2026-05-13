@@ -5,10 +5,15 @@ import sys
 root_dir = os.path.dirname(__file__) + "\\..\\..\\.."
 sys.path.insert(0, root_dir)
 
-from DONT_CHANGE.specific_scripts.common_code import input_success, install_requirements, print_traceback, recreate_venv
+from DONT_CHANGE.specific_scripts.common_code import (
+    input_success,
+    install_packages_from_file,
+    print_traceback,
+    recreate_venv,
+)
 from DONT_CHANGE.specific_scripts.common_variables import (
+    determined_needed_packages_output_file_path,
     excluded_folders_for_package_search,
-    needed_packages_output_file_path,
     python_scripts_dir,
 )
 from DONT_CHANGE.specific_scripts.dev_tools.dev_tools_common_code import (
@@ -16,7 +21,7 @@ from DONT_CHANGE.specific_scripts.dev_tools.dev_tools_common_code import (
 )
 
 try:
-    path = needed_packages_output_file_path
+    path = determined_needed_packages_output_file_path
     save_required_packages(
         path,
         with_versions=False,
@@ -24,7 +29,7 @@ try:
         ignored_folders=excluded_folders_for_package_search,
     )
     recreate_venv()
-    install_requirements(path)
+    install_packages_from_file(path)
     print()
     input_success("[Success] Press enter to exit")
 except Exception as e:
