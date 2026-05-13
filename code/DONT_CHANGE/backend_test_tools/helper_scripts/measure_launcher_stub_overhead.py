@@ -8,7 +8,8 @@ from pathlib import Path
 
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-DONT_CHANGE_DIR = SCRIPT_DIR.parent
+BACKEND_TEST_TOOLS_DIR = SCRIPT_DIR.parent
+DONT_CHANGE_DIR = BACKEND_TEST_TOOLS_DIR.parent
 BACKEND_PYTHON = DONT_CHANGE_DIR / "P" / "P.exe"
 WORK_DIR = DONT_CHANGE_DIR / "DO_NOT_SYNC" / "launcher_stub_overhead"
 

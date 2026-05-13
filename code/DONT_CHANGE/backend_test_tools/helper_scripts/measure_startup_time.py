@@ -10,14 +10,15 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 
-# add root dir for debug cases where this script is called on its own:
-root_dir = os.path.dirname(__file__) + "\\..\\.."
-sys.path.insert(0, root_dir)
+# Add code dir for debug cases where this script is called on its own.
+root_dir = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(root_dir))
 
 from DONT_CHANGE.specific_scripts.common_variables import python_code_path
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-DONT_CHANGE_DIR = SCRIPT_DIR.parent
+BACKEND_TEST_TOOLS_DIR = SCRIPT_DIR.parent
+DONT_CHANGE_DIR = BACKEND_TEST_TOOLS_DIR.parent
 CODE_DIR = DONT_CHANGE_DIR.parent
 REPO_DIR = CODE_DIR.parent
 WORK_DIR = DONT_CHANGE_DIR / "DO_NOT_SYNC" / "startup_time"

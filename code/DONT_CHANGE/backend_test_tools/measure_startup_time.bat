@@ -5,7 +5,7 @@ set "HERE=%~dp0"
 set "DO_NOT_CHANGE_DIR=%HERE%.."
 set "CODE_DIR=%DO_NOT_CHANGE_DIR%\.."
 set "REPO_DIR=%CODE_DIR%\.."
-set "BENCHMARK_PY=%DO_NOT_CHANGE_DIR%\specific_scripts\measure_startup_time.py"
+set "BENCHMARK_PY=%HERE%helper_scripts\measure_startup_time.py"
 set "VENV_PY=%CODE_DIR%\py_env\virt_env\Portable_Scripts\python.bat"
 set "DIST_PY=%CODE_DIR%\py_env\py_dist\python.exe"
 
