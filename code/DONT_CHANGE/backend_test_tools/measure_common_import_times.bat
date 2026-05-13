@@ -3,6 +3,7 @@ setlocal EnableExtensions
 
 set "HERE=%~dp0"
 set "DO_NOT_CHANGE_DIR=%HERE%.."
+set "HELPER_DIR=%HERE%helper_scripts"
 set "CODE_DIR=%DO_NOT_CHANGE_DIR%\.."
 set "BACKEND_PY=%DO_NOT_CHANGE_DIR%\P\P.exe"
 
@@ -26,7 +27,7 @@ echo Backend Python:
 "%BACKEND_PY%" -c "import sys; print(sys.version); print(sys.executable)"
 echo.
 
-"%BACKEND_PY%" "%HERE%measure_common_import_times.py" --runs "%RUNS%"
+"%BACKEND_PY%" "%HELPER_DIR%\measure_common_import_times.py" --runs "%RUNS%"
 set "EXIT_CODE=%ERRORLEVEL%"
 
 echo.
