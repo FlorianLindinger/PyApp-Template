@@ -6,25 +6,22 @@ root_dir = os.path.dirname(__file__) + "\\..\\..\\.."
 sys.path.insert(0, root_dir)
 
 from DONT_CHANGE.specific_scripts.common_code import (
-    ensure_venv,
+    ensure_python_distro_and_venv,
     input_success,
-    install_requirements,
+    install_packages_from_file,
     print_traceback,
     recreate_venv,
+    save_current_packages_withVersion
 )
 from DONT_CHANGE.specific_scripts.common_variables import (
-    determined_current_packages_file_path,
-)
-from DONT_CHANGE.specific_scripts.dev_tools.dev_tools_common_code import (
-    get_freeze_lines,
-    write_lines,
+    determined_current_packages_file_path_withVersion,
 )
 
 try:
-    ensure_venv()
-    write_lines(determined_current_packages_file_path, get_freeze_lines())
+    ensure_python_distro_and_venv()
+    save_current_packages_withVersion()
     recreate_venv()
-    install_requirements(determined_current_packages_file_path)
+    install_packages_from_file(determined_current_packages_file_path_withVersion)
     print()
     input_success("[Success] Press enter to exit")
 except Exception as e:
