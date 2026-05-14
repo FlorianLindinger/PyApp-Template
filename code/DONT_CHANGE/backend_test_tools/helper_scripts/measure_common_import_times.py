@@ -6,7 +6,6 @@ import sys
 import time
 from pathlib import Path
 
-
 SCRIPT_DIR = Path(__file__).resolve().parent
 BACKEND_TEST_TOOLS_DIR = SCRIPT_DIR.parent
 DONT_CHANGE_DIR = BACKEND_TEST_TOOLS_DIR.parent
@@ -21,7 +20,7 @@ MODULES = [
 
 def run_once(code: str, env: dict[str, str]) -> float:
     start = time.perf_counter_ns()
-    result = subprocess.run(
+    result = subprocess.run(  # noqa
         [sys.executable, "-c", code],
         cwd=CODE_DIR,
         env=env,

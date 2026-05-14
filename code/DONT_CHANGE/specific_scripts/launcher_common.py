@@ -25,7 +25,7 @@ ANSI_ESCAPE_RE = re.compile(
 )
 
 
-def strip_ansi_escape_sequences(text: str) -> str:
+def _strip_ansi_escape_sequences(text: str) -> str:
     return ANSI_ESCAPE_RE.sub("", text)
 
 
@@ -149,7 +149,7 @@ class TerminalLogger:
             return
 
         with self._lock:
-            text = strip_ansi_escape_sequences(text)
+            text = _strip_ansi_escape_sequences(text)
             self._log_file.write(self._add_timestamps(text))
             self._log_file.flush()
 
@@ -230,16 +230,6 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
         pass
 
 
-def open_file_in_default_app(path: str) -> None:
-    if path == "":
-        return
-
-    try:
-        os.startfile(path)  # type: ignore[attr-defined]  # noqa:S606
-    except Exception:
-        pass
-
-
 class CompletionAlerts:
     def __init__(
         self,
@@ -292,5 +282,8 @@ class CompletionAlerts:
         sound_setting = self.play_sound_by_kind.get(kind)
         if sound_setting:
             play_windows_sound(sound_setting)
-        if self.open_log_file_by_kind.get(kind, False):
-            open_file_in_default_app(self.log_path)
+        if self.open_log_file_by_kind.get(kind, False) and self.log_path != "":
+            try:
+                os.startfile(self.log_path)  # type: ignore[attr-defined]  # noqa:S606
+            except Exception:
+                pass

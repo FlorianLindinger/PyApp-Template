@@ -21,6 +21,8 @@ root_dir = os.path.dirname(__file__) + "\\..\\.."
 if root_dir not in sys.path:
     sys.path.insert(0, root_dir)
 
+from winpty import PtyProcess
+
 from DONT_CHANGE.specific_scripts.launcher_common import (
     CompletionAlerts,
     ProcessIdRegistry,
@@ -29,8 +31,6 @@ from DONT_CHANGE.specific_scripts.launcher_common import (
     arg_to_wav_path,
     looks_like_interpreter_crash,
 )
-
-from winpty import PtyProcess
 
 MAX_STORED_EVENTS = 10000
 SHUTDOWN_AFTER_CLOSE_SECONDS = 0.4
