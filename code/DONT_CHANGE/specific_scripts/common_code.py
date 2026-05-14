@@ -23,7 +23,7 @@ from DONT_CHANGE.specific_scripts.common_variables import (
     python_exe_path,
     python_scripts_dir,
     python_version_indicator_file_path,
-    relative_py_env_to_python_dist,
+    rel_path_py_env_to_python_dist,
     variable_in_default_packages_path_that_triggers_search_if_true,
     venv_dir_path,
     venv_exe_path,
@@ -57,7 +57,7 @@ def input_success(msg):
 
 def print_traceback(message="Error", add_press_enter_to_exit=False) -> None:
     """colored traceback via "rich" package"""
-    
+
     exc_type, exc_value, tb = sys.exc_info()
     try:
         import rich.box
@@ -66,7 +66,6 @@ def print_traceback(message="Error", add_press_enter_to_exit=False) -> None:
         import rich.text
         import rich.traceback
 
-        
         if exc_type is None or exc_value is None:
             rich.console.Console().print(
                 "[yellow][Warning] Running print_traceback function without active exception.[/yellow]"
@@ -97,6 +96,7 @@ def print_traceback(message="Error", add_press_enter_to_exit=False) -> None:
     # fallback
     except Exception:
         import traceback
+
         print(traceback.print_exception(exc_type, exc_value, tb))
 
     # close and potetniall prompt before
@@ -104,9 +104,9 @@ def print_traceback(message="Error", add_press_enter_to_exit=False) -> None:
         if add_press_enter_to_exit:
             input()
         close_terminal()
-        sys.exit(1) # should not be reached after close_terminal()
-                
-        
+        sys.exit(1)  # should not be reached after close_terminal()
+
+
 # =========================
 # miscellaneous
 
@@ -612,6 +612,7 @@ def close_terminal() -> bool:
 # =========================
 # path related
 
+
 def make_abs_path_relative_to_file(path: str, file: str) -> str:
     if not os.path.isabs(path):
         return os.path.normpath(os.path.dirname(file) + "\\" + path)
@@ -1042,7 +1043,7 @@ def recreate_venv() -> None:
     delete_venv()
 
     subprocess.run(  # noqa
-        ["cmd.exe", "/d", "/c", "call", portable_venv_creator_path, py_env_dir, relative_py_env_to_python_dist],
+        ["cmd.exe", "/d", "/c", "call", portable_venv_creator_path, py_env_dir, rel_path_py_env_to_python_dist],
         check=True,
     )
 
@@ -1292,14 +1293,14 @@ def get_installed_packages(exe_path, with_version=True):
 
             if line == "" or line.startswith("#"):
                 continue
-                
+
             for operator in ("===", "==", "~=", ">=", "<=", "!=", ">", "<"):
                 if operator in line:
                     packages_without_version.append(line.split(operator, 1)[0].strip())
                     break
             else:
                 packages_without_version.append(line)
-            
+
         return packages_without_version
 
 
