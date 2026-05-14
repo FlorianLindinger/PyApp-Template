@@ -3,6 +3,8 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+take a look at total log logic in start_program
+
 conside making it not temmplate
 
 change terminaol icon before venv setup. hm is it faster if i allow pywin32 usage. if fast enough maybe always do?
