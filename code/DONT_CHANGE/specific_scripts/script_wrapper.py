@@ -111,10 +111,10 @@ try:
         print(f"{ANSI_WARN}{msg}{ANSI_RESET}", sep=sep, end=end)
 
     def input_warn(msg):
-        input(f"{ANSI_WARN}{msg}{ANSI_RESET}")
+        return input(f"{ANSI_WARN}{msg}{ANSI_RESET}")
 
     def input_success(msg):
-        input(f"{ANSI_SUCCESS}{msg}{ANSI_RESET}")
+        return input(f"{ANSI_SUCCESS}{msg}{ANSI_RESET}")
 
     def set_terminal_name(name: str) -> None:
         try:
