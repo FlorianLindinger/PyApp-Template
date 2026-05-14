@@ -40,26 +40,23 @@ from DONT_CHANGE.specific_scripts.common_variables import (
     icon_path,
     settings_icon_path,
     stop_icon_path,
+    shortcut_output_dir,
+    launcher_terminal,
+    launcher_settings,
+    launcher_emulator,
+    launcher_browser,
+    launcher_stop,
+    launcher_no_terminal
 )
 
 # =============================
-
-# local settings:
-
-output_path = os.path.normpath(file_dir + "..\\..\\..") + "\\"
-
-launcher_terminal = os.path.normpath(file_dir + "..\\W.bat")
-launcher_emulator = os.path.normpath(file_dir + "..\\E.bat")
-launcher_settings = os.path.normpath(file_dir + "..\\S.bat")
-launcher_browser = os.path.normpath(file_dir + "..\\B.bat")
-launcher_no_terminal = os.path.normpath(file_dir + "..\\N.bat")
-launcher_stop = os.path.normpath(file_dir + "..\\Q.bat")
+# local variables:
 
 SHORTCUT_DELETE_TIMEOUT_SECONDS = 5.0
 SHORTCUT_CREATE_TIMEOUT_SECONDS = 5.0
 SHORTCUT_RETRY_DELAY_SECONDS = 0.1
 
-# ====================
+# =============================
 
 
 def quote_cmd_argument(value):
@@ -266,7 +263,7 @@ def main():
 
     # Shortcut: normal start
     if windows_terminal_shortcut_name not in [None, False, ""]:
-        out = output_path + sanitize_filename(windows_terminal_shortcut_name) + ".lnk"
+        out = shortcut_output_dir + "\\" + sanitize_filename(windows_terminal_shortcut_name) + ".lnk"
         make_lnk(
             out,
             icon_path,
@@ -278,7 +275,7 @@ def main():
 
     # Shortcut: start in terminal emulator
     if terminal_emulator_shortcut_name not in [None, False, ""]:
-        out = output_path + sanitize_filename(terminal_emulator_shortcut_name) + ".lnk"
+        out = shortcut_output_dir +"\\" + sanitize_filename(terminal_emulator_shortcut_name) + ".lnk"
         make_lnk(
             out,
             icon_path,
@@ -290,7 +287,7 @@ def main():
 
     # Shortcut: start in browser terminal
     if browser_shortcut_name not in [None, False, ""]:
-        out = output_path + sanitize_filename(browser_shortcut_name) + ".lnk"
+        out = shortcut_output_dir +"\\" + sanitize_filename(browser_shortcut_name) + ".lnk"
         make_lnk(
             out,
             icon_path,
@@ -303,7 +300,7 @@ def main():
 
     # Shortcut: start without terminal
     if no_terminal_shortcut_name not in [False, None, ""]:
-        out = output_path + sanitize_filename(no_terminal_shortcut_name) + ".lnk"
+        out = shortcut_output_dir + "\\" +sanitize_filename(no_terminal_shortcut_name) + ".lnk"
         make_lnk(
             out,
             icon_path,
@@ -316,7 +313,7 @@ def main():
 
     # Shortcut: stop program started by any generated launcher mode
     if stop_running_shortcut_name not in ["", False, None]:
-        out = output_path + sanitize_filename(stop_running_shortcut_name) + ".lnk"
+        out = shortcut_output_dir + "\\" +sanitize_filename(stop_running_shortcut_name) + ".lnk"
         make_lnk(out, stop_icon_path, launcher_stop, description=f"Stop running {program_name} processes.")
 
     # Shortcut: open settings
@@ -328,7 +325,7 @@ def main():
                 f"The settings shortcut will still be created, but it will show an error until the file exists. "
                 f'Disable the settings shortcut by setting user_settings_path = None in "{developer_settings_path}".'
             )
-        out = output_path + sanitize_filename(open_settings_shortcut_name) + ".lnk"
+        out = shortcut_output_dir +"\\" + sanitize_filename(open_settings_shortcut_name) + ".lnk"
         make_lnk(
             out,
             settings_icon_path,
@@ -341,7 +338,7 @@ if __name__ == "__main__":
     try:
         main()
         print()
-        print(f"Shortcut(s) created in: {output_path}")
+        print(f"Shortcut(s) created in: {shortcut_output_dir}")
         print()
         print("=============================")
         input("[Success] Press enter to exit")
