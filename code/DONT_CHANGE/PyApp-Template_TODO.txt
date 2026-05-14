@@ -5,6 +5,8 @@
 
 rechekc logic in tools
 
+rechek  start script and script wrapper
+
 take a look at total log logic in start_program
 
 conside making it not temmplate
