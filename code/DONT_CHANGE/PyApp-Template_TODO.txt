@@ -3,6 +3,8 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+rechekc logic in tools
+
 take a look at total log logic in start_program
 
 conside making it not temmplate
@@ -179,9 +181,19 @@ make all file accesses try except that are used in normal start
 
 crate a wrapper launch cost scrtipt
 
+
+
+
+
+
+
+
+
 ================
 ==== Future ====
 ================
+
+maybe readd readlines;writelines
 
 chekck if something does nto need to be extra function in common code
 
