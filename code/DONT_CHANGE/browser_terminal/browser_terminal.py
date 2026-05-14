@@ -30,6 +30,8 @@ from DONT_CHANGE.specific_scripts.launcher_common import (
     looks_like_interpreter_crash,
 )
 
+from winpty import PtyProcess
+
 MAX_STORED_EVENTS = 10000
 SHUTDOWN_AFTER_CLOSE_SECONDS = 0.4
 DEFAULT_ROWS = 30
@@ -72,7 +74,7 @@ def open_browser(url: str, start_minimized: bool) -> bool:
         except Exception:
             pass
 
-    return bool(webbrowser.open(url))
+    return webbrowser.open(url)
 
 
 class BrowserTerminalState:
