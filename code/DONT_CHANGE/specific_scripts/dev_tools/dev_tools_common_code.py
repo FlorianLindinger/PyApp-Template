@@ -13,19 +13,13 @@ if root_dir not in sys.path:
 from DONT_CHANGE.specific_scripts.common_code import (
     _run_python_exe,
     ensure_parent,
-    ensure_python_distro_and_venv,
-    save_current_packages_withVersion,
-    save_current_packages_noVersion
+    ensure_python_distro_and_venv
 )
 from DONT_CHANGE.specific_scripts.common_variables import (
     excluded_folders_for_package_search,
     python_exe_path,
     python_scripts_dir,
 )
-
-
-class DevToolError(RuntimeError):
-    pass
 
 
 def resolve_output_path(raw_path: str | None, default_path: str) -> str:
@@ -68,13 +62,6 @@ def requirement_names_without_versions(requirements: Iterable[str]) -> list[str]
     return names
 
 
-def save_current_packages(output_path: str, *, with_versions: bool) -> None:
-    if with_versions:
-        save_current_packages_withVersion(output_path)
-    else:
-        save_current_packages_noVersion(output_path)
-
-
 def get_temp_python(temp_venv: str) -> str:
     return temp_venv+ "\\Scripts\\python.exe"
 
@@ -87,7 +74,7 @@ def create_temp_package_install_environment(python_executable: str) -> tuple[str
         _run_python_exe(python_executable, "-m", "venv", temp_venv)
         temp_python = get_temp_python(temp_venv)
         if not os.path.exists(temp_python):
-            raise DevToolError(f'Temporary environment did not create "{temp_python}"')
+            raise RuntimeError(f'Temporary environment did not create "{temp_python}"')
         return temp_venv, temp_python
     except Exception:
         shutil.rmtree(temp_venv, ignore_errors=True)
