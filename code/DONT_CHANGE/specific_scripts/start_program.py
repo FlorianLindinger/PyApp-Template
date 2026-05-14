@@ -17,6 +17,12 @@ if root_dir not in sys.path:
 
 try:
     # =============================
+    # global variables
+    # =============================
+
+    VALID_LAUNCH_MODES = ["terminal", "no_terminal", "terminal_emulator", "uncompiled_terminal_emulator", "browser"]
+
+    # =============================
     # imports packages and common variables and developer settings
     # =============================
 
@@ -72,11 +78,15 @@ try:
         developer_settings_dir,
         developer_settings_path,
         icon_path,
+        play_sound_on_crash_default,
+        play_sound_on_failure_default,
+        play_sound_on_success_default,
         process_id_file_path,
         python_code_path,
         script_wrapper_path,
         uncompiled_terminal_path,
         venv_exe_path,
+        windows_dir,
     )
 
     # needed for pywin32 to find its modules
@@ -99,7 +109,7 @@ try:
                 os.add_dll_directory(path)
 
     # =============================
-    # process imports
+    # process imported variables
     # =============================
 
     script_path: str = python_code_path
@@ -125,13 +135,13 @@ try:
         else:
             log_path = os.path.join(os.getcwd(), log_path_rel_to_start_folder)
         log_path = datetime.now(tz=timezone.utc).strftime(log_path)
+
     if dark_mode is None:
         dark_mode = "auto"
     elif dark_mode is True:
         dark_mode = "1"
     elif dark_mode is False:  # type:ignore
         dark_mode = "0"
-
     if stylesheet_path in [False, None]:
         stylesheet_path = ""
     else:
@@ -153,6 +163,37 @@ try:
     if terminal_text_color in [None, False]:
         terminal_text_color = ""
 
+    if play_sound_on_crash is True:
+        play_sound_on_crash = play_sound_on_crash_default
+    elif play_sound_on_crash in [False, None]:
+        play_sound_on_crash = ""
+    elif not os.path.isabs(play_sound_on_crash):
+        play_sound_on_crash = os.path.normpath(windows_dir + "\\Media\\" + play_sound_on_crash)
+    if play_sound_on_crash != "" and play_sound_on_crash[-4:] != ".wav":
+        play_sound_on_crash += ".wav"
+    if not os.path.exists(play_sound_on_crash):
+        print(f"[Warning] Sound file does not exist: {play_sound_on_crash}")
+    if play_sound_on_success is True:
+        play_sound_on_success = play_sound_on_success_default
+    elif play_sound_on_success in [False, None]:
+        play_sound_on_success = ""
+    elif not os.path.isabs(play_sound_on_success):
+        play_sound_on_success = os.path.normpath(windows_dir + "\\Media\\" + play_sound_on_success)
+    if play_sound_on_success != "" and play_sound_on_success[-4:] != ".wav":
+        play_sound_on_success += ".wav"
+    if not os.path.exists(play_sound_on_success):
+        print(f"[Warning] Sound file does not exist: {play_sound_on_success}")
+    if play_sound_on_failure is True:
+        play_sound_on_failure = play_sound_on_failure_default
+    elif play_sound_on_failure in [False, None]:
+        play_sound_on_failure = ""
+    elif not os.path.isabs(play_sound_on_failure):
+        play_sound_on_failure = os.path.normpath(windows_dir + "\\Media\\" + play_sound_on_failure)
+    if play_sound_on_failure != "" and play_sound_on_failure[-4:] != ".wav":
+        play_sound_on_failure += ".wav"
+    if not os.path.exists(play_sound_on_failure):
+        print(f"[Warning] Sound file does not exist: {play_sound_on_failure}")
+
     # =============================
     # helper function
     # =============================
@@ -166,35 +207,19 @@ try:
         startupinfo.wShowWindow = getattr(subprocess, "SW_SHOWMINIMIZED", 2)
         return startupinfo
 
-    def bool_arg(value: bool) -> str:
+    def bool_to_arg(value: bool) -> str:
         return "true" if value else "false"
-
-    def sound_arg(value: str | bool | None, default_wav: str) -> str:
-        if value in [None, False, ""]:
-            return ""
-        if value is True:
-            return default_wav
-
-        sound_path = value.strip()
-        if sound_path.lower() in {"", "0", "false", "no", "off", "none"}:
-            return ""
-        extension = os.path.splitext(sound_path)[1]
-        if not extension:
-            sound_path += ".wav"
-        elif extension.lower() != ".wav":
-            raise ValueError(f'[Error] Sound setting must be False, None, "", True, or a .wav file: "{sound_path}"')
-        return sound_path
 
     # =============================
     # main function
     # =============================
 
     def main() -> None:
-        # ======================
-        # process args
-
-        valid_launch_modes = ["terminal", "no_terminal", "terminal_emulator", "uncompiled_terminal_emulator", "browser"]
-
+        global log_path
+        
+        # =============================
+        # get args
+        
         if len(sys.argv) >= 3:
             app_id = sys.argv[1]
             launch_mode = sys.argv[2]
@@ -204,27 +229,30 @@ try:
         else:
             app_id = ""
             launch_mode = "terminal"
+            
+        # =============================
+        # process args
 
-        if launch_mode not in valid_launch_modes:
+        # check launch_mode
+        if launch_mode not in VALID_LAUNCH_MODES:
             raise ValueError(
-                f'[Error] Unknown launch_mode "{launch_mode}". Expected one of: {", ".join(valid_launch_modes)}'
+                f'[Error] Unknown launch_mode "{launch_mode}". Expected one of: {", ".join(VALID_LAUNCH_MODES)}'
             )
 
-        enable_log_setting_by_launch_mode = {
-            "terminal": ("enable_log_for_Windows_terminal_start", enable_log_for_Windows_terminal_start),
-            "terminal_emulator": ("enable_log_for_terminal_emulator_start", enable_log_for_terminal_emulator_start),
-            "uncompiled_terminal_emulator": (
-                "enable_log_for_terminal_emulator_start",
-                enable_log_for_terminal_emulator_start,
-            ),
-            "browser": ("enable_log_for_browser_start", enable_log_for_browser_start),
-            "no_terminal": ("enable_log_for_no_terminal_start", enable_log_for_no_terminal_start),
-        }
-        enable_log_setting_name, enable_log_for_current_launch_mode = enable_log_setting_by_launch_mode[launch_mode]
-        if enable_log_for_current_launch_mode != False and log_path == "":
-            raise ValueError(
-                f'[Error] log_path_rel_to_start_folder in [False,None,""] in developer settings at "{developer_settings_path}" prevents log creation which is wanted by {enable_log_setting_name} for the current launch_mode "{launch_mode}".'
+        # set log_path="" if not enabled
+        if (
+            (launch_mode == "terminal" and enable_log_for_Windows_terminal_start == False)
+            or (launch_mode == "no_terminal" and enable_log_for_no_terminal_start == False)
+            or (launch_mode == "browser" and enable_log_for_browser_start == False)
+            or (
+                launch_mode in ["terminal_emulator", "uncompiled_terminal_emulator"]
+                and enable_log_for_terminal_emulator_start == False
             )
+        ):
+            log_path = ""
+
+        # ======================
+        # close existing instances if enabled
 
         if close_existing_instances_on_start:
             stopped_count, _stale_count, failed_messages = stop_processes_from_pid_file(process_id_file_path)
@@ -258,39 +286,37 @@ try:
         # setup venv
 
         if use_global_python == False:
-            ensure_python_distro_and_venv(set_icon_for_slow=True,app_id_for_slow=app_id)
+            ensure_python_distro_and_venv(set_icon_for_slow=True, app_id_for_slow=app_id)
 
         # ======================
         # launch terminal
-
-        effective_log_path = log_path if enable_log_for_current_launch_mode else ""
 
         args = [
             program_name,
             icon_path,
             app_id,
-            bool_arg(wdir_is_script_dir),
-            bool_arg(close_on_crash),
-            bool_arg(close_on_failure),
-            bool_arg(close_on_success),
+            bool_to_arg(wdir_is_script_dir),
+            bool_to_arg(close_on_crash),
+            bool_to_arg(close_on_failure),
+            bool_to_arg(close_on_success),
             print_prepend,
-            effective_log_path,
+            log_path,
             log_print_prepend,
-            bool_arg(overwrite_log),
+            bool_to_arg(overwrite_log),
             input_prepend,
             process_id_file_path,
-            sound_arg(play_sound_on_success, "notify.wav"),
-            bool_arg(send_Windows_notification_on_success),
-            sound_arg(play_sound_on_failure, "Windows Critical Stop.wav"),
-            bool_arg(send_Windows_notification_on_failure),
-            sound_arg(play_sound_on_crash, "Windows Critical Stop.wav"),
-            bool_arg(send_Windows_notification_on_crash),
-            bool_arg(open_log_file_after_success),
-            bool_arg(open_log_file_after_failure),
-            bool_arg(open_log_file_after_crash),
-            bool_arg(start_minimized),
+            play_sound_on_success,
+            bool_to_arg(send_Windows_notification_on_success),
+            play_sound_on_failure,
+            bool_to_arg(send_Windows_notification_on_failure),
+            play_sound_on_crash,
+            bool_to_arg(send_Windows_notification_on_crash),
+            bool_to_arg(open_log_file_after_success),
+            bool_to_arg(open_log_file_after_failure),
+            bool_to_arg(open_log_file_after_crash),
+            bool_to_arg(start_minimized),
         ]
-        
+
         # ==============
 
         if launch_mode == "browser":
@@ -333,7 +359,7 @@ try:
                     ) from e
 
             args += [
-                bool_arg(terminal_needs_input),
+                bool_to_arg(terminal_needs_input),
                 stylesheet_path,
                 dark_mode,
                 button_settings_path,
@@ -368,7 +394,7 @@ try:
                     stderr=subprocess.STDOUT,
                     text=True,
                 )
-                
+
         # ==============
 
         else:  # run in terminal or no window
@@ -376,7 +402,7 @@ try:
             launched_backend_path = script_wrapper_path
             args += [
                 terminal_bg_color + terminal_text_color,  # type:ignore
-                bool_arg(launch_mode == "terminal"),
+                bool_to_arg(launch_mode == "terminal"),
                 log_input_prepend,
             ]
 
@@ -391,11 +417,11 @@ try:
                     [python_exe_for_script_path, "-X", "faulthandler", script_wrapper_path, script_path, *args],
                     creationflags=subprocess.CREATE_NO_WINDOW,
                 )
-                
+
         # =================================
         # wait shortly and check & handle if script immediately failed
         # =================================
-        
+
         time.sleep(0.8)
         error_code = proc.poll()
         if error_code is not None and proc.poll() != 0:
