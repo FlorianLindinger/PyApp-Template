@@ -59,33 +59,22 @@ try:
     )
     from DONT_CHANGE.specific_scripts.common_code import (
         close_terminal,
-        delete_venv,
+        ensure_python_distro_and_venv,
         get_running_processes_from_pid_file,
-        input_warn,
-        install_packages,
         print_traceback,
-        print_warn,
-        read_search_phrase_state,
-        recreate_portable_venv,
-        reinstall_python_distro_if_nonexistent_or_incorrect_version,
-        save_current_packages_as_default,
-        save_requirements_of_root_folder_noVersion,
         stop_processes_from_pid_file,
     )
     from DONT_CHANGE.specific_scripts.common_variables import (
         backend_packages_dir,
         browser_terminal_path,
         compiled_terminal_path,
-        default_packages_file_path,
         developer_settings_dir,
         developer_settings_path,
         icon_path,
-        needed_packages_output_file_path,
         process_id_file_path,
         python_code_path,
         script_wrapper_path,
         uncompiled_terminal_path,
-        venv_dir_path,
         venv_exe_path,
     )
 
@@ -135,16 +124,6 @@ try:
         else:
             log_path = os.path.join(os.getcwd(), log_path_rel_to_start_folder)
         log_path = datetime.now(tz=timezone.utc).strftime(log_path)
-    if (
-        enable_log_for_Windows_terminal_start != False
-        or enable_log_for_terminal_emulator_start != False
-        or enable_log_for_browser_start != False
-        or enable_log_for_no_terminal_start != False
-    ) and log_path == "":
-        raise ValueError(
-            f'[Error] log_path_rel_to_start_folder in [False,None,""] in developer settings at "{developer_settings_path}" prevents log creation which is wanted by at least one enable_log_for_*_start setting being True.'
-        )
-
     if dark_mode is None:
         dark_mode = "auto"
     elif dark_mode is True:
@@ -174,6 +153,38 @@ try:
         terminal_text_color = ""
 
     # =============================
+    # helper function
+    # =============================
+
+    def generate_minimized_startupinfo():
+        if not start_minimized:
+            return None
+
+        startupinfo = subprocess.STARTUPINFO()
+        startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+        startupinfo.wShowWindow = getattr(subprocess, "SW_SHOWMINIMIZED", 2)
+        return startupinfo
+
+    def bool_arg(value: bool) -> str:
+        return "true" if value else "false"
+
+    def sound_arg(value: str | bool | None, default_wav: str) -> str:
+        if value in [None, False, ""]:
+            return ""
+        if value is True:
+            return default_wav
+
+        sound_path = value.strip()
+        if sound_path.lower() in {"", "0", "false", "no", "off", "none"}:
+            return ""
+        extension = os.path.splitext(sound_path)[1]
+        if not extension:
+            sound_path += ".wav"
+        elif extension.lower() != ".wav":
+            raise ValueError(f'[Error] Sound setting must be False, None, "", True, or a .wav file: "{sound_path}"')
+        return sound_path
+
+    # =============================
     # main function
     # =============================
 
@@ -198,9 +209,21 @@ try:
                 f'[Error] Unknown launch_mode "{launch_mode}". Expected one of: {", ".join(valid_launch_modes)}'
             )
 
-        # it overrides use_uncompiled_terminal_emulator_and_run_it_in_global from developer_settings
-        if len(sys.argv) > 3:  # any arg means True. Used for debug before compiling terminal emulator
-            use_uncompiled_terminal_emulator_and_run_it_in_global = True
+        enable_log_setting_by_launch_mode = {
+            "terminal": ("enable_log_for_Windows_terminal_start", enable_log_for_Windows_terminal_start),
+            "terminal_emulator": ("enable_log_for_terminal_emulator_start", enable_log_for_terminal_emulator_start),
+            "uncompiled_terminal_emulator": (
+                "enable_log_for_terminal_emulator_start",
+                enable_log_for_terminal_emulator_start,
+            ),
+            "browser": ("enable_log_for_browser_start", enable_log_for_browser_start),
+            "no_terminal": ("enable_log_for_no_terminal_start", enable_log_for_no_terminal_start),
+        }
+        enable_log_setting_name, enable_log_for_current_launch_mode = enable_log_setting_by_launch_mode[launch_mode]
+        if enable_log_for_current_launch_mode != False and log_path == "":
+            raise ValueError(
+                f'[Error] log_path_rel_to_start_folder in [False,None,""] in developer settings at "{developer_settings_path}" prevents log creation which is wanted by {enable_log_setting_name} for the current launch_mode "{launch_mode}".'
+            )
 
         if close_existing_instances_on_start:
             stopped_count, _stale_count, failed_messages = stop_processes_from_pid_file(process_id_file_path)
@@ -230,76 +253,16 @@ try:
                     raise RuntimeError("Failed to close existing program instance(s):\n" + "\n".join(failed_messages))
                 print(f"[Info] Closed {stopped_count} existing program instance(s).")
 
-        def bool_arg(value: bool) -> str:
-            return "true" if value else "false"
-
-        def sound_arg(value: str | bool | None, default_wav: str) -> str:
-            if value in [None, False, ""]:
-                return ""
-            if value is True:
-                return default_wav
-
-            sound_path = value.strip()
-            if sound_path.lower() in {"", "0", "false", "no", "off", "none"}:
-                return ""
-            extension = os.path.splitext(sound_path)[1]
-            if not extension:
-                sound_path += ".wav"
-            elif extension.lower() != ".wav":
-                raise ValueError(f'[Error] Sound setting must be False, None, "", True, or a .wav file: "{sound_path}"')
-            return sound_path
-
-        def generate_minimized_startupinfo():
-            if not start_minimized:
-                return None
-
-            startupinfo = subprocess.STARTUPINFO()
-            startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-            startupinfo.wShowWindow = getattr(subprocess, "SW_SHOWMINIMIZED", 2)
-            return startupinfo
-
         # ======================
-        # potentially auto search for required packages
+        # setup venv
 
         if use_global_python == False:
-            # auto find packages if none given and magic phrase present
-            if read_search_phrase_state():
-                if os.path.exists(needed_packages_output_file_path):
-                    os.remove(needed_packages_output_file_path)
-                try:
-                    save_requirements_of_root_folder_noVersion(needed_packages_output_file_path)
-                except Exception as e:
-                    print_traceback(
-                        f"[Error] Failed to auto determine packages (do you have internet?): {e}",
-                        add_press_enter_to_exit=True,
-                    )
-
-                if os.path.exists(needed_packages_output_file_path):
-                    delete_venv()
-                    reinstall_python_distro_if_nonexistent_or_incorrect_version()
-                    recreate_portable_venv()
-                    install_packages(needed_packages_output_file_path)
-                    save_current_packages_as_default(search_phrase_state=False)
-                else:
-                    print_warn("[Error] Failed to auto determine required Python packages.")
-                    input_warn("Aborting. Press enter to exit")
-
-            # ======================
-            # setup venv: install python distribution if not existatant and venv. Also recreate if the target python version is not dist version.
-
-        if use_global_python == False:
-            reinstall_python_distro_if_nonexistent_or_incorrect_version()  # deletes venv for change/creation of distro
-            if not os.path.exists(venv_dir_path):
-                recreate_portable_venv()
-                install_packages(default_packages_file_path)
+            ensure_python_distro_and_venv(set_icon_for_slow=True,app_id_for_slow=app_id)
 
         # ======================
         # launch terminal
 
-        if launch_mode != "no_terminal":
-            effective_log_path = log_path if enable_log_for_terminal_start else ""
-        else:
-            effective_log_path = log_path if enable_log_for_no_terminal_start else ""
+        effective_log_path = log_path if enable_log_for_current_launch_mode else ""
 
         args = [
             program_name,
@@ -326,6 +289,8 @@ try:
             bool_arg(open_log_file_after_crash),
             bool_arg(start_minimized),
         ]
+        
+        # ==============
 
         if launch_mode == "browser":
             launched_backend_path = browser_terminal_path
@@ -344,6 +309,8 @@ try:
                 stderr=subprocess.STDOUT,
                 text=True,
             )
+
+        # ==============
 
         elif launch_mode in ["terminal_emulator", "uncompiled_terminal_emulator"]:
             # run in terminal emulator
@@ -375,7 +342,15 @@ try:
             if launch_mode == "uncompiled_terminal_emulator":
                 launched_backend_path = uncompiled_terminal_path
                 proc = subprocess.Popen(  # noqa:S603 #type:ignore
-                    ["py", "-X", "faulthandler", uncompiled_terminal_path, script_path, python_exe_for_script_path, *args],
+                    [
+                        "py",
+                        "-X",
+                        "faulthandler",
+                        uncompiled_terminal_path,
+                        script_path,
+                        python_exe_for_script_path,
+                        *args,
+                    ],
                     creationflags=subprocess.CREATE_NO_WINDOW,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.STDOUT,
@@ -392,6 +367,8 @@ try:
                     stderr=subprocess.STDOUT,
                     text=True,
                 )
+                
+        # ==============
 
         else:  # run in terminal or no window
             # script_wrapper_path need additional args
@@ -413,8 +390,11 @@ try:
                     [python_exe_for_script_path, "-X", "faulthandler", script_wrapper_path, script_path, *args],
                     creationflags=subprocess.CREATE_NO_WINDOW,
                 )
-
+                
+        # =================================
         # wait shortly and check & handle if script immediately failed
+        # =================================
+        
         time.sleep(0.8)
         error_code = proc.poll()
         if error_code is not None and proc.poll() != 0:
