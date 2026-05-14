@@ -8,7 +8,7 @@ import sys
 import threading
 from datetime import datetime, timezone
 
-WINDOWS_CRASH_CODES = {
+_WINDOWS_CRASH_CODES = {
     0xC0000005,  # access violation
     0xC00000FD,  # stack overflow
     0xC000001D,  # illegal instruction
@@ -16,7 +16,7 @@ WINDOWS_CRASH_CODES = {
     0xC0000409,  # stack buffer overrun
 }
 
-ANSI_ESCAPE_RE = re.compile(
+_ANSI_ESCAPE_RE = re.compile(
     r"\x1b(?:"
     r"\[[0-?]*[ -/]*[@-~]"
     r"|\][^\x07]*(?:\x07|\x1b\\)"
@@ -26,7 +26,7 @@ ANSI_ESCAPE_RE = re.compile(
 
 
 def _strip_ansi_escape_sequences(text: str) -> str:
-    return ANSI_ESCAPE_RE.sub("", text)
+    return _ANSI_ESCAPE_RE.sub("", text)
 
 
 def arg_to_bool(index: int, default: bool = False, argv: list[str] | None = None) -> bool:
@@ -37,23 +37,12 @@ def arg_to_bool(index: int, default: bool = False, argv: list[str] | None = None
     return argv[index].strip().lower() in {"1", "true", "yes", "on"}
 
 
-def arg_to_wav_path(index: int, argv: list[str] | None = None) -> str:
-    if argv is None:
-        argv = sys.argv
-    if len(argv) <= index:
-        return ""
-    wav_path = argv[index].strip()
-    if wav_path != "" and os.path.splitext(wav_path)[1].lower() != ".wav":
-        raise ValueError(f'[Error] Sound argument must be empty or a .wav file: "{wav_path}"')
-    return wav_path
-
-
-def unsigned32(n: int) -> int:
+def _unsigned32(n: int) -> int:
     return n & 0xFFFFFFFF
 
 
 def looks_like_interpreter_crash(returncode) -> bool:
-    return isinstance(returncode, int) and (unsigned32(returncode) in WINDOWS_CRASH_CODES)
+    return isinstance(returncode, int) and (_unsigned32(returncode) in _WINDOWS_CRASH_CODES)
 
 
 class ProcessIdRegistry:
@@ -162,18 +151,12 @@ class TerminalLogger:
             self._log_file = None
 
 
-def play_windows_sound(wav_path: str) -> None:
-    if os.name != "nt":
-        return
-
+def play_wav(wav_path: str) -> None:
     try:
         import winsound
-
-        sound = wav_path
-        if not os.path.isabs(sound):
-            sound = os.path.join(r"C:\Windows\Media", sound)
+        
         winsound.PlaySound(
-            sound,
+            wav_path,
             winsound.SND_FILENAME | winsound.SND_NODEFAULT,
         )
     except Exception:
@@ -181,8 +164,6 @@ def play_windows_sound(wav_path: str) -> None:
 
 
 def send_windows_notification(notification_title: str, message: str, app_id: str) -> None:
-    if os.name != "nt":
-        return
 
     powershell_script = r"""
 $titleText = if ($args.Count -gt 0) { $args[0] } else { "Python script" }
@@ -281,7 +262,7 @@ class CompletionAlerts:
             )
         sound_setting = self.play_sound_by_kind.get(kind)
         if sound_setting:
-            play_windows_sound(sound_setting)
+            play_wav(sound_setting)
         if self.open_log_file_by_kind.get(kind, False) and self.log_path != "":
             try:
                 os.startfile(self.log_path)  # type: ignore[attr-defined]  # noqa:S606

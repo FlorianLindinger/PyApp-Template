@@ -601,7 +601,6 @@ def close_terminal() -> bool:
 # =========================
 # path related
 
-
 def make_abs_path_relative_to_file(path: str, file: str) -> str:
     if not os.path.isabs(path):
         return os.path.normpath(os.path.dirname(file) + "\\" + path)
@@ -1280,18 +1279,16 @@ def get_installed_packages(exe_path, with_version=True):
         for line in packages_with_version:
             line = line.strip()
 
-            if not line:
+            if line == "" or line.startswith("#"):
                 continue
-
-            if "==" in line:
-                packages_without_version.append(line.split("==", 1)[0])
-            elif " @ " in line:
-                packages_without_version.append(line.split(" @ ", 1)[0])
-            elif line.startswith("-e "):
-                packages_without_version.append(line)
+                
+            for operator in ("===", "==", "~=", ">=", "<=", "!=", ">", "<"):
+                if operator in line:
+                    packages_without_version.append(line.split(operator, 1)[0].strip())
+                    break
             else:
                 packages_without_version.append(line)
-
+            
         return packages_without_version
 
 
