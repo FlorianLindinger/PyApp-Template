@@ -8,11 +8,22 @@
 ==== Must do before release ====
 ================================
 
+i still have t versions in py_dist
+
+sort common variables more
+
+does one need a portable venv? istn a protable python like a prortable vvn? ->maybe just py_dist and py_packages. what will break usually on porting??
+one needs custom pip i guess. or imitate venv activation and reirect pip to target
+->less psace and time.
+ask if anything othjer than pip needs replacement
+->chage site packags in manage py_dsit
+
 recheck logic in tools
 
 recheck start script and script wrapper
 
 
+somehow make startup time test not requier chafgnees in main_code
 
 instlling rich traceback is slwo? do i want it maybe only in wrapper? no error should usualyl occur in backend and when it occurs i delibertate do traceback
 
@@ -185,6 +196,12 @@ does anythign nned folder cration or not actually need folder cration?
 ==== Future ====
 ================
 
+
+
+no gil option in dev settings.
+
+make a batch that compiles main:scirpt wiht its dependecies and using managed python->output with and wihtout terminal. i guess that leaves out all extra features
+or maybe a thing that convertts the folder to cloickable
 
 maybe have seciotns in the wrapper/terminal/browser scripts that say "common code" insteaf of imoprtign stuff
 i guess i want comprehenvsive launcher_common. i have to test if compulation handles that
