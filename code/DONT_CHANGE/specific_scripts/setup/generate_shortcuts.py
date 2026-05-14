@@ -9,18 +9,13 @@ import win32com.propsys.pscon as pscon  # type:ignore #noqa
 from win32com.client import Dispatch  # type:ignore
 from win32com.shell import shellcon  # type:ignore
 
-# move to folder of this file for correct relative paths and ensure it's in path
-file_dir = os.path.dirname(os.path.abspath(__file__)) + "\\"
-os.chdir(file_dir)
-
 # add root dir for debug cases where this script is called on its own:
 root_dir = os.path.dirname(__file__) + "\\..\\.."
 if root_dir not in sys.path:
     sys.path.insert(0, root_dir)
 
 # =============================
-# import from common_code_and_variables.py
-# =============================
+# imports
 
 import developer_settings
 from developer_settings import (
@@ -33,7 +28,7 @@ from developer_settings import (
     windows_terminal_shortcut_name,
 )
 
-browser_shortcut_name = getattr(developer_settings, "browser_shortcut_name", "")
+browser_shortcut_name = getattr(developer_settings, "browser_shortcut_name", "") # backwards compatible
 from DONT_CHANGE.specific_scripts.common_code import close_terminal, print_traceback
 from DONT_CHANGE.specific_scripts.common_variables import (
     developer_settings_path,
