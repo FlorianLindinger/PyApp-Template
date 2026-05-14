@@ -15,7 +15,8 @@ os.chdir(file_dir)
 
 # add root dir for debug cases where this script is called on its own:
 root_dir = os.path.dirname(__file__) + "\\..\\.."
-sys.path.insert(0, root_dir)
+if root_dir not in sys.path:
+    sys.path.insert(0, root_dir)
 
 # =============================
 # import from common_code_and_variables.py
