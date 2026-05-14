@@ -3,9 +3,10 @@ setlocal
 cd /d "%~dp0"
 
 :: ===========================
+:: local variables
 
 set "VERSION=3.12.10" @REM 3.12.11+ don't have a Windows embeddable zip available
-set "INSTALL_DIR=%cd%\..\P"
+set "INSTALL_DIR=%cd%\..\..\P"
 set "ZIP=%INSTALL_DIR%\tmp.zip"
 set "URL=https://www.python.org/ftp/python/%VERSION%/python-%VERSION%-embed-amd64.zip"
 
