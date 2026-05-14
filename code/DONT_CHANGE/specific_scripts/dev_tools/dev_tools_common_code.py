@@ -7,7 +7,8 @@ from collections.abc import Iterable
 
 # add root dir for imports:
 root_dir = os.path.dirname(__file__) + "\\..\\..\\.."
-sys.path.insert(0, root_dir)
+if root_dir not in sys.path:
+    sys.path.insert(0, root_dir)
 
 from DONT_CHANGE.specific_scripts.common_code import (
     _run_python_exe,

@@ -4,7 +4,8 @@ import sys
 
 # add root dir for debug cases where this script is called on its own:
 root_dir = os.path.dirname(__file__) + "\\..\\.."
-sys.path.insert(0, root_dir)
+if root_dir not in sys.path:
+    sys.path.insert(0, root_dir)
 
 from developer_settings import install_tests, install_tkinter, install_tools, program_name, python_version
 from DONT_CHANGE.specific_scripts.common_variables import (
@@ -27,8 +28,8 @@ from DONT_CHANGE.specific_scripts.common_variables import (
     venv_exe_path,
 )
 
-ICON_WAS_SET = False
-APP_ID_IS_SET = False
+_ICON_WAS_SET = False
+_APP_ID_IS_SET = False
 
 # =========================
 # colored print and input
@@ -834,7 +835,7 @@ def set_terminal_name(name: str) -> None:
 
 def set_terminal_icon_once():
     global ICON_WAS_SET
-    if ICON_WAS_SET == False:
+    if _ICON_WAS_SET == False:
         set_terminal_name(program_name)
         set_terminal_icon(program_name, icon_path)
         ICON_WAS_SET = True
@@ -842,7 +843,7 @@ def set_terminal_icon_once():
 
 def set_app_id_once(app_id: str):
     global APP_ID_IS_SET
-    if APP_ID_IS_SET == False:
+    if _APP_ID_IS_SET == False:
         set_terminal_app_id_safe(app_id)
         APP_ID_IS_SET = True
 
