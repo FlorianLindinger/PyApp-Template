@@ -12,7 +12,8 @@ from pathlib import Path
 
 # Add code dir for debug cases where this script is called on its own.
 root_dir = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(root_dir))
+if root_dir not in sys.path:
+    sys.path.insert(0, root_dir)
 
 from DONT_CHANGE.specific_scripts.common_variables import python_code_path
 

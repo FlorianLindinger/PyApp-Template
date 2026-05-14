@@ -235,12 +235,7 @@ def open_file_in_default_app(path: str) -> None:
         return
 
     try:
-        if os.name == "nt":
-            os.startfile(path)  # type: ignore[attr-defined]  # noqa:S606
-        elif sys.platform == "darwin":
-            subprocess.Popen(["open", path])  # noqa:S603
-        else:
-            subprocess.Popen(["xdg-open", path])  # noqa:S603
+        os.startfile(path)  # type: ignore[attr-defined]  # noqa:S606
     except Exception:
         pass
 
