@@ -169,7 +169,7 @@ def warn_missing_shortcuts(missing_shortcuts: list[ShortcutSpec]) -> None:
     print()
     print("[Warning] Missing generated shortcut link(s).")
     print("You may need to regenerate shortcuts so the .lnk files match the names in developer_settings.py.")
-    print(f"Shortcut generator: {DONT_CHANGE_DIR / 'specific_scripts' / 'generate_shortcuts.py'}")
+    print(f"Shortcut generator: {DONT_CHANGE_DIR / 'specific_scripts' / "setup"/'generate_shortcuts.py'}")
     print()
     print("Missing:")
     for shortcut in missing_shortcuts:

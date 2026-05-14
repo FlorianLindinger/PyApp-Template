@@ -12,7 +12,7 @@ os.chdir(os.path.dirname(os.path.realpath(__file__)))
 # ===========================
 
 # variables
-python_folder = r"..\P"
+python_folder = r"..\..\P"
 python_exe = python_folder + r"\P.exe"
 packages_folder = python_folder + r"\..\python_packages"
 pth_file_path = python_folder + r"\python312._pth"
