@@ -89,25 +89,16 @@ try:
     )
 
     def play_windows_sound(wav_path: str) -> None:
-        if os.name != "nt":
-            return
-
         try:
             import winsound
-
-            sound = wav_path
-            if not os.path.isabs(sound):
-                sound = os.path.join(r"C:\Windows\Media", sound)
             winsound.PlaySound(
-                sound,
+                wav_path,
                 winsound.SND_FILENAME | winsound.SND_ASYNC | winsound.SND_NODEFAULT,
             )
         except Exception:
             pass
 
     def send_windows_notification(notification_title: str, message: str, app_id: str) -> None:
-        if os.name != "nt":
-            return
 
         powershell_script = r"""
 $titleText = if ($args.Count -gt 0) { $args[0] } else { "Python script" }
@@ -1541,14 +1532,6 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
             return default
         return sys.argv[index]
 
-    def arg_to_wav_path(index: int) -> str:
-        if len(sys.argv) <= index:
-            return ""
-        wav_path = sys.argv[index].strip()
-        if wav_path != "" and os.path.splitext(wav_path)[1].lower() != ".wav":
-            raise ValueError(f'[Error] Sound argument must be empty or a .wav file: "{wav_path}"')
-        return wav_path
-
     def remove_own_process_id_file_entries(path: str, process_id: int) -> None:
         try:
             with open(path, encoding="utf-8") as pid_file:
@@ -1633,11 +1616,11 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
         INPUT_PREPEND = arg_to_str(14, "> ")
         process_id_file_path = arg_to_str(15, "")
 
-        play_sound_on_success = arg_to_wav_path(16)
+        play_sound_on_success = sys.argv[16]
         send_Windows_notification_on_success = arg_to_bool(17, False)
-        play_sound_on_failure = arg_to_wav_path(18)
+        play_sound_on_failure = sys.argv[18]
         send_Windows_notification_on_failure = arg_to_bool(19, False)
-        play_sound_on_python_interpreter_crash = arg_to_wav_path(20)
+        play_sound_on_python_interpreter_crash =  sys.argv[20]
         send_Windows_notification_on_python_interpreter_crash = arg_to_bool(21, False)
         open_log_file_after_success = arg_to_bool(22, False)
         open_log_file_after_failure = arg_to_bool(23, False)

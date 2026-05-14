@@ -31,7 +31,6 @@ try:
         CompletionAlerts,
         ProcessIdRegistry,
         arg_to_bool,
-        arg_to_wav_path,
         looks_like_interpreter_crash,
     )
 
@@ -49,11 +48,11 @@ try:
     overwrite_log = arg_to_bool(12)
     input_prepend = sys.argv[13]
     process_id_file_path = sys.argv[14]
-    play_sound_on_success = arg_to_wav_path(15)
+    play_sound_on_success = sys.argv[15]
     send_Windows_notification_on_success = arg_to_bool(16)
-    play_sound_on_failure = arg_to_wav_path(17)
+    play_sound_on_failure = sys.argv[17]
     send_Windows_notification_on_failure = arg_to_bool(18)
-    play_sound_on_python_interpreter_crash = arg_to_wav_path(19)
+    play_sound_on_python_interpreter_crash = sys.argv[19]
     send_Windows_notification_on_python_interpreter_crash = arg_to_bool(20)
     open_log_file_after_success = arg_to_bool(21)
     open_log_file_after_failure = arg_to_bool(22)
