@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 # Add code dir for debug cases where this script is called on its own.
-root_dir = Path(__file__).resolve().parents[2]
+root_dir = os.path.dirname(__file__) + "\\..\\..\\.."
 if root_dir not in sys.path:
     sys.path.insert(0, root_dir)
 
