@@ -3,6 +3,10 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+move browser_terminal to own folder
+
+mnove startup_benchmark_marker.py?
+
 rechekc logic in tools
 
 rechek  start script and script wrapper
