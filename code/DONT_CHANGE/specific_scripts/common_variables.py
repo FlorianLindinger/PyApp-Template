@@ -51,12 +51,14 @@ determined_current_packages_file_path_withVersion = make_abs(
 determined_current_packages_file_path_noVersion = make_abs(
     developer_tools_dir + "\\determined_current_packages_noVersion.txt"
 )
-determined_needed_packages_output_file_path = make_abs(developer_tools_dir + "\\auto_found_required_packages.txt")
+determined_needed_packages_output_file_path_noVersion = make_abs(developer_tools_dir + "\\auto_found_required_packages_noVersion.txt")
+determined_needed_packages_output_file_path_withVersion = make_abs(developer_tools_dir + "\\auto_found_required_packages_withVersion.txt")
 python_version_indicator_file_path = developer_tools_dir + "\\current_python_version.txt"
+
 
 # variables
 # ------------------------
-excluded_folders_for_package_search = ["DONT_CHANGE", "py_env", "icons", "developer_tools", "__pycache__"]
+excluded_folders_for_package_search = ["DONT_CHANGE", "py_env", "icons", "developer_tools", "__pycache__",".git", ".hg", ".svn",".tmp"]
 variable_in_default_packages_path_that_triggers_search_if_true = (
     "# auto_find_required_packages_here_and_reset_venv_to_them"
 )
