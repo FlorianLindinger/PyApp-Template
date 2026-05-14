@@ -12,7 +12,7 @@ from DONT_CHANGE.specific_scripts.common_code import (
     install_packages_from_file,
     print_traceback,
     recreate_venv,
-    save_current_packages_withVersion
+    save_current_packages
 )
 from DONT_CHANGE.specific_scripts.common_variables import (
     determined_current_packages_file_path_withVersion,
@@ -20,7 +20,7 @@ from DONT_CHANGE.specific_scripts.common_variables import (
 
 try:
     ensure_python_distro_and_venv()
-    save_current_packages_withVersion()
+    save_current_packages(determined_current_packages_file_path_withVersion)
     recreate_venv()
     install_packages_from_file(determined_current_packages_file_path_withVersion)
     print()

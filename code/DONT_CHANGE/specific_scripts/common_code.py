@@ -834,7 +834,7 @@ def set_terminal_name(name: str) -> None:
 
 
 def set_terminal_icon_once():
-    global ICON_WAS_SET
+    global _ICON_WAS_SET
     if _ICON_WAS_SET == False:
         set_terminal_name(program_name)
         set_terminal_icon(program_name, icon_path)
@@ -842,7 +842,7 @@ def set_terminal_icon_once():
 
 
 def set_app_id_once(app_id: str):
-    global APP_ID_IS_SET
+    global _APP_ID_IS_SET
     if _APP_ID_IS_SET == False:
         set_terminal_app_id_safe(app_id)
         APP_ID_IS_SET = True
@@ -1154,7 +1154,7 @@ def ensure_python_distro_and_venv(
                 elif answer == 2:
                     recreate_venv()
                 elif answer in [3, 4]:
-                    p = save_current_packages_noVersion()
+                    p = save_current_packages(with_version=False)
                     recreate_venv()
                     install_packages_from_file(p)
                     if answer == 4:
@@ -1252,88 +1252,62 @@ def get_auto_search_phrase_state() -> bool | None:
     return None
 
 
-def save_current_packages_as_default(auto_search_phrase_state=None):
+def save_current_packages_as_default(auto_search_phrase_state=None,with_version=True):
     if auto_search_phrase_state is None:
         auto_search_phrase_state = get_auto_search_phrase_state()
 
+    packages=get_current_packages(with_version=with_version)
+
     with open(default_packages_file_path, "w", encoding="utf-8") as file:
         file.write(f"{variable_in_default_packages_path_that_triggers_search_if_true} = {auto_search_phrase_state}\n\n")
-        file.flush()
-        _run_venv_python(
-            "-m",
-            "pip",
-            "--disable-pip-version-check",
-            "freeze",
-            "--local",
-            stdout=file,
-            stderr=subprocess.PIPE,
-        )
+        file.writelines(packages)
 
 
-def get_current_packages_withVersion():
-
+def get_current_packages(with_version=True):
     result = subprocess.run(  # noqa
         [venv_exe_path, "-m", "pip", "--disable-pip-version-check", "freeze"],
         capture_output=True,
         text=True,
         check=True,
     )
+    packages_with_version=result.stdout.strip().splitlines()
 
-    requirements = result.stdout.strip()
+    if with_version== True:
+        return packages_with_version
+    else:
+        packages_without_version = []
 
-    return requirements.splitlines()
+        for line in packages_with_version:
+            line = line.strip()
+
+            if not line:
+                continue
+
+            if "==" in line:
+                packages_without_version.append(line.split("==", 1)[0])
+            elif " @ " in line:
+                packages_without_version.append(line.split(" @ ", 1)[0])
+            elif line.startswith("-e "):
+                packages_without_version.append(line)
+            else:
+                packages_without_version.append(line)
+
+        return packages_without_version
 
 
-def save_current_packages_withVersion(output_path=determined_current_packages_file_path_withVersion):
-    """
-    Run pip freeze using the given Python executable and write packages with versions.
-    """
-    output_path = os.path.abspath(output_path)
 
-    packages = get_current_packages_withVersion()
+def save_current_packages(output_path=None,with_version=True):
 
-    with open(output_path, "w", encoding="utf-8") as f:
-        f.write("\n".join(packages) + "\n")
-
-    return output_path
-
-
-def get_current_packages_noVersion():
-    result = subprocess.run(  # noqa
-        [venv_exe_path, "-m", "pip", "--disable-pip-version-check", "freeze"],
-        capture_output=True,
-        text=True,
-        check=True,
-    )
-
-    packages = []
-
-    for line in result.stdout.splitlines():
-        line = line.strip()
-
-        if not line:
-            continue
-
-        if "==" in line:
-            packages.append(line.split("==", 1)[0])
-        elif " @ " in line:
-            packages.append(line.split(" @ ", 1)[0])
-        elif line.startswith("-e "):
-            packages.append(line)
+    if output_path is None:
+        if with_version == True:
+            output_path=determined_current_packages_file_path_withVersion
         else:
-            packages.append(line)
-
-    return packages
-
-
-def save_current_packages_noVersion(output_path=determined_current_packages_file_path_noVersion):
-    """
-    Run pip freeze using the given Python executable and write package names only.
-    """
-    output_path = os.path.abspath(output_path)
-
-    packages = get_current_packages_noVersion()
-
+            output_path=determined_current_packages_file_path_noVersion
+    else:
+        output_path = os.path.abspath(output_path)
+    
+    packages = get_current_packages(with_version=with_version)
+    
     with open(output_path, "w", encoding="utf-8") as f:
         f.write("\n".join(packages) + "\n")
 
