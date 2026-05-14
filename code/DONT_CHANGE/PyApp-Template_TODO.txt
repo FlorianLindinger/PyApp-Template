@@ -8,21 +8,17 @@
 ==== Must do before release ====
 ================================
 
+recheck logic in tools
+
+recheck start script and script wrapper
+
+
+
 instlling rich traceback is slwo? do i want it maybe only in wrapper? no error should usualyl occur in backend and when it occurs i delibertate do traceback
 
 test how slow to set icon and app id with print time
 
 make launch faster by not using venv
-
-recheck logic in tools
-
-recheck start script and script wrapper
-
-i guess i want comprehenvsive launcher_common. i have to test if compulation handles that
-
-since print_traceback is now lazy import. do i have fallback?. -> add insdie functiokn
-
-maybe remove pyhton verison settings? or mention that one has to manually reinstall. dont male it chekc which costs 40ms. kind of does not matter but seems useless
 
 do i still want msi thing. does winget able to install locally. look at my git requests
 
@@ -39,15 +35,6 @@ is the file organication somewher unconventuional? should i renomea seom sutff?
 ask AI for imporovemnts
 ask AI for safety and robustness improvmens
 ask for cleanup simplification and sorting idaes
-
-make suire first prints which everyone will see are most nice. aks AI for ideas
-
-in wrapper:
-        elif looks_like_interpreter_crash(exit_code):
-            if close_on_python_interpreter_crash:
-                sys.exit(exit_code)
-            else:
-                ...  ################### WIP
 
 underline in readme better visibile?
 udpate main readme
@@ -138,6 +125,7 @@ is this correct:
 ==== Must do before release (in end) ====
 =========================================
 
+make suire first prints which everyone will see are most nice. aks AI for ideas
 
  does it not stay open for start failure? is it most batch safe for any mistake in python scripts?
 
@@ -199,6 +187,7 @@ does anythign nned folder cration or not actually need folder cration?
 
 
 maybe have seciotns in the wrapper/terminal/browser scripts that say "common code" insteaf of imoprtign stuff
+i guess i want comprehenvsive launcher_common. i have to test if compulation handles that
 
 do i want to raise insteadf of manging closeure somehwer bc outer most handles?
 
