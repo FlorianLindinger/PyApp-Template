@@ -12,7 +12,8 @@ from DONT_CHANGE.specific_scripts.common_variables import (
     default_packages_file_path,
     determined_current_packages_file_path_noVersion,
     determined_current_packages_file_path_withVersion,
-    determined_needed_packages_output_file_path,
+    determined_needed_packages_output_file_path_noVersion,
+    determined_needed_packages_output_file_path_withVersion,
     excluded_folders_for_package_search,
     icon_path,
     portable_python_installer_path,
@@ -28,15 +29,18 @@ from DONT_CHANGE.specific_scripts.common_variables import (
     venv_exe_path,
 )
 
+# =========================
+# global variables
+
 _ICON_WAS_SET = False
 _APP_ID_IS_SET = False
-
-# =========================
-# colored print and input
 
 ANSI_WARN = "\x1b[1;37;41m"  # white text, red bg, bold
 ANSI_SUCCESS = "\x1b[1;37;42m"  # white text, green bg, bold
 ANSI_RESET = "\033[0m"
+
+# =========================
+# colored print and input and general print related
 
 
 def print_warn(msg, sep: str | None = " ", end: str | None = "\n"):
@@ -51,55 +55,8 @@ def input_success(msg):
     return input(f"{ANSI_SUCCESS}{msg}{ANSI_RESET}")
 
 
-# =========================
-
-
-def close_terminal() -> bool:
-    parent_pid = os.getppid()
-    try:
-        import ctypes
-        from ctypes import wintypes
-
-        PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
-
-        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
-        kernel32.OpenProcess.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]
-        kernel32.OpenProcess.restype = wintypes.HANDLE
-        kernel32.QueryFullProcessImageNameW.argtypes = [
-            wintypes.HANDLE,
-            wintypes.DWORD,
-            wintypes.LPWSTR,
-            ctypes.POINTER(wintypes.DWORD),
-        ]
-        kernel32.QueryFullProcessImageNameW.restype = wintypes.BOOL
-        kernel32.CloseHandle.argtypes = [wintypes.HANDLE]
-        kernel32.CloseHandle.restype = wintypes.BOOL
-
-        process_handle = kernel32.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, False, parent_pid)
-        if not process_handle:
-            parent_image_path = ""
-        try:
-            buffer_length = wintypes.DWORD(32768)
-            buffer = ctypes.create_unicode_buffer(buffer_length.value)
-            if not kernel32.QueryFullProcessImageNameW(process_handle, 0, buffer, ctypes.byref(buffer_length)):
-                parent_image_path = ""
-            parent_image_path = buffer.value
-        finally:
-            kernel32.CloseHandle(process_handle)
-    except Exception:
-        parent_image_path = ""
-    parent_name = os.path.basename(parent_image_path).lower()
-    if parent_name not in ("cmd.exe", "powershell.exe", "pwsh.exe"):
-        return False
-
-    import signal
-
-    os.kill(parent_pid, signal.SIGTERM)
-    return True
-
-
-# colored traceback
 def print_traceback(message="Error", add_press_enter_to_exit=False) -> None:
+    """colored traceback via "rich" package"""
     import rich.box
     import rich.console
     import rich.panel
@@ -139,361 +96,8 @@ def print_traceback(message="Error", add_press_enter_to_exit=False) -> None:
         close_terminal()
 
 
-def ensure_parent(path: str) -> None:
-    parent = os.path.dirname(path)
-    if parent:
-        os.makedirs(parent, exist_ok=True)
-
-
-def _run_command(
-    command: list[str],
-    *,
-    cwd: str | None = None,
-    check: bool = True,
-    capture_output: bool = False,
-    stdout=None,
-    stderr=None,
-) -> subprocess.CompletedProcess[str]:
-    if isinstance(command, (str, bytes)):
-        command_fmt = os.fsdecode(command)
-    else:
-        parts = []
-        for part in command:
-            text = os.fspath(part)
-            if any(char.isspace() for char in text):
-                text = f'"{text}"'
-            parts.append(text)
-        command_fmt = " ".join(parts)
-    print(f"[Run] {command_fmt}")
-    return subprocess.run(  # noqa:S603
-        command,
-        cwd=cwd,
-        check=check,
-        capture_output=capture_output,
-        stdout=stdout,
-        stderr=stderr,
-        text=True,
-    )
-
-
-def _run_batch(batch_file: str, *args: object, check: bool = True) -> subprocess.CompletedProcess[str]:
-    if not os.path.exists(batch_file):
-        raise FileNotFoundError(f'Batch helper not found: "{batch_file}"')
-    return _run_command(
-        ["cmd.exe", "/d", "/c", "call", batch_file, *[os.fspath(str(arg)) for arg in args]], check=check
-    )
-
-
-def _run_python_exe(
-    python_executable: str,
-    *args: object,
-    check: bool = True,
-    capture_output: bool = False,
-    stdout=None,
-    stderr=None,
-) -> subprocess.CompletedProcess[str]:
-    return _run_command(
-        [python_executable, *[os.fspath(str(arg)) for arg in args]],
-        check=check,
-        capture_output=capture_output,
-        stdout=stdout,
-        stderr=stderr,
-    )
-
-
-def make_abs_path_relative_to_file(path: str, file: str) -> str:
-    if not os.path.isabs(path):
-        return os.path.normpath(os.path.dirname(file) + "\\" + path)
-    return path
-
-
-def _process_is_running(pid: int) -> bool:
-    if pid <= 0:
-        return False
-
-    try:
-        import ctypes
-        from ctypes import wintypes
-
-        PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
-        STILL_ACTIVE = 259
-
-        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
-        kernel32.OpenProcess.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]
-        kernel32.OpenProcess.restype = wintypes.HANDLE
-        kernel32.GetExitCodeProcess.argtypes = [wintypes.HANDLE, ctypes.POINTER(wintypes.DWORD)]
-        kernel32.GetExitCodeProcess.restype = wintypes.BOOL
-        kernel32.CloseHandle.argtypes = [wintypes.HANDLE]
-        kernel32.CloseHandle.restype = wintypes.BOOL
-
-        process_handle = kernel32.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, False, pid)
-        if not process_handle:
-            return ctypes.get_last_error() == 5  # ERROR_ACCESS_DENIED means the process still exists.
-        try:
-            exit_code = wintypes.DWORD()
-            if not kernel32.GetExitCodeProcess(process_handle, ctypes.byref(exit_code)):
-                return False
-            return exit_code.value == STILL_ACTIVE
-        finally:
-            kernel32.CloseHandle(process_handle)
-    except Exception:
-        return False
-
-
-def _wait_until_process_stops(pid: int, timeout_seconds: float) -> bool:
-    import time
-
-    deadline = time.monotonic() + timeout_seconds
-    while time.monotonic() < deadline:
-        if not _process_is_running(pid):
-            return True
-        time.sleep(0.1)
-    return not _process_is_running(pid)
-
-
-def _stop_process_tree(pid: int) -> str:
-    if not _process_is_running(pid):
-        return ""
-    cmd = ["taskkill", "/PID", str(pid), "/T"]
-    try:
-        graceful_result = subprocess.run(  # noqa:S603
-            cmd,
-            check=False,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-        )
-
-    except FileNotFoundError:
-        import signal
-
-        os.kill(pid, signal.SIGTERM)
-        return ""
-
-    graceful_output = (graceful_result.stdout or "").strip()
-    if graceful_result.returncode == 0 and _wait_until_process_stops(pid, 2.0):
-        return graceful_output
-
-    if not _process_is_running(pid):
-        return graceful_output
-    forced_result = subprocess.run(  # noqa:S603
-        cmd + ["/F"],  # force
-        check=False,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        text=True,
-    )
-    forced_output = (forced_result.stdout or "").strip()
-    if forced_result.returncode == 0 or _wait_until_process_stops(pid, 2.0):
-        return "\n".join(output for output in [graceful_output, forced_output] if output)
-
-    detail = forced_output or graceful_output
-    if detail:
-        raise RuntimeError(detail)
-    raise RuntimeError(f"taskkill failed with exit code {forced_result.returncode}")
-
-
-def _read_process_id_entries(path: str) -> list[tuple[int, str]]:
-    entries = []
-    with open(path, encoding="utf-8") as pid_file:
-        for line in pid_file:
-            stripped_line = line.strip()
-            if stripped_line != "":
-                process_id_text = stripped_line.split(maxsplit=1)[0]
-                try:
-                    entries.append((int(process_id_text), line))
-                except ValueError:
-                    pass
-    return entries
-
-
-def _write_process_id_lines(path: str, lines: list[str]) -> None:
-    non_empty_lines = [line if line.endswith("\n") else line + "\n" for line in lines if line.strip()]
-    if non_empty_lines:
-        with open(path, "w", encoding="utf-8") as pid_file:
-            pid_file.writelines(non_empty_lines)
-    elif os.path.exists(path):
-        os.remove(path)
-
-
-def get_running_processes_from_pid_file(pid_path: str) -> tuple[list[int], int]:
-    """returns (running_process_ids, stale_count)"""
-
-    if pid_path == "" or not os.path.exists(pid_path):
-        return [], 0
-
-    process_id_entries = _read_process_id_entries(pid_path)
-    if not process_id_entries:
-        os.remove(pid_path)
-        return [], 0
-
-    running_process_ids = []
-    stale_count = 0
-    seen_process_ids: set[int] = set()
-    for process_id, _line in process_id_entries:
-        if process_id in seen_process_ids:
-            continue
-        seen_process_ids.add(process_id)
-
-        if _process_is_running(process_id):
-            running_process_ids.append(process_id)
-        else:
-            stale_count += 1
-
-    _write_process_id_lines(pid_path, [f"{process_id}\n" for process_id in running_process_ids])
-    return running_process_ids, stale_count
-
-
-def stop_processes_from_pid_file(pid_path: str) -> tuple[int, int, list[str]]:
-    """returns (stopped_count, stale_count, failed_messages)"""
-    if pid_path == "" or not os.path.exists(pid_path):
-        return 0, 0, []
-
-    process_id_entries = _read_process_id_entries(pid_path)
-    if not process_id_entries:
-        os.remove(pid_path)
-        return 0, 0, []
-
-    lines_by_process_id: dict[int, list[str]] = {}
-    for process_id, line in process_id_entries:
-        lines_by_process_id.setdefault(process_id, []).append(line)
-
-    failed_lines = []
-    failed_messages = []
-    stopped_count = 0
-    stale_count = 0
-    for process_id, lines in lines_by_process_id.items():
-        if not _process_is_running(process_id):
-            stale_count += 1
-            continue
-
-        try:
-            _stop_process_tree(process_id)
-            stopped_count += 1
-        except Exception as process_error:
-            failed_lines.extend(lines)
-            failed_messages.append(f"{process_id}: {process_error}")
-
-    _write_process_id_lines(pid_path, failed_lines)
-    return stopped_count, stale_count, failed_messages
-
-
-def _run_venv_python(
-    *args: object,
-    check: bool = True,
-    capture_output: bool = False,
-    stdout=None,
-    stderr=None,
-) -> subprocess.CompletedProcess[str]:
-    if not os.path.exists(venv_exe_path):
-        raise FileNotFoundError(f'Virtual environment Python not found: "{venv_exe_path}"')
-    return _run_command(
-        ["cmd.exe", "/d", "/c", "call", venv_exe_path, *[os.fspath(str(arg)) for arg in args]],
-        check=check,
-        capture_output=capture_output,
-        stdout=stdout,
-        stderr=stderr,
-    )
-
-
-def get_python_version():
-    return subprocess.check_output(  # noqa:S603
-        [
-            python_exe_path,
-            "-c",
-            "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}')",
-        ],
-        stderr=subprocess.STDOUT,
-        text=True,
-    ).strip()
-
-
-def is_python_version_compatible(actual_version, required_version):
-
-    actual_parts = actual_version.split(".")
-    required_parts = required_version.strip().split(".")
-
-    if (len(actual_parts) != 3) or (any(not part.isdigit() for part in actual_parts)):
-        raise ValueError(
-            f"Could not determine Python version from output: {actual_version}. Expected format like '3.13.2'."
-        )
-
-    if not required_parts or any(not part.isdigit() for part in required_parts):
-        raise ValueError(
-            f"Invalid target_version format: {required_version}. Must be a string like '3', '3.13', or '3.13.2'."
-        )
-
-    return actual_parts[: len(required_parts)] == required_parts
-
-
-def read_python_version_from_file():
-
-    if not os.path.exists(python_version_indicator_file_path):
-        print_warn(f'[Error] missing file "{python_version_indicator_file_path}". Using Fallback determination.')
-        return get_python_version()
-
-    try:
-        with open(python_version_indicator_file_path, encoding="utf8") as f:
-            return f.read().strip()
-    except Exception as e:
-        print_warn("[Error] Failed to determine python version from file. Using Fallback determination.")
-        return get_python_version()
-    
-def save_python_version_to_file():
-    
-    current_version = get_python_version()
-    with open(python_version_indicator_file_path,mode="w", encoding="utf8") as f:
-        f.write(current_version)
-
-
-def is_python_version_correct(target_version: str | float | int) -> tuple[bool, str | None]:
-    """
-    Returns whether the Python executable at ``exe_path`` matches ``target_version`` and the actual version:
-        if target_version in [None, False, ""]:
-            return [True,None]
-        else:
-            returns: [match,current_verison]
-
-    Matching is prefix-based on proven version components:
-    - If ``target_version`` is ``"3"``, any Python 3.x matches.
-    - If ``target_version`` is ``"3.13"``, any Python 3.13.x matches.
-    - If ``target_version`` is ``"3.13.2"``, only Python 3.13.2 matches.
-    """
-    if target_version in [None, False, ""]:
-        return (True, None)
-
-    if isinstance(target_version, (float, int)):
-        target_version = str(target_version)
-
-    found_version = read_python_version_from_file()
-
-    return (is_python_version_compatible(found_version, target_version), found_version)
-
-
-def _format_bytes(num_bytes) -> str:
-    units = ["B", "KB", "MB", "GB", "TB"]
-    size = float(num_bytes)
-    for unit in units:
-        if size < 1024 or unit == units[-1]:
-            if unit == "B":
-                return f"{int(size)} {unit}"
-            else:
-                return f"{size:.2f} {unit}"
-        size /= 1024
-    return f"{num_bytes} B"
-
-
-def _get_folder_size(folder: str | os.PathLike[str]) -> int:
-    total = 0
-    for root, _dirs, files in os.walk(folder):
-        for filename in files:
-            path = os.path.join(root, filename)
-            try:
-                if os.path.isfile(path):
-                    total += os.path.getsize(path)
-            except (OSError, PermissionError):
-                pass
-    return total
+# =========================
+# miscellaneous
 
 
 def delete_folder_safe(
@@ -561,82 +165,184 @@ def delete_folder_safe(
     return True
 
 
-def delete_venv() -> bool:
-    return delete_folder_safe(
-        venv_dir_path,
-        prompt_for_confirmation=False,
-        allowed_base=python_scripts_dir,
-        expected_name=os.path.basename(venv_dir_path),
+# =========================
+# terminal related
+
+
+def set_terminal_app_id_safe(app_id: str) -> int:
+    """Try to set System.AppUserModel.ID on the terminal window itself."""
+    import ctypes
+    from ctypes import wintypes
+
+    candidate_hwnds = _get_candidate_hwnds()
+
+    import uuid
+
+    if app_id == "":
+        return 0
+
+    HRESULT = ctypes.c_long
+    VT_LPWSTR = 31
+    S_OK = 0
+    S_FALSE = 1
+    RPC_E_CHANGED_MODE = 0x80010106
+
+    class GUID(ctypes.Structure):
+        _fields_ = [
+            ("Data1", ctypes.c_ulong),
+            ("Data2", ctypes.c_ushort),
+            ("Data3", ctypes.c_ushort),
+            ("Data4", ctypes.c_ubyte * 8),
+        ]
+
+    class PROPERTYKEY(ctypes.Structure):
+        _fields_ = [("fmtid", GUID), ("pid", wintypes.DWORD)]
+
+    class PROPVARIANT(ctypes.Structure):
+        _fields_ = [
+            ("vt", ctypes.c_ushort),
+            ("wReserved1", ctypes.c_ushort),
+            ("wReserved2", ctypes.c_ushort),
+            ("wReserved3", ctypes.c_ushort),
+            ("pwszVal", ctypes.c_wchar_p),
+        ]
+
+    class IPropertyStore(ctypes.Structure):
+        pass
+
+    IPropertyStorePtr = ctypes.POINTER(IPropertyStore)
+
+    class IPropertyStoreVtbl(ctypes.Structure):
+        _fields_ = [
+            (
+                "QueryInterface",
+                ctypes.WINFUNCTYPE(
+                    HRESULT,
+                    IPropertyStorePtr,
+                    ctypes.POINTER(GUID),
+                    ctypes.POINTER(ctypes.c_void_p),
+                ),
+            ),
+            ("AddRef", ctypes.WINFUNCTYPE(ctypes.c_ulong, IPropertyStorePtr)),
+            ("Release", ctypes.WINFUNCTYPE(ctypes.c_ulong, IPropertyStorePtr)),
+            ("GetCount", ctypes.WINFUNCTYPE(HRESULT, IPropertyStorePtr, ctypes.POINTER(wintypes.DWORD))),
+            (
+                "GetAt",
+                ctypes.WINFUNCTYPE(
+                    HRESULT,
+                    IPropertyStorePtr,
+                    wintypes.DWORD,
+                    ctypes.POINTER(PROPERTYKEY),
+                ),
+            ),
+            (
+                "GetValue",
+                ctypes.WINFUNCTYPE(
+                    HRESULT,
+                    IPropertyStorePtr,
+                    ctypes.POINTER(PROPERTYKEY),
+                    ctypes.POINTER(PROPVARIANT),
+                ),
+            ),
+            (
+                "SetValue",
+                ctypes.WINFUNCTYPE(
+                    HRESULT,
+                    IPropertyStorePtr,
+                    ctypes.POINTER(PROPERTYKEY),
+                    ctypes.POINTER(PROPVARIANT),
+                ),
+            ),
+            ("Commit", ctypes.WINFUNCTYPE(HRESULT, IPropertyStorePtr)),
+        ]
+
+    IPropertyStore._fields_ = [("lpVtbl", ctypes.POINTER(IPropertyStoreVtbl))]
+
+    def make_guid(value: str) -> GUID:
+        parsed = uuid.UUID(value)
+        return GUID(
+            parsed.time_low,
+            parsed.time_mid,
+            parsed.time_hi_version,
+            (ctypes.c_ubyte * 8)(*parsed.bytes[8:]),
+        )
+
+    def format_hresult(hr: int) -> str:
+        code = hr & 0xFFFFFFFF
+        try:
+            message = ctypes.FormatError(code).strip()
+        except Exception:
+            message = "unknown error"
+        return f"0x{code:08X}: {message}"
+
+    def check_hresult(hr: int, action: str) -> None:
+        if hr < 0:
+            raise OSError(f"{action} failed with HRESULT {format_hresult(hr)}")
+
+    shell32 = ctypes.WinDLL("shell32", use_last_error=True)
+    ole32 = ctypes.WinDLL("ole32", use_last_error=True)
+
+    shell32.SHGetPropertyStoreForWindow.argtypes = [
+        wintypes.HWND,
+        ctypes.POINTER(GUID),
+        ctypes.POINTER(IPropertyStorePtr),
+    ]
+    shell32.SHGetPropertyStoreForWindow.restype = HRESULT
+
+    ole32.CoInitialize.argtypes = [ctypes.c_void_p]
+    ole32.CoInitialize.restype = HRESULT
+    ole32.CoUninitialize.argtypes = []
+    ole32.CoUninitialize.restype = None
+
+    iid_property_store = make_guid("886D8EEB-8CF2-4446-8D02-CDBA1DBDCF99")
+    pkey_app_user_model_id = PROPERTYKEY(
+        make_guid("9F4C2855-9F79-4B39-A8D0-E1D42DE1D5F3"),
+        5,
     )
+    prop_var = PROPVARIANT()
+    prop_var.vt = VT_LPWSTR
+    prop_var.pwszVal = app_id
 
+    coinitialize_result = ole32.CoInitialize(None)
+    should_uninitialize = coinitialize_result in {S_OK, S_FALSE}
+    if coinitialize_result < 0 and (coinitialize_result & 0xFFFFFFFF) != RPC_E_CHANGED_MODE:
+        raise OSError(f"CoInitialize failed with HRESULT {format_hresult(coinitialize_result)}")
 
-def delete_python_distro() -> bool:
-    return delete_folder_safe(
-        python_dist_path,
-        prompt_for_confirmation=False,
-        allowed_base=python_scripts_dir,
-        expected_name=os.path.basename(python_dist_path),
-    )
+    changed_count = 0
+    try:
+        for hwnd in candidate_hwnds:
+            try:
+                property_store = IPropertyStorePtr()
+                hr = shell32.SHGetPropertyStoreForWindow(
+                    wintypes.HWND(hwnd),
+                    ctypes.byref(iid_property_store),
+                    ctypes.byref(property_store),
+                )
+                check_hresult(hr, f"SHGetPropertyStoreForWindow for hwnd 0x{hwnd:016X}")
 
+                try:
+                    hr = property_store.contents.lpVtbl.contents.SetValue(
+                        property_store,
+                        ctypes.byref(pkey_app_user_model_id),
+                        ctypes.byref(prop_var),
+                    )
+                    check_hresult(hr, f"SetValue System.AppUserModel.ID for hwnd 0x{hwnd:016X}")
 
-def recreate_python_distro() -> None:
+                    hr = property_store.contents.lpVtbl.contents.Commit(property_store)
+                    check_hresult(hr, f"Commit System.AppUserModel.ID for hwnd 0x{hwnd:016X}")
 
-    delete_python_distro()
+                    _helper_refresh_nonclient_area(hwnd)
+                    changed_count += 1
+                finally:
+                    if property_store:
+                        property_store.contents.lpVtbl.contents.Release(property_store)
+            except Exception as error:
+                print(f"[Info] AppID update skipped for hwnd 0x{hwnd:016X}: {error}")
+    finally:
+        if should_uninitialize:
+            ole32.CoUninitialize()
 
-    _run_batch(
-        portable_python_installer_path,
-        python_version,
-        py_env_dir,
-        "1" if install_tkinter else "0",
-        "1" if install_tests else "0",
-        "1" if install_tools else "0",
-        "0",  # dont install docs
-    )
-
-    if not os.path.exists(python_exe_path):
-        raise RuntimeError(f'Portable Python installation did not produce expected file at "{python_exe_path}"')
-    else:
-        save_python_version_to_file()
-
-
-def recreate_venv() -> None:
-
-    delete_venv()
-
-    _run_batch(portable_venv_creator_path, py_env_dir, relative_py_env_to_python_dist)
-
-    if not os.path.exists(venv_exe_path):
-        raise RuntimeError(f'Portable virtual environment creator did not produce "{venv_exe_path}"')
-
-
-def prompt_for_distro_reinstall(msg="Reinstall distro / recreate virtual environment?"):
-    """
-    Return int in prints below for cases in print:
-        print("0. Leave current Python version and venv")
-        print("1. Change Python version + Recreate venv with default packages")
-        print("2. Change Python version + Recreate venv without packages")
-        print("3. Change Python version + Recreate venv with current packages")
-        print("4. Change Python version + Recreate venv with current packages + set them default")
-        print("5. Change Python version + Recreate venv with auto-determined needed packages")
-        print("6. Change Python version + Recreate venv with auto-determined needed packages + set them default")
-    """
-    print_warn(msg)
-    print()
-    print_warn("0. Leave current Python version and venv")
-    print_warn("1. Change Python version + Recreate venv with default packages")
-    print_warn("2. Change Python version + Recreate venv without packages")
-    print_warn("3. Change Python version + Recreate venv with current packages")
-    print_warn("4. Change Python version + Recreate venv with current packages + set them default")
-    print_warn("5. Change Python version + Recreate venv with auto-determined needed packages")
-    print_warn("6. Change Python version + Recreate venv with auto-determined needed packages + set them default")
-
-    while True:
-        choice = input_warn("Choose an option [1-6]: ").strip()
-
-        if choice in {"0", "1", "2", "3", "4", "5", "6"}:
-            return int(choice)
-
-        print_warn("Invalid choice. Please enter 0, 1, 2, 3, 4, 5, or 6.")
+    return changed_count
 
 
 def set_terminal_icon(window_title: str, icon_path: str) -> int:
@@ -838,14 +544,93 @@ def set_terminal_icon_once():
     if _ICON_WAS_SET == False:
         set_terminal_name(program_name)
         set_terminal_icon(program_name, icon_path)
-        ICON_WAS_SET = True
+        _ICON_WAS_SET = True
 
 
 def set_app_id_once(app_id: str):
     global _APP_ID_IS_SET
     if _APP_ID_IS_SET == False:
         set_terminal_app_id_safe(app_id)
-        APP_ID_IS_SET = True
+        _APP_ID_IS_SET = True
+
+
+def close_terminal() -> bool:
+    parent_pid = os.getppid()
+    try:
+        import ctypes
+        from ctypes import wintypes
+
+        PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
+
+        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        kernel32.OpenProcess.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]
+        kernel32.OpenProcess.restype = wintypes.HANDLE
+        kernel32.QueryFullProcessImageNameW.argtypes = [
+            wintypes.HANDLE,
+            wintypes.DWORD,
+            wintypes.LPWSTR,
+            ctypes.POINTER(wintypes.DWORD),
+        ]
+        kernel32.QueryFullProcessImageNameW.restype = wintypes.BOOL
+        kernel32.CloseHandle.argtypes = [wintypes.HANDLE]
+        kernel32.CloseHandle.restype = wintypes.BOOL
+
+        process_handle = kernel32.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, False, parent_pid)
+        if not process_handle:
+            parent_image_path = ""
+        try:
+            buffer_length = wintypes.DWORD(32768)
+            buffer = ctypes.create_unicode_buffer(buffer_length.value)
+            if not kernel32.QueryFullProcessImageNameW(process_handle, 0, buffer, ctypes.byref(buffer_length)):
+                parent_image_path = ""
+            parent_image_path = buffer.value
+        finally:
+            kernel32.CloseHandle(process_handle)
+    except Exception:
+        parent_image_path = ""
+    parent_name = os.path.basename(parent_image_path).lower()
+    if parent_name not in ("cmd.exe", "powershell.exe", "pwsh.exe"):
+        return False
+
+    import signal
+
+    os.kill(parent_pid, signal.SIGTERM)
+    return True
+
+
+# =========================
+# path related
+
+
+def make_abs_path_relative_to_file(path: str, file: str) -> str:
+    if not os.path.isabs(path):
+        return os.path.normpath(os.path.dirname(file) + "\\" + path)
+    return path
+
+
+# =========================
+# file read/write
+
+
+def write_file(path: str, lines: list[str], override=True, create_folder=True):
+
+    if create_folder == True:
+        parent = os.path.dirname(path)
+        if parent:
+            os.makedirs(parent, exist_ok=True)
+
+    with open(path, "w" if override else "a", encoding="utf-8") as f:
+        f.writelines(lines)
+
+
+def read_file(path: str):
+
+    with open(path, encoding="utf-8") as f:
+        return f.readlines()
+
+
+# =========================
+# helper functions
 
 
 def _get_candidate_hwnds() -> list[int]:
@@ -915,180 +700,374 @@ def _helper_refresh_nonclient_area(hwnd: int) -> None:
     )
 
 
-def set_terminal_app_id_safe(app_id: str) -> int:
-    """Try to set System.AppUserModel.ID on the terminal window itself."""
-    import ctypes
-    from ctypes import wintypes
+def _process_is_running(pid: int) -> bool:
+    if pid <= 0:
+        return False
 
-    candidate_hwnds = _get_candidate_hwnds()
+    try:
+        import ctypes
+        from ctypes import wintypes
 
-    import uuid
+        PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
+        STILL_ACTIVE = 259
 
-    if app_id == "":
-        return 0
+        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        kernel32.OpenProcess.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]
+        kernel32.OpenProcess.restype = wintypes.HANDLE
+        kernel32.GetExitCodeProcess.argtypes = [wintypes.HANDLE, ctypes.POINTER(wintypes.DWORD)]
+        kernel32.GetExitCodeProcess.restype = wintypes.BOOL
+        kernel32.CloseHandle.argtypes = [wintypes.HANDLE]
+        kernel32.CloseHandle.restype = wintypes.BOOL
 
-    HRESULT = ctypes.c_long
-    VT_LPWSTR = 31
-    S_OK = 0
-    S_FALSE = 1
-    RPC_E_CHANGED_MODE = 0x80010106
+        process_handle = kernel32.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, False, pid)
+        if not process_handle:
+            return ctypes.get_last_error() == 5  # ERROR_ACCESS_DENIED means the process still exists.
+        try:
+            exit_code = wintypes.DWORD()
+            if not kernel32.GetExitCodeProcess(process_handle, ctypes.byref(exit_code)):
+                return False
+            return exit_code.value == STILL_ACTIVE
+        finally:
+            kernel32.CloseHandle(process_handle)
+    except Exception:
+        return False
 
-    class GUID(ctypes.Structure):
-        _fields_ = [
-            ("Data1", ctypes.c_ulong),
-            ("Data2", ctypes.c_ushort),
-            ("Data3", ctypes.c_ushort),
-            ("Data4", ctypes.c_ubyte * 8),
-        ]
 
-    class PROPERTYKEY(ctypes.Structure):
-        _fields_ = [("fmtid", GUID), ("pid", wintypes.DWORD)]
+def _wait_until_process_stops(pid: int, timeout_seconds: float) -> bool:
+    import time
 
-    class PROPVARIANT(ctypes.Structure):
-        _fields_ = [
-            ("vt", ctypes.c_ushort),
-            ("wReserved1", ctypes.c_ushort),
-            ("wReserved2", ctypes.c_ushort),
-            ("wReserved3", ctypes.c_ushort),
-            ("pwszVal", ctypes.c_wchar_p),
-        ]
+    deadline = time.monotonic() + timeout_seconds
+    while time.monotonic() < deadline:
+        if not _process_is_running(pid):
+            return True
+        time.sleep(0.1)
+    return not _process_is_running(pid)
 
-    class IPropertyStore(ctypes.Structure):
-        pass
 
-    IPropertyStorePtr = ctypes.POINTER(IPropertyStore)
-
-    class IPropertyStoreVtbl(ctypes.Structure):
-        _fields_ = [
-            (
-                "QueryInterface",
-                ctypes.WINFUNCTYPE(
-                    HRESULT,
-                    IPropertyStorePtr,
-                    ctypes.POINTER(GUID),
-                    ctypes.POINTER(ctypes.c_void_p),
-                ),
-            ),
-            ("AddRef", ctypes.WINFUNCTYPE(ctypes.c_ulong, IPropertyStorePtr)),
-            ("Release", ctypes.WINFUNCTYPE(ctypes.c_ulong, IPropertyStorePtr)),
-            ("GetCount", ctypes.WINFUNCTYPE(HRESULT, IPropertyStorePtr, ctypes.POINTER(wintypes.DWORD))),
-            (
-                "GetAt",
-                ctypes.WINFUNCTYPE(
-                    HRESULT,
-                    IPropertyStorePtr,
-                    wintypes.DWORD,
-                    ctypes.POINTER(PROPERTYKEY),
-                ),
-            ),
-            (
-                "GetValue",
-                ctypes.WINFUNCTYPE(
-                    HRESULT,
-                    IPropertyStorePtr,
-                    ctypes.POINTER(PROPERTYKEY),
-                    ctypes.POINTER(PROPVARIANT),
-                ),
-            ),
-            (
-                "SetValue",
-                ctypes.WINFUNCTYPE(
-                    HRESULT,
-                    IPropertyStorePtr,
-                    ctypes.POINTER(PROPERTYKEY),
-                    ctypes.POINTER(PROPVARIANT),
-                ),
-            ),
-            ("Commit", ctypes.WINFUNCTYPE(HRESULT, IPropertyStorePtr)),
-        ]
-
-    IPropertyStore._fields_ = [("lpVtbl", ctypes.POINTER(IPropertyStoreVtbl))]
-
-    def make_guid(value: str) -> GUID:
-        parsed = uuid.UUID(value)
-        return GUID(
-            parsed.time_low,
-            parsed.time_mid,
-            parsed.time_hi_version,
-            (ctypes.c_ubyte * 8)(*parsed.bytes[8:]),
+def _stop_process_tree(pid: int) -> str:
+    if not _process_is_running(pid):
+        return ""
+    cmd = ["taskkill", "/PID", str(pid), "/T"]
+    try:
+        graceful_result = subprocess.run(  # noqa:S603
+            cmd,
+            check=False,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
         )
 
-    def format_hresult(hr: int) -> str:
-        code = hr & 0xFFFFFFFF
-        try:
-            message = ctypes.FormatError(code).strip()
-        except Exception:
-            message = "unknown error"
-        return f"0x{code:08X}: {message}"
+    except FileNotFoundError:
+        import signal
 
-    def check_hresult(hr: int, action: str) -> None:
-        if hr < 0:
-            raise OSError(f"{action} failed with HRESULT {format_hresult(hr)}")
+        os.kill(pid, signal.SIGTERM)
+        return ""
 
-    shell32 = ctypes.WinDLL("shell32", use_last_error=True)
-    ole32 = ctypes.WinDLL("ole32", use_last_error=True)
+    graceful_output = (graceful_result.stdout or "").strip()
+    if graceful_result.returncode == 0 and _wait_until_process_stops(pid, 2.0):
+        return graceful_output
 
-    shell32.SHGetPropertyStoreForWindow.argtypes = [
-        wintypes.HWND,
-        ctypes.POINTER(GUID),
-        ctypes.POINTER(IPropertyStorePtr),
-    ]
-    shell32.SHGetPropertyStoreForWindow.restype = HRESULT
-
-    ole32.CoInitialize.argtypes = [ctypes.c_void_p]
-    ole32.CoInitialize.restype = HRESULT
-    ole32.CoUninitialize.argtypes = []
-    ole32.CoUninitialize.restype = None
-
-    iid_property_store = make_guid("886D8EEB-8CF2-4446-8D02-CDBA1DBDCF99")
-    pkey_app_user_model_id = PROPERTYKEY(
-        make_guid("9F4C2855-9F79-4B39-A8D0-E1D42DE1D5F3"),
-        5,
+    if not _process_is_running(pid):
+        return graceful_output
+    forced_result = subprocess.run(  # noqa:S603
+        cmd + ["/F"],  # force
+        check=False,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
     )
-    prop_var = PROPVARIANT()
-    prop_var.vt = VT_LPWSTR
-    prop_var.pwszVal = app_id
+    forced_output = (forced_result.stdout or "").strip()
+    if forced_result.returncode == 0 or _wait_until_process_stops(pid, 2.0):
+        return "\n".join(output for output in [graceful_output, forced_output] if output)
 
-    coinitialize_result = ole32.CoInitialize(None)
-    should_uninitialize = coinitialize_result in {S_OK, S_FALSE}
-    if coinitialize_result < 0 and (coinitialize_result & 0xFFFFFFFF) != RPC_E_CHANGED_MODE:
-        raise OSError(f"CoInitialize failed with HRESULT {format_hresult(coinitialize_result)}")
+    detail = forced_output or graceful_output
+    if detail:
+        raise RuntimeError(detail)
+    raise RuntimeError(f"taskkill failed with exit code {forced_result.returncode}")
 
-    changed_count = 0
-    try:
-        for hwnd in candidate_hwnds:
+
+def _read_process_id_entries(path: str) -> list[tuple[int, str]]:
+
+    lines = read_file(path)
+
+    out = []
+    for line in lines:
+        line = line.strip()
+        if line != "":
+            process_id_text = line.split(maxsplit=1)[0]
             try:
-                property_store = IPropertyStorePtr()
-                hr = shell32.SHGetPropertyStoreForWindow(
-                    wintypes.HWND(hwnd),
-                    ctypes.byref(iid_property_store),
-                    ctypes.byref(property_store),
-                )
-                check_hresult(hr, f"SHGetPropertyStoreForWindow for hwnd 0x{hwnd:016X}")
+                out.append((int(process_id_text), line))
+            except ValueError:
+                pass
+    return out
 
-                try:
-                    hr = property_store.contents.lpVtbl.contents.SetValue(
-                        property_store,
-                        ctypes.byref(pkey_app_user_model_id),
-                        ctypes.byref(prop_var),
-                    )
-                    check_hresult(hr, f"SetValue System.AppUserModel.ID for hwnd 0x{hwnd:016X}")
 
-                    hr = property_store.contents.lpVtbl.contents.Commit(property_store)
-                    check_hresult(hr, f"Commit System.AppUserModel.ID for hwnd 0x{hwnd:016X}")
+def _write_process_id_lines(path: str, lines: list[str]) -> None:
+    non_empty_lines = [line if line.endswith("\n") else line + "\n" for line in lines if line.strip()]
+    if non_empty_lines:
+        write_file(path, non_empty_lines)
+    elif os.path.exists(path):
+        os.remove(path)
 
-                    _helper_refresh_nonclient_area(hwnd)
-                    changed_count += 1
-                finally:
-                    if property_store:
-                        property_store.contents.lpVtbl.contents.Release(property_store)
-            except Exception as error:
-                print(f"[Info] AppID update skipped for hwnd 0x{hwnd:016X}: {error}")
-    finally:
-        if should_uninitialize:
-            ole32.CoUninitialize()
 
-    return changed_count
+def _format_bytes(num_bytes) -> str:
+    units = ["B", "KB", "MB", "GB", "TB"]
+    size = float(num_bytes)
+    for unit in units:
+        if size < 1024 or unit == units[-1]:
+            if unit == "B":
+                return f"{int(size)} {unit}"
+            else:
+                return f"{size:.2f} {unit}"
+        size /= 1024
+    return f"{num_bytes} B"
+
+
+def _get_folder_size(folder: str | os.PathLike[str]) -> int:
+    total = 0
+    for root, _dirs, files in os.walk(folder):
+        for filename in files:
+            path = os.path.join(root, filename)
+            try:
+                if os.path.isfile(path):
+                    total += os.path.getsize(path)
+            except (OSError, PermissionError):
+                pass
+    return total
+
+
+# =========================
+# pid/process related
+
+
+def get_running_processes_from_pid_file(pid_path: str) -> tuple[list[int], int]:
+    """returns (running_process_ids, stale_count)"""
+
+    if pid_path == "" or not os.path.exists(pid_path):
+        return [], 0
+
+    process_id_entries = _read_process_id_entries(pid_path)
+    if not process_id_entries:
+        os.remove(pid_path)
+        return [], 0
+
+    running_process_ids = []
+    stale_count = 0
+    seen_process_ids: set[int] = set()
+    for process_id, _line in process_id_entries:
+        if process_id in seen_process_ids:
+            continue
+        seen_process_ids.add(process_id)
+
+        if _process_is_running(process_id):
+            running_process_ids.append(process_id)
+        else:
+            stale_count += 1
+
+    _write_process_id_lines(pid_path, [f"{process_id}\n" for process_id in running_process_ids])
+    return running_process_ids, stale_count
+
+
+def stop_processes_from_pid_file(pid_path: str) -> tuple[int, int, list[str]]:
+    """returns (stopped_count, stale_count, failed_messages)"""
+    if pid_path == "" or not os.path.exists(pid_path):
+        return 0, 0, []
+
+    process_id_entries = _read_process_id_entries(pid_path)
+    if not process_id_entries:
+        os.remove(pid_path)
+        return 0, 0, []
+
+    lines_by_process_id: dict[int, list[str]] = {}
+    for process_id, line in process_id_entries:
+        lines_by_process_id.setdefault(process_id, []).append(line)
+
+    failed_lines = []
+    failed_messages = []
+    stopped_count = 0
+    stale_count = 0
+    for process_id, lines in lines_by_process_id.items():
+        if not _process_is_running(process_id):
+            stale_count += 1
+            continue
+
+        try:
+            _stop_process_tree(process_id)
+            stopped_count += 1
+        except Exception as process_error:
+            failed_lines.extend(lines)
+            failed_messages.append(f"{process_id}: {process_error}")
+
+    _write_process_id_lines(pid_path, failed_lines)
+    return stopped_count, stale_count, failed_messages
+
+
+# =========================
+# python version related
+
+
+def get_python_version():
+    return subprocess.check_output(  # noqa:S603
+        [
+            python_exe_path,
+            "-c",
+            "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}')",
+        ],
+        stderr=subprocess.STDOUT,
+        text=True,
+    ).strip()
+
+
+def is_python_version_compatible(actual_version, required_version):
+
+    actual_parts = actual_version.split(".")
+    required_parts = required_version.strip().split(".")
+
+    if (len(actual_parts) != 3) or (any(not part.isdigit() for part in actual_parts)):
+        raise ValueError(
+            f"Could not determine Python version from output: {actual_version}. Expected format like '3.13.2'."
+        )
+
+    if not required_parts or any(not part.isdigit() for part in required_parts):
+        raise ValueError(
+            f"Invalid target_version format: {required_version}. Must be a string like '3', '3.13', or '3.13.2'."
+        )
+
+    return actual_parts[: len(required_parts)] == required_parts
+
+
+def read_python_version_from_file():
+
+    if not os.path.exists(python_version_indicator_file_path):
+        print_warn(f'[Error] missing file "{python_version_indicator_file_path}". Using Fallback determination.')
+        return get_python_version()
+
+    try:
+        return read_file(python_version_indicator_file_path)[0].strip()
+    except Exception:
+        print_warn("[Error] Failed to determine python version from file. Using Fallback determination.")
+        return get_python_version()
+
+
+def save_python_version_to_file():
+    current_version = get_python_version()
+    write_file(python_version_indicator_file_path, [current_version])
+
+
+def is_python_version_correct(target_version: str | float | int) -> tuple[bool, str | None]:
+    """
+    Returns whether the Python executable at ``exe_path`` matches ``target_version`` and the actual version:
+        if target_version in [None, False, ""]:
+            return [True,None]
+        else:
+            returns: [match,current_verison]
+
+    Matching is prefix-based on proven version components:
+    - If ``target_version`` is ``"3"``, any Python 3.x matches.
+    - If ``target_version`` is ``"3.13"``, any Python 3.13.x matches.
+    - If ``target_version`` is ``"3.13.2"``, only Python 3.13.2 matches.
+    """
+    if target_version in [None, False, ""]:
+        return (True, None)
+
+    if isinstance(target_version, (float, int)):
+        target_version = str(target_version)
+
+    found_version = read_python_version_from_file()
+
+    return (is_python_version_compatible(found_version, target_version), found_version)
+
+
+# =========================
+# python/venv setup
+
+
+def delete_venv() -> bool:
+    return delete_folder_safe(
+        venv_dir_path,
+        prompt_for_confirmation=False,
+        allowed_base=python_scripts_dir,
+        expected_name=os.path.basename(venv_dir_path),
+    )
+
+
+def delete_python_distro() -> bool:
+    return delete_folder_safe(
+        python_dist_path,
+        prompt_for_confirmation=False,
+        allowed_base=python_scripts_dir,
+        expected_name=os.path.basename(python_dist_path),
+    )
+
+
+def recreate_python_distro() -> None:
+
+    delete_python_distro()
+
+    subprocess.run(  # noqa
+        [
+            "cmd.exe",
+            "/d",
+            "/c",
+            "call",
+            portable_python_installer_path,
+            python_version,
+            py_env_dir,
+            "1" if install_tkinter else "0",
+            "1" if install_tests else "0",
+            "1" if install_tools else "0",
+            "0",  # dont install docs
+        ],
+        check=True,
+    )
+
+    if not os.path.exists(python_exe_path):
+        raise RuntimeError(f'Portable Python installation did not produce expected file at "{python_exe_path}"')
+    else:
+        save_python_version_to_file()
+
+
+def recreate_venv() -> None:
+
+    delete_venv()
+
+    subprocess.run(  # noqa
+        ["cmd.exe", "/d", "/c", "call", portable_venv_creator_path, py_env_dir, relative_py_env_to_python_dist],
+        check=True,
+    )
+
+    if not os.path.exists(venv_exe_path):
+        raise RuntimeError(f'Portable virtual environment creator did not produce "{venv_exe_path}"')
+
+
+def prompt_for_distro_reinstall(msg="Reinstall distro / recreate virtual environment?"):
+    """
+    Return int in prints below for cases in print:
+        print("0. Leave current Python version and venv")
+        print("1. Change Python version + Recreate venv with default packages")
+        print("2. Change Python version + Recreate venv without packages")
+        print("3. Change Python version + Recreate venv with current packages")
+        print("4. Change Python version + Recreate venv with current packages + set them default")
+        print("5. Change Python version + Recreate venv with auto-determined needed packages")
+        print("6. Change Python version + Recreate venv with auto-determined needed packages + set them default")
+    """
+    print_warn(msg)
+    print()
+    print_warn("0. Leave current Python version and venv")
+    print_warn("1. Change Python version + Recreate venv with default packages")
+    print_warn("2. Change Python version + Recreate venv without packages")
+    print_warn("3. Change Python version + Recreate venv with current packages")
+    print_warn("4. Change Python version + Recreate venv with current packages + set them default")
+    print_warn("5. Change Python version + Recreate venv with auto-determined needed packages")
+    print_warn("6. Change Python version + Recreate venv with auto-determined needed packages + set them default")
+
+    while True:
+        choice = input_warn("Choose an option [1-6]: ").strip()
+
+        if choice in {"0", "1", "2", "3", "4", "5", "6"}:
+            return int(choice)
+
+        print_warn("Invalid choice. Please enter 0, 1, 2, 3, 4, 5, or 6.")
 
 
 def ensure_python_distro_and_venv(
@@ -1098,7 +1077,7 @@ def ensure_python_distro_and_venv(
     if app_id_for_slow in [None, False]:
         app_id_for_slow = ""
 
-    if not os.path.exists(python_exe_path):  # new python distro case:
+    if not os.path.exists(python_exe_path):  # no python distro existing case:
         if set_icon_for_slow:
             set_terminal_icon_once()
         if app_id_for_slow != "":
@@ -1108,6 +1087,7 @@ def ensure_python_distro_and_venv(
         recreate_python_distro()
         recreate_venv()
         install_default_packages(check_auto_determine_flag=check_auto_determine_flag_for_default_package_install)
+
     else:  # alread existing python distro case:
         if python_version not in ["", None]:
             matching, actual_version = is_python_version_correct(python_version)
@@ -1175,8 +1155,8 @@ def ensure_python_distro_and_venv(
                 raise ValueError(f"Invalid answer: {answer}")
 
 
-def python_distro_exists() -> bool:
-    return os.path.exists(python_exe_path)
+# ========================
+# package related
 
 
 def install_packages_from_file(path: str, *, upgrade: bool = True, no_cache: bool = True) -> None:
@@ -1186,9 +1166,8 @@ def install_packages_from_file(path: str, *, upgrade: bool = True, no_cache: boo
     print()
     print(f'[Info] Package list: "{path}"')
 
-    with open(path, encoding="utf-8") as file:
-        lines = file.readlines()
-    for line in lines:
+    packages = read_file(path)
+    for line in packages:
         stripped = line.strip()
         if stripped and not stripped.startswith("#"):
             break
@@ -1196,12 +1175,29 @@ def install_packages_from_file(path: str, *, upgrade: bool = True, no_cache: boo
         print("[Info] No packages to install.")
         return
 
-    command: list[object] = ["-m", "pip", "install", "-r", path, "--disable-pip-version-check"]
+    extra_commands: list[str] = []
     if upgrade:
-        command.append("--upgrade")
+        extra_commands.append("--upgrade")
     if no_cache:
-        command.append("--no-cache-dir")
-    _run_venv_python(*command)
+        extra_commands.append("--no-cache-dir")
+
+    subprocess.run(  # noqa
+        [
+            "cmd.exe",
+            "/d",
+            "/c",
+            "call",
+            venv_exe_path,
+            "-m",
+            "pip",
+            "install",
+            "-r",
+            path,
+            "--disable-pip-version-check",
+            *extra_commands,
+        ],
+        check=True,
+    )
 
 
 def install_default_packages(check_auto_determine_flag=True):
@@ -1231,8 +1227,7 @@ def get_auto_search_phrase_state() -> bool | None:
     if not os.path.exists(default_packages_file_path):
         return None
 
-    with open(default_packages_file_path, encoding="utf-8") as file:
-        lines = file.readlines()
+    lines = read_file(default_packages_file_path)
 
     for line in lines:
         if variable_in_default_packages_path_that_triggers_search_if_true not in line:
@@ -1252,27 +1247,32 @@ def get_auto_search_phrase_state() -> bool | None:
     return None
 
 
-def save_current_packages_as_default(auto_search_phrase_state=None,with_version=True):
+def save_current_packages_as_default(auto_search_phrase_state=None, with_version=True):
     if auto_search_phrase_state is None:
         auto_search_phrase_state = get_auto_search_phrase_state()
 
-    packages=get_current_packages(with_version=with_version)
+    packages = get_current_packages(with_version=with_version)
 
-    with open(default_packages_file_path, "w", encoding="utf-8") as file:
-        file.write(f"{variable_in_default_packages_path_that_triggers_search_if_true} = {auto_search_phrase_state}\n\n")
-        file.writelines(packages)
+    write_file(
+        default_packages_file_path,
+        [
+            f"{variable_in_default_packages_path_that_triggers_search_if_true} = {auto_search_phrase_state}",
+            "",
+            *packages,
+        ],
+    )
 
 
-def get_current_packages(with_version=True):
+def get_installed_packages(exe_path, with_version=True):
     result = subprocess.run(  # noqa
-        [venv_exe_path, "-m", "pip", "--disable-pip-version-check", "freeze"],
+        [exe_path, "-m", "pip", "--disable-pip-version-check", "freeze"],
         capture_output=True,
         text=True,
         check=True,
     )
-    packages_with_version=result.stdout.strip().splitlines()
+    packages_with_version = result.stdout.strip().splitlines()
 
-    if with_version== True:
+    if with_version == True:
         return packages_with_version
     else:
         packages_without_version = []
@@ -1295,27 +1295,33 @@ def get_current_packages(with_version=True):
         return packages_without_version
 
 
+def get_current_packages(with_version=True):
+    return get_installed_packages(exe_path=venv_exe_path, with_version=with_version)
 
-def save_current_packages(output_path=None,with_version=True):
+
+def save_installed_packages(exe_path, output_path=None, with_version=True):
 
     if output_path is None:
         if with_version == True:
-            output_path=determined_current_packages_file_path_withVersion
+            output_path = determined_current_packages_file_path_withVersion
         else:
-            output_path=determined_current_packages_file_path_noVersion
+            output_path = determined_current_packages_file_path_noVersion
     else:
         output_path = os.path.abspath(output_path)
-    
-    packages = get_current_packages(with_version=with_version)
-    
-    with open(output_path, "w", encoding="utf-8") as f:
-        f.write("\n".join(packages) + "\n")
+
+    packages = get_installed_packages(with_version=with_version, exe_path=exe_path)
+
+    write_file(output_path, packages)
 
     return output_path
 
 
+def save_current_packages(output_path=None, with_version=True):
+    return save_installed_packages(output_path=output_path, with_version=with_version, exe_path=venv_exe_path)
+
+
 def save_requirements_of_root_folder_noVersion(
-    output_path=determined_needed_packages_output_file_path,
+    output_path=determined_needed_packages_output_file_path_noVersion,
 ) -> tuple[bool, str]:
     """reuturns success,output_path"""
 
@@ -1350,9 +1356,8 @@ def save_requirements_of_root_folder_noVersion(
             subprocess.run(cmd, check=True)  # noqa
             print("-" * 20)
             print(f'End of finding required python packages. Result: "{output_path}":\n')
-            with open(output_path, encoding="utf-8") as file:
-                contents = file.read()
-            print(contents)
+            packages = read_file(output_path)
+            print(*packages)
             print("=" * 20)
             print()
 
@@ -1368,3 +1373,49 @@ def save_requirements_of_root_folder_noVersion(
         success = False
 
     return success, output_path
+
+
+def save_requirements_of_root_folder_withVersion(
+    output_path: str = determined_needed_packages_output_file_path_withVersion,
+):
+    """returns success bool"""
+
+    import shutil  # lazy import because slow
+    import tempfile  # lazy import because only here
+
+    temp_venv = tempfile.mkdtemp(prefix="pyapp_template_package_pin_")
+    temp_python = temp_venv + "\\Scripts\\python.exe"
+
+    try:
+        output_path = os.path.normpath(os.path.abspath(output_path))
+
+        success, output_path_noVersion = save_requirements_of_root_folder_noVersion()
+
+        if success == False:
+            return False
+
+        ensure_python_distro_and_venv()
+
+        subprocess.run([python_exe_path, "-m", "venv", temp_venv], check=True)  # noqa
+        if not os.path.exists(temp_python):
+            raise RuntimeError(f'Temporary environment did not create "{temp_python}"')
+
+        subprocess.run(  # noqa
+            [temp_python, "-m", "pip", "install", "-r", output_path_noVersion, "--disable-pip-version-check"],
+            check=True,
+        )
+
+        save_installed_packages(exe_path=temp_python, output_path=output_path, with_version=True)
+
+        return True
+
+    except Exception as e:
+        print()
+        print_warn(f"[Error] Failed to auto determine packages: {e}")
+        return False
+
+    finally:
+        shutil.rmtree(temp_venv, ignore_errors=True)
+
+
+# ========================
