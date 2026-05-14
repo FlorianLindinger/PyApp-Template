@@ -947,7 +947,17 @@ input_success("[Program finished successfully] Press Enter to exit.")
             if close_on_python_interpreter_crash:
                 sys.exit(exit_code)
             else:
-                ...  ################### WIP
+                script = f"""
+set_terminal_name(rf"[Crash] {{get_terminal_name()}}")
+print()
+print_warn(rf'[Python Interpreter Crash] Script exited with Windows crash code: "{exit_code}"')
+input_warn("[Python Interpreter Crash] Press Enter to exit.")
+"""
+                if script_has_terminal:
+                    exec(script)  # noqa
+                else:
+                    run_text_in_new_terminal_and_wait(script_base + script)
+                sys.exit(exit_code)
 
         else:  # regular failure case (includes any string exit_code)
             completion_alerts.run("failure", exit_code)
