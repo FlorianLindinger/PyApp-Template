@@ -1,3 +1,4 @@
+from DONT_CHANGE.specific_scripts.common_code import ensure_python_distro_and_venv
 import os
 import subprocess
 import sys
@@ -7,11 +8,11 @@ root_dir = os.path.dirname(__file__) + "\\..\\..\\.."
 if root_dir not in sys.path:
     sys.path.insert(0, root_dir)
 
-from DONT_CHANGE.specific_scripts.common_code import ensure_venv, print_traceback
+from DONT_CHANGE.specific_scripts.common_code import ensure_python_distro_and_venv, print_traceback
 from DONT_CHANGE.specific_scripts.common_variables import venv_dir_path, venv_exe_path
 
 try:
-    ensure_venv()
+    ensure_python_distro_and_venv()
     try:
         subprocess.run(  # noqa
             (

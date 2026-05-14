@@ -7,10 +7,10 @@ root_dir = os.path.dirname(__file__) + "\\..\\..\\.."
 if root_dir not in sys.path:
     sys.path.insert(0, root_dir)
 
-from DONT_CHANGE.specific_scripts.common_code import ensure_venv, input_success, print_traceback
+from DONT_CHANGE.specific_scripts.common_code import ensure_python_distro_and_venv, input_success, print_traceback
 from DONT_CHANGE.specific_scripts.common_variables import venv_exe_path
 
-ensure_venv()
+ensure_python_distro_and_venv()
 
 try:
     subprocess.run([venv_exe_path, "-m", "pip", "install", "pip", "--upgrade", "--disable-pip-version-check"])  # noqa
