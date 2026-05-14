@@ -57,45 +57,56 @@ def input_success(msg):
 
 def print_traceback(message="Error", add_press_enter_to_exit=False) -> None:
     """colored traceback via "rich" package"""
-    import rich.box
-    import rich.console
-    import rich.panel
-    import rich.text
-    import rich.traceback
-
+    
     exc_type, exc_value, tb = sys.exc_info()
-    if exc_type is None or exc_value is None:
-        rich.console.Console().print(
-            "[yellow][Warning] Running print_traceback function without active exception.[/yellow]"
-        )
+    try:
+        import rich.box
+        import rich.console
+        import rich.panel
+        import rich.text
+        import rich.traceback
+
+        
+        if exc_type is None or exc_value is None:
+            rich.console.Console().print(
+                "[yellow][Warning] Running print_traceback function without active exception.[/yellow]"
+            )
+            if add_press_enter_to_exit:
+                rich.console.Console().print("[red]Press enter to exit[/red]")
+        else:
+            panel = rich.panel.Panel(
+                rich.traceback.Traceback.from_exception(
+                    exc_type,
+                    exc_value,
+                    tb,
+                    show_locals=False,
+                ),
+                title=rich.text.Text(message, style="bold red on white"),
+                title_align="left",
+                subtitle=rich.text.Text("Press Enter to exit", style="bold red on white")
+                if add_press_enter_to_exit
+                else None,
+                subtitle_align="left",
+                box=rich.box.HEAVY,
+                border_style="bold red",
+                padding=(1, 2),
+                expand=False,
+            )
+            rich.console.Console().print(panel)
+
+    # fallback
+    except Exception:
+        import traceback
+        print(traceback.print_exception(exc_type, exc_value, tb))
+
+    # close and potetniall prompt before
+    finally:
         if add_press_enter_to_exit:
-            rich.console.Console().print("[red]Press enter to exit[/red]")
-    else:
-        panel = rich.panel.Panel(
-            rich.traceback.Traceback.from_exception(
-                exc_type,
-                exc_value,
-                tb,
-                show_locals=False,
-            ),
-            title=rich.text.Text(message, style="bold red on white"),
-            title_align="left",
-            subtitle=rich.text.Text("Press Enter to exit", style="bold red on white")
-            if add_press_enter_to_exit
-            else None,
-            subtitle_align="left",
-            box=rich.box.HEAVY,
-            border_style="bold red",
-            padding=(1, 2),
-            expand=False,
-        )
-        rich.console.Console().print(panel)
-
-    if add_press_enter_to_exit:
-        input()
+            input()
         close_terminal()
-
-
+        sys.exit(1) # should not be reached after close_terminal()
+                
+        
 # =========================
 # miscellaneous
 
