@@ -3,65 +3,22 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
-make ensure_python_distro
-
-get_installed_packages should be safer for all possible operators
-
-rechekc logic in tools
-
-rechek start script and script wrapper
-
-take a look at total log logic in start_program
-
-conside making it not temmplate
-
-more specfic chekc if shportctus exist by shorctut name:
-. no wait. baý launch mode
-if (
-        enable_log_for_Windows_terminal_start != False
-        or enable_log_for_terminal_emulator_start != False
-        or enable_log_for_browser_start != False
-        or enable_log_for_no_terminal_start != False
-    ) and log_path == "":
-        raise ValueError(
-            f'[Error] log_path_rel_to_start_folder in [False,None,""] in developer settings at "{developer_settings_path}" prevents log creation which is wanted by at least one enable_log_for_*_start setting being True.'
-        )
-
-it does not stay open for start failure? is it most batch safe for any mistake in python scripts?
-
-chekc if something in common code and common_lauincher code is actually not common
-
-wrapper should also rely on common code? or do i leave it fully independent-> common code
-ask ai if somethign is slow in common_code
-but why do i pass so mutch into args if i could importer itself in wrapper. i mean a lot duplicate to other launch mode
-
-probalby merge launcehr common into common. unless seomthing is slwo because dobule slow donwlaode then
-
-test how slow to set icon and app id with print time
-
-instlling rich traceback is slwo? do i want it maybe only in wrapper? no error should usualyl occur in backend and when it occurs i delibertate do traceback
-
-is this correct:
-    elif looks_like_interpreter_crash(exit_code):
-                completion_alerts.run("crash", exit_code)
-                if close_on_python_interpreter_crash:
-                    sys.exit(exit_code)
-                else:
-                    script = f"""
-    set_terminal_name(rf"[Crash] {{get_terminal_name()}}")
-    print()
-    print_warn(rf'[Python Interpreter Crash] Script exited with Windows crash code: "{exit_code}"')
-    input_warn("[Python Interpreter Crash] Press Enter to exit.")
-    """
-                    if script_has_terminal:
-                        exec(script)  # noqa
-                    else:
-                        run_text_in_new_terminal_and_wait(script_base + script)
-                    sys.exit(exit_code)
 
 ================================
 ==== Must do before release ====
 ================================
+
+instlling rich traceback is slwo? do i want it maybe only in wrapper? no error should usualyl occur in backend and when it occurs i delibertate do traceback
+
+test how slow to set icon and app id with print time
+
+make launch faster by not using venv
+
+recheck logic in tools
+
+recheck start script and script wrapper
+
+i guess i want comprehenvsive launcher_common. i have to test if compulation handles that
 
 since print_traceback is now lazy import. do i have fallback?. -> add insdie functiokn
 
@@ -158,9 +115,35 @@ shouild i use set_terminal_icon from wrapper or starter?
 what if i either way need for app id stuff. can i make that simpler?
 do i want a wrapper_common_code? wither way start and wrapper should be fast and no unncecresasy imports
 
+is this correct:
+    elif looks_like_interpreter_crash(exit_code):
+                completion_alerts.run("crash", exit_code)
+                if close_on_python_interpreter_crash:
+                    sys.exit(exit_code)
+                else:
+                    script = f"""
+    set_terminal_name(rf"[Crash] {{get_terminal_name()}}")
+    print()
+    print_warn(rf'[Python Interpreter Crash] Script exited with Windows crash code: "{exit_code}"')
+    input_warn("[Python Interpreter Crash] Press Enter to exit.")
+    """
+                    if script_has_terminal:
+                        exec(script)  # noqa
+                    else:
+                        run_text_in_new_terminal_and_wait(script_base + script)
+                    sys.exit(exit_code)
+
+
 =========================================
 ==== Must do before release (in end) ====
 =========================================
+
+
+ does it not stay open for start failure? is it most batch safe for any mistake in python scripts?
+
+chekc if something in common code and common_lauincher code is actually not common
+
+conside making it not temmplate
 
 ask if i muss seom print_warn soemwher
 
@@ -213,6 +196,11 @@ does anythign nned folder cration or not actually need folder cration?
 ================
 ==== Future ====
 ================
+
+
+maybe have seciotns in the wrapper/terminal/browser scripts that say "common code" insteaf of imoprtign stuff
+
+do i want to raise insteadf of manging closeure somehwer bc outer most handles?
 
 somehjow make it not install default packages during setup of venv
 C:\Users\Flo\Documents\Repositories\PyApp Template\code\DONT_CHANGE\specific_scripts\dev_tools\save_list_of_packages_needed_in_files -withVersion.py
