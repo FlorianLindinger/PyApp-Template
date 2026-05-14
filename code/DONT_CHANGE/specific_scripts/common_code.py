@@ -283,7 +283,7 @@ def _stop_process_tree(pid: int) -> str:
         text=True,
     )
     forced_output = (forced_result.stdout or "").strip()
-    if forced_result.returncode == 0 or wait_until_process_stops(pid, 2.0):
+    if forced_result.returncode == 0 or _wait_until_process_stops(pid, 2.0):
         return "\n".join(output for output in [graceful_output, forced_output] if output)
 
     detail = forced_output or graceful_output
@@ -377,30 +377,17 @@ def stop_processes_from_pid_file(pid_path: str) -> tuple[int, int, list[str]]:
     return stopped_count, stale_count, failed_messages
 
 
-def venv_python_path() -> str:
-    candidates = [
-        venv_exe_path,
-        join_path(venv_dir_path, "portable_Scripts", "python.bat"),
-        join_path(venv_dir_path, "Portable_Scripts", "python.bat"),
-    ]
-    for candidate in candidates:
-        if os.path.exists(candidate):
-            return candidate
-    return candidates[0]
-
-
-def run_venv_python(
+def _run_venv_python(
     *args: object,
     check: bool = True,
     capture_output: bool = False,
     stdout=None,
     stderr=None,
 ) -> subprocess.CompletedProcess[str]:
-    python_bat = venv_python_path()
-    if not os.path.exists(python_bat):
-        raise FileNotFoundError(f'Virtual environment Python not found: "{python_bat}"')
-    return run_command(
-        ["cmd.exe", "/d", "/c", "call", python_bat, *[os.fspath(str(arg)) for arg in args]],
+    if not os.path.exists(venv_exe_path):
+        raise FileNotFoundError(f'Virtual environment Python not found: "{venv_exe_path}"')
+    return _run_command(
+        ["cmd.exe", "/d", "/c", "call", venv_exe_path, *[os.fspath(str(arg)) for arg in args]],
         check=check,
         capture_output=capture_output,
         stdout=stdout,
@@ -408,58 +395,10 @@ def run_venv_python(
     )
 
 
-def load_developer_settings():
-    spec = importlib.util.spec_from_file_location("_pyapp_template_developer_settings", developer_settings_path)
-    if spec is None or spec.loader is None:
-        raise CommonCodeError(f'Could not load developer settings from "{developer_settings_path}"')
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
-
-
-def _python_setup_values(
-    python_version=None,
-    install_tkinter=None,
-    install_tests=None,
-    install_tools=None,
-) -> tuple[str, bool, bool, bool]:
-    settings = None
-    if None in (python_version, install_tkinter, install_tests, install_tools):
-        settings = load_developer_settings()
-
-    if python_version is None:
-        python_version = getattr(settings, "python_version", "")
-    if install_tkinter is None:
-        install_tkinter = getattr(settings, "install_tkinter", True)
-    if install_tests is None:
-        install_tests = getattr(settings, "install_tests", False)
-    if install_tools is None:
-        install_tools = getattr(settings, "install_tools", False)
-
-    if python_version in [None, False]:
-        python_version = ""
-
-    return str(python_version), bool(install_tkinter), bool(install_tests), bool(install_tools)
-
-
-def check_python_version(target_version: str | float | int, exe_path: str = "py") -> bool:
-    """
-    Return whether the Python executable at ``exe_path`` matches ``target_version``.
-
-    Matching is prefix-based on proven version components:
-    - If ``target_version`` is ``"3"``, any Python 3.x matches.
-    - If ``target_version`` is ``"3.13"``, any Python 3.13.x matches.
-    - If ``target_version`` is ``"3.13.2"``, only Python 3.13.2 matches.
-    """
-    if target_version in [None, False, ""]:
-        return True
-
-    if isinstance(target_version, (float, int)):
-        target_version = str(target_version)
-
-    output = subprocess.check_output(  # noqa:S603
+def get_python_version():
+    return subprocess.check_output(  # noqa:S603
         [
-            exe_path,
+            python_exe_path,
             "-c",
             "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}')",
         ],
@@ -467,21 +406,70 @@ def check_python_version(target_version: str | float | int, exe_path: str = "py"
         text=True,
     ).strip()
 
-    actual_parts = output.split(".")
-    target_parts = target_version.strip().split(".")
+
+def is_python_version_compatible(actual_version, required_version):
+
+    actual_parts = actual_version.split(".")
+    required_parts = required_version.strip().split(".")
 
     if (len(actual_parts) != 3) or (any(not part.isdigit() for part in actual_parts)):
-        raise ValueError(f"Could not determine Python version from output: {output}. Expected format like '3.13.2'.")
-
-    if not target_parts or any(not part.isdigit() for part in target_parts):
         raise ValueError(
-            f"Invalid target_version format: {target_version}. Must be a string like '3', '3.13', or '3.13.2'."
+            f"Could not determine Python version from output: {actual_version}. Expected format like '3.13.2'."
         )
 
-    return actual_parts[: len(target_parts)] == target_parts
+    if not required_parts or any(not part.isdigit() for part in required_parts):
+        raise ValueError(
+            f"Invalid target_version format: {required_version}. Must be a string like '3', '3.13', or '3.13.2'."
+        )
+
+    return actual_parts[: len(required_parts)] == required_parts
 
 
-def format_bytes(num_bytes) -> str:
+def read_python_version_from_file():
+
+    if not os.path.exists(python_version_indicator_file_path):
+        print_warn(f'[Error] missing file "{python_version_indicator_file_path}". Using Fallback determination.')
+        return get_python_version()
+
+    try:
+        with open(python_version_indicator_file_path, encoding="utf8") as f:
+            return f.read().strip()
+    except Exception as e:
+        print_warn("[Error] Failed to determine python version from file. Using Fallback determination.")
+        return get_python_version()
+    
+def save_python_version_to_file():
+    
+    current_version = get_python_version()
+    with open(python_version_indicator_file_path,mode="w", encoding="utf8") as f:
+        f.write(current_version)
+
+
+def is_python_version_correct(target_version: str | float | int) -> tuple[bool, str | None]:
+    """
+    Returns whether the Python executable at ``exe_path`` matches ``target_version`` and the actual version:
+        if target_version in [None, False, ""]:
+            return [True,None]
+        else:
+            returns: [match,current_verison]
+
+    Matching is prefix-based on proven version components:
+    - If ``target_version`` is ``"3"``, any Python 3.x matches.
+    - If ``target_version`` is ``"3.13"``, any Python 3.13.x matches.
+    - If ``target_version`` is ``"3.13.2"``, only Python 3.13.2 matches.
+    """
+    if target_version in [None, False, ""]:
+        return (True, None)
+
+    if isinstance(target_version, (float, int)):
+        target_version = str(target_version)
+
+    found_version = read_python_version_from_file()
+
+    return (is_python_version_compatible(found_version, target_version), found_version)
+
+
+def _format_bytes(num_bytes) -> str:
     units = ["B", "KB", "MB", "GB", "TB"]
     size = float(num_bytes)
     for unit in units:
@@ -494,7 +482,7 @@ def format_bytes(num_bytes) -> str:
     return f"{num_bytes} B"
 
 
-def get_folder_size(folder: str | os.PathLike[str]) -> int:
+def _get_folder_size(folder: str | os.PathLike[str]) -> int:
     total = 0
     for root, _dirs, files in os.walk(folder):
         for filename in files:
@@ -505,10 +493,6 @@ def get_folder_size(folder: str | os.PathLike[str]) -> int:
             except (OSError, PermissionError):
                 pass
     return total
-
-
-def is_filesystem_root(path: str) -> bool:
-    return os.path.abspath(path) == os.path.abspath(os.path.join(path, os.pardir))
 
 
 def delete_folder_safe(
@@ -528,7 +512,7 @@ def delete_folder_safe(
         return False
 
     if expected_name is not None and os.path.basename(target_path).lower() != expected_name.lower():
-        raise CommonCodeError(f'Refusing to delete "{target_path}" because its folder name is not "{expected_name}".')
+        raise RuntimeError(f'Refusing to delete "{target_path}" because its folder name is not "{expected_name}".')
 
     if not os.path.exists(base_path):
         raise FileNotFoundError(f"Allowed base does not exist: {base_path}")
@@ -539,7 +523,8 @@ def delete_folder_safe(
     if not os.path.isdir(target_path):
         raise NotADirectoryError(f"Target is not a directory: {target_path}")
 
-    if is_filesystem_root(target_path):
+    # check if file system root
+    if os.path.abspath(target_path) == os.path.abspath(os.path.join(target_path, os.pardir)):
         raise ValueError(f"Refusing to delete filesystem root: {target_path}")
 
     if os.path.normcase(target_path) == os.path.normcase(base_path):
@@ -561,7 +546,7 @@ def delete_folder_safe(
         print()
         print("Folder deletion request:")
         print(f"Folder: {target_path}")
-        print(f"Folder size: {format_bytes(get_folder_size(target_path))}")
+        print(f"Folder size: {_format_bytes(_get_folder_size(target_path))}")
         print()
         answer = input(prompt_message).strip().lower()
         if answer not in {"y", "yes"}:
@@ -571,7 +556,7 @@ def delete_folder_safe(
     print(f'[Info] Deleting "{target_path}"')
     shutil.rmtree(target_path)
     if os.path.exists(target_path):
-        raise CommonCodeError(f'Failed to delete "{target_path}"')
+        raise RuntimeError(f'Failed to delete "{target_path}"')
     return True
 
 
@@ -593,127 +578,620 @@ def delete_python_distro() -> bool:
     )
 
 
-def create_portable_python(
-    python_version=None,
-    install_tkinter=None,
-    install_tests=None,
-    install_tools=None,
-) -> None:
-    python_version, install_tkinter, install_tests, install_tools = _python_setup_values(
-        python_version,
-        install_tkinter,
-        install_tests,
-        install_tools,
-    )
-    run_batch(
+def recreate_python_distro() -> None:
+
+    delete_python_distro()
+
+    _run_batch(
         portable_python_installer_path,
         python_version,
         py_env_dir,
         "1" if install_tkinter else "0",
         "1" if install_tests else "0",
         "1" if install_tools else "0",
-        "0",
+        "0",  # dont install docs
     )
 
     if not os.path.exists(python_exe_path):
-        raise CommonCodeError(f'Portable Python installation did not produce expected file at "{python_exe_path}"')
-
-
-def create_portable_venv() -> None:
-    run_batch(portable_venv_creator_path, py_env_dir, relative_py_env_to_python_dist)
-
-    if not os.path.exists(venv_python_path()):
-        raise CommonCodeError(f'Portable virtual environment creator did not produce "{venv_python_path()}"')
-
-
-def ensure_python_distribution(
-    python_version=None,
-    install_tkinter=None,
-    install_tests=None,
-    install_tools=None,
-    *,
-    reinstall_if_wrong_version=True,
-) -> None:
-    python_version, install_tkinter, install_tests, install_tools = _python_setup_values(
-        python_version,
-        install_tkinter,
-        install_tests,
-        install_tools,
-    )
-
-    if not os.path.exists(python_exe_path):
-        print("\n" * 5)
-        print("[Info] Python distribution not found. Installing portable Python and recreating virtual environment:")
-        delete_python_distro()
-        create_portable_python(python_version, install_tkinter, install_tests, install_tools)
-        delete_venv()
-        return
-
-    if reinstall_if_wrong_version and python_version and not check_python_version(python_version, python_exe_path):
-        print("\n" * 3)
-        print(
-            "Installed Python version does not match target version. "
-            "Reinstalling Python distribution and recreating virtual environment:"
-        )
-        delete_python_distro()
-        create_portable_python(python_version, install_tkinter, install_tests, install_tools)
-        delete_venv()
-
-
-def reinstall_python_distro_if_nonexistent_or_incorrect_version(
-    python_version=None,
-    install_tkinter=None,
-    install_tests=None,
-    install_tools=None,
-) -> None:
-    ensure_python_distribution(python_version, install_tkinter, install_tests, install_tools)
-    if not os.path.exists(venv_python_path()):
-        print("[Info] Virtual environment not found. Creating portable virtual environment:")
-        delete_venv()
-
-
-def recreate_portable_venv(
-    python_version=None,
-    install_tkinter=None,
-    install_tests=None,
-    install_tools=None,
-) -> None:
-    ensure_python_distribution(python_version, install_tkinter, install_tests, install_tools)
-    delete_venv()
-    create_portable_venv()
+        raise RuntimeError(f'Portable Python installation did not produce expected file at "{python_exe_path}"')
+    else:
+        save_python_version_to_file()
 
 
 def recreate_venv() -> None:
-    recreate_portable_venv()
+
+    delete_venv()
+
+    _run_batch(portable_venv_creator_path, py_env_dir, relative_py_env_to_python_dist)
+
+    if not os.path.exists(venv_exe_path):
+        raise RuntimeError(f'Portable virtual environment creator did not produce "{venv_exe_path}"')
 
 
-def ensure_venv(
-    python_version=None,
-    install_tkinter=None,
-    install_tests=None,
-    install_tools=None,
+def prompt_for_distro_reinstall(msg="Reinstall distro / recreate virtual environment?"):
+    """
+    Return int in prints below for cases in print:
+        print("0. Leave current Python version and venv")
+        print("1. Change Python version + Recreate venv with default packages")
+        print("2. Change Python version + Recreate venv without packages")
+        print("3. Change Python version + Recreate venv with current packages")
+        print("4. Change Python version + Recreate venv with current packages + set them default")
+        print("5. Change Python version + Recreate venv with auto-determined needed packages")
+        print("6. Change Python version + Recreate venv with auto-determined needed packages + set them default")
+    """
+    print_warn(msg)
+    print()
+    print_warn("0. Leave current Python version and venv")
+    print_warn("1. Change Python version + Recreate venv with default packages")
+    print_warn("2. Change Python version + Recreate venv without packages")
+    print_warn("3. Change Python version + Recreate venv with current packages")
+    print_warn("4. Change Python version + Recreate venv with current packages + set them default")
+    print_warn("5. Change Python version + Recreate venv with auto-determined needed packages")
+    print_warn("6. Change Python version + Recreate venv with auto-determined needed packages + set them default")
+
+    while True:
+        choice = input_warn("Choose an option [1-6]: ").strip()
+
+        if choice in {"0", "1", "2", "3", "4", "5", "6"}:
+            return int(choice)
+
+        print_warn("Invalid choice. Please enter 0, 1, 2, 3, 4, 5, or 6.")
+
+
+def set_terminal_icon(window_title: str, icon_path: str) -> int:
+    """Best-effort update of the current Windows terminal icon using ctypes only."""
+    if icon_path == "":
+        return 0
+
+    normalized_icon_path = os.path.abspath(os.path.expanduser(icon_path))
+    if not os.path.isfile(normalized_icon_path):
+        return 0
+
+    try:
+        import ctypes
+        import time
+        import uuid
+        from ctypes import wintypes
+
+        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        user32 = ctypes.WinDLL("user32", use_last_error=True)
+
+        kernel32.GetConsoleWindow.restype = wintypes.HWND
+        kernel32.GetConsoleTitleW.argtypes = [wintypes.LPWSTR, wintypes.DWORD]
+        kernel32.GetConsoleTitleW.restype = wintypes.DWORD
+        kernel32.SetConsoleTitleW.argtypes = [wintypes.LPCWSTR]
+        kernel32.SetConsoleTitleW.restype = wintypes.BOOL
+
+        user32.FindWindowW.argtypes = [wintypes.LPCWSTR, wintypes.LPCWSTR]
+        user32.FindWindowW.restype = wintypes.HWND
+        lparam_type = getattr(wintypes, "LPARAM", ctypes.c_ssize_t)
+        enum_windows_proc = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, lparam_type)
+        user32.EnumWindows.argtypes = [enum_windows_proc, lparam_type]
+        user32.EnumWindows.restype = wintypes.BOOL
+        user32.GetAncestor.argtypes = [wintypes.HWND, ctypes.c_uint]
+        user32.GetAncestor.restype = wintypes.HWND
+        user32.GetSystemMetrics.argtypes = [ctypes.c_int]
+        user32.GetSystemMetrics.restype = ctypes.c_int
+        user32.GetWindowTextLengthW.argtypes = [wintypes.HWND]
+        user32.GetWindowTextLengthW.restype = ctypes.c_int
+        user32.GetWindowTextW.argtypes = [wintypes.HWND, wintypes.LPWSTR, ctypes.c_int]
+        user32.GetWindowTextW.restype = ctypes.c_int
+        user32.IsWindow.argtypes = [wintypes.HWND]
+        user32.IsWindow.restype = wintypes.BOOL
+        user32.LoadImageW.argtypes = [
+            wintypes.HINSTANCE,
+            wintypes.LPCWSTR,
+            ctypes.c_uint,
+            ctypes.c_int,
+            ctypes.c_int,
+            ctypes.c_uint,
+        ]
+        user32.LoadImageW.restype = wintypes.HANDLE
+        user32.SendMessageW.argtypes = [wintypes.HWND, ctypes.c_uint, ctypes.c_size_t, ctypes.c_size_t]
+        user32.SendMessageW.restype = ctypes.c_size_t
+        user32.SetWindowPos.argtypes = [
+            wintypes.HWND,
+            wintypes.HWND,
+            ctypes.c_int,
+            ctypes.c_int,
+            ctypes.c_int,
+            ctypes.c_int,
+            ctypes.c_uint,
+        ]
+        user32.SetWindowPos.restype = wintypes.BOOL
+
+        WM_SETICON = 0x0080
+        ICON_SMALL = 0
+        ICON_BIG = 1
+        IMAGE_ICON = 1
+        LR_LOADFROMFILE = 0x0010
+        LR_DEFAULTSIZE = 0x0040
+        SM_CXSMICON = 49
+        SM_CYSMICON = 50
+        SM_CXICON = 11
+        SM_CYICON = 12
+        GA_ROOTOWNER = 3
+        SWP_NOMOVE = 0x0002
+        SWP_NOSIZE = 0x0001
+        SWP_NOZORDER = 0x0004
+        SWP_NOACTIVATE = 0x0010
+        SWP_FRAMECHANGED = 0x0020
+
+        def get_console_title() -> str:
+            buffer = ctypes.create_unicode_buffer(1024)
+            title_length = kernel32.GetConsoleTitleW(buffer, len(buffer))
+            return buffer.value if title_length else ""
+
+        original_title = get_console_title()
+        final_title = window_title or original_title
+        marker_title = f"PyAppTemplate-{os.getpid()}-{uuid.uuid4().hex}"
+
+        def add_candidate(candidates: list[int], hwnd: int) -> None:
+            if hwnd and user32.IsWindow(hwnd) and hwnd not in candidates:
+                candidates.append(int(hwnd))  # type:ignore
+
+        def add_with_root(candidates: list[int], hwnd: int) -> None:
+            add_candidate(candidates, hwnd)
+            if hwnd:
+                add_candidate(candidates, int(user32.GetAncestor(hwnd, GA_ROOTOWNER) or 0))
+
+        def get_window_text(hwnd: int) -> str:
+            text_length = user32.GetWindowTextLengthW(hwnd)
+            if text_length <= 0:
+                return ""
+            buffer = ctypes.create_unicode_buffer(text_length + 1)
+            user32.GetWindowTextW(hwnd, buffer, len(buffer))
+            return buffer.value
+
+        def find_windows_by_exact_title(title: str) -> list[int]:
+            matching_hwnds: list[int] = []
+            if title == "":
+                return matching_hwnds
+
+            hwnd = int(user32.FindWindowW("ConsoleWindowClass", title) or 0)
+            add_with_root(matching_hwnds, hwnd)
+            hwnd = int(user32.FindWindowW(None, title) or 0)
+            add_with_root(matching_hwnds, hwnd)
+            return matching_hwnds
+
+        def find_windows_by_title_fragment(title: str) -> list[int]:
+            matching_hwnds: list[int] = []
+            if title == "":
+                return matching_hwnds
+
+            def enum_proc(hwnd: int, _lparam: int) -> bool:
+                try:
+                    if title in get_window_text(hwnd):
+                        add_with_root(matching_hwnds, int(hwnd))  # type:ignore
+                except Exception:
+                    pass
+                return True
+
+            callback = enum_windows_proc(enum_proc)
+            user32.EnumWindows(callback, 0)
+            return matching_hwnds
+
+        candidates: list[int] = []
+        console_hwnd = int(kernel32.GetConsoleWindow() or 0)
+        add_with_root(candidates, console_hwnd)
+
+        try:
+            kernel32.SetConsoleTitleW(marker_title)
+            time.sleep(0.05)
+            for hwnd in find_windows_by_exact_title(marker_title):
+                add_with_root(candidates, hwnd)
+            for hwnd in find_windows_by_title_fragment(marker_title):
+                add_with_root(candidates, hwnd)
+        finally:
+            kernel32.SetConsoleTitleW(final_title)
+
+        def load_icon(width: int, height: int) -> int:
+            icon = user32.LoadImageW(None, normalized_icon_path, IMAGE_ICON, width, height, LR_LOADFROMFILE)
+            if not icon:
+                icon = user32.LoadImageW(None, normalized_icon_path, IMAGE_ICON, 0, 0, LR_LOADFROMFILE | LR_DEFAULTSIZE)
+            return int(icon or 0)
+
+        small_icon = load_icon(
+            user32.GetSystemMetrics(SM_CXSMICON),
+            user32.GetSystemMetrics(SM_CYSMICON),
+        )
+        large_icon = load_icon(
+            user32.GetSystemMetrics(SM_CXICON),
+            user32.GetSystemMetrics(SM_CYICON),
+        )
+        if small_icon == 0 and large_icon == 0:
+            return 0
+
+        changed_count = 0
+        for hwnd in candidates:
+            if small_icon:
+                user32.SendMessageW(hwnd, WM_SETICON, ICON_SMALL, small_icon)
+            if large_icon:
+                user32.SendMessageW(hwnd, WM_SETICON, ICON_BIG, large_icon)
+            user32.SetWindowPos(
+                hwnd,
+                None,
+                0,
+                0,
+                0,
+                0,
+                SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED,
+            )
+            changed_count += 1
+
+        return changed_count
+    except Exception:
+        return 0
+
+
+def set_terminal_name(name: str) -> None:
+    try:
+        clean_name = name.replace("\r\n", "").replace("\r", "")
+        os.system(f"title {clean_name}")  # noqa:S605
+    except Exception:
+        pass
+
+
+def set_terminal_icon_once():
+    global ICON_WAS_SET
+    if ICON_WAS_SET == False:
+        set_terminal_name(program_name)
+        set_terminal_icon(program_name, icon_path)
+        ICON_WAS_SET = True
+
+
+def set_app_id_once(app_id: str):
+    global APP_ID_IS_SET
+    if APP_ID_IS_SET == False:
+        set_terminal_app_id_safe(app_id)
+        APP_ID_IS_SET = True
+
+
+def _get_candidate_hwnds() -> list[int]:
+    import ctypes
+
+    kernel32_DLL = ctypes.WinDLL("kernel32", use_last_error=True)  # type:ignore
+    user32_DLL = ctypes.WinDLL("user32", use_last_error=True)
+
+    candidate_hwnds: list[int] = []
+
+    def add(hwnd: int) -> None:
+        if hwnd == 0 or not user32_DLL.IsWindow(hwnd) or hwnd in candidate_hwnds:
+            return
+        candidate_hwnds.append(hwnd)
+
+    console_hwnd = int(kernel32_DLL.GetConsoleWindow() or 0)
+
+    def get_console_title() -> str:
+        buffer = ctypes.create_unicode_buffer(1024)
+        title_length = kernel32_DLL.GetConsoleTitleW(buffer, len(buffer))
+        if title_length == 0:
+            return ""
+        return buffer.value
+
+    def get_root_owner(hwnd: int) -> int:
+        GA_ROOTOWNER = 3
+        if hwnd == 0:
+            return 0
+        return int(user32_DLL.GetAncestor(hwnd, GA_ROOTOWNER) or 0)
+
+    console_title = get_console_title()
+
+    add(console_hwnd)
+    add(get_root_owner(console_hwnd))
+
+    if console_title:
+        hwnd_by_console_class = int(user32_DLL.FindWindowW("ConsoleWindowClass", console_title) or 0)
+        add(hwnd_by_console_class)
+        add(get_root_owner(hwnd_by_console_class))
+
+        hwnd_by_title = int(user32_DLL.FindWindowW(None, console_title) or 0)
+        add(hwnd_by_title)
+        add(get_root_owner(hwnd_by_title))
+
+    return candidate_hwnds
+
+
+def _helper_refresh_nonclient_area(hwnd: int) -> None:
+    import ctypes
+
+    user32_DLL = ctypes.WinDLL("user32", use_last_error=True)
+
+    SWP_NOMOVE = 0x0002
+    SWP_NOSIZE = 0x0001
+    SWP_NOZORDER = 0x0004
+    SWP_NOACTIVATE = 0x0010
+    SWP_FRAMECHANGED = 0x0020
+
+    user32_DLL.SetWindowPos(
+        hwnd,
+        None,
+        0,
+        0,
+        0,
+        0,
+        SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED,
+    )
+
+
+def set_terminal_app_id_safe(app_id: str) -> int:
+    """Try to set System.AppUserModel.ID on the terminal window itself."""
+    import ctypes
+    from ctypes import wintypes
+
+    candidate_hwnds = _get_candidate_hwnds()
+
+    import uuid
+
+    if app_id == "":
+        return 0
+
+    HRESULT = ctypes.c_long
+    VT_LPWSTR = 31
+    S_OK = 0
+    S_FALSE = 1
+    RPC_E_CHANGED_MODE = 0x80010106
+
+    class GUID(ctypes.Structure):
+        _fields_ = [
+            ("Data1", ctypes.c_ulong),
+            ("Data2", ctypes.c_ushort),
+            ("Data3", ctypes.c_ushort),
+            ("Data4", ctypes.c_ubyte * 8),
+        ]
+
+    class PROPERTYKEY(ctypes.Structure):
+        _fields_ = [("fmtid", GUID), ("pid", wintypes.DWORD)]
+
+    class PROPVARIANT(ctypes.Structure):
+        _fields_ = [
+            ("vt", ctypes.c_ushort),
+            ("wReserved1", ctypes.c_ushort),
+            ("wReserved2", ctypes.c_ushort),
+            ("wReserved3", ctypes.c_ushort),
+            ("pwszVal", ctypes.c_wchar_p),
+        ]
+
+    class IPropertyStore(ctypes.Structure):
+        pass
+
+    IPropertyStorePtr = ctypes.POINTER(IPropertyStore)
+
+    class IPropertyStoreVtbl(ctypes.Structure):
+        _fields_ = [
+            (
+                "QueryInterface",
+                ctypes.WINFUNCTYPE(
+                    HRESULT,
+                    IPropertyStorePtr,
+                    ctypes.POINTER(GUID),
+                    ctypes.POINTER(ctypes.c_void_p),
+                ),
+            ),
+            ("AddRef", ctypes.WINFUNCTYPE(ctypes.c_ulong, IPropertyStorePtr)),
+            ("Release", ctypes.WINFUNCTYPE(ctypes.c_ulong, IPropertyStorePtr)),
+            ("GetCount", ctypes.WINFUNCTYPE(HRESULT, IPropertyStorePtr, ctypes.POINTER(wintypes.DWORD))),
+            (
+                "GetAt",
+                ctypes.WINFUNCTYPE(
+                    HRESULT,
+                    IPropertyStorePtr,
+                    wintypes.DWORD,
+                    ctypes.POINTER(PROPERTYKEY),
+                ),
+            ),
+            (
+                "GetValue",
+                ctypes.WINFUNCTYPE(
+                    HRESULT,
+                    IPropertyStorePtr,
+                    ctypes.POINTER(PROPERTYKEY),
+                    ctypes.POINTER(PROPVARIANT),
+                ),
+            ),
+            (
+                "SetValue",
+                ctypes.WINFUNCTYPE(
+                    HRESULT,
+                    IPropertyStorePtr,
+                    ctypes.POINTER(PROPERTYKEY),
+                    ctypes.POINTER(PROPVARIANT),
+                ),
+            ),
+            ("Commit", ctypes.WINFUNCTYPE(HRESULT, IPropertyStorePtr)),
+        ]
+
+    IPropertyStore._fields_ = [("lpVtbl", ctypes.POINTER(IPropertyStoreVtbl))]
+
+    def make_guid(value: str) -> GUID:
+        parsed = uuid.UUID(value)
+        return GUID(
+            parsed.time_low,
+            parsed.time_mid,
+            parsed.time_hi_version,
+            (ctypes.c_ubyte * 8)(*parsed.bytes[8:]),
+        )
+
+    def format_hresult(hr: int) -> str:
+        code = hr & 0xFFFFFFFF
+        try:
+            message = ctypes.FormatError(code).strip()
+        except Exception:
+            message = "unknown error"
+        return f"0x{code:08X}: {message}"
+
+    def check_hresult(hr: int, action: str) -> None:
+        if hr < 0:
+            raise OSError(f"{action} failed with HRESULT {format_hresult(hr)}")
+
+    shell32 = ctypes.WinDLL("shell32", use_last_error=True)
+    ole32 = ctypes.WinDLL("ole32", use_last_error=True)
+
+    shell32.SHGetPropertyStoreForWindow.argtypes = [
+        wintypes.HWND,
+        ctypes.POINTER(GUID),
+        ctypes.POINTER(IPropertyStorePtr),
+    ]
+    shell32.SHGetPropertyStoreForWindow.restype = HRESULT
+
+    ole32.CoInitialize.argtypes = [ctypes.c_void_p]
+    ole32.CoInitialize.restype = HRESULT
+    ole32.CoUninitialize.argtypes = []
+    ole32.CoUninitialize.restype = None
+
+    iid_property_store = make_guid("886D8EEB-8CF2-4446-8D02-CDBA1DBDCF99")
+    pkey_app_user_model_id = PROPERTYKEY(
+        make_guid("9F4C2855-9F79-4B39-A8D0-E1D42DE1D5F3"),
+        5,
+    )
+    prop_var = PROPVARIANT()
+    prop_var.vt = VT_LPWSTR
+    prop_var.pwszVal = app_id
+
+    coinitialize_result = ole32.CoInitialize(None)
+    should_uninitialize = coinitialize_result in {S_OK, S_FALSE}
+    if coinitialize_result < 0 and (coinitialize_result & 0xFFFFFFFF) != RPC_E_CHANGED_MODE:
+        raise OSError(f"CoInitialize failed with HRESULT {format_hresult(coinitialize_result)}")
+
+    changed_count = 0
+    try:
+        for hwnd in candidate_hwnds:
+            try:
+                property_store = IPropertyStorePtr()
+                hr = shell32.SHGetPropertyStoreForWindow(
+                    wintypes.HWND(hwnd),
+                    ctypes.byref(iid_property_store),
+                    ctypes.byref(property_store),
+                )
+                check_hresult(hr, f"SHGetPropertyStoreForWindow for hwnd 0x{hwnd:016X}")
+
+                try:
+                    hr = property_store.contents.lpVtbl.contents.SetValue(
+                        property_store,
+                        ctypes.byref(pkey_app_user_model_id),
+                        ctypes.byref(prop_var),
+                    )
+                    check_hresult(hr, f"SetValue System.AppUserModel.ID for hwnd 0x{hwnd:016X}")
+
+                    hr = property_store.contents.lpVtbl.contents.Commit(property_store)
+                    check_hresult(hr, f"Commit System.AppUserModel.ID for hwnd 0x{hwnd:016X}")
+
+                    _helper_refresh_nonclient_area(hwnd)
+                    changed_count += 1
+                finally:
+                    if property_store:
+                        property_store.contents.lpVtbl.contents.Release(property_store)
+            except Exception as error:
+                print(f"[Info] AppID update skipped for hwnd 0x{hwnd:016X}: {error}")
+    finally:
+        if should_uninitialize:
+            ole32.CoUninitialize()
+
+    return changed_count
+
+
+def ensure_python_distro_and_venv(
+    check_auto_determine_flag_for_default_package_install=True, set_icon_for_slow=False, app_id_for_slow=None
 ) -> None:
-    ensure_python_distribution(python_version, install_tkinter, install_tests, install_tools)
-    if not os.path.exists(venv_python_path()):
-        delete_venv()
-        create_portable_venv()
+
+    if app_id_for_slow in [None, False]:
+        app_id_for_slow = ""
+
+    if not os.path.exists(python_exe_path):  # new python distro case:
+        if set_icon_for_slow:
+            set_terminal_icon_once()
+        if app_id_for_slow != "":
+            set_app_id_once(app_id_for_slow)
+        print("\n" * 5)
+        print("[Info] Python distribution not found. Installing portable Python:")
+        recreate_python_distro()
+        recreate_venv()
+        install_default_packages(check_auto_determine_flag=check_auto_determine_flag_for_default_package_install)
+    else:  # alread existing python distro case:
+        if python_version not in ["", None]:
+            matching, actual_version = is_python_version_correct(python_version)
+        else:
+            matching = True
+
+        if matching == True:  # right python version case:
+            if get_auto_search_phrase_state() == True:
+                if set_icon_for_slow:
+                    set_terminal_icon_once()
+                if app_id_for_slow != "":
+                    set_app_id_once(app_id_for_slow)
+                print(
+                    f'[Info] Found flag "{variable_in_default_packages_path_that_triggers_search_if_true} = True" in default packages file "{default_packages_file_path}"'
+                )
+                print(
+                    "--> Auto determine needed packages and install them in recreated venv and set them as new defaults if success."
+                )
+                success, p = save_requirements_of_root_folder_noVersion()
+                if success == True:
+                    install_packages_from_file(p)
+                    save_current_packages_as_default(auto_search_phrase_state=False)
+                else:
+                    print("[Warning] Failed to auto determine needed packages (see above).")
+
+        else:  # wrong python version case:
+            answer = prompt_for_distro_reinstall(
+                f"[Warning] Python version in settings ({python_version}) is not matching the current one ({actual_version}). Please enter how to proceed:"  # type:ignore
+            )
+
+            if answer == 0:
+                return
+            elif answer in [1, 2, 3, 4, 5]:
+                if set_icon_for_slow:
+                    set_terminal_icon_once()
+                if app_id_for_slow != "":
+                    set_app_id_once(app_id_for_slow)
+                recreate_python_distro()
+                if answer == 1:
+                    recreate_venv()
+                    install_default_packages(
+                        check_auto_determine_flag=check_auto_determine_flag_for_default_package_install
+                    )
+                elif answer == 2:
+                    recreate_venv()
+                elif answer in [3, 4]:
+                    p = save_current_packages_noVersion()
+                    recreate_venv()
+                    install_packages_from_file(p)
+                    if answer == 4:
+                        save_current_packages_as_default()
+                elif answer in [5, 6]:
+                    recreate_venv()
+                    success, p = save_requirements_of_root_folder_noVersion()
+                    if success == True:
+                        install_packages_from_file(p)
+                        if answer == 6:
+                            save_current_packages_as_default()
+                    else:
+                        print(
+                            "[Warning] Failed to auto determine needed packages (see above). Installing default packages instead:"
+                        )
+                        install_default_packages(check_auto_determine_flag=False)
+            else:
+                raise ValueError(f"Invalid answer: {answer}")
 
 
-def has_installable_requirements(path: str) -> bool:
-    for line in read_text(path).splitlines():
-        stripped = line.strip()
-        if stripped and not stripped.startswith("#"):
-            return True
-    return False
+def python_distro_exists() -> bool:
+    return os.path.exists(python_exe_path)
 
 
-def install_requirements(path: str, *, upgrade: bool = True, no_cache: bool = True) -> None:
+def install_packages_from_file(path: str, *, upgrade: bool = True, no_cache: bool = True) -> None:
     if not os.path.exists(path):
         raise FileNotFoundError(f'Package list not found: "{path}"')
 
     print()
     print(f'[Info] Package list: "{path}"')
-    if not has_installable_requirements(path):
+
+    with open(path, encoding="utf-8") as file:
+        lines = file.readlines()
+    for line in lines:
+        stripped = line.strip()
+        if stripped and not stripped.startswith("#"):
+            break
+    else:
         print("[Info] No packages to install.")
         return
 
@@ -722,18 +1200,40 @@ def install_requirements(path: str, *, upgrade: bool = True, no_cache: bool = Tr
         command.append("--upgrade")
     if no_cache:
         command.append("--no-cache-dir")
-    run_venv_python(*command)
+    _run_venv_python(*command)
 
 
-def install_packages(path: str) -> None:
-    install_requirements(path, upgrade=False, no_cache=False)
+def install_default_packages(check_auto_determine_flag=True):
+
+    if check_auto_determine_flag == True:
+        if get_auto_search_phrase_state() == True:
+            print(
+                f'[Info] Found flag "{variable_in_default_packages_path_that_triggers_search_if_true} = True" in default packages file "{default_packages_file_path}"'
+            )
+            print(
+                "--> Auto determine needed packages and install them in recreated venv and set them as new defaults if success."
+            )
+
+            success, p = save_requirements_of_root_folder_noVersion()
+
+            if success:
+                install_packages_from_file(p)
+                save_current_packages_as_default(auto_search_phrase_state=False)
+            else:
+                print_warn("[Error] Failed to auto determine required Python packages.")
+                input_warn("Aborting. Press enter to exit")
+
+    install_packages_from_file(default_packages_file_path)
 
 
-def read_search_phrase_state() -> bool | None:
+def get_auto_search_phrase_state() -> bool | None:
     if not os.path.exists(default_packages_file_path):
         return None
 
-    for line in read_text(default_packages_file_path).splitlines():
+    with open(default_packages_file_path, encoding="utf-8") as file:
+        lines = file.readlines()
+
+    for line in lines:
         if variable_in_default_packages_path_that_triggers_search_if_true not in line:
             continue
         value = (
@@ -751,56 +1251,17 @@ def read_search_phrase_state() -> bool | None:
     return None
 
 
-def read_default_auto_find_state() -> bool:
-    return read_search_phrase_state() is True
-
-
-def get_freeze_lines() -> list[str]:
-    ensure_venv()
-    result = run_venv_python(
-        "-m",
-        "pip",
-        "--disable-pip-version-check",
-        "freeze",
-        "--local",
-        capture_output=True,
-    )
-    return [line.strip() for line in result.stdout.splitlines() if line.strip() and not line.startswith("#")]
-
-
-def write_lines(path: str, lines: Iterable[str], *, header: Iterable[str] = ()) -> None:
-    path = abs_norm(path)
-    ensure_parent(path)
-    if os.path.exists(path):
-        print(f'[Warning] Overwriting "{path}"')
-
-    normalized_lines = [line.rstrip() for line in lines if line.strip()]
-    content_lines = [line.rstrip() for line in header if line.strip()]
-    content_lines.extend(sorted(dict.fromkeys(normalized_lines), key=str.lower))
-
-    write_text(path, "\n".join(content_lines) + ("\n" if content_lines else ""))
-    print(f'[Success] Wrote "{path}"')
-
-
-def write_default_packages(lines: Iterable[str]) -> None:
-    state = read_default_auto_find_state()
-    write_lines(
-        default_packages_file_path,
-        lines,
-        header=[f"{variable_in_default_packages_path_that_triggers_search_if_true} = {state}"],
-    )
-
-
-def save_current_packages_as_default(search_phrase_state=None):
-    if search_phrase_state is None:
-        search_phrase_state = read_search_phrase_state()
+def save_current_packages_as_default(auto_search_phrase_state=None):
+    if auto_search_phrase_state is None:
+        auto_search_phrase_state = get_auto_search_phrase_state()
 
     with open(default_packages_file_path, "w", encoding="utf-8") as file:
-        file.write(f"{variable_in_default_packages_path_that_triggers_search_if_true} = {search_phrase_state}\n\n")
+        file.write(f"{variable_in_default_packages_path_that_triggers_search_if_true} = {auto_search_phrase_state}\n\n")
         file.flush()
-        run_venv_python(
+        _run_venv_python(
             "-m",
             "pip",
+            "--disable-pip-version-check",
             "freeze",
             "--local",
             stdout=file,
@@ -808,36 +1269,127 @@ def save_current_packages_as_default(search_phrase_state=None):
         )
 
 
-def save_requirements_of_root_folder_noVersion(output_path):
-    searched_folder = python_scripts_dir
-    excluded_folders = excluded_folders_for_package_search
+def get_current_packages_withVersion():
 
-    cmd = [
-        sys.executable,
-        "-m",
-        "pipreqs.pipreqs",
-        searched_folder,
-        "--force",
-        "--savepath",
-        output_path,
-        "--ignore",
-        ",".join(excluded_folders),
-        "--encoding",
-        "utf-8",
-        "--mode",
-        "no-pin",
-        "--no-follow-links",
-    ]
+    result = subprocess.run(  # noqa
+        [venv_exe_path, "-m", "pip", "--disable-pip-version-check", "freeze"],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
 
-    print()
-    print("=" * 20)
-    print("Start of finding required python packages")
-    print("-" * 20)
-    subprocess.run(cmd, check=True)  # noqa
-    print("-" * 20)
-    print(f'End of finding required python packages. Result: "{output_path}":\n')
-    with open(output_path, encoding="utf-8") as file:
-        contents = file.read()
-    print(contents)
-    print("=" * 20)
-    print()
+    requirements = result.stdout.strip()
+
+    return requirements.splitlines()
+
+
+def save_current_packages_withVersion(output_path=determined_current_packages_file_path_withVersion):
+    """
+    Run pip freeze using the given Python executable and write packages with versions.
+    """
+    output_path = os.path.abspath(output_path)
+
+    packages = get_current_packages_withVersion()
+
+    with open(output_path, "w", encoding="utf-8") as f:
+        f.write("\n".join(packages) + "\n")
+
+    return output_path
+
+
+def get_current_packages_noVersion():
+    result = subprocess.run(  # noqa
+        [venv_exe_path, "-m", "pip", "--disable-pip-version-check", "freeze"],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+
+    packages = []
+
+    for line in result.stdout.splitlines():
+        line = line.strip()
+
+        if not line:
+            continue
+
+        if "==" in line:
+            packages.append(line.split("==", 1)[0])
+        elif " @ " in line:
+            packages.append(line.split(" @ ", 1)[0])
+        elif line.startswith("-e "):
+            packages.append(line)
+        else:
+            packages.append(line)
+
+    return packages
+
+
+def save_current_packages_noVersion(output_path=determined_current_packages_file_path_noVersion):
+    """
+    Run pip freeze using the given Python executable and write package names only.
+    """
+    output_path = os.path.abspath(output_path)
+
+    packages = get_current_packages_noVersion()
+
+    with open(output_path, "w", encoding="utf-8") as f:
+        f.write("\n".join(packages) + "\n")
+
+    return output_path
+
+
+def save_requirements_of_root_folder_noVersion(
+    output_path=determined_needed_packages_output_file_path,
+) -> tuple[bool, str]:
+    """reuturns success,output_path"""
+
+    output_path = os.path.abspath(output_path)
+
+    if os.path.exists(output_path):
+        os.remove(output_path)
+
+    try:
+        cmd = [
+            sys.executable,
+            "-m",
+            "pipreqs.pipreqs",
+            python_scripts_dir,  # searched_folder,
+            "--force",
+            "--savepath",
+            output_path,
+            "--ignore",
+            ",".join(excluded_folders_for_package_search),  # excluded_folders
+            "--encoding",
+            "utf-8",
+            "--mode",
+            "no-pin",
+            "--no-follow-links",
+        ]
+
+        if os.path.exists(output_path):
+            print()
+            print("=" * 20)
+            print("Start of finding required python packages")
+            print("-" * 20)
+            subprocess.run(cmd, check=True)  # noqa
+            print("-" * 20)
+            print(f'End of finding required python packages. Result: "{output_path}":\n')
+            with open(output_path, encoding="utf-8") as file:
+                contents = file.read()
+            print(contents)
+            print("=" * 20)
+            print()
+
+            success = True
+
+        else:
+            success = False
+            print()
+            print_warn("[Error] Failed to auto determine needed packages (see above)")
+    except Exception as e:
+        print()
+        print_warn(f"[Error] Failed to auto determine packages (do you have internet?): {e}")
+        success = False
+
+    return success, output_path
