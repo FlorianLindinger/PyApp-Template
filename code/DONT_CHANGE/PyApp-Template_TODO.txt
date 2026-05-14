@@ -3,19 +3,17 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
-move browser_terminal to own folder
+make ensure_python_distro
 
-mnove startup_benchmark_marker.py?
+get_installed_packages should be safer for all possible operators
 
 rechekc logic in tools
 
-rechek  start script and script wrapper
+rechek start script and script wrapper
 
 take a look at total log logic in start_program
 
 conside making it not temmplate
-
-change terminaol icon before venv setup. hm is it faster if i allow pywin32 usage. if fast enough maybe always do?
 
 more specfic chekc if shportctus exist by shorctut name:
 . no wait. baý launch mode
@@ -42,6 +40,24 @@ probalby merge launcehr common into common. unless seomthing is slwo because dob
 test how slow to set icon and app id with print time
 
 instlling rich traceback is slwo? do i want it maybe only in wrapper? no error should usualyl occur in backend and when it occurs i delibertate do traceback
+
+is this correct:
+    elif looks_like_interpreter_crash(exit_code):
+                completion_alerts.run("crash", exit_code)
+                if close_on_python_interpreter_crash:
+                    sys.exit(exit_code)
+                else:
+                    script = f"""
+    set_terminal_name(rf"[Crash] {{get_terminal_name()}}")
+    print()
+    print_warn(rf'[Python Interpreter Crash] Script exited with Windows crash code: "{exit_code}"')
+    input_warn("[Python Interpreter Crash] Press Enter to exit.")
+    """
+                    if script_has_terminal:
+                        exec(script)  # noqa
+                    else:
+                        run_text_in_new_terminal_and_wait(script_base + script)
+                    sys.exit(exit_code)
 
 ================================
 ==== Must do before release ====
@@ -146,8 +162,6 @@ do i want a wrapper_common_code? wither way start and wrapper should be fast and
 ==== Must do before release (in end) ====
 =========================================
 
-
-
 ask if i muss seom print_warn soemwher
 
 test all starters
@@ -182,10 +196,11 @@ ask for spelling mistakes
 
 ask it to double chec ensuer_venv
 
-
 make all file accesses try except that are used in normal start
 
 crate a wrapper launch cost scrtipt
+
+does anythign nned folder cration or not actually need folder cration?
 
 
 
@@ -198,6 +213,12 @@ crate a wrapper launch cost scrtipt
 ================
 ==== Future ====
 ================
+
+somehjow make it not install default packages during setup of venv
+C:\Users\Flo\Documents\Repositories\PyApp Template\code\DONT_CHANGE\specific_scripts\dev_tools\save_list_of_packages_needed_in_files -withVersion.py
+
+
+renaed stuff in common code wiht _ before if only local used
 
 maybe readd readlines;writelines
 

@@ -13,7 +13,7 @@ from DONT_CHANGE.specific_scripts.common_code import (
     recreate_venv,
 )
 from DONT_CHANGE.specific_scripts.common_variables import (
-    determined_needed_packages_output_file_path,
+    determined_needed_packages_output_file_path_noVersion,
     excluded_folders_for_package_search,
     python_scripts_dir,
 )
@@ -22,7 +22,7 @@ from DONT_CHANGE.specific_scripts.dev_tools.dev_tools_common_code import (
 )
 
 try:
-    path = determined_needed_packages_output_file_path
+    path = determined_needed_packages_output_file_path_noVersion
     save_required_packages(
         path,
         with_versions=False,
