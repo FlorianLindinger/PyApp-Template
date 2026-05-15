@@ -16,17 +16,14 @@ from DONT_CHANGE.specific_scripts.common_variables import (
     determined_needed_packages_output_file_path_withVersion,
     excluded_folders_for_package_search,
     icon_path,
+    packages_dir,
     portable_python_installer_path,
-    portable_venv_creator_path,
     py_env_dir,
     python_dist_path,
     python_exe_path,
     python_scripts_dir,
     python_version_indicator_file_path,
-    rel_path_py_env_to_python_dist,
     variable_in_default_packages_path_that_triggers_search_if_true,
-    venv_dir_path,
-    venv_exe_path,
 )
 
 # =========================
@@ -35,24 +32,24 @@ from DONT_CHANGE.specific_scripts.common_variables import (
 _ICON_WAS_SET = False
 _APP_ID_IS_SET = False
 
-ANSI_WARN = "\x1b[1;37;41m"  # white text, red bg, bold
-ANSI_SUCCESS = "\x1b[1;37;42m"  # white text, green bg, bold
-ANSI_RESET = "\033[0m"
+_ANSI_WARN = "\x1b[1;37;41m"  # white text, red bg, bold
+_ANSI_SUCCESS = "\x1b[1;37;42m"  # white text, green bg, bold
+_ANSI_RESET = "\033[0m"
 
 # =========================
 # colored print and input and general print related
 
 
 def print_warn(msg, sep: str | None = " ", end: str | None = "\n"):
-    print(f"{ANSI_WARN}{msg}{ANSI_RESET}", sep=sep, end=end)
+    print(f"{_ANSI_WARN}{msg}{_ANSI_RESET}", sep=sep, end=end)
 
 
 def input_warn(msg):
-    return input(f"{ANSI_WARN}{msg}{ANSI_RESET}")
+    return input(f"{_ANSI_WARN}{msg}{_ANSI_RESET}")
 
 
 def input_success(msg):
-    return input(f"{ANSI_SUCCESS}{msg}{ANSI_RESET}")
+    return input(f"{_ANSI_SUCCESS}{msg}{_ANSI_RESET}")
 
 
 def print_traceback(message="Error", add_press_enter_to_exit=False) -> None:
@@ -613,10 +610,58 @@ def close_terminal() -> bool:
 # path related
 
 
-def make_abs_path_relative_to_file(path: str, file: str) -> str:
+def make_abs_path_relative_to_file(path, file):
+    """makes a path absolute if relative with respect to the file (as if the file defined it)"""
     if not os.path.isabs(path):
         return os.path.normpath(os.path.dirname(file) + "\\" + path)
-    return path
+    else:
+        return path
+
+
+def sanitize_filename(filename, replacement="_"):
+    import re
+
+    # 1. Characters illegal in Windows: < > : " / \ | ? *
+    # Also handles control characters (0-31)
+    illegal_chars = r'[<>:"/\\|?*\x00-\x1f]'
+    filename = re.sub(illegal_chars, replacement, filename)
+    # 2. Windows reserved filenames (CON, PRN, AUX, NUL, COM1-9, LPT1-9)
+    # These cannot be filenames even with an extension (e.g., CON.txt is bad)
+    reserved_names = {
+        "CON",
+        "PRN",
+        "AUX",
+        "NUL",
+        "COM1",
+        "COM2",
+        "COM3",
+        "COM4",
+        "COM5",
+        "COM6",
+        "COM7",
+        "COM8",
+        "COM9",
+        "LPT1",
+        "LPT2",
+        "LPT3",
+        "LPT4",
+        "LPT5",
+        "LPT6",
+        "LPT7",
+        "LPT8",
+        "LPT9",
+    }
+    # Check the "stem" (name before the dot)
+    base_name = os.path.splitext(filename)[0].upper()
+    if base_name in reserved_names:
+        filename = f"{replacement}{filename}"
+    # 3. Strip trailing dots and spaces (Windows ignores/removes these)
+    filename = filename.rstrip(". ")
+    # 4. Enforce length limit (255 characters for the filename itself)
+    if len(filename) > 255:
+        filename = filename[:255]
+    # 5. Handle empty strings (if sanitization removed everything)
+    return filename if filename else "unnamed_file"
 
 
 # =========================
@@ -990,30 +1035,40 @@ def is_python_version_correct(target_version: str | float | int) -> tuple[bool, 
 
 
 # =========================
-# python/venv setup
+# python setup
 
 
-def delete_venv() -> bool:
-    return delete_folder_safe(
-        venv_dir_path,
+def delete_packages():
+    """return success"""
+    success = delete_folder_safe(
+        packages_dir,
         prompt_for_confirmation=False,
-        allowed_base=python_scripts_dir,
-        expected_name=os.path.basename(venv_dir_path),
+        allowed_base=py_env_dir,
     )
+    if success == False:
+        raise RuntimeError("[Error] Folder deletion failed. Aborting")
+    else:
+        os.mkdir(python_dist_path)
 
 
-def delete_python_distro() -> bool:
-    return delete_folder_safe(
+def delete_python_distro():
+    """return success"""
+    success = delete_folder_safe(
         python_dist_path,
         prompt_for_confirmation=False,
-        allowed_base=python_scripts_dir,
-        expected_name=os.path.basename(python_dist_path),
+        allowed_base=py_env_dir,
     )
+    if success == False:
+        raise RuntimeError("[Error] Folder deletion failed. Aborting")
+    else:
+        os.mkdir(python_dist_path)
 
 
 def recreate_python_distro() -> None:
 
     delete_python_distro()
+
+    rel_path_dist_to_packages = os.path.relpath(python_dist_path, packages_dir).replace("\\", "/")
 
     subprocess.run(  # noqa
         [
@@ -1028,6 +1083,7 @@ def recreate_python_distro() -> None:
             "1" if install_tests else "0",
             "1" if install_tools else "0",
             "0",  # dont install docs
+            rel_path_dist_to_packages,
         ],
         check=True,
     )
@@ -1038,39 +1094,26 @@ def recreate_python_distro() -> None:
         save_python_version_to_file()
 
 
-def recreate_venv() -> None:
-
-    delete_venv()
-
-    subprocess.run(  # noqa
-        ["cmd.exe", "/d", "/c", "call", portable_venv_creator_path, py_env_dir, rel_path_py_env_to_python_dist],
-        check=True,
-    )
-
-    if not os.path.exists(venv_exe_path):
-        raise RuntimeError(f'Portable virtual environment creator did not produce "{venv_exe_path}"')
-
-
 def prompt_for_distro_reinstall(msg="Reinstall distro / recreate virtual environment?"):
     """
     Return int in prints below for cases in print:
-        print("0. Leave current Python version and venv")
-        print("1. Change Python version + Recreate venv with default packages")
-        print("2. Change Python version + Recreate venv without packages")
-        print("3. Change Python version + Recreate venv with current packages")
-        print("4. Change Python version + Recreate venv with current packages + set them default")
-        print("5. Change Python version + Recreate venv with auto-determined needed packages")
-        print("6. Change Python version + Recreate venv with auto-determined needed packages + set them default")
+        print("0: Leave current Python version and packages")
+        print("1: Change Python version + Reset packages + Reinstall default packages")
+        print("2: Change Python version + Reset packages + Don't install packages")
+        print("3: Change Python version + Reset packages + Reinstall current packages")
+        print("4: Change Python version + Reset packages + Reinstall current packages + set them default")
+        print("5: Change Python version + Reset packages + Install auto-determined needed packages")
+        print("6: Change Python version + Reset packages + Install auto-determined needed packages + set them default")
     """
     print_warn(msg)
     print()
-    print_warn("0. Leave current Python version and venv")
-    print_warn("1. Change Python version + Recreate venv with default packages")
-    print_warn("2. Change Python version + Recreate venv without packages")
-    print_warn("3. Change Python version + Recreate venv with current packages")
-    print_warn("4. Change Python version + Recreate venv with current packages + set them default")
-    print_warn("5. Change Python version + Recreate venv with auto-determined needed packages")
-    print_warn("6. Change Python version + Recreate venv with auto-determined needed packages + set them default")
+    print_warn("0: Leave current Python version and packages")
+    print_warn("1: Change Python version + Reset packages + Reinstall default packages")
+    print_warn("2: Change Python version + Reset packages + Don't install packages")
+    print_warn("3: Change Python version + Reset packages + Reinstall current packages")
+    print_warn("4: Change Python version + Reset packages + Reinstall current packages + set them default")
+    print_warn("5: Change Python version + Reset packages + Install auto-determined needed packages")
+    print_warn("6: Change Python version + Reset packages + Install auto-determined needed packages + set them default")
 
     while True:
         choice = input_warn("Choose an option [1-6]: ").strip()
@@ -1081,7 +1124,7 @@ def prompt_for_distro_reinstall(msg="Reinstall distro / recreate virtual environ
         print_warn("Invalid choice. Please enter 0, 1, 2, 3, 4, 5, or 6.")
 
 
-def ensure_python_distro_and_venv(
+def ensure_python_distro(
     check_auto_determine_flag_for_default_package_install=True, set_icon_for_slow=False, app_id_for_slow=None
 ) -> None:
 
@@ -1096,7 +1139,7 @@ def ensure_python_distro_and_venv(
         print("\n" * 5)
         print("[Info] Python distribution not found. Installing portable Python:")
         recreate_python_distro()
-        recreate_venv()
+        delete_packages()
         install_default_packages(check_auto_determine_flag=check_auto_determine_flag_for_default_package_install)
 
     else:  # alread existing python distro case:
@@ -1115,7 +1158,7 @@ def ensure_python_distro_and_venv(
                     f'[Info] Found flag "{variable_in_default_packages_path_that_triggers_search_if_true} = True" in default packages file "{default_packages_file_path}"'
                 )
                 print(
-                    "--> Auto determine needed packages and install them in recreated venv and set them as new defaults if success."
+                    "--> Auto determine needed packages & reset installed packages to them & set them as new defaults if success."
                 )
                 success, p = save_requirements_of_root_folder_noVersion()
                 if success == True:
@@ -1138,20 +1181,20 @@ def ensure_python_distro_and_venv(
                     set_app_id_once(app_id_for_slow)
                 recreate_python_distro()
                 if answer == 1:
-                    recreate_venv()
+                    delete_packages()
                     install_default_packages(
                         check_auto_determine_flag=check_auto_determine_flag_for_default_package_install
                     )
                 elif answer == 2:
-                    recreate_venv()
+                    delete_packages()
                 elif answer in [3, 4]:
                     p = save_current_packages(with_version=False)
-                    recreate_venv()
+                    delete_packages()
                     install_packages_from_file(p)
                     if answer == 4:
                         save_current_packages_as_default()
                 elif answer in [5, 6]:
-                    recreate_venv()
+                    delete_packages()
                     success, p = save_requirements_of_root_folder_noVersion()
                     if success == True:
                         install_packages_from_file(p)
@@ -1170,7 +1213,7 @@ def ensure_python_distro_and_venv(
 # package related
 
 
-def install_packages_from_file(path: str, *, upgrade: bool = True, no_cache: bool = True) -> None:
+def install_packages_from_file(path: str, no_cache: bool = True) -> None:
     if not os.path.exists(path):
         raise FileNotFoundError(f'Package list not found: "{path}"')
 
@@ -1186,29 +1229,25 @@ def install_packages_from_file(path: str, *, upgrade: bool = True, no_cache: boo
         print("[Info] No packages to install.")
         return
 
-    extra_commands: list[str] = []
-    if upgrade:
-        extra_commands.append("--upgrade")
+    args = [
+        "cmd.exe",
+        "/d",
+        "/c",
+        "call",
+        python_exe_path,
+        "-m",
+        "pip",
+        "install",
+        "-r",
+        path,
+        "--target",
+        packages_dir,
+        "--disable-pip-version-check",
+        "--upgrade",
+    ]
     if no_cache:
-        extra_commands.append("--no-cache-dir")
-
-    subprocess.run(  # noqa
-        [
-            "cmd.exe",
-            "/d",
-            "/c",
-            "call",
-            venv_exe_path,
-            "-m",
-            "pip",
-            "install",
-            "-r",
-            path,
-            "--disable-pip-version-check",
-            *extra_commands,
-        ],
-        check=True,
-    )
+        args.append("--no-cache-dir")
+    subprocess.run(args, check=True)  # noqa
 
 
 def install_default_packages(check_auto_determine_flag=True):
@@ -1219,7 +1258,7 @@ def install_default_packages(check_auto_determine_flag=True):
                 f'[Info] Found flag "{variable_in_default_packages_path_that_triggers_search_if_true} = True" in default packages file "{default_packages_file_path}"'
             )
             print(
-                "--> Auto determine needed packages and install them in recreated venv and set them as new defaults if success."
+                "--> Auto determine needed packages & reset installed packages to them & set them as new defaults if success."
             )
 
             success, p = save_requirements_of_root_folder_noVersion()
@@ -1305,7 +1344,7 @@ def get_installed_packages(exe_path, with_version=True):
 
 
 def get_current_packages(with_version=True):
-    return get_installed_packages(exe_path=venv_exe_path, with_version=with_version)
+    return get_installed_packages(exe_path=python_exe_path, with_version=with_version)
 
 
 def save_installed_packages(exe_path, output_path=None, with_version=True):
@@ -1326,7 +1365,7 @@ def save_installed_packages(exe_path, output_path=None, with_version=True):
 
 
 def save_current_packages(output_path=None, with_version=True):
-    return save_installed_packages(output_path=output_path, with_version=with_version, exe_path=venv_exe_path)
+    return save_installed_packages(output_path=output_path, with_version=with_version, exe_path=python_exe_path)
 
 
 def save_requirements_of_root_folder_noVersion(
@@ -1403,7 +1442,7 @@ def save_requirements_of_root_folder_withVersion(
         if success == False:
             return False
 
-        ensure_python_distro_and_venv()
+        ensure_python_distro()
 
         subprocess.run([python_exe_path, "-m", "venv", temp_venv], check=True)  # noqa
         if not os.path.exists(temp_python):

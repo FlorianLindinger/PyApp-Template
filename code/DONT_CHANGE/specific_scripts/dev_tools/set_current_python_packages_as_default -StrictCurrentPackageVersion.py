@@ -1,4 +1,3 @@
-from DONT_CHANGE.specific_scripts.common_code import save_current_packages_as_default
 import os
 import sys
 

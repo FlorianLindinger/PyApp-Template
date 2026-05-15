@@ -7,14 +7,33 @@ root_dir = os.path.dirname(__file__) + "\\..\\..\\.."
 if root_dir not in sys.path:
     sys.path.insert(0, root_dir)
 
-from DONT_CHANGE.specific_scripts.common_code import ensure_python_distro_and_venv, input_success, print_traceback
-from DONT_CHANGE.specific_scripts.common_variables import venv_exe_path
+from DONT_CHANGE.specific_scripts.common_code import (
+    ensure_python_distro,
+    input_success,
+    print_traceback,
+    save_current_packages,
+)
+from DONT_CHANGE.specific_scripts.common_variables import packages_dir, python_exe_path
 
-ensure_python_distro_and_venv()
+ensure_python_distro()
 
 try:
-    subprocess.run([venv_exe_path, "-m", "pip", "install", "pip", "--upgrade", "--disable-pip-version-check"])  # noqa
-    subprocess.run([venv_exe_path, "-m", "pip", "install", "--upgrade", "--disable-pip-version-check"])  # noqa
+    path = save_current_packages(with_version=False)
+
+    subprocess.run([python_exe_path, "-m", "pip", "install", "pip", "--upgrade", "--disable-pip-version-check"])  # noqa
+    subprocess.run(  # noqa
+        [
+            python_exe_path,
+            "-m",
+            "pip",
+            "install",
+            path,
+            "--target",
+            packages_dir,
+            "--upgrade",
+            "--disable-pip-version-check",
+        ]
+    )
     print()
     input_success("[Success] Press enter to exit")
 except Exception as e:

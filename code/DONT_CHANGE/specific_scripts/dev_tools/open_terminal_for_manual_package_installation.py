@@ -1,4 +1,3 @@
-from DONT_CHANGE.specific_scripts.common_code import ensure_python_distro_and_venv
 import os
 import subprocess
 import sys
@@ -8,15 +7,20 @@ root_dir = os.path.dirname(__file__) + "\\..\\..\\.."
 if root_dir not in sys.path:
     sys.path.insert(0, root_dir)
 
-from DONT_CHANGE.specific_scripts.common_code import ensure_python_distro_and_venv, print_traceback
-from DONT_CHANGE.specific_scripts.common_variables import venv_dir_path, venv_exe_path
+from DONT_CHANGE.specific_scripts.common_code import ensure_python_distro, print_traceback
+from DONT_CHANGE.specific_scripts.common_variables import (
+    python_exe_path,
+    script_for_set_python_and_pip_target,
+)
 
 try:
-    ensure_python_distro_and_venv()
+    ensure_python_distro()
+
+    # upgrade pip
     try:
         subprocess.run(  # noqa
             (
-                venv_exe_path,
+                python_exe_path,
                 "-m",
                 "pip",
                 "install",
@@ -30,13 +34,11 @@ try:
     except subprocess.CalledProcessError:
         print("[Warning] pip upgrade failed. Opening the terminal anyway.")
 
-    activate_bat = venv_dir_path + "\\Scripts\\activate.bat"
-
     print('Install packages with "pip install package_name"')
     print()
 
     subprocess.run(  # noqa
-        f'cmd /k "call "{activate_bat}""',
+        ["cmd", "/k", "call", script_for_set_python_and_pip_target],
         shell=True,
     )
 except Exception as e:

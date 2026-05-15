@@ -7,7 +7,7 @@ if root_dir not in sys.path:
     sys.path.insert(0, root_dir)
 
 from DONT_CHANGE.specific_scripts.common_code import (
-    ensure_python_distro_and_venv,
+    ensure_python_distro,
     input_success,
     install_packages_from_file,
     print_traceback,
@@ -16,7 +16,7 @@ from DONT_CHANGE.specific_scripts.common_variables import developer_tools_dir
 
 try:
     path = developer_tools_dir + "\\requirements.txt"
-    ensure_python_distro_and_venv()
+    ensure_python_distro()
     install_packages_from_file(path)
     print()
     input_success("[Success] Press enter to exit")
