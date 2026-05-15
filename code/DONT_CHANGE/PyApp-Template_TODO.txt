@@ -9,13 +9,25 @@ open_terminal_with_set_python_and_pip_target.bat
 
 fix all backend tools
 
-fix dev tools sgottctu paths
+fix changed dev tools sgottctu paths
 
 waht does quote_cmd_argument
+
+do i want wt.exe? color customizaiton? i can open the terminal with title alredy btw.
+colorSchemes
+# problem iwth chekci immediate crash wit cmd /c insteaf of pytrhgon.exe ...
+do i want conhost.exe soemwhere else?
+make setting
+soemhow fix black line in temrinal
+
+have colors for setup cmds?
+do they wanrt titles
 
 ================================
 ==== Must do before release ====
 ================================
+
+have time.sleep(0.8) depend on launch mode?
 
 recheck logic in tools
 
