@@ -5,6 +5,8 @@ def make_abs(x: str) -> str:
     return os.path.normpath(os.path.dirname(os.path.normpath(__file__)) + "\\" + x)
 
 
+windows_dir = os.environ.get("WINDIR", default="C:\\Windows")
+
 # ========================
 # === define variables ===
 # ========================
@@ -17,9 +19,8 @@ developer_tools_dir = make_abs("..\\..\\developer_tools")
 DONT_CHANGE_dir = make_abs("..")
 backend_packages_dir = make_abs("..\\..\\python_packages")
 shortcut_output_dir = make_abs("..\\..\\..")
-python_dist_path = py_env_dir + "\\py_dist"
-windows_dir = os.environ.get("WINDIR", default="C:\\Windows")
 packages_dir = py_env_dir + "\\packages"
+python_dist_path = py_env_dir + "\\py_dist"
 
 # scripts
 # ------------------------
@@ -35,6 +36,7 @@ launcher_settings = make_abs("..\\S.bat")
 launcher_browser = make_abs("..\\B.bat")
 launcher_no_terminal = make_abs("..\\N.bat")
 launcher_stop = make_abs("..\\Q.bat")
+script_for_set_python_and_pip_target = python_dist_path + "\\tools\\open_terminal_with_set_python_and_pip_target.bat"
 
 # files
 # ------------------------
@@ -44,6 +46,10 @@ settings_icon_path = make_abs("..\\..\\icons\\settings.ico")
 stop_icon_path = make_abs("..\\..\\icons\\stop.ico")
 process_id_file_path = make_abs("..\\..\\..\\currently_running.pid")
 default_packages_file_path = make_abs("..\\..\\developer_tools\\!DEFAULT_PYHON_PACKAGES.txt")
+python_version_indicator_file_path = developer_tools_dir + "\\current_python_version.txt"
+play_sound_on_crash_default = windows_dir + "\\Media\\Windows Critical Stop.wav"
+play_sound_on_failure_default = windows_dir + "\\Media\\Windows Critical Stop.wav"
+play_sound_on_success_default = windows_dir + "\\Media\\notify.wav"
 determined_current_packages_file_path_withVersion = make_abs(
     developer_tools_dir + "\\determined_current_packages_withVersion.txt"
 )
@@ -56,10 +62,6 @@ determined_needed_packages_output_file_path_noVersion = make_abs(
 determined_needed_packages_output_file_path_withVersion = make_abs(
     developer_tools_dir + "\\auto_found_required_packages_withVersion.txt"
 )
-python_version_indicator_file_path = developer_tools_dir + "\\current_python_version.txt"
-play_sound_on_crash_default = windows_dir + "\\Media\\Windows Critical Stop.wav"
-play_sound_on_failure_default = windows_dir + "\\Media\\Windows Critical Stop.wav"
-play_sound_on_success_default = windows_dir + "\\Media\\notify.wav"
 
 # variables
 # ------------------------
@@ -79,9 +81,8 @@ variable_in_default_packages_path_that_triggers_search_if_true = (
 )
 
 # =============================
-# === process the variables ===
+# === derived/less-flexible variables ===
 # =============================
 
 developer_settings_dir = os.path.dirname(developer_settings_path)
 python_exe_path = os.path.normpath(python_dist_path + "\\python.exe")
-script_for_set_python_and_pip_target = python_dist_path + "\\tools\\open_terminal_with_set_python_and_pip_target.bat"
