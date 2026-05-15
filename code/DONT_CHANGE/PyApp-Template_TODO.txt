@@ -17,22 +17,15 @@ waht does quote_cmd_argument
 ==== Must do before release ====
 ================================
 
-sort common variables more
-
 recheck logic in tools
 
 recheck start script and script wrapper
-
 
 somehow make startup time test not requier chafgnees in main_code
 
 instlling rich traceback is slwo? do i want it maybe only in wrapper? no error should usualyl occur in backend and when it occurs i delibertate do traceback
 
 test how slow to set icon and app id with print time
-
-make launch faster by not using venv
-
-do i still want msi thing. does winget able to install locally. look at my git requests
 
 test open_log_file_after_success
 
@@ -97,18 +90,12 @@ is use_global_python used everywhere and als ohandles iof modeule not present?
 
 cehck for fail of install_packages_from_file and hadnle error
 
-
-chekc "--disable-pip-version-check", everyhwerhe
+ask if "--disable-pip-version-check", everyhwerhe
 
 
 when do i want no cache or no upgrade for pip sintall
 
-
-remove _run_command and similar
-
-sort common_code
-
-do some scripts want  ensure_python_distro_and_venv?
+do some scripts want  ensure_python_distro?
 
 shouild i use set_terminal_icon from wrapper or starter?
 what if i either way need for app id stuff. can i make that simpler?
@@ -196,6 +183,9 @@ ask if i can use more input succes/warn
 ================
 ==== Future ====
 ================
+
+sort common variables more
+
 
 checkl if stuff in baclend debug tools should be in common code
 
