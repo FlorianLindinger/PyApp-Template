@@ -2,12 +2,13 @@
 :: Installs portable full-version (aka. not embeddable-version) Python (version <py_ver>) at path "<target_dir>\py_dist" with control what subparts get installed (see Usage below). Should work for Python version 3.6-3.14 and likely later versions. Probably needs user to be admin to install.
 ::
 :: Usage:
-:: create_portable_python.bat <py_ver> "<target_dir>" <install_tkinter> <install_tests> <install_tools> <install_docs>
+:: create_portable_python.bat <py_ver> "<target_dir>" <install_tkinter> <install_tests> <install_tools> <install_docs> <rel_path_from_target_dir_to_packages>
 :: 
 :: Args (all optional):
 :: <py_ver>: It picks the most modern python version by default the matches None/x/x.y/x.y.z defined python version.
 :: <target_dir>: If not defined it generates in the file folder. It always names the generated python folder py_dist in the <target_dir>.
 :: <install_tkinter>/<install_tests>/<install_tools>/<install_docs>: Can be 1/0 for install/no-install of that python sub components. Default 1/1/1/0
+:: <pip_for_package_folder_path> tells python where to search for packages additionally.
 ::
 :: Note:
 :: For python 3.11+ the download of for example "python-3.11.0-amd64.zip" is an alternative to the .msi files download from the amd64 folder. Downside is no control over what gets downloaded and installed.
@@ -26,6 +27,7 @@ set "install_tkinter=%~3"
 set "install_tests=%~4"
 set "install_tools=%~5"
 set "install_docs=%~6"
+set "rel_path_to_packages=%~7"
 
 :: set default values
 if "%install_tkinter%"=="" (
@@ -62,6 +64,10 @@ CALL :set_abs_path "%TARGET_DIR%" "TARGET_DIR"
 :: add "py_dist" for delete safety
 set "PYTHON_FOLDER=%TARGET_DIR%\py_dist"
 set "DOWNLOAD_FOLDER=%temp%\tmp_python_installation_files"
+set "path_to_packages_file_path=%PYTHON_FOLDER%\Lib\site-packages\path_to_packages.pth"
+if not "%rel_path_to_packages%==" (
+  set "rel_path_to_packages=../../../%rel_path_to_packages%"
+)
 
 :: find available python full version compatible with specified input and installation method via amd64 folders and .msi files
 set "FULL_VER="
@@ -179,11 +185,11 @@ if not exist "%PYTHON_FOLDER%\python.exe" (
 )
 
 :: verify functioning python.exe
-CALL "%PYTHON_FOLDER%\python.exe" -V > Nul || (
-  echo [Error] Python not runnable (see above^). Aborting. Press any key to exit.
-  PAUSE > NUL
-  EXIT /B 5
-)
+@REM CALL "%PYTHON_FOLDER%\python.exe" -V > Nul || (
+@REM   echo [Error] Python not runnable (see above^). Aborting. Press any key to exit.
+@REM   PAUSE > NUL
+@REM   EXIT /B 5
+@REM )
 
 :: add a settings file for pip to avoid warning for portable python not being in a folder mentioned in system variable PATH
 > "%PYTHON_FOLDER%\pip.ini" (
@@ -218,6 +224,11 @@ if errorlevel 1 (
     echo [Error] Python's pip not sucessfully installed (see above^). Aborting. Press any key to exit.
     PAUSE > NUL
     EXIT /B 8
+)
+
+:: create a file that tells python the path to the packages
+if not "%rel_path_to_packages%==" (
+  echo %rel_path_to_packages% > "%path_to_packages_file_path%"
 )
 
 :: print success and exit

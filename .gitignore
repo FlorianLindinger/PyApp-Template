@@ -14,12 +14,14 @@ log*.txt
 # temporary id files for no-terminal start:
 *.pid
 # generated portable Python environment:
-code/py_env/
+/code/py_env/
+# whitelist indicator file:
+!/code/py_env/USE developer_tools FOLDER (IN PARENT FOLDER) TO CHANGE PACKAGES
 # output files of developer tools:
-code/developer_tools/*.txt
+/code/developer_tools/*.txt
 # whitelist specific files in developer tools folder:
-!code/developer_tools/_README.txt
-!code/developer_tools/!DEFAULT_PYHON_PACKAGES.txt
+!/code/developer_tools/_README.txt
+!/code/developer_tools/!DEFAULT_PYHON_PACKAGES.txt
 # ===================================================
 
 # =============================

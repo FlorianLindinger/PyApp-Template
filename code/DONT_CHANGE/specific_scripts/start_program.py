@@ -66,7 +66,7 @@ try:
     )
     from DONT_CHANGE.specific_scripts.common_code import (
         close_terminal,
-        ensure_python_distro_and_venv,
+        ensure_python_distro,
         get_running_processes_from_pid_file,
         print_traceback,
         stop_processes_from_pid_file,
@@ -83,9 +83,9 @@ try:
         play_sound_on_success_default,
         process_id_file_path,
         python_code_path,
+        python_exe_path,
         script_wrapper_path,
         uncompiled_terminal_path,
-        venv_exe_path,
         windows_dir,
     )
 
@@ -120,7 +120,7 @@ try:
     if use_global_python == True:
         python_exe_for_script_path = "py"
     else:
-        python_exe_for_script_path = venv_exe_path
+        python_exe_for_script_path = python_exe_path
 
     if start_in_shortcut_folder == True:
         wdir_is_script_dir = False
@@ -146,7 +146,7 @@ try:
         stylesheet_path = ""
     else:
         if not os.path.isabs(stylesheet_path):
-            stylesheet_path = developer_settings_dir + "\\" + stylesheet_path
+            stylesheet_path = os.path.normpath(developer_settings_dir + "\\" + stylesheet_path)
 
     if python_version in [None, False]:
         python_version = ""
@@ -216,10 +216,10 @@ try:
 
     def main() -> None:
         global log_path
-        
+
         # =============================
         # get args
-        
+
         if len(sys.argv) >= 3:
             app_id = sys.argv[1]
             launch_mode = sys.argv[2]
@@ -229,7 +229,7 @@ try:
         else:
             app_id = ""
             launch_mode = "terminal"
-            
+
         # =============================
         # process args
 
@@ -283,10 +283,10 @@ try:
                 print(f"[Info] Closed {stopped_count} existing program instance(s).")
 
         # ======================
-        # setup venv
+        # setup python
 
         if use_global_python == False:
-            ensure_python_distro_and_venv(set_icon_for_slow=True, app_id_for_slow=app_id)
+            ensure_python_distro(set_icon_for_slow=True, app_id_for_slow=app_id)
 
         # ======================
         # launch terminal

@@ -6,10 +6,10 @@ root_dir = os.path.dirname(__file__) + "\\..\\..\\.."
 if root_dir not in sys.path:
     sys.path.insert(0, root_dir)
 
-from DONT_CHANGE.specific_scripts.common_code import input_success, print_traceback, recreate_venv
+from DONT_CHANGE.specific_scripts.common_code import delete_packages, input_success, print_traceback
 
 try:
-    recreate_venv()
+    delete_packages()
     print()
     input_success("[Success] Press enter to exit")
 except Exception as e:
