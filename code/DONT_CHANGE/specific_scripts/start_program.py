@@ -171,7 +171,7 @@ try:
         play_sound_on_crash = os.path.normpath(windows_dir + "\\Media\\" + play_sound_on_crash)
     if play_sound_on_crash != "" and play_sound_on_crash[-4:] != ".wav":
         play_sound_on_crash += ".wav"
-    if not os.path.exists(play_sound_on_crash):
+    if play_sound_on_crash != "" and not os.path.exists(play_sound_on_crash):
         print(f"[Warning] Sound file does not exist: {play_sound_on_crash}")
     if play_sound_on_success is True:
         play_sound_on_success = play_sound_on_success_default
@@ -181,7 +181,7 @@ try:
         play_sound_on_success = os.path.normpath(windows_dir + "\\Media\\" + play_sound_on_success)
     if play_sound_on_success != "" and play_sound_on_success[-4:] != ".wav":
         play_sound_on_success += ".wav"
-    if not os.path.exists(play_sound_on_success):
+    if play_sound_on_success != "" and not os.path.exists(play_sound_on_success):
         print(f"[Warning] Sound file does not exist: {play_sound_on_success}")
     if play_sound_on_failure is True:
         play_sound_on_failure = play_sound_on_failure_default
@@ -191,7 +191,7 @@ try:
         play_sound_on_failure = os.path.normpath(windows_dir + "\\Media\\" + play_sound_on_failure)
     if play_sound_on_failure != "" and play_sound_on_failure[-4:] != ".wav":
         play_sound_on_failure += ".wav"
-    if not os.path.exists(play_sound_on_failure):
+    if play_sound_on_failure != "" and not os.path.exists(play_sound_on_failure):
         print(f"[Warning] Sound file does not exist: {play_sound_on_failure}")
 
     # =============================
@@ -408,7 +408,15 @@ try:
 
             if launch_mode == "terminal":  # run in terminal and don't wait
                 proc = subprocess.Popen(  # noqa:S603 #type:ignore
-                    [python_exe_for_script_path, "-X", "faulthandler", script_wrapper_path, script_path, *args],
+                    [
+                        "conhost.exe",
+                        python_exe_for_script_path,
+                        "-X",
+                        "faulthandler",
+                        script_wrapper_path,
+                        script_path,
+                        *args,
+                    ],
                     creationflags=subprocess.CREATE_NEW_CONSOLE,
                     startupinfo=generate_minimized_startupinfo(),
                 )
@@ -437,7 +445,6 @@ try:
                 print(child_output.rstrip())
                 print("-" * 20)
             input("[Error (see above)] Press enter to exit.")
-            os._exit(error_code)
 
         close_terminal()
 

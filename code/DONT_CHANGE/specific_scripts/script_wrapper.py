@@ -116,13 +116,6 @@ try:
     def input_success(msg):
         return input(f"{ANSI_SUCCESS}{msg}{ANSI_RESET}")
 
-    def set_terminal_name(name: str) -> None:
-        try:
-            clean_name = name.replace("\r\n", "").replace("\r", "")
-            os.system(f"title {clean_name}")  # noqa:S605
-        except Exception:
-            pass
-
     def run_text_in_new_terminal_and_wait(text):
         import subprocess
         import sys
@@ -134,16 +127,16 @@ try:
     if script_has_terminal:
         from ctypes import wintypes
 
-        kernel32_DLL = ctypes.WinDLL("kernel32", use_last_error=True) #type:ignore
+        kernel32_DLL = ctypes.WinDLL("kernel32", use_last_error=True)  # type:ignore
         user32_DLL = ctypes.WinDLL("user32", use_last_error=True)
-        
+
         def _helper_refresh_nonclient_area(hwnd: int) -> None:
             SWP_NOMOVE = 0x0002
             SWP_NOSIZE = 0x0001
             SWP_NOZORDER = 0x0004
             SWP_NOACTIVATE = 0x0010
             SWP_FRAMECHANGED = 0x0020
-            
+
             user32_DLL.SetWindowPos(
                 hwnd,
                 None,
@@ -169,7 +162,7 @@ try:
                     user32_DLL.ShowWindow(hwnd, 2)
             except Exception:
                 pass
-            
+
         def get_candidate_hwnds() -> list[int]:
             candidate_hwnds: list[int] = []
 
@@ -179,19 +172,20 @@ try:
                 candidate_hwnds.append(hwnd)
 
             console_hwnd = int(kernel32_DLL.GetConsoleWindow() or 0)
-            
+
             def get_console_title() -> str:
                 buffer = ctypes.create_unicode_buffer(1024)
                 title_length = kernel32_DLL.GetConsoleTitleW(buffer, len(buffer))
                 if title_length == 0:
                     return ""
                 return buffer.value
+
             def get_root_owner(hwnd: int) -> int:
                 GA_ROOTOWNER = 3
                 if hwnd == 0:
                     return 0
                 return int(user32_DLL.GetAncestor(hwnd, GA_ROOTOWNER) or 0)
-            
+
             console_title = get_console_title()
 
             add(console_hwnd)
@@ -207,7 +201,7 @@ try:
                 add(get_root_owner(hwnd_by_title))
 
             return candidate_hwnds
-            
+
         def set_terminal_app_id_safe(candidate_hwnds: list[int], app_id: str) -> int:
             """Try to set System.AppUserModel.ID on the terminal window itself."""
             import uuid
@@ -378,7 +372,7 @@ try:
 
             return changed_count
 
-        def set_terminal_icon(candidate_hwnds,icon_path: str):
+        def set_terminal_icon(candidate_hwnds, icon_path: str):
             """Change the icon of the current terminal window"""
 
             WM_SETICON = 0x0080
@@ -501,8 +495,6 @@ try:
                     return prefix
                 return f"{prefix} ({error_code}: {ctypes.FormatError(error_code).strip()})"
 
-            
-
             def get_window_text(hwnd: int) -> str:
                 if hwnd == 0:
                     return ""
@@ -556,8 +548,6 @@ try:
                     f"process={get_process_image_path(process_id)!r}"
                 )
 
-
-
             def load_icon(path: str, width: int, height: int) -> int:
                 icon_handle = user32_DLL.LoadImageW(None, path, IMAGE_ICON, width, height, LR_LOADFROMFILE)
                 if not icon_handle:
@@ -599,7 +589,6 @@ try:
                 except OSError:
                     pass
                 _helper_refresh_nonclient_area(hwnd)
-
 
     # end of "if script_has_terminal:""
     # ==================================
@@ -844,6 +833,14 @@ def get_terminal_name():
     # ==================
 
     try:
+        # set terminal colors
+        if terminal_colors != "":
+            os.system(f"color {terminal_colors}")  # noqa:S605
+
+        # set terminal name
+        if title != "":
+            os.system(f"title {title}")  # noqa:S605
+
         # set working directory
         if wdir_is_script_dir:
             os.chdir(os.path.dirname(script_path))
@@ -865,13 +862,9 @@ def get_terminal_name():
             def apply_terminal_appearance() -> None:
                 try:
                     candidate_hwnds = get_candidate_hwnds()
-                    
-                    set_terminal_name(title)  # type:ignore
                     set_terminal_icon(candidate_hwnds, icon_path)  # type:ignore
                     set_terminal_app_id_safe(candidate_hwnds, app_id)  # type:ignore
 
-                    if terminal_colors != "":
-                        os.system(f"color {terminal_colors}")  # noqa:S605
                 except Exception as error:
                     print(f"[Error] Terminal appearance update skipped: {error}")
 
@@ -911,7 +904,7 @@ def get_terminal_name():
             if terminal_appearance_thread is not None:
                 terminal_appearance_thread.start()
             if script_has_terminal and start_minimized:
-                minimize_current_console() #type:ignore
+                minimize_current_console()  # type:ignore
             runpy.run_path(script_path, run_name="__main__")
             # no crash:
             exit_code = 0
