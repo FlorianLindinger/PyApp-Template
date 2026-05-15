@@ -28,20 +28,25 @@ from developer_settings import (
     windows_terminal_shortcut_name,
 )
 
-browser_shortcut_name = getattr(developer_settings, "browser_shortcut_name", "") # backwards compatible
-from DONT_CHANGE.specific_scripts.common_code import close_terminal, print_traceback
+browser_shortcut_name = getattr(developer_settings, "browser_shortcut_name", "")  # backwards compatible
+from DONT_CHANGE.specific_scripts.common_code import (
+    close_terminal,
+    make_abs_path_relative_to_file,
+    print_traceback,
+    sanitize_filename,
+)
 from DONT_CHANGE.specific_scripts.common_variables import (
     developer_settings_path,
     icon_path,
-    settings_icon_path,
-    stop_icon_path,
-    shortcut_output_dir,
-    launcher_terminal,
-    launcher_settings,
-    launcher_emulator,
     launcher_browser,
+    launcher_emulator,
+    launcher_no_terminal,
+    launcher_settings,
     launcher_stop,
-    launcher_no_terminal
+    launcher_terminal,
+    settings_icon_path,
+    shortcut_output_dir,
+    stop_icon_path,
 )
 
 # =============================
@@ -57,58 +62,6 @@ SHORTCUT_RETRY_DELAY_SECONDS = 0.1
 def quote_cmd_argument(value):
     text = os.fspath(value)
     return '"' + text.replace('"', '""') + '"'
-
-
-def make_abs_path_relative_to_file(path, file):
-    """makes a path absolute if relative with respect to the file (as if the file defined it)"""
-    if not os.path.isabs(path):
-        return os.path.normpath(os.path.dirname(file) + "\\" + path)
-    else:
-        return path
-
-
-def sanitize_filename(filename, replacement="_"):
-    # 1. Characters illegal in Windows: < > : " / \ | ? *
-    # Also handles control characters (0-31)
-    illegal_chars = r'[<>:"/\\|?*\x00-\x1f]'
-    filename = re.sub(illegal_chars, replacement, filename)
-    # 2. Windows reserved filenames (CON, PRN, AUX, NUL, COM1-9, LPT1-9)
-    # These cannot be filenames even with an extension (e.g., CON.txt is bad)
-    reserved_names = {
-        "CON",
-        "PRN",
-        "AUX",
-        "NUL",
-        "COM1",
-        "COM2",
-        "COM3",
-        "COM4",
-        "COM5",
-        "COM6",
-        "COM7",
-        "COM8",
-        "COM9",
-        "LPT1",
-        "LPT2",
-        "LPT3",
-        "LPT4",
-        "LPT5",
-        "LPT6",
-        "LPT7",
-        "LPT8",
-        "LPT9",
-    }
-    # Check the "stem" (name before the dot)
-    base_name = os.path.splitext(filename)[0].upper()
-    if base_name in reserved_names:
-        filename = f"{replacement}{filename}"
-    # 3. Strip trailing dots and spaces (Windows ignores/removes these)
-    filename = filename.rstrip(". ")
-    # 4. Enforce length limit (255 characters for the filename itself)
-    if len(filename) > 255:
-        filename = filename[:255]
-    # 5. Handle empty strings (if sanitization removed everything)
-    return filename if filename else "unnamed_file"
 
 
 def sanitize_app_id(input_string):
@@ -270,7 +223,7 @@ def main():
 
     # Shortcut: start in terminal emulator
     if terminal_emulator_shortcut_name not in [None, False, ""]:
-        out = shortcut_output_dir +"\\" + sanitize_filename(terminal_emulator_shortcut_name) + ".lnk"
+        out = shortcut_output_dir + "\\" + sanitize_filename(terminal_emulator_shortcut_name) + ".lnk"
         make_lnk(
             out,
             icon_path,
@@ -282,7 +235,7 @@ def main():
 
     # Shortcut: start in browser terminal
     if browser_shortcut_name not in [None, False, ""]:
-        out = shortcut_output_dir +"\\" + sanitize_filename(browser_shortcut_name) + ".lnk"
+        out = shortcut_output_dir + "\\" + sanitize_filename(browser_shortcut_name) + ".lnk"
         make_lnk(
             out,
             icon_path,
@@ -295,7 +248,7 @@ def main():
 
     # Shortcut: start without terminal
     if no_terminal_shortcut_name not in [False, None, ""]:
-        out = shortcut_output_dir + "\\" +sanitize_filename(no_terminal_shortcut_name) + ".lnk"
+        out = shortcut_output_dir + "\\" + sanitize_filename(no_terminal_shortcut_name) + ".lnk"
         make_lnk(
             out,
             icon_path,
@@ -308,7 +261,7 @@ def main():
 
     # Shortcut: stop program started by any generated launcher mode
     if stop_running_shortcut_name not in ["", False, None]:
-        out = shortcut_output_dir + "\\" +sanitize_filename(stop_running_shortcut_name) + ".lnk"
+        out = shortcut_output_dir + "\\" + sanitize_filename(stop_running_shortcut_name) + ".lnk"
         make_lnk(out, stop_icon_path, launcher_stop, description=f"Stop running {program_name} processes.")
 
     # Shortcut: open settings
@@ -320,7 +273,7 @@ def main():
                 f"The settings shortcut will still be created, but it will show an error until the file exists. "
                 f'Disable the settings shortcut by setting user_settings_path = None in "{developer_settings_path}".'
             )
-        out = shortcut_output_dir +"\\" + sanitize_filename(open_settings_shortcut_name) + ".lnk"
+        out = shortcut_output_dir + "\\" + sanitize_filename(open_settings_shortcut_name) + ".lnk"
         make_lnk(
             out,
             settings_icon_path,

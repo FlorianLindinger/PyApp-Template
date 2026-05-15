@@ -18,7 +18,6 @@ DONT_CHANGE_dir = make_abs("..")
 backend_packages_dir = make_abs("..\\..\\python_packages")
 shortcut_output_dir = make_abs("..\\..\\..")
 python_dist_path = py_env_dir + "\\py_dist"
-venv_dir_path = py_env_dir + "\\virt_env"
 windows_dir = os.environ.get("WINDIR", default="C:\\Windows")
 packages_dir = py_env_dir + "\\packages"
 
@@ -26,8 +25,6 @@ packages_dir = py_env_dir + "\\packages"
 # ------------------------
 python_code_path = make_abs("..\\..\\main_code.py")
 portable_python_installer_path = make_abs("..\\general_scripts\\create_portable_python.bat")
-portable_venv_creator_path = make_abs("..\\general_scripts\\create_portable_venv.bat")
-venv_exe_path = venv_dir_path + "\\Portable_Scripts\\python.bat"
 script_wrapper_path = make_abs("script_wrapper.py")
 browser_terminal_path = make_abs("browser_terminal.py")
 compiled_terminal_path = make_abs("..\\terminal_emulator\\compiled\\run.exe")
@@ -78,7 +75,7 @@ excluded_folders_for_package_search = [
     ".tmp",
 ]
 variable_in_default_packages_path_that_triggers_search_if_true = (
-    "# auto_find_required_packages_here_and_reset_venv_to_them"
+    "# auto_find_required_packages_here_and_reset_installed_packages_to_them"
 )
 
 # =============================
@@ -87,5 +84,4 @@ variable_in_default_packages_path_that_triggers_search_if_true = (
 
 developer_settings_dir = os.path.dirname(developer_settings_path)
 python_exe_path = os.path.normpath(python_dist_path + "\\python.exe")
-rel_path_py_env_to_python_dist = os.path.relpath(python_dist_path, py_env_dir)
-rel_path_python_site_packages_to_packages = os.path.relpath(python_dist_path + "\\Lib\\site-packages", packages_dir)
+script_for_set_python_and_pip_target = python_dist_path + "\\tools\\open_terminal_with_set_python_and_pip_target.bat"

@@ -6,26 +6,20 @@ root_dir = os.path.dirname(__file__) + "\\..\\..\\.."
 if root_dir not in sys.path:
     sys.path.insert(0, root_dir)
 
-from DONT_CHANGE.specific_scripts.common_code import input_success, print_traceback
-from DONT_CHANGE.specific_scripts.common_variables import (
-    developer_tools_dir,
-    excluded_folders_for_package_search,
-    python_scripts_dir,
-)
-from DONT_CHANGE.specific_scripts.dev_tools.dev_tools_common_code import (
-    save_required_packages,
+from DONT_CHANGE.specific_scripts.common_code import (
+    input_success,
+    print_traceback,
+    save_requirements_of_root_folder_noVersion,
 )
 
 try:
-    path = developer_tools_dir + "\\packages_needed_in_files -withoutVersion.txt"
-    save_required_packages(
-        path,
-        with_versions=False,
-        folder=python_scripts_dir,
-        ignored_folders=excluded_folders_for_package_search,
-    )
-    print()
-    input_success("[Success] Press enter to exit")
+    success, output_path = save_requirements_of_root_folder_noVersion()
+
+    if success:
+        print()
+        input_success("[Success] Press enter to exit")
+    else:
+        raise RuntimeError("Failed to determine needed packages.")
 except Exception as e:
     print_traceback(
         f"[Error] Failed to save package list needed in files without versions: {e}",

@@ -1,4 +1,4 @@
-# auto_find_required_packages_here_and_reset_venv_to_them = False
+# auto_find_required_packages_here_and_reset_installed_packages_to_them = False
 
 PySide6==6.11.0
 PySide6_Addons==6.11.0
