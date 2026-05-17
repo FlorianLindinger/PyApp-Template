@@ -10,13 +10,20 @@
 #   ...
 
 try:
+    # signal correct start such that caller can exit
+    import os
+
+    CORRECT_START_SIGNAL_FILE_PATH = (
+        os.path.dirname(os.path.normpath(__file__)) + "\\..\\signal_that_program_started_correctly.signal"
+    )
+    open(CORRECT_START_SIGNAL_FILE_PATH, "w").close()
+
     # ==================
     # import
 
     import atexit
     import builtins
     import faulthandler
-    import os
     import re
     import runpy
     import sys
@@ -1011,7 +1018,7 @@ except Exception as e:
     print(f"[Error] Failed in wrapper script with error: {e}:")
     print("-" * 20)
     print(traceback.format_exc())
-    print("-" * 20)
+    print("=" * 20)
     input("Press enter to exit")
     sys.exit(1)
 

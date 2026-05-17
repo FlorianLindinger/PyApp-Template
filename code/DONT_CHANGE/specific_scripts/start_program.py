@@ -68,10 +68,13 @@ try:
         close_terminal,
         ensure_python_distro,
         get_running_processes_from_pid_file,
+        input_warn,
         print_traceback,
+        print_warn,
         stop_processes_from_pid_file,
     )
     from DONT_CHANGE.specific_scripts.common_variables import (
+        CORRECT_START_SIGNAL_FILE_PATH,
         backend_packages_dir,
         browser_terminal_path,
         compiled_terminal_path,
@@ -216,6 +219,10 @@ try:
 
     def main() -> None:
         global log_path
+
+        # clear old singal file
+        if os.path.exists(CORRECT_START_SIGNAL_FILE_PATH):
+            os.remove(CORRECT_START_SIGNAL_FILE_PATH)
 
         # =============================
         # get args
@@ -427,25 +434,32 @@ try:
                 )
 
         # =================================
-        # wait shortly and check & handle if script immediately failed
+        # wait for signal file creation to know if correct start
         # =================================
 
-        time.sleep(0.8)
-        error_code = proc.poll()
-        if error_code is not None and proc.poll() != 0:
-            print("=" * 20)
-            print(f"[Error] Failed launching {launch_mode} backend:")
-            print(launched_backend_path)
-            print("-" * 20)
+        for _ in range(20):  # try up to 1s
+            if os.path.exists(CORRECT_START_SIGNAL_FILE_PATH):
+                os.remove(CORRECT_START_SIGNAL_FILE_PATH)
+                break
+            else:
+                time.sleep(0.05)
+        else:
+            error_code = proc.poll()
+            print()
+            print_warn("=" * 20)
+            print_warn("[Error] Backend code did not seem to launch properly.")
+            print_warn(f"Launch mode: {launch_mode}")
+            print_warn(f"Backend code: {launched_backend_path}")
+            print_warn(f'Error code (potentially meaningless): "{error_code}"')
             try:
                 child_output, _ = proc.communicate(timeout=0.2)
             except Exception:
                 child_output = ""
             if child_output:
-                print(child_output.rstrip())
-                print("-" * 20)
-            input("[Error (see above)] Press enter to exit.")
-
+                print_warn("-" * 20)
+                print_warn(child_output.rstrip())
+            print("=" * 20)
+            input_warn("[Error (see above)] Press enter to exit.")
         close_terminal()
 
     # =============================

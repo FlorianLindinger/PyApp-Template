@@ -62,6 +62,7 @@ determined_needed_packages_output_file_path_noVersion = make_abs(
 determined_needed_packages_output_file_path_withVersion = make_abs(
     developer_tools_dir + "\\auto_found_required_packages_withVersion.txt"
 )
+CORRECT_START_SIGNAL_FILE_PATH = make_abs("..\\signal_that_program_started_correctly.signal")
 
 # variables
 # ------------------------
