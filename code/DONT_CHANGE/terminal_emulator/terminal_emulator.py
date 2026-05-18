@@ -1532,6 +1532,16 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
             return default
         return sys.argv[index]
 
+    def create_signal_file(path: str) -> None:
+        if path == "":
+            return
+
+        folder = os.path.dirname(path)
+        if folder:
+            os.makedirs(folder, exist_ok=True)
+        with open(path, "w", encoding="utf-8"):
+            pass
+
     def remove_own_process_id_file_entries(path: str, process_id: int) -> None:
         try:
             with open(path, encoding="utf-8") as pid_file:
@@ -1595,7 +1605,7 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
         # process args
         if len(sys.argv) < 2:
             raise ValueError(
-                "terminal_emulator.py needs at least the Python script path as argument. Usage: terminal_emulator.py script_path [python_exe] [title] [icon_path] [app_id] [wdir_is_script_dir] [close_on_crash] [close_on_failure] [close_on_success] [print_timestamp_format] [log_path] [log_timestamp_format] [overwrite_log] [input_prepend] [process_id_file_path] [play_sound_on_success] [send_Windows_notification_on_success] [play_sound_on_failure] [send_Windows_notification_on_failure] [play_sound_on_python_interpreter_crash] [send_Windows_notification_on_python_interpreter_crash] [open_log_file_after_success] [open_log_file_after_failure] [open_log_file_after_python_interpreter_crash] [start_minimized] [terminal_needs_input] [stylesheet_path] [dark_mode] [faulthandler_always_on] [button_settings] [log_input_prepend]"
+                "terminal_emulator.py needs at least the Python script path as argument. Usage: terminal_emulator.py script_path [python_exe] [title] [icon_path] [app_id] [wdir_is_script_dir] [close_on_crash] [close_on_failure] [close_on_success] [print_timestamp_format] [log_path] [log_timestamp_format] [overwrite_log] [input_prepend] [process_id_file_path] [play_sound_on_success] [send_Windows_notification_on_success] [play_sound_on_failure] [send_Windows_notification_on_failure] [play_sound_on_python_interpreter_crash] [send_Windows_notification_on_python_interpreter_crash] [open_log_file_after_success] [open_log_file_after_failure] [open_log_file_after_python_interpreter_crash] [start_minimized] [correct_start_signal_file_path] [terminal_needs_input] [stylesheet_path] [dark_mode] [button_settings] [log_input_prepend]"
             )
 
         script_path = sys.argv[1]
@@ -1627,14 +1637,18 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
         open_log_file_after_python_interpreter_crash = arg_to_bool(24, False)
         start_minimized = arg_to_bool(25, False)
 
-        terminal_needs_input = arg_to_bool(26, True)
-        stylesheet_path = arg_to_str(27, "")
-        dark_mode = arg_to_str(28, "1")  # no bool because "auto" could also be option that should not be turned to True
-        button_settings_arg = arg_to_str(29, "")
-        LOG_INPUT_PREPEND = arg_to_str(30, log_timestamp_format)
+        correct_start_signal_file_path = arg_to_str(26, "")
+        terminal_needs_input = arg_to_bool(27, True)
+        stylesheet_path = arg_to_str(28, "")
+        dark_mode = arg_to_str(29, "1")  # no bool because "auto" could also be option that should not be turned to True
+        button_settings_arg = arg_to_str(30, "")
+        LOG_INPUT_PREPEND = arg_to_str(31, log_timestamp_format)
         button_settings = (
             normalize_button_settings(json.loads(button_settings_arg)) if button_settings_arg != "" else None
         )
+        
+        # tell backend terminal to close because of sucessful start here
+        create_signal_file(correct_start_signal_file_path)
 
         try:
             write_own_process_id_file_entry(process_id_file_path)
