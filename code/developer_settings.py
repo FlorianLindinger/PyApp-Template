@@ -86,10 +86,18 @@ install_tools = False
 # ==== Launcher Mode Specific Settings ====
 # =========================================
 
-# --------------------------
-# ---- Windows Terminal ----
-# --------------------------
+# --------------------------------
+# ---- Windows Terminal Start ----
+# --------------------------------
 
+# use_classic_terminal=True uses classic old-style terminal (conhost.exe) with no tabs (looks more like an app and less like a terminal but text rendering and zooming are worse).
+# use_classic_terminal=False uses modern Windows Terminal (wt.exe): tabs and modern text rendering and zoom:
+use_classic_terminal: bool = True
+# Classic terminal window size. None uses the Windows default:
+classic_terminal_cols: int | None = 120
+classic_terminal_lines: int | None = 30
+# Modern terminal tab color. None uses the Windows Terminal profile default (e.g. "#3B78FF"):
+modern_terminal_tab_color: str | None = "#3B78FF"
 # Background color: 0=Black,1=Blue,2=Green,3=Aqua,4=Red,5=Purple,6=Yellow,8=Gray,7=White,9=LightBlue:
 terminal_bg_color: str | None = "9"
 # Text color: A=LightGreen,B=LightAqua,C=LightRed,,D=LightPurple,E=LightYellow,F=BrightWhite:
