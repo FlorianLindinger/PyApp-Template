@@ -1,3 +1,5 @@
+# code here should raise an error instead of handling terminal closing or press enter to exit logic. Other than the function definitions that are defined here to do that in the callers like close_terminal and print_traceback
+
 import os
 import subprocess
 import sys
@@ -111,24 +113,82 @@ def print_traceback(message="Error", add_press_enter_to_exit=False) -> None:
 
 
 def delete_folder_safe(
-    target: str | os.PathLike[str],
+    folder_abs_path: str | os.PathLike[str],
     *,
     prompt_message="Delete this folder? [y/n]: ",
-    allowed_base: str | os.PathLike[str],
-    expected_name: str | None = None,
-    prompt_for_confirmation=True,
+    allowed_base_abs_path: str | os.PathLike[str],
+    expected_folder_name: str | None = None,
+    required_included_files: list[str] | tuple[str, ...] | None = (),
+    required_included_dirs: list[str] | tuple[str, ...] | None = (),
+    require_direct_child_of_allowed_base=False,
+    min_path_depth: int | None = 4,
+    max_size_GB_before_prompt: float | None = 1.0,
+    max_size_check_seconds: float | None = 5.0,
+    prompt_instead_of_requirement_failure=True,
+    always_prompt_for_confirmation=True,
 ) -> bool:
+    """Delete a folder after path, marker, depth, and size safety checks.
 
-    target_path = os.path.realpath(os.path.abspath(os.fspath(target)))
-    base_path = os.path.realpath(os.path.abspath(os.fspath(allowed_base)))
+    Both ``folder_abs_path`` and ``allowed_base_abs_path`` must be absolute.
+    The resolved target must exist inside the resolved allowed base, and it is
+    never allowed to be the filesystem root or the allowed base folder itself.
+    Set ``require_direct_child_of_allowed_base`` to require the target to be a
+    direct child of the base instead of any deeper descendant.
+
+    ``expected_folder_name`` requires the target's final folder name to match.
+    ``required_included_files`` and ``required_included_dirs`` require exact
+    file/directory names directly inside the target, but only when the target
+    contains at least one non-empty file. Pass ``None`` or an empty sequence for
+    no marker requirements. Folders with only empty subfolders or 0-byte files
+    are treated as empty for this marker check.
+
+    ``min_path_depth`` warns for shallow paths. ``max_size_GB_before_prompt``
+    warns for large folders. In an interactive terminal these warnings ask for
+    confirmation; in non-interactive mode they raise instead. Set either value
+    to ``None`` to disable that check.
+
+    ``max_size_check_seconds`` limits how long folder-size scanning may run.
+    If it times out, the measured size is a lower bound. With
+    ``prompt_instead_of_requirement_failure=True`` and interactive stdin, size
+    scan failures/timeouts, empty-check failures, and missing required marker
+    files/dirs prompt instead of raising. Other hard path-safety failures still
+    raise. Set ``max_size_check_seconds=None`` to disable the timeout.
+
+    If ``always_prompt_for_confirmation`` is true, a final confirmation prompt
+    is shown after all safety checks. Returns ``True`` if the folder was absent
+    or deleted, and ``False`` only when the user cancels a prompt.
+    """
+
+    folder_path_text = os.fspath(folder_abs_path)
+    allowed_base_text = os.fspath(allowed_base_abs_path)
+    if not os.path.isabs(folder_path_text):
+        raise ValueError(f'Folder path must be absolute: "{folder_path_text}"')
+    if not os.path.isabs(allowed_base_text):
+        raise ValueError(f'Allowed base path must be absolute: "{allowed_base_text}"')
+
+    if required_included_files is None:
+        required_included_files = ()
+    if required_included_dirs is None:
+        required_included_dirs = ()
+
+    target_path = os.path.realpath(folder_path_text)
+    base_path = os.path.realpath(allowed_base_text)
 
     if not os.path.exists(target_path):
         return True
 
-    import shutil  # lazy import because takes 0.2 s
+    is_below_min_path_depth = False
+    path_depth = 0
+    if min_path_depth is not None:
+        if min_path_depth < 0:
+            raise ValueError(f"Minimum path depth must be zero or greater: {min_path_depth}")
+        path_depth = _get_path_depth(target_path)
+        is_below_min_path_depth = path_depth < min_path_depth
 
-    if expected_name is not None and os.path.basename(target_path).lower() != expected_name.lower():
-        raise RuntimeError(f'Refusing to delete "{target_path}" because its folder name is not "{expected_name}".')
+    if expected_folder_name is not None and os.path.basename(target_path).lower() != expected_folder_name.lower():
+        raise RuntimeError(
+            f'Refusing to delete "{target_path}" because its folder name is not "{expected_folder_name}".'
+        )
 
     if not os.path.exists(base_path):
         raise FileNotFoundError(f"Allowed base does not exist: {base_path}")
@@ -144,7 +204,7 @@ def delete_folder_safe(
         raise ValueError(f"Refusing to delete filesystem root: {target_path}")
 
     if os.path.normcase(target_path) == os.path.normcase(base_path):
-        raise ValueError("Refusing to delete the allowed base directory itself")
+        raise ValueError(f"Refusing to delete the allowed base directory itself: {target_path}")
 
     try:
         common_path = os.path.commonpath([base_path, target_path])
@@ -158,11 +218,182 @@ def delete_folder_safe(
             f"Refusing to delete directory outside allowed base.\nTarget: {target_path}\nAllowed base: {base_path}"
         )
 
-    if prompt_for_confirmation:
+    if require_direct_child_of_allowed_base and os.path.normcase(os.path.dirname(target_path)) != os.path.normcase(
+        base_path
+    ):
+        raise ValueError(
+            "Refusing to delete directory because it is not directly inside the allowed base.\n"
+            f"Target: {target_path}\nAllowed base: {base_path}"
+        )
+
+    folder_size: int | None = None
+    folder_size_is_partial = False
+    is_above_max_size = False
+    if max_size_GB_before_prompt is not None:
+        try:
+            folder_size = _get_folder_size(target_path, timeout_seconds=max_size_check_seconds)
+        except _FolderSizeCheckTimedOut_Error as error:
+            folder_size = error.minimum_size
+            folder_size_is_partial = True
+            if not prompt_instead_of_requirement_failure or not sys.stdin.isatty():
+                raise ValueError(
+                    f'Could not finish size check for "{target_path}" within {error.timeout_seconds:g} seconds. '
+                    f"Measured at least {_format_bytes(error.minimum_size)}."
+                ) from error
+            print()
+            print("Folder deletion size check warning:")
+            print(f"Folder: {target_path}")
+            print(f"Size check timed out after {error.timeout_seconds:g} seconds.")
+            print(f"Measured at least: {_format_bytes(error.minimum_size)}")
+            print()
+            answer = input("Delete anyway? [y/n]: ").strip().lower()
+            if answer not in {"y", "yes"}:
+                print("Cancelled folder deletion.")
+                return False
+        except OSError as error:
+            if not prompt_instead_of_requirement_failure or not sys.stdin.isatty():
+                raise
+            print()
+            print("Folder deletion size check warning:")
+            print(f"Folder: {target_path}")
+            print(f"Could not determine folder size: {error}")
+            print()
+            answer = input("Delete anyway? [y/n]: ").strip().lower()
+            if answer not in {"y", "yes"}:
+                print("Cancelled folder deletion.")
+                return False
+        if folder_size is not None:
+            max_size_bytes = int(max_size_GB_before_prompt * 1024 * 1024 * 1024)
+            is_above_max_size = folder_size > max_size_bytes
+
+    try:
+        is_empty = _is_folder_empty(target_path)
+    except OSError as error:
+        if not prompt_instead_of_requirement_failure or not sys.stdin.isatty():
+            raise
+        print()
+        print("Folder deletion empty-check warning:")
+        print(f"Folder: {target_path}")
+        print(f"Could not determine whether the folder only contains empty files/folders: {error}")
+        print()
+        answer = input("Continue deletion checks anyway? [y/n]: ").strip().lower()
+        if answer not in {"y", "yes"}:
+            print("Cancelled folder deletion.")
+            return False
+        is_empty = False
+
+    if not is_empty:
+        for expected_file in required_included_files:
+            expected_path = os.path.join(target_path, expected_file)
+            if not os.path.isfile(expected_path):
+                message = f'Required file is missing: "{expected_file}"'
+                if not prompt_instead_of_requirement_failure or not sys.stdin.isatty():
+                    raise ValueError(f'Refusing to delete "{target_path}" because {message}')
+                print()
+                print("Folder deletion requirement warning:")
+                print(f"Folder: {target_path}")
+                print(message)
+                print()
+                answer = input("Delete anyway? [y/n]: ").strip().lower()
+                if answer not in {"y", "yes"}:
+                    print("Cancelled folder deletion.")
+                    return False
+
+        for expected_dir in required_included_dirs:
+            expected_path = os.path.join(target_path, expected_dir)
+            if not os.path.isdir(expected_path):
+                message = f'Required directory is missing: "{expected_dir}"'
+                if not prompt_instead_of_requirement_failure or not sys.stdin.isatty():
+                    raise ValueError(f'Refusing to delete "{target_path}" because {message}')
+                print()
+                print("Folder deletion requirement warning:")
+                print(f"Folder: {target_path}")
+                print(message)
+                print()
+                answer = input("Delete anyway? [y/n]: ").strip().lower()
+                if answer not in {"y", "yes"}:
+                    print("Cancelled folder deletion.")
+                    return False
+
+    if is_below_min_path_depth:
+        if not sys.stdin.isatty():
+            raise ValueError(
+                f'Refusing to delete "{target_path}" with path depth {path_depth} without interactive confirmation. '
+                f"Configured minimum depth: {min_path_depth}."
+            )
+
+        print()
+        print("Folder deletion path depth warning:")
+        print(f"Folder: {target_path}")
+        print(f"Path depth: {path_depth}")
+        print(f"Configured minimum depth: {min_path_depth}")
+        print()
+        answer = input("Folder path is shallower than expected. Delete anyway? [y/n]: ").strip().lower()
+        if answer not in {"y", "yes"}:
+            print("Cancelled folder deletion.")
+            return False
+
+    if is_above_max_size:
+        if not sys.stdin.isatty():
+            raise ValueError(
+                f"Refusing to delete folder larger than {_format_bytes(max_size_bytes)} without interactive confirmation. "  # type:ignore
+                f"Folder: {target_path}. Folder size: {_format_bytes(folder_size)}"
+            )
+
+        print()
+        print("Folder deletion size warning:")
+        print(f"Folder: {target_path}")
+        size_label = "Measured at least" if folder_size_is_partial else "Folder size"
+        print(f"{size_label}: {_format_bytes(folder_size)}")
+        print(f"Configured limit: {_format_bytes(max_size_bytes)}")  # type:ignore
+        print()
+        answer = input("Folder is larger than expected. Delete anyway? [y/n]: ").strip().lower()
+        if answer not in {"y", "yes"}:
+            print("Cancelled folder deletion.")
+            return False
+
+    if always_prompt_for_confirmation:
+        if folder_size is None:
+            try:
+                folder_size = _get_folder_size(target_path, timeout_seconds=max_size_check_seconds)
+            except _FolderSizeCheckTimedOut_Error as error:
+                folder_size = error.minimum_size
+                folder_size_is_partial = True
+                if not prompt_instead_of_requirement_failure or not sys.stdin.isatty():
+                    raise ValueError(
+                        f'Could not finish size check for "{target_path}" within {error.timeout_seconds:g} seconds. '
+                        f"Measured at least {_format_bytes(error.minimum_size)}."
+                    ) from error
+                print()
+                print("Folder deletion size check warning:")
+                print(f"Folder: {target_path}")
+                print(f"Size check timed out after {error.timeout_seconds:g} seconds.")
+                print(f"Measured at least: {_format_bytes(error.minimum_size)}")
+                print()
+                answer = input("Continue to deletion confirmation? [y/n]: ").strip().lower()
+                if answer not in {"y", "yes"}:
+                    print("Cancelled folder deletion.")
+                    return False
+            except OSError as error:
+                if not prompt_instead_of_requirement_failure or not sys.stdin.isatty():
+                    raise
+                print()
+                print("Folder deletion size check warning:")
+                print(f"Folder: {target_path}")
+                print(f"Could not determine folder size: {error}")
+                print()
+                answer = input("Continue to deletion confirmation? [y/n]: ").strip().lower()
+                if answer not in {"y", "yes"}:
+                    print("Cancelled folder deletion.")
+                    return False
         print()
         print("Folder deletion request:")
         print(f"Folder: {target_path}")
-        print(f"Folder size: {_format_bytes(_get_folder_size(target_path))}")
+        size_label = "Measured at least" if folder_size_is_partial else "Folder size"
+        if folder_size is not None:
+            print(f"{size_label}: {_format_bytes(folder_size)}")
+        else:
+            print("Folder size: unknown")
         print()
         answer = input(prompt_message).strip().lower()
         if answer not in {"y", "yes"}:
@@ -170,6 +401,9 @@ def delete_folder_safe(
             return False
 
     print(f'[Info] Deleting "{target_path}"')
+
+    import shutil  # lazy import because takes 0.2 s
+
     shutil.rmtree(target_path)
     if os.path.exists(target_path):
         raise RuntimeError(f'Failed to delete "{target_path}"')
@@ -610,7 +844,7 @@ def close_terminal() -> bool:
 
 
 # =========================
-# path related
+# path related/file name related
 
 
 def make_abs_path_relative_to_file(path, file):
@@ -619,6 +853,14 @@ def make_abs_path_relative_to_file(path, file):
         return os.path.normpath(os.path.dirname(file) + "\\" + path)
     else:
         return path
+
+
+def _get_path_depth(path: str | os.PathLike[str]) -> int:
+    _drive, path_without_drive = os.path.splitdrive(os.path.normpath(os.fspath(path)))
+    path_without_root = path_without_drive.strip("\\/")
+    if path_without_root == "":
+        return 0
+    return len([part for part in path_without_root.replace("\\", "/").split("/") if part])
 
 
 def sanitize_filename(filename, replacement="_"):
@@ -882,17 +1124,47 @@ def _format_bytes(num_bytes) -> str:
     return f"{num_bytes} B"
 
 
-def _get_folder_size(folder: str | os.PathLike[str]) -> int:
+class _FolderSizeCheckTimedOut_Error(TimeoutError):
+    def __init__(self, minimum_size: int, timeout_seconds: float) -> None:
+        super().__init__(
+            f"Folder size check timed out after {timeout_seconds:g} seconds. "
+            f"Measured at least {_format_bytes(minimum_size)}."
+        )
+        self.minimum_size = minimum_size
+        self.timeout_seconds = timeout_seconds
+
+
+def _get_folder_size(folder: str | os.PathLike[str], timeout_seconds: float | None = None) -> int:
     total = 0
-    for root, _dirs, files in os.walk(folder):
+    deadline = None
+    if timeout_seconds is not None:
+        import time
+
+        deadline = time.monotonic() + timeout_seconds
+
+    def raise_walk_error(error: OSError) -> None:
+        raise error
+
+    for root, _dirs, files in os.walk(folder, onerror=raise_walk_error):
         for filename in files:
+            if deadline is not None and time.monotonic() > deadline:  # type:ignore[name-defined]
+                raise _FolderSizeCheckTimedOut_Error(total, timeout_seconds)  # type:ignore[arg-type]
             path = os.path.join(root, filename)
-            try:
-                if os.path.isfile(path):
-                    total += os.path.getsize(path)
-            except (OSError, PermissionError):
-                pass
+            if os.path.isfile(path):
+                total += os.path.getsize(path)
     return total
+
+
+def _is_folder_empty(path: str | os.PathLike[str]) -> bool:
+    def raise_walk_error(error: OSError) -> None:
+        raise error
+
+    for root, _dirs, files in os.walk(path, onerror=raise_walk_error):
+        for filename in files:
+            file_path = os.path.join(root, filename)
+            if os.path.isfile(file_path) and os.path.getsize(file_path) > 0:
+                return False
+    return True
 
 
 # =========================
@@ -1049,8 +1321,8 @@ def install_full_python(
     install_tools: bool = True,
     install_docs: bool = False,
     rel_path_to_packages: str = "",
-) -> int:
-    """Create a portable full Python distribution and return a process exit code."""
+):
+    """Create a portable full Python distribution and raise on failure."""
 
     import html.parser
     import re
@@ -1059,22 +1331,6 @@ def install_full_python(
     import urllib.error
     import urllib.parse
     import urllib.request
-
-    def pause_if_interactive() -> None:
-        if sys.stdin.isatty():
-            input("Press Enter to exit.")
-
-    def run_command_printing_output_on_failure(command: list[str]) -> int:
-        result = subprocess.run(  # noqa
-            command,
-            check=False,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-        )
-        if result.returncode != 0 and result.stdout:
-            print(result.stdout.rstrip())
-        return result.returncode
 
     target_dir = os.path.abspath(target_dir) if target_dir else os.getcwd()
     python_folder = os.path.join(target_dir, "py_dist")
@@ -1101,23 +1357,25 @@ def install_full_python(
 
     # ----- Find newest matching Python version with amd64 MSI files -----
 
-    class LinkParser(html.parser.HTMLParser):
-        """Minimal link collector for python.org's simple directory listings."""
-
-        def __init__(self) -> None:
-            super().__init__()
-            self.links: list[str] = []
-
-        def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-            if tag.lower() != "a":
-                return
-            for name, value in attrs:
-                if name.lower() == "href" and value:
-                    self.links.append(value)
-
     def fetch_links(url: str) -> list[str]:
-        request = urllib.request.Request(url, headers={"User-Agent": "install-full-python/1.0"}) #noqa
-        with urllib.request.urlopen(request, timeout=python_download_timeout_s) as response: #noqa
+        # python.org exposes these installer folders as simple HTML directory
+        # listings, so fetch the page and collect href values from anchor tags.
+        class LinkParser(html.parser.HTMLParser):
+            def __init__(self) -> None:
+                super().__init__()
+                self.links: list[str] = []
+
+            def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+                if tag.lower() != "a":
+                    return
+                # Every useful entry in the directory listing is an <a href=...>.
+                # Keep raw href values so callers can distinguish folders and files.
+                for name, value in attrs:
+                    if name.lower() == "href" and value:
+                        self.links.append(value)
+
+        request = urllib.request.Request(url, headers={"User-Agent": "install-full-python/1.0"})  # noqa
+        with urllib.request.urlopen(request, timeout=python_download_timeout_s) as response:  # noqa
             html = response.read().decode("utf-8", errors="replace")
         parser = LinkParser()
         parser.feed(html)
@@ -1153,16 +1411,14 @@ def install_full_python(
             break
 
     if not full_ver:
-        print(
+        raise RuntimeError(
             "[ERROR] Could not determine latest implemented version for specified version "
             f"({py_ver}) or download method not implemented for this version or no internet connection. "
             'This code needs "https://www.python.org/ftp/python/{full-python-version}/amd64/" '
             "to exist. Aborting."
         )
-        pause_if_interactive()
-        return 1
 
-    print(f"Found (msi-install-available) Python version {full_ver}")
+    print(f"Found (msi-install-available) Python version {full_ver} for target version: {version_pattern}")
     url = urllib.parse.urljoin(python_download_ftp_url, f"{full_ver}/amd64/")
     print(f"Download URL: {url}")
 
@@ -1189,16 +1445,27 @@ def install_full_python(
         msi_urls.append(absolute_url)
 
     if not msi_urls:
-        print(f"[Error] No installable MSI files found at {url}. Aborting before deleting existing Python.")
-        pause_if_interactive()
-        return 1
+        raise RuntimeError(f"No installable MSI files found at {url}. Aborting before deleting existing Python.")
     print(f"Found {len(msi_urls)} MSI package(s) to install.")
 
     # ----- Replace old py_dist with an empty target folder -----
 
-    delete_status = _portable_python_delete_existing_python_folder(python_folder, target_dir)
-    if delete_status != 0:
-        return delete_status
+    try:
+        delete_folder_safe(
+            python_folder,
+            allowed_base_abs_path=target_dir,
+            expected_folder_name=None,
+            required_included_files=("python.exe", ".gitignore"),
+            required_included_dirs=("Lib",),
+            require_direct_child_of_allowed_base=True,
+            max_size_GB_before_prompt=1.2,
+            always_prompt_for_confirmation=False,
+        )
+    except Exception as error:
+        raise RuntimeError(
+            f'[Error] Refusing to delete "{python_folder}". {error} '
+            "-> Delete manually after confirming it is a Python folder and restart."
+        ) from error
 
     os.makedirs(python_folder, exist_ok=True)
     write_file(
@@ -1220,8 +1487,8 @@ def install_full_python(
             output_path = os.path.join(download_folder, filename)
             print(f"Downloading {filename}")
 
-            request = urllib.request.Request(msi_url, headers={"User-Agent": "install-full-python/1.0"}) #noqa
-            with urllib.request.urlopen(request, timeout=python_download_timeout_s) as response: #noqa
+            request = urllib.request.Request(msi_url, headers={"User-Agent": "install-full-python/1.0"})  # noqa
+            with urllib.request.urlopen(request, timeout=python_download_timeout_s) as response:  # noqa
                 with open(output_path, "wb") as file:
                     shutil.copyfileobj(response, file)
 
@@ -1255,9 +1522,7 @@ def install_full_python(
                 os.remove(installed_msi_copy)
 
     except Exception as error:
-        print(f"[Error] Portable Python installation failed: {error}")
-        pause_if_interactive()
-        return 9
+        raise RuntimeError(f"Portable Python installation failed: {error}") from error
     finally:
         if download_folder is not None and os.path.exists(download_folder):
             shutil.rmtree(download_folder, ignore_errors=True)
@@ -1265,38 +1530,32 @@ def install_full_python(
     # ----- Verify install and bootstrap pip -----
 
     if not os.path.exists(os.path.join(python_folder, "python.exe")):
-        print("[Error] Python installation failed (see above). Aborting.")
-        pause_if_interactive()
-        return 4
+        raise RuntimeError("Python installation failed: python.exe was not created.")
 
     write_file(os.path.join(python_folder, "pip.ini"), ["[global]\n", "no-warn-script-location = false\n"])
 
     python_exe = os.path.join(python_folder, "python.exe")
-    if run_command_printing_output_on_failure([python_exe, "-m", "ensurepip", "--upgrade"]) != 0:
-        print("[Error] Python not sucessfully installed (see above). Aborting.")
-        pause_if_interactive()
-        return 6
+    if subprocess.run([python_exe, "-m", "ensurepip", "--upgrade"], check=False).returncode != 0:  # noqa
+        raise RuntimeError("Python installation failed: ensurepip did not complete successfully.")
 
     if (
-        run_command_printing_output_on_failure(
-            [python_exe, "-m", "pip", "install", "--upgrade", "pip", "--ignore-installed", "--progress-bar", "off"]
-        )
+        subprocess.run(  # noqa
+            [python_exe, "-m", "pip", "install", "--upgrade", "pip", "--ignore-installed", "--progress-bar", "off"],
+            check=False,
+        ).returncode
         != 0
     ):
         if (
-            run_command_printing_output_on_failure(
-                [python_exe, "-m", "pip", "install", "--upgrade", "pip", "--ignore-installed"]
-            )
+            subprocess.run(  # noqa
+                [python_exe, "-m", "pip", "install", "--upgrade", "pip", "--ignore-installed"],
+                check=False,
+            ).returncode
             != 0
         ):
-            print("[Error] Python's pip not sucessfully installed (see above). Aborting.")
-            pause_if_interactive()
-            return 7
+            raise RuntimeError("Python installation failed: pip upgrade did not complete successfully.")
 
-    if run_command_printing_output_on_failure([python_exe, "-m", "pip", "install", "--upgrade", "pip"]) != 0:
-        print("[Error] Python's pip not sucessfully installed (see above). Aborting.")
-        pause_if_interactive()
-        return 8
+    if subprocess.run([python_exe, "-m", "pip", "install", "--upgrade", "pip"], check=False).returncode != 0:  # noqa
+        raise RuntimeError("Python installation failed: final pip upgrade did not complete successfully.")
 
     # ----- Register additional package search folder, if requested -----
 
@@ -1305,121 +1564,6 @@ def install_full_python(
 
     print()
     print(f'Sucessfully created portable Python ({full_ver}) at "{python_folder}".')
-    return 0
-
-
-def _portable_python_delete_existing_python_folder(python_folder: str, target_dir: str) -> int:
-    """Delete an existing py_dist only after conservative path validation.
-
-    Return codes match the batch installer:
-    - 0: no existing folder was present, or deletion succeeded.
-    - 2: the folder failed safety validation and was not deleted.
-    - 3: deletion was attempted but the folder still exists afterwards.
-    """
-
-    if not os.path.exists(python_folder):
-        return 0
-
-    error = _portable_python_get_python_folder_delete_safety_error(python_folder, target_dir)
-    if error:
-        print(
-            f'[Error] Refusing to delete "{python_folder}". {error} '
-            "-> Delete manually after confirming it is a Python folder and restart."
-        )
-        if sys.stdin.isatty():
-            input("Press Enter to exit.")
-        return 2
-
-    import shutil  # lazy: only needed when an old distro exists
-
-    shutil.rmtree(python_folder)
-    if os.path.exists(python_folder):
-        print(
-            f'[Error] Failed to delete "{python_folder}". '
-            "-> Delete manually after confirming it is a Python folder and restart."
-        )
-        if sys.stdin.isatty():
-            input("Press Enter to exit.")
-        return 3
-    print("Deleted old python folder.")
-    return 0
-
-
-def _portable_python_get_python_folder_delete_safety_error(python_folder: str, target_dir: str) -> str:
-    """Return a refusal reason if python_folder is not safe to delete."""
-
-    try:
-        resolved_python_folder = os.path.realpath(os.path.abspath(python_folder))
-        resolved_target_dir = os.path.realpath(os.path.abspath(target_dir))
-    except OSError as error:
-        return f"Could not resolve path safely: {error}."
-
-    if not os.path.isdir(resolved_python_folder):
-        return "Path is not a folder."
-
-    if os.path.basename(resolved_python_folder).lower() != "py_dist":
-        return 'Folder name is not "py_dist".'
-
-    if os.path.normcase(os.path.dirname(resolved_python_folder)) != os.path.normcase(resolved_target_dir):
-        return "Folder is not directly inside the selected target directory."
-
-    if _portable_python_is_filesystem_root(resolved_python_folder):
-        return "Folder resolves to a filesystem root."
-
-    current_dir = os.path.realpath(os.path.abspath(os.getcwd()))
-    if os.path.normcase(resolved_python_folder) == os.path.normcase(current_dir):
-        return "Folder resolves to the current working directory."
-
-    home_dir = os.path.realpath(os.path.abspath(os.path.expanduser("~")))
-    if os.path.normcase(resolved_python_folder) == os.path.normcase(home_dir):
-        return "Folder resolves to the user home directory."
-
-    # Empty py_dist folders are safe to remove because they contain no user
-    # data and may be left behind by a failed or interrupted setup attempt.
-    if _portable_python_is_folder_empty(resolved_python_folder):
-        return ""
-
-    if not os.path.isfile(os.path.join(resolved_python_folder, "python.exe")):
-        return 'Missing expected marker file "python.exe".'
-
-    if not os.path.isdir(os.path.join(resolved_python_folder, "Lib")):
-        return 'Missing expected Python folder "Lib".'
-
-    if not _portable_python_has_installer_gitignore_marker(resolved_python_folder):
-        return 'Missing installer-created ".gitignore" marker.'
-
-    return ""
-
-
-def _portable_python_is_filesystem_root(path: str) -> bool:
-    """Return whether path points at a drive or filesystem root."""
-
-    return os.path.normcase(path) == os.path.normcase(os.path.dirname(path))
-
-
-def _portable_python_is_folder_empty(path: str) -> bool:
-    """Return whether a folder contains no files or subfolders."""
-
-    with os.scandir(path) as entries:
-        try:
-            next(entries)
-        except StopIteration:
-            return True
-    return False
-
-
-def _portable_python_has_installer_gitignore_marker(python_folder: str) -> bool:
-    """Check for the marker written by this installer before deleting py_dist."""
-
-    marker_file = os.path.join(python_folder, ".gitignore")
-    if not os.path.isfile(marker_file):
-        return False
-    try:
-        with open(marker_file, encoding="utf-8", errors="replace") as file:
-            marker_text = file.read()
-    except OSError:
-        return False
-    return "Auto added to prevent synchronization of python distribution" in marker_text
 
 
 # =========================
@@ -1427,29 +1571,33 @@ def _portable_python_has_installer_gitignore_marker(python_folder: str) -> bool:
 
 
 def delete_packages():
-    """return success"""
-    success = delete_folder_safe(
+    delete_folder_safe(
         frontend_packages_dir,
-        prompt_for_confirmation=False,
-        allowed_base=py_env_dir,
+        always_prompt_for_confirmation=False,
+        allowed_base_abs_path=python_scripts_dir,
+        expected_folder_name=None,
+        require_direct_child_of_allowed_base=False,
+        max_size_GB_before_prompt=5.0,
+        required_included_files=None,
+        required_included_dirs=None,
+        min_path_depth=6,
     )
-    if success == False:
-        raise RuntimeError("[Error] Folder deletion failed. Aborting")
-    else:
-        os.mkdir(frontend_packages_dir)
+    os.mkdir(frontend_packages_dir)
 
 
 def delete_python_distro():
-    """return success"""
-    success = delete_folder_safe(
+    delete_folder_safe(
         frontend_python_dir,
-        prompt_for_confirmation=False,
-        allowed_base=py_env_dir,
+        always_prompt_for_confirmation=False,
+        allowed_base_abs_path=python_scripts_dir,
+        expected_folder_name=None,
+        required_included_files=None,
+        required_included_dirs=None,
+        require_direct_child_of_allowed_base=False,
+        max_size_GB_before_prompt=1.2,
+        min_path_depth=6,
     )
-    if success == False:
-        raise RuntimeError("[Error] Folder deletion failed. Aborting")
-    else:
-        os.mkdir(frontend_python_dir)
+    os.mkdir(frontend_python_dir)
 
 
 def recreate_python_distro() -> None:
@@ -1458,7 +1606,7 @@ def recreate_python_distro() -> None:
 
     rel_path_dist_to_packages = os.path.relpath(frontend_python_dir, frontend_packages_dir).replace("\\", "/")
 
-    exit_code = install_full_python(
+    install_full_python(
         py_ver=python_version,
         target_dir=py_env_dir,
         install_tkinter=install_tkinter,
@@ -1467,8 +1615,6 @@ def recreate_python_distro() -> None:
         install_docs=False,
         rel_path_to_packages=rel_path_dist_to_packages,
     )
-    if exit_code != 0:
-        raise RuntimeError(f"Python installation failed with exit code {exit_code}")
 
     if not os.path.exists(frontend_python_exe):
         raise RuntimeError(f'Python installation did not produce expected file at "{frontend_python_exe}"')
