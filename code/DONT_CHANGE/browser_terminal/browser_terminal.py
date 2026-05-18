@@ -21,14 +21,11 @@ root_dir = os.path.dirname(__file__) + "\\..\\.."
 if root_dir not in sys.path:
     sys.path.insert(0, root_dir)
 
-from winpty import PtyProcess
-
 from DONT_CHANGE.specific_scripts.launcher_common import (
     CompletionAlerts,
     ProcessIdRegistry,
     TerminalLogger,
     arg_to_bool,
-    arg_to_wav_path,
     create_signal_file,
     looks_like_interpreter_crash,
 )
@@ -189,7 +186,7 @@ class BrowserTerminalState:
             process.terminate(force=True)
         except Exception:
             if self.child_process_id is not None and os.name == "nt":
-                subprocess.run(
+                subprocess.run(  # noqa
                     ["taskkill", "/PID", str(self.child_process_id), "/T", "/F"],
                     check=False,
                     stdout=subprocess.PIPE,
@@ -599,7 +596,7 @@ def start_pty_process(
     command = [resolved_python_exe, "-u", "-X", "faulthandler", script_path]
 
     try:
-        from winpty import PtyProcess
+        from DONT_CHANGE.backend_py_pckgs.winpty import PtyProcess
     except Exception as error:
         raise RuntimeError(
             "[Error] pywinpty is required for browser terminal mode.\n"
@@ -660,11 +657,11 @@ def main() -> None:
     log_timestamp_format = sys.argv[12]
     overwrite_log = arg_to_bool(13, True)
     process_id_file_path = sys.argv[15]
-    play_sound_on_success = arg_to_wav_path(16)
+    play_sound_on_success = sys.argv[16]
     send_Windows_notification_on_success = arg_to_bool(17)
-    play_sound_on_failure = arg_to_wav_path(18)
+    play_sound_on_failure = sys.argv[18]
     send_Windows_notification_on_failure = arg_to_bool(19)
-    play_sound_on_python_interpreter_crash = arg_to_wav_path(20)
+    play_sound_on_python_interpreter_crash = sys.argv[20]
     send_Windows_notification_on_python_interpreter_crash = arg_to_bool(21)
     open_log_file_after_success = arg_to_bool(22)
     open_log_file_after_failure = arg_to_bool(23)
