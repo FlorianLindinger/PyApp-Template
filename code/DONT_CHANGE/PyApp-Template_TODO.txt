@@ -3,11 +3,18 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+chekc if folder size check and walks are fast enough
+
+only chekc size if not None.
+add good min depth to delte packages and distro
+
+do i wnat user to give chance to delte folder themselfves before raising error. Like reprint path and not deleted until deleted.
+
+add docstring to everything even files;
+
 chekc completion_alerts = CompletionAlerts
 
 i guess have launcerh common for now. ask AI what i could move over to there. ask AI if comilation will be larger
-
-mention target version in prints of py install
 
 create USE developer_tools FOLDER (IN PARENT FOLDER) TO CHANGE PACKAGES
 
