@@ -6,6 +6,7 @@ import re
 import subprocess
 import sys
 import threading
+import time
 from datetime import datetime, timezone
 
 _WINDOWS_CRASH_CODES = {
@@ -43,6 +44,38 @@ def _unsigned32(n: int) -> int:
 
 def looks_like_interpreter_crash(returncode) -> bool:
     return isinstance(returncode, int) and (_unsigned32(returncode) in _WINDOWS_CRASH_CODES)
+
+
+def remove_signal_file(path: str) -> None:
+    if path == "":
+        return
+
+    try:
+        if os.path.exists(path):
+            os.remove(path)
+    except Exception:
+        pass
+
+
+def create_signal_file(path: str) -> None:
+    if path == "":
+        return
+
+    folder = os.path.dirname(path)
+    if folder:
+        os.makedirs(folder, exist_ok=True)
+    with open(path, "w", encoding="utf-8"):
+        pass
+
+
+def wait_for_signal_file(path: str, timeout_seconds: float, poll_seconds: float = 0.05) -> bool:
+    deadline = time.monotonic() + timeout_seconds
+    while time.monotonic() < deadline:
+        if os.path.exists(path):
+            remove_signal_file(path)
+            return True
+        time.sleep(poll_seconds)
+    return False
 
 
 class ProcessIdRegistry:

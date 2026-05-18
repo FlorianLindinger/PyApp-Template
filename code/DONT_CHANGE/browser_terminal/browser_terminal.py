@@ -29,6 +29,7 @@ from DONT_CHANGE.specific_scripts.launcher_common import (
     TerminalLogger,
     arg_to_bool,
     arg_to_wav_path,
+    create_signal_file,
     looks_like_interpreter_crash,
 )
 
@@ -644,7 +645,7 @@ def main() -> None:
             "play_sound_on_failure send_Windows_notification_on_failure "
             "play_sound_on_python_interpreter_crash send_Windows_notification_on_python_interpreter_crash "
             "open_log_file_after_success open_log_file_after_failure open_log_file_after_python_interpreter_crash "
-            "start_minimized]"
+            "start_minimized correct_start_signal_file_path]"
         )
 
     script_path = sys.argv[1]
@@ -658,17 +659,18 @@ def main() -> None:
     log_path = sys.argv[11]
     log_timestamp_format = sys.argv[12]
     overwrite_log = arg_to_bool(13, True)
-    process_id_file_path = sys.argv[16]
-    play_sound_on_success = arg_to_wav_path(17)
-    send_Windows_notification_on_success = arg_to_bool(18)
-    play_sound_on_failure = arg_to_wav_path(19)
-    send_Windows_notification_on_failure = arg_to_bool(20)
-    play_sound_on_python_interpreter_crash = arg_to_wav_path(21)
-    send_Windows_notification_on_python_interpreter_crash = arg_to_bool(22)
-    open_log_file_after_success = arg_to_bool(23)
-    open_log_file_after_failure = arg_to_bool(24)
-    open_log_file_after_python_interpreter_crash = arg_to_bool(25)
-    start_minimized = arg_to_bool(26)
+    process_id_file_path = sys.argv[15]
+    play_sound_on_success = arg_to_wav_path(16)
+    send_Windows_notification_on_success = arg_to_bool(17)
+    play_sound_on_failure = arg_to_wav_path(18)
+    send_Windows_notification_on_failure = arg_to_bool(19)
+    play_sound_on_python_interpreter_crash = arg_to_wav_path(20)
+    send_Windows_notification_on_python_interpreter_crash = arg_to_bool(21)
+    open_log_file_after_success = arg_to_bool(22)
+    open_log_file_after_failure = arg_to_bool(23)
+    open_log_file_after_python_interpreter_crash = arg_to_bool(24)
+    start_minimized = arg_to_bool(25)
+    correct_start_signal_file_path = sys.argv[26] if len(sys.argv) > 26 else ""
 
     registry = ProcessIdRegistry(process_id_file_path)
     registry.add(os.getpid())
@@ -704,6 +706,7 @@ def main() -> None:
         python_exe=python_exe,
         wdir_is_script_dir=wdir_is_script_dir,
     )
+    create_signal_file(correct_start_signal_file_path)
 
     try:
         opened = open_browser(url, start_minimized)
