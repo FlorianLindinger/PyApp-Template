@@ -3,12 +3,17 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+ask long think AI for docstring improvements
+
+add setting to launch in classic_terminal (conhost) or modern_tabbed_terminal (wt)
+
+rename py_env_package_change_marker_file_path
+
+remove reuiqrment of python folder to be py_dist
+
 chekc if folder size check and walks are fast enough
 
-only chekc size if not None.
-add good min depth to delte packages and distro
-
-do i wnat user to give chance to delte folder themselfves before raising error. Like reprint path and not deleted until deleted.
+do i wnat user to give chance to delte folder themselfves before raising error. Like reprint path and not deleted until deleted. but also they are prompted and they should not be able to do more. maybe chekc after prompt if sucess and reprompt otherwise -> yes
 
 add docstring to everything even files;
 
@@ -16,26 +21,19 @@ chekc completion_alerts = CompletionAlerts
 
 i guess have launcerh common for now. ask AI what i could move over to there. ask AI if comilation will be larger
 
-create USE developer_tools FOLDER (IN PARENT FOLDER) TO CHANGE PACKAGES
-
-add allowed deletion of empty folder to delete safe. add max size = 3gb. set to something resaonable for python disrto.
-move python instrall py script to commmoin code i guess and lazy import
-
-cleanup a python version of create_portable_python.bat
+cleanup of python version of create_portable_python.bat
 
 do i want python.bat and pip.bat in portable_python? only if i also add a terminal there i guess. for predictable behauvir maybe outside in backend. or somehow buneled in protable pyhrton? maybe different name and soemhow easy name change at runtim
 -> ship:
 open_terminal_with_set_python_and_pip_target.bat
 
-fix all backend tools
+test all backend tools
 
 any good reason to cartch error in batch instaef of via signal: i guess itehrwidse i dont get whats worng. what if i just leave windwo open and close delibertöy?
 
 do i want to contron conhost cols and lines?
-
-do iwant to control tab colr in wt.exe
-
-fix changed dev tools sgottctu paths
+do iwant to control tab colr in wt.exe?
+more?
 
 waht does quote_cmd_argument
 
@@ -172,6 +170,8 @@ is this correct:
                     sys.exit(exit_code)
 
 
+
+
 =========================================
 ==== Must do before release (in end) ====
 =========================================
@@ -237,6 +237,8 @@ ask if i can use more input succes/warn
 ================
 ==== Future ====
 ================
+
+craete tests in bvakcned test folder
 
 sort common variables more
 
