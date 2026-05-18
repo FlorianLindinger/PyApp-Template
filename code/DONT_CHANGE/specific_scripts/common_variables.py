@@ -5,28 +5,27 @@ def make_abs(x: str) -> str:
     return os.path.normpath(os.path.dirname(os.path.normpath(__file__)) + "\\" + x)
 
 
-windows_dir = os.environ.get("WINDIR", default="C:\\Windows")
-
 # ========================
 # === define variables ===
 # ========================
 
 # folders
 # ------------------------
+windows_dir = os.environ.get("WINDIR", default="C:\\Windows")
 python_scripts_dir = make_abs("..\\..")
 py_env_dir = make_abs("..\\..\\py_env")
 developer_tools_dir = make_abs("..\\..\\developer_tools")
 DONT_CHANGE_dir = make_abs("..")
-backend_packages_dir = make_abs("..\\..\\python_packages")
+backend_packages_dir = make_abs("..\\backend_py_pckgs")
 shortcut_output_dir = make_abs("..\\..\\..")
-packages_dir = py_env_dir + "\\packages"
-python_dist_path = py_env_dir + "\\py_dist"
+frontend_packages_dir = py_env_dir + "\\packages"
+frontend_python_dir = py_env_dir + "\\py_dist"
 
 # scripts
 # ------------------------
 python_code_path = make_abs("..\\..\\main_code.py")
 script_wrapper_path = make_abs("script_wrapper.py")
-browser_terminal_path = make_abs("browser_terminal.py")
+browser_terminal_path = make_abs("..\\browser_terminal\\browser_terminal.py")
 compiled_terminal_path = make_abs("..\\terminal_emulator\\compiled\\run.exe")
 uncompiled_terminal_path = make_abs("..\\terminal_emulator\\terminal_emulator.py")
 launcher_terminal = make_abs("..\\W.bat")
@@ -35,7 +34,7 @@ launcher_settings = make_abs("..\\S.bat")
 launcher_browser = make_abs("..\\B.bat")
 launcher_no_terminal = make_abs("..\\N.bat")
 launcher_stop = make_abs("..\\Q.bat")
-script_for_set_python_and_pip_target = python_dist_path + "\\tools\\open_terminal_with_set_python_and_pip_target.bat"
+script_for_set_python_and_pip_target = frontend_python_dir + "\\tools\\open_terminal_with_set_python_and_pip_target.bat"
 
 # files
 # ------------------------
@@ -49,16 +48,14 @@ python_version_indicator_file_path = developer_tools_dir + "\\current_python_ver
 play_sound_on_crash_default = windows_dir + "\\Media\\Windows Critical Stop.wav"
 play_sound_on_failure_default = windows_dir + "\\Media\\Windows Critical Stop.wav"
 play_sound_on_success_default = windows_dir + "\\Media\\notify.wav"
-determined_current_packages_file_path_withVersion = make_abs(
+determined_current_packages_file_path_withVersion = (
     developer_tools_dir + "\\determined_current_packages_withVersion.txt"
 )
-determined_current_packages_file_path_noVersion = make_abs(
-    developer_tools_dir + "\\determined_current_packages_noVersion.txt"
-)
-determined_needed_packages_output_file_path_noVersion = make_abs(
+determined_current_packages_file_path_noVersion = developer_tools_dir + "\\determined_current_packages_noVersion.txt"
+determined_needed_packages_output_file_path_noVersion = (
     developer_tools_dir + "\\auto_found_required_packages_noVersion.txt"
 )
-determined_needed_packages_output_file_path_withVersion = make_abs(
+determined_needed_packages_output_file_path_withVersion = (
     developer_tools_dir + "\\auto_found_required_packages_withVersion.txt"
 )
 CORRECT_START_SIGNAL_FILE_PATH = make_abs("..\\signal_that_program_started_correctly.signal")
@@ -88,4 +85,4 @@ python_download_timeout_s = 120
 # =============================
 
 developer_settings_dir = os.path.dirname(developer_settings_path)
-python_exe_path = os.path.normpath(python_dist_path + "\\python.exe")
+frontend_python_exe = os.path.normpath(frontend_python_dir + "\\python.exe")
