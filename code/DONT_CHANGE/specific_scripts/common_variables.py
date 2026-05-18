@@ -9,6 +9,18 @@ def make_abs(x: str) -> str:
 # === define variables ===
 # ========================
 
+# backend related
+# ------------------------
+# on change of all backend: stuff has to be changed manually (see finish_backend_installation.py) or regenerated automatically by deleting the previous folder:
+backend_python_exe = make_abs("..\\P\\P.exe") # has to match python_exe_name in install_backend_python.bat
+backend_python_dir = os.path.dirname(backend_python_exe)
+backend_python_pth_file = backend_python_dir + "\\python312._pth"
+backend_python_zip_rel_path = "python312.zip"
+backend_packages_dir = make_abs(
+    "..\\backend_py_pckgs"
+)
+backend_package_requirements_file = make_abs("..\\backend_packages_requirements.txt")
+
 # folders
 # ------------------------
 windows_dir = os.environ.get("WINDIR", default="C:\\Windows")
@@ -16,10 +28,7 @@ python_scripts_dir = make_abs("..\\..")
 py_env_dir = make_abs("..\\..\\py_env")
 developer_tools_dir = make_abs("..\\..\\developer_tools")
 DONT_CHANGE_dir = make_abs("..")
-backend_packages_dir = make_abs("..\\backend_py_pckgs")
 shortcut_output_dir = make_abs("..\\..\\..")
-frontend_packages_dir = py_env_dir + "\\packages"
-frontend_python_dir = py_env_dir + "\\py_dist"
 
 # scripts
 # ------------------------
@@ -34,7 +43,6 @@ launcher_settings = make_abs("..\\S.bat")
 launcher_browser = make_abs("..\\B.bat")
 launcher_no_terminal = make_abs("..\\N.bat")
 launcher_stop = make_abs("..\\Q.bat")
-script_for_set_python_and_pip_target = frontend_python_dir + "\\tools\\open_terminal_with_set_python_and_pip_target.bat"
 
 # files
 # ------------------------
@@ -80,9 +88,18 @@ python_download_ftp_url = "https://www.python.org/ftp/python/"
 python_download_excluded_base_msi_names = {"path", "appendpath", "pip", "launcher"}
 python_download_timeout_s = 120
 
+# frontend related
+# ------------------------
+frontend_packages_dir = py_env_dir + "\\packages"
+frontend_python_dir = py_env_dir + "\\py_dist"
+frontend_script_for_set_python_and_pip_target = (
+    frontend_python_dir + "\\tools\\open_terminal_with_set_python_and_pip_target.bat"
+)
+
 # =============================
 # === derived/less-flexible variables ===
 # =============================
 
 developer_settings_dir = os.path.dirname(developer_settings_path)
 frontend_python_exe = os.path.normpath(frontend_python_dir + "\\python.exe")
+rel_path_from_backend_python_to_backend_packages = os.path.relpath(backend_packages_dir,backend_python_dir)

@@ -2,40 +2,50 @@ import os
 import subprocess
 import sys
 import urllib.request
-from pathlib import Path
 
-# ===========================
+# ====================================
+# add root dir for debug cases where this script is called on its own:
 
-# go to folder of this script
-os.chdir(os.path.dirname(os.path.realpath(__file__)))
+root_dir = os.path.dirname(__file__) + "\\..\\..\\.."
+if root_dir not in sys.path:
+    sys.path.insert(0, root_dir)
 
-# ===========================
+# ====================================
+# import variables
 
-# variables
-python_folder = r"..\..\P"
-python_exe = python_folder + r"\P.exe"
-packages_folder = python_folder + r"\..\python_packages"
-pth_file_path = python_folder + r"\python312._pth"
+from DONT_CHANGE.specific_scripts.common_code import delete_folder_safe
+from DONT_CHANGE.specific_scripts.common_variables import (
+    backend_package_requirements_file,
+    backend_packages_dir,
+    backend_python_dir,
+    backend_python_exe,
+    backend_python_pth_file,
+    backend_python_zip_rel_path,
+    python_scripts_dir,
+    rel_path_from_backend_python_to_backend_packages,
+)
+
+# ====================================
+# local variables
+
 get_pip_url = "https://bootstrap.pypa.io/get-pip.py"
-requirements_file = packages_folder + r"\requirements.txt"
-pipreqs_mapping_path = packages_folder + r"\pipreqs\mapping"
-get_pip_path = python_folder + r"\get-pip.py"
-backend_packages_requirements = r"..\backend_packages_requirements.txt"
+pipreqs_mapping_path = backend_packages_dir + "\\pipreqs\\mapping"
+get_pip_path = backend_python_dir + "\\get-pip.py"
 
 # ===========================
 
 try:
     # update pth_file_path temporily to include packages folder for pip installation
-    with open(pth_file_path, "w", encoding="utf-8") as f:
-        f.write(r"""python312.zip
+    with open(backend_python_pth_file, "w", encoding="utf-8") as f:
+        f.write(rf"""{backend_python_zip_rel_path}
 .
 import site""")
-    
+
     # install pip
     try:
         urllib.request.urlretrieve(get_pip_url, get_pip_path)  # noqa:S310
         subprocess.run(  # noqa:S603
-            [python_exe, get_pip_path, "--no-warn-script-location"],
+            [backend_python_exe, get_pip_path, "--no-warn-script-location"],
             check=True,
         )
         if os.path.exists(get_pip_path):
@@ -45,53 +55,61 @@ import site""")
         raise
 
     # remove unneeded files to save space
-    if os.path.exists(python_folder + r"\sqlite3.dll"):
-        os.remove(python_folder + r"\sqlite3.dll")
+    if os.path.exists(backend_python_dir + r"\sqlite3.dll"):
+        os.remove(backend_python_dir + r"\sqlite3.dll")
     else:
         print("sqlite3.dll not found to remove.")
-    if os.path.exists(python_folder + r"\python.cat"):
-        os.remove(python_folder + r"\python.cat")
+    if os.path.exists(backend_python_dir + r"\python.cat"):
+        os.remove(backend_python_dir + r"\python.cat")
     else:
         print("python.cat not found to remove.")
 
     # clear packages folder
     def clear_folder_contents(folder):
         import shutil  # lazy import because slow
+
         forced_name = "python_packages"
 
-        folder = Path(folder).resolve()
+        folder = os.path.abspath(folder)
 
-        if not folder.exists():
+        if not os.path.exists(folder):
             raise FileNotFoundError(folder)
 
-        if not folder.is_dir():
+        if not os.path.isdir(folder):
             raise NotADirectoryError(folder)
 
-        if folder.name != forced_name:
-            raise ValueError(f"Refusing to delete: expected folder named {forced_name!r}, got {folder.name!r}")
+        folder_name = os.path.basename(folder)
+        if folder_name != forced_name:
+            raise ValueError(f"Refusing to delete: expected folder named {forced_name!r}, got {folder_name!r}")
 
-        for item in folder.iterdir():
-            if item.is_file() or item.is_symlink():
-                item.unlink()
-            elif item.is_dir():
+        for item_name in os.listdir(folder):
+            item = os.path.join(folder, item_name)
+            if os.path.isfile(item) or os.path.islink(item):
+                os.remove(item)
+            elif os.path.isdir(item):
                 shutil.rmtree(item)
 
-    if os.path.exists(packages_folder):
-        clear_folder_contents(packages_folder)
+    if os.path.exists(backend_packages_dir):
+        success = delete_folder_safe(
+            backend_packages_dir, max_size_GB_before_prompt=0.5, allowed_base_abs_path=python_scripts_dir
+        )
+        if not success:
+            raise RuntimeError(f'Failed to delete "{backend_packages_dir}". Aborting.')
+            input("Press enter to exit")
     else:
-        os.makedirs(packages_folder)
+        os.makedirs(backend_packages_dir)
 
     # print
     print()
-    print("=" * 20)
+    print("==============================")
     print("Installing backend packages...")
-    print("=" * 20)
+    print("==============================")
     print()
 
     # install "setuptools" and its dependency "wheel" for "docopt" package installation
     subprocess.run(  # noqa:S603
         [
-            python_exe,
+            backend_python_exe,
             "-m",
             "pip",
             "install",
@@ -108,14 +126,14 @@ import site""")
     # install backend packages
     subprocess.run(  # noqa:S603
         [
-            python_exe,
+            backend_python_exe,
             "-m",
             "pip",
             "install",
             "-r",
-            backend_packages_requirements,
+            backend_package_requirements_file,
             "--target",
-            packages_folder,
+            backend_packages_dir,
             "--upgrade",
             "--no-deps",
         ],
@@ -124,25 +142,25 @@ import site""")
 
     # Console entry points are generated into python_packages\bin by pip --target.
     # The embedded runtime imports packages directly and does not use those scripts.
-    generated_bin_folder = os.path.join(packages_folder, "bin")
+    generated_bin_folder = os.path.join(backend_packages_dir, "bin")
     if os.path.isdir(generated_bin_folder):
         import shutil  # lazy import because slow
+
         shutil.rmtree(generated_bin_folder)
 
     # uninstall pip, setuptools and wheel from the embedded python to save space
     subprocess.run(  # noqa:S603
-        [python_exe, "-m", "pip", "uninstall", "pip", "packaging", "setuptools", "wheel", "-y"], check=True
+        [backend_python_exe, "-m", "pip", "uninstall", "pip", "packaging", "setuptools", "wheel", "-y"], check=True
     )
 
-    # update python312._pth
-    with open(pth_file_path, "w", encoding="utf-8") as f:
-        f.write(r"""python312.zip
+    # update python3xx._pth
+    with open(backend_python_pth_file, "w", encoding="utf-8") as f:
+        f.write(rf"""{backend_python_zip_rel_path}
 .
-..\..
-..\python_packages
-..\python_packages\win32
-..\python_packages\win32\lib
-..\python_packages\Pythonwin
+{rel_path_from_backend_python_to_backend_packages}
+{rel_path_from_backend_python_to_backend_packages}\win32
+{rel_path_from_backend_python_to_backend_packages}\win32\lib
+{rel_path_from_backend_python_to_backend_packages}\Pythonwin
 
 # Uncomment to run site.main() automatically
 # import site""")
@@ -1359,9 +1377,9 @@ import site""")
     servicemanager:pywin32""")
 
     print()
-    print("=" * 20)
+    print("===========================")
     print("End of backend installation")
-    print("=" * 20)
+    print("===========================")
     print()
     sys.exit(0)
 
