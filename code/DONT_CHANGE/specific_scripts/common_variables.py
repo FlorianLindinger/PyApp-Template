@@ -25,7 +25,6 @@ python_dist_path = py_env_dir + "\\py_dist"
 # scripts
 # ------------------------
 python_code_path = make_abs("..\\..\\main_code.py")
-portable_python_installer_path = make_abs("..\\general_scripts\\create_portable_python.bat")
 script_wrapper_path = make_abs("script_wrapper.py")
 browser_terminal_path = make_abs("browser_terminal.py")
 compiled_terminal_path = make_abs("..\\terminal_emulator\\compiled\\run.exe")
@@ -80,6 +79,9 @@ excluded_folders_for_package_search = [
 variable_in_default_packages_path_that_triggers_search_if_true = (
     "# auto_find_required_packages_here_and_reset_installed_packages_to_them"
 )
+python_download_ftp_url = "https://www.python.org/ftp/python/"
+python_download_excluded_base_msi_names = {"path", "appendpath", "pip", "launcher"}
+python_download_timeout_s = 120
 
 # =============================
 # === derived/less-flexible variables ===

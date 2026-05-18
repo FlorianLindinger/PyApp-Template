@@ -17,9 +17,11 @@ from DONT_CHANGE.specific_scripts.common_variables import (
     excluded_folders_for_package_search,
     icon_path,
     packages_dir,
-    portable_python_installer_path,
     py_env_dir,
     python_dist_path,
+    python_download_excluded_base_msi_names,
+    python_download_ftp_url,
+    python_download_timeout_s,
     python_exe_path,
     python_scripts_dir,
     python_version_indicator_file_path,
@@ -116,13 +118,14 @@ def delete_folder_safe(
     expected_name: str | None = None,
     prompt_for_confirmation=True,
 ) -> bool:
-    import shutil  # lazy import because takes 0.2 s
 
     target_path = os.path.realpath(os.path.abspath(os.fspath(target)))
     base_path = os.path.realpath(os.path.abspath(os.fspath(allowed_base)))
 
     if not os.path.exists(target_path):
-        return False
+        return True
+
+    import shutil  # lazy import because takes 0.2 s
 
     if expected_name is not None and os.path.basename(target_path).lower() != expected_name.lower():
         raise RuntimeError(f'Refusing to delete "{target_path}" because its folder name is not "{expected_name}".')
@@ -1035,6 +1038,396 @@ def is_python_version_correct(target_version: str | float | int) -> tuple[bool, 
 
 
 # =========================
+# Python installer
+
+
+def install_full_python(
+    py_ver: str = "",
+    target_dir: str = "",
+    install_tkinter: bool = True,
+    install_tests: bool = True,
+    install_tools: bool = True,
+    install_docs: bool = False,
+    rel_path_to_packages: str = "",
+) -> int:
+    """Create a portable full Python distribution and return a process exit code."""
+
+    import html.parser
+    import re
+    import shutil
+    import tempfile
+    import urllib.error
+    import urllib.parse
+    import urllib.request
+
+    def pause_if_interactive() -> None:
+        if sys.stdin.isatty():
+            input("Press Enter to exit.")
+
+    def run_command_printing_output_on_failure(command: list[str]) -> int:
+        result = subprocess.run(  # noqa
+            command,
+            check=False,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+        )
+        if result.returncode != 0 and result.stdout:
+            print(result.stdout.rstrip())
+        return result.returncode
+
+    target_dir = os.path.abspath(target_dir) if target_dir else os.getcwd()
+    python_folder = os.path.join(target_dir, "py_dist")
+    path_to_packages_file_path = os.path.join(python_folder, "Lib", "site-packages", "path_to_packages.pth")
+
+    # ----- Process installer options -----
+
+    # Match the batch script's behavior: caller passes a path relative to
+    # target_dir, but the .pth file lives below py_dist/Lib/site-packages.
+    if rel_path_to_packages:
+        rel_path_to_packages = "../../../" + rel_path_to_packages
+
+    # Python's Windows installer is split into multiple MSI files. These names
+    # are optional components or global registration helpers we do not want.
+    exclude_files = set(python_download_excluded_base_msi_names)
+    if not install_tkinter:
+        exclude_files.add("tcltk")
+    if not install_tests:
+        exclude_files.add("test")
+    if not install_tools:
+        exclude_files.add("tools")
+    if not install_docs:
+        exclude_files.add("doc")
+
+    # ----- Find newest matching Python version with amd64 MSI files -----
+
+    class LinkParser(html.parser.HTMLParser):
+        """Minimal link collector for python.org's simple directory listings."""
+
+        def __init__(self) -> None:
+            super().__init__()
+            self.links: list[str] = []
+
+        def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+            if tag.lower() != "a":
+                return
+            for name, value in attrs:
+                if name.lower() == "href" and value:
+                    self.links.append(value)
+
+    def fetch_links(url: str) -> list[str]:
+        request = urllib.request.Request(url, headers={"User-Agent": "install-full-python/1.0"})
+        with urllib.request.urlopen(request, timeout=python_download_timeout_s) as response:
+            html = response.read().decode("utf-8", errors="replace")
+        parser = LinkParser()
+        parser.feed(html)
+        return parser.links
+
+    arg = py_ver.strip()
+    if arg == "":
+        version_pattern = re.compile(r"^\d+\.\d+\.\d+/$")
+    elif re.fullmatch(r"\d+", arg):
+        version_pattern = re.compile(rf"^{re.escape(arg)}\.\d+\.\d+/$")
+    elif re.fullmatch(r"\d+\.\d+", arg):
+        version_pattern = re.compile(rf"^{re.escape(arg)}\.\d+/$")
+    elif re.fullmatch(r"\d+\.\d+\.\d+", arg):
+        version_pattern = re.compile(rf"^{re.escape(arg)}/$")
+    else:
+        version_pattern = None
+
+    full_ver = ""
+    if version_pattern is not None:
+        try:
+            versions = [link.strip("/") for link in fetch_links(python_download_ftp_url) if version_pattern.match(link)]
+        except (OSError, urllib.error.URLError):
+            versions = []
+
+        versions.sort(key=lambda version: tuple(int(part) for part in version.split(".")), reverse=True)
+        for version in versions:
+            candidate_url = urllib.parse.urljoin(python_download_ftp_url, f"{version}/amd64/")
+            try:
+                fetch_links(candidate_url)
+            except (OSError, urllib.error.URLError):
+                continue
+            full_ver = version
+            break
+
+    if not full_ver:
+        print(
+            "[ERROR] Could not determine latest implemented version for specified version "
+            f"({py_ver}) or download method not implemented for this version or no internet connection. "
+            'This code needs "https://www.python.org/ftp/python/{full-python-version}/amd64/" '
+            "to exist. Aborting."
+        )
+        pause_if_interactive()
+        return 1
+
+    print(f"Found (msi-install-available) Python version {full_ver}")
+    url = urllib.parse.urljoin(python_download_ftp_url, f"{full_ver}/amd64/")
+    print(f"Download URL: {url}")
+
+    # ----- Build MSI install set before deleting an existing working Python -----
+
+    msi_urls = []
+    for link in fetch_links(url):
+        if link.endswith("/"):
+            continue
+
+        absolute_url = link if re.match(r"^https?://", link) else urllib.parse.urljoin(url, link)
+        filename = os.path.basename(urllib.parse.urlparse(absolute_url).path)
+        if not filename.lower().endswith(".msi"):
+            continue
+
+        # Skip debug-symbol/debug-build packages like component_d.msi and
+        # component_pdb.msi.
+        stem = os.path.splitext(os.path.splitext(filename)[0])[0]
+        if re.search(r"(_d|_pdb)$", stem):
+            continue
+        if os.path.splitext(filename)[0] in exclude_files:
+            continue
+
+        msi_urls.append(absolute_url)
+
+    if not msi_urls:
+        print(f"[Error] No installable MSI files found at {url}. Aborting before deleting existing Python.")
+        pause_if_interactive()
+        return 1
+    print(f"Found {len(msi_urls)} MSI package(s) to install.")
+
+    # ----- Replace old py_dist with an empty target folder -----
+
+    delete_status = _portable_python_delete_existing_python_folder(python_folder, target_dir)
+    if delete_status != 0:
+        return delete_status
+
+    os.makedirs(python_folder, exist_ok=True)
+    write_file(
+        os.path.join(python_folder, ".gitignore"),
+        [
+            '# Auto added to prevent synchronization of python distribution in git by blacklisting everything with wildcard "*"\n',
+            "*\n",
+        ],
+    )
+
+    download_folder = None
+    try:
+        # ----- Download MSI files into an isolated temp folder -----
+
+        download_folder = tempfile.mkdtemp(prefix="tmp_python_installation_files_")
+        msi_paths = []
+        for msi_url in msi_urls:
+            filename = os.path.basename(urllib.parse.urlparse(msi_url).path)
+            output_path = os.path.join(download_folder, filename)
+            print(f"Downloading {filename}")
+
+            request = urllib.request.Request(msi_url, headers={"User-Agent": "install-full-python/1.0"})
+            with urllib.request.urlopen(request, timeout=python_download_timeout_s) as response:
+                with open(output_path, "wb") as file:
+                    shutil.copyfileobj(response, file)
+
+            if not os.path.isfile(output_path) or os.path.getsize(output_path) == 0:
+                raise RuntimeError(f'Download produced an empty file: "{output_path}"')
+            msi_paths.append(output_path)
+
+        # ----- Extract MSI files into py_dist -----
+
+        for msi_path in sorted(msi_paths, key=lambda path: os.path.basename(path).lower()):
+            msi_name = os.path.basename(msi_path)
+            print(f"Installing {msi_name}")
+            log_path = os.path.splitext(msi_path)[0] + ".msi.log"
+
+            # Use a command-line string to match the original batch syntax.
+            # msiexec is picky about MSI properties whose values contain spaces.
+            command_line = f'msiexec /a "{msi_path}" TARGETDIR="{python_folder}" /qn /L*V "{log_path}"'
+            result = subprocess.run(command_line, check=False)  # noqa
+            if result.returncode != 0:
+                raise RuntimeError(f"msiexec failed for {msi_name} with exit code {result.returncode}. Log: {log_path}")
+
+            if msi_name.lower() == "test.msi":
+                ruff_config_path = os.path.join(python_folder, "Lib", "test", ".ruff.toml")
+                if os.path.exists(ruff_config_path):
+                    lines = read_file(ruff_config_path)
+                    updated_lines = ["# " + line if re.match(r"^\s*extend\s*=", line) else line for line in lines]
+                    write_file(ruff_config_path, updated_lines)
+
+            installed_msi_copy = os.path.join(python_folder, msi_name)
+            if os.path.exists(installed_msi_copy):
+                os.remove(installed_msi_copy)
+
+    except Exception as error:
+        print(f"[Error] Portable Python installation failed: {error}")
+        pause_if_interactive()
+        return 9
+    finally:
+        if download_folder is not None and os.path.exists(download_folder):
+            shutil.rmtree(download_folder, ignore_errors=True)
+
+    # ----- Verify install and bootstrap pip -----
+
+    if not os.path.exists(os.path.join(python_folder, "python.exe")):
+        print("[Error] Python installation failed (see above). Aborting.")
+        pause_if_interactive()
+        return 4
+
+    write_file(os.path.join(python_folder, "pip.ini"), ["[global]\n", "no-warn-script-location = false\n"])
+
+    python_exe = os.path.join(python_folder, "python.exe")
+    if run_command_printing_output_on_failure([python_exe, "-m", "ensurepip", "--upgrade"]) != 0:
+        print("[Error] Python not sucessfully installed (see above). Aborting.")
+        pause_if_interactive()
+        return 6
+
+    if (
+        run_command_printing_output_on_failure(
+            [python_exe, "-m", "pip", "install", "--upgrade", "pip", "--ignore-installed", "--progress-bar", "off"]
+        )
+        != 0
+    ):
+        if (
+            run_command_printing_output_on_failure(
+                [python_exe, "-m", "pip", "install", "--upgrade", "pip", "--ignore-installed"]
+            )
+            != 0
+        ):
+            print("[Error] Python's pip not sucessfully installed (see above). Aborting.")
+            pause_if_interactive()
+            return 7
+
+    if (
+        run_command_printing_output_on_failure(
+            [python_exe, "-m", "pip", "install", "--upgrade", "pip"]
+        )
+        != 0
+    ):
+        print("[Error] Python's pip not sucessfully installed (see above). Aborting.")
+        pause_if_interactive()
+        return 8
+
+    # ----- Register additional package search folder, if requested -----
+
+    if rel_path_to_packages:
+        write_file(path_to_packages_file_path, [rel_path_to_packages + "\n"])
+
+    print()
+    print(f'Sucessfully created portable Python ({full_ver}) at "{python_folder}".')
+    return 0
+
+
+def _portable_python_delete_existing_python_folder(python_folder: str, target_dir: str) -> int:
+    """Delete an existing py_dist only after conservative path validation.
+
+    Return codes match the batch installer:
+    - 0: no existing folder was present, or deletion succeeded.
+    - 2: the folder failed safety validation and was not deleted.
+    - 3: deletion was attempted but the folder still exists afterwards.
+    """
+
+    if not os.path.exists(python_folder):
+        return 0
+
+    error = _portable_python_get_python_folder_delete_safety_error(python_folder, target_dir)
+    if error:
+        print(
+            f'[Error] Refusing to delete "{python_folder}". {error} '
+            "-> Delete manually after confirming it is a Python folder and restart."
+        )
+        if sys.stdin.isatty():
+            input("Press Enter to exit.")
+        return 2
+
+    import shutil  # lazy: only needed when an old distro exists
+
+    shutil.rmtree(python_folder)
+    if os.path.exists(python_folder):
+        print(
+            f'[Error] Failed to delete "{python_folder}". '
+            "-> Delete manually after confirming it is a Python folder and restart."
+        )
+        if sys.stdin.isatty():
+            input("Press Enter to exit.")
+        return 3
+    print("Deleted old python folder.")
+    return 0
+
+
+def _portable_python_get_python_folder_delete_safety_error(python_folder: str, target_dir: str) -> str:
+    """Return a refusal reason if python_folder is not safe to delete."""
+
+    try:
+        resolved_python_folder = os.path.realpath(os.path.abspath(python_folder))
+        resolved_target_dir = os.path.realpath(os.path.abspath(target_dir))
+    except OSError as error:
+        return f"Could not resolve path safely: {error}."
+
+    if not os.path.isdir(resolved_python_folder):
+        return "Path is not a folder."
+
+    if os.path.basename(resolved_python_folder).lower() != "py_dist":
+        return 'Folder name is not "py_dist".'
+
+    if os.path.normcase(os.path.dirname(resolved_python_folder)) != os.path.normcase(resolved_target_dir):
+        return "Folder is not directly inside the selected target directory."
+
+    if _portable_python_is_filesystem_root(resolved_python_folder):
+        return "Folder resolves to a filesystem root."
+
+    current_dir = os.path.realpath(os.path.abspath(os.getcwd()))
+    if os.path.normcase(resolved_python_folder) == os.path.normcase(current_dir):
+        return "Folder resolves to the current working directory."
+
+    home_dir = os.path.realpath(os.path.abspath(os.path.expanduser("~")))
+    if os.path.normcase(resolved_python_folder) == os.path.normcase(home_dir):
+        return "Folder resolves to the user home directory."
+
+    # Empty py_dist folders are safe to remove because they contain no user
+    # data and may be left behind by a failed or interrupted setup attempt.
+    if _portable_python_is_folder_empty(resolved_python_folder):
+        return ""
+
+    if not os.path.isfile(os.path.join(resolved_python_folder, "python.exe")):
+        return 'Missing expected marker file "python.exe".'
+
+    if not os.path.isdir(os.path.join(resolved_python_folder, "Lib")):
+        return 'Missing expected Python folder "Lib".'
+
+    if not _portable_python_has_installer_gitignore_marker(resolved_python_folder):
+        return 'Missing installer-created ".gitignore" marker.'
+
+    return ""
+
+
+def _portable_python_is_filesystem_root(path: str) -> bool:
+    """Return whether path points at a drive or filesystem root."""
+
+    return os.path.normcase(path) == os.path.normcase(os.path.dirname(path))
+
+
+def _portable_python_is_folder_empty(path: str) -> bool:
+    """Return whether a folder contains no files or subfolders."""
+
+    with os.scandir(path) as entries:
+        try:
+            next(entries)
+        except StopIteration:
+            return True
+    return False
+
+
+def _portable_python_has_installer_gitignore_marker(python_folder: str) -> bool:
+    """Check for the marker written by this installer before deleting py_dist."""
+
+    marker_file = os.path.join(python_folder, ".gitignore")
+    if not os.path.isfile(marker_file):
+        return False
+    try:
+        with open(marker_file, encoding="utf-8", errors="replace") as file:
+            marker_text = file.read()
+    except OSError:
+        return False
+    return "Auto added to prevent synchronization of python distribution" in marker_text
+
+
+# =========================
 # python setup
 
 
@@ -1048,7 +1441,7 @@ def delete_packages():
     if success == False:
         raise RuntimeError("[Error] Folder deletion failed. Aborting")
     else:
-        os.mkdir(python_dist_path)
+        os.mkdir(packages_dir)
 
 
 def delete_python_distro():
