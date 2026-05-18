@@ -80,13 +80,13 @@ try:
         compiled_terminal_path,
         developer_settings_dir,
         developer_settings_path,
+        frontend_python_exe,
         icon_path,
         play_sound_on_crash_default,
         play_sound_on_failure_default,
         play_sound_on_success_default,
         process_id_file_path,
         python_code_path,
-        python_exe_path,
         script_wrapper_path,
         uncompiled_terminal_path,
         windows_dir,
@@ -123,7 +123,7 @@ try:
     if use_global_python == True:
         python_exe_for_script_path = "py"
     else:
-        python_exe_for_script_path = python_exe_path
+        python_exe_for_script_path = frontend_python_exe
 
     if start_in_shortcut_folder == True:
         wdir_is_script_dir = False
@@ -325,6 +325,7 @@ try:
             bool_to_arg(open_log_file_after_failure),
             bool_to_arg(open_log_file_after_crash),
             bool_to_arg(start_minimized),
+            CORRECT_START_SIGNAL_FILE_PATH,
         ]
 
         # ==============
@@ -418,8 +419,21 @@ try:
 
             if launch_mode == "terminal":  # run in terminal and don't wait
                 proc = subprocess.Popen(  # noqa:S603 #type:ignore
+                    # [
+                    #     "conhost.exe",
+                    #     "cmd.exe",
+                    #     "/k",
+                    #     "call",
+                    #     f"{os.path.dirname(os.path.normpath(__file__))}\\test.bat",
+                    #     "test",
+                    #     "5B",
+                    #     f'"{python_exe_for_script_path}" -X faulthandler "{script_wrapper_path}" "{script_path}" '
+                    #     + subprocess.list2cmdline(args),  # type:ignore
+                    # ],
                     [
                         "conhost.exe",
+                        # "cmd.exe",
+                        # "/k",
                         python_exe_for_script_path,
                         "-X",
                         "faulthandler",
