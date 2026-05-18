@@ -1116,8 +1116,8 @@ def install_full_python(
                     self.links.append(value)
 
     def fetch_links(url: str) -> list[str]:
-        request = urllib.request.Request(url, headers={"User-Agent": "install-full-python/1.0"})
-        with urllib.request.urlopen(request, timeout=python_download_timeout_s) as response:
+        request = urllib.request.Request(url, headers={"User-Agent": "install-full-python/1.0"}) #noqa
+        with urllib.request.urlopen(request, timeout=python_download_timeout_s) as response: #noqa
             html = response.read().decode("utf-8", errors="replace")
         parser = LinkParser()
         parser.feed(html)
@@ -1220,8 +1220,8 @@ def install_full_python(
             output_path = os.path.join(download_folder, filename)
             print(f"Downloading {filename}")
 
-            request = urllib.request.Request(msi_url, headers={"User-Agent": "install-full-python/1.0"})
-            with urllib.request.urlopen(request, timeout=python_download_timeout_s) as response:
+            request = urllib.request.Request(msi_url, headers={"User-Agent": "install-full-python/1.0"}) #noqa
+            with urllib.request.urlopen(request, timeout=python_download_timeout_s) as response: #noqa
                 with open(output_path, "wb") as file:
                     shutil.copyfileobj(response, file)
 
