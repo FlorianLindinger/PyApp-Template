@@ -21,6 +21,7 @@ try:
     # =============================
 
     VALID_LAUNCH_MODES = ["terminal", "no_terminal", "terminal_emulator", "uncompiled_terminal_emulator", "browser"]
+    EMPTY_ARG_INDICATOR = "__EMPTY__"
 
     # =============================
     # imports packages and common variables and developer settings
@@ -135,12 +136,12 @@ try:
         wdir_is_script_dir = True
 
     if log_path_rel_to_start_folder in [None, False, ""]:
-        log_path = ""
+        log_path = EMPTY_ARG_INDICATOR
     else:
         if wdir_is_script_dir:
-            log_path = os.path.join(os.path.dirname(script_path), log_path_rel_to_start_folder)
+            log_path = os.path.normpath(os.path.join(os.path.dirname(script_path), log_path_rel_to_start_folder))
         else:
-            log_path = os.path.join(os.getcwd(), log_path_rel_to_start_folder)
+            log_path = os.path.normpath(os.path.join(os.getcwd(), log_path_rel_to_start_folder))
         log_path = datetime.now(tz=timezone.utc).strftime(log_path)
 
     if dark_mode is None:
@@ -149,56 +150,66 @@ try:
         dark_mode = "1"
     elif dark_mode is False:  # type:ignore
         dark_mode = "0"
-    if stylesheet_path in [False, None]:
-        stylesheet_path = ""
+    if stylesheet_path in [False, None, ""]:
+        stylesheet_path = EMPTY_ARG_INDICATOR
     else:
         if not os.path.isabs(stylesheet_path):
             stylesheet_path = os.path.normpath(developer_settings_dir + "\\" + stylesheet_path)
 
-    if python_version in [None, False]:
-        python_version = ""
-    if log_print_prepend in [None, False]:
-        log_print_prepend = ""
-    if log_input_prepend in [None, False]:
-        log_input_prepend = ""
-    if print_prepend in [None, False]:
-        print_prepend = ""
-    if input_prepend in [None, False]:
-        input_prepend = ""
-    if terminal_bg_color in [None, False]:
-        terminal_bg_color = ""
-    if terminal_text_color in [None, False]:
-        terminal_text_color = ""
+    if python_version in [None, False, ""]:
+        python_version = EMPTY_ARG_INDICATOR
+    if log_print_prepend in [None, False, ""]:
+        log_print_prepend = EMPTY_ARG_INDICATOR
+    if log_input_prepend in [None, False, ""]:
+        log_input_prepend = EMPTY_ARG_INDICATOR
+    if print_prepend in [None, False, ""]:
+        print_prepend = EMPTY_ARG_INDICATOR
+    if input_prepend in [None, False, ""]:
+        input_prepend = EMPTY_ARG_INDICATOR
+    if terminal_bg_color in [None, False, ""]:
+        terminal_bg_color = EMPTY_ARG_INDICATOR
+    if terminal_text_color in [None, False, ""]:
+        terminal_text_color = EMPTY_ARG_INDICATOR
+    if classic_terminal_cols in [None, False, ""]:
+        classic_terminal_cols = EMPTY_ARG_INDICATOR
+    else:
+        classic_terminal_cols = str(classic_terminal_cols)
+    if classic_terminal_lines in [None, False, ""]:
+        classic_terminal_lines = EMPTY_ARG_INDICATOR
+    else:
+        classic_terminal_lines = str(classic_terminal_lines)
+    if modern_terminal_tab_color in [None, False, ""]:
+        modern_terminal_tab_color = EMPTY_ARG_INDICATOR
 
     if play_sound_on_crash is True:
         play_sound_on_crash = play_sound_on_crash_default
-    elif play_sound_on_crash in [False, None]:
-        play_sound_on_crash = ""
+    elif play_sound_on_crash in [False, None, ""]:
+        play_sound_on_crash = EMPTY_ARG_INDICATOR
     elif not os.path.isabs(play_sound_on_crash):
         play_sound_on_crash = os.path.normpath(windows_dir + "\\Media\\" + play_sound_on_crash)
-    if play_sound_on_crash != "" and play_sound_on_crash[-4:] != ".wav":
+    if play_sound_on_crash != EMPTY_ARG_INDICATOR and play_sound_on_crash[-4:] != ".wav":
         play_sound_on_crash += ".wav"
-    if play_sound_on_crash != "" and not os.path.exists(play_sound_on_crash):
+    if play_sound_on_crash != EMPTY_ARG_INDICATOR and not os.path.exists(play_sound_on_crash):
         print(f"[Warning] Sound file does not exist: {play_sound_on_crash}")
     if play_sound_on_success is True:
         play_sound_on_success = play_sound_on_success_default
-    elif play_sound_on_success in [False, None]:
-        play_sound_on_success = ""
+    elif play_sound_on_success in [False, None, ""]:
+        play_sound_on_success = EMPTY_ARG_INDICATOR
     elif not os.path.isabs(play_sound_on_success):
         play_sound_on_success = os.path.normpath(windows_dir + "\\Media\\" + play_sound_on_success)
-    if play_sound_on_success != "" and play_sound_on_success[-4:] != ".wav":
+    if play_sound_on_success != EMPTY_ARG_INDICATOR and play_sound_on_success[-4:] != ".wav":
         play_sound_on_success += ".wav"
-    if play_sound_on_success != "" and not os.path.exists(play_sound_on_success):
+    if play_sound_on_success != EMPTY_ARG_INDICATOR and not os.path.exists(play_sound_on_success):
         print(f"[Warning] Sound file does not exist: {play_sound_on_success}")
     if play_sound_on_failure is True:
         play_sound_on_failure = play_sound_on_failure_default
-    elif play_sound_on_failure in [False, None]:
-        play_sound_on_failure = ""
+    elif play_sound_on_failure in [False, None, ""]:
+        play_sound_on_failure = EMPTY_ARG_INDICATOR
     elif not os.path.isabs(play_sound_on_failure):
         play_sound_on_failure = os.path.normpath(windows_dir + "\\Media\\" + play_sound_on_failure)
-    if play_sound_on_failure != "" and play_sound_on_failure[-4:] != ".wav":
+    if play_sound_on_failure != EMPTY_ARG_INDICATOR and play_sound_on_failure[-4:] != ".wav":
         play_sound_on_failure += ".wav"
-    if play_sound_on_failure != "" and not os.path.exists(play_sound_on_failure):
+    if play_sound_on_failure != EMPTY_ARG_INDICATOR and not os.path.exists(play_sound_on_failure):
         print(f"[Warning] Sound file does not exist: {play_sound_on_failure}")
 
     # =============================
@@ -235,10 +246,10 @@ try:
             app_id = sys.argv[1]
             launch_mode = sys.argv[2]
         elif len(sys.argv) == 2:
-            app_id = ""
+            app_id = EMPTY_ARG_INDICATOR
             launch_mode = sys.argv[1]
         else:
-            app_id = ""
+            app_id = EMPTY_ARG_INDICATOR
             launch_mode = "terminal"
 
         # =============================
@@ -250,7 +261,7 @@ try:
                 f'[Error] Unknown launch_mode "{launch_mode}". Expected one of: {", ".join(VALID_LAUNCH_MODES)}'
             )
 
-        # set log_path="" if not enabled
+        # set log_path=EMPTY_ARG_INDICATOR if not enabled
         if (
             (launch_mode == "terminal" and enable_log_for_Windows_terminal_start == False)
             or (launch_mode == "no_terminal" and enable_log_for_no_terminal_start == False)
@@ -260,7 +271,7 @@ try:
                 and enable_log_for_terminal_emulator_start == False
             )
         ):
-            log_path = ""
+            log_path = EMPTY_ARG_INDICATOR
 
         # ======================
         # close existing instances if enabled
@@ -357,8 +368,8 @@ try:
             import json
 
             # pass button settings via json
-            if button_settings in [None, False]:
-                button_settings_path = ""
+            if button_settings in [None, False, ""]:
+                button_settings_path = EMPTY_ARG_INDICATOR
             else:
                 try:
                     button_settings_path = json.dumps(dict(button_settings))
