@@ -4,18 +4,20 @@ import sys
 import time
 import unicodedata
 
-import win32com.propsys.propsys as propsys  # type:ignore #noqa
-import win32com.propsys.pscon as pscon  # type:ignore #noqa
-from win32com.client import Dispatch  # type:ignore
-from win32com.shell import shellcon  # type:ignore
-
 # add root dir for debug cases where this script is called on its own:
-root_dir = os.path.dirname(__file__) + "\\..\\.."
+root_dir = os.path.dirname(__file__) + "\\..\\..\\.."
 if root_dir not in sys.path:
     sys.path.insert(0, root_dir)
 
 # =============================
 # imports
+
+from win32com.client import Dispatch  # type:ignore
+from win32com.propsys import (  # type:ignore
+    propsys,
+    pscon,
+)
+from win32com.shell import shellcon  # type:ignore
 
 import developer_settings
 from developer_settings import (
