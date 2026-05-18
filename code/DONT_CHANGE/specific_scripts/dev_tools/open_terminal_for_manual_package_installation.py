@@ -9,7 +9,7 @@ if root_dir not in sys.path:
 
 from DONT_CHANGE.specific_scripts.common_code import ensure_python_distro, print_traceback
 from DONT_CHANGE.specific_scripts.common_variables import (
-    python_exe_path,
+    frontend_python_exe,
     script_for_set_python_and_pip_target,
 )
 
@@ -20,7 +20,7 @@ try:
     try:
         subprocess.run(  # noqa
             (
-                python_exe_path,
+                frontend_python_exe,
                 "-m",
                 "pip",
                 "install",
