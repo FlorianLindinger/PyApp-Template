@@ -28,6 +28,8 @@ try:
 
     from developer_settings import (
         button_settings,
+        classic_terminal_cols,
+        classic_terminal_lines,
         close_existing_instances_on_start,
         close_on_crash,
         close_on_failure,
@@ -41,6 +43,7 @@ try:
         log_input_prepend,
         log_path_rel_to_start_folder,
         log_print_prepend,
+        modern_terminal_tab_color,
         open_log_file_after_crash,
         open_log_file_after_failure,
         open_log_file_after_success,
@@ -62,6 +65,7 @@ try:
         terminal_bg_color,
         terminal_needs_input,
         terminal_text_color,
+        use_classic_terminal,
         use_global_python,
     )
     from DONT_CHANGE.specific_scripts.common_code import (
@@ -202,9 +206,6 @@ try:
     # =============================
 
     def generate_minimized_startupinfo():
-        if not start_minimized:
-            return None
-
         startupinfo = subprocess.STARTUPINFO()
         startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
         startupinfo.wShowWindow = getattr(subprocess, "SW_SHOWMINIMIZED", 2)
@@ -302,6 +303,7 @@ try:
         # launch terminal
 
         args = [
+            script_path,
             program_name,
             icon_path,
             app_id,
@@ -326,11 +328,13 @@ try:
             bool_to_arg(open_log_file_after_crash),
             bool_to_arg(start_minimized),
             CORRECT_START_SIGNAL_FILE_PATH,
+            log_input_prepend,
         ]
 
         # ==============
 
         if launch_mode == "browser":
+            args += [python_exe_for_script_path]
             launched_backend_path = browser_terminal_path
             proc = subprocess.Popen(  # noqa:S603 #type:ignore
                 [
@@ -338,8 +342,6 @@ try:
                     "-X",
                     "faulthandler",
                     browser_terminal_path,
-                    script_path,
-                    python_exe_for_script_path,
                     *args,
                 ],
                 creationflags=subprocess.CREATE_NO_WINDOW,
@@ -370,11 +372,11 @@ try:
                     ) from e
 
             args += [
+                python_exe_for_script_path,
                 bool_to_arg(terminal_needs_input),
                 stylesheet_path,
                 dark_mode,
                 button_settings_path,
-                log_input_prepend,
             ]
 
             if launch_mode == "uncompiled_terminal_emulator":
@@ -385,8 +387,6 @@ try:
                         "-X",
                         "faulthandler",
                         uncompiled_terminal_path,
-                        script_path,
-                        python_exe_for_script_path,
                         *args,
                     ],
                     creationflags=subprocess.CREATE_NO_WINDOW,
@@ -398,9 +398,9 @@ try:
                 # run and wait (using the compiled terminal emulator)
                 launched_backend_path = compiled_terminal_path
                 proc = subprocess.Popen(  # noqa:S603 #type:ignore
-                    [compiled_terminal_path, script_path, python_exe_for_script_path, *args],
+                    [compiled_terminal_path, *args],
                     creationflags=subprocess.CREATE_NO_WINDOW,
-                    startupinfo=generate_minimized_startupinfo(),
+                    startupinfo=generate_minimized_startupinfo() if start_minimized else None,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.STDOUT,
                     text=True,
@@ -411,44 +411,48 @@ try:
         else:  # run in terminal or no window
             # script_wrapper_path need additional args
             launched_backend_path = script_wrapper_path
+            windows_terminal_mode = (
+                "classic"
+                if (use_classic_terminal and launch_mode == "terminal")
+                else "modern"
+                if (launch_mode == "terminal")
+                else "invisible"
+            )
             args += [
                 terminal_bg_color + terminal_text_color,  # type:ignore
-                bool_to_arg(launch_mode == "terminal"),
-                log_input_prepend,
+                windows_terminal_mode,
+                classic_terminal_cols,
+                classic_terminal_lines,
             ]
 
-            if launch_mode == "terminal":  # run in terminal and don't wait
-                proc = subprocess.Popen(  # noqa:S603 #type:ignore
-                    # [
-                    #     "conhost.exe",
-                    #     "cmd.exe",
-                    #     "/k",
-                    #     "call",
-                    #     f"{os.path.dirname(os.path.normpath(__file__))}\\test.bat",
-                    #     "test",
-                    #     "5B",
-                    #     f'"{python_exe_for_script_path}" -X faulthandler "{script_wrapper_path}" "{script_path}" '
-                    #     + subprocess.list2cmdline(args),  # type:ignore
-                    # ],
-                    [
-                        "conhost.exe",
-                        # "cmd.exe",
-                        # "/k",
-                        python_exe_for_script_path,
-                        "-X",
-                        "faulthandler",
-                        script_wrapper_path,
-                        script_path,
-                        *args,
-                    ],
-                    creationflags=subprocess.CREATE_NEW_CONSOLE,
-                    startupinfo=generate_minimized_startupinfo(),
-                )
-            else:  # run without terminal but create one on crash and don't wait
-                proc = subprocess.Popen(  # noqa:S603 #type:ignore
-                    [python_exe_for_script_path, "-X", "faulthandler", script_wrapper_path, script_path, *args],
-                    creationflags=subprocess.CREATE_NO_WINDOW,
-                )
+            script_command = [
+                python_exe_for_script_path,
+                "-X",
+                "faulthandler",
+                script_wrapper_path,
+                *args,
+            ]
+
+            if windows_terminal_mode == "classic":
+                terminal_command = ["conhost.exe", *script_command]
+                creationflags = subprocess.CREATE_NEW_CONSOLE
+                startupinfo = generate_minimized_startupinfo() if start_minimized else None
+            elif windows_terminal_mode == "modern":
+                terminal_command = ["wt.exe", "--title", program_name]
+                if modern_terminal_tab_color != EMPTY_ARG_INDICATOR:
+                    terminal_command += ["--tabColor", modern_terminal_tab_color]
+                terminal_command += script_command
+                creationflags = subprocess.CREATE_NO_WINDOW
+                startupinfo = generate_minimized_startupinfo() if start_minimized else None
+            else:
+                terminal_command = script_command
+                creationflags = subprocess.CREATE_NO_WINDOW
+                startupinfo = None
+            proc = subprocess.Popen(  # noqa:S603 #type:ignore
+                terminal_command,
+                creationflags=creationflags,
+                startupinfo=startupinfo,
+            )
 
         # =================================
         # wait for signal file creation to know if correct start
