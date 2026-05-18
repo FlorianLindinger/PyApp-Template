@@ -3,9 +3,47 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
-ask long think AI for docstring improvements
+have a look at inital batches for shortcuts to launch 
 
-add setting to launch in classic_terminal (conhost) or modern_tabbed_terminal (wt)
+does everyhting that needs it have EMPTY_ARG_INDICATOR in start_prgoram.
+make caleld scirpt accept EMPTY_ARG_INDICATOR
+
+do i still need or handle it via _pth:
+    # needed for pywin32 to find its modules
+    for path in reversed(
+        [
+            backend_packages_dir,
+            os.path.join(backend_packages_dir, "win32"),
+            os.path.join(backend_packages_dir, "win32", "lib"),
+            os.path.join(backend_packages_dir, "Pythonwin"),
+        ]
+    ):
+        if path not in sys.path:
+            sys.path.insert(0, path)
+    if hasattr(os, "add_dll_directory"):
+        for path in [
+            backend_packages_dir,
+            os.path.join(backend_packages_dir, "pywin32_system32"),
+        ]:
+            if os.path.exists(path):
+                os.add_dll_directory(path)
+
+
+fix arg order for not windows terminal paaths
+
+cut down on backend installatikn packages and not ship? kind of too risky for no gain
+
+i guess add backend python installation to genrtated shoretuctus 
+
+make backend installtion more robust for fails by delting folder and redoing i guess. i guess already implem,enwed
+
+make packaend packages installtion indepomendent chekc and fail delete
+
+add chekc for backend python folder and install them automatically for shortcus
+
+make arg order in start_program more logical
+
+ask long think AI for docstring improvements
 
 rename py_env_package_change_marker_file_path
 
