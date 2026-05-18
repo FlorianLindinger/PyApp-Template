@@ -220,9 +220,12 @@ try:
     def main() -> None:
         global log_path
 
-        # clear old singal file
-        if os.path.exists(CORRECT_START_SIGNAL_FILE_PATH):
-            os.remove(CORRECT_START_SIGNAL_FILE_PATH)
+        # clear old signal file
+        try:
+            if os.path.exists(CORRECT_START_SIGNAL_FILE_PATH):
+                os.remove(CORRECT_START_SIGNAL_FILE_PATH)
+        except Exception:
+            pass
 
         # =============================
         # get args
@@ -437,13 +440,18 @@ try:
         # wait for signal file creation to know if correct start
         # =================================
 
-        for _ in range(20):  # try up to 1s
+        correct_start_signal_received = False
+        for _ in range(40):  # try up to 2s
             if os.path.exists(CORRECT_START_SIGNAL_FILE_PATH):
-                os.remove(CORRECT_START_SIGNAL_FILE_PATH)
+                try:
+                    os.remove(CORRECT_START_SIGNAL_FILE_PATH)
+                except Exception:
+                    pass
+                correct_start_signal_received = True
                 break
-            else:
-                time.sleep(0.05)
-        else:
+            time.sleep(0.05)
+
+        if not correct_start_signal_received:
             error_code = proc.poll()
             print()
             print_warn("=" * 20)
