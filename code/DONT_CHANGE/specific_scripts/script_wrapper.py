@@ -10,20 +10,12 @@
 #   ...
 
 try:
-    # signal correct start such that caller can exit
-    import os
-
-    CORRECT_START_SIGNAL_FILE_PATH = (
-        os.path.dirname(os.path.normpath(__file__)) + "\\..\\signal_that_program_started_correctly.signal"
-    )
-    open(CORRECT_START_SIGNAL_FILE_PATH, "w").close()
-
     # ==================
     # import
-
     import atexit
     import builtins
     import faulthandler
+    import os
     import re
     import runpy
     import sys
@@ -38,6 +30,7 @@ try:
         CompletionAlerts,
         ProcessIdRegistry,
         arg_to_bool,
+        create_signal_file,
         looks_like_interpreter_crash,
     )
 
@@ -65,10 +58,14 @@ try:
     open_log_file_after_failure = arg_to_bool(22)
     open_log_file_after_python_interpreter_crash = arg_to_bool(23)
     start_minimized = arg_to_bool(24)
-    terminal_colors = sys.argv[25]
-    script_has_terminal = arg_to_bool(26)
-    log_input_prepend = sys.argv[27] if len(sys.argv) > 27 else log_timestamp_format
-    # script_has_terminal = true means that this window is run in a terminal and False that it is invisible and one needs to create a new terminal to print
+    correct_start_signal_file_path = sys.argv[25]
+    terminal_colors = sys.argv[26]
+    script_has_terminal = arg_to_bool(27)  # False means it has no visible terminal
+    log_input_prepend = sys.argv[28] if len(sys.argv) > 28 else log_timestamp_format
+
+    # tell the backend terminal to close because successful start
+    create_signal_file(correct_start_signal_file_path)
+
     completion_alerts = CompletionAlerts(
         title=title,
         app_id=app_id,
