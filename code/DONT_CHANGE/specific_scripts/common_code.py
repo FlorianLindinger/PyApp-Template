@@ -15,14 +15,14 @@ from DONT_CHANGE.specific_scripts.common_variables import (
     determined_needed_packages_output_file_path_noVersion,
     determined_needed_packages_output_file_path_withVersion,
     excluded_folders_for_package_search,
+    frontend_packages_dir,
+    frontend_python_dir,
+    frontend_python_exe,
     icon_path,
-    packages_dir,
     py_env_dir,
-    python_dist_path,
     python_download_excluded_base_msi_names,
     python_download_ftp_url,
     python_download_timeout_s,
-    python_exe_path,
     python_scripts_dir,
     python_version_indicator_file_path,
     variable_in_default_packages_path_that_triggers_search_if_true,
@@ -968,7 +968,7 @@ def stop_processes_from_pid_file(pid_path: str) -> tuple[int, int, list[str]]:
 def get_python_version():
     return subprocess.check_output(  # noqa:S603
         [
-            python_exe_path,
+            frontend_python_exe,
             "-c",
             "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}')",
         ],
@@ -1293,12 +1293,7 @@ def install_full_python(
             pause_if_interactive()
             return 7
 
-    if (
-        run_command_printing_output_on_failure(
-            [python_exe, "-m", "pip", "install", "--upgrade", "pip"]
-        )
-        != 0
-    ):
+    if run_command_printing_output_on_failure([python_exe, "-m", "pip", "install", "--upgrade", "pip"]) != 0:
         print("[Error] Python's pip not sucessfully installed (see above). Aborting.")
         pause_if_interactive()
         return 8
@@ -1434,55 +1429,49 @@ def _portable_python_has_installer_gitignore_marker(python_folder: str) -> bool:
 def delete_packages():
     """return success"""
     success = delete_folder_safe(
-        packages_dir,
+        frontend_packages_dir,
         prompt_for_confirmation=False,
         allowed_base=py_env_dir,
     )
     if success == False:
         raise RuntimeError("[Error] Folder deletion failed. Aborting")
     else:
-        os.mkdir(packages_dir)
+        os.mkdir(frontend_packages_dir)
 
 
 def delete_python_distro():
     """return success"""
     success = delete_folder_safe(
-        python_dist_path,
+        frontend_python_dir,
         prompt_for_confirmation=False,
         allowed_base=py_env_dir,
     )
     if success == False:
         raise RuntimeError("[Error] Folder deletion failed. Aborting")
     else:
-        os.mkdir(python_dist_path)
+        os.mkdir(frontend_python_dir)
 
 
 def recreate_python_distro() -> None:
 
     delete_python_distro()
 
-    rel_path_dist_to_packages = os.path.relpath(python_dist_path, packages_dir).replace("\\", "/")
+    rel_path_dist_to_packages = os.path.relpath(frontend_python_dir, frontend_packages_dir).replace("\\", "/")
 
-    subprocess.run(  # noqa
-        [
-            "cmd.exe",
-            "/d",
-            "/c",
-            "call",
-            portable_python_installer_path,
-            python_version,
-            py_env_dir,
-            "1" if install_tkinter else "0",
-            "1" if install_tests else "0",
-            "1" if install_tools else "0",
-            "0",  # dont install docs
-            rel_path_dist_to_packages,
-        ],
-        check=True,
+    exit_code = install_full_python(
+        py_ver=python_version,
+        target_dir=py_env_dir,
+        install_tkinter=install_tkinter,
+        install_tests=install_tests,
+        install_tools=install_tools,
+        install_docs=False,
+        rel_path_to_packages=rel_path_dist_to_packages,
     )
+    if exit_code != 0:
+        raise RuntimeError(f"Python installation failed with exit code {exit_code}")
 
-    if not os.path.exists(python_exe_path):
-        raise RuntimeError(f'Portable Python installation did not produce expected file at "{python_exe_path}"')
+    if not os.path.exists(frontend_python_exe):
+        raise RuntimeError(f'Python installation did not produce expected file at "{frontend_python_exe}"')
     else:
         save_python_version_to_file()
 
@@ -1524,7 +1513,7 @@ def ensure_python_distro(
     if app_id_for_slow in [None, False]:
         app_id_for_slow = ""
 
-    if not os.path.exists(python_exe_path):  # no python distro existing case:
+    if not os.path.exists(frontend_python_exe):  # no python distro existing case:
         if set_icon_for_slow:
             set_terminal_icon_once()
         if app_id_for_slow != "":
@@ -1627,14 +1616,14 @@ def install_packages_from_file(path: str, no_cache: bool = True) -> None:
         "/d",
         "/c",
         "call",
-        python_exe_path,
+        frontend_python_exe,
         "-m",
         "pip",
         "install",
         "-r",
         path,
         "--target",
-        packages_dir,
+        frontend_packages_dir,
         "--disable-pip-version-check",
         "--upgrade",
     ]
@@ -1737,7 +1726,7 @@ def get_installed_packages(exe_path, with_version=True):
 
 
 def get_current_packages(with_version=True):
-    return get_installed_packages(exe_path=python_exe_path, with_version=with_version)
+    return get_installed_packages(exe_path=frontend_python_exe, with_version=with_version)
 
 
 def save_installed_packages(exe_path, output_path=None, with_version=True):
@@ -1758,7 +1747,7 @@ def save_installed_packages(exe_path, output_path=None, with_version=True):
 
 
 def save_current_packages(output_path=None, with_version=True):
-    return save_installed_packages(output_path=output_path, with_version=with_version, exe_path=python_exe_path)
+    return save_installed_packages(output_path=output_path, with_version=with_version, exe_path=frontend_python_exe)
 
 
 def save_requirements_of_root_folder_noVersion(
@@ -1789,12 +1778,13 @@ def save_requirements_of_root_folder_noVersion(
             "--no-follow-links",
         ]
 
+        print()
+        print("=" * 20)
+        print("Start of finding required python packages")
+        print("-" * 20)
+        subprocess.run(cmd, check=True)  # noqa
+
         if os.path.exists(output_path):
-            print()
-            print("=" * 20)
-            print("Start of finding required python packages")
-            print("-" * 20)
-            subprocess.run(cmd, check=True)  # noqa
             print("-" * 20)
             print(f'End of finding required python packages. Result: "{output_path}":\n')
             packages = read_file(output_path)
@@ -1837,7 +1827,7 @@ def save_requirements_of_root_folder_withVersion(
 
         ensure_python_distro()
 
-        subprocess.run([python_exe_path, "-m", "venv", temp_venv], check=True)  # noqa
+        subprocess.run([frontend_python_exe, "-m", "venv", temp_venv], check=True)  # noqa
         if not os.path.exists(temp_python):
             raise RuntimeError(f'Temporary environment did not create "{temp_python}"')
 
