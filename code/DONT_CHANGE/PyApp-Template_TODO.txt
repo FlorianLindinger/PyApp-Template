@@ -3,6 +3,8 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+chekc completion_alerts = CompletionAlerts
+
 pass signal file name to scripts in start_progream
 
 i guess have launcerh common for now. ask AI what i could move over to there. ask AI if comilation will be larger

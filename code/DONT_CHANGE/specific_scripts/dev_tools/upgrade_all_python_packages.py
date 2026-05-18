@@ -13,23 +13,23 @@ from DONT_CHANGE.specific_scripts.common_code import (
     print_traceback,
     save_current_packages,
 )
-from DONT_CHANGE.specific_scripts.common_variables import packages_dir, python_exe_path
+from DONT_CHANGE.specific_scripts.common_variables import frontend_packages_dir, frontend_python_exe
 
 ensure_python_distro()
 
 try:
     path = save_current_packages(with_version=False)
 
-    subprocess.run([python_exe_path, "-m", "pip", "install", "pip", "--upgrade", "--disable-pip-version-check"])  # noqa
+    subprocess.run([frontend_python_exe, "-m", "pip", "install", "pip", "--upgrade", "--disable-pip-version-check"])  # noqa
     subprocess.run(  # noqa
         [
-            python_exe_path,
+            frontend_python_exe,
             "-m",
             "pip",
             "install",
             path,
             "--target",
-            packages_dir,
+            frontend_packages_dir,
             "--upgrade",
             "--disable-pip-version-check",
         ]
