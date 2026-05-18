@@ -20,13 +20,16 @@ try:
     import runpy
     import sys
 
+    # ==================
     # add root dir for imports:
     root_dir = os.path.dirname(__file__) + "\\..\\.."
     if root_dir not in sys.path:
         sys.path.insert(0, root_dir)
 
+    # ==================
     # import common code
     from DONT_CHANGE.specific_scripts.launcher_common import (
+        EMPTY_ARG_INDICATOR,
         CompletionAlerts,
         ProcessIdRegistry,
         arg_to_bool,
@@ -34,54 +37,71 @@ try:
         looks_like_interpreter_crash,
     )
 
-    script_path = sys.argv[1]
-    title = sys.argv[2]
-    icon_path = sys.argv[3]
-    app_id = sys.argv[4]
+    def arg_to_str(idx, default="") -> str:
+        arg=sys.argv[idx]
+        if arg == EMPTY_ARG_INDICATOR:
+            return default
+        else:
+            return arg
+
+    script_path = arg_to_str(1)
+    program_name = arg_to_str(2)
+    icon_path = arg_to_str(3)
+    app_id = arg_to_str(4)
     wdir_is_script_dir = arg_to_bool(5)
-    close_on_python_interpreter_crash = arg_to_bool(6)
+    close_on_crash = arg_to_bool(6)
     close_on_failure = arg_to_bool(7)
     close_on_success = arg_to_bool(8)
-    print_timestamp_format = sys.argv[9]
-    log_path = sys.argv[10]
-    log_timestamp_format = sys.argv[11]
+    print_prepend = arg_to_str(9)
+    log_path = arg_to_str(10)
+    log_print_prepend = arg_to_str(11)
     overwrite_log = arg_to_bool(12)
-    input_prepend = sys.argv[13]
-    process_id_file_path = sys.argv[14]
-    play_sound_on_success = sys.argv[15]
+    input_prepend = arg_to_str(13)
+    process_id_file_path = arg_to_str(14)
+    play_sound_on_success = arg_to_str(15)
     send_Windows_notification_on_success = arg_to_bool(16)
-    play_sound_on_failure = sys.argv[17]
+    play_sound_on_failure = arg_to_str(17)
     send_Windows_notification_on_failure = arg_to_bool(18)
-    play_sound_on_python_interpreter_crash = sys.argv[19]
-    send_Windows_notification_on_python_interpreter_crash = arg_to_bool(20)
+    play_sound_on_crash = arg_to_str(19)
+    send_Windows_notification_on_crash = arg_to_bool(20)
     open_log_file_after_success = arg_to_bool(21)
     open_log_file_after_failure = arg_to_bool(22)
-    open_log_file_after_python_interpreter_crash = arg_to_bool(23)
+    open_log_file_after_crash = arg_to_bool(23)
     start_minimized = arg_to_bool(24)
-    correct_start_signal_file_path = sys.argv[25]
-    terminal_colors = sys.argv[26]
-    script_has_terminal = arg_to_bool(27)  # False means it has no visible terminal
-    log_input_prepend = sys.argv[28] if len(sys.argv) > 28 else log_timestamp_format
+    CORRECT_START_SIGNAL_FILE_PATH = arg_to_str(25)
+    log_input_prepend = arg_to_str(26)
+    terminal_colors = arg_to_str(27)
+    windows_terminal_mode = arg_to_str(28)
+    if windows_terminal_mode not in {"classic", "modern", "invisible"}:
+        raise ValueError(
+            f'[Error] Unknown windows_terminal_mode "{windows_terminal_mode}". '
+            "Expected one of: classic, modern, invisible"
+        )
+    classic_terminal_cols = arg_to_str(29)
+    classic_terminal_lines = arg_to_str(30)
+
+    # ==================
+    # WIP???
+
+    script_has_terminal = windows_terminal_mode != "invisible"
 
     # tell the backend terminal to close because successful start
-    create_signal_file(correct_start_signal_file_path)
+    create_signal_file(CORRECT_START_SIGNAL_FILE_PATH)
 
     completion_alerts = CompletionAlerts(
-        title=title,
+        title=program_name,
         app_id=app_id,
         log_path=log_path,
         play_sound_on_success=play_sound_on_success,
         send_windows_notification_on_success=send_Windows_notification_on_success,
         play_sound_on_failure=play_sound_on_failure,
         send_windows_notification_on_failure=send_Windows_notification_on_failure,
-        play_sound_on_python_interpreter_crash=play_sound_on_python_interpreter_crash,
-        send_windows_notification_on_python_interpreter_crash=send_Windows_notification_on_python_interpreter_crash,
+        play_sound_on_python_interpreter_crash=play_sound_on_crash,
+        send_windows_notification_on_python_interpreter_crash=send_Windows_notification_on_crash,
         open_log_file_after_success=open_log_file_after_success,
         open_log_file_after_failure=open_log_file_after_failure,
-        open_log_file_after_python_interpreter_crash=open_log_file_after_python_interpreter_crash,
+        open_log_file_after_python_interpreter_crash=open_log_file_after_crash,
     )
-
-    # ==================
 
     if app_id != "" or script_has_terminal:
         import ctypes
@@ -780,16 +800,16 @@ try:
             sys.stdout = pipe_splitter(
                 sys.__stdout__,
                 log_file,
-                print_timestamp_format=print_timestamp_format,
-                log_timestamp_format=log_timestamp_format,
+                print_timestamp_format=print_prepend,
+                log_timestamp_format=log_print_prepend,
                 input_timestamp_format=input_prepend,
                 log_input_timestamp_format=log_input_prepend,
             )
             sys.stderr = pipe_splitter(
                 sys.__stderr__,
                 log_file,
-                print_timestamp_format=print_timestamp_format,
-                log_timestamp_format=log_timestamp_format,
+                print_timestamp_format=print_prepend,
+                log_timestamp_format=log_print_prepend,
                 input_timestamp_format=input_prepend,
                 log_input_timestamp_format=log_input_prepend,
                 print_red=True,
@@ -838,12 +858,19 @@ def get_terminal_name():
 
     try:
         # set terminal colors
-        if terminal_colors != "":
+        if script_has_terminal and terminal_colors != "":
             os.system(f"color {terminal_colors}")  # noqa:S605
+        if windows_terminal_mode == "classic" and (classic_terminal_cols != "" or classic_terminal_lines != ""):
+            mode_parts = []
+            if classic_terminal_cols != "":
+                mode_parts.append(f"cols={classic_terminal_cols}")
+            if classic_terminal_lines != "":
+                mode_parts.append(f"lines={classic_terminal_lines}")
+            os.system("mode con: " + " ".join(mode_parts))  # noqa:S605
 
         # set terminal name
-        if title != "":
-            os.system(f"title {title}")  # noqa:S605
+        if program_name != "":
+            os.system(f"title {program_name}")  # noqa:S605
 
         # set working directory
         if wdir_is_script_dir:
@@ -878,8 +905,8 @@ def get_terminal_name():
 
         sys.argv = [
             script_path,
+            program_name,
             icon_path,
-            title,
             app_id,
             log_path,
             "1" if script_has_terminal else "01" if wdir_is_script_dir else "01" if close_on_failure else "0",
@@ -941,7 +968,7 @@ input_success("[Program finished successfully] Press Enter to exit.")
                 sys.exit(0)
         elif looks_like_interpreter_crash(exit_code):
             completion_alerts.run("crash", exit_code)
-            if close_on_python_interpreter_crash:
+            if close_on_crash:
                 sys.exit(exit_code)
             else:
                 script = f"""
