@@ -3,6 +3,18 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+make whole sub category of delte folder in common code.
+
+move helper functions below code where needed
+
+remove target_dir fully form common_code -> get rid of py_dist
+
+make it auto install default python packlags on not found packages folder in ensure_python_distro and create:_
+    
+    os.makedirs(py_env_dir, exist_ok=True)
+    if not os.path.exists(dev_tools_referal_note_file_name):
+        open(dev_tools_referal_note_file_name, "w", encoding="utf-8").close()
+
 have a look at inital batches for shortcuts to launch 
 
 does everyhting that needs it have EMPTY_ARG_INDICATOR in start_prgoram.
