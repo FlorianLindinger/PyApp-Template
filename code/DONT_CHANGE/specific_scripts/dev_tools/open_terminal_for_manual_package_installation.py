@@ -10,7 +10,7 @@ if root_dir not in sys.path:
 from DONT_CHANGE.specific_scripts.common_code import ensure_python_distro, print_traceback
 from DONT_CHANGE.specific_scripts.common_variables import (
     frontend_python_exe,
-    script_for_set_python_and_pip_target,
+    frontend_script_for_set_python_and_pip_target,
 )
 
 try:
@@ -38,7 +38,7 @@ try:
     print()
 
     subprocess.run(  # noqa
-        ["cmd", "/k", "call", script_for_set_python_and_pip_target],
+        ["cmd", "/k", "call", frontend_script_for_set_python_and_pip_target],
         shell=True,
     )
 except Exception as e:
