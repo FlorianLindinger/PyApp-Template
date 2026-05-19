@@ -25,6 +25,8 @@ _ANSI_ESCAPE_RE = re.compile(
     r")"
 )
 
+EMPTY_ARG_INDICATOR = "__EMPTY__"
+
 
 def _strip_ansi_escape_sequences(text: str) -> str:
     return _ANSI_ESCAPE_RE.sub("", text)

@@ -12,13 +12,11 @@ def make_abs(x: str) -> str:
 # backend related
 # ------------------------
 # on change of all backend: stuff has to be changed manually (see finish_backend_installation.py) or regenerated automatically by deleting the previous folder:
-backend_python_exe = make_abs("..\\P\\P.exe") # has to match python_exe_name in install_backend_python.bat
+backend_python_exe = make_abs("..\\P\\P.exe")  # has to match python_exe_name in install_backend_python.bat
 backend_python_dir = os.path.dirname(backend_python_exe)
 backend_python_pth_file = backend_python_dir + "\\python312._pth"
 backend_python_zip_rel_path = "python312.zip"
-backend_packages_dir = make_abs(
-    "..\\backend_py_pckgs"
-)
+backend_packages_dir = make_abs("..\\backend_py_pckgs")
 backend_package_requirements_file = make_abs("..\\backend_packages_requirements.txt")
 
 # folders
@@ -102,4 +100,4 @@ frontend_script_for_set_python_and_pip_target = (
 
 developer_settings_dir = os.path.dirname(developer_settings_path)
 frontend_python_exe = os.path.normpath(frontend_python_dir + "\\python.exe")
-rel_path_from_backend_python_to_backend_packages = os.path.relpath(backend_packages_dir,backend_python_dir)
+rel_path_from_backend_python_to_backend_packages = os.path.relpath(backend_packages_dir, backend_python_dir)
