@@ -16,12 +16,13 @@ from DONT_CHANGE.specific_scripts.common_variables import (
     determined_current_packages_file_path_withVersion,
     determined_needed_packages_output_file_path_noVersion,
     determined_needed_packages_output_file_path_withVersion,
+    dev_tools_referal_note_file_name,
     excluded_folders_for_package_search,
+    frontend_env_dir,
     frontend_packages_dir,
     frontend_python_dir,
     frontend_python_exe,
     icon_path,
-    py_env_dir,
     python_download_excluded_base_msi_names,
     python_download_ftp_url,
     python_download_timeout_s,
@@ -1455,8 +1456,8 @@ def install_full_python(
             python_folder,
             allowed_base_abs_path=target_dir,
             expected_folder_name=None,
-            required_included_files=("python.exe", ".gitignore"),
-            required_included_dirs=("Lib",),
+            required_included_files=None,
+            required_included_dirs=None,
             require_direct_child_of_allowed_base=True,
             max_size_GB_before_prompt=1.2,
             always_prompt_for_confirmation=False,
@@ -1582,7 +1583,7 @@ def delete_packages():
         required_included_dirs=None,
         min_path_depth=6,
     )
-    os.mkdir(frontend_packages_dir)
+    os.makedirs(frontend_packages_dir, exist_ok=True)
 
 
 def delete_python_distro():
@@ -1597,7 +1598,7 @@ def delete_python_distro():
         max_size_GB_before_prompt=1.2,
         min_path_depth=6,
     )
-    os.mkdir(frontend_python_dir)
+    os.makedirs(frontend_python_dir, exist_ok=True)
 
 
 def recreate_python_distro() -> None:
@@ -1608,7 +1609,7 @@ def recreate_python_distro() -> None:
 
     install_full_python(
         py_ver=python_version,
-        target_dir=py_env_dir,
+        target_dir=frontend_env_dir,
         install_tkinter=install_tkinter,
         install_tests=install_tests,
         install_tools=install_tools,
