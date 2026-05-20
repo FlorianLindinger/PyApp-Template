@@ -19,11 +19,22 @@ backend_python_zip_rel_path = "python312.zip"
 backend_packages_dir = make_abs("..\\backend_py_pckgs")
 backend_package_requirements_file = make_abs("..\\backend_packages_requirements.txt")
 
+# frontend related
+# ------------------------
+frontend_env_dir = make_abs("..\\..\\py_env")
+frontend_packages_dir = frontend_env_dir + "\\packages"
+frontend_python_dir = frontend_env_dir + "\\py_dist"
+frontend_script_for_set_python_and_pip_target = (
+    frontend_python_dir + "\\tools\\open_terminal_with_set_python_and_pip_target.bat"
+)
+dev_tools_referal_note_file_name = (
+    frontend_env_dir + "\\USE developer_tools FOLDER (IN PARENT FOLDER) TO CHANGE PACKAGES"
+)
+
 # folders
 # ------------------------
 windows_dir = os.environ.get("WINDIR", default="C:\\Windows")
 python_scripts_dir = make_abs("..\\..")
-py_env_dir = make_abs("..\\..\\py_env")
 developer_tools_dir = make_abs("..\\..\\developer_tools")
 DONT_CHANGE_dir = make_abs("..")
 shortcut_output_dir = make_abs("..\\..\\..")
@@ -86,13 +97,6 @@ python_download_ftp_url = "https://www.python.org/ftp/python/"
 python_download_excluded_base_msi_names = {"path", "appendpath", "pip", "launcher"}
 python_download_timeout_s = 120
 
-# frontend related
-# ------------------------
-frontend_packages_dir = py_env_dir + "\\packages"
-frontend_python_dir = py_env_dir + "\\py_dist"
-frontend_script_for_set_python_and_pip_target = (
-    frontend_python_dir + "\\tools\\open_terminal_with_set_python_and_pip_target.bat"
-)
 
 # =============================
 # === derived/less-flexible variables ===
