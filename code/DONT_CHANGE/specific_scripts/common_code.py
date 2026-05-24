@@ -110,70 +110,208 @@ def print_traceback(message="Error", add_press_enter_to_exit=False) -> None:
 
 
 # =========================
-# miscellaneous
+# folder deletion function
 
 
 def delete_folder_safe(
     folder_abs_path: str | os.PathLike[str],
     *,
-    prompt_message="Delete this folder? [y/n]: ",
-    allowed_base_abs_path: str | os.PathLike[str],
+    prompt_message="Delete this folder? (confirm that it is not an important one) [y/n]: ",
+    allowed_base_abs_path: str | os.PathLike[str] | None = None,
     expected_folder_name: str | None = None,
     required_included_files: list[str] | tuple[str, ...] | None = (),
     required_included_dirs: list[str] | tuple[str, ...] | None = (),
+    allow_empty_without_markers=True,
     require_direct_child_of_allowed_base=False,
+    allow_filesystem_root_base=False,
     min_path_depth: int | None = 4,
     max_size_GB_before_prompt: float | None = 1.0,
     max_size_check_seconds: float | None = 5.0,
     prompt_instead_of_requirement_failure=True,
-    always_prompt_for_confirmation=True,
+    always_prompt_for_confirmation=False,
 ) -> bool:
-    """Delete a folder after path, marker, depth, and size safety checks.
+    """Delete a directory only after path, identity, and size checks pass.
 
-    Both ``folder_abs_path`` and ``allowed_base_abs_path`` must be absolute.
-    The resolved target must exist inside the resolved allowed base, and it is
-    never allowed to be the filesystem root or the allowed base folder itself.
-    Set ``require_direct_child_of_allowed_base`` to require the target to be a
-    direct child of the base instead of any deeper descendant.
+    ``folder_abs_path`` must be an absolute path. If ``allowed_base_abs_path``
+    is not ``None``, it must also be an absolute path. The target path and any
+    allowed-base path themselves must not be symlinks, junctions, or Windows
+    reparse points. After resolving both paths, the target must be inside the
+    allowed base, must not be the allowed base, and must not be a filesystem
+    root. The allowed base may not be a filesystem root unless
+    ``allow_filesystem_root_base`` is true. Pass ``allowed_base_abs_path=None``
+    to skip the base existence and containment checks. If the target is absent,
+    this returns ``True`` only after the relevant path-safety checks pass.
 
-    ``expected_folder_name`` requires the target's final folder name to match.
+    ``require_direct_child_of_allowed_base`` requires the target to be an
+    immediate child of the allowed base. ``expected_folder_name`` requires the
+    target's final folder name to match.
+
     ``required_included_files`` and ``required_included_dirs`` require exact
-    file/directory names directly inside the target, but only when the target
-    contains at least one non-empty file. Pass ``None`` or an empty sequence for
-    no marker requirements. Folders with only empty subfolders or 0-byte files
-    are treated as empty for this marker check.
+    file or directory names directly inside the target. Marker names may not be
+    absolute paths, drive-qualified paths, ``.``, ``..``, or contain path
+    separators. Pass ``None`` or an empty sequence for no marker requirements.
+    Set ``allow_empty_without_markers`` to skip marker checks only when the
+    target contains nothing except empty folders and 0-byte files.
 
     ``min_path_depth`` warns for shallow paths. ``max_size_GB_before_prompt``
-    warns for large folders. In an interactive terminal these warnings ask for
-    confirmation; in non-interactive mode they raise instead. Set either value
-    to ``None`` to disable that check.
+    warns for large folders. Interactive warnings ask for confirmation;
+    non-interactive warnings raise. Set either value to ``None`` to disable
+    that check. ``max_size_check_seconds`` limits folder-size and empty-folder
+    scans; if the size scan times out, the measured size is a lower bound. Set
+    it to ``None`` to disable scan timeouts.
 
-    ``max_size_check_seconds`` limits how long folder-size scanning may run.
-    If it times out, the measured size is a lower bound. With
-    ``prompt_instead_of_requirement_failure=True`` and interactive stdin, size
-    scan failures/timeouts, empty-check failures, and missing required marker
-    files/dirs prompt instead of raising. Other hard path-safety failures still
-    raise. Set ``max_size_check_seconds=None`` to disable the timeout.
+    With ``prompt_instead_of_requirement_failure=True`` and interactive stdin,
+    size/empty scan failures and missing markers prompt instead of raising.
+    Hard path-safety failures always raise. If
+    ``always_prompt_for_confirmation`` is true, a final confirmation prompt is
+    shown after all safety checks; in non-interactive mode it raises instead.
 
-    If ``always_prompt_for_confirmation`` is true, a final confirmation prompt
-    is shown after all safety checks. Returns ``True`` if the folder was absent
-    or deleted, and ``False`` only when the user cancels a prompt.
+    Returns ``True`` if the folder was absent or deleted, and ``False`` only
+    when the user cancels an interactive prompt.
     """
 
+    # Local helpers for the deletion safety checks: formatting, marker validation,
+    # reparse-point detection, and bounded folder-size scans.
+    def format_bytes(num_bytes) -> str:
+        units = ["B", "KB", "MB", "GB", "TB"]
+        size = float(num_bytes)
+        for unit in units:
+            if size < 1024 or unit == units[-1]:
+                if unit == "B":
+                    return f"{int(size)} {unit}"
+                else:
+                    return f"{size:.2f} {unit}"
+            size /= 1024
+        return f"{num_bytes} B"
+
+    def is_filesystem_root_path(path: str | os.PathLike[str]) -> bool:
+        path_text = os.path.abspath(os.fspath(path))
+        return path_text == os.path.abspath(os.path.join(path_text, os.pardir))
+
+    def validate_required_child_names(names: list[str] | tuple[str, ...], label: str) -> tuple[str, ...]:
+        validated_names = []
+        for name in names:
+            name_text = os.fspath(name)
+            drive, _tail = os.path.splitdrive(name_text)
+            if name_text in {"", ".", ".."} or drive or os.path.isabs(name_text) or "/" in name_text or "\\" in name_text:
+                raise ValueError(f'Required {label} marker must be a direct child name: "{name_text}"')
+            validated_names.append(name_text)
+        return tuple(validated_names)
+
+    def is_symlink_or_junction(path: str | os.PathLike[str]) -> bool:
+        path_text = os.fspath(path)
+        if os.path.islink(path_text):
+            return True
+
+        isjunction = getattr(os.path, "isjunction", None)
+        if isjunction is not None and isjunction(path_text):
+            return True
+
+        try:
+            file_attributes = getattr(os.lstat(path_text), "st_file_attributes", 0)
+        except OSError:
+            return False
+        return bool(file_attributes & 0x400)  # FILE_ATTRIBUTE_REPARSE_POINT
+
+    def get_folder_size(folder: str | os.PathLike[str], timeout_seconds: float | None = None) -> tuple[int, bool]:
+        total = 0
+        deadline = None
+        get_time = None
+        if timeout_seconds is not None:
+            if timeout_seconds <= 0:
+                raise ValueError(f"Folder scan timeout must be greater than zero: {timeout_seconds}")
+            import time
+
+            get_time = time.monotonic
+            deadline = get_time() + timeout_seconds
+
+        def scan_timed_out() -> bool:
+            if deadline is not None and get_time is not None and get_time() > deadline:
+                return True
+            return False
+
+        def raise_walk_error(error: OSError) -> None:
+            raise error
+
+        for root, _dirs, files in os.walk(folder, onerror=raise_walk_error):
+            if scan_timed_out():
+                return total, True
+            for filename in files:
+                if scan_timed_out():
+                    return total, True
+                path = os.path.join(root, filename)
+                if os.path.isfile(path):
+                    total += os.path.getsize(path)
+        return total, False
+
     folder_path_text = os.fspath(folder_abs_path)
-    allowed_base_text = os.fspath(allowed_base_abs_path)
     if not os.path.isabs(folder_path_text):
         raise ValueError(f'Folder path must be absolute: "{folder_path_text}"')
-    if not os.path.isabs(allowed_base_text):
-        raise ValueError(f'Allowed base path must be absolute: "{allowed_base_text}"')
+
+    allowed_base_text = None
+    if allowed_base_abs_path is not None:
+        allowed_base_text = os.fspath(allowed_base_abs_path)
+        if not os.path.isabs(allowed_base_text):
+            raise ValueError(f'Allowed base path must be absolute: "{allowed_base_text}"')
+    elif require_direct_child_of_allowed_base:
+        raise ValueError("Cannot require direct child of allowed base when no allowed base path is configured.")
 
     if required_included_files is None:
         required_included_files = ()
     if required_included_dirs is None:
         required_included_dirs = ()
+    required_included_files = validate_required_child_names(required_included_files, "file")
+    required_included_dirs = validate_required_child_names(required_included_dirs, "directory")
+
+    if max_size_GB_before_prompt is not None and max_size_GB_before_prompt < 0:
+        raise ValueError(f"Maximum folder size must be zero or greater: {max_size_GB_before_prompt}")
+    if max_size_check_seconds is not None and max_size_check_seconds <= 0:
+        raise ValueError(f"Folder scan timeout must be greater than zero: {max_size_check_seconds}")
+
+    if is_symlink_or_junction(folder_path_text):
+        raise ValueError(f'Refusing to delete symlink or junction path: "{folder_path_text}"')
+    if allowed_base_text is not None and is_symlink_or_junction(allowed_base_text):
+        raise ValueError(f'Allowed base path may not be a symlink or junction: "{allowed_base_text}"')
 
     target_path = os.path.realpath(folder_path_text)
-    base_path = os.path.realpath(allowed_base_text)
+
+    if is_filesystem_root_path(target_path):
+        raise ValueError(f"Refusing to delete filesystem root: {target_path}")
+
+    if allowed_base_text is not None:
+        base_path = os.path.realpath(allowed_base_text)
+
+        if not os.path.exists(base_path):
+            raise FileNotFoundError(f"Allowed base does not exist: {base_path}")
+
+        if not os.path.isdir(base_path):
+            raise NotADirectoryError(f"Allowed base is not a directory: {base_path}")
+
+        if is_filesystem_root_path(base_path) and not allow_filesystem_root_base:
+            raise ValueError(f"Allowed base may not be a filesystem root: {base_path}")
+
+        if os.path.normcase(target_path) == os.path.normcase(base_path):
+            raise ValueError(f"Refusing to delete the allowed base directory itself: {target_path}")
+
+        try:
+            common_path = os.path.commonpath([base_path, target_path])
+        except ValueError as exc:
+            raise ValueError(
+                f"Refusing to delete directory outside allowed base.\nTarget: {target_path}\nAllowed base: {base_path}"
+            ) from exc
+
+        if os.path.normcase(common_path) != os.path.normcase(base_path):
+            raise ValueError(
+                f"Refusing to delete directory outside allowed base.\nTarget: {target_path}\nAllowed base: {base_path}"
+            )
+
+        if require_direct_child_of_allowed_base and os.path.normcase(os.path.dirname(target_path)) != os.path.normcase(
+            base_path
+        ):
+            raise ValueError(
+                "Refusing to delete directory because it is not directly inside the allowed base.\n"
+                f"Target: {target_path}\nAllowed base: {base_path}"
+            )
 
     if not os.path.exists(target_path):
         return True
@@ -183,7 +321,9 @@ def delete_folder_safe(
     if min_path_depth is not None:
         if min_path_depth < 0:
             raise ValueError(f"Minimum path depth must be zero or greater: {min_path_depth}")
-        path_depth = _get_path_depth(target_path)
+        _drive, path_without_drive = os.path.splitdrive(os.path.normpath(target_path))
+        path_without_root = path_without_drive.strip("\\/")
+        path_depth = len([part for part in path_without_root.replace("\\", "/").split("/") if part])
         is_below_min_path_depth = path_depth < min_path_depth
 
     if expected_folder_name is not None and os.path.basename(target_path).lower() != expected_folder_name.lower():
@@ -191,66 +331,18 @@ def delete_folder_safe(
             f'Refusing to delete "{target_path}" because its folder name is not "{expected_folder_name}".'
         )
 
-    if not os.path.exists(base_path):
-        raise FileNotFoundError(f"Allowed base does not exist: {base_path}")
-
-    if not os.path.isdir(base_path):
-        raise NotADirectoryError(f"Allowed base is not a directory: {base_path}")
-
     if not os.path.isdir(target_path):
         raise NotADirectoryError(f"Target is not a directory: {target_path}")
 
-    # check if file system root
-    if os.path.abspath(target_path) == os.path.abspath(os.path.join(target_path, os.pardir)):
-        raise ValueError(f"Refusing to delete filesystem root: {target_path}")
-
-    if os.path.normcase(target_path) == os.path.normcase(base_path):
-        raise ValueError(f"Refusing to delete the allowed base directory itself: {target_path}")
-
-    try:
-        common_path = os.path.commonpath([base_path, target_path])
-    except ValueError as exc:
-        raise ValueError(
-            f"Refusing to delete directory outside allowed base.\nTarget: {target_path}\nAllowed base: {base_path}"
-        ) from exc
-
-    if os.path.normcase(common_path) != os.path.normcase(base_path):
-        raise ValueError(
-            f"Refusing to delete directory outside allowed base.\nTarget: {target_path}\nAllowed base: {base_path}"
-        )
-
-    if require_direct_child_of_allowed_base and os.path.normcase(os.path.dirname(target_path)) != os.path.normcase(
-        base_path
-    ):
-        raise ValueError(
-            "Refusing to delete directory because it is not directly inside the allowed base.\n"
-            f"Target: {target_path}\nAllowed base: {base_path}"
-        )
+    if always_prompt_for_confirmation and not sys.stdin.isatty():
+        raise ValueError(f'Refusing to delete "{target_path}" without interactive confirmation.')
 
     folder_size: int | None = None
     folder_size_is_partial = False
     is_above_max_size = False
     if max_size_GB_before_prompt is not None:
         try:
-            folder_size = _get_folder_size(target_path, timeout_seconds=max_size_check_seconds)
-        except _FolderSizeCheckTimedOut_Error as error:
-            folder_size = error.minimum_size
-            folder_size_is_partial = True
-            if not prompt_instead_of_requirement_failure or not sys.stdin.isatty():
-                raise ValueError(
-                    f'Could not finish size check for "{target_path}" within {error.timeout_seconds:g} seconds. '
-                    f"Measured at least {_format_bytes(error.minimum_size)}."
-                ) from error
-            print()
-            print("Folder deletion size check warning:")
-            print(f"Folder: {target_path}")
-            print(f"Size check timed out after {error.timeout_seconds:g} seconds.")
-            print(f"Measured at least: {_format_bytes(error.minimum_size)}")
-            print()
-            answer = input("Delete anyway? [y/n]: ").strip().lower()
-            if answer not in {"y", "yes"}:
-                print("Cancelled folder deletion.")
-                return False
+            folder_size, folder_size_is_partial = get_folder_size(target_path, timeout_seconds=max_size_check_seconds)
         except OSError as error:
             if not prompt_instead_of_requirement_failure or not sys.stdin.isatty():
                 raise
@@ -263,58 +355,119 @@ def delete_folder_safe(
             if answer not in {"y", "yes"}:
                 print("Cancelled folder deletion.")
                 return False
+        if folder_size_is_partial:
+            if not prompt_instead_of_requirement_failure or not sys.stdin.isatty():
+                raise ValueError(
+                    f'Could not finish size check for "{target_path}" within {max_size_check_seconds:g} seconds. '
+                    f"Measured at least {format_bytes(folder_size)}."
+                )
+            print()
+            print("Folder deletion size check warning:")
+            print(f"Folder: {target_path}")
+            print(f"Size check timed out after {max_size_check_seconds:g} seconds.")
+            print(f"Measured at least: {format_bytes(folder_size)}")
+            print()
+            answer = input("Delete anyway? [y/n]: ").strip().lower()
+            if answer not in {"y", "yes"}:
+                print("Cancelled folder deletion.")
+                return False
         if folder_size is not None:
             max_size_bytes = int(max_size_GB_before_prompt * 1024 * 1024 * 1024)
             is_above_max_size = folder_size > max_size_bytes
 
-    try:
-        is_empty = _is_folder_empty(target_path)
-    except OSError as error:
-        if not prompt_instead_of_requirement_failure or not sys.stdin.isatty():
-            raise
-        print()
-        print("Folder deletion empty-check warning:")
-        print(f"Folder: {target_path}")
-        print(f"Could not determine whether the folder only contains empty files/folders: {error}")
-        print()
-        answer = input("Continue deletion checks anyway? [y/n]: ").strip().lower()
-        if answer not in {"y", "yes"}:
-            print("Cancelled folder deletion.")
-            return False
-        is_empty = False
+    if required_included_files or required_included_dirs:
+        try:
+            is_empty = True
+            empty_check_deadline = None
+            empty_check_get_time = None
+            if max_size_check_seconds is not None:
+                import time
 
-    if not is_empty:
-        for expected_file in required_included_files:
-            expected_path = os.path.join(target_path, expected_file)
-            if not os.path.isfile(expected_path):
-                message = f'Required file is missing: "{expected_file}"'
-                if not prompt_instead_of_requirement_failure or not sys.stdin.isatty():
-                    raise ValueError(f'Refusing to delete "{target_path}" because {message}')
-                print()
-                print("Folder deletion requirement warning:")
-                print(f"Folder: {target_path}")
-                print(message)
-                print()
-                answer = input("Delete anyway? [y/n]: ").strip().lower()
-                if answer not in {"y", "yes"}:
-                    print("Cancelled folder deletion.")
-                    return False
+                empty_check_get_time = time.monotonic
+                empty_check_deadline = empty_check_get_time() + max_size_check_seconds
 
-        for expected_dir in required_included_dirs:
-            expected_path = os.path.join(target_path, expected_dir)
-            if not os.path.isdir(expected_path):
-                message = f'Required directory is missing: "{expected_dir}"'
-                if not prompt_instead_of_requirement_failure or not sys.stdin.isatty():
-                    raise ValueError(f'Refusing to delete "{target_path}" because {message}')
-                print()
-                print("Folder deletion requirement warning:")
-                print(f"Folder: {target_path}")
-                print(message)
-                print()
-                answer = input("Delete anyway? [y/n]: ").strip().lower()
-                if answer not in {"y", "yes"}:
-                    print("Cancelled folder deletion.")
-                    return False
+            def check_empty_scan_timeout() -> None:
+                if (
+                    empty_check_deadline is not None
+                    and empty_check_get_time is not None
+                    and empty_check_get_time() > empty_check_deadline
+                ):
+                    raise TimeoutError
+
+            def raise_walk_error(error: OSError) -> None:
+                raise error
+
+            for root, _dirs, files in os.walk(target_path, onerror=raise_walk_error):
+                check_empty_scan_timeout()
+                for filename in files:
+                    check_empty_scan_timeout()
+                    file_path = os.path.join(root, filename)
+                    if os.path.isfile(file_path) and os.path.getsize(file_path) > 0:
+                        is_empty = False
+                        break
+                if not is_empty:
+                    break
+        except TimeoutError as error:
+            if not prompt_instead_of_requirement_failure or not sys.stdin.isatty():
+                raise ValueError(
+                    f'Could not finish empty-folder check for "{target_path}" within {max_size_check_seconds:g} seconds.'
+                ) from error
+            print()
+            print("Folder deletion empty-check warning:")
+            print(f"Folder: {target_path}")
+            print(f"Empty-folder check timed out after {max_size_check_seconds:g} seconds.")
+            print()
+            answer = input("Continue deletion checks anyway? [y/n]: ").strip().lower()
+            if answer not in {"y", "yes"}:
+                print("Cancelled folder deletion.")
+                return False
+            is_empty = False
+        except OSError as error:
+            if not prompt_instead_of_requirement_failure or not sys.stdin.isatty():
+                raise
+            print()
+            print("Folder deletion empty-check warning:")
+            print(f"Folder: {target_path}")
+            print(f"Could not determine whether the folder only contains empty files/folders: {error}")
+            print()
+            answer = input("Continue deletion checks anyway? [y/n]: ").strip().lower()
+            if answer not in {"y", "yes"}:
+                print("Cancelled folder deletion.")
+                return False
+            is_empty = False
+
+        if not is_empty or not allow_empty_without_markers:
+            for expected_file in required_included_files:
+                expected_path = os.path.join(target_path, expected_file)
+                if not os.path.isfile(expected_path):
+                    message = f'Required file is missing: "{expected_file}"'
+                    if not prompt_instead_of_requirement_failure or not sys.stdin.isatty():
+                        raise ValueError(f'Refusing to delete "{target_path}" because {message}')
+                    print()
+                    print("Folder deletion requirement warning:")
+                    print(f"Folder: {target_path}")
+                    print(message)
+                    print()
+                    answer = input("Delete anyway? [y/n]: ").strip().lower()
+                    if answer not in {"y", "yes"}:
+                        print("Cancelled folder deletion.")
+                        return False
+
+            for expected_dir in required_included_dirs:
+                expected_path = os.path.join(target_path, expected_dir)
+                if not os.path.isdir(expected_path):
+                    message = f'Required directory is missing: "{expected_dir}"'
+                    if not prompt_instead_of_requirement_failure or not sys.stdin.isatty():
+                        raise ValueError(f'Refusing to delete "{target_path}" because {message}')
+                    print()
+                    print("Folder deletion requirement warning:")
+                    print(f"Folder: {target_path}")
+                    print(message)
+                    print()
+                    answer = input("Delete anyway? [y/n]: ").strip().lower()
+                    if answer not in {"y", "yes"}:
+                        print("Cancelled folder deletion.")
+                        return False
 
     if is_below_min_path_depth:
         if not sys.stdin.isatty():
@@ -337,16 +490,16 @@ def delete_folder_safe(
     if is_above_max_size:
         if not sys.stdin.isatty():
             raise ValueError(
-                f"Refusing to delete folder larger than {_format_bytes(max_size_bytes)} without interactive confirmation. "  # type:ignore
-                f"Folder: {target_path}. Folder size: {_format_bytes(folder_size)}"
+                f"Refusing to delete folder larger than {format_bytes(max_size_bytes)} without interactive confirmation. "  # type:ignore
+                f"Folder: {target_path}. Folder size: {format_bytes(folder_size)}"
             )
 
         print()
         print("Folder deletion size warning:")
         print(f"Folder: {target_path}")
         size_label = "Measured at least" if folder_size_is_partial else "Folder size"
-        print(f"{size_label}: {_format_bytes(folder_size)}")
-        print(f"Configured limit: {_format_bytes(max_size_bytes)}")  # type:ignore
+        print(f"{size_label}: {format_bytes(folder_size)}")
+        print(f"Configured limit: {format_bytes(max_size_bytes)}")  # type:ignore
         print()
         answer = input("Folder is larger than expected. Delete anyway? [y/n]: ").strip().lower()
         if answer not in {"y", "yes"}:
@@ -356,25 +509,9 @@ def delete_folder_safe(
     if always_prompt_for_confirmation:
         if folder_size is None:
             try:
-                folder_size = _get_folder_size(target_path, timeout_seconds=max_size_check_seconds)
-            except _FolderSizeCheckTimedOut_Error as error:
-                folder_size = error.minimum_size
-                folder_size_is_partial = True
-                if not prompt_instead_of_requirement_failure or not sys.stdin.isatty():
-                    raise ValueError(
-                        f'Could not finish size check for "{target_path}" within {error.timeout_seconds:g} seconds. '
-                        f"Measured at least {_format_bytes(error.minimum_size)}."
-                    ) from error
-                print()
-                print("Folder deletion size check warning:")
-                print(f"Folder: {target_path}")
-                print(f"Size check timed out after {error.timeout_seconds:g} seconds.")
-                print(f"Measured at least: {_format_bytes(error.minimum_size)}")
-                print()
-                answer = input("Continue to deletion confirmation? [y/n]: ").strip().lower()
-                if answer not in {"y", "yes"}:
-                    print("Cancelled folder deletion.")
-                    return False
+                folder_size, folder_size_is_partial = get_folder_size(
+                    target_path, timeout_seconds=max_size_check_seconds
+                )
             except OSError as error:
                 if not prompt_instead_of_requirement_failure or not sys.stdin.isatty():
                     raise
@@ -387,12 +524,28 @@ def delete_folder_safe(
                 if answer not in {"y", "yes"}:
                     print("Cancelled folder deletion.")
                     return False
+            if folder_size_is_partial:
+                if not prompt_instead_of_requirement_failure or not sys.stdin.isatty():
+                    raise ValueError(
+                        f'Could not finish size check for "{target_path}" within {max_size_check_seconds:g} seconds. '
+                        f"Measured at least {format_bytes(folder_size)}."
+                    )
+                print()
+                print("Folder deletion size check warning:")
+                print(f"Folder: {target_path}")
+                print(f"Size check timed out after {max_size_check_seconds:g} seconds.")
+                print(f"Measured at least: {format_bytes(folder_size)}")
+                print()
+                answer = input("Continue to deletion confirmation? [y/n]: ").strip().lower()
+                if answer not in {"y", "yes"}:
+                    print("Cancelled folder deletion.")
+                    return False
         print()
         print("Folder deletion request:")
         print(f"Folder: {target_path}")
         size_label = "Measured at least" if folder_size_is_partial else "Folder size"
         if folder_size is not None:
-            print(f"{size_label}: {_format_bytes(folder_size)}")
+            print(f"{size_label}: {format_bytes(folder_size)}")
         else:
             print("Folder size: unknown")
         print()
@@ -856,14 +1009,6 @@ def make_abs_path_relative_to_file(path, file):
         return path
 
 
-def _get_path_depth(path: str | os.PathLike[str]) -> int:
-    _drive, path_without_drive = os.path.splitdrive(os.path.normpath(os.fspath(path)))
-    path_without_root = path_without_drive.strip("\\/")
-    if path_without_root == "":
-        return 0
-    return len([part for part in path_without_root.replace("\\", "/").split("/") if part])
-
-
 def sanitize_filename(filename, replacement="_"):
     import re
 
@@ -1110,62 +1255,6 @@ def _write_process_id_lines(path: str, lines: list[str]) -> None:
         write_file(path, non_empty_lines)
     elif os.path.exists(path):
         os.remove(path)
-
-
-def _format_bytes(num_bytes) -> str:
-    units = ["B", "KB", "MB", "GB", "TB"]
-    size = float(num_bytes)
-    for unit in units:
-        if size < 1024 or unit == units[-1]:
-            if unit == "B":
-                return f"{int(size)} {unit}"
-            else:
-                return f"{size:.2f} {unit}"
-        size /= 1024
-    return f"{num_bytes} B"
-
-
-class _FolderSizeCheckTimedOut_Error(TimeoutError):
-    def __init__(self, minimum_size: int, timeout_seconds: float) -> None:
-        super().__init__(
-            f"Folder size check timed out after {timeout_seconds:g} seconds. "
-            f"Measured at least {_format_bytes(minimum_size)}."
-        )
-        self.minimum_size = minimum_size
-        self.timeout_seconds = timeout_seconds
-
-
-def _get_folder_size(folder: str | os.PathLike[str], timeout_seconds: float | None = None) -> int:
-    total = 0
-    deadline = None
-    if timeout_seconds is not None:
-        import time
-
-        deadline = time.monotonic() + timeout_seconds
-
-    def raise_walk_error(error: OSError) -> None:
-        raise error
-
-    for root, _dirs, files in os.walk(folder, onerror=raise_walk_error):
-        for filename in files:
-            if deadline is not None and time.monotonic() > deadline:  # type:ignore[name-defined]
-                raise _FolderSizeCheckTimedOut_Error(total, timeout_seconds)  # type:ignore[arg-type]
-            path = os.path.join(root, filename)
-            if os.path.isfile(path):
-                total += os.path.getsize(path)
-    return total
-
-
-def _is_folder_empty(path: str | os.PathLike[str]) -> bool:
-    def raise_walk_error(error: OSError) -> None:
-        raise error
-
-    for root, _dirs, files in os.walk(path, onerror=raise_walk_error):
-        for filename in files:
-            file_path = os.path.join(root, filename)
-            if os.path.isfile(file_path) and os.path.getsize(file_path) > 0:
-                return False
-    return True
 
 
 # =========================
@@ -1652,6 +1741,10 @@ def prompt_for_distro_reinstall(msg="Reinstall distro / recreate virtual environ
 
         print_warn("Invalid choice. Please enter 0, 1, 2, 3, 4, 5, or 6.")
 
+def ensure_py_distro_and_pckgs():
+    
+    ensure_python_distro()
+    ensure_python_packages()
 
 def ensure_python_distro(
     check_auto_determine_flag_for_default_package_install=True, set_icon_for_slow=False, app_id_for_slow=None
