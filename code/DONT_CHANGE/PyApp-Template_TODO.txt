@@ -1,11 +1,12 @@
-
 ======================================
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
-make whole sub category of delte folder in common code.
+how do i indicate that there are meant to be no packages in frontent packages folder if case. i dont want to always delte folder? maybe just spwan file:
+"__NO_PACKAGES_INSTALLED__"->better : __REMOVE_FILE_TO_WIPE_AND_INSTALL_DEFAULT_PACKAGES__. if that is not given i guess it would install frontend packages? is this redundant with that requitremtn.txt file?
+wait didnt i want to chekc for bacoekdn separed for packags and python?
 
-move helper functions below code where needed
+move helper functions below code where needed?
 
 remove target_dir fully form common_code -> get rid of py_dist
 
@@ -15,7 +16,7 @@ make it auto install default python packlags on not found packages folder in ens
     if not os.path.exists(dev_tools_referal_note_file_name):
         open(dev_tools_referal_note_file_name, "w", encoding="utf-8").close()
 
-have a look at inital batches for shortcuts to launch 
+have a look at inital batches for shortcuts to launch. 
 
 does everyhting that needs it have EMPTY_ARG_INDICATOR in start_prgoram.
 make caleld scirpt accept EMPTY_ARG_INDICATOR
@@ -287,6 +288,12 @@ ask if i can use more input succes/warn
 ================
 ==== Future ====
 ================
+
+setting to run in admin mode?
+
+builtin profiling of code?
+
+profiling of backend?
 
 craete tests in bvakcned test folder
 
