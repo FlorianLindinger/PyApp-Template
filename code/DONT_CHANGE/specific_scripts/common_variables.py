@@ -24,6 +24,7 @@ backend_package_requirements_file = make_abs("..\\backend_packages_requirements.
 frontend_env_dir = make_abs("..\\..\\py_env")
 frontend_packages_dir = frontend_env_dir + "\\packages"
 frontend_python_dir = frontend_env_dir + "\\py_dist"
+frontend_packages_are_installed_marker_filename = "__DELETE_THIS_TO_WIPE_AND_INSTALL_DEFAULT_PACKAGES__"
 frontend_script_for_set_python_and_pip_target = (
     frontend_python_dir + "\\tools\\open_terminal_with_set_python_and_pip_target.bat"
 )
@@ -105,3 +106,6 @@ python_download_timeout_s = 120
 developer_settings_dir = os.path.dirname(developer_settings_path)
 frontend_python_exe = os.path.normpath(frontend_python_dir + "\\python.exe")
 rel_path_from_backend_python_to_backend_packages = os.path.relpath(backend_packages_dir, backend_python_dir)
+frontend_packages_are_installed_marker_path = (
+    frontend_packages_dir + "\\" + frontend_packages_are_installed_marker_filename
+)
