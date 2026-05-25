@@ -19,6 +19,7 @@ from DONT_CHANGE.specific_scripts.common_variables import (
     dev_tools_referal_note_file_name,
     excluded_folders_for_package_search,
     frontend_env_dir,
+    frontend_packages_are_installed_marker_path,
     frontend_packages_dir,
     frontend_python_dir,
     frontend_python_exe,
@@ -193,7 +194,13 @@ def delete_folder_safe(
         for name in names:
             name_text = os.fspath(name)
             drive, _tail = os.path.splitdrive(name_text)
-            if name_text in {"", ".", ".."} or drive or os.path.isabs(name_text) or "/" in name_text or "\\" in name_text:
+            if (
+                name_text in {"", ".", ".."}
+                or drive
+                or os.path.isabs(name_text)
+                or "/" in name_text
+                or "\\" in name_text
+            ):
                 raise ValueError(f'Required {label} marker must be a direct child name: "{name_text}"')
             validated_names.append(name_text)
         return tuple(validated_names)
@@ -938,19 +945,17 @@ def set_terminal_name(name: str) -> None:
         pass
 
 
-def set_terminal_icon_once():
+def set_terminal_NAME_APPiD_ICON_once(app_id: str):
     global _ICON_WAS_SET
+    global _APP_ID_IS_SET
     if _ICON_WAS_SET == False:
         set_terminal_name(program_name)
         set_terminal_icon(program_name, icon_path)
         _ICON_WAS_SET = True
-
-
-def set_app_id_once(app_id: str):
-    global _APP_ID_IS_SET
     if _APP_ID_IS_SET == False:
-        set_terminal_app_id_safe(app_id)
-        _APP_ID_IS_SET = True
+        if app_id:
+            set_terminal_app_id_safe(app_id)
+            _APP_ID_IS_SET = True
 
 
 def close_terminal() -> bool:
@@ -1059,21 +1064,28 @@ def sanitize_filename(filename, replacement="_"):
 # file read/write
 
 
-def write_file(path: str, lines: list[str], override=True, create_folder=True):
+def write_lines(path: str, lines: list[str], override=True, create_folder=True):
+    """lines are a list of strings without the endline symbol ("\n") added.
+    If override==False it will append instead of recreating the file (default:  override=True)."""
 
     if create_folder == True:
         parent = os.path.dirname(path)
         if parent:
             os.makedirs(parent, exist_ok=True)
 
+    lines_str = "\n".join(lines) + "\n"
+
     with open(path, "w" if override else "a", encoding="utf-8") as f:
-        f.writelines(lines)
+        f.write(lines_str)
 
 
-def read_file(path: str):
+def read_lines(path: str):
+    """returns a list of strings from path without the endline symbol ("\n" or "\r\n")"""
 
     with open(path, encoding="utf-8") as f:
-        return f.readlines()
+        lines = f.readlines()  # readlines converts \r\n into \n
+
+    return [l.rstrip("\n") for l in lines]
 
 
 # =========================
@@ -1235,7 +1247,7 @@ def _stop_process_tree(pid: int) -> str:
 
 def _read_process_id_entries(path: str) -> list[tuple[int, str]]:
 
-    lines = read_file(path)
+    lines = read_lines(path)
 
     out = []
     for line in lines:
@@ -1250,9 +1262,9 @@ def _read_process_id_entries(path: str) -> list[tuple[int, str]]:
 
 
 def _write_process_id_lines(path: str, lines: list[str]) -> None:
-    non_empty_lines = [line if line.endswith("\n") else line + "\n" for line in lines if line.strip()]
+    non_empty_lines = [line for line in lines if line.strip()]
     if non_empty_lines:
-        write_file(path, non_empty_lines)
+        write_lines(path, non_empty_lines)
     elif os.path.exists(path):
         os.remove(path)
 
@@ -1285,7 +1297,7 @@ def get_running_processes_from_pid_file(pid_path: str) -> tuple[list[int], int]:
         else:
             stale_count += 1
 
-    _write_process_id_lines(pid_path, [f"{process_id}\n" for process_id in running_process_ids])
+    _write_process_id_lines(pid_path, [f"{process_id}" for process_id in running_process_ids])
     return running_process_ids, stale_count
 
 
@@ -1364,7 +1376,7 @@ def read_python_version_from_file():
         return get_python_version()
 
     try:
-        return read_file(python_version_indicator_file_path)[0].strip()
+        return read_lines(python_version_indicator_file_path)[0].strip()
     except Exception:
         print_warn("[Error] Failed to determine python version from file. Using Fallback determination.")
         return get_python_version()
@@ -1372,7 +1384,7 @@ def read_python_version_from_file():
 
 def save_python_version_to_file():
     current_version = get_python_version()
-    write_file(python_version_indicator_file_path, [current_version])
+    write_lines(python_version_indicator_file_path, [current_version])
 
 
 def is_python_version_correct(target_version: str | float | int) -> tuple[bool, str | None]:
@@ -1404,15 +1416,15 @@ def is_python_version_correct(target_version: str | float | int) -> tuple[bool, 
 
 
 def install_full_python(
+    python_dir: str = "",
     py_ver: str = "",
-    target_dir: str = "",
+    rel_path_to_packages: str = "",
     install_tkinter: bool = True,
     install_tests: bool = True,
     install_tools: bool = True,
     install_docs: bool = False,
-    rel_path_to_packages: str = "",
 ):
-    """Create a portable full Python distribution and raise on failure."""
+    r"""Create a portable full Python distribution and raise on failure. if rel_path_to_packages is defined it give the relative path from python_dir to the installed packages folder. This will be indicated to python via a file (path_to_packages.pth) in Lib\site-package."""
 
     import html.parser
     import re
@@ -1422,28 +1434,22 @@ def install_full_python(
     import urllib.parse
     import urllib.request
 
-    target_dir = os.path.abspath(target_dir) if target_dir else os.getcwd()
-    python_folder = os.path.join(target_dir, "py_dist")
-    path_to_packages_file_path = os.path.join(python_folder, "Lib", "site-packages", "path_to_packages.pth")
+    # --------------------
+    # process parameters
 
-    # ----- Process installer options -----
-
-    # Match the batch script's behavior: caller passes a path relative to
-    # target_dir, but the .pth file lives below py_dist/Lib/site-packages.
+    python_dir = os.path.abspath(python_dir)
+    path_to_packages_file_path = os.path.join(python_dir, "Lib", "site-packages", "path_to_packages.pth")
     if rel_path_to_packages:
-        rel_path_to_packages = "../../../" + rel_path_to_packages
-
-    # Python's Windows installer is split into multiple MSI files. These names
-    # are optional components or global registration helpers we do not want.
-    exclude_files = set(python_download_excluded_base_msi_names)
+        rel_path_to_packages = "../../../" + rel_path_to_packages.replace(os.sep, "/")
+    excluded_msi_files = set(python_download_excluded_base_msi_names)
     if not install_tkinter:
-        exclude_files.add("tcltk")
+        excluded_msi_files.add("tcltk")
     if not install_tests:
-        exclude_files.add("test")
+        excluded_msi_files.add("test")
     if not install_tools:
-        exclude_files.add("tools")
+        excluded_msi_files.add("tools")
     if not install_docs:
-        exclude_files.add("doc")
+        excluded_msi_files.add("doc")
 
     # ----- Find newest matching Python version with amd64 MSI files -----
 
@@ -1529,7 +1535,7 @@ def install_full_python(
         stem = os.path.splitext(os.path.splitext(filename)[0])[0]
         if re.search(r"(_d|_pdb)$", stem):
             continue
-        if os.path.splitext(filename)[0] in exclude_files:
+        if os.path.splitext(filename)[0] in excluded_msi_files:
             continue
 
         msi_urls.append(absolute_url)
@@ -1538,31 +1544,23 @@ def install_full_python(
         raise RuntimeError(f"No installable MSI files found at {url}. Aborting before deleting existing Python.")
     print(f"Found {len(msi_urls)} MSI package(s) to install.")
 
-    # ----- Replace old py_dist with an empty target folder -----
+    # ----- Replace old python_dir with an empty target folder -----
 
     try:
         delete_folder_safe(
-            python_folder,
-            allowed_base_abs_path=target_dir,
-            expected_folder_name=None,
-            required_included_files=None,
-            required_included_dirs=None,
-            require_direct_child_of_allowed_base=True,
+            python_dir,
             max_size_GB_before_prompt=1.2,
-            always_prompt_for_confirmation=False,
         )
     except Exception as error:
         raise RuntimeError(
-            f'[Error] Refusing to delete "{python_folder}". {error} '
+            f'[Error] Refusing to delete "{python_dir}". {error} '
             "-> Delete manually after confirming it is a Python folder and restart."
         ) from error
 
-    os.makedirs(python_folder, exist_ok=True)
-    write_file(
-        os.path.join(python_folder, ".gitignore"),
+    write_lines(python_dir+"\\.gitignore",
         [
-            '# Auto added to prevent synchronization of python distribution in git by blacklisting everything with wildcard "*"\n',
-            "*\n",
+            '# Auto added to prevent synchronization of python distribution in git by blacklisting everything with wildcard "*":',
+            "*",
         ],
     )
 
@@ -1586,7 +1584,7 @@ def install_full_python(
                 raise RuntimeError(f'Download produced an empty file: "{output_path}"')
             msi_paths.append(output_path)
 
-        # ----- Extract MSI files into py_dist -----
+        # ----- Extract MSI files into python_dir -----
 
         for msi_path in sorted(msi_paths, key=lambda path: os.path.basename(path).lower()):
             msi_name = os.path.basename(msi_path)
@@ -1595,19 +1593,19 @@ def install_full_python(
 
             # Use a command-line string to match the original batch syntax.
             # msiexec is picky about MSI properties whose values contain spaces.
-            command_line = f'msiexec /a "{msi_path}" TARGETDIR="{python_folder}" /qn /L*V "{log_path}"'
+            command_line = f'msiexec /a "{msi_path}" TARGETDIR="{python_dir}" /qn /L*V "{log_path}"'
             result = subprocess.run(command_line, check=False)  # noqa
             if result.returncode != 0:
                 raise RuntimeError(f"msiexec failed for {msi_name} with exit code {result.returncode}. Log: {log_path}")
 
             if msi_name.lower() == "test.msi":
-                ruff_config_path = os.path.join(python_folder, "Lib", "test", ".ruff.toml")
+                ruff_config_path = os.path.join(python_dir, "Lib", "test", ".ruff.toml")
                 if os.path.exists(ruff_config_path):
-                    lines = read_file(ruff_config_path)
+                    lines = read_lines(ruff_config_path)
                     updated_lines = ["# " + line if re.match(r"^\s*extend\s*=", line) else line for line in lines]
-                    write_file(ruff_config_path, updated_lines)
+                    write_lines(ruff_config_path, updated_lines)
 
-            installed_msi_copy = os.path.join(python_folder, msi_name)
+            installed_msi_copy = os.path.join(python_dir, msi_name)
             if os.path.exists(installed_msi_copy):
                 os.remove(installed_msi_copy)
 
@@ -1619,12 +1617,12 @@ def install_full_python(
 
     # ----- Verify install and bootstrap pip -----
 
-    if not os.path.exists(os.path.join(python_folder, "python.exe")):
+    if not os.path.exists(os.path.join(python_dir, "python.exe")):
         raise RuntimeError("Python installation failed: python.exe was not created.")
 
-    write_file(os.path.join(python_folder, "pip.ini"), ["[global]\n", "no-warn-script-location = false\n"])
+    write_lines(os.path.join(python_dir, "pip.ini"), ["[global]", "no-warn-script-location = false"])
 
-    python_exe = os.path.join(python_folder, "python.exe")
+    python_exe = os.path.join(python_dir, "python.exe")
     if subprocess.run([python_exe, "-m", "ensurepip", "--upgrade"], check=False).returncode != 0:  # noqa
         raise RuntimeError("Python installation failed: ensurepip did not complete successfully.")
 
@@ -1650,29 +1648,14 @@ def install_full_python(
     # ----- Register additional package search folder, if requested -----
 
     if rel_path_to_packages:
-        write_file(path_to_packages_file_path, [rel_path_to_packages + "\n"])
+        write_lines(path_to_packages_file_path, [rel_path_to_packages])
 
     print()
-    print(f'Sucessfully created portable Python ({full_ver}) at "{python_folder}".')
+    print(f'Sucessfully created local Python ({full_ver}) at "{python_dir}".')
 
 
 # =========================
-# python setup
-
-
-def delete_packages():
-    delete_folder_safe(
-        frontend_packages_dir,
-        always_prompt_for_confirmation=False,
-        allowed_base_abs_path=python_scripts_dir,
-        expected_folder_name=None,
-        require_direct_child_of_allowed_base=False,
-        max_size_GB_before_prompt=5.0,
-        required_included_files=None,
-        required_included_dirs=None,
-        min_path_depth=6,
-    )
-    os.makedirs(frontend_packages_dir, exist_ok=True)
+# python distribution related
 
 
 def delete_python_distro():
@@ -1698,7 +1681,7 @@ def recreate_python_distro() -> None:
 
     install_full_python(
         py_ver=python_version,
-        target_dir=frontend_env_dir,
+        python_dir=frontend_env_dir,
         install_tkinter=install_tkinter,
         install_tests=install_tests,
         install_tools=install_tools,
@@ -1741,114 +1724,172 @@ def prompt_for_distro_reinstall(msg="Reinstall distro / recreate virtual environ
 
         print_warn("Invalid choice. Please enter 0, 1, 2, 3, 4, 5, or 6.")
 
-def ensure_py_distro_and_pckgs():
-    
-    ensure_python_distro()
-    ensure_python_packages()
 
-def ensure_python_distro(
-    check_auto_determine_flag_for_default_package_install=True, set_icon_for_slow=False, app_id_for_slow=None
-) -> None:
-
-    if app_id_for_slow in [None, False]:
-        app_id_for_slow = ""
+def ensure_python_distro(check_auto_determine_flag_for_default_package_install=True, used_appid_if_slow: str = ""):
+    """returns if python version is correct"""
 
     if not os.path.exists(frontend_python_exe):  # no python distro existing case:
-        if set_icon_for_slow:
-            set_terminal_icon_once()
-        if app_id_for_slow != "":
-            set_app_id_once(app_id_for_slow)
+        set_terminal_NAME_APPiD_ICON_once(used_appid_if_slow)
         print("\n" * 5)
-        print("[Info] Python distribution not found. Installing portable Python:")
+        print("[Info] Python distribution not found. Installing Python:")
         recreate_python_distro()
-        delete_packages()
-        install_default_packages(check_auto_determine_flag=check_auto_determine_flag_for_default_package_install)
+
+        if are_frontend_packages_installed() == True:
+            print("Deleting packages because are not connected to a Python exe.")
+            delete_packages()
+        return
 
     else:  # alread existing python distro case:
-        if python_version not in ["", None]:
+        if python_version:
             matching, actual_version = is_python_version_correct(python_version)
         else:
             matching = True
 
         if matching == True:  # right python version case:
-            if get_auto_search_phrase_state() == True:
-                if set_icon_for_slow:
-                    set_terminal_icon_once()
-                if app_id_for_slow != "":
-                    set_app_id_once(app_id_for_slow)
-                print(
-                    f'[Info] Found flag "{variable_in_default_packages_path_that_triggers_search_if_true} = True" in default packages file "{default_packages_file_path}"'
-                )
-                print(
-                    "--> Auto determine needed packages & reset installed packages to them & set them as new defaults if success."
-                )
-                success, p = save_requirements_of_root_folder_noVersion()
-                if success == True:
-                    install_packages_from_file(p)
-                    save_current_packages_as_default(auto_search_phrase_state=False)
-                else:
-                    print("[Warning] Failed to auto determine needed packages (see above).")
+            return
 
         else:  # wrong python version case:
-            answer = prompt_for_distro_reinstall(
-                f"[Warning] Python version in settings ({python_version}) is not matching the current one ({actual_version}). Please enter how to proceed:"  # type:ignore
-            )
-
-            if answer == 0:
-                return
-            elif answer in [1, 2, 3, 4, 5]:
-                if set_icon_for_slow:
-                    set_terminal_icon_once()
-                if app_id_for_slow != "":
-                    set_app_id_once(app_id_for_slow)
+            if not are_frontend_packages_installed():
                 recreate_python_distro()
-                if answer == 1:
-                    delete_packages()
-                    install_default_packages(
-                        check_auto_determine_flag=check_auto_determine_flag_for_default_package_install
-                    )
-                elif answer == 2:
-                    delete_packages()
-                elif answer in [3, 4]:
-                    p = save_current_packages(with_version=False)
-                    delete_packages()
-                    install_packages_from_file(p)
-                    if answer == 4:
-                        save_current_packages_as_default()
-                elif answer in [5, 6]:
-                    delete_packages()
-                    success, p = save_requirements_of_root_folder_noVersion()
-                    if success == True:
-                        install_packages_from_file(p)
-                        if answer == 6:
-                            save_current_packages_as_default()
-                    else:
-                        print(
-                            "[Warning] Failed to auto determine needed packages (see above). Installing default packages instead:"
-                        )
-                        install_default_packages(check_auto_determine_flag=False)
+                return
+
             else:
-                raise ValueError(f"Invalid answer: {answer}")
+                answer = prompt_for_distro_reinstall(
+                    f"[Warning] Python version in settings ({python_version}) is not matching the current one ({actual_version}). Please enter how to proceed:"  # type:ignore
+                )
+
+                if answer == 0:
+                    return
+                elif answer in [1, 2, 3, 4, 5]:
+                    set_terminal_NAME_APPiD_ICON_once(used_appid_if_slow)
+                    recreate_python_distro()
+                    if answer == 1:
+                        delete_packages()
+                        install_default_packages(
+                            check_auto_determine_flag=check_auto_determine_flag_for_default_package_install
+                        )
+                    elif answer == 2:
+                        delete_packages()
+                    elif answer in [3, 4]:
+                        p = save_current_packages(with_version=False)
+                        delete_packages()
+                        install_packages_from_file(p)
+                        if answer == 4:
+                            save_current_packages_as_default()
+                    elif answer in [5, 6]:
+                        delete_packages()
+                        success, p = save_requirements_of_root_folder_noVersion()
+                        if success == True:
+                            install_packages_from_file(p)
+                            if answer == 6:
+                                save_current_packages_as_default()
+                        else:
+                            print(
+                                "[Warning] Failed to auto determine needed packages (see above). Installing default packages instead:"
+                            )
+                            install_default_packages(check_auto_determine_flag=False)
+                else:
+                    raise ValueError(f"Invalid answer: {answer}")
 
 
 # ========================
 # package related
 
 
+def delete_packages():
+    delete_folder_safe(
+        frontend_packages_dir,
+        always_prompt_for_confirmation=False,
+        allowed_base_abs_path=python_scripts_dir,
+        expected_folder_name=None,
+        require_direct_child_of_allowed_base=False,
+        max_size_GB_before_prompt=5.0,
+        required_included_files=None,
+        required_included_dirs=None,
+        min_path_depth=6,
+    )
+    os.makedirs(frontend_packages_dir, exist_ok=True)
+
+
+def are_frontend_packages_installed() -> bool:
+    """returns True if frontend packages are installed"""
+
+    if not os.path.exists(frontend_packages_dir):
+        return False
+    else:
+        num_elems = len(os.listdir(frontend_packages_dir))
+
+        if num_elems == 0:
+            return False
+        elif num_elems == 1:
+            if os.path.exists(frontend_packages_are_installed_marker_path):
+                return True
+            else:
+                return False
+        else:
+            return True
+
+
+def check_if_auto_determine_pckgs_and_install_default(app_id_for_slow: str = ""):
+    if get_auto_find_pckgs_phrase_state() == True:
+        set_terminal_NAME_APPiD_ICON_once(app_id_for_slow)
+        print(
+            f'[Info] Found flag "{variable_in_default_packages_path_that_triggers_search_if_true} = True" in default packages file "{default_packages_file_path}"'
+        )
+        print(
+            "--> Auto determine needed packages & reset installed packages to them & set them as new defaults if success."
+        )
+        success, p = save_requirements_of_root_folder_noVersion()
+        if success == True:
+            install_packages_from_file(p)
+            save_current_packages_as_default(auto_search_phrase_state=False)
+        else:
+            print_warn(
+                "[Warning] Failed to auto determine needed packages (see above). Installing default packages instead:"
+            )
+            install_default_packages()
+    else:
+        install_default_packages()
+
+
+def ensure_frontend_packages(used_appid_if_slow: str = ""):
+
+    ensure_python_distro(used_appid_if_slow)
+
+    if not os.path.exists(frontend_packages_dir):  # packages folder not existing - case
+        check_if_auto_determine_pckgs_and_install_default(used_appid_if_slow)
+
+    else:  # packages folder existing - case
+        if os.path.exists(frontend_packages_are_installed_marker_path):
+            return
+        else:
+            delete_packages()  # resetting packages
+            check_if_auto_determine_pckgs_and_install_default(used_appid_if_slow)
+
+
 def install_packages_from_file(path: str, no_cache: bool = True) -> None:
+
+    if not os.path.exists(frontend_packages_dir):
+        os.makedirs(frontend_packages_dir)
+
+    # add indicator that packages were installed
+    if not os.path.exists(frontend_packages_are_installed_marker_path):
+        open(frontend_packages_are_installed_marker_path, "w").close()
+
     if not os.path.exists(path):
         raise FileNotFoundError(f'Package list not found: "{path}"')
 
     print()
     print(f'[Info] Package list: "{path}"')
 
-    packages = read_file(path)
+    packages = read_lines(path)
     for line in packages:
         stripped = line.strip()
         if stripped and not stripped.startswith("#"):
             break
     else:
         print("[Info] No packages to install.")
+
         return
 
     args = [
@@ -1875,7 +1916,7 @@ def install_packages_from_file(path: str, no_cache: bool = True) -> None:
 def install_default_packages(check_auto_determine_flag=True):
 
     if check_auto_determine_flag == True:
-        if get_auto_search_phrase_state() == True:
+        if get_auto_find_pckgs_phrase_state() == True:
             print(
                 f'[Info] Found flag "{variable_in_default_packages_path_that_triggers_search_if_true} = True" in default packages file "{default_packages_file_path}"'
             )
@@ -1888,18 +1929,18 @@ def install_default_packages(check_auto_determine_flag=True):
             if success:
                 install_packages_from_file(p)
                 save_current_packages_as_default(auto_search_phrase_state=False)
+                return
             else:
-                print_warn("[Error] Failed to auto determine required Python packages.")
-                input_warn("Aborting. Press enter to exit")
+                raise RuntimeError("[Error] Failed to auto determine required Python packages.")
+    else:
+        install_packages_from_file(default_packages_file_path)
 
-    install_packages_from_file(default_packages_file_path)
 
-
-def get_auto_search_phrase_state() -> bool | None:
+def get_auto_find_pckgs_phrase_state() -> bool | None:
     if not os.path.exists(default_packages_file_path):
         return None
 
-    lines = read_file(default_packages_file_path)
+    lines = read_lines(default_packages_file_path)
 
     for line in lines:
         if variable_in_default_packages_path_that_triggers_search_if_true not in line:
@@ -1921,11 +1962,11 @@ def get_auto_search_phrase_state() -> bool | None:
 
 def save_current_packages_as_default(auto_search_phrase_state=None, with_version=True):
     if auto_search_phrase_state is None:
-        auto_search_phrase_state = get_auto_search_phrase_state()
+        auto_search_phrase_state = get_auto_find_pckgs_phrase_state()
 
     packages = get_current_packages(with_version=with_version)
 
-    write_file(
+    write_lines(
         default_packages_file_path,
         [
             f"{variable_in_default_packages_path_that_triggers_search_if_true} = {auto_search_phrase_state}",
@@ -1981,7 +2022,7 @@ def save_installed_packages(exe_path, output_path=None, with_version=True):
 
     packages = get_installed_packages(with_version=with_version, exe_path=exe_path)
 
-    write_file(output_path, packages)
+    write_lines(output_path, packages)
 
     return output_path
 
@@ -2027,8 +2068,8 @@ def save_requirements_of_root_folder_noVersion(
         if os.path.exists(output_path):
             print("-" * 20)
             print(f'End of finding required python packages. Result: "{output_path}":\n')
-            packages = read_file(output_path)
-            print(*packages)
+            packages = read_lines(output_path)
+            print(*packages, sep="\n")
             print("=" * 20)
             print()
 
