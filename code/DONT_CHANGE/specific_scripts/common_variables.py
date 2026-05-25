@@ -28,7 +28,7 @@ frontend_packages_are_installed_marker_filename = "__DELETE_THIS_TO_WIPE_AND_INS
 frontend_script_for_set_python_and_pip_target = (
     frontend_python_dir + "\\tools\\open_terminal_with_set_python_and_pip_target.bat"
 )
-dev_tools_referal_note_file_name = (
+dev_tools_referal_note_path = (
     frontend_env_dir + "\\USE developer_tools FOLDER (IN PARENT FOLDER) TO CHANGE PACKAGES"
 )
 
