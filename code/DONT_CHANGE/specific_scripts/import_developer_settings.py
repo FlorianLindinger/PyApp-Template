@@ -62,7 +62,7 @@ from DONT_CHANGE.specific_scripts.common_variables import (
     play_sound_on_success_default,
     process_id_file_path,
     python_code_path,
-    start_time_dummy_main_code,
+    start_time_dummy_main_script,
     windows_dir,
 )
 
@@ -70,7 +70,7 @@ from DONT_CHANGE.specific_scripts.common_variables import (
 # process developer_settings settings
 
 if os.environ.get(env_var_to_signal_startup_time_measurement):
-    python_code_path = start_time_dummy_main_code
+    python_code_path = start_time_dummy_main_script
 
 # raise error if script not found
 if not os.path.exists(python_code_path):
@@ -168,9 +168,7 @@ args = [
     python_code_path,
     program_name,
     icon_path,
-    
     # app_id,
-    
     wdir_is_script_dir,
     close_on_crash,
     close_on_failure,
@@ -193,9 +191,7 @@ args = [
     start_minimized,
     CORRECT_START_SIGNAL_FILE_PATH,
     log_input_prepend,
-    
     ##########
-    
     taskbar_flashing_on_crash,
     taskbar_flashing_on_failure,
     taskbar_flashing_on_success,
