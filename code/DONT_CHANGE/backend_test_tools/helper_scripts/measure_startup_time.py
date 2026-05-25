@@ -15,169 +15,26 @@ root_dir = os.path.dirname(__file__) + "\\..\\..\\.."
 if root_dir not in sys.path:
     sys.path.insert(0, root_dir)
 
-from DONT_CHANGE.specific_scripts.common_variables import python_code_path
+from developer_settings import (
+    no_terminal_shortcut_name,
+    terminal_emulator_shortcut_name,
+    windows_terminal_shortcut_name,
+)
+from DONT_CHANGE.specific_scripts.common_variables import (
+    env_var_to_signal_startup_time_measurement,
+    python_code_path,
+)
 
-SCRIPT_DIR = Path(__file__).resolve().parent
-BACKEND_TEST_TOOLS_DIR = SCRIPT_DIR.parent
-DONT_CHANGE_DIR = BACKEND_TEST_TOOLS_DIR.parent
-CODE_DIR = DONT_CHANGE_DIR.parent
-REPO_DIR = CODE_DIR.parent
-WORK_DIR = DONT_CHANGE_DIR / "DO_NOT_SYNC" / "startup_time"
-DEVELOPER_SETTINGS_PATH = CODE_DIR / "developer_settings.py"
-VENV_PYTHON = CODE_DIR / "py_env" / "virt_env" / "Portable_Scripts" / "python.bat"
-PY_DIST_PYTHON = CODE_DIR / "py_env" / "py_dist" / "python.exe"
+shortcuts = [windows_terminal_shortcut_name,no_terminal_shortcut_name,terminal_emulator_shortcut_name, "browser shortcut placeholder" ]
+
 VERSION_SCRIPT = (
     "import platform, sys; print(f'{platform.python_implementation()} {sys.version.split()[0]} ({sys.executable})')"
 )
-SHORTCUT_SETTINGS = [
-    ("windows_terminal", ("windows_terminal_shortcut_name", "start_windows_terminal_shortcut_name")),
-    ("terminal_emulator", ("terminal_emulator_shortcut_name", "start_terminal_emulator_shortcut_name")),
-    ("browser", ("browser_shortcut_name", "start_browser_shortcut_name")),
-    ("no_terminal", ("no_terminal_shortcut_name", "start_no_terminal_shortcut_name")),
-]
 
 
-@dataclass(frozen=True)
-class ShortcutSpec:
-    path: Path
-    mode: str
-    setting_name: str
-    shortcut_name: str
 
 
-def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Measure PyApp startup time to the marker in the main script.")
-    parser.add_argument("--runs", type=int, default=10, help="Runs per startup mode. Default: 10.")
-    parser.add_argument("--timeout", type=float, default=20.0, help="Seconds to wait for the startup marker.")
-    parser.add_argument("--skip-launcher", action="store_true", help="Skip all .lnk shortcut measurements.")
-    parser.add_argument("--skip-windows-terminal-shortcut", action="store_true", help="Skip Windows Terminal .lnk.")
-    parser.add_argument("--skip-terminal-emulator-shortcut", action="store_true", help="Skip terminal emulator .lnk.")
-    parser.add_argument("--skip-browser-shortcut", action="store_true", help="Skip browser .lnk.")
-    parser.add_argument("--skip-no-terminal-shortcut", action="store_true", help="Skip no-terminal .lnk.")
-    parser.add_argument("--skip-py-dist", action="store_true", help="Skip direct py_dist python measurement.")
-    parser.add_argument("--skip-global", action="store_true", help="Skip direct global 'py' measurement.")
-    parser.add_argument(
-        "--shortcut",
-        action="append",
-        default=None,
-        help=(
-            "Explicit PyApp shortcut to launch. Can be passed multiple times. "
-            "When omitted, shortcut names are read from developer_settings.py."
-        ),
-    )
-    return parser.parse_args()
 
-
-def load_developer_setting(names: str | tuple[str, ...], default):
-    import importlib.util
-
-    spec = importlib.util.spec_from_file_location("developer_settings", DEVELOPER_SETTINGS_PATH)
-    if spec is None or spec.loader is None:
-        return default
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    if isinstance(names, str):
-        names = (names,)
-    for name in names:
-        value = getattr(module, name, None)
-        if value is not None:
-            return value
-    return default
-
-
-def sanitize_filename(filename, replacement="_"):
-    import re
-
-    filename = re.sub(r'[<>:"/\\|?*\x00-\x1f]', replacement, filename)
-    base_name = os.path.splitext(filename)[0].upper()
-    reserved_names = {
-        "CON",
-        "PRN",
-        "AUX",
-        "NUL",
-        "COM1",
-        "COM2",
-        "COM3",
-        "COM4",
-        "COM5",
-        "COM6",
-        "COM7",
-        "COM8",
-        "COM9",
-        "LPT1",
-        "LPT2",
-        "LPT3",
-        "LPT4",
-        "LPT5",
-        "LPT6",
-        "LPT7",
-        "LPT8",
-        "LPT9",
-    }
-    if base_name in reserved_names:
-        filename = f"{replacement}{filename}"
-    filename = filename.rstrip(". ")
-    if len(filename) > 255:
-        filename = filename[:255]
-    return filename if filename else "unnamed_file"
-
-
-def shortcut_specs_from_developer_settings(args: argparse.Namespace) -> list[ShortcutSpec]:
-    skip_args_by_mode = {
-        "windows_terminal": args.skip_windows_terminal_shortcut,
-        "terminal_emulator": args.skip_terminal_emulator_shortcut,
-        "browser": args.skip_browser_shortcut,
-        "no_terminal": args.skip_no_terminal_shortcut,
-    }
-    shortcut_specs: list[ShortcutSpec] = []
-    for mode, setting_names in SHORTCUT_SETTINGS:
-        if skip_args_by_mode[mode]:
-            continue
-        shortcut_name = load_developer_setting(setting_names, "")
-        if shortcut_name in [None, False, ""]:
-            continue
-        shortcut_name_text = str(shortcut_name)
-        shortcut_specs.append(
-            ShortcutSpec(
-                path=REPO_DIR / f"{sanitize_filename(shortcut_name_text)}.lnk",
-                mode=mode,
-                setting_name=setting_names[0],
-                shortcut_name=shortcut_name_text,
-            )
-        )
-    return shortcut_specs
-
-
-def shortcut_specs_from_explicit_args(shortcuts: list[str]) -> list[ShortcutSpec]:
-    shortcut_specs: list[ShortcutSpec] = []
-    for shortcut in shortcuts:
-        shortcut_path = Path(shortcut).expanduser()
-        if not shortcut_path.is_absolute():
-            shortcut_path = (REPO_DIR / shortcut_path).resolve()
-        shortcut_specs.append(
-            ShortcutSpec(
-                path=shortcut_path,
-                mode="explicit",
-                setting_name="--shortcut",
-                shortcut_name=shortcut_path.stem,
-            )
-        )
-    return shortcut_specs
-
-
-def warn_missing_shortcuts(missing_shortcuts: list[ShortcutSpec]) -> None:
-    print()
-    print("[Warning] Missing generated shortcut link(s).")
-    print("You may need to regenerate shortcuts so the .lnk files match the names in developer_settings.py.")
-    print(f"Shortcut generator: {DONT_CHANGE_DIR / 'specific_scripts' / "setup"/'generate_shortcuts.py'}")
-    print()
-    print("Missing:")
-    for shortcut in missing_shortcuts:
-        print(f"  mode: {shortcut.mode}")
-        print(f'  developer_settings.py setting: {shortcut.setting_name} = "{shortcut.shortcut_name}"')
-        print(f'  expected .lnk: "{shortcut.path}"')
-        print()
-    input("Press enter to exit")
 
 
 def python_command(python_path: Path | str, args: list[str]) -> list[str]:
@@ -448,8 +305,6 @@ def measure_shortcut(
     return results
 
 
-def safe_marker_name(label: str) -> str:
-    return "".join(character if character.isalnum() else "_" for character in label.lower()).strip("_")
 
 
 def print_summary(results: dict[str, list[float]]) -> None:
@@ -466,14 +321,6 @@ def print_summary(results: dict[str, list[float]]) -> None:
         )
 
 
-def print_marker_help(target_script: Path) -> None:
-    print("\nThe target script must write the startup marker. Add or move this near the startup point to measure:")
-    print(
-        """
-from DONT_CHANGE.specific_scripts.startup_benchmark_marker import mark_startup_time
-""".strip()
-    )
-    print(f"\nCurrent target script: {target_script}")
 
 
 def main() -> int:
