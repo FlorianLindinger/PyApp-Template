@@ -1,14 +1,3 @@
-# launch script in wrapper that handles:
-#   errors
-#   return
-#   icon setting
-#   terminal-renaming
-#   working dir setting
-#   app-id setting
-#   closer or keep open logic on finish/error/fail
-#   print in additional terminal for final print info if in no-terminal mode
-#   ...
-
 try:
     # ==================
     # import
@@ -38,7 +27,7 @@ try:
     )
 
     def arg_to_str(idx, default="") -> str:
-        arg=sys.argv[idx]
+        arg = sys.argv[idx]
         if arg == EMPTY_ARG_INDICATOR:
             return default
         else:
@@ -103,9 +92,6 @@ try:
         open_log_file_after_python_interpreter_crash=open_log_file_after_crash,
     )
 
-    if app_id != "" or script_has_terminal:
-        import ctypes
-
     if process_id_file_path != "":
         try:
             process_id_registry = ProcessIdRegistry(process_id_file_path)
@@ -149,6 +135,7 @@ try:
         )
 
     if script_has_terminal:
+        import ctypes
         from ctypes import wintypes
 
         kernel32_DLL = ctypes.WinDLL("kernel32", use_last_error=True)  # type:ignore
@@ -617,6 +604,7 @@ try:
     # end of "if script_has_terminal:""
     # ==================================
 
+    # define code to log prints and errors
     if log_path != "":
         import threading
         from datetime import datetime, timezone
@@ -857,6 +845,10 @@ def get_terminal_name():
     # ==================
 
     try:
+        # minimize terminal if wanted
+        if script_has_terminal and start_minimized:
+            minimize_current_console()  # type:ignore
+
         # set terminal colors
         if script_has_terminal and terminal_colors != "":
             os.system(f"color {terminal_colors}")  # noqa:S605
@@ -872,21 +864,14 @@ def get_terminal_name():
         if program_name != "":
             os.system(f"title {program_name}")  # noqa:S605
 
-        # set working directory
-        if wdir_is_script_dir:
-            os.chdir(os.path.dirname(script_path))
-
-        # setup logging
-        if log_path != "":
-            setup_log_prints(log_path, overwrite_log)  # type:ignore
-
-        # set app id for taskbar grouping (combining) of (Qt) GUI icon with launcher shortcut icon
+        # set app id for taskbar grouping (combining) of launched window with shortcut icon
         if app_id != "":
             try:
                 ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(app_id)  # type:ignore
             except Exception as e:
                 print(e)
 
+        # set terminal appearance in new thread because slow
         terminal_appearance_thread = None
         if script_has_terminal:
 
@@ -902,21 +887,33 @@ def get_terminal_name():
             import threading
 
             terminal_appearance_thread = threading.Thread(target=apply_terminal_appearance)
+            terminal_appearance_thread.start()
 
+        # set working directory
+        if wdir_is_script_dir:
+            os.chdir(os.path.dirname(script_path))
+
+        # setup logging
+        if log_path != "":
+            setup_log_prints(log_path, overwrite_log)  # type:ignore
+
+        # define args to pass to main script
         sys.argv = [
             script_path,
             program_name,
             icon_path,
             app_id,
             log_path,
-            "1" if script_has_terminal else "01" if wdir_is_script_dir else "01" if close_on_failure else "0",
+            "1" if script_has_terminal else "0",
+            "1" if wdir_is_script_dir else "0",
+            "1" if close_on_failure else "0",
             "1" if close_on_success else "0",
         ]
 
         # change sys.path[0] to be dir of target script and not this script
         sys.path[0] = os.path.dirname(script_path)
 
-        # run in the current python process and wait for finish
+        # change pythons builtin "input" function
         original_input = builtins.input
         if input_prepend != "" or log_input_prepend != "" or hasattr(sys.stdout, "complete_input_line"):
 
@@ -931,22 +928,76 @@ def get_terminal_name():
                 return text
 
             builtins.input = input_with_prepend
+
+        # run in the current python process and wait for finish
         try:
-            if terminal_appearance_thread is not None:
-                terminal_appearance_thread.start()
-            if script_has_terminal and start_minimized:
-                minimize_current_console()  # type:ignore
             runpy.run_path(script_path, run_name="__main__")
-            # no crash:
-            exit_code = 0
-        except SystemExit as e:  # catch sys.exit
+            exit_code = 0  # meaning no crash
+        except SystemExit as e:  # catches sys.exit
             exit_code = e.code
             if exit_code is None:
                 exit_code = 0
+        except SyntaxError as e:  # catches synatx error in script_path or raise by script_path
+            # WIP!!
+
+            import traceback
+
+            print("-" * 20)
+
+            # SyntaxError is special for older python versions: Python normally prints it without a normal traceback.
+            if isinstance(e, SyntaxError):
+                print("".join(traceback.format_exception_only(type(e), e)), end="")
+            else:
+                tb = e.__traceback__
+
+                # Drop frames from this launcher/wrapper/runpy until the script's first frame.
+                while tb is not None:
+                    frame_path = os.path.abspath(tb.tb_frame.f_code.co_filename)
+
+                    if frame_path == script_path:
+                        break
+
+                    tb = tb.tb_next
+
+                traceback.print_exception(type(e), e, tb)
+
+            print("-" * 20)
+            print("".join(traceback.format_exception_only(type(e), e)), end="")
+
+            print("-" * 20)
+            print(traceback.format_exc())
+            print("-" * 20)
+
+            exit_code = 1
+        except KeyboardInterrupt as e:
+            exit_code = 1
+
+        except BaseException as e:
+            exit_code = 1
+
+        # # SyntaxError is special: Python normally prints it without a normal traceback.
+        # if isinstance(error, SyntaxError):
+        #     print("".join(traceback.format_exception_only(type(error), error)), end="")
+        #     return
+
+        # script_path = os.path.abspath(script_path)
+        # tb = error.__traceback__
+
+        # # Drop frames from this launcher/wrapper/runpy until the script's first frame.
+        # while tb is not None:
+        #     frame_path = os.path.abspath(tb.tb_frame.f_code.co_filename)
+
+        #     if frame_path == script_path:
+        #         break
+
+        #     tb = tb.tb_next
+
+        # traceback.print_exception(type(error), error, tb)
+
         finally:
             builtins.input = original_input
             if terminal_appearance_thread is not None:
-                terminal_appearance_thread.join()
+                terminal_appearance_thread.join(timeout=5)  # timeout in s
 
         # change terminal and print depending on exit_code
         if exit_code == 0:
@@ -954,33 +1005,40 @@ def get_terminal_name():
             if close_on_success:
                 sys.exit(0)
             else:
-                script = """
+                script = (
+                    script_base
+                    + """
 set_terminal_name(rf"[Success] {{get_terminal_name()}}")
 print()
 input_success("[Program finished successfully] Press Enter to exit.")
 """
+                )
                 if script_has_terminal:
                     exec(script)  # noqa
                 else:
                     if log_path != "":
                         print("[Program finished successfully]")
-                    run_text_in_new_terminal_and_wait(script_base + script)
+                    run_text_in_new_terminal_and_wait(script)
                 sys.exit(0)
+
         elif looks_like_interpreter_crash(exit_code):
             completion_alerts.run("crash", exit_code)
             if close_on_crash:
                 sys.exit(exit_code)
             else:
-                script = f"""
+                script = (
+                    script_base
+                    + f"""
 set_terminal_name(rf"[Crash] {{get_terminal_name()}}")
 print()
 print_warn(rf'[Python Interpreter Crash] Script exited with Windows crash code: "{exit_code}"')
 input_warn("[Python Interpreter Crash] Press Enter to exit.")
 """
+                )
                 if script_has_terminal:
                     exec(script)  # noqa
                 else:
-                    run_text_in_new_terminal_and_wait(script_base + script)
+                    run_text_in_new_terminal_and_wait(script)
                 sys.exit(exit_code)
 
         else:  # regular failure case (includes any string exit_code)
@@ -988,16 +1046,20 @@ input_warn("[Python Interpreter Crash] Press Enter to exit.")
             if close_on_failure:
                 sys.exit(exit_code)
             else:
-                script = f"""
+                script = (
+                    script_base
+                    + f"""
 set_terminal_name(rf"[Failure] {{get_terminal_name()}}")
 print()
 print_warn(rf"[Python Failure Return] Script exited with code: {exit_code}")
 input_warn("[Python Failure Return] Press Enter to exit.")
 """
+                )
                 if script_has_terminal:
                     exec(script)  # noqa
                 else:
-                    run_text_in_new_terminal_and_wait(script_base + script)
+                    run_text_in_new_terminal_and_wait(script)
+
                 sys.exit(exit_code)
 
     except Exception as e:  # backend crash
@@ -1005,7 +1067,9 @@ input_warn("[Python Failure Return] Press Enter to exit.")
         import traceback
 
         try:  # attempt detailed error report
-            script = f"""
+            script = (
+                script_base
+                + f"""
 set_terminal_name(rf"[Crash] {{get_terminal_name()}}")
 print()
 print_warn("="*40)
@@ -1018,19 +1082,29 @@ print_warn(r"[Info] Script: {script_path}")
 print_warn("-"*40)
 input_warn("[Python Crash] See above. Press Enter to exit.")
 """
+            )
             if script_has_terminal:
                 exec(script)  # noqa
             else:
-                run_text_in_new_terminal_and_wait(script_base + script)
+                run_text_in_new_terminal_and_wait(script)
             sys.exit(1)
 
-        except Exception as inner_e:  # fallback to minimal error report. Always in new terminal for extra safety
-            script = f"""
+        except Exception as inner_e:  # fallback to minimal error report
+            if script_has_terminal:
                 print(f"[Error] Failed to handle crash: {inner_e}")
                 print({traceback.format_exc()})
                 input("Press Enter to exit.")
-            """
-            run_text_in_new_terminal_and_wait(script_base + script)
+            else:
+                script = (
+                    script_base
+                    + f"""
+                print(f"[Error] Failed to handle crash: {inner_e}")
+                print({traceback.format_exc()})
+                input("Press Enter to exit.")
+                """
+                )
+                run_text_in_new_terminal_and_wait(script)
+
             sys.exit(1)
 
 
