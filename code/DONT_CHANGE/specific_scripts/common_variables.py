@@ -53,6 +53,7 @@ launcher_settings = make_abs("..\\S.bat")
 launcher_browser = make_abs("..\\B.bat")
 launcher_no_terminal = make_abs("..\\N.bat")
 launcher_stop = make_abs("..\\Q.bat")
+start_time_dummy_main_code = make_abs("start_time_dummy_main_code.py")
 
 # files
 # ------------------------
@@ -97,6 +98,7 @@ variable_in_default_packages_path_that_triggers_search_if_true = (
 python_download_ftp_url = "https://www.python.org/ftp/python/"
 python_download_excluded_base_msi_names = {"path", "appendpath", "pip", "launcher"}
 python_download_timeout_s = 120
+env_var_to_signal_startup_time_measurement = "PYAPP_TEMPLATE_ACTIVE_STARTUP_TIME_MEASUREMENT"
 
 
 # =============================

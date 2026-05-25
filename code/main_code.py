@@ -1,6 +1,8 @@
 # ==============================
 
-from DONT_CHANGE.backend_test_tools.helper_scripts.startup_benchmark_marker import mark_startup_time  # noqa
+asda asd
+
+
 
 # ==============================
 import sys
