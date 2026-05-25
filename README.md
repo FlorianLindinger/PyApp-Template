@@ -35,9 +35,9 @@
 ## Quick Start
 
 1. Clone/download/copy this repository
-2. Add the python code you want to execute to `code/main_code.py`
+2. Add the python code you want to execute to `code/main_script.py`
 3. (Optional: Change program settings like Python version or program name under `code/developer_settings.py`)
-4. (Optional: Add user settings under `code/settings.py`. Import them in `main_code.py` via `import settings`)
+4. (Optional: Add user settings under `code/settings.py`. Import them in `main_script.py` via `import settings`)
 5. Execute `RUN BEFORE FIRST START AND AFTER FOLDER MOVE TO GENERATE SHORTCUTS.lnk` to generate shortcuts
 6. Run program via the generated shortcuts (it will auto install needed packages)
 
