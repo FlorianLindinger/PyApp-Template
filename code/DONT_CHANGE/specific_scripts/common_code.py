@@ -130,6 +130,7 @@ def delete_folder_safe(
     max_size_check_seconds: float | None = 5.0,
     prompt_instead_of_requirement_failure=True,
     always_prompt_for_confirmation=False,
+    print_on_deletion=False,
 ) -> bool:
     """Delete a directory only after path, identity, and size checks pass.
 
@@ -561,7 +562,8 @@ def delete_folder_safe(
             print("Cancelled folder deletion.")
             return False
 
-    print(f'[Info] Deleting "{target_path}"')
+    if print_on_deletion:
+        print(f'[Info] Deleting "{target_path}"')
 
     import shutil  # lazy import because takes 0.2 s
 
@@ -1216,6 +1218,8 @@ def _stop_process_tree(pid: int) -> str:
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
+            encoding="oem",
+            errors="replace",
         )
 
     except FileNotFoundError:
@@ -1236,6 +1240,8 @@ def _stop_process_tree(pid: int) -> str:
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
+        encoding="oem",
+        errors="replace",
     )
     forced_output = (forced_result.stdout or "").strip()
     if forced_result.returncode == 0 or _wait_until_process_stops(pid, 2.0):
@@ -1445,7 +1451,7 @@ def install_full_python(
             valid MSI set is found. Must be absolute path and raises Error otherwise.
         python_version (optional, default ""): Python version filter. Examples: ``""``, ``"3"``,
             ``"3.12"``, ``"3.12.4"``.
-        rel_path_to_packages: Optional path relative to ``python_dir_abs_path`` that is
+        rel_path_to_packages: Optional path relative to being inside ``python_dir_abs_path`` that is
             written into ``Lib/site-packages/path_to_packages.pth``. Default "" -> No path written.
         install_tkinter (optional, default True): Include Tcl/Tk support.
         install_tests (optional, default True): Include the standard library test package.
@@ -1478,7 +1484,7 @@ def install_full_python(
 
     python_exe = python_dir_abs_path + "\\python.exe"
     site_packages_dir = python_dir_abs_path + "\\Lib\\site-packages"
-    path_to_packages_file = site_packages_dir + "\\path_to_packages.pth"
+    path_to_packages_file = site_packages_dir + "\\_PATH_TO_PACKAGES_.pth"
 
     # Add optional packages to the exclusion list when they are disabled.
     excluded_msi_files = set(python_download_excluded_base_msi_names)
@@ -1715,9 +1721,8 @@ def install_full_python(
 
     # tell python where to look for third party packages
     if rel_path_to_packages:
-        # .pth files work best with forward slashes.
-        package_path = "../../../" + rel_path_to_packages.replace("\\", "/")
-        write_lines(path_to_packages_file, [package_path])
+        # .pth files work best with forward slashes:
+        write_lines(path_to_packages_file, ["../../" + rel_path_to_packages.replace("\\", "/")])
 
     if print_:
         print()
@@ -1747,7 +1752,7 @@ def recreate_python_distro() -> None:
 
     delete_python_distro()
 
-    rel_path_dist_to_packages = os.path.relpath(frontend_python_dir, frontend_packages_dir).replace("\\", "/")
+    rel_path_dist_to_packages = os.path.relpath(path=frontend_packages_dir, start=frontend_python_dir)
 
     install_full_python(
         python_version=python_version,
@@ -1866,6 +1871,23 @@ def ensure_python_distro(check_auto_determine_flag_for_default_package_install=T
 # package related
 
 
+def can_reach_pip_url(url: str = "https://pypi.org/simple/pip/", timeout_s: float = 5.0) -> bool:
+    """Return True if the given URL can be reached."""
+    import urllib.request
+
+    try:
+        request = urllib.request.Request(  # noqa
+            url,
+            headers={"User-Agent": "python-installer-check/1.0"},
+        )
+
+        with urllib.request.urlopen(request, timeout=timeout_s):  # noqa
+            return True
+
+    except OSError:
+        return False
+
+
 def delete_packages():
     delete_folder_safe(
         frontend_packages_dir,
@@ -1900,78 +1922,57 @@ def are_frontend_packages_installed() -> bool:
             return True
 
 
-def check_if_auto_determine_pckgs_and_install_default(app_id_for_slow: str = ""):
-    if get_auto_find_pckgs_phrase_state() == True:
-        set_terminal_NAME_APPiD_ICON_once(app_id_for_slow)
-        print(
-            f'[Info] Found flag "{variable_in_default_packages_path_that_triggers_search_if_true} = True" in default packages file "{default_packages_file_path}"'
-        )
-        print(
-            "--> Auto determine needed packages & reset installed packages to them & set them as new defaults if success."
-        )
-        success, p = save_requirements_of_root_folder_noVersion()
-        if success == True:
-            install_packages_from_file(p)
-            save_current_packages_as_default(auto_search_phrase_state=False)
-        else:
-            print_warn(
-                "[Warning] Failed to auto determine needed packages (see above). Installing default packages instead:"
-            )
-            install_default_packages()
-    else:
-        install_default_packages()
-
-
 def ensure_frontend_packages(used_appid_if_slow: str = ""):
 
     ensure_python_distro(used_appid_if_slow)
 
     if not os.path.exists(frontend_packages_dir):  # packages folder not existing - case
-        check_if_auto_determine_pckgs_and_install_default(used_appid_if_slow)
+        install_default_packages(check_auto_determine_flag=True, app_id_for_slow=used_appid_if_slow)
 
     else:  # packages folder existing - case
         if os.path.exists(frontend_packages_are_installed_marker_path):
             return
         else:
+            print("[Info] Resetting Python packages:")
             delete_packages()  # resetting packages
-            check_if_auto_determine_pckgs_and_install_default(used_appid_if_slow)
+            install_default_packages(check_auto_determine_flag=True, app_id_for_slow=used_appid_if_slow)
 
     # create file to note where to change packages if missing
     if not os.path.exists(dev_tools_referal_note_path):
-        open(dev_tools_referal_note_path, "w",encoding="utf-8").close()
+        open(dev_tools_referal_note_path, "w", encoding="utf-8").close()
 
 
-def install_packages_from_file(path: str, no_cache: bool = True) -> None:
+def install_packages_from_file(path: str, no_cache: bool = True, app_id_for_slow: str = "") -> None:
+    """raises if failur"""
+
     import subprocess
 
     if not os.path.exists(frontend_packages_dir):
         os.makedirs(frontend_packages_dir)
 
-    # add indicator that packages were installed
-    if not os.path.exists(frontend_packages_are_installed_marker_path):
-        open(frontend_packages_are_installed_marker_path, "w").close()
-
     if not os.path.exists(path):
         raise FileNotFoundError(f'Package list not found: "{path}"')
 
     print()
-    print(f'[Info] Package list: "{path}"')
+    print(f'[Info] Package list file: "{path}"')
 
     packages = read_lines(path)
-    for line in packages:
-        stripped = line.strip()
-        if stripped and not stripped.startswith("#"):
-            break
+    actual_packgages = [l for l in packages if (not l.strip().startswith("#") and l.strip() != "")]
+    if len(actual_packgages) > 0:
+        print("-" * 20)
+        print(*actual_packgages, sep="\n")
+        print("-" * 20)
+        print()
     else:
         print("[Info] No packages to install.")
-
+        print("-" * 20)
+        print()
         return
 
+    if app_id_for_slow:
+        set_terminal_NAME_APPiD_ICON_once(app_id_for_slow)
+
     args = [
-        "cmd.exe",
-        "/d",
-        "/c",
-        "call",
         frontend_python_exe,
         "-m",
         "pip",
@@ -1985,13 +1986,27 @@ def install_packages_from_file(path: str, no_cache: bool = True) -> None:
     ]
     if no_cache:
         args.append("--no-cache-dir")
-    subprocess.run(args, check=True)  # noqa
+
+    try:
+        subprocess.run(args, check=True)  # raises if failure #noqa
+    except Exception as e:
+        if not can_reach_pip_url():
+            raise RuntimeError(
+                f"Failed to install packages because cannot reach PyPI. Check internet, firewall, proxy, or DNS.: {e}"
+            ) from e
+        else:
+            raise RuntimeError(f"Failed to install packages: {e}") from e
+
+    # add indicator that packages were installed
+    if not os.path.exists(frontend_packages_are_installed_marker_path):
+        open(frontend_packages_are_installed_marker_path, "w", encoding="utf-8").close()
 
 
-def install_default_packages(check_auto_determine_flag=True):
+def install_default_packages(check_auto_determine_flag: bool, app_id_for_slow: str = ""):
 
     if check_auto_determine_flag == True:
         if get_auto_find_pckgs_phrase_state() == True:
+            set_terminal_NAME_APPiD_ICON_once(app_id_for_slow)
             print(
                 f'[Info] Found flag "{variable_in_default_packages_path_that_triggers_search_if_true} = True" in default packages file "{default_packages_file_path}"'
             )
@@ -2007,8 +2022,10 @@ def install_default_packages(check_auto_determine_flag=True):
                 return
             else:
                 raise RuntimeError("[Error] Failed to auto determine required Python packages.")
+        else:
+            install_packages_from_file(default_packages_file_path, app_id_for_slow=app_id_for_slow)
     else:
-        install_packages_from_file(default_packages_file_path)
+        install_packages_from_file(default_packages_file_path, app_id_for_slow=app_id_for_slow)
 
 
 def get_auto_find_pckgs_phrase_state() -> bool | None:

@@ -94,7 +94,7 @@ try:
         process_id_file_path,
         python_code_path,
         script_wrapper_path,
-        start_time_dummy_main_code,
+        start_time_dummy_main_script,
         uncompiled_terminal_path,
         windows_dir,
     )
@@ -123,7 +123,7 @@ try:
     # =============================
 
     if os.environ.get(env_var_to_signal_startup_time_measurement):
-        python_code_path = start_time_dummy_main_code
+        python_code_path = start_time_dummy_main_script
 
     # raise error if script not found
     if not os.path.exists(python_code_path):
