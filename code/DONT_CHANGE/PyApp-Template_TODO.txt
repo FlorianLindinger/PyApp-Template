@@ -2,6 +2,42 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+
+if i x terminal it does not remove pid
+
+why does my prints diasgpper in scroipt wrapper beiggning?
+
+i can pass naem to pyside5 via exe but not tkinter via rename of python.exe -> yes on replace shortcuts and python distro installation. . meantion somewhere?
+but chekc if sigantrues stay same. i guess via frsh python
+is kind of less av safe
+
+can main_scirpt just import dev_settings? for all cases?
+-> mention? i guess overkill. do i want to pass more envs?
+
+-> mention soemhwer pass of env varables
+add examples how to set adn get? :in their guis with exampokle for pyside6/5 qt tkingrt..
+
+add arg setting in dev setting to pass to scropt
+
+
+i guess i want way clearer athan rich seomhow for exampwel for no internet?
+
+do i want more explceit :
+    try:
+        subprocess.run(args, check=True)  # raises if failure #noqa 
+    except Exception as e:
+        raise RuntimeError(f"Failed to install packages (Do you have internet?): {e}") from e
+insted of just cehcl=Tru?
+-> chekc all check=True.
+-> check also if i want check anywher i n subprocess.run in all scriopts
+
+
+
+do i want to catch importError explicitly in wrapper? or otehrs launcerhs
+# somehow make parity. what if i remove the temrinal in ´this verison? might be even more work
+
+if soemthing in main_scropt spawn gui it needs passe appid? what if i run the terminal app id setter regardless?
+
 test what featues break for lower versions of fronent python. ask AI
 
 i am passing crazy amount of args to wrappers/...
@@ -196,7 +232,7 @@ recheck logic in tools
 
 recheck start script and script wrapper
 
-somehow make startup time test not requier chafgnees in main_code
+somehow make startup time test not requier chafgnees in main_script
 
 instlling rich traceback is slwo? do i want it maybe only in wrapper? no error should usualyl occur in backend and when it occurs i delibertate do traceback
 
@@ -359,9 +395,16 @@ ask it to add comment to code blocks
 
 
 
+
+
+
+
 ================
 ==== Future ====
 ================
+
+can i pass the icon via chagnign P.exe to pyqt defualt gui?
+
 
 jump list for right click on shortcut
 
@@ -533,10 +576,10 @@ developer_settings:add button settings as dict? or mabye easyer?
 when do i want or need "os.kill(os.getppid(), signal.SIGTERM)"?
 
 add,ove ins start_program:
-    # restart_main_code_on_crash,
+    # restart_main_script_on_crash,
     # after_python_crash_code_path
 
-remove. restart_main_code_on_crash. just mention that one can name main_script and it will get 
+remove. restart_main_script_on_crash. just mention that one can name main_script and it will get 
 sys.argv[-1] == "crash"
 clarify that restart on crash only appeas on python crsahj not regular crahs of script
 make it that way

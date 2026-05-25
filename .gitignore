@@ -7,21 +7,21 @@
 __pycache__
 # shortcuts in root folder:
 /*.lnk
-# whitelist sync of realitve-path-shortcut:
-!RUN BEFORE FIRST START AND AFTER FOLDER MOVE TO GENERATE SHORTCUTS.lnk
+# whitelist shorcut generator shortcut:
+!_RUN BEFORE FIRST START AND AFTER FOLDER MOVE TO GENERATE SHORTCUTS.lnk
 # log files:
 log*.txt
 # temporary id files for no-terminal start:
 *.pid
-# generated portable Python environment:
+# generated Python distro and packages:
 /code/py_env/
 # whitelist indicator file:
-!/code/py_env/USE developer_tools FOLDER (IN PARENT FOLDER) TO CHANGE PACKAGES
+!/code/py_env/_USE developer_tools FOLDER (IN PARENT FOLDER) TO CHANGE PACKAGES_
 # output files of developer tools:
 /code/developer_tools/*.txt
 # whitelist specific files in developer tools folder:
-!/code/developer_tools/_README.txt
-!/code/developer_tools/!DEFAULT_PYHON_PACKAGES.txt
+!/code/developer_tools/_README_.txt
+!/code/developer_tools/_DEFAULT_PYHON_PACKAGES_.txt
 # ===================================================
 
 # =============================
