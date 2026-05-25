@@ -2,9 +2,18 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
-how do i indicate that there are meant to be no packages in frontent packages folder if case. i dont want to always delte folder? maybe just spwan file:
-"__NO_PACKAGES_INSTALLED__"->better : __REMOVE_FILE_TO_WIPE_AND_INSTALL_DEFAULT_PACKAGES__. if that is not given i guess it would install frontend packages? is this redundant with that requitremtn.txt file?
-wait didnt i want to chekc for bacoekdn separed for packags and python?
+do i want delete_folder_safe to retrun succes/user_refuse/error ...?
+
+msi files should go to temp?
+should i delete the temp folder?
+
+double chek that pid stuff is correct with \n missing or being added correctly
+
+ask full AI if it can simplify install_full_öpython and add more comments
+
+test if write_file(path_to_packages_file_path, [rel_path_to_packages + "\n"])  \n needed
+
+make python download more understandale for scrutiny
 
 move helper functions below code where needed?
 
@@ -279,7 +288,7 @@ does anythign nned folder cration or not actually need folder cration?
 
 ask if i can use more input succes/warn
 
-
+ask it to add comment to code blocks
 
 
 

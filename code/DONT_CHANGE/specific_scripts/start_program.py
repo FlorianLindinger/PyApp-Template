@@ -71,7 +71,7 @@ try:
     )
     from DONT_CHANGE.specific_scripts.common_code import (
         close_terminal,
-        ensure_python_distro,
+        ensure_frontend_packages,
         get_running_processes_from_pid_file,
         input_warn,
         print_traceback,
@@ -308,7 +308,7 @@ try:
         # setup python
 
         if use_global_python == False:
-            ensure_python_distro(set_icon_for_slow=True, app_id_for_slow=app_id)
+            ensure_frontend_packages(app_id_for_slow=app_id)
 
         # ======================
         # launch terminal
