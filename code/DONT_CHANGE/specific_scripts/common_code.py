@@ -16,7 +16,7 @@ from DONT_CHANGE.specific_scripts.common_variables import (
     determined_current_packages_file_path_withVersion,
     determined_needed_packages_output_file_path_noVersion,
     determined_needed_packages_output_file_path_withVersion,
-    dev_tools_referal_note_file_name,
+    dev_tools_referal_note_path,
     excluded_folders_for_package_search,
     frontend_env_dir,
     frontend_packages_are_installed_marker_path,
@@ -1557,7 +1557,8 @@ def install_full_python(
             "-> Delete manually after confirming it is a Python folder and restart."
         ) from error
 
-    write_lines(python_dir+"\\.gitignore",
+    write_lines(
+        python_dir + "\\.gitignore",
         [
             '# Auto added to prevent synchronization of python distribution in git by blacklisting everything with wildcard "*":',
             "*",
@@ -1865,6 +1866,10 @@ def ensure_frontend_packages(used_appid_if_slow: str = ""):
         else:
             delete_packages()  # resetting packages
             check_if_auto_determine_pckgs_and_install_default(used_appid_if_slow)
+
+    # create file to note where to change packages if missing
+    if not os.path.exists(dev_tools_referal_note_path):
+        open(dev_tools_referal_note_path, "w").close()
 
 
 def install_packages_from_file(path: str, no_cache: bool = True) -> None:
