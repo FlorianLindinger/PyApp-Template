@@ -38,6 +38,13 @@ send_Windows_notification_on_crash = True
 open_log_file_after_success = False
 open_log_file_after_failure = False
 open_log_file_after_crash = False
+taskbar_flashing_on_success = False
+taskbar_flashing_on_failure = True
+taskbar_flashing_on_crash = True
+# flashing overrides highlight:
+taskbar_highlight_on_success = True
+taskbar_highlight_on_failure = True
+taskbar_highlight_on_crash = True
 # False for off. True for default. String for rel. path to .wav in C:\Windows\Media:
 play_sound_on_success: str | bool = False
 play_sound_on_failure: str | bool = True
