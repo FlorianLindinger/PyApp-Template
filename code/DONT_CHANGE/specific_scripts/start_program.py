@@ -308,7 +308,7 @@ try:
         # setup python
 
         if use_global_python == False:
-            ensure_frontend_packages(app_id_for_slow=app_id)
+            ensure_frontend_packages(app_id)
 
         # ======================
         # launch terminal
