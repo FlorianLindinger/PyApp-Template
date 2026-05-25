@@ -37,8 +37,9 @@ try:
             print(f"[Info] No PID file found at {pid_path}.")
             print("This could mean it was already stopped via this script.")
         else:
-            print(f"[Info] Removed {stale_count} stale PID entries from {pid_path}.")
+            print(f"[Info] Removed {stale_count} stale PID entries from {pid_path}. No more apparently open to close")
         input("Press enter to exit")
+        close_terminal()
         sys.exit(0)
 
     print(f"[Success] Stopped {stopped_count} process(es).")

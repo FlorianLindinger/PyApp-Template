@@ -72,7 +72,7 @@ try:
     # ==================
     # WIP???
 
-    script_has_terminal = windows_terminal_mode != "invisible"
+    program_has_terminal = windows_terminal_mode != "invisible"
 
     # tell the backend terminal to close because successful start
     create_signal_file(CORRECT_START_SIGNAL_FILE_PATH)
@@ -134,7 +134,10 @@ try:
             [sys.executable, "-X", "faulthandler", "-c", text], creationflags=subprocess.CREATE_NEW_CONSOLE
         )
 
-    if script_has_terminal:
+    # import time
+    # time1 = time.time()
+    # takes 11 ms on python 3.14
+    if program_has_terminal:
         import ctypes
         from ctypes import wintypes
 
@@ -601,6 +604,9 @@ try:
                     pass
                 _helper_refresh_nonclient_area(hwnd)
 
+    # time2 = time.time()
+    # print(time2 - time1)
+
     # end of "if script_has_terminal:""
     # ==================================
 
@@ -846,11 +852,11 @@ def get_terminal_name():
 
     try:
         # minimize terminal if wanted
-        if script_has_terminal and start_minimized:
+        if program_has_terminal and start_minimized:
             minimize_current_console()  # type:ignore
 
         # set terminal colors
-        if script_has_terminal and terminal_colors != "":
+        if program_has_terminal and terminal_colors != "":
             os.system(f"color {terminal_colors}")  # noqa:S605
         if windows_terminal_mode == "classic" and (classic_terminal_cols != "" or classic_terminal_lines != ""):
             mode_parts = []
@@ -863,18 +869,19 @@ def get_terminal_name():
         # set terminal name
         if program_name != "":
             os.system(f"title {program_name}")  # noqa:S605
-
-        # set app id for taskbar grouping (combining) of launched window with shortcut icon
+        
+        # needed if main script spawns a GUI: For taskbar grouping (combining) of launched window with shortcut icon
         if app_id != "":
             try:
                 ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(app_id)  # type:ignore
             except Exception as e:
-                print(e)
+                print(f"[Info] Failed to set app id for taskbar grouping: {e}")
 
-        # set terminal appearance in new thread because slow
+        # set terminal appearance in new thread because slow: terminal title+icon+appID (for taskabr grouping)
+        # import time
+        # time1 = time.time()
         terminal_appearance_thread = None
-        if script_has_terminal:
-
+        if program_has_terminal:
             def apply_terminal_appearance() -> None:
                 try:
                     candidate_hwnds = get_candidate_hwnds()
@@ -888,6 +895,8 @@ def get_terminal_name():
 
             terminal_appearance_thread = threading.Thread(target=apply_terminal_appearance)
             terminal_appearance_thread.start()
+        # time2 = time.time()
+        # print(time2 - time1)
 
         # set working directory
         if wdir_is_script_dir:
@@ -896,22 +905,6 @@ def get_terminal_name():
         # setup logging
         if log_path != "":
             setup_log_prints(log_path, overwrite_log)  # type:ignore
-
-        # define args to pass to main script
-        sys.argv = [
-            script_path,
-            program_name,
-            icon_path,
-            app_id,
-            log_path,
-            "1" if script_has_terminal else "0",
-            "1" if wdir_is_script_dir else "0",
-            "1" if close_on_failure else "0",
-            "1" if close_on_success else "0",
-        ]
-
-        # change sys.path[0] to be dir of target script and not this script
-        sys.path[0] = os.path.dirname(script_path)
 
         # change pythons builtin "input" function
         original_input = builtins.input
@@ -928,6 +921,19 @@ def get_terminal_name():
                 return text
 
             builtins.input = input_with_prepend
+
+        # define environemental variables to pass to main script
+        os.environ["PROGRAM_NAME"] = program_name
+        os.environ["ICON_PATH"] = icon_path
+        os.environ["LOG_PATH"] = log_path
+        os.environ["APP_ID"] = app_id
+        os.environ["PROGRAM_HAS_TERMINAL"] = "1" if program_has_terminal else "0"
+        os.environ["WDIR_IS_SCRIPT_DIR"] = "1" if wdir_is_script_dir else "0"
+        os.environ["CLOSE_ON_FAILURE"] = "1" if close_on_failure else "0"
+        os.environ["CLOSE_ON_SUCCESS"] = "1" if close_on_success else "0"
+
+        # change sys.path[0] to be dir of target script and not this script
+        sys.path[0] = os.path.dirname(script_path)
 
         # run in the current python process and wait for finish
         try:
@@ -975,6 +981,10 @@ def get_terminal_name():
         except BaseException as e:
             exit_code = 1
 
+            import traceback
+
+            print(traceback.format_exc())
+
         # # SyntaxError is special: Python normally prints it without a normal traceback.
         # if isinstance(error, SyntaxError):
         #     print("".join(traceback.format_exception_only(type(error), error)), end="")
@@ -1013,7 +1023,7 @@ print()
 input_success("[Program finished successfully] Press Enter to exit.")
 """
                 )
-                if script_has_terminal:
+                if program_has_terminal:
                     exec(script)  # noqa
                 else:
                     if log_path != "":
@@ -1035,7 +1045,7 @@ print_warn(rf'[Python Interpreter Crash] Script exited with Windows crash code: 
 input_warn("[Python Interpreter Crash] Press Enter to exit.")
 """
                 )
-                if script_has_terminal:
+                if program_has_terminal:
                     exec(script)  # noqa
                 else:
                     run_text_in_new_terminal_and_wait(script)
@@ -1055,7 +1065,7 @@ print_warn(rf"[Python Failure Return] Script exited with code: {exit_code}")
 input_warn("[Python Failure Return] Press Enter to exit.")
 """
                 )
-                if script_has_terminal:
+                if program_has_terminal:
                     exec(script)  # noqa
                 else:
                     run_text_in_new_terminal_and_wait(script)
@@ -1083,14 +1093,14 @@ print_warn("-"*40)
 input_warn("[Python Crash] See above. Press Enter to exit.")
 """
             )
-            if script_has_terminal:
+            if program_has_terminal:
                 exec(script)  # noqa
             else:
                 run_text_in_new_terminal_and_wait(script)
             sys.exit(1)
 
         except Exception as inner_e:  # fallback to minimal error report
-            if script_has_terminal:
+            if program_has_terminal:
                 print(f"[Error] Failed to handle crash: {inner_e}")
                 print({traceback.format_exc()})
                 input("Press Enter to exit.")
