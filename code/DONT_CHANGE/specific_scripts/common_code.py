@@ -1423,8 +1423,34 @@ def install_full_python(
     install_tests: bool = True,
     install_tools: bool = True,
     install_docs: bool = False,
-):
-    r"""Create a portable full Python distribution and raise on failure. if rel_path_to_packages is defined it give the relative path from python_dir to the installed packages folder. This will be indicated to python via a file (path_to_packages.pth) in Lib\site-package."""
+) -> None:
+    r"""
+    Create a portable full Windows Python installation from python.org MSI files.
+
+    The function finds the newest matching Python version from:
+
+        https://www.python.org/ftp/python/{version}/amd64/
+
+    It downloads the selected amd64 MSI packages, extracts them into
+    ``python_dir``, bootstraps/upgrades pip, and optionally writes a ``.pth``
+    file that adds another package directory to Python's import path.
+
+    Args:
+        python_dir: Target directory. Existing contents are deleted after a
+            valid MSI set is found.
+        py_ver: Python version filter. Examples: ``""``, ``"3"``,
+            ``"3.12"``, ``"3.12.4"``.
+        rel_path_to_packages: Optional path relative to ``python_dir`` that is
+            written into ``Lib/site-packages/path_to_packages.pth``.
+        install_tkinter: Include Tcl/Tk support.
+        install_tests: Include the standard library test package.
+        install_tools: Include Python tools.
+        install_docs: Include documentation.
+
+    Raises:
+        RuntimeError: If version discovery, download, extraction, or pip setup
+        fails.
+    """
 
     import html.parser
     import re
@@ -1434,13 +1460,14 @@ def install_full_python(
     import urllib.parse
     import urllib.request
 
-    # --------------------
-    # process parameters
+    user_agent = "install-full-python/1.0"
 
     python_dir = os.path.abspath(python_dir)
-    path_to_packages_file_path = os.path.join(python_dir, "Lib", "site-packages", "path_to_packages.pth")
-    if rel_path_to_packages:
-        rel_path_to_packages = "../../../" + rel_path_to_packages.replace(os.sep, "/")
+    python_exe = python_dir + "\\python.exe"
+    site_packages_dir = python_dir + "\\Lib\\site-packages"
+    path_to_packages_file = site_packages_dir + "\\path_to_packages.pth"
+
+    # Add optional packages to the exclusion list when they are disabled.
     excluded_msi_files = set(python_download_excluded_base_msi_names)
     if not install_tkinter:
         excluded_msi_files.add("tcltk")
@@ -1451,208 +1478,220 @@ def install_full_python(
     if not install_docs:
         excluded_msi_files.add("doc")
 
-    # ----- Find newest matching Python version with amd64 MSI files -----
+    class LinkParser(html.parser.HTMLParser):
+        """Extract href values from a simple HTML directory listing."""
+
+        def __init__(self) -> None:
+            super().__init__()
+            self.links: list[str] = []
+
+        def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+            if tag.lower() == "a":
+                self.links.extend(value for name, value in attrs if name.lower() == "href" and value)
 
     def fetch_links(url: str) -> list[str]:
-        # python.org exposes these installer folders as simple HTML directory
-        # listings, so fetch the page and collect href values from anchor tags.
-        class LinkParser(html.parser.HTMLParser):
-            def __init__(self) -> None:
-                super().__init__()
-                self.links: list[str] = []
+        request = urllib.request.Request(url, headers={"User-Agent": user_agent})  # noqa
 
-            def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-                if tag.lower() != "a":
-                    return
-                # Every useful entry in the directory listing is an <a href=...>.
-                # Keep raw href values so callers can distinguish folders and files.
-                for name, value in attrs:
-                    if name.lower() == "href" and value:
-                        self.links.append(value)
-
-        request = urllib.request.Request(url, headers={"User-Agent": "install-full-python/1.0"})  # noqa
         with urllib.request.urlopen(request, timeout=python_download_timeout_s) as response:  # noqa
-            html = response.read().decode("utf-8", errors="replace")
+            html_text = response.read().decode("utf-8", errors="replace")
+
         parser = LinkParser()
-        parser.feed(html)
+        parser.feed(html_text)
         return parser.links
 
-    arg = py_ver.strip()
-    if arg == "":
-        version_pattern = re.compile(r"^\d+\.\d+\.\d+/$")
-    elif re.fullmatch(r"\d+", arg):
-        version_pattern = re.compile(rf"^{re.escape(arg)}\.\d+\.\d+/$")
-    elif re.fullmatch(r"\d+\.\d+", arg):
-        version_pattern = re.compile(rf"^{re.escape(arg)}\.\d+/$")
-    elif re.fullmatch(r"\d+\.\d+\.\d+", arg):
-        version_pattern = re.compile(rf"^{re.escape(arg)}/$")
-    else:
-        version_pattern = None
+    def version_pattern(version: str) -> re.Pattern[str] | None:
+        version = version.strip()
 
-    full_ver = ""
-    if version_pattern is not None:
+        if version == "":
+            return re.compile(r"^\d+\.\d+\.\d+/$")
+        if re.fullmatch(r"\d+", version):
+            return re.compile(rf"^{re.escape(version)}\.\d+\.\d+/$")
+        if re.fullmatch(r"\d+\.\d+", version):
+            return re.compile(rf"^{re.escape(version)}\.\d+/$")
+        if re.fullmatch(r"\d+\.\d+\.\d+", version):
+            return re.compile(rf"^{re.escape(version)}/$")
+
+        return None
+
+    def version_key(version: str) -> tuple[int, int, int]:
+        major, minor, patch = version.split(".")
+        return int(major), int(minor), int(patch)
+
+    def is_wanted_msi(filename: str) -> bool:
+        base, ext = os.path.splitext(filename.lower())
+
+        # Skip non-MSI files, debug MSIs, symbol MSIs, and disabled components.
+        return ext == ".msi" and not base.endswith(("_d", "_pdb")) and base not in excluded_msi_files
+
+    def find_msi_set() -> tuple[str, str, list[str]]:
+        pattern = version_pattern(py_ver)
+
+        if pattern is None:
+            return "", "", []
+
         try:
-            versions = [link.strip("/") for link in fetch_links(python_download_ftp_url) if version_pattern.match(link)]
+            versions = [link.strip("/") for link in fetch_links(python_download_ftp_url) if pattern.match(link)]
         except (OSError, urllib.error.URLError):
-            versions = []
+            return "", "", []
 
-        versions.sort(key=lambda version: tuple(int(part) for part in version.split(".")), reverse=True)
-        for version in versions:
-            candidate_url = urllib.parse.urljoin(python_download_ftp_url, f"{version}/amd64/")
+        for version in sorted(versions, key=version_key, reverse=True):
+            url = urllib.parse.urljoin(python_download_ftp_url, f"{version}/amd64/")
+
             try:
-                fetch_links(candidate_url)
+                msi_urls = [
+                    urllib.parse.urljoin(url, link)
+                    for link in fetch_links(url)
+                    if not link.endswith("/") and is_wanted_msi(os.path.basename(urllib.parse.urlparse(link).path))
+                ]
             except (OSError, urllib.error.URLError):
                 continue
-            full_ver = version
-            break
 
-    if not full_ver:
-        raise RuntimeError(
-            "[ERROR] Could not determine latest implemented version for specified version "
-            f"({py_ver}) or download method not implemented for this version or no internet connection. "
-            'This code needs "https://www.python.org/ftp/python/{full-python-version}/amd64/" '
-            "to exist. Aborting."
+            if msi_urls:
+                return version, url, sorted(msi_urls)
+
+        return "", "", []
+
+    def download(url: str, folder: str) -> str:
+        filename = os.path.basename(urllib.parse.urlparse(url).path)
+        output_path = os.path.join(folder, filename)
+
+        print(f"Downloading {filename}")
+
+        request = urllib.request.Request(url, headers={"User-Agent": user_agent})  # noqa
+
+        with urllib.request.urlopen(request, timeout=python_download_timeout_s) as response:  # noqa
+            with open(output_path, "wb") as file:
+                shutil.copyfileobj(response, file)
+
+        if not os.path.isfile(output_path) or os.path.getsize(output_path) == 0:
+            raise RuntimeError(f'Download produced an empty file: "{output_path}"')
+
+        return output_path
+
+    def patch_test_package() -> None:
+        ruff_config = os.path.join(python_dir, "Lib", "test", ".ruff.toml")
+
+        if not os.path.exists(ruff_config):
+            return
+
+        # Some extracted test packages contain extend directives that may not
+        # work correctly in this portable layout.
+        lines = read_lines(ruff_config)
+        lines = ["# " + line if re.match(r"^\s*extend\s*=", line) else line for line in lines]
+        write_lines(ruff_config, lines)
+
+    def extract_msi(msi_path: str) -> None:
+        msi_name = os.path.basename(msi_path)
+        log_path = os.path.splitext(msi_path)[0] + ".msi.log"
+
+        print(f"Installing {msi_name}")
+
+        # Administrative extraction installs the MSI contents into TARGETDIR.
+        result = subprocess.run(  # noqa
+            [
+                "msiexec",
+                "/a",
+                msi_path,
+                f"TARGETDIR={python_dir}",
+                "/qn",
+                "/L*V",
+                log_path,
+            ],
+            check=False,
         )
 
-    print(f"Found (msi-install-available) Python version {full_ver} for target version: {version_pattern}")
-    url = urllib.parse.urljoin(python_download_ftp_url, f"{full_ver}/amd64/")
-    print(f"Download URL: {url}")
+        if result.returncode != 0:
+            raise RuntimeError(f"msiexec failed for {msi_name} with exit code {result.returncode}. Log: {log_path}")
 
-    # ----- Build MSI install set before deleting an existing working Python -----
+        if msi_name.lower() == "test.msi":
+            patch_test_package()
 
-    msi_urls = []
-    for link in fetch_links(url):
-        if link.endswith("/"):
-            continue
+        # Remove any MSI copy that administrative extraction left in TARGETDIR.
+        copied_msi = os.path.join(python_dir, msi_name)
+        if os.path.exists(copied_msi):
+            os.remove(copied_msi)
 
-        absolute_url = link if re.match(r"^https?://", link) else urllib.parse.urljoin(url, link)
-        filename = os.path.basename(urllib.parse.urlparse(absolute_url).path)
-        if not filename.lower().endswith(".msi"):
-            continue
+    def run_python(args: list[str], error_message: str) -> None:
+        result = subprocess.run([python_exe, *args], check=False)  # noqa
 
-        # Skip debug-symbol/debug-build packages like component_d.msi and
-        # component_pdb.msi.
-        stem = os.path.splitext(os.path.splitext(filename)[0])[0]
-        if re.search(r"(_d|_pdb)$", stem):
-            continue
-        if os.path.splitext(filename)[0] in excluded_msi_files:
-            continue
+        if result.returncode != 0:
+            raise RuntimeError(error_message)
 
-        msi_urls.append(absolute_url)
+    def setup_pip() -> None:
+        run_python(
+            ["-m", "ensurepip", "--upgrade"],
+            "Python installation failed: ensurepip failed.",
+        )
 
-    if not msi_urls:
-        raise RuntimeError(f"No installable MSI files found at {url}. Aborting before deleting existing Python.")
-    print(f"Found {len(msi_urls)} MSI package(s) to install.")
+        # Try quiet/log-friendly pip upgrade first, then retry without progress option.
+        upgrade_args = ["-m", "pip", "install", "--upgrade", "pip", "--ignore-installed"]
 
-    # ----- Replace old python_dir with an empty target folder -----
+        result = subprocess.run(  # noqa
+            [python_exe, *upgrade_args, "--progress-bar", "off"],
+            check=False,
+        )
 
+        if result.returncode != 0:
+            result = subprocess.run([python_exe, *upgrade_args], check=False)  # noqa
+
+        if result.returncode != 0:
+            raise RuntimeError("Python installation failed: pip upgrade failed.")
+
+    full_version, download_url, msi_urls = find_msi_set()
+
+    if not full_version:
+        raise RuntimeError(f'[ERROR] Could not find a matching Python amd64 MSI set for "{py_ver}".')
+
+    print(f"Found Python {full_version}.")
+    print(f"Download URL: {download_url}")
+    print(f"Found {len(msi_urls)} MSI package(s).")
+
+    # Only delete the target after a valid MSI set has been found.
     try:
-        delete_folder_safe(
-            python_dir,
-            max_size_GB_before_prompt=1.2,
-        )
+        delete_folder_safe(python_dir, max_size_GB_before_prompt=1.2)
     except Exception as error:
-        raise RuntimeError(
-            f'[Error] Refusing to delete "{python_dir}". {error} '
-            "-> Delete manually after confirming it is a Python folder and restart."
-        ) from error
+        raise RuntimeError(f'[ERROR] Refusing to delete "{python_dir}". {error}') from error
+
+    os.makedirs(python_dir, exist_ok=True)
 
     write_lines(
-        python_dir + "\\.gitignore",
+        python_dir+"\\.gitignore",
         [
-            '# Auto added to prevent synchronization of python distribution in git by blacklisting everything with wildcard "*":',
+            "# Prevent committing the local Python distribution.",
             "*",
         ],
     )
 
-    download_folder = None
     try:
-        # ----- Download MSI files into an isolated temp folder -----
+        with tempfile.TemporaryDirectory(prefix="tmp_python_installation_files_") as tmp:
+            msi_paths = [download(url, tmp) for url in msi_urls]
 
-        download_folder = tempfile.mkdtemp(prefix="tmp_python_installation_files_")
-        msi_paths = []
-        for msi_url in msi_urls:
-            filename = os.path.basename(urllib.parse.urlparse(msi_url).path)
-            output_path = os.path.join(download_folder, filename)
-            print(f"Downloading {filename}")
-
-            request = urllib.request.Request(msi_url, headers={"User-Agent": "install-full-python/1.0"})  # noqa
-            with urllib.request.urlopen(request, timeout=python_download_timeout_s) as response:  # noqa
-                with open(output_path, "wb") as file:
-                    shutil.copyfileobj(response, file)
-
-            if not os.path.isfile(output_path) or os.path.getsize(output_path) == 0:
-                raise RuntimeError(f'Download produced an empty file: "{output_path}"')
-            msi_paths.append(output_path)
-
-        # ----- Extract MSI files into python_dir -----
-
-        for msi_path in sorted(msi_paths, key=lambda path: os.path.basename(path).lower()):
-            msi_name = os.path.basename(msi_path)
-            print(f"Installing {msi_name}")
-            log_path = os.path.splitext(msi_path)[0] + ".msi.log"
-
-            # Use a command-line string to match the original batch syntax.
-            # msiexec is picky about MSI properties whose values contain spaces.
-            command_line = f'msiexec /a "{msi_path}" TARGETDIR="{python_dir}" /qn /L*V "{log_path}"'
-            result = subprocess.run(command_line, check=False)  # noqa
-            if result.returncode != 0:
-                raise RuntimeError(f"msiexec failed for {msi_name} with exit code {result.returncode}. Log: {log_path}")
-
-            if msi_name.lower() == "test.msi":
-                ruff_config_path = os.path.join(python_dir, "Lib", "test", ".ruff.toml")
-                if os.path.exists(ruff_config_path):
-                    lines = read_lines(ruff_config_path)
-                    updated_lines = ["# " + line if re.match(r"^\s*extend\s*=", line) else line for line in lines]
-                    write_lines(ruff_config_path, updated_lines)
-
-            installed_msi_copy = os.path.join(python_dir, msi_name)
-            if os.path.exists(installed_msi_copy):
-                os.remove(installed_msi_copy)
+            for msi_path in sorted(msi_paths, key=lambda path: os.path.basename(path).lower()):
+                extract_msi(msi_path)
 
     except Exception as error:
         raise RuntimeError(f"Portable Python installation failed: {error}") from error
-    finally:
-        if download_folder is not None and os.path.exists(download_folder):
-            shutil.rmtree(download_folder, ignore_errors=True)
 
-    # ----- Verify install and bootstrap pip -----
-
-    if not os.path.exists(os.path.join(python_dir, "python.exe")):
+    if not os.path.exists(python_exe):
         raise RuntimeError("Python installation failed: python.exe was not created.")
 
-    write_lines(os.path.join(python_dir, "pip.ini"), ["[global]", "no-warn-script-location = false"])
+    write_lines(
+        os.path.join(python_dir, "pip.ini"),
+        [
+            "[global]",
+            "no-warn-script-location = false",
+        ],
+    )
 
-    python_exe = os.path.join(python_dir, "python.exe")
-    if subprocess.run([python_exe, "-m", "ensurepip", "--upgrade"], check=False).returncode != 0:  # noqa
-        raise RuntimeError("Python installation failed: ensurepip did not complete successfully.")
-
-    if (
-        subprocess.run(  # noqa
-            [python_exe, "-m", "pip", "install", "--upgrade", "pip", "--ignore-installed", "--progress-bar", "off"],
-            check=False,
-        ).returncode
-        != 0
-    ):
-        if (
-            subprocess.run(  # noqa
-                [python_exe, "-m", "pip", "install", "--upgrade", "pip", "--ignore-installed"],
-                check=False,
-            ).returncode
-            != 0
-        ):
-            raise RuntimeError("Python installation failed: pip upgrade did not complete successfully.")
-
-    if subprocess.run([python_exe, "-m", "pip", "install", "--upgrade", "pip"], check=False).returncode != 0:  # noqa
-        raise RuntimeError("Python installation failed: final pip upgrade did not complete successfully.")
-
-    # ----- Register additional package search folder, if requested -----
+    setup_pip()
 
     if rel_path_to_packages:
-        write_lines(path_to_packages_file_path, [rel_path_to_packages])
+        # .pth files work best with forward slashes.
+        package_path = "../../../" + rel_path_to_packages.replace("\\", "/")
+        write_lines(path_to_packages_file, [package_path])
 
     print()
-    print(f'Sucessfully created local Python ({full_ver}) at "{python_dir}".')
+    print(f'Successfully created local Python {full_version} at "{python_dir}".')
 
 
 # =========================
