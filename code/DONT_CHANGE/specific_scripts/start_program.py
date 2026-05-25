@@ -85,6 +85,7 @@ try:
         compiled_terminal_path,
         developer_settings_dir,
         developer_settings_path,
+        env_var_to_signal_startup_time_measurement,
         frontend_python_exe,
         icon_path,
         play_sound_on_crash_default,
@@ -93,6 +94,7 @@ try:
         process_id_file_path,
         python_code_path,
         script_wrapper_path,
+        start_time_dummy_main_code,
         uncompiled_terminal_path,
         windows_dir,
     )
@@ -120,10 +122,12 @@ try:
     # process imported variables
     # =============================
 
-    script_path: str = python_code_path
+    if os.environ.get(env_var_to_signal_startup_time_measurement):
+        python_code_path = start_time_dummy_main_code
+
     # raise error if script not found
-    if not os.path.exists(script_path):
-        raise FileNotFoundError(f'[Error] Python script not found at "{script_path}"')
+    if not os.path.exists(python_code_path):
+        raise FileNotFoundError(f'[Error] Python script not found at "{python_code_path}"')
 
     if use_global_python == True:
         python_exe_for_script_path = "py"
@@ -139,7 +143,7 @@ try:
         log_path = EMPTY_ARG_INDICATOR
     else:
         if wdir_is_script_dir:
-            log_path = os.path.normpath(os.path.join(os.path.dirname(script_path), log_path_rel_to_start_folder))
+            log_path = os.path.normpath(os.path.join(os.path.dirname(python_code_path), log_path_rel_to_start_folder))
         else:
             log_path = os.path.normpath(os.path.join(os.getcwd(), log_path_rel_to_start_folder))
         log_path = datetime.now(tz=timezone.utc).strftime(log_path)
@@ -314,7 +318,7 @@ try:
         # launch terminal
 
         args = [
-            script_path,
+            python_code_path,
             program_name,
             icon_path,
             app_id,

@@ -1,13 +1,16 @@
 @echo off
 setlocal EnableExtensions EnableDelayedExpansion
 
-echo WINDOWS CACHES MODULES SO THIS TEST IS PROBABLY ONLY ACCURATE AFTER A FRESH BOOT OR OTHER KIND OF RESTART
-echo.
+:: ==========================
+:: benchmark settings
 
-set "HERE=%~dp0"
-set "DO_NOT_CHANGE_DIR=%HERE%.."
-set "PYTHON=%DO_NOT_CHANGE_DIR%\P\P.exe"
-set "MODULES=shutil tkinter multiprocessing pydoc venv asyncio unittest email ssl argparse logging subprocess pathlib tarfile zipfile ctypes json os sys time re"
+set "PYTHON=%~dp0..\P\P.exe"
+set "MODULES=os sys subprocess shutil rich traceback ctypes time re tempfile html.parser urllib.parse urllib.request urllib.error uuid signal threading"
+
+:: ==========================
+
+echo     NOTE: WINDOWS CACHES MODULES SO THIS TEST IS PROBABLY ONLY ACCURATE AFTER A FRESH BOOT OR OTHER KIND OF RESTART
+echo.
 
 if not exist "%PYTHON%" (
     echo [Error] Backend Python not found:

@@ -2,28 +2,93 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
-do i want delete_folder_safe to retrun succes/user_refuse/error ...?
+test what featues break for lower versions of fronent python. ask AI
 
-msi files should go to temp?
-should i delete the temp folder?
+i am passing crazy amount of args to wrappers/...
+->should they just read themselves and i check existance of file in starter?
+basic processing in starter? or what if i just add a processing script for dev_settings. 
+-> i made script for common dev_settings for all launch modes and they read in as imports
+
+project creep:::::::::::::::
+but i guess i want for stable featues to add now:
+
+add setting. "flash in taskbar on"?
+
+i can choose tab title
+
+i guess no need for pbar and error if i can falshj. unless i want to distinguies flash
+
+also set newly opened terminal to awrn appearance. do i want wt or conhost?
+
+do i need get_candidate_hwnds()[0] if 0 seems to work? can i ask when needed or if i can detect working and stop?
+
+in wt.exe i want to change the corlor to green for success i guess? for that taskbar colring
+
+highlight or altert in taskabr in wiondwos terminal? can i set it to highlight and not flash? flash until opend i guess
+
+pbar options:
+cycling
+any % accent
+yellow
+red
+none
+
+simplify wrapper.
+
+genrally simplify whole path for normal start and once start that user would see.
+
+ask ai to draw a flwochart of whoel prpgram
+
+change color of tabbed temrinal for error or finish
+
+move up [Python Failure Return] to exception SyntaxError. but i guess make sure to reset input and print before? or do i want warpper prints to end in log? probalby actually
+
+wait time is worong???? for timestapsts
+
+why is failure of runpy so slow after tracevbacl print in wrapper
+
+make input after every exec(script) at elast for script_has_terminal or make try except with normal input. somehow it should not be able to fail.
+
+add crash icons? and terminal name. i guess they could always do that?
+
+# how can i be carefull with python traceback error color red with any bg? how can i make it nicer for older or any python verions error print
+
+# wait i have only nice erorr print for launchering new terminal so for no terminal mode, right??
+
+
+do i want to  catch BaseException insteadf of Exception somewhere
+
+do i want in wrapper and other to handle or not handle keyboead interrupt? probably i want. not atm
+
+in wrapper. do i want appearance change attempt for error?
+
+wait in wrapper how do i fancy print the tracebacmks????
+
+somehow stop it from adding imports in vscode
+
+make it report only as if inside the main_script:
+     except SyntaxError as e: # catches synatx error in script_path
+
+it always deletes: [Info] Deleting "C:\Users\Flo\Documents\Repositories\PyApp Template\code\py_env\packages"
+
+checl at what point the wrapper got broken a lot
+
+do i need twice app id setting in wrapper?
+
+review the wrapper
+
+see if script wrapper could want lazy imports
+
+test logic for frontend python and package installation for missing folder
+
+fix backend tools paths:
+    fix startup time measruemtn: make sure it kills process and removed pid no mather what closing setting is there for on_success
+
+do i want delete_folder_safe to retrun succes/user_refuse/error ...?
 
 double chek that pid stuff is correct with \n missing or being added correctly
 
-ask full AI if it can simplify install_full_öpython and add more comments
-
-test if write_file(path_to_packages_file_path, [rel_path_to_packages + "\n"])  \n needed
-
-make python download more understandale for scrutiny
-
 move helper functions below code where needed?
-
-remove target_dir fully form common_code -> get rid of py_dist
-
-make it auto install default python packlags on not found packages folder in ensure_python_distro and create:_
-    
-    os.makedirs(py_env_dir, exist_ok=True)
-    if not os.path.exists(dev_tools_referal_note_file_name):
-        open(dev_tools_referal_note_file_name, "w", encoding="utf-8").close()
 
 have a look at inital batches for shortcuts to launch. 
 
@@ -51,7 +116,7 @@ do i still need or handle it via _pth:
                 os.add_dll_directory(path)
 
 
-fix arg order for not windows terminal paaths
+fix arg order for not-windows-terminal paths
 
 cut down on backend installatikn packages and not ship? kind of too risky for no gain
 
@@ -297,6 +362,9 @@ ask it to add comment to code blocks
 ================
 ==== Future ====
 ================
+
+jump list for right click on shortcut
+
 
 setting to run in admin mode?
 
