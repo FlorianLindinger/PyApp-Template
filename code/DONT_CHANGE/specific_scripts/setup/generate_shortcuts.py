@@ -19,18 +19,18 @@ from win32com.propsys import (  # type:ignore
 )
 from win32com.shell import shellcon  # type:ignore
 
-import developer_settings
+# import developer_settings
 from developer_settings import (
     no_terminal_shortcut_name,
     open_settings_shortcut_name,
     program_name,
     stop_running_shortcut_name,
-    terminal_emulator_shortcut_name,
+    # terminal_emulator_shortcut_name,
     user_settings_path,
     windows_terminal_shortcut_name,
 )
 
-browser_shortcut_name = getattr(developer_settings, "browser_shortcut_name", "")  # backwards compatible
+# browser_shortcut_name = getattr(developer_settings, "browser_shortcut_name", "")  # backwards compatible
 from DONT_CHANGE.specific_scripts.common_code import (
     close_terminal,
     make_abs_path_relative_to_file,
@@ -40,8 +40,8 @@ from DONT_CHANGE.specific_scripts.common_code import (
 from DONT_CHANGE.specific_scripts.common_variables import (
     developer_settings_path,
     icon_path,
-    launcher_browser,
-    launcher_emulator,
+    # launcher_browser,
+    # launcher_emulator,
     launcher_no_terminal,
     launcher_settings,
     launcher_stop,
@@ -223,30 +223,30 @@ def main():
             description=f"Start {program_name} in Windows Terminal.",
         )
 
-    # Shortcut: start in terminal emulator
-    if terminal_emulator_shortcut_name not in [None, False, ""]:
-        out = shortcut_output_dir + "\\" + sanitize_filename(terminal_emulator_shortcut_name) + ".lnk"
-        make_lnk(
-            out,
-            icon_path,
-            launcher_emulator,
-            args=appid,
-            appid=appid + "E",  # use a separate AppID so the terminal emulator can be pinned separately
-            description=f"Start {program_name} in the bundled terminal emulator.",
-        )
+    # # Shortcut: start in terminal emulator
+    # if terminal_emulator_shortcut_name not in [None, False, ""]:
+    #     out = shortcut_output_dir + "\\" + sanitize_filename(terminal_emulator_shortcut_name) + ".lnk"
+    #     make_lnk(
+    #         out,
+    #         icon_path,
+    #         launcher_emulator,
+    #         args=appid,
+    #         appid=appid + "E",  # use a separate AppID so the terminal emulator can be pinned separately
+    #         description=f"Start {program_name} in the bundled terminal emulator.",
+    #     )
 
-    # Shortcut: start in browser terminal
-    if browser_shortcut_name not in [None, False, ""]:
-        out = shortcut_output_dir + "\\" + sanitize_filename(browser_shortcut_name) + ".lnk"
-        make_lnk(
-            out,
-            icon_path,
-            launcher_browser,
-            args=appid,
-            appid=appid
-            + "B",  # use a separate AppID so the browser launcher can be pinned separately from terminal mode
-            description=f"Start {program_name} with the browser terminal.",
-        )
+    # # Shortcut: start in browser terminal
+    # if browser_shortcut_name not in [None, False, ""]:
+    #     out = shortcut_output_dir + "\\" + sanitize_filename(browser_shortcut_name) + ".lnk"
+    #     make_lnk(
+    #         out,
+    #         icon_path,
+    #         launcher_browser,
+    #         args=appid,
+    #         appid=appid
+    #         + "B",  # use a separate AppID so the browser launcher can be pinned separately from terminal mode
+    #         description=f"Start {program_name} with the browser terminal.",
+    #     )
 
     # Shortcut: start without terminal
     if no_terminal_shortcut_name not in [False, None, ""]:
