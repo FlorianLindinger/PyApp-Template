@@ -2,8 +2,12 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+test what happends fro prompt of delete_folder_safe. is abort wanted or do i want repeated prompt or print path to fodler and manual prompt and then rechekc ....
+chekc if folder size check and walks are fast enough
+
 cehck ProcessIdRegistry and all in launcehr_common
 if i x terminal it does not remove pid
+double chek that pid stuff is correct with \n missing or being added correctly
 
 check ensure_python_distro
 
@@ -58,10 +62,6 @@ make input after every exec(script) at elast for script_has_terminal or make try
 
 do i want to  catch BaseException insteadf of Exception somewhere
 
-
-
-somehow stop it from adding imports in vscode
-
 make it report only as if inside the main_script:
      except SyntaxError as e: # catches synatx error in script_path
 
@@ -70,9 +70,6 @@ test logic for frontend python and package installation for missing folder
 ask ai if case for backend tools paths:
     fix startup time measruemtn: make sure it kills process and removed pid no mather what closing setting is there for on_success
 
-do i want delete_folder_safe to retrun succes/user_refuse/error ...?
-
-double chek that pid stuff is correct with \n missing or being added correctly
 
 move helper functions below code where needed?
 
@@ -99,13 +96,8 @@ do i still need or handle it via _pth:
             if os.path.exists(path):
                 os.add_dll_directory(path)
 
-
-
-
-
 ask long think AI for docstring improvements
 
-chekc if folder size check and walks are fast enough
 
 do i wnat user to give chance to delte folder themselfves before raising error. Like reprint path and not deleted until deleted. but also they are prompted and they should not be able to do more. maybe chekc after prompt if sucess and reprompt otherwise -> yes
 
@@ -300,6 +292,8 @@ ask it to add comment to code blocks
 ================
 ==== Future ====
 ================
+
+do i want delete_folder_safe to retrun succes/user_refuse/error ...?
 
 ###### move all backend installation featurs and fixes to future since anyway there is no option to not ship implemented i guess:
 i guess add backend python installation to genrtated shoretuctus
