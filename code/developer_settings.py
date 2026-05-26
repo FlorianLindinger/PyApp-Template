@@ -14,7 +14,6 @@ user_settings_path: str | None = "settings.py"
 # -------------------------------------------------
 # Names of created shortcuts (None to disable). Accepts for example f"{program_name}":
 windows_terminal_shortcut_name: str | None = f"{program_name}"
-terminal_emulator_shortcut_name: str | None = f"{program_name} (Terminal Emulator)"
 no_terminal_shortcut_name: str | None = f"{program_name} (no Terminal)"
 open_settings_shortcut_name: str | None = f"{program_name} - Settings"
 stop_running_shortcut_name: str | None = f"Stop {program_name}"
@@ -109,30 +108,5 @@ modern_terminal_tab_color: str | None = "#3B78FF"
 terminal_bg_color: str | None = "9"
 # Text color: A=LightGreen,B=LightAqua,C=LightRed,,D=LightPurple,E=LightYellow,F=BrightWhite:
 terminal_text_color: str | None = "F"
-
-# ---------------------------
-# ---- Terminal Emulator ----
-# ---------------------------
-
-terminal_needs_input = True  # to en/disable the input box
-dark_mode: bool | None = True  # None = Windows dark setting
-stylesheet_path: str | None = "terminal_stylesheet.py"  # None = default stylesheet settings
-button_settings: None | list[tuple[str, dict[str, bool]]] = [  # None = default button settings
-    # ("button_name", {"visible"/"clickable"/"pinned"/"starting_state": bool , ...}),
-    ("show_input", {"pinned": False, "starting_state": True}),
-    ("autoscroll", {"starting_state": True}),
-    ("foreground_on_print", {"pinned": False}),
-    ("highlight_on_print", {"pinned": False}),
-    ("confirm_close", {"pinned": False}),
-    ("restart", {}),
-    ("clear", {}),
-    ("stop", {"visible": True}),
-    ("to_tray", {"clickable": True}),
-    ("open_script", {"pinned": False}),
-]
-
-# -----------------
-# ---- Browser ----
-# -----------------
 
 # =========================================
