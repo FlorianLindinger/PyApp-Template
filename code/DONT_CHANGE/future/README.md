@@ -1,3 +1,7 @@
+
+- WIP: Fancy terminal emulator & browser terminal emulator
+
+
 ---
 
 ## Optional Terminal Emulator - Addition Features
