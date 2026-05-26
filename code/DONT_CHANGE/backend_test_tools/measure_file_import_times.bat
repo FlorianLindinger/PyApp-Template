@@ -5,8 +5,9 @@ setlocal EnableExtensions
 :: benchmark settings
 
 set "RUNS=10"
-set "specific_scripts_dir=%~dp0..\specific_scripts"
-set "FILES=common_variables common_code launcher_common"
+set "HERE=%~dp0"
+set "specific_scripts_dir=%HERE%..\specific_scripts"
+set "FILES=common_variables common_code get_launcher_settings"
 
 set "HELPER_FILE=%HERE%helper_scripts\measure_file_import_times.py"
 set "BACKEND_PY=%HERE%..\P\P.exe"

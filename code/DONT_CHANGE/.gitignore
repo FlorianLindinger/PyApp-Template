@@ -14,3 +14,4 @@ __pycache__
 *.pyo
 # temporary signal file to signal correct program start:
 *.signal
+backend_test_tools/.startup_time_markers/*
