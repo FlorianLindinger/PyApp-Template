@@ -1,6 +1,11 @@
 ======================================
 ==== TODO LIST FOR PyApp-Template ====
+# wrap up and move as much as possible to future:
 ======================================
+
+
+
+Install Python at generate shortcuts?
 
 test what happends fro prompt of delete_folder_safe. is abort wanted or do i want repeated prompt or print path to fodler and manual prompt and then rechekc ....
 chekc if folder size check and walks are fast enough
@@ -144,6 +149,7 @@ what if i let python kill the old terminal via thread once its clear it wont fai
 ==== Must do before release ====
 ================================
 
+
 recheck logic in tools
 
 recheck start script and script wrapper
@@ -152,7 +158,7 @@ test option to start minimized in all modes
 test play sounds and start time
 does it set all terminals ot that icon eg also from differnet opened apps form framework???
 
-check for "todos" in code and in google notees
+check for "todos" in code
 ask AI if code or variable is unused
 let it chekc if seomthing looks like a placeholder and unfinsihjesd and nunnnecassy prings
 is the file organication somewher unconventuional? should i renomea seom sutff? 
@@ -208,6 +214,8 @@ when do i want no cache or no upgrade for pip sintall
 =========================================
 ==== Must do before release (in end) ====
 =========================================
+
+Reorder features in readme. Also tags. And add description 
 
 never close on backend failur: shoudl be already? ask AI if could ahppend. THat should not happen. always open a new terminal to report. I guess no log then.
 
@@ -285,13 +293,15 @@ ask it to add comment to code blocks
 
 
 
-
-
-
-
-================
+===============================================================================================================================
+===============================================================================================================================
+===============================================================================================================================
+===============================================================================================================================
 ==== Future ====
+# make feature triage for future: maybe first implemetn all features such that AI can best copy behaviour for otehr launch options and ask what would be extra possible/current there
 ================
+
+Make txt which tells what's minimally needed to keep 
 
 do i want delete_folder_safe to retrun succes/user_refuse/error ...?
 
@@ -466,24 +476,7 @@ Compile via GitHub action for proof of exe content
 
 Setuptools for av safe args passing?
 
-Make the crash script only run on literal python crash. Not crash within python 
-https://gemini.google.com/share/1db513bda7c4
-
 Make txt which tells what's minimally needed to keep 
-
-Move gitatrivutes to code
-
-learn gitlens and make settings
-
-Add a bullet point list of what devs have to do:
-
-Install Python at generate shortcuts?
-
-Reorder features in readme. Also tags. And add description
-
-Mentioned all settings file tpyes supported without need for packages download 
-
-Test for all versions . Maybe write auto tester 
 
 spawn batch shortcuts such that one can pass args.
 
