@@ -2,12 +2,6 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
-do i want specifc way to open log?
-
-make run_completion_alerts rather a function that looks like process_finish(notification,sound,title)
-
-check run_completion_alerts
-
 cehck ProcessIdRegistry and all in launcehr_common
 if i x terminal it does not remove pid
 
@@ -346,6 +340,8 @@ ask it to add comment to code blocks
 ================
 ==== Future ====
 ================
+
+is sound playing + log opening + remain open on success somewhat slow?
 
 readd windwos notifications
 
