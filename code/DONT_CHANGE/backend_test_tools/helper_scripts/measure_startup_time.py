@@ -2,12 +2,12 @@ import argparse
 import ctypes
 import json
 import os
+import re
 import shutil
 import statistics
 import subprocess
 import sys
 import time
-from dataclasses import dataclass
 from pathlib import Path
 
 # Add code dir for debug cases where this script is called on its own.
@@ -15,26 +15,100 @@ root_dir = os.path.dirname(__file__) + "\\..\\..\\.."
 if root_dir not in sys.path:
     sys.path.insert(0, root_dir)
 
-from developer_settings import (
-    no_terminal_shortcut_name,
-    terminal_emulator_shortcut_name,
-    windows_terminal_shortcut_name,
-)
+import developer_settings
 from DONT_CHANGE.specific_scripts.common_variables import (
     env_var_to_signal_startup_time_measurement,
-    python_script_path,
+    start_time_dummy_main_script,
 )
 
-shortcuts = [
-    windows_terminal_shortcut_name,
-    no_terminal_shortcut_name,
-    terminal_emulator_shortcut_name,
-    "browser shortcut placeholder",
-]
+HELPER_DIR = Path(__file__).resolve().parent
+BACKEND_TEST_TOOLS_DIR = HELPER_DIR.parent
+DONT_CHANGE_DIR = BACKEND_TEST_TOOLS_DIR.parent
+CODE_DIR = DONT_CHANGE_DIR.parent
+REPO_DIR = CODE_DIR.parent
+PY_DIST_PYTHON = CODE_DIR / "py_env" / "py_dist" / "python.exe"
+WORK_DIR = BACKEND_TEST_TOOLS_DIR / ".startup_time_markers"
 
 VERSION_SCRIPT = (
     "import platform, sys; print(f'{platform.python_implementation()} {sys.version.split()[0]} ({sys.executable})')"
 )
+
+
+def setting_to_shortcut_path(setting_name: str) -> Path | None:
+    shortcut_name = getattr(developer_settings, setting_name, None)
+    if shortcut_name in {None, False, ""}:
+        return None
+    return REPO_DIR / f"{shortcut_name}.lnk"
+
+
+def shortcut_paths_from_developer_settings(args: argparse.Namespace) -> list[Path]:
+    shortcut_paths: list[Path] = []
+    shortcut_settings = [
+        (args.measure_windows_terminal_shortcut, "windows_terminal_shortcut_name"),
+        (args.measure_no_terminal_shortcut, "no_terminal_shortcut_name"),
+        (args.measure_terminal_emulator_shortcut, "terminal_emulator_shortcut_name"),
+        (args.measure_browser_shortcut, "browser_shortcut_name"),
+    ]
+    for enabled, setting_name in shortcut_settings:
+        if not enabled:
+            continue
+        path = setting_to_shortcut_path(setting_name)
+        if path is not None:
+            shortcut_paths.append(path)
+    return shortcut_paths
+
+
+def shortcut_paths_from_explicit_args(shortcut_paths: list[str]) -> list[Path]:
+    return [Path(path).expanduser().resolve() for path in shortcut_paths]
+
+
+def warn_missing_shortcuts(shortcuts: list[Path]) -> None:
+    print("[Error] Missing shortcut(s):")
+    for shortcut_path in shortcuts:
+        print(f"  {shortcut_path}")
+    print()
+    print("Regenerate shortcuts or disable the matching measurement flag in the batch file.")
+
+
+def safe_marker_name(label: str) -> str:
+    return re.sub(r"[^A-Za-z0-9_.-]+", "_", label).strip("_.-") or "measurement"
+
+
+def print_marker_help(target_script: Path) -> None:
+    print()
+    print("[Hint] The measured script must write the startup marker.")
+    print(f"Expected marker script: {target_script}")
+    print("For shortcut measurements, start_program.py receives the startup-measurement environment variable.")
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Measure PyApp startup time.")
+    parser.add_argument("runs", nargs="?", type=int, default=5)
+    parser.add_argument("timeout", nargs="?", type=float, default=5.0)
+    parser.add_argument("measure_windows_terminal_shortcut", nargs="?", type=int, default=1)
+    parser.add_argument("measure_no_terminal_shortcut", nargs="?", type=int, default=1)
+    parser.add_argument("measure_terminal_emulator_shortcut", nargs="?", type=int, default=0)
+    parser.add_argument("measure_browser_shortcut", nargs="?", type=int, default=0)
+    parser.add_argument("measure_direct_py_dist", nargs="?", type=int, default=1)
+    parser.add_argument("measure_direct_global_py", nargs="?", type=int, default=1)
+    parser.add_argument("run_setup_warmup", nargs="?", type=int, default=1)
+    parser.add_argument("setup_timeout", nargs="?", type=float, default=600.0)
+    parser.add_argument("--shortcut", action="append", default=[])
+    parser.add_argument("--skip-launcher", action="store_true")
+    parser.add_argument("--skip-py-dist", action="store_true")
+    parser.add_argument("--skip-global", action="store_true")
+    parser.add_argument("--skip-setup-warmup", action="store_true")
+    args = parser.parse_args()
+    args.measure_windows_terminal_shortcut = bool(args.measure_windows_terminal_shortcut)
+    args.measure_no_terminal_shortcut = bool(args.measure_no_terminal_shortcut)
+    args.measure_terminal_emulator_shortcut = bool(args.measure_terminal_emulator_shortcut)
+    args.measure_browser_shortcut = bool(args.measure_browser_shortcut)
+    args.skip_py_dist = args.skip_py_dist or not bool(args.measure_direct_py_dist)
+    args.skip_global = args.skip_global or not bool(args.measure_direct_global_py)
+    args.run_setup_warmup = bool(args.run_setup_warmup) and not args.skip_setup_warmup
+    if args.setup_timeout <= 0:
+        args.setup_timeout = None
+    return args
 
 
 def python_command(python_path: Path | str, args: list[str]) -> list[str]:
@@ -172,19 +246,25 @@ def cleanup_process(proc: subprocess.Popen, marker_values: dict[str, str]) -> No
 
 def wait_for_marker(
     marker_path: Path,
-    timeout: float,
+    timeout: float | None,
     proc: subprocess.Popen | None = None,
     *,
     fail_on_process_exit: bool = True,
 ) -> tuple[dict[str, str], float]:
-    deadline = time.perf_counter() + timeout
-    while time.perf_counter() < deadline:
+    deadline = None if timeout is None else time.perf_counter() + timeout
+    while deadline is None or time.perf_counter() < deadline:
         if marker_path.exists() and marker_path.stat().st_size > 0:
             return parse_marker(marker_path), time.perf_counter()
-        if proc is not None and proc.poll() is not None and (fail_on_process_exit or proc.returncode != 0):
+        if proc is not None and proc.poll() is not None and fail_on_process_exit:
             raise RuntimeError(f"Process exited with code {proc.returncode} before writing the startup marker.")
         time.sleep(0.005)
     raise TimeoutError(f'No startup marker was written to "{marker_path}" within {timeout:.1f}s.')
+
+
+def raise_if_marker_error(marker_values: dict[str, str]) -> None:
+    error = marker_values.get("error", "")
+    if error:
+        raise RuntimeError(error)
 
 
 def run_one(command: list[str], marker_path: Path, timeout: float) -> float:
@@ -195,6 +275,7 @@ def run_one(command: list[str], marker_path: Path, timeout: float) -> float:
     start_ns = time.perf_counter_ns()
     env["PYAPP_STARTUP_BENCHMARK_MARKER"] = str(marker_path)
     env["PYAPP_STARTUP_BENCHMARK_START_NS"] = str(start_ns)
+    env[env_var_to_signal_startup_time_measurement] = "1"
     env["PYTHONPATH"] = str(CODE_DIR) + os.pathsep + env.get("PYTHONPATH", "")
 
     creationflags = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
@@ -211,6 +292,7 @@ def run_one(command: list[str], marker_path: Path, timeout: float) -> float:
     marker_values: dict[str, str] = {}
     try:
         marker_values, detected_at = wait_for_marker(marker_path, timeout, proc)
+        raise_if_marker_error(marker_values)
         ready_ns = marker_values.get("ready_ns", "")
         if ready_ns.isdigit():
             return (int(ready_ns) - start_ns) / 1_000_000
@@ -224,7 +306,9 @@ def run_one_shortcut(
     shortcut_launch_command: list[str],
     shortcut_cwd: Path,
     marker_path: Path,
-    timeout: float,
+    timeout: float | None,
+    *,
+    show_output: bool = False,
 ) -> float:
     if marker_path.exists():
         marker_path.unlink()
@@ -233,22 +317,24 @@ def run_one_shortcut(
     start_ns = time.perf_counter_ns()
     env["PYAPP_STARTUP_BENCHMARK_MARKER"] = str(marker_path)
     env["PYAPP_STARTUP_BENCHMARK_START_NS"] = str(start_ns)
+    env[env_var_to_signal_startup_time_measurement] = "1"
     env["PYTHONPATH"] = str(CODE_DIR) + os.pathsep + env.get("PYTHONPATH", "")
 
-    creationflags = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
+    creationflags = 0 if show_output else subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
     starter_proc = subprocess.Popen(  # noqa:S603
         shortcut_launch_command,
         cwd=shortcut_cwd,
         env=env,
-        stdin=subprocess.DEVNULL,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
+        stdin=None if show_output else subprocess.DEVNULL,
+        stdout=None if show_output else subprocess.DEVNULL,
+        stderr=None if show_output else subprocess.DEVNULL,
         creationflags=creationflags,
     )
 
     marker_values: dict[str, str] = {}
     try:
         marker_values, detected_at = wait_for_marker(marker_path, timeout, starter_proc, fail_on_process_exit=False)
+        raise_if_marker_error(marker_values)
         ready_ns = marker_values.get("ready_ns", "")
         if ready_ns.isdigit():
             return (int(ready_ns) - start_ns) / 1_000_000
@@ -305,6 +391,28 @@ def measure_shortcut(
     return results
 
 
+def run_setup_warmup(
+    shortcut_path: Path,
+    shortcut_launch_command: list[str],
+    shortcut_cwd: Path,
+    timeout: float | None,
+) -> None:
+    marker_path = WORK_DIR / f"startup_marker_setup_{safe_marker_name(shortcut_path.name)}.txt"
+    timeout_text = "no timeout" if timeout is None else f"{timeout:.0f}s timeout"
+    print("\nSetup warmup")
+    print(f"  shortcut: {shortcut_path.name}")
+    print(f"  mode: unmeasured, {timeout_text}")
+    print("  purpose: let ensure_frontend_packages finish setup before timed runs")
+    elapsed_ms = run_one_shortcut(
+        shortcut_launch_command,
+        shortcut_cwd,
+        marker_path,
+        timeout,
+        show_output=True,
+    )
+    print(f"  ready after {elapsed_ms:.1f} ms")
+
+
 def print_summary(results: dict[str, list[float]]) -> None:
     print("\nSummary")
     print("Mode                                      median      mean       min       max")
@@ -324,13 +432,13 @@ def main() -> int:
     if args.runs < 1:
         raise ValueError("--runs must be at least 1")
 
-    target_script = Path(python_script_path)
-    shortcut_specs: list[ShortcutSpec] = []
+    target_script = Path(start_time_dummy_main_script)
+    shortcut_paths: list[Path] = []
     if not args.skip_launcher:
         if args.shortcut:
-            shortcut_specs = shortcut_specs_from_explicit_args(args.shortcut)
+            shortcut_paths = shortcut_paths_from_explicit_args(args.shortcut)
         else:
-            shortcut_specs = shortcut_specs_from_developer_settings(args)
+            shortcut_paths = shortcut_paths_from_developer_settings(args)
 
     if not target_script.exists():
         raise FileNotFoundError(f'Target script not found: "{target_script}"')
@@ -340,13 +448,13 @@ def main() -> int:
     WORK_DIR.mkdir(parents=True, exist_ok=True)
     cleanup_stale_markers()
     shortcut_measurements: list[tuple[Path, list[str], Path]] = []
-    missing_shortcuts = [shortcut for shortcut in shortcut_specs if not shortcut.path.exists()]
+    missing_shortcuts = [shortcut_path for shortcut_path in shortcut_paths if not shortcut_path.exists()]
     if missing_shortcuts:
         warn_missing_shortcuts(missing_shortcuts)
         return 1
-    for shortcut in shortcut_specs:
-        shortcut_launch_command, shortcut_cwd = resolve_shortcut(shortcut.path)
-        shortcut_measurements.append((shortcut.path, shortcut_launch_command, shortcut_cwd))
+    for shortcut_path in shortcut_paths:
+        shortcut_launch_command, shortcut_cwd = resolve_shortcut(shortcut_path)
+        shortcut_measurements.append((shortcut_path, shortcut_launch_command, shortcut_cwd))
 
     measurements: list[tuple[str, list[str]]] = []
     if not args.skip_py_dist:
@@ -356,6 +464,14 @@ def main() -> int:
 
     print(f"Target script: {target_script}")
     print(f"Runs per mode: {args.runs}")
+    print(
+        "Setup warmup: "
+        + (
+            "enabled"
+            if args.run_setup_warmup and shortcut_measurements
+            else "skipped"
+        )
+    )
     if shortcut_measurements:
         print("PyApp shortcuts:")
         for shortcut_path, shortcut_launch_command, shortcut_cwd in shortcut_measurements:
@@ -377,6 +493,18 @@ def main() -> int:
         print("global py: unavailable (not on PATH)")
     else:
         print("global py: skipped" if args.skip_global else f"global py: {describe_python('py')}")
+
+    if args.run_setup_warmup and shortcut_measurements:
+        shortcut_path, shortcut_launch_command, shortcut_cwd = shortcut_measurements[0]
+        try:
+            run_setup_warmup(shortcut_path, shortcut_launch_command, shortcut_cwd, args.setup_timeout)
+        except TimeoutError as error:
+            print(f"\n[Error] setup warmup: {error}")
+            print_marker_help(target_script)
+            return 1
+        except (FileNotFoundError, RuntimeError) as error:
+            print(f"\n[Error] setup warmup: {error}")
+            return 1
 
     results: dict[str, list[float]] = {}
     for shortcut_path, shortcut_launch_command, shortcut_cwd in shortcut_measurements:

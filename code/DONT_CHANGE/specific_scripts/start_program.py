@@ -412,6 +412,19 @@ try:
             main()
             sys.exit(0)
         except Exception as e:
+            marker_path = os.environ.get("PYAPP_STARTUP_BENCHMARK_MARKER", "")
+            # for backend debug test of startup time:
+            if marker_path:
+                marker_dir = os.path.dirname(marker_path)
+                if marker_dir:
+                    os.makedirs(marker_dir, exist_ok=True)
+                message = str(e).replace("\r", " ").replace("\n", " ")
+                with open(marker_path, "w", encoding="utf-8") as marker_file:
+                    marker_file.write(f"error={message}\n")
+                    marker_file.write(f"ready_ns={time.perf_counter_ns()}\n")
+                    marker_file.write(f"pid={os.getpid()}\n")
+                print_traceback(f"[Error] Failed to launch the program: {e}", add_press_enter_to_exit=False)
+                sys.exit(1)
             print_traceback(f"[Error] Failed to launch the program: {e}", add_press_enter_to_exit=True)
 
 except Exception as e:
