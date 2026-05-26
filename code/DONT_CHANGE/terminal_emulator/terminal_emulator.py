@@ -60,7 +60,7 @@ try:
     import subprocess
     import sys
     import traceback
-    from datetime import datetime, timezone
+    from datetime import datetime
 
     try:
         from typing import override  # Python 3.12+
@@ -798,7 +798,7 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
         def _timestamp_prefix(self, fmt: str | None) -> str:
             if not fmt:
                 return ""
-            return datetime.now(timezone.utc).strftime(fmt)
+            return datetime.now().strftime(fmt)
 
         def _add_line_timestamps(self, text: str, fmt: str | None, state_attr: str) -> str:
             if not fmt:
@@ -1477,7 +1477,7 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
         def _timestamp_prefix(self) -> str:
             if not self.timestamp_format:
                 return ""
-            return datetime.now(timezone.utc).strftime(self.timestamp_format)
+            return datetime.now().strftime(self.timestamp_format)
 
         def _add_line_timestamps(self, data: str) -> str:
             if data is None:
@@ -1507,7 +1507,7 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
                 stream.flush()
 
     def prepare_log_path(path: str) -> str:
-        path = datetime.now(tz=timezone.utc).strftime(path)
+        path = datetime.now().strftime(path)
         folder = os.path.dirname(path)
         if folder:
             os.makedirs(folder, exist_ok=True)
