@@ -14,17 +14,13 @@ if root_dir not in sys.path:
 # ====================================
 
 from developer_settings import (
-    classic_terminal_cols,
-    classic_terminal_lines,
     close_on_crash,
     close_on_failure,
     close_on_success,
-    dark_mode,
     input_prepend,
     log_input_prepend,
     log_path_rel_to_start_folder,
     log_print_prepend,
-    modern_terminal_tab_color,
     open_log_file_after_crash,
     open_log_file_after_failure,
     open_log_file_after_success,
@@ -40,22 +36,16 @@ from developer_settings import (
     send_Windows_notification_on_success,
     start_in_shortcut_folder,
     start_minimized,
-    stylesheet_path,
     taskbar_flashing_on_crash,
     taskbar_flashing_on_failure,
     taskbar_flashing_on_success,
     taskbar_highlight_on_crash,
     taskbar_highlight_on_failure,
     taskbar_highlight_on_success,
-    terminal_bg_color,
-    terminal_text_color,
-    use_global_python,
 )
 from DONT_CHANGE.specific_scripts.common_variables import (
     CORRECT_START_SIGNAL_FILE_PATH,
-    developer_settings_dir,
     env_var_to_signal_startup_time_measurement,
-    frontend_python_exe,
     icon_path,
     play_sound_on_crash_default,
     play_sound_on_failure_default,
@@ -76,11 +66,6 @@ if os.environ.get(env_var_to_signal_startup_time_measurement):
 if not os.path.exists(python_code_path):
     raise FileNotFoundError(f'[Error] Python script not found at "{python_code_path}"')
 
-if use_global_python == True:
-    python_exe_for_script_path = "py"
-else:
-    python_exe_for_script_path = frontend_python_exe
-
 if start_in_shortcut_folder == True:
     wdir_is_script_dir = False
 else:
@@ -95,18 +80,6 @@ else:
         log_path = os.path.normpath(os.path.join(os.getcwd(), log_path_rel_to_start_folder))
     log_path = datetime.now(tz=timezone.utc).strftime(log_path)
 
-if dark_mode is None:
-    dark_mode = "auto"
-elif dark_mode is True:
-    dark_mode = "1"
-elif dark_mode is False:  # type:ignore
-    dark_mode = "0"
-if stylesheet_path in [False, None, ""]:
-    stylesheet_path = ""
-else:
-    if not os.path.isabs(stylesheet_path):
-        stylesheet_path = os.path.normpath(developer_settings_dir + "\\" + stylesheet_path)
-
 if python_version in [None, False, ""]:
     python_version = ""
 if log_print_prepend in [None, False, ""]:
@@ -117,20 +90,6 @@ if print_prepend in [None, False, ""]:
     print_prepend = ""
 if input_prepend in [None, False, ""]:
     input_prepend = ""
-if terminal_bg_color in [None, False, ""]:
-    terminal_bg_color = ""
-if terminal_text_color in [None, False, ""]:
-    terminal_text_color = ""
-if classic_terminal_cols in [None, False, ""]:
-    classic_terminal_cols = ""
-else:
-    classic_terminal_cols = str(classic_terminal_cols)
-if classic_terminal_lines in [None, False, ""]:
-    classic_terminal_lines = ""
-else:
-    classic_terminal_lines = str(classic_terminal_lines)
-if modern_terminal_tab_color in [None, False, ""]:
-    modern_terminal_tab_color = ""
 
 if play_sound_on_crash is True:
     play_sound_on_crash = play_sound_on_crash_default
@@ -168,7 +127,7 @@ args = [
     python_code_path,
     program_name,
     icon_path,
-    # app_id,
+    # app_id, # comes from start_program
     wdir_is_script_dir,
     close_on_crash,
     close_on_failure,

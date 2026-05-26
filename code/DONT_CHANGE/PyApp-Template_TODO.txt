@@ -2,6 +2,7 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+fix wrapper
 
 if i x terminal it does not remove pid
 
@@ -19,7 +20,6 @@ add examples how to set adn get? :in their guis with exampokle for pyside6/5 qt 
 
 add arg setting in dev setting to pass to scropt
 
-
 i guess i want way clearer athan rich seomhow for exampwel for no internet?
 
 do i want more explceit :
@@ -31,12 +31,8 @@ insted of just cehcl=Tru?
 -> chekc all check=True.
 -> check also if i want check anywher i n subprocess.run in all scriopts
 
-
-
-do i want to catch importError explicitly in wrapper? or otehrs launcerhs
+do i want to catch importError explicitly in wrapper? or otehrs launcerhs. -> i guess and then refer how to install to basically dev tools;
 # somehow make parity. what if i remove the temrinal in ´this verison? might be even more work
-
-if soemthing in main_scropt spawn gui it needs passe appid? what if i run the terminal app id setter regardless?
 
 test what featues break for lower versions of fronent python. ask AI
 
@@ -44,9 +40,6 @@ i am passing crazy amount of args to wrappers/...
 ->should they just read themselves and i check existance of file in starter?
 basic processing in starter? or what if i just add a processing script for dev_settings. 
 -> i made script for common dev_settings for all launch modes and they read in as imports
-
-project creep:::::::::::::::
-but i guess i want for stable featues to add now:
 
 add setting. "flash in taskbar on"?
 
