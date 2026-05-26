@@ -6,7 +6,7 @@ import os
 import subprocess
 import sys
 import time
-from datetime import datetime, timezone
+from datetime import datetime
 
 # ====================================
 # add root dir for debug cases where this script is called on its own:
@@ -109,7 +109,7 @@ try:
             log_path = os.path.normpath(os.path.join(os.path.dirname(python_script_path), log_path_rel_to_start_folder))
         else:
             log_path = os.path.normpath(os.path.join(os.getcwd(), log_path_rel_to_start_folder))
-        log_path = datetime.now(tz=timezone.utc).strftime(log_path)
+        log_path = datetime.now().strftime(log_path)
 
     # if dark_mode is None:
     #     dark_mode = "auto"

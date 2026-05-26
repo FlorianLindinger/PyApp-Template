@@ -614,10 +614,10 @@ try:
     # define code to log prints and errors
     if log_path != "":
         import threading
-        from datetime import datetime, timezone
+        from datetime import datetime
 
         def prepare_log_path(path: str) -> str:
-            path = datetime.now(timezone.utc).strftime(path)
+            path = datetime.now().strftime(path)
             folder = os.path.dirname(path)
             if folder:
                 os.makedirs(folder, exist_ok=True)
@@ -692,7 +692,7 @@ try:
             def _timestamp_prefix(self, fmt: str | None) -> str:
                 if not fmt:
                     return ""
-                return datetime.now(timezone.utc).strftime(fmt)
+                return datetime.now().strftime(fmt)
 
             def _print_supports_color(self) -> bool:
                 return bool(getattr(self.print_stream, "isatty", lambda: False)())
