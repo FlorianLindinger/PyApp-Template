@@ -2,13 +2,18 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+i am passing crazy amount of args to wrappers/...
+->should they just read themselves and i check existance of file in starter?
+basic processing in starter? or what if i just add a processing script for dev_settings. 
+-> i made script for common dev_settings for all launch modes and they read in as imports
+
 fix wrapper
 
 if i x terminal it does not remove pid
 
 why does my prints diasgpper in scroipt wrapper beiggning?
 
-i can pass naem to pyside5 via exe but not tkinter via rename of python.exe -> yes on replace shortcuts and python distro installation. . meantion somewhere?
+i can pass name to pyside5 via exe but not tkinter via rename of python.exe -> yes on replace shortcuts and python distro installation. . meantion somewhere?
 but chekc if sigantrues stay same. i guess via frsh python
 is kind of less av safe
 
@@ -36,18 +41,15 @@ do i want to catch importError explicitly in wrapper? or otehrs launcerhs. -> i 
 
 test what featues break for lower versions of fronent python. ask AI
 
-i am passing crazy amount of args to wrappers/...
-->should they just read themselves and i check existance of file in starter?
-basic processing in starter? or what if i just add a processing script for dev_settings. 
--> i made script for common dev_settings for all launch modes and they read in as imports
 
-add setting. "flash in taskbar on"?
+
+implemetn setting. "flash in taskbar on"?
 
 i can choose tab title
 
 i guess no need for pbar and error if i can falshj. unless i want to distinguies flash
 
-also set newly opened terminal to awrn appearance. do i want wt or conhost?
+also set newly opened terminal to warn appearance. do i want wt or conhost?
 
 do i need get_candidate_hwnds()[0] if 0 seems to work? can i ask when needed or if i can detect working and stop?
 
