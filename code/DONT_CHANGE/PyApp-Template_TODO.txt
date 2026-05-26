@@ -5,23 +5,15 @@
 cehck ProcessIdRegistry and all in launcehr_common
 if i x terminal it does not remove pid
 
-# compile script needs to be adjusted to take stuff live for import somehow i guess
-
 fix wrapper
 
 why does my prints diasgpper in scroipt wrapper beiggning?
-
-i can pass name to pyside5 via exe but not tkinter via rename of python.exe -> yes on replace shortcuts and python distro installation. . meantion somewhere?
-but chekc if sigantrues stay same. i guess via frsh python
-is kind of less av safe
 
 can main_scirpt just import dev_settings? for all cases?
 -> mention? i guess overkill. do i want to pass more envs?
 
 -> mention soemhwer pass of env varables
 add examples how to set adn get? :in their guis with exampokle for pyside6/5 qt tkingrt..
-
-add arg setting in dev setting to pass to scropt
 
 i guess i want way clearer traceback than rich seomhow for exampwel for no internet? somehow more clear what the first message to read is
 
@@ -37,38 +29,9 @@ insted of just cehcl=Tru?
 do i want to catch importError explicitly in wrapper? or otehrs launcerhs. -> i guess and then refer how to install to basically dev tools;
 # somehow make parity. what if i remove the temrinal in ´this verison? might be even more work
 
-test what featues break for lower versions of fronent python. ask AI
-
-
-
-implemetn setting. "flash in taskbar on"?
-
-i can choose tab title
-
-i guess no need for pbar and error if i can falshj. unless i want to distinguies flash
-
-also set newly opened terminal to warn appearance. do i want wt or conhost?
-
-do i need get_candidate_hwnds()[0] if 0 seems to work? can i ask when needed or if i can detect working and stop?
-
-in wt.exe i want to change the corlor to green for success i guess? for that taskbar colring
-
-highlight or altert in taskabr in wiondwos terminal? can i set it to highlight and not flash? flash until opend i guess
-
-pbar options:
-cycling
-any % accent
-yellow
-red
-none
-
 simplify wrapper.
 
 genrally simplify whole path for normal start and once start that user would see.
-
-ask ai to draw a flwochart of whoel prpgram
-
-change color of tabbed temrinal for error or finish
 
 move up [Python Failure Return] to exception SyntaxError. but i guess make sure to reset input and print before? or do i want warpper prints to end in log? probalby actually
 
@@ -78,8 +41,6 @@ why is failure of runpy so slow after tracevbacl print in wrapper
 
 make input after every exec(script) at elast for script_has_terminal or make try except with normal input. somehow it should not be able to fail.
 
-add crash icons? and terminal name. i guess they could always do that?
-
 # how can i be carefull with python traceback error color red with any bg? how can i make it nicer for older or any python verions error print
 
 # wait i have only nice erorr print for launchering new terminal so for no terminal mode, right??
@@ -88,9 +49,8 @@ do i want to  catch BaseException insteadf of Exception somewhere
 
 do i want in wrapper and other to handle or not handle keyboead interrupt? probably i want. not atm
 
-in wrapper. do i want appearance change attempt for error?
-
 wait in wrapper how do i fancy print the tracebacmks????
+i guess cant claim in read,e
 
 somehow stop it from adding imports in vscode
 
@@ -112,8 +72,6 @@ move helper functions below code where needed?
 
 have a look at inital batches for shortcuts to launch. 
 
-does everyhting that needs it have EMPTY_ARG_INDICATOR in start_prgoram.
-make caleld scirpt accept EMPTY_ARG_INDICATOR
 
 do i still need or handle it via _pth:
     # needed for pywin32 to find its modules
@@ -136,8 +94,6 @@ do i still need or handle it via _pth:
                 os.add_dll_directory(path)
 
 
-fix arg order for not-windows-terminal paths
-
 cut down on backend installatikn packages and not ship? kind of too risky for no gain
 
 i guess add backend python installation to genrtated shoretuctus 
@@ -148,13 +104,7 @@ make packaend packages installtion indepomendent chekc and fail delete
 
 add chekc for backend python folder and install them automatically for shortcus
 
-make arg order in start_program more logical
-
 ask long think AI for docstring improvements
-
-rename py_env_package_change_marker_file_path
-
-remove reuiqrment of python folder to be py_dist
 
 chekc if folder size check and walks are fast enough
 
@@ -163,10 +113,6 @@ do i wnat user to give chance to delte folder themselfves before raising error. 
 add docstring to everything even files;
 
 chekc completion_alerts = CompletionAlerts
-
-i guess have launcerh common for now. ask AI what i could move over to there. ask AI if comilation will be larger
-
-cleanup of python version of create_portable_python.bat
 
 do i want python.bat and pip.bat in portable_python? only if i also add a terminal there i guess. for predictable behauvir maybe outside in backend. or somehow buneled in protable pyhrton? maybe different name and soemhow easy name change at runtim
 -> ship:
@@ -210,17 +156,11 @@ what if i let python kill the old terminal via thread once its clear it wont fai
 
 sort wrapper
 
-have time.sleep(0.8) depend on launch mode?
-
 recheck logic in tools
 
 recheck start script and script wrapper
 
-somehow make startup time test not requier chafgnees in main_script
-
 instlling rich traceback is slwo? do i want it maybe only in wrapper? no error should usualyl occur in backend and when it occurs i delibertate do traceback
-
-test how slow to set icon and app id with print time
 
 test open_log_file_after_success
 
@@ -321,6 +261,10 @@ is this correct:
 ==== Must do before release (in end) ====
 =========================================
 
+add crash icons? and terminal name. i guess they could always do that?
+
+in wrapper. do i want appearance change attempt for error?
+
 ask AI if i fortgit a featue to emantion
 
 udpate size in readme
@@ -387,9 +331,50 @@ ask it to add comment to code blocks
 
 
 
+
+
+
+
 ================
 ==== Future ====
 ================
+
+ask ai to draw a flwochart of whoel prpgram
+
+change color of tabbed temrinal for error or finish
+
+do i need get_candidate_hwnds()[0] if 0 seems to work? can i ask when needed or if i can detect working and stop?
+
+in wt.exe i want to change the corlor to green for success i guess? for that taskbar colring
+
+highlight or altert in taskabr in wiondwos terminal? can i set it to highlight and not flash? flash until opend i guess
+
+pbar options:
+cycling
+any % accent
+yellow
+red
+none
+
+
+test what featues break for lower versions of fronent python. ask AI
+
+i can choose tab title
+
+i guess no need for pbar and error if i can falshj. unless i want to distinguies flash
+
+also set newly opened terminal to warn appearance. do i want wt or conhost?
+
+implemetn setting. "flash in taskbar on"?
+
+i can pass name to pyside5 via exe but not tkinter via rename of python.exe -> yes on replace shortcuts and python distro installation. . meantion somewhere?
+but chekc if sigantrues stay same. i guess via frsh python
+is kind of less av safe
+
+# compile script needs to be adjusted to take stuff live for import somehow i guess
+
+add arg setting in dev setting to pass to scropt
+
 
 what prevents me from python 3.6-? hardcode solution?
 
