@@ -1800,7 +1800,7 @@ def prompt_for_distro_reinstall(msg="Reinstall distro / recreate virtual environ
         print_warn("Invalid choice. Please enter 0, 1, 2, 3, 4, 5, or 6.")
 
 
-def ensure_python_distro(check_auto_determine_flag_for_default_package_install=True, used_appid_if_slow: str = ""):
+def ensure_python_distro(check_auto_determine_flag_for_default_package_install:bool=True, used_appid_if_slow: str = ""):
     """returns if python version is correct"""
 
     if not os.path.exists(frontend_python_exe):  # no python distro existing case:
@@ -1924,7 +1924,7 @@ def are_frontend_packages_installed() -> bool:
 
 def ensure_frontend_packages(used_appid_if_slow: str = ""):
 
-    ensure_python_distro(used_appid_if_slow)
+    ensure_python_distro(used_appid_if_slow=used_appid_if_slow)
 
     if not os.path.exists(frontend_packages_dir):  # packages folder not existing - case
         install_default_packages(check_auto_determine_flag=True, app_id_for_slow=used_appid_if_slow)
