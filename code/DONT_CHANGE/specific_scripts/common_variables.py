@@ -108,7 +108,7 @@ EMPTY_ARG_INDICATOR = "__EMPTY__"
 # =============================
 
 developer_settings_dir = os.path.dirname(developer_settings_path)
-frontend_python_exe = os.path.normpath(frontend_python_dir + "\\test.exe")
+frontend_python_exe = os.path.normpath(frontend_python_dir + "\\python.exe")
 rel_path_from_backend_python_to_backend_packages = os.path.relpath(backend_packages_dir, backend_python_dir)
 frontend_packages_are_installed_marker_path = (
     frontend_packages_dir + "\\" + frontend_packages_are_installed_marker_filename
