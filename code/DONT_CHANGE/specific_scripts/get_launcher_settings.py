@@ -114,7 +114,7 @@ def create_signal_file(path: str) -> None:
         pass
 
 
-class ProcessIdRegistry:
+class _ProcessIdRegistry:
     def __init__(self, path: str) -> None:
         self.path = path
         self._process_ids: set[int] = set()
@@ -316,7 +316,7 @@ create_signal_file(CORRECT_START_SIGNAL_FILE_PATH)
 # add pid to "currently running" file
 if process_id_file_path != "":
     try:
-        process_id_registry = ProcessIdRegistry(process_id_file_path)
+        process_id_registry = _ProcessIdRegistry(process_id_file_path)
         process_id_registry.add(os.getpid())
         atexit.register(process_id_registry.cleanup)
     except Exception as e:
