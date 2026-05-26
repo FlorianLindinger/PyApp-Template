@@ -22,7 +22,6 @@ if root_dir not in sys.path:
     sys.path.insert(0, root_dir)
 
 from DONT_CHANGE.specific_scripts.launcher_common import (
-    CompletionAlerts,
     ProcessIdRegistry,
     TerminalLogger,
     arg_to_bool,
@@ -75,6 +74,65 @@ def open_browser(url: str, start_minimized: bool) -> bool:
     return webbrowser.open(url)
 
 
+def play_windows_sound(wav_path: str) -> None:
+    try:
+        import winsound
+
+        winsound.PlaySound(
+            wav_path,
+            winsound.SND_FILENAME | winsound.SND_NODEFAULT,
+        )
+    except Exception:
+        pass
+
+
+def send_windows_notification(notification_title: str, message: str, app_id: str) -> None:
+    powershell_script = r"""
+$titleText = if ($args.Count -gt 0) { $args[0] } else { "Python script" }
+$messageText = if ($args.Count -gt 1) { $args[1] } else { "" }
+$appId = if ($args.Count -gt 2 -and $args[2]) { $args[2] } else { "PyAppTemplate" }
+[Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType=WindowsRuntime] | Out-Null
+[Windows.Data.Xml.Dom.XmlDocument, Windows.Data.Xml.Dom.XmlDocument, ContentType=WindowsRuntime] | Out-Null
+$titleXml = [System.Security.SecurityElement]::Escape($titleText)
+$messageXml = [System.Security.SecurityElement]::Escape($messageText)
+$xml = @"
+<toast>
+  <visual>
+    <binding template="ToastGeneric">
+      <text>$titleXml</text>
+      <text>$messageXml</text>
+    </binding>
+  </visual>
+  <audio silent="true"/>
+</toast>
+"@
+$doc = [Windows.Data.Xml.Dom.XmlDocument]::new()
+$doc.LoadXml($xml)
+$toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
+[Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier($appId).Show($toast)
+"""
+    try:
+        subprocess.Popen(  # noqa:S603
+            [
+                "powershell.exe",
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-Command",
+                powershell_script,
+                notification_title,
+                message,
+                app_id,
+            ],
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+        )
+    except Exception:
+        pass
+
+
 class BrowserTerminalState:
     def __init__(
         self,
@@ -99,20 +157,21 @@ class BrowserTerminalState:
         self.app_id = app_id
         self.close_on_success = close_on_success
         self.close_on_failure = close_on_failure
-        self.alerts = CompletionAlerts(
-            title=title,
-            app_id=app_id,
-            log_path=logger.path,
-            play_sound_on_success=play_sound_on_success,
-            send_windows_notification_on_success=send_Windows_notification_on_success,
-            play_sound_on_failure=play_sound_on_failure,
-            send_windows_notification_on_failure=send_Windows_notification_on_failure,
-            play_sound_on_python_interpreter_crash=play_sound_on_python_interpreter_crash,
-            send_windows_notification_on_python_interpreter_crash=send_Windows_notification_on_python_interpreter_crash,
-            open_log_file_after_success=open_log_file_after_success,
-            open_log_file_after_failure=open_log_file_after_failure,
-            open_log_file_after_python_interpreter_crash=open_log_file_after_python_interpreter_crash,
-        )
+        self.play_sound_by_kind = {
+            "success": play_sound_on_success,
+            "failure": play_sound_on_failure,
+            "crash": play_sound_on_python_interpreter_crash,
+        }
+        self.notification_by_kind = {
+            "success": send_Windows_notification_on_success,
+            "failure": send_Windows_notification_on_failure,
+            "crash": send_Windows_notification_on_python_interpreter_crash,
+        }
+        self.open_log_file_by_kind = {
+            "success": open_log_file_after_success,
+            "failure": open_log_file_after_failure,
+            "crash": open_log_file_after_python_interpreter_crash,
+        }
         self.logger = logger
         self.registry = registry
         self.pty_process: Any = None
@@ -206,7 +265,28 @@ class BrowserTerminalState:
         threading.Thread(target=shutdown_later, daemon=True).start()
 
     def run_completion_alerts(self, kind: str, exit_code: int) -> None:
-        self.alerts.run(kind, exit_code)
+        messages = {
+            "success": "Script finished successfully.",
+            "failure": f"Script exited with code {exit_code}.",
+            "crash": f"Python process crashed with code {exit_code}.",
+        }
+        if self.notification_by_kind.get(kind, False):
+            send_windows_notification(
+                f"{self.title}: {kind.title()}",
+                messages.get(kind, f"Script ended with code {exit_code}."),
+                self.app_id,
+            )
+        sound_setting = self.play_sound_by_kind.get(kind)
+        if sound_setting:
+            play_windows_sound(sound_setting)
+        if self.open_log_file_by_kind.get(kind, False) and self.logger.path != "":
+            flush_logger = getattr(self.logger, "flush", None)
+            if flush_logger is not None:
+                flush_logger()
+            try:
+                os.startfile(self.logger.path)  # type: ignore[attr-defined]  # noqa:S606
+            except Exception:
+                pass
 
 
 def resolve_pty_python_exe(python_exe: str) -> str:

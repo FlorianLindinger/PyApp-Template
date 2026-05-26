@@ -29,9 +29,9 @@ try:
         open_log_file_after_success,
         overwrite_log,
         program_name,
-        send_Windows_notification_on_crash,
-        send_Windows_notification_on_failure,
-        send_Windows_notification_on_success,
+        # send_Windows_notification_on_crash,
+        # send_Windows_notification_on_failure,
+        # send_Windows_notification_on_success,
         start_minimized,
         # taskbar_flashing_on_crash,
         # taskbar_flashing_on_failure,
@@ -42,16 +42,16 @@ try:
     )
     from DONT_CHANGE.specific_scripts.common_variables import EMPTY_ARG_INDICATOR, icon_path
     from DONT_CHANGE.specific_scripts.get_launcher_settings import (
-        CompletionAlerts,
         input_prepend,
         log_input_prepend,
         log_print_prepend,
         looks_like_interpreter_crash,
-        play_sound_on_crash,
-        play_sound_on_failure,
-        play_sound_on_success,
         print_prepend,
+        process_finish,
         python_script_path,
+        wav_on_crash,
+        wav_on_failure,
+        wav_on_success,
         wdir_is_script_dir,
     )
 
@@ -61,7 +61,7 @@ try:
     def arg_to_str(idx, default="") -> str:
         if idx > len(sys.argv) - 1:
             raise IndexError(f"[Error] Index {idx} is too large for sys.argv (length {len(sys.argv)}): {sys.argv}")
-        
+
         arg = sys.argv[idx]
         if arg == EMPTY_ARG_INDICATOR:
             return default
@@ -84,22 +84,6 @@ try:
     # process args
 
     program_has_terminal = windows_terminal_mode != "invisible"
-
-    # WIP???
-    completion_alerts = CompletionAlerts(
-        title=program_name,
-        app_id=app_id,
-        log_path=log_path,
-        play_sound_on_success=play_sound_on_success,
-        send_windows_notification_on_success=send_Windows_notification_on_success,
-        play_sound_on_failure=play_sound_on_failure,
-        send_windows_notification_on_failure=send_Windows_notification_on_failure,
-        play_sound_on_python_interpreter_crash=play_sound_on_crash,
-        send_windows_notification_on_python_interpreter_crash=send_Windows_notification_on_crash,
-        open_log_file_after_success=open_log_file_after_success,
-        open_log_file_after_failure=open_log_file_after_failure,
-        open_log_file_after_python_interpreter_crash=open_log_file_after_crash,
-    )
 
     # ==================
     # define functions and variables
@@ -617,7 +601,7 @@ try:
         from datetime import datetime
 
         def prepare_log_path(path: str) -> str:
-            path = datetime.now().strftime(path)
+            path = datetime.now().astimezone().strftime(path)
             folder = os.path.dirname(path)
             if folder:
                 os.makedirs(folder, exist_ok=True)
@@ -692,7 +676,7 @@ try:
             def _timestamp_prefix(self, fmt: str | None) -> str:
                 if not fmt:
                     return ""
-                return datetime.now().strftime(fmt)
+                return datetime.now().astimezone().strftime(fmt)
 
             def _print_supports_color(self) -> bool:
                 return bool(getattr(self.print_stream, "isatty", lambda: False)())
@@ -1013,7 +997,7 @@ def get_terminal_name():
 
         # change terminal and print depending on exit_code
         if exit_code == 0:
-            completion_alerts.run("success", exit_code)
+            process_finish(wav_on_success, log_path, open_log_file_after_success)
             if close_on_success:
                 sys.exit(0)
             else:
@@ -1034,7 +1018,7 @@ input_success("[Program finished successfully] Press Enter to exit.")
                 sys.exit(0)
 
         elif looks_like_interpreter_crash(exit_code):
-            completion_alerts.run("crash", exit_code)
+            process_finish(wav_on_crash, log_path, open_log_file_after_crash)
             if close_on_crash:
                 sys.exit(exit_code)
             else:
@@ -1054,7 +1038,7 @@ input_warn("[Python Interpreter Crash] Press Enter to exit.")
                 sys.exit(exit_code)
 
         else:  # regular failure case (includes any string exit_code)
-            completion_alerts.run("failure", exit_code)
+            process_finish(wav_on_failure, log_path, open_log_file_after_failure)
             if close_on_failure:
                 sys.exit(exit_code)
             else:
