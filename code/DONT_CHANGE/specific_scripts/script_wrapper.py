@@ -33,12 +33,12 @@ try:
         send_Windows_notification_on_failure,
         send_Windows_notification_on_success,
         start_minimized,
-        taskbar_flashing_on_crash,
-        taskbar_flashing_on_failure,
-        taskbar_flashing_on_success,
-        taskbar_highlight_on_crash,
-        taskbar_highlight_on_failure,
-        taskbar_highlight_on_success,
+        # taskbar_flashing_on_crash,
+        # taskbar_flashing_on_failure,
+        # taskbar_flashing_on_success,
+        # taskbar_highlight_on_crash,
+        # taskbar_highlight_on_failure,
+        # taskbar_highlight_on_success,
     )
     from DONT_CHANGE.specific_scripts.common_variables import EMPTY_ARG_INDICATOR, icon_path
     from DONT_CHANGE.specific_scripts.get_launcher_settings import (

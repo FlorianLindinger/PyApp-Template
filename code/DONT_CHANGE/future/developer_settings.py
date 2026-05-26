@@ -1,4 +1,15 @@
 
+
+taskbar_flashing_on_success = False
+taskbar_flashing_on_failure = True
+taskbar_flashing_on_crash = True
+# flashing overrides highlight:
+taskbar_highlight_on_success = True
+taskbar_highlight_on_failure = True
+taskbar_highlight_on_crash = True
+
+
+
 terminal_emulator_shortcut_name: str | None = f"{program_name} (Terminal Emulator)"
 
 # ---------------------------
