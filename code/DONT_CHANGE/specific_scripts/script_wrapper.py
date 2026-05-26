@@ -59,6 +59,9 @@ try:
     # import args
 
     def arg_to_str(idx, default="") -> str:
+        if idx > len(sys.argv) - 1:
+            raise IndexError(f"[Error] Index {idx} is too large for sys.argv (length {len(sys.argv)}): {sys.argv}")
+        
         arg = sys.argv[idx]
         if arg == EMPTY_ARG_INDICATOR:
             return default
