@@ -100,6 +100,7 @@ python_download_ftp_url = "https://www.python.org/ftp/python/"
 python_download_excluded_base_msi_names = {"path", "appendpath", "pip", "launcher"}
 python_download_timeout_s = 120
 env_var_to_signal_startup_time_measurement = "PYAPP_TEMPLATE_ACTIVE_STARTUP_TIME_MEASUREMENT"
+EMPTY_ARG_INDICATOR = "__EMPTY__"
 
 
 # =============================

@@ -21,7 +21,6 @@ try:
     # =============================
 
     VALID_LAUNCH_MODES = ["terminal", "no_terminal", "terminal_emulator", "uncompiled_terminal_emulator", "browser"]
-    EMPTY_ARG_INDICATOR = "__EMPTY__"
 
     # =============================
     # imports packages and common variables and developer settings
@@ -62,6 +61,7 @@ try:
     )
     from DONT_CHANGE.specific_scripts.common_variables import (
         CORRECT_START_SIGNAL_FILE_PATH,
+        EMPTY_ARG_INDICATOR,
         backend_packages_dir,
         # browser_terminal_path,
         # compiled_terminal_path,

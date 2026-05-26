@@ -3,13 +3,11 @@
 ======================================
 
 cehck ProcessIdRegistry and all in launcehr_common
-
+if i x terminal it does not remove pid
 
 # compile script needs to be adjusted to take stuff live for import somehow i guess
 
 fix wrapper
-
-if i x terminal it does not remove pid
 
 why does my prints diasgpper in scroipt wrapper beiggning?
 
