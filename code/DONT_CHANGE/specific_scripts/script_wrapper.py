@@ -1,6 +1,7 @@
 try:
     # ==================
     # import
+
     import atexit
     import builtins
     import faulthandler
@@ -11,20 +12,56 @@ try:
 
     # ==================
     # add root dir for imports:
+
     root_dir = os.path.dirname(__file__) + "\\..\\.."
     if root_dir not in sys.path:
         sys.path.insert(0, root_dir)
 
     # ==================
     # import common code
+
+    from developer_settings import (
+        close_on_crash,
+        close_on_failure,
+        close_on_success,
+        open_log_file_after_crash,
+        open_log_file_after_failure,
+        open_log_file_after_success,
+        overwrite_log,
+        program_name,
+        send_Windows_notification_on_crash,
+        send_Windows_notification_on_failure,
+        send_Windows_notification_on_success,
+        start_minimized,
+        taskbar_flashing_on_crash,
+        taskbar_flashing_on_failure,
+        taskbar_flashing_on_success,
+        taskbar_highlight_on_crash,
+        taskbar_highlight_on_failure,
+        taskbar_highlight_on_success,
+    )
+    from DONT_CHANGE.specific_scripts.common_variables import (
+        icon_path,
+    )
+    from DONT_CHANGE.specific_scripts.get_launcher_settings import (
+        input_prepend,
+        log_input_prepend,
+        log_print_prepend,
+        play_sound_on_crash,
+        play_sound_on_failure,
+        play_sound_on_success,
+        print_prepend,
+        python_script_path,
+        wdir_is_script_dir,
+    )
     from DONT_CHANGE.specific_scripts.launcher_common import (
         EMPTY_ARG_INDICATOR,
         CompletionAlerts,
-        ProcessIdRegistry,
-        arg_to_bool,
-        create_signal_file,
         looks_like_interpreter_crash,
     )
+
+    # ==================
+    # import args
 
     def arg_to_str(idx, default="") -> str:
         arg = sys.argv[idx]
@@ -33,50 +70,24 @@ try:
         else:
             return arg
 
-    script_path = arg_to_str(1)
-    program_name = arg_to_str(2)
-    icon_path = arg_to_str(3)
-    app_id = arg_to_str(4)
-    wdir_is_script_dir = arg_to_bool(5)
-    close_on_crash = arg_to_bool(6)
-    close_on_failure = arg_to_bool(7)
-    close_on_success = arg_to_bool(8)
-    print_prepend = arg_to_str(9)
-    log_path = arg_to_str(10)
-    log_print_prepend = arg_to_str(11)
-    overwrite_log = arg_to_bool(12)
-    input_prepend = arg_to_str(13)
-    process_id_file_path = arg_to_str(14)
-    play_sound_on_success = arg_to_str(15)
-    send_Windows_notification_on_success = arg_to_bool(16)
-    play_sound_on_failure = arg_to_str(17)
-    send_Windows_notification_on_failure = arg_to_bool(18)
-    play_sound_on_crash = arg_to_str(19)
-    send_Windows_notification_on_crash = arg_to_bool(20)
-    open_log_file_after_success = arg_to_bool(21)
-    open_log_file_after_failure = arg_to_bool(22)
-    open_log_file_after_crash = arg_to_bool(23)
-    start_minimized = arg_to_bool(24)
-    CORRECT_START_SIGNAL_FILE_PATH = arg_to_str(25)
-    log_input_prepend = arg_to_str(26)
-    terminal_colors = arg_to_str(27)
-    windows_terminal_mode = arg_to_str(28)
+    app_id = arg_to_str(1)
+    log_path = arg_to_str(2)
+    terminal_colors = arg_to_str(3)
+    windows_terminal_mode = arg_to_str(4)
     if windows_terminal_mode not in {"classic", "modern", "invisible"}:
         raise ValueError(
             f'[Error] Unknown windows_terminal_mode "{windows_terminal_mode}". '
             "Expected one of: classic, modern, invisible"
         )
-    classic_terminal_cols = arg_to_str(29)
-    classic_terminal_lines = arg_to_str(30)
+    classic_terminal_cols = arg_to_str(5)
+    classic_terminal_lines = arg_to_str(6)
 
     # ==================
-    # WIP???
+    # process args
 
     program_has_terminal = windows_terminal_mode != "invisible"
 
-    # tell the backend terminal to close because successful start
-    create_signal_file(CORRECT_START_SIGNAL_FILE_PATH)
-
+    # WIP???
     completion_alerts = CompletionAlerts(
         title=program_name,
         app_id=app_id,
@@ -92,16 +103,8 @@ try:
         open_log_file_after_python_interpreter_crash=open_log_file_after_crash,
     )
 
-    if process_id_file_path != "":
-        try:
-            process_id_registry = ProcessIdRegistry(process_id_file_path)
-            process_id_registry.add(os.getpid())
-            atexit.register(process_id_registry.cleanup)
-        except Exception as e:
-            print(f"[Warning] Failed to write script-wrapper PID file: {e}")
-
     # ==================
-    # define functons and variables
+    # define functions and variables
 
     ANSI_WARN = "\x1b[1;37;41m"  # white text, red bg, bold
     ANSI_SUCCESS = "\x1b[1;37;42m"  # white text, green bg, bold
@@ -869,7 +872,7 @@ def get_terminal_name():
         # set terminal name
         if program_name != "":
             os.system(f"title {program_name}")  # noqa:S605
-        
+
         # needed if main script spawns a GUI: For taskbar grouping (combining) of launched window with shortcut icon
         if app_id != "":
             try:
@@ -882,6 +885,7 @@ def get_terminal_name():
         # time1 = time.time()
         terminal_appearance_thread = None
         if program_has_terminal:
+
             def apply_terminal_appearance() -> None:
                 try:
                     candidate_hwnds = get_candidate_hwnds()
@@ -900,7 +904,7 @@ def get_terminal_name():
 
         # set working directory
         if wdir_is_script_dir:
-            os.chdir(os.path.dirname(script_path))
+            os.chdir(os.path.dirname(python_script_path))
 
         # setup logging
         if log_path != "":
@@ -933,11 +937,11 @@ def get_terminal_name():
         os.environ["CLOSE_ON_SUCCESS"] = "1" if close_on_success else "0"
 
         # change sys.path[0] to be dir of target script and not this script
-        sys.path[0] = os.path.dirname(script_path)
+        sys.path[0] = os.path.dirname(python_script_path)
 
         # run in the current python process and wait for finish
         try:
-            runpy.run_path(script_path, run_name="__main__")
+            runpy.run_path(python_script_path, run_name="__main__")
             exit_code = 0  # meaning no crash
         except SystemExit as e:  # catches sys.exit
             exit_code = e.code
@@ -960,7 +964,7 @@ def get_terminal_name():
                 while tb is not None:
                     frame_path = os.path.abspath(tb.tb_frame.f_code.co_filename)
 
-                    if frame_path == script_path:
+                    if frame_path == python_script_path:
                         break
 
                     tb = tb.tb_next
@@ -1088,7 +1092,7 @@ print_warn("-"*40)
 print_warn(r\"""{traceback.format_exc()}\""",end="")
 print_warn("-"*40)
 print_warn(r"[Info] Python Exe: {sys.executable}")
-print_warn(r"[Info] Script: {script_path}")
+print_warn(r"[Info] Script: {python_script_path}")
 print_warn("-"*40)
 input_warn("[Python Crash] See above. Press Enter to exit.")
 """

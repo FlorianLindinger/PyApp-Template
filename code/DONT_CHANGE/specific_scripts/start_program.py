@@ -28,43 +28,25 @@ try:
     # =============================
 
     from developer_settings import (
-        button_settings,
+        # button_settings,
         classic_terminal_cols,
         classic_terminal_lines,
         close_existing_instances_on_start,
-        close_on_crash,
-        close_on_failure,
-        close_on_success,
-        dark_mode,
+        # dark_mode,
         enable_log_for_browser_start,
         enable_log_for_no_terminal_start,
         enable_log_for_terminal_emulator_start,
         enable_log_for_Windows_terminal_start,
-        input_prepend,
-        log_input_prepend,
         log_path_rel_to_start_folder,
-        log_print_prepend,
         modern_terminal_tab_color,
-        open_log_file_after_crash,
-        open_log_file_after_failure,
-        open_log_file_after_success,
-        overwrite_log,
-        play_sound_on_crash,
-        play_sound_on_failure,
-        play_sound_on_success,
         prevent_launch_if_existing_instances_running,
-        print_prepend,
         program_name,
         prompt_to_close_existing_instances,
-        python_version,
-        send_Windows_notification_on_crash,
-        send_Windows_notification_on_failure,
-        send_Windows_notification_on_success,
         start_in_shortcut_folder,
         start_minimized,
-        stylesheet_path,
+        # stylesheet_path,
         terminal_bg_color,
-        terminal_needs_input,
+        # terminal_needs_input,
         terminal_text_color,
         use_classic_terminal,
         use_global_python,
@@ -81,22 +63,15 @@ try:
     from DONT_CHANGE.specific_scripts.common_variables import (
         CORRECT_START_SIGNAL_FILE_PATH,
         backend_packages_dir,
-        browser_terminal_path,
-        compiled_terminal_path,
-        developer_settings_dir,
-        developer_settings_path,
-        env_var_to_signal_startup_time_measurement,
+        # browser_terminal_path,
+        # compiled_terminal_path,
+        # developer_settings_dir,
+        # developer_settings_path,
         frontend_python_exe,
-        icon_path,
-        play_sound_on_crash_default,
-        play_sound_on_failure_default,
-        play_sound_on_success_default,
         process_id_file_path,
-        python_code_path,
+        # uncompiled_terminal_path,
+        python_script_path,
         script_wrapper_path,
-        start_time_dummy_main_script,
-        uncompiled_terminal_path,
-        windows_dir,
     )
 
     # needed for pywin32 to find its modules
@@ -122,58 +97,39 @@ try:
     # process imported variables
     # =============================
 
-    if os.environ.get(env_var_to_signal_startup_time_measurement):
-        python_code_path = start_time_dummy_main_script
-
-    # raise error if script not found
-    if not os.path.exists(python_code_path):
-        raise FileNotFoundError(f'[Error] Python script not found at "{python_code_path}"')
-
     if use_global_python == True:
         python_exe_for_script_path = "py"
     else:
         python_exe_for_script_path = frontend_python_exe
 
-    if start_in_shortcut_folder == True:
-        wdir_is_script_dir = False
-    else:
-        wdir_is_script_dir = True
-
     if log_path_rel_to_start_folder in [None, False, ""]:
-        log_path = EMPTY_ARG_INDICATOR
+        log_path = ""
     else:
-        if wdir_is_script_dir:
-            log_path = os.path.normpath(os.path.join(os.path.dirname(python_code_path), log_path_rel_to_start_folder))
+        if start_in_shortcut_folder == False:
+            log_path = os.path.normpath(os.path.join(os.path.dirname(python_script_path), log_path_rel_to_start_folder))
         else:
             log_path = os.path.normpath(os.path.join(os.getcwd(), log_path_rel_to_start_folder))
         log_path = datetime.now(tz=timezone.utc).strftime(log_path)
 
-    if dark_mode is None:
-        dark_mode = "auto"
-    elif dark_mode is True:
-        dark_mode = "1"
-    elif dark_mode is False:  # type:ignore
-        dark_mode = "0"
-    if stylesheet_path in [False, None, ""]:
-        stylesheet_path = EMPTY_ARG_INDICATOR
-    else:
-        if not os.path.isabs(stylesheet_path):
-            stylesheet_path = os.path.normpath(developer_settings_dir + "\\" + stylesheet_path)
+    # if dark_mode is None:
+    #     dark_mode = "auto"
+    # elif dark_mode is True:
+    #     dark_mode = "1"
+    # elif dark_mode is False:  # type:ignore
+    #     dark_mode = "0"
+    # if stylesheet_path in [False, None, ""]:
+    #     stylesheet_path = EMPTY_ARG_INDICATOR
+    # else:
+    #     if not os.path.isabs(stylesheet_path):
+    #         stylesheet_path = os.path.normpath(developer_settings_dir + "\\" + stylesheet_path)
 
-    if python_version in [None, False, ""]:
-        python_version = EMPTY_ARG_INDICATOR
-    if log_print_prepend in [None, False, ""]:
-        log_print_prepend = EMPTY_ARG_INDICATOR
-    if log_input_prepend in [None, False, ""]:
-        log_input_prepend = EMPTY_ARG_INDICATOR
-    if print_prepend in [None, False, ""]:
-        print_prepend = EMPTY_ARG_INDICATOR
-    if input_prepend in [None, False, ""]:
-        input_prepend = EMPTY_ARG_INDICATOR
     if terminal_bg_color in [None, False, ""]:
-        terminal_bg_color = EMPTY_ARG_INDICATOR
+        terminal_bg_color = ""
     if terminal_text_color in [None, False, ""]:
-        terminal_text_color = EMPTY_ARG_INDICATOR
+        terminal_text_color = ""
+    terminal_color = terminal_bg_color + terminal_text_color
+    if terminal_color == "":
+        terminal_color = EMPTY_ARG_INDICATOR
     if classic_terminal_cols in [None, False, ""]:
         classic_terminal_cols = EMPTY_ARG_INDICATOR
     else:
@@ -184,37 +140,6 @@ try:
         classic_terminal_lines = str(classic_terminal_lines)
     if modern_terminal_tab_color in [None, False, ""]:
         modern_terminal_tab_color = EMPTY_ARG_INDICATOR
-
-    if play_sound_on_crash is True:
-        play_sound_on_crash = play_sound_on_crash_default
-    elif play_sound_on_crash in [False, None, ""]:
-        play_sound_on_crash = EMPTY_ARG_INDICATOR
-    elif not os.path.isabs(play_sound_on_crash):
-        play_sound_on_crash = os.path.normpath(windows_dir + "\\Media\\" + play_sound_on_crash)
-    if play_sound_on_crash != EMPTY_ARG_INDICATOR and play_sound_on_crash[-4:] != ".wav":
-        play_sound_on_crash += ".wav"
-    if play_sound_on_crash != EMPTY_ARG_INDICATOR and not os.path.exists(play_sound_on_crash):
-        print(f"[Warning] Sound file does not exist: {play_sound_on_crash}")
-    if play_sound_on_success is True:
-        play_sound_on_success = play_sound_on_success_default
-    elif play_sound_on_success in [False, None, ""]:
-        play_sound_on_success = EMPTY_ARG_INDICATOR
-    elif not os.path.isabs(play_sound_on_success):
-        play_sound_on_success = os.path.normpath(windows_dir + "\\Media\\" + play_sound_on_success)
-    if play_sound_on_success != EMPTY_ARG_INDICATOR and play_sound_on_success[-4:] != ".wav":
-        play_sound_on_success += ".wav"
-    if play_sound_on_success != EMPTY_ARG_INDICATOR and not os.path.exists(play_sound_on_success):
-        print(f"[Warning] Sound file does not exist: {play_sound_on_success}")
-    if play_sound_on_failure is True:
-        play_sound_on_failure = play_sound_on_failure_default
-    elif play_sound_on_failure in [False, None, ""]:
-        play_sound_on_failure = EMPTY_ARG_INDICATOR
-    elif not os.path.isabs(play_sound_on_failure):
-        play_sound_on_failure = os.path.normpath(windows_dir + "\\Media\\" + play_sound_on_failure)
-    if play_sound_on_failure != EMPTY_ARG_INDICATOR and play_sound_on_failure[-4:] != ".wav":
-        play_sound_on_failure += ".wav"
-    if play_sound_on_failure != EMPTY_ARG_INDICATOR and not os.path.exists(play_sound_on_failure):
-        print(f"[Warning] Sound file does not exist: {play_sound_on_failure}")
 
     # =============================
     # helper function
@@ -317,113 +242,88 @@ try:
         # ======================
         # launch terminal
 
-        args = [
-            python_code_path,
-            program_name,
-            icon_path,
-            app_id,
-            bool_to_arg(wdir_is_script_dir),
-            bool_to_arg(close_on_crash),
-            bool_to_arg(close_on_failure),
-            bool_to_arg(close_on_success),
-            print_prepend,
-            log_path,
-            log_print_prepend,
-            bool_to_arg(overwrite_log),
-            input_prepend,
-            process_id_file_path,
-            play_sound_on_success,
-            bool_to_arg(send_Windows_notification_on_success),
-            play_sound_on_failure,
-            bool_to_arg(send_Windows_notification_on_failure),
-            play_sound_on_crash,
-            bool_to_arg(send_Windows_notification_on_crash),
-            bool_to_arg(open_log_file_after_success),
-            bool_to_arg(open_log_file_after_failure),
-            bool_to_arg(open_log_file_after_crash),
-            bool_to_arg(start_minimized),
-            CORRECT_START_SIGNAL_FILE_PATH,
-            log_input_prepend,
-        ]
+        args = [app_id, log_path]
 
         # ==============
 
-        if launch_mode == "browser":
-            args += [python_exe_for_script_path]
-            launched_backend_path = browser_terminal_path
-            proc = subprocess.Popen(  # noqa:S603 #type:ignore
-                [
-                    sys.executable,
-                    "-X",
-                    "faulthandler",
-                    browser_terminal_path,
-                    *args,
-                ],
-                creationflags=subprocess.CREATE_NO_WINDOW,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                text=True,
-            )
+        # if launch_mode == "browser":
+
+        #     args += [python_exe_for_script_path]
+        #     launched_backend_path = browser_terminal_path
+        #     proc = subprocess.Popen(  #type:ignore
+        #         [
+        #             sys.executable,
+        #             "-X",
+        #             "faulthandler",
+        #             browser_terminal_path,
+        #             *args,
+        #         ],
+        #         creationflags=subprocess.CREATE_NO_WINDOW,
+        #         stdout=subprocess.PIPE,
+        #         stderr=subprocess.STDOUT,
+        #         text=True,
+        #     )
 
         # ==============
 
-        elif launch_mode in ["terminal_emulator", "uncompiled_terminal_emulator"]:
-            # run in terminal emulator
-            import json
+        # elif launch_mode in ["terminal_emulator", "uncompiled_terminal_emulator"]:
 
-            # pass button settings via json
-            if button_settings in [None, False, ""]:
-                button_settings_path = EMPTY_ARG_INDICATOR
-            else:
-                try:
-                    button_settings_path = json.dumps(dict(button_settings))
-                except TypeError as e:
-                    raise TypeError(
-                        f'[Error] button_settings in developer settings at "{developer_settings_path}" must be JSON serializable and convertible to a dict.'
-                    ) from e
-                except ValueError as e:
-                    raise ValueError(
-                        f'[Error] button_settings in developer settings at "{developer_settings_path}" must be a dict or an iterable of (button_name, settings) pairs.'
-                    ) from e
+        #     # run in terminal emulator
+        #     import json
 
-            args += [
-                python_exe_for_script_path,
-                bool_to_arg(terminal_needs_input),
-                stylesheet_path,
-                dark_mode,
-                button_settings_path,
-            ]
+        #     # pass button settings via json
+        #     if button_settings in [None, False, ""]:
+        #         button_settings_path = EMPTY_ARG_INDICATOR
+        #     else:
+        #         try:
+        #             button_settings_path = json.dumps(dict(button_settings))
+        #         except TypeError as e:
+        #             raise TypeError(
+        #                 f'[Error] button_settings in developer settings at "{developer_settings_path}" must be JSON serializable and convertible to a dict.'
+        #             ) from e
+        #         except ValueError as e:
+        #             raise ValueError(
+        #                 f'[Error] button_settings in developer settings at "{developer_settings_path}" must be a dict or an iterable of (button_name, settings) pairs.'
+        #             ) from e
 
-            if launch_mode == "uncompiled_terminal_emulator":
-                launched_backend_path = uncompiled_terminal_path
-                proc = subprocess.Popen(  # noqa:S603 #type:ignore
-                    [
-                        "py",
-                        "-X",
-                        "faulthandler",
-                        uncompiled_terminal_path,
-                        *args,
-                    ],
-                    creationflags=subprocess.CREATE_NO_WINDOW,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.STDOUT,
-                    text=True,
-                )
-            else:
-                # run and wait (using the compiled terminal emulator)
-                launched_backend_path = compiled_terminal_path
-                proc = subprocess.Popen(  # noqa:S603 #type:ignore
-                    [compiled_terminal_path, *args],
-                    creationflags=subprocess.CREATE_NO_WINDOW,
-                    startupinfo=generate_minimized_startupinfo() if start_minimized else None,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.STDOUT,
-                    text=True,
-                )
+        #     args += [
+        #         python_exe_for_script_path,
+        #         bool_to_arg(terminal_needs_input),
+        #         stylesheet_path,
+        #         dark_mode,
+        #         button_settings_path,
+        #     ]
+
+        #     if launch_mode == "uncompiled_terminal_emulator":
+        #         launched_backend_path = uncompiled_terminal_path
+        #         proc = subprocess.Popen( #type:ignore
+        #             [
+        #                 "py",
+        #                 "-X",
+        #                 "faulthandler",
+        #                 uncompiled_terminal_path,
+        #                 *args,
+        #             ],
+        #             creationflags=subprocess.CREATE_NO_WINDOW,
+        #             stdout=subprocess.PIPE,
+        #             stderr=subprocess.STDOUT,
+        #             text=True,
+        #         )
+        #     else:
+        #         # run and wait (using the compiled terminal emulator)
+        #         launched_backend_path = compiled_terminal_path
+        #         proc = subprocess.Popen(  #type:ignore
+        #             [compiled_terminal_path, *args],
+        #             creationflags=subprocess.CREATE_NO_WINDOW,
+        #             startupinfo=generate_minimized_startupinfo() if start_minimized else None,
+        #             stdout=subprocess.PIPE,
+        #             stderr=subprocess.STDOUT,
+        #             text=True,
+        #         )
 
         # ==============
 
-        else:  # run in terminal or no window
+        if True:  # run in terminal or no window
             # script_wrapper_path need additional args
             launched_backend_path = script_wrapper_path
             windows_terminal_mode = (
@@ -434,7 +334,7 @@ try:
                 else "invisible"
             )
             args += [
-                terminal_bg_color + terminal_text_color,  # type:ignore
+                terminal_color,
                 windows_terminal_mode,
                 classic_terminal_cols,
                 classic_terminal_lines,

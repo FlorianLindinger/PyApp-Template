@@ -21,26 +21,28 @@ backend_package_requirements_file = make_abs("..\\backend_packages_requirements.
 
 # frontend related
 # ------------------------
-frontend_env_dir = make_abs("..\\..\\py_env") # UPDATE GITIGNORE
+frontend_env_dir = make_abs("..\\..\\py_env")  # UPDATE GITIGNORE
 frontend_packages_dir = frontend_env_dir + "\\packages"
 frontend_python_dir = frontend_env_dir + "\\py_dist"
 frontend_packages_are_installed_marker_filename = "_DELETE_THIS_TO_REINSTALL_ONLY_DEFAULT_PACKAGES_"
 frontend_script_for_set_python_and_pip_target = (
     frontend_python_dir + "\\tools\\open_terminal_with_set_python_and_pip_target.bat"
 )
-dev_tools_referal_note_path = frontend_env_dir + "\\_USE developer_tools FOLDER (IN PARENT FOLDER) TO CHANGE PACKAGES_" # UPDATE GITIGNORE
+dev_tools_referal_note_path = (
+    frontend_env_dir + "\\_USE developer_tools FOLDER (IN PARENT FOLDER) TO CHANGE PACKAGES_"
+)  # UPDATE GITIGNORE
 
 # folders
 # ------------------------
 windows_dir = os.environ.get("WINDIR", default="C:\\Windows")
 python_scripts_dir = make_abs("..\\..")
-developer_tools_dir = make_abs("..\\..\\developer_tools") # UPDATE GITIGNORE
+developer_tools_dir = make_abs("..\\..\\developer_tools")  # UPDATE GITIGNORE
 DONT_CHANGE_dir = make_abs("..")
-shortcut_output_dir = make_abs("..\\..\\..") # UPDATE GITIGNORE
+shortcut_output_dir = make_abs("..\\..\\..")  # UPDATE GITIGNORE
 
 # scripts
 # ------------------------
-python_code_path = make_abs("..\\..\\main_script.py")
+python_script_path = make_abs("..\\..\\main_script.py")
 script_wrapper_path = make_abs("script_wrapper.py")
 browser_terminal_path = make_abs("..\\browser_terminal\\browser_terminal.py")
 compiled_terminal_path = make_abs("..\\terminal_emulator\\compiled\\run.exe")
