@@ -40,24 +40,19 @@ try:
         taskbar_highlight_on_failure,
         taskbar_highlight_on_success,
     )
-    from DONT_CHANGE.specific_scripts.common_variables import (
-        icon_path,
-    )
+    from DONT_CHANGE.specific_scripts.common_variables import EMPTY_ARG_INDICATOR, icon_path
     from DONT_CHANGE.specific_scripts.get_launcher_settings import (
+        CompletionAlerts,
         input_prepend,
         log_input_prepend,
         log_print_prepend,
+        looks_like_interpreter_crash,
         play_sound_on_crash,
         play_sound_on_failure,
         play_sound_on_success,
         print_prepend,
         python_script_path,
         wdir_is_script_dir,
-    )
-    from DONT_CHANGE.specific_scripts.launcher_common import (
-        EMPTY_ARG_INDICATOR,
-        CompletionAlerts,
-        looks_like_interpreter_crash,
     )
 
     # ==================
