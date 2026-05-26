@@ -69,49 +69,52 @@ if input_prepend in [None, False, ""]:
     input_prepend = ""
 
 if play_sound_on_crash is True:
-    play_sound_on_crash = play_sound_on_crash_default
+    wav_on_crash = play_sound_on_crash_default
 elif play_sound_on_crash in [False, None, ""]:
-    play_sound_on_crash = ""
+    wav_on_crash = ""
 elif not os.path.isabs(play_sound_on_crash):
-    play_sound_on_crash = os.path.normpath(windows_dir + "\\Media\\" + play_sound_on_crash)
-if play_sound_on_crash != "" and play_sound_on_crash[-4:] != ".wav":
-    play_sound_on_crash += ".wav"
-if play_sound_on_crash != "" and not os.path.exists(play_sound_on_crash):
-    print(f"[Warning] Sound file does not exist: {play_sound_on_crash}")
+    wav_on_crash = os.path.normpath(windows_dir + "\\Media\\" + play_sound_on_crash)
+else:
+    wav_on_crash=play_sound_on_crash
+if wav_on_crash != "":
+    if wav_on_crash[-4:] != ".wav":
+        wav_on_crash += ".wav"
+    if not os.path.exists(wav_on_crash):
+        print(f"[Warning] Sound file does not exist: {wav_on_crash}")
+        wav_on_crash=""
+
 if play_sound_on_success is True:
-    play_sound_on_success = play_sound_on_success_default
+    wav_on_success = play_sound_on_success_default
 elif play_sound_on_success in [False, None, ""]:
-    play_sound_on_success = ""
+    wav_on_success = ""
 elif not os.path.isabs(play_sound_on_success):
-    play_sound_on_success = os.path.normpath(windows_dir + "\\Media\\" + play_sound_on_success)
-if play_sound_on_success != "" and play_sound_on_success[-4:] != ".wav":
-    play_sound_on_success += ".wav"
-if play_sound_on_success != "" and not os.path.exists(play_sound_on_success):
-    print(f"[Warning] Sound file does not exist: {play_sound_on_success}")
+    wav_on_success = os.path.normpath(windows_dir + "\\Media\\" + play_sound_on_success)
+else:
+    wav_on_success=play_sound_on_success
+if wav_on_success != "":
+    if wav_on_success[-4:] != ".wav":
+        wav_on_success += ".wav"
+    if not os.path.exists(wav_on_success):
+        print(f"[Warning] Sound file does not exist: {wav_on_success}")
+        wav_on_success=""
+        
 if play_sound_on_failure is True:
-    play_sound_on_failure = play_sound_on_failure_default
+    wav_on_failure = play_sound_on_failure_default
 elif play_sound_on_failure in [False, None, ""]:
-    play_sound_on_failure = ""
+    wav_on_failure = ""
 elif not os.path.isabs(play_sound_on_failure):
-    play_sound_on_failure = os.path.normpath(windows_dir + "\\Media\\" + play_sound_on_failure)
-if play_sound_on_failure != "" and play_sound_on_failure[-4:] != ".wav":
-    play_sound_on_failure += ".wav"
-if play_sound_on_failure != "" and not os.path.exists(play_sound_on_failure):
-    print(f"[Warning] Sound file does not exist: {play_sound_on_failure}")
+    wav_on_failure = os.path.normpath(windows_dir + "\\Media\\" + play_sound_on_failure)
+else:
+    wav_on_failure=play_sound_on_failure
+if wav_on_failure != "":
+    if wav_on_failure[-4:] != ".wav":
+        wav_on_failure += ".wav"
+    if not os.path.exists(wav_on_failure):
+        print(f"[Warning] Sound file does not exist: {wav_on_failure}")
+        wav_on_failure=""
 
 # ====================================
 #  define common code
-
-
-def create_signal_file(path: str) -> None:
-    if path == "":
-        return
-
-    folder = os.path.dirname(path)
-    if folder:
-        os.makedirs(folder, exist_ok=True)
-    with open(path, "w", encoding="utf-8"):
-        pass
 
 
 class _ProcessIdRegistry:
@@ -171,128 +174,24 @@ class _ProcessIdRegistry:
             self.remove(process_id)
 
 
-class CompletionAlerts:
-    def __init__(
-        self,
-        *,
-        title: str,
-        app_id: str,
-        log_path: str = "",
-        play_sound_on_success: str,
-        send_windows_notification_on_success: bool,
-        play_sound_on_failure: str,
-        send_windows_notification_on_failure: bool,
-        play_sound_on_python_interpreter_crash: str,
-        send_windows_notification_on_python_interpreter_crash: bool,
-        open_log_file_after_success: bool = False,
-        open_log_file_after_failure: bool = False,
-        open_log_file_after_python_interpreter_crash: bool = False,
-    ) -> None:
-        self.title = title
-        self.app_id = app_id
-        self.log_path = log_path
-        self.play_sound_by_kind = {
-            "success": play_sound_on_success,
-            "failure": play_sound_on_failure,
-            "crash": play_sound_on_python_interpreter_crash,
-        }
-        self.notification_by_kind = {
-            "success": send_windows_notification_on_success,
-            "failure": send_windows_notification_on_failure,
-            "crash": send_windows_notification_on_python_interpreter_crash,
-        }
-        self.open_log_file_by_kind = {
-            "success": open_log_file_after_success,
-            "failure": open_log_file_after_failure,
-            "crash": open_log_file_after_python_interpreter_crash,
-        }
+def process_finish(wav_path: str = "", log_path: str = "",open_log:bool=False):
 
-    def run(self, kind: str, exit_code) -> None:
-        messages = {
-            "success": "Script finished successfully.",
-            "failure": f"Script exited with code {exit_code}.",
-            "crash": f"Python process crashed with code {exit_code}.",
-        }
+    if wav_path:
+        try:
+            import winsound
 
-        if self.notification_by_kind.get(kind, False):
-            _send_windows_notification(
-                f"{self.title}: {kind.title()}",
-                messages.get(kind, f"Script ended with code {exit_code}."),
-                self.app_id,
+            winsound.PlaySound(
+                wav_path,
+                winsound.SND_FILENAME | winsound.SND_NODEFAULT,
             )
-        sound_setting = self.play_sound_by_kind.get(kind)
-        if sound_setting:
-            _play_wav(sound_setting)
-        if self.open_log_file_by_kind.get(kind, False) and self.log_path != "":
-            try:
-                os.startfile(self.log_path)  # type: ignore[attr-defined]  # noqa:S606
-            except Exception:
-                pass
+        except Exception as e:
+            print(f"[Error] Failed to play .wav file: {e}")
 
-
-def _play_wav(wav_path: str) -> None:
-    try:
-        import winsound
-
-        winsound.PlaySound(
-            wav_path,
-            winsound.SND_FILENAME | winsound.SND_NODEFAULT,
-        )
-    except Exception:
-        pass
-
-
-def _send_windows_notification(notification_title: str, message: str, app_id: str) -> None:
-    import subprocess
-
-    powershell_script = r"""
-$titleText = if ($args.Count -gt 0) { $args[0] } else { "Python script" }
-$messageText = if ($args.Count -gt 1) { $args[1] } else { "" }
-$appId = if ($args.Count -gt 2 -and $args[2]) { $args[2] } else { "PyAppTemplate" }
-[Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType=WindowsRuntime] | Out-Null
-[Windows.Data.Xml.Dom.XmlDocument, Windows.Data.Xml.Dom.XmlDocument, ContentType=WindowsRuntime] | Out-Null
-$titleXml = [System.Security.SecurityElement]::Escape($titleText)
-$messageXml = [System.Security.SecurityElement]::Escape($messageText)
-$xml = @"
-<toast>
-  <visual>
-    <binding template="ToastGeneric">
-      <text>$titleXml</text>
-      <text>$messageXml</text>
-    </binding>
-  </visual>
-  <audio silent="true"/>
-</toast>
-"@
-$doc = [Windows.Data.Xml.Dom.XmlDocument]::new()
-$doc.LoadXml($xml)
-$toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
-[Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier($appId).Show($toast)
-"""
-    try:
-        subprocess.Popen(  # noqa:S603
-            [
-                "powershell.exe",
-                "-NoProfile",
-                "-ExecutionPolicy",
-                "Bypass",
-                "-Command",
-                powershell_script,
-                notification_title,
-                message,
-                app_id,
-            ],
-            stdin=subprocess.DEVNULL,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
-        )
-    except Exception:
-        pass
-
-
-def _unsigned32(n: int) -> int:
-    return n & 0xFFFFFFFF
+    if log_path and open_log:
+        try:
+            os.startfile(log_path)  # type: ignore[attr-defined]  # noqa:S606
+        except Exception as e:
+            print(f"[Error] Failed to open log: {e}")
 
 
 def looks_like_interpreter_crash(returncode) -> bool:
@@ -304,16 +203,25 @@ def looks_like_interpreter_crash(returncode) -> bool:
         0xC0000409,  # stack buffer overrun
     }
 
+    def _unsigned32(n: int) -> int:
+        return n & 0xFFFFFFFF
+
     return isinstance(returncode, int) and (_unsigned32(returncode) in _WINDOWS_CRASH_CODES)
+
 
 # ====================================
 #  define common variables
 
+
 # ====================================
 #  execute common code
 
-# tell the backend terminal to close because successful start
-create_signal_file(CORRECT_START_SIGNAL_FILE_PATH)
+# tell the backend terminal to close because successful start via a signal file
+if CORRECT_START_SIGNAL_FILE_PATH:
+    folder = os.path.dirname(CORRECT_START_SIGNAL_FILE_PATH)
+    if folder:
+        os.makedirs(folder, exist_ok=True)
+    open(CORRECT_START_SIGNAL_FILE_PATH, "w", encoding="utf-8").close()
 
 # add pid to "currently running" file
 if process_id_file_path != "":

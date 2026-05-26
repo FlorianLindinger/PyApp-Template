@@ -8,6 +8,9 @@ taskbar_highlight_on_success = True
 taskbar_highlight_on_failure = True
 taskbar_highlight_on_crash = True
 
+send_Windows_notification_on_success = False
+send_Windows_notification_on_failure = True
+send_Windows_notification_on_crash = True
 
 
 terminal_emulator_shortcut_name: str | None = f"{program_name} (Terminal Emulator)"
