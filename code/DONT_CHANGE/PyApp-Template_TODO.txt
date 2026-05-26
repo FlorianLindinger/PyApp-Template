@@ -214,7 +214,6 @@ update pyproject.toml but not enable the D
 add only usefual stuff to pyproject
 update good settings for pyrefly for pyproject.toml
 
-integrate settings.py in emulator
 
 mention: (but where?)
 mayor version: remove stuff outside DONT_CHANGE
@@ -260,6 +259,8 @@ is this correct:
 =========================================
 ==== Must do before release (in end) ====
 =========================================
+
+update _README in DONT_CHANGE
 
 add crash icons? and terminal name. i guess they could always do that?
 
@@ -338,6 +339,8 @@ ask it to add comment to code blocks
 ================
 ==== Future ====
 ================
+
+integrate settings.py in emulator
 
 ask ai to draw a flwochart of whoel prpgram
 
