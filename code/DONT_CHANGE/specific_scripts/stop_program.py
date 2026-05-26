@@ -1,4 +1,9 @@
 # ==========================================================================
+# local settings
+
+sleep_before_close_on_success_s = 2
+
+# ==========================================================================
 # package imports
 
 import os
@@ -16,6 +21,7 @@ if root_dir not in sys.path:
 from DONT_CHANGE.specific_scripts.common_code import (
     close_terminal,
     make_abs_path_relative_to_file,
+    print_success,
     print_traceback,
     stop_processes_from_pid_file,
 )
@@ -37,15 +43,15 @@ try:
             print(f"[Info] No PID file found at {pid_path}.")
             print("This could mean it was already stopped via this script.")
         else:
-            print(f"[Info] Removed {stale_count} stale PID entries from {pid_path}. No more apparently open to close")
+            print(f"[Info] Nothing to stop. Removed {stale_count} stale PID entries from {pid_path}.")
         input("Press enter to exit")
         close_terminal()
         sys.exit(0)
 
-    print(f"[Success] Stopped {stopped_count} process(es).")
+    print_success(f"[Success] Stopped {stopped_count} process(es).")
     if stale_count:
-        print(f"[Info] Removed {stale_count} stale PID entries.")
-    time.sleep(1)
+        print_success(f"[Info] Removed {stale_count} stale PID entries.")
+    time.sleep(sleep_before_close_on_success_s)
     close_terminal()
     sys.exit(0)
 
