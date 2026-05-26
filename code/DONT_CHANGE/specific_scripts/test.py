@@ -1,9 +1,3 @@
-
-
-
-
-
-
 def set_window_dwm_color(hwnd: int, attribute: int, rgb: tuple[int, int, int]) -> None:
     """Set one Windows DWM color attribute on a window."""
 
@@ -23,13 +17,18 @@ def set_window_dwm_color(hwnd: int, attribute: int, rgb: tuple[int, int, int]) -
     if result != 0:
         raise OSError(f"DwmSetWindowAttribute failed with HRESULT {result:#x}")
 
+
 DWMWA_BORDER_COLOR = 34
 DWMWA_CAPTION_COLOR = 35
 DWMWA_TEXT_COLOR = 36
 
+# more DWMWA option???
+
+
 set_window_dwm_color(get_candidate_hwnds()[0], DWMWA_CAPTION_COLOR, (255, 0, 0))
 set_window_dwm_color(get_candidate_hwnds()[0], DWMWA_TEXT_COLOR, (255, 255, 255))
 set_window_dwm_color(get_candidate_hwnds()[0], DWMWA_BORDER_COLOR, (255, 0, 0))
+
 
 class TaskbarProgress:
     """Control Windows taskbar progress without using comtypes."""
@@ -223,18 +222,19 @@ class TaskbarProgress:
 test = TaskbarProgress()
 hwnd = get_candidate_hwnds()[0]
 import time
+
 # for _ in range(10):
-test.set_error(hwnd,100)
+test.set_error(hwnd, 100)
 time.sleep(0.1)
-test.set_error(hwnd,80)
+test.set_error(hwnd, 80)
 time.sleep(0.1)
-test.set_error(hwnd,60)
+test.set_error(hwnd, 60)
 time.sleep(0.1)
-test.set_error(hwnd,40)
+test.set_error(hwnd, 40)
 time.sleep(0.1)
-test.set_error(hwnd,20)
+test.set_error(hwnd, 20)
 time.sleep(0.1)
-test.set_error(hwnd,0)
+test.set_error(hwnd, 0)
 time.sleep(0.1)
 
 test.set_indeterminate(hwnd)
@@ -248,8 +248,9 @@ time.sleep(1)
 for _ in range(10):
     test.set_paused(hwnd)
     time.sleep(0.7)
-    test.set_error(hwnd,50)
+    test.set_error(hwnd, 50)
     time.sleep(0.7)
+
 
 def flash_window(hwnd: int, count: int = 0, timeout_ms: int = 0) -> None:
     """Flash a window's taskbar button and caption.
@@ -294,9 +295,13 @@ def flash_window(hwnd: int, count: int = 0, timeout_ms: int = 0) -> None:
     if not ctypes.windll.user32.FlashWindowEx(ctypes.byref(info)):
         raise ctypes.WinError()
 
+
 test.set_error(get_candidate_hwnds()[0])
 
-    
+
 flash_window(get_candidate_hwnds()[0])
 
 input()
+
+
+# need highöight instaef of flash function?
