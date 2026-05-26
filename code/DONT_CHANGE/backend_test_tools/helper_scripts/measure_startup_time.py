@@ -22,19 +22,19 @@ from developer_settings import (
 )
 from DONT_CHANGE.specific_scripts.common_variables import (
     env_var_to_signal_startup_time_measurement,
-    python_code_path,
+    python_script_path,
 )
 
-shortcuts = [windows_terminal_shortcut_name,no_terminal_shortcut_name,terminal_emulator_shortcut_name, "browser shortcut placeholder" ]
+shortcuts = [
+    windows_terminal_shortcut_name,
+    no_terminal_shortcut_name,
+    terminal_emulator_shortcut_name,
+    "browser shortcut placeholder",
+]
 
 VERSION_SCRIPT = (
     "import platform, sys; print(f'{platform.python_implementation()} {sys.version.split()[0]} ({sys.executable})')"
 )
-
-
-
-
-
 
 
 def python_command(python_path: Path | str, args: list[str]) -> list[str]:
@@ -305,8 +305,6 @@ def measure_shortcut(
     return results
 
 
-
-
 def print_summary(results: dict[str, list[float]]) -> None:
     print("\nSummary")
     print("Mode                                      median      mean       min       max")
@@ -321,14 +319,12 @@ def print_summary(results: dict[str, list[float]]) -> None:
         )
 
 
-
-
 def main() -> int:
     args = parse_args()
     if args.runs < 1:
         raise ValueError("--runs must be at least 1")
 
-    target_script = Path(python_code_path)
+    target_script = Path(python_script_path)
     shortcut_specs: list[ShortcutSpec] = []
     if not args.skip_launcher:
         if args.shortcut:
