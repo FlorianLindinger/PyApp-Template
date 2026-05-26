@@ -54,6 +54,9 @@ _ANSI_RESET = "\033[0m"
 # colored print and input and general print related
 
 
+def print_success(msg, sep: str | None = " ", end: str | None = "\n"):
+    print(f"{_ANSI_SUCCESS}{msg}{_ANSI_RESET}", sep=sep, end=end)
+
 def print_warn(msg, sep: str | None = " ", end: str | None = "\n"):
     print(f"{_ANSI_WARN}{msg}{_ANSI_RESET}", sep=sep, end=end)
 
