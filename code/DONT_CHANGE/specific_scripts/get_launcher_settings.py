@@ -306,6 +306,8 @@ def looks_like_interpreter_crash(returncode) -> bool:
 
     return isinstance(returncode, int) and (_unsigned32(returncode) in _WINDOWS_CRASH_CODES)
 
+# ====================================
+#  define common variables
 
 # ====================================
 #  execute common code
