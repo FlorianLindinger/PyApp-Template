@@ -2,10 +2,16 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
-check ensure_python_distro
+do i want specifc way to open log?
+
+make run_completion_alerts rather a function that looks like process_finish(notification,sound,title)
+
+check run_completion_alerts
 
 cehck ProcessIdRegistry and all in launcehr_common
 if i x terminal it does not remove pid
+
+check ensure_python_distro
 
 fix wrapper
 
@@ -36,8 +42,6 @@ simplify wrapper.
 genrally simplify whole path for normal start and once start that user would see.
 
 move up [Python Failure Return] to exception SyntaxError. but i guess make sure to reset input and print before? or do i want warpper prints to end in log? probalby actually
-
-wait time is worong???? for timestapsts
 
 why is failure of runpy so slow after tracevbacl print in wrapper
 
@@ -114,13 +118,10 @@ do i wnat user to give chance to delte folder themselfves before raising error. 
 
 add docstring to everything even files;
 
-chekc completion_alerts = CompletionAlerts
 
 do i want python.bat and pip.bat in portable_python? only if i also add a terminal there i guess. for predictable behauvir maybe outside in backend. or somehow buneled in protable pyhrton? maybe different name and soemhow easy name change at runtim
 -> ship:
 open_terminal_with_set_python_and_pip_target.bat
-
-test all backend tools
 
 any good reason to cartch error in batch instaef of via signal: i guess itehrwidse i dont get whats worng. what if i just leave windwo open and close delibertöy?
 
@@ -239,7 +240,7 @@ do i want a wrapper_common_code? wither way start and wrapper should be fast and
 
 is this correct:
     elif looks_like_interpreter_crash(exit_code):
-                completion_alerts.run("crash", exit_code)
+                run_completion_alerts("crash", exit_code)
                 if close_on_python_interpreter_crash:
                     sys.exit(exit_code)
                 else:
@@ -345,6 +346,10 @@ ask it to add comment to code blocks
 ================
 ==== Future ====
 ================
+
+readd windwos notifications
+
+make faster start for more lazy defintion and import
 
 Medium/security: terminal_emulator.py (line 1359) runs eval(f"self.{rest}") on text emitted by the child process. Replace this with an explicit command protocol.
 
