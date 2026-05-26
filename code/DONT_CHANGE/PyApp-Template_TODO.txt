@@ -8,8 +8,25 @@ if i x terminal it does not remove pid
 check ensure_python_distro
 
 fix wrapper
-
+simplify wrapper.
+why is failure of runpy so slow after tracevbacl print in wrapper
 why does my prints diasgpper in scroipt wrapper beiggning?
+do i want to catch importError explicitly in wrapper? or otehrs launcerhs. -> i guess and then refer how to install to basically dev tools;
+# somehow make parity. what if i remove the temrinal in ´this verison? might be even more work
+do i want in wrapper and other to handle or not handle keyboead interrupt? probably i want. not atm
+wait in wrapper how do i fancy print the tracebacmks????
+i guess cant claim in read,e
+see if script wrapper could want lazy imports
+instlling rich traceback is slwo? do i want it maybe only in wrapper? no error should usualyl occur in backend and when it occurs i delibertate do traceback
+sort wrapper
+shouild i use set_terminal_icon from wrapper or starter?
+what if i either way need for app id stuff. can i make that simpler?
+do i want a wrapper_common_code? wither way start and wrapper should be fast and no unncecresasy imports
+fix erorr print in wrapper mode haveing blac kcolor for tiomestapmo
+dont i always handle a interpreter crash by wrapper and emulator? no need for setting?
+in wrapper. do i want appearance change attempt for error?
+
+crate a wrapper launch cost scrtipt -> ask startup time from start_program instraf of from lnk via batch in backend tools
 
 can main_scirpt just import dev_settings? for all cases?
 -> mention? i guess overkill. do i want to pass more envs?
@@ -28,16 +45,10 @@ insted of just cehcl=Tru?
 -> chekc all check=True.
 -> check also if i want check anywher i n subprocess.run in all scriopts
 
-do i want to catch importError explicitly in wrapper? or otehrs launcerhs. -> i guess and then refer how to install to basically dev tools;
-# somehow make parity. what if i remove the temrinal in ´this verison? might be even more work
-
-simplify wrapper.
-
 genrally simplify whole path for normal start and once start that user would see.
 
 move up [Python Failure Return] to exception SyntaxError. but i guess make sure to reset input and print before? or do i want warpper prints to end in log? probalby actually
 
-why is failure of runpy so slow after tracevbacl print in wrapper
 
 make input after every exec(script) at elast for script_has_terminal or make try except with normal input. somehow it should not be able to fail.
 
@@ -47,21 +58,16 @@ make input after every exec(script) at elast for script_has_terminal or make try
 
 do i want to  catch BaseException insteadf of Exception somewhere
 
-do i want in wrapper and other to handle or not handle keyboead interrupt? probably i want. not atm
 
-wait in wrapper how do i fancy print the tracebacmks????
-i guess cant claim in read,e
 
 somehow stop it from adding imports in vscode
 
 make it report only as if inside the main_script:
      except SyntaxError as e: # catches synatx error in script_path
 
-see if script wrapper could want lazy imports
-
 test logic for frontend python and package installation for missing folder
 
-fix backend tools paths:
+ask ai if case for backend tools paths:
     fix startup time measruemtn: make sure it kills process and removed pid no mather what closing setting is there for on_success
 
 do i want delete_folder_safe to retrun succes/user_refuse/error ...?
@@ -94,15 +100,8 @@ do i still need or handle it via _pth:
                 os.add_dll_directory(path)
 
 
-cut down on backend installatikn packages and not ship? kind of too risky for no gain
 
-i guess add backend python installation to genrtated shoretuctus 
 
-make backend installtion more robust for fails by delting folder and redoing i guess. i guess already implem,enwed
-
-make packaend packages installtion indepomendent chekc and fail delete
-
-add chekc for backend python folder and install them automatically for shortcus
 
 ask long think AI for docstring improvements
 
@@ -112,7 +111,9 @@ do i wnat user to give chance to delte folder themselfves before raising error. 
 
 add docstring to everything even files;
 
+fix and test all dev tools
 
+fix needed for dev tools (ask ai if working somehwo):
 do i want python.bat and pip.bat in portable_python? only if i also add a terminal there i guess. for predictable behauvir maybe outside in backend. or somehow buneled in protable pyhrton? maybe different name and soemhow easy name change at runtim
 -> ship:
 open_terminal_with_set_python_and_pip_target.bat
@@ -137,11 +138,11 @@ do they wanrt titles
 
 do i really want terminal to stay open so long? cant i just spawn invisible to monitor for immeadiate fail and then oipen a cmd to print thta?
 
-launch backend mimizied and only go to front if any print?
+launch backend mimizied and only go to front if any print? is possible?
 
 set color and title in Popen alreay
 
-set cwd in  crartion of temrinla
+set cwd in  crartion of temrinla?
 
 do i want to chatc error in cmd command? would not work for no terminal ; better than waitnig 0.8s
 what if i let python kill the old terminal via thread once its clear it wont fail?
@@ -151,21 +152,15 @@ what if i let python kill the old terminal via thread once its clear it wont fai
 ==== Must do before release ====
 ================================
 
-sort wrapper
-
 recheck logic in tools
 
 recheck start script and script wrapper
-
-instlling rich traceback is slwo? do i want it maybe only in wrapper? no error should usualyl occur in backend and when it occurs i delibertate do traceback
-
-test open_log_file_after_success
 
 test option to start minimized in all modes
 test play sounds and start time
 does it set all terminals ot that icon eg also from differnet opened apps form framework???
 
-check for "todos" in code
+check for "todos" in code and in google notees
 ask AI if code or variable is unused
 let it chekc if seomthing looks like a placeholder and unfinsihjesd and nunnnecassy prings
 is the file organication somewher unconventuional? should i renomea seom sutff? 
@@ -181,23 +176,18 @@ Fix Release in git
 mention colroful tracebac on error
 mention that windows might ask for permissions for start since it is code from online. any alternatives?
 
-see if windows terminal hadnles all crash and erros.
+see if windows terminal hadnles all crash and erros and what i improve and mention that. probalby i dont improve over opened terminal but what do i imporev over doble clcik python file?
 not working:
 crash1,2
 NVMD. os._exit and os.abort should just close i guess. So maybe emulator should just close. Or maybe it should be cauot be close_on_failure. is it being caupt be that in emulator? if that can be cought i guess best is to see if it is 0 or 1 .
 os.abort is either way only used to test a crash so i dont have to respect it other than a crasher. So i guess the wrapper should catch it. does emulator trieat is as failure or crash?
 
-fix erorr print in wrapper mode haveing blac kcolor for tiomestapmo
 
 ask AI if at every spot it would wait for input on error and if i genertally catrch every error
-
-dont i always handle a interpreter crash by wrapper and emulator? no need for setting?
 
 chekc overall start time overhead compared to global python. I guess check with batch i have that measurs execution time and jsut a script that exits immediately. maybe mention that overhead in README
 
 test no terminal error print
-
-never close on backend failur. THat should not happen. always open a new terminal to report. I guess no log then.
 
 am i using faulthandler correctly? do i need to print that to a log? ask ai if works
 
@@ -211,7 +201,6 @@ update pyproject.toml but not enable the D
 add only usefual stuff to pyproject
 update good settings for pyrefly for pyproject.toml
 
-
 mention: (but where?)
 mayor version: remove stuff outside DONT_CHANGE
 minor version: replacement or added outside DONT_CHANGE
@@ -222,46 +211,19 @@ is use_global_python used everywhere and als ohandles iof modeule not present?
 cehck for fail of install_packages_from_file and hadnle error
 
 ask if "--disable-pip-version-check", everyhwerhe
-
-
 when do i want no cache or no upgrade for pip sintall
-
-do some scripts want  ensure_python_distro?
-
-shouild i use set_terminal_icon from wrapper or starter?
-what if i either way need for app id stuff. can i make that simpler?
-do i want a wrapper_common_code? wither way start and wrapper should be fast and no unncecresasy imports
-
-is this correct:
-    elif looks_like_interpreter_crash(exit_code):
-                run_completion_alerts("crash", exit_code)
-                if close_on_python_interpreter_crash:
-                    sys.exit(exit_code)
-                else:
-                    script = f"""
-    set_terminal_name(rf"[Crash] {{get_terminal_name()}}")
-    print()
-    print_warn(rf'[Python Interpreter Crash] Script exited with Windows crash code: "{exit_code}"')
-    input_warn("[Python Interpreter Crash] Press Enter to exit.")
-    """
-                    if script_has_terminal:
-                        exec(script)  # noqa
-                    else:
-                        run_text_in_new_terminal_and_wait(script_base + script)
-                    sys.exit(exit_code)
-
-
-
 
 =========================================
 ==== Must do before release (in end) ====
 =========================================
 
+never close on backend failur: shoudl be already? ask AI if could ahppend. THat should not happen. always open a new terminal to report. I guess no log then.
+
+do some scripts want  ensure_python_distro? -> ask AI
+
 update _README in DONT_CHANGE
 
 add crash icons? and terminal name. i guess they could always do that?
-
-in wrapper. do i want appearance change attempt for error?
 
 ask AI if i fortgit a featue to emantion
 
@@ -313,8 +275,6 @@ ask it to double chec ensuer_venv
 
 make all file accesses try except that are used in normal start
 
-crate a wrapper launch cost scrtipt
-
 does anythign nned folder cration or not actually need folder cration?
 
 ask if i can use more input succes/warn
@@ -340,6 +300,15 @@ ask it to add comment to code blocks
 ================
 ==== Future ====
 ================
+
+###### move all backend installation featurs and fixes to future since anyway there is no option to not ship implemented i guess:
+i guess add backend python installation to genrtated shoretuctus
+cut down on backend installatikn packages and not ship? kind of too risky for no gain
+make backend installtion more robust for fails by delting folder and redoing i guess. i guess already implem,enwed
+add chekc for backend python folder and install them automatically for shortcus
+make backend packages installtion indepomendent chekc and fail delete
+
+add setting: foreground on print
 
 is sound playing + log opening + remain open on success somewhat slow?
 
