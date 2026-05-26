@@ -2,10 +2,17 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+cehck ProcessIdRegistry and all in launcehr_common
+
+does get_launcehr_stetting server same purpose as lacunerh_common?
+more code to move to lajncehr_commong from wrapper?
+# compile script needs to be adjusted to take stuff live for import somehow
+
 i am passing crazy amount of args to wrappers/...
 ->should they just read themselves and i check existance of file in starter?
 basic processing in starter? or what if i just add a processing script for dev_settings. 
 -> i made script for common dev_settings for all launch modes and they read in as imports
+
 
 fix wrapper
 
