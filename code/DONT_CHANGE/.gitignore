@@ -12,3 +12,5 @@ terminal_emulator/nuitka-crash-report.xml
 __pycache__
 *.pyc
 *.pyo
+# temporary signal file to signal correct program start:
+*.signal
