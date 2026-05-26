@@ -25,7 +25,7 @@ add examples how to set adn get? :in their guis with exampokle for pyside6/5 qt 
 
 add arg setting in dev setting to pass to scropt
 
-i guess i want way clearer athan rich seomhow for exampwel for no internet?
+i guess i want way clearer traceback than rich seomhow for exampwel for no internet? somehow more clear what the first message to read is
 
 do i want more explceit :
     try:
@@ -86,7 +86,6 @@ add crash icons? and terminal name. i guess they could always do that?
 
 # wait i have only nice erorr print for launchering new terminal so for no terminal mode, right??
 
-
 do i want to  catch BaseException insteadf of Exception somewhere
 
 do i want in wrapper and other to handle or not handle keyboead interrupt? probably i want. not atm
@@ -99,14 +98,6 @@ somehow stop it from adding imports in vscode
 
 make it report only as if inside the main_script:
      except SyntaxError as e: # catches synatx error in script_path
-
-it always deletes: [Info] Deleting "C:\Users\Flo\Documents\Repositories\PyApp Template\code\py_env\packages"
-
-checl at what point the wrapper got broken a lot
-
-do i need twice app id setting in wrapper?
-
-review the wrapper
 
 see if script wrapper could want lazy imports
 
@@ -332,6 +323,10 @@ is this correct:
 ==== Must do before release (in end) ====
 =========================================
 
+ask AI if i fortgit a featue to emantion
+
+udpate size in readme
+
 waht varaible should i make capitalized? all i guess?
 
 make suire first prints which everyone will see are most nice. aks AI for ideas
@@ -397,6 +392,11 @@ ask it to add comment to code blocks
 ================
 ==== Future ====
 ================
+
+what prevents me from python 3.6-? hardcode solution?
+
+reimplement terminal emulatr and make parity
+
 
 can i pass the icon via chagnign P.exe to pyqt defualt gui?
 
