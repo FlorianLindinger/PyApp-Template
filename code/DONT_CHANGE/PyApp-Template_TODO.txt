@@ -2,6 +2,8 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+check ensure_python_distro
+
 cehck ProcessIdRegistry and all in launcehr_common
 if i x terminal it does not remove pid
 
@@ -336,9 +338,15 @@ ask it to add comment to code blocks
 
 
 
+
+
+
+
 ================
 ==== Future ====
 ================
+
+Medium/security: terminal_emulator.py (line 1359) runs eval(f"self.{rest}") on text emitted by the child process. Replace this with an explicit command protocol.
 
 integrate settings.py in emulator
 
