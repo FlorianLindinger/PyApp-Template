@@ -207,7 +207,7 @@ def main():
     appid = sanitize_app_id(program_name)
     # replace and shorten if too long which might cause path length limit problems (10 is arbitrary)
     if len(appid) > 15:
-        appid.replace("-", "").replace(".", "")
+        appid = appid.replace("-", "").replace(".", "")
     if len(appid) > 15:
         appid = appid[:7] + appid[-7:]
 
