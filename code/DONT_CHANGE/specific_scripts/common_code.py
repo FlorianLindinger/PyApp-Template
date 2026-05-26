@@ -1,13 +1,17 @@
 # code here should raise an error instead of handling terminal closing or press enter to exit logic. Other than the function definitions that are defined here to do that in the callers like close_terminal and print_traceback.
 # imports are mostly lazy because it is not clear what will be needed
 
+# =========================
+
 import os
 import sys
 
+# =========================
 # add root dir for debug cases where this script is called on its own:
 root_dir = os.path.dirname(__file__) + "\\..\\.."
 if root_dir not in sys.path:
     sys.path.insert(0, root_dir)
+# =========================
 
 from developer_settings import install_tests, install_tkinter, install_tools, program_name, python_version
 from DONT_CHANGE.specific_scripts.common_variables import (
@@ -41,6 +45,10 @@ _APP_ID_IS_SET = False
 _ANSI_WARN = "\x1b[1;37;41m"  # white text, red bg, bold
 _ANSI_SUCCESS = "\x1b[1;37;42m"  # white text, green bg, bold
 _ANSI_RESET = "\033[0m"
+
+# =========================
+# general helper functions
+
 
 # =========================
 # colored print and input and general print related
@@ -174,7 +182,7 @@ def delete_folder_safe(
 
     # Local helpers for the deletion safety checks: formatting, marker validation,
     # reparse-point detection, and bounded folder-size scans.
-    def format_bytes(num_bytes) -> str:
+    def _format_bytes(num_bytes) -> str:
         units = ["B", "KB", "MB", "GB", "TB"]
         size = float(num_bytes)
         for unit in units:
@@ -186,11 +194,11 @@ def delete_folder_safe(
             size /= 1024
         return f"{num_bytes} B"
 
-    def is_filesystem_root_path(path: str | os.PathLike[str]) -> bool:
+    def _is_filesystem_root_path(path: str | os.PathLike[str]) -> bool:
         path_text = os.path.abspath(os.fspath(path))
         return path_text == os.path.abspath(os.path.join(path_text, os.pardir))
 
-    def validate_required_child_names(names: list[str] | tuple[str, ...], label: str) -> tuple[str, ...]:
+    def _validate_required_child_names(names: list[str] | tuple[str, ...], label: str) -> tuple[str, ...]:
         validated_names = []
         for name in names:
             name_text = os.fspath(name)
@@ -206,7 +214,7 @@ def delete_folder_safe(
             validated_names.append(name_text)
         return tuple(validated_names)
 
-    def is_symlink_or_junction(path: str | os.PathLike[str]) -> bool:
+    def _is_symlink_or_junction(path: str | os.PathLike[str]) -> bool:
         path_text = os.fspath(path)
         if os.path.islink(path_text):
             return True
@@ -221,7 +229,7 @@ def delete_folder_safe(
             return False
         return bool(file_attributes & 0x400)  # FILE_ATTRIBUTE_REPARSE_POINT
 
-    def get_folder_size(folder: str | os.PathLike[str], timeout_seconds: float | None = None) -> tuple[int, bool]:
+    def _get_folder_size(folder: str | os.PathLike[str], timeout_seconds: float | None = None) -> tuple[int, bool]:
         total = 0
         deadline = None
         get_time = None
@@ -233,19 +241,19 @@ def delete_folder_safe(
             get_time = time.monotonic
             deadline = get_time() + timeout_seconds
 
-        def scan_timed_out() -> bool:
+        def _scan_timed_out() -> bool:
             if deadline is not None and get_time is not None and get_time() > deadline:
                 return True
             return False
 
-        def raise_walk_error(error: OSError) -> None:
+        def _raise_walk_error(error: OSError) -> None:
             raise error
 
-        for root, _dirs, files in os.walk(folder, onerror=raise_walk_error):
-            if scan_timed_out():
+        for root, _dirs, files in os.walk(folder, onerror=_raise_walk_error):
+            if _scan_timed_out():
                 return total, True
             for filename in files:
-                if scan_timed_out():
+                if _scan_timed_out():
                     return total, True
                 path = os.path.join(root, filename)
                 if os.path.isfile(path):
@@ -268,22 +276,22 @@ def delete_folder_safe(
         required_included_files = ()
     if required_included_dirs is None:
         required_included_dirs = ()
-    required_included_files = validate_required_child_names(required_included_files, "file")
-    required_included_dirs = validate_required_child_names(required_included_dirs, "directory")
+    required_included_files = _validate_required_child_names(required_included_files, "file")
+    required_included_dirs = _validate_required_child_names(required_included_dirs, "directory")
 
     if max_size_GB_before_prompt is not None and max_size_GB_before_prompt < 0:
         raise ValueError(f"Maximum folder size must be zero or greater: {max_size_GB_before_prompt}")
     if max_size_check_seconds is not None and max_size_check_seconds <= 0:
         raise ValueError(f"Folder scan timeout must be greater than zero: {max_size_check_seconds}")
 
-    if is_symlink_or_junction(folder_path_text):
+    if _is_symlink_or_junction(folder_path_text):
         raise ValueError(f'Refusing to delete symlink or junction path: "{folder_path_text}"')
-    if allowed_base_text is not None and is_symlink_or_junction(allowed_base_text):
+    if allowed_base_text is not None and _is_symlink_or_junction(allowed_base_text):
         raise ValueError(f'Allowed base path may not be a symlink or junction: "{allowed_base_text}"')
 
     target_path = os.path.realpath(folder_path_text)
 
-    if is_filesystem_root_path(target_path):
+    if _is_filesystem_root_path(target_path):
         raise ValueError(f"Refusing to delete filesystem root: {target_path}")
 
     if allowed_base_text is not None:
@@ -295,7 +303,7 @@ def delete_folder_safe(
         if not os.path.isdir(base_path):
             raise NotADirectoryError(f"Allowed base is not a directory: {base_path}")
 
-        if is_filesystem_root_path(base_path) and not allow_filesystem_root_base:
+        if _is_filesystem_root_path(base_path) and not allow_filesystem_root_base:
             raise ValueError(f"Allowed base may not be a filesystem root: {base_path}")
 
         if os.path.normcase(target_path) == os.path.normcase(base_path):
@@ -350,7 +358,7 @@ def delete_folder_safe(
     is_above_max_size = False
     if max_size_GB_before_prompt is not None:
         try:
-            folder_size, folder_size_is_partial = get_folder_size(target_path, timeout_seconds=max_size_check_seconds)
+            folder_size, folder_size_is_partial = _get_folder_size(target_path, timeout_seconds=max_size_check_seconds)
         except OSError as error:
             if not prompt_instead_of_requirement_failure or not sys.stdin.isatty():
                 raise
@@ -367,13 +375,13 @@ def delete_folder_safe(
             if not prompt_instead_of_requirement_failure or not sys.stdin.isatty():
                 raise ValueError(
                     f'Could not finish size check for "{target_path}" within {max_size_check_seconds:g} seconds. '
-                    f"Measured at least {format_bytes(folder_size)}."
+                    f"Measured at least {_format_bytes(folder_size)}."
                 )
             print()
             print("Folder deletion size check warning:")
             print(f"Folder: {target_path}")
             print(f"Size check timed out after {max_size_check_seconds:g} seconds.")
-            print(f"Measured at least: {format_bytes(folder_size)}")
+            print(f"Measured at least: {_format_bytes(folder_size)}")
             print()
             answer = input("Delete anyway? [y/n]: ").strip().lower()
             if answer not in {"y", "yes"}:
@@ -498,16 +506,16 @@ def delete_folder_safe(
     if is_above_max_size:
         if not sys.stdin.isatty():
             raise ValueError(
-                f"Refusing to delete folder larger than {format_bytes(max_size_bytes)} without interactive confirmation. "  # type:ignore
-                f"Folder: {target_path}. Folder size: {format_bytes(folder_size)}"
+                f"Refusing to delete folder larger than {_format_bytes(max_size_bytes)} without interactive confirmation. "  # type:ignore
+                f"Folder: {target_path}. Folder size: {_format_bytes(folder_size)}"
             )
 
         print()
         print("Folder deletion size warning:")
         print(f"Folder: {target_path}")
         size_label = "Measured at least" if folder_size_is_partial else "Folder size"
-        print(f"{size_label}: {format_bytes(folder_size)}")
-        print(f"Configured limit: {format_bytes(max_size_bytes)}")  # type:ignore
+        print(f"{size_label}: {_format_bytes(folder_size)}")
+        print(f"Configured limit: {_format_bytes(max_size_bytes)}")  # type:ignore
         print()
         answer = input("Folder is larger than expected. Delete anyway? [y/n]: ").strip().lower()
         if answer not in {"y", "yes"}:
@@ -517,7 +525,7 @@ def delete_folder_safe(
     if always_prompt_for_confirmation:
         if folder_size is None:
             try:
-                folder_size, folder_size_is_partial = get_folder_size(
+                folder_size, folder_size_is_partial = _get_folder_size(
                     target_path, timeout_seconds=max_size_check_seconds
                 )
             except OSError as error:
@@ -536,13 +544,13 @@ def delete_folder_safe(
                 if not prompt_instead_of_requirement_failure or not sys.stdin.isatty():
                     raise ValueError(
                         f'Could not finish size check for "{target_path}" within {max_size_check_seconds:g} seconds. '
-                        f"Measured at least {format_bytes(folder_size)}."
+                        f"Measured at least {_format_bytes(folder_size)}."
                     )
                 print()
                 print("Folder deletion size check warning:")
                 print(f"Folder: {target_path}")
                 print(f"Size check timed out after {max_size_check_seconds:g} seconds.")
-                print(f"Measured at least: {format_bytes(folder_size)}")
+                print(f"Measured at least: {_format_bytes(folder_size)}")
                 print()
                 answer = input("Continue to deletion confirmation? [y/n]: ").strip().lower()
                 if answer not in {"y", "yes"}:
@@ -553,7 +561,7 @@ def delete_folder_safe(
         print(f"Folder: {target_path}")
         size_label = "Measured at least" if folder_size_is_partial else "Folder size"
         if folder_size is not None:
-            print(f"{size_label}: {format_bytes(folder_size)}")
+            print(f"{size_label}: {_format_bytes(folder_size)}")
         else:
             print("Folder size: unknown")
         print()
@@ -581,6 +589,69 @@ def set_terminal_app_id_safe(app_id: str) -> int:
     """Try to set System.AppUserModel.ID on the terminal window itself."""
     import ctypes
     from ctypes import wintypes
+
+    def _helper_refresh_nonclient_area(hwnd: int) -> None:
+
+        user32_DLL = ctypes.WinDLL("user32", use_last_error=True)
+
+        SWP_NOMOVE = 0x0002
+        SWP_NOSIZE = 0x0001
+        SWP_NOZORDER = 0x0004
+        SWP_NOACTIVATE = 0x0010
+        SWP_FRAMECHANGED = 0x0020
+
+        user32_DLL.SetWindowPos(
+            hwnd,
+            None,
+            0,
+            0,
+            0,
+            0,
+            SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED,
+        )
+
+    def _get_candidate_hwnds() -> list[int]:
+
+        kernel32_DLL = ctypes.WinDLL("kernel32", use_last_error=True)  # type:ignore
+        user32_DLL = ctypes.WinDLL("user32", use_last_error=True)
+
+        candidate_hwnds: list[int] = []
+
+        def add(hwnd: int) -> None:
+            if hwnd == 0 or not user32_DLL.IsWindow(hwnd) or hwnd in candidate_hwnds:
+                return
+            candidate_hwnds.append(hwnd)
+
+        console_hwnd = int(kernel32_DLL.GetConsoleWindow() or 0)
+
+        def get_console_title() -> str:
+            buffer = ctypes.create_unicode_buffer(1024)
+            title_length = kernel32_DLL.GetConsoleTitleW(buffer, len(buffer))
+            if title_length == 0:
+                return ""
+            return buffer.value
+
+        def get_root_owner(hwnd: int) -> int:
+            GA_ROOTOWNER = 3
+            if hwnd == 0:
+                return 0
+            return int(user32_DLL.GetAncestor(hwnd, GA_ROOTOWNER) or 0)
+
+        console_title = get_console_title()
+
+        add(console_hwnd)
+        add(get_root_owner(console_hwnd))
+
+        if console_title:
+            hwnd_by_console_class = int(user32_DLL.FindWindowW("ConsoleWindowClass", console_title) or 0)
+            add(hwnd_by_console_class)
+            add(get_root_owner(hwnd_by_console_class))
+
+            hwnd_by_title = int(user32_DLL.FindWindowW(None, console_title) or 0)
+            add(hwnd_by_title)
+            add(get_root_owner(hwnd_by_title))
+
+        return candidate_hwnds
 
     candidate_hwnds = _get_candidate_hwnds()
 
@@ -1091,74 +1162,117 @@ def read_lines(path: str):
 
 
 # =========================
-# helper functions
+# pid/process related
 
 
-def _get_candidate_hwnds() -> list[int]:
-    import ctypes
+def get_running_processes_from_pid_file(pid_path: str) -> tuple[list[int], int]:
+    """returns (running_process_ids, stale_count)"""
 
-    kernel32_DLL = ctypes.WinDLL("kernel32", use_last_error=True)  # type:ignore
-    user32_DLL = ctypes.WinDLL("user32", use_last_error=True)
+    if pid_path == "" or not os.path.exists(pid_path):
+        return [], 0
 
-    candidate_hwnds: list[int] = []
+    process_id_entries = _read_process_id_entries(pid_path)
+    if not process_id_entries:
+        os.remove(pid_path)
+        return [], 0
 
-    def add(hwnd: int) -> None:
-        if hwnd == 0 or not user32_DLL.IsWindow(hwnd) or hwnd in candidate_hwnds:
-            return
-        candidate_hwnds.append(hwnd)
+    running_process_ids = []
+    stale_count = 0
+    seen_process_ids: set[int] = set()
+    for process_id, _line in process_id_entries:
+        if process_id in seen_process_ids:
+            continue
+        seen_process_ids.add(process_id)
 
-    console_hwnd = int(kernel32_DLL.GetConsoleWindow() or 0)
+        if _process_is_running(process_id):
+            running_process_ids.append(process_id)
+        else:
+            stale_count += 1
 
-    def get_console_title() -> str:
-        buffer = ctypes.create_unicode_buffer(1024)
-        title_length = kernel32_DLL.GetConsoleTitleW(buffer, len(buffer))
-        if title_length == 0:
+    _write_process_id_lines(pid_path, [f"{process_id}" for process_id in running_process_ids])
+    return running_process_ids, stale_count
+
+
+def stop_processes_from_pid_file(pid_path: str) -> tuple[int, int, list[str]]:
+    """returns (stopped_count, stale_count, failed_messages)"""
+    import subprocess
+
+    def _stop_process_tree(pid: int) -> str:
+
+        if not _process_is_running(pid):
             return ""
-        return buffer.value
+        cmd = ["taskkill", "/PID", str(pid), "/T"]
+        try:
+            graceful_result = subprocess.run(  # noqa:S603
+                cmd,
+                check=False,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                encoding="oem",
+                errors="replace",
+            )
 
-    def get_root_owner(hwnd: int) -> int:
-        GA_ROOTOWNER = 3
-        if hwnd == 0:
-            return 0
-        return int(user32_DLL.GetAncestor(hwnd, GA_ROOTOWNER) or 0)
+        except FileNotFoundError:
+            import signal
 
-    console_title = get_console_title()
+            os.kill(pid, signal.SIGTERM)
+            return ""
 
-    add(console_hwnd)
-    add(get_root_owner(console_hwnd))
+        graceful_output = (graceful_result.stdout or "").strip()
+        if graceful_result.returncode == 0 and _wait_until_process_stops(pid, 2.0):
+            return graceful_output
 
-    if console_title:
-        hwnd_by_console_class = int(user32_DLL.FindWindowW("ConsoleWindowClass", console_title) or 0)
-        add(hwnd_by_console_class)
-        add(get_root_owner(hwnd_by_console_class))
+        if not _process_is_running(pid):
+            return graceful_output
+        forced_result = subprocess.run(  # noqa:S603
+            cmd + ["/F"],  # force
+            check=False,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            encoding="oem",
+            errors="replace",
+        )
+        forced_output = (forced_result.stdout or "").strip()
+        if forced_result.returncode == 0 or _wait_until_process_stops(pid, 2.0):
+            return "\n".join(output for output in [graceful_output, forced_output] if output)
 
-        hwnd_by_title = int(user32_DLL.FindWindowW(None, console_title) or 0)
-        add(hwnd_by_title)
-        add(get_root_owner(hwnd_by_title))
+        detail = forced_output or graceful_output
+        if detail:
+            raise RuntimeError(detail)
+        raise RuntimeError(f"taskkill failed with exit code {forced_result.returncode}")
 
-    return candidate_hwnds
+    if pid_path == "" or not os.path.exists(pid_path):
+        return 0, 0, []
 
+    process_id_entries = _read_process_id_entries(pid_path)
+    if not process_id_entries:
+        os.remove(pid_path)
+        return 0, 0, []
 
-def _helper_refresh_nonclient_area(hwnd: int) -> None:
-    import ctypes
+    lines_by_process_id: dict[int, list[str]] = {}
+    for process_id, line in process_id_entries:
+        lines_by_process_id.setdefault(process_id, []).append(line)
 
-    user32_DLL = ctypes.WinDLL("user32", use_last_error=True)
+    failed_lines = []
+    failed_messages = []
+    stopped_count = 0
+    stale_count = 0
+    for process_id, lines in lines_by_process_id.items():
+        if not _process_is_running(process_id):
+            stale_count += 1
+            continue
 
-    SWP_NOMOVE = 0x0002
-    SWP_NOSIZE = 0x0001
-    SWP_NOZORDER = 0x0004
-    SWP_NOACTIVATE = 0x0010
-    SWP_FRAMECHANGED = 0x0020
+        try:
+            _stop_process_tree(process_id)
+            stopped_count += 1
+        except Exception as process_error:
+            failed_lines.extend(lines)
+            failed_messages.append(f"{process_id}: {process_error}")
 
-    user32_DLL.SetWindowPos(
-        hwnd,
-        None,
-        0,
-        0,
-        0,
-        0,
-        SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED,
-    )
+    _write_process_id_lines(pid_path, failed_lines)
+    return stopped_count, stale_count, failed_messages
 
 
 def _process_is_running(pid: int) -> bool:
@@ -1205,54 +1319,6 @@ def _wait_until_process_stops(pid: int, timeout_seconds: float) -> bool:
     return not _process_is_running(pid)
 
 
-def _stop_process_tree(pid: int) -> str:
-    import subprocess
-
-    if not _process_is_running(pid):
-        return ""
-    cmd = ["taskkill", "/PID", str(pid), "/T"]
-    try:
-        graceful_result = subprocess.run(  # noqa:S603
-            cmd,
-            check=False,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-            encoding="oem",
-            errors="replace",
-        )
-
-    except FileNotFoundError:
-        import signal
-
-        os.kill(pid, signal.SIGTERM)
-        return ""
-
-    graceful_output = (graceful_result.stdout or "").strip()
-    if graceful_result.returncode == 0 and _wait_until_process_stops(pid, 2.0):
-        return graceful_output
-
-    if not _process_is_running(pid):
-        return graceful_output
-    forced_result = subprocess.run(  # noqa:S603
-        cmd + ["/F"],  # force
-        check=False,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        text=True,
-        encoding="oem",
-        errors="replace",
-    )
-    forced_output = (forced_result.stdout or "").strip()
-    if forced_result.returncode == 0 or _wait_until_process_stops(pid, 2.0):
-        return "\n".join(output for output in [graceful_output, forced_output] if output)
-
-    detail = forced_output or graceful_output
-    if detail:
-        raise RuntimeError(detail)
-    raise RuntimeError(f"taskkill failed with exit code {forced_result.returncode}")
-
-
 def _read_process_id_entries(path: str) -> list[tuple[int, str]]:
 
     lines = read_lines(path)
@@ -1275,72 +1341,6 @@ def _write_process_id_lines(path: str, lines: list[str]) -> None:
         write_lines(path, non_empty_lines)
     elif os.path.exists(path):
         os.remove(path)
-
-
-# =========================
-# pid/process related
-
-
-def get_running_processes_from_pid_file(pid_path: str) -> tuple[list[int], int]:
-    """returns (running_process_ids, stale_count)"""
-
-    if pid_path == "" or not os.path.exists(pid_path):
-        return [], 0
-
-    process_id_entries = _read_process_id_entries(pid_path)
-    if not process_id_entries:
-        os.remove(pid_path)
-        return [], 0
-
-    running_process_ids = []
-    stale_count = 0
-    seen_process_ids: set[int] = set()
-    for process_id, _line in process_id_entries:
-        if process_id in seen_process_ids:
-            continue
-        seen_process_ids.add(process_id)
-
-        if _process_is_running(process_id):
-            running_process_ids.append(process_id)
-        else:
-            stale_count += 1
-
-    _write_process_id_lines(pid_path, [f"{process_id}" for process_id in running_process_ids])
-    return running_process_ids, stale_count
-
-
-def stop_processes_from_pid_file(pid_path: str) -> tuple[int, int, list[str]]:
-    """returns (stopped_count, stale_count, failed_messages)"""
-    if pid_path == "" or not os.path.exists(pid_path):
-        return 0, 0, []
-
-    process_id_entries = _read_process_id_entries(pid_path)
-    if not process_id_entries:
-        os.remove(pid_path)
-        return 0, 0, []
-
-    lines_by_process_id: dict[int, list[str]] = {}
-    for process_id, line in process_id_entries:
-        lines_by_process_id.setdefault(process_id, []).append(line)
-
-    failed_lines = []
-    failed_messages = []
-    stopped_count = 0
-    stale_count = 0
-    for process_id, lines in lines_by_process_id.items():
-        if not _process_is_running(process_id):
-            stale_count += 1
-            continue
-
-        try:
-            _stop_process_tree(process_id)
-            stopped_count += 1
-        except Exception as process_error:
-            failed_lines.extend(lines)
-            failed_messages.append(f"{process_id}: {process_error}")
-
-    _write_process_id_lines(pid_path, failed_lines)
-    return stopped_count, stale_count, failed_messages
 
 
 # =========================
