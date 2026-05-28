@@ -12,7 +12,7 @@ def make_abs(x: str) -> str:
 # backend related
 # ------------------------
 # on change of all backend: stuff has to be changed manually (see finish_backend_installation.py) or regenerated automatically by deleting the previous folder:
-backend_python_exe = make_abs("..\\P\\P.exe")  # has to match python_exe_name in install_backend_python.bat
+backend_python_exe = make_abs("..\\backend_python\\python.exe")  # has to match python_exe_name in install_backend_python.bat
 backend_python_dir = os.path.dirname(backend_python_exe)
 backend_python_pth_file = backend_python_dir + "\\python312._pth"
 backend_python_zip_rel_path = "python312.zip"
@@ -53,6 +53,7 @@ launcher_settings = make_abs("..\\S.bat")
 launcher_browser = make_abs("..\\B.bat")
 launcher_no_terminal = make_abs("..\\N.bat")
 launcher_stop = make_abs("..\\Q.bat")
+launcher_log = make_abs("..\\L.bat")
 start_time_dummy_main_script = make_abs("start_time_dummy_main_script.py")
 
 # files
@@ -61,6 +62,7 @@ developer_settings_path = make_abs("..\\..\\developer_settings.py")
 icon_path = make_abs("..\\..\\icons\\icon.ico")
 settings_icon_path = make_abs("..\\..\\icons\\settings.ico")
 stop_icon_path = make_abs("..\\..\\icons\\stop.ico")
+log_icon_path = make_abs("..\\..\\icons\\log.ico")
 process_id_file_path = make_abs("..\\..\\..\\_CURRENTLY_RUNNING_.pid")
 default_packages_file_path = make_abs("..\\..\\developer_tools\\_DEFAULT_PYHON_PACKAGES_.txt")  # UPDATE GITIGNORE
 python_version_indicator_file_path = developer_tools_dir + "\\_CURRENT_PYTHON_VERSION_.txt"

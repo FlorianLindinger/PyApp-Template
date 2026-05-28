@@ -3,6 +3,12 @@
 # wrap up and move as much as possible to future:
 ======================================
 
+update HOW_TO_CHANGE_ICONS.txt
+
+press enter to exit does not exit dev tools. addd prints that file was save and where and clicakbla
+
+how do i realese a clean main_script while WIP dev. do i go dev branch i guess
+
 rename? backend_packages_requirements
 backend_packages_list.txt
 
@@ -361,6 +367,8 @@ make backend installtion more robust for fails by delting folder and redoing i g
 add chekc for backend python folder and install them automatically for shortcus
 make backend packages installtion indepomendent chekc and fail delete
 
+i gurss i cant driectly renaemd python.exe since shoprtcuts and batches have hardcoded python name
+
 add setting: foreground on print
 
 is sound playing + log opening + remain open on success somewhat slow?
@@ -415,7 +423,7 @@ what prevents me from python 3.6-? hardcode solution?
 reimplement terminal emulatr and make parity
 
 
-can i pass the icon via chagnign P.exe to pyqt defualt gui?
+can i pass the icon via chagnign python.exe to pyqt defualt gui?
 
 
 jump list for right click on shortcut
@@ -750,7 +758,7 @@ what if developer_tools scripts just interact with list in its folder?
 move default packages to "code" folder??
 do i somehow want default python_palckages in developers? or even whole env folder??? but then i also move icon to that . maybe yes? at this point i can also move everything there??? including script
 make develper tools fodler to actual folder with structute and shortcuts to call everyrginh
-developer_tools:I guess make all to shortcut of P.exe and script? hm i made it like it is at the moment to be able to add or remove at any moment
+developer_tools:I guess make all to shortcut of python.exe and script? hm i made it like it is at the moment to be able to add or remove at any moment
 
 easy way to add buttons i guess
 
@@ -875,7 +883,7 @@ Clean README/onboarding. README.md (line 46) still has a terminal-emulator TODO,
 
 Tighten batch safety. The Python installer batch downloads via Invoke-WebRequest, extracts MSI files, and deletes folders with rmdir /s /q. Add unique temp dirs, hash/size verification where possible, clearer network failure messages, and maybe move the installer logic to Python for testability.
 
-Add smoke tests. The best test matrix would cover: fresh clone, path with spaces, moved folder, no internet, wrong Python version, missing package, no-terminal stop button, normal terminal crash, fancy terminal crash, and shortcut regeneration. Syntax currently passes with code/DONT_CHANGE/P/P.exe -m py_compile on the main scripts.
+Add smoke tests. The best test matrix would cover: fresh clone, path with spaces, moved folder, no internet, wrong Python version, missing package, no-terminal stop button, normal terminal crash, fancy terminal crash, and shortcut regeneration. Syntax currently passes with code/DONT_CHANGE/backend_python\python.exe -m py_compile on the main scripts.
 
 Improve the first-run package flow. Catch ModuleNotFoundError from user code and offer: install once, add to default packages, open manual install terminal, or abort. This would be a big usability win for the template.
 
