@@ -40,8 +40,6 @@ Changed python312._pth to:
 	# Uncomment to run site.main() automatically
 	# import site
 
-Renamed python.exe to P.exe
-
 ==================================================
 === Python packages folder ("python_packages") ===
 ==================================================
