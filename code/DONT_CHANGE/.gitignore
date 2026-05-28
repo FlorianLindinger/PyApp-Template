@@ -2,16 +2,16 @@
 tmp.txt
 # compilation build folder:
 *.build
+# terminal compilation error report:
+nuitka-crash-report.xml
 # DO_NOT_SYNC folders:
 DO_NOT_SYNC
 # package installation records:
 RECORD
-# terminal compilation error report:
-terminal_emulator/nuitka-crash-report.xml
 # generated caches:
 __pycache__
 *.pyc
 *.pyo
 # temporary signal file to signal correct program start:
 *.signal
-backend_test_tools/.startup_time_markers/*
+.startup_time_markers/*
