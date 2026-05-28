@@ -3,6 +3,8 @@
 # wrap up and move as much as possible to future:
 ======================================
 
+add description to all __inits__
+
 update HOW_TO_CHANGE_ICONS.txt
 
 press enter to exit does not exit dev tools. addd prints that file was save and where and clicakbla
