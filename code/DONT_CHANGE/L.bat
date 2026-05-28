@@ -3,9 +3,7 @@ setlocal
 
 set "launcher_dir=%~dp0"
 set "python_exe=%launcher_dir%backend_python\python.exe"
-set "backend_script=%launcher_dir%specific_scripts\start_program.py"
-set "app_id=%~1"
-set "launch_mode=no_terminal"
+set "backend_script=%launcher_dir%specific_scripts\open_log.py"
 
 if not exist "%python_exe%" (
     echo [Error] Backend Python not found:
@@ -14,7 +12,7 @@ if not exist "%python_exe%" (
     exit /b 1
 )
 
-"%python_exe%" "%backend_script%" "%app_id%" "%launch_mode%"
+"%python_exe%" "%backend_script%"
 set "exit_code=%ERRORLEVEL%"
 
 if not "%exit_code%"=="0" (

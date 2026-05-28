@@ -6,10 +6,9 @@ cd /d "%~dp0"
 :: local variables
 
 set "VERSION=3.12.10" @REM 3.12.11+ don't have a Windows embeddable zip available
-set "INSTALL_DIR=%cd%\..\..\P"
+set "INSTALL_DIR=%cd%\..\..\backend_python"
 set "ZIP=%INSTALL_DIR%\tmp.zip"
 set "URL=https://www.python.org/ftp/python/%VERSION%/python-%VERSION%-embed-amd64.zip"
-set "python_exe_name=P.exe"
 
 :: ===========================
 
@@ -62,11 +61,8 @@ if errorlevel 1 (
 :: Cleanup temporary installer files
 if exist "%ZIP%" del "%ZIP%"
 
-:: rename python.exe to P.exe
-ren "%INSTALL_DIR%\python.exe" "%python_exe_name%"
-
 :: finish backend installation in python because easier
-"%INSTALL_DIR%\P.exe" "%cd%\finish_backend_installation.py"
+"%INSTALL_DIR%\python.exe" "%cd%\finish_backend_installation.py"
 if errorlevel 1 (
     :: delete the python exe to indicate that installation needs to be retried
     echo Backend Python installation failed during finalization step.

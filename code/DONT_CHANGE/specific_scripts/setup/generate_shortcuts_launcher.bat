@@ -5,7 +5,7 @@ cd /d "%~dp0"
 :: ===========================
 :: local variables
 
-set "python_exe=..\..\P\P.exe"
+set "python_exe=..\..\backend_python\python.exe"
 set "shortcut_generator_script=generate_shortcuts.py"
 set "terminal_title=Generating Shortcuts"
 set "install_backend_script=install_backend_python.bat"

@@ -52,7 +52,7 @@ Run this shortcut:
 
 That shortcut currently launches:
 
-    code/DONT_CHANGE/P/P.exe code/DONT_CHANGE/icon_related/generate_icons.py
+    code/DONT_CHANGE/backend_python/python.exe code/DONT_CHANGE/icon_related/generate_icons.py
 
 The generator script is:
 
@@ -70,7 +70,7 @@ Default:
 
 Manual example:
 
-    code/DONT_CHANGE/P/P.exe code/DONT_CHANGE/icon_related/generate_icons.py 0.6
+    code/DONT_CHANGE/backend_python/python.exe code/DONT_CHANGE/icon_related/generate_icons.py 0.6
 
 Icons should be generated this way instead of with a quick online converter, because Windows
 icons need multiple embedded sizes to scale well in shortcuts, taskbar entries, and Explorer.

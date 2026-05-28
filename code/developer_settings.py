@@ -17,6 +17,7 @@ windows_terminal_shortcut_name: str | None = f"{program_name}"
 no_terminal_shortcut_name: str | None = f"{program_name} (no Terminal)"
 open_settings_shortcut_name: str | None = f"{program_name} - Settings"
 stop_running_shortcut_name: str | None = f"Stop {program_name}"
+open_log_shortcut_name: str | None = f"{program_name} - Log"
 # -------------------------------------------------
 # String added before prints/inputs. Accepts datetime.datetime.strftime usage: e.g. "%H:%M:%S | ". None to turn off:
 print_prepend: str | None = "%H:%M:%S | "
@@ -65,7 +66,10 @@ prompt_to_close_existing_instances = False
 # Decide if global default (any version) Python should be used instead of automatic localized download and installation of Python/packages:
 use_global_python = False
 # -------------------------------------------------
-# Start launch windows minimized where supported:
+# Install Python environment while generating shortcuts instead of for first start (Ignored when use_global_python = True):
+install_python_when_generating_shortcuts = True
+# -------------------------------------------------
+# Start program minimized:
 start_minimized = False
 # -------------------------------------------------
 # Decide what parts of vanilla full Python to install:

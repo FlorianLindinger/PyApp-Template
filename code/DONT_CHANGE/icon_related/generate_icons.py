@@ -1,3 +1,5 @@
+"""Generate PyApp Template .ico files from PNG image assets."""
+
 import base64
 import json
 import os
@@ -18,12 +20,13 @@ from DONT_CHANGE.specific_scripts.common_code import close_terminal
 user_png_folder_path = "../../icons/"
 fallback_png_folder_path = "./"
 output_path = "../../icons/"
-fallback_base_png_id = "200x200:82f0d3c0"
-fallback_settings_png_id = "200x200:71db6cbb"
-fallback_stop_png_id = "200x200:83248fd0"
+fallback_base_png_id = "512x512:697b74ef"
+fallback_settings_png_id = "512x512:68617905"
+fallback_stop_png_id = "512x512:18389952"
+fallback_log_png_id = "512x512:3d23c1a5"
 ICON_DELETE_TIMEOUT_SECONDS = 5.0
 ICON_RETRY_DELAY_SECONDS = 0.1
-GENERATED_ICON_FILENAMES = ("icon.ico", "settings.ico", "stop.ico")
+GENERATED_ICON_FILENAMES = ("icon.ico", "settings.ico", "stop.ico", "log.ico")
 
 file_path = os.path.dirname(os.path.abspath(__file__))
 os.chdir(file_path)
@@ -348,6 +351,7 @@ def create_composite_icon(
 
 
 def image_id(path: str) -> str:
+    """Return a stable image identifier from dimensions and pixels."""
     width, height, bgra_bytes = _load_image_data(path)
     rgba_bytes = _bgra_to_rgba(bgra_bytes)
     crc = zlib.crc32(rgba_bytes) & 0xFFFFFFFF
@@ -355,6 +359,7 @@ def image_id(path: str) -> str:
 
 
 def _pick_icon_path(user_path: str, fallback_path: str, fallback_image_id: str, label: str) -> str:
+    """Choose the user icon path when available, otherwise the fallback path."""
     if os.path.exists(user_path):
         if image_id(user_path) == fallback_image_id:
             print(f"Using fallback {label} icon.")
@@ -366,6 +371,7 @@ def _pick_icon_path(user_path: str, fallback_path: str, fallback_image_id: str, 
 
 
 def _pause_before_exit() -> None:
+    """Pause before exit so console users can read the result."""
     if not sys.stdin.isatty() or not sys.stdout.isatty():
         return
 
@@ -441,6 +447,12 @@ if __name__ == "__main__":
         fallback_stop_png_id,
         "stop",
     )
+    log_icon_path = _pick_icon_path(
+        user_png_folder_path + "log.png",
+        fallback_png_folder_path + "default_log.png",
+        fallback_log_png_id,
+        "log",
+    )
 
     try:
         create_icon(base_icon_path, output_path + "icon.ico")
@@ -459,5 +471,11 @@ if __name__ == "__main__":
         print("Generated: stop.ico")
     except Exception as e:
         print(f"Error creating stop.ico: {e}")
+
+    try:
+        create_composite_icon(base_icon_path, log_icon_path, output_path + "log.ico", overlay_scale_factor)
+        print("Generated: log.ico")
+    except Exception as e:
+        print(f"Error creating log.ico: {e}")
 
     _pause_before_exit()
