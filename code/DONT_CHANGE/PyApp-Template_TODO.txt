@@ -3,16 +3,67 @@
 # wrap up and move as much as possible to future:
 ======================================
 
+rename? backend_packages_requirements
+backend_packages_list.txt
+
+move all batches to sub folder with short name?
+B?
+
+ask AI where bottlenack for length. Wait do i still need shroty python folder???????
+mention shoemwher eaxmple of too long path so one can compare? at this point i can hcek again in shortcut craeation. 
+
+do i want _ in _RUN BEFORE FIRST START AND AFTER FOLDER MOVE TO GENERATE SHORTCUTS? kind of no püurpoe and layman could be ticked off by "_"?
+also renmaed to "RUN TO GENERATE SHORTCUTS BEFORE FIRST START AND AFTER FOLDER MOVE". aks AI if better name
+
+add text inside: _VERSION_0.8a. maybe renamed to indice backend. do i want to distinguish backend and freamwork. backend shoulkd alawys be framework i guess. dev stuff is kind of not backend? only dont chagne is framewokr? hmm. i kind of only differnentiat there what is already there to be modified from tempplate aka dev stuff files and what needs to be added new my dev
+do i want text in all the signal files and so on? maybe onily if i dont care about speedup
+
+ask AI for more test ideas/featues. Ask for recommneatiodbs to test the main_scripts. test via compile? easy way for git actions.... simular stuff
+
+what if i move evrything that only dev cares about into FOR_DEVELOPERS and rest is code but i guess that also only for devs. only thing that end user cares aabout is settings. but also nice to have acessible dev_settings. not sure think about. waht if i put everything but "settings.py" and "main_script.yp" into "backend" ? makes paths longer tho.
+how high do i want pyproject.toml? new gitignore? want multiple? new README would be nice thehre
+also nicer for updating.
+new license?
+
+removed unnecessary/useless __init__.pys
+
+wait. stop closes instalngly? or opens mimiimized? make stopper and settings be open. or maybe not setting.lnk. test if it does not creat setting.lnk if something
+
+do i still need tmp.txt in gitignore
+
+can i measure when shortcut cration that path too long and warn and abort? doesnt python or its packages liomit?
+
+is backend terminal minimization as fast as possibel? do i want to set appid icon and title for any print in backend. might just be easyer?
+
+waht varaible should i make capitalized? in common_variables. all i guess? generally all vars that i imoprt i guess but not in dev settings tho
+
+renameed get_launcerh_settings to common_launcher
+
+ask AI if anything would break for frontend low. I guess wrapper needs to be very lowend safe
+
+have all readme names same convention
+
+add shortcut to logs folder
+i guess that script should look for live setting wher next log woud be produced. need new icon
+
+move to dev_tools : start_time_dummy_main_script.py
+no actiually to helpers in backend_test_tools
+
+what type of window d o we want backend to be? probably generic for future proof
+
+add _README_ to sepcfic scripts. do i want to just call it scripts? i guess i will never have generics again?
+
+crate a wrapper launch cost scrtipt -> ask startup time from start_program instraf of from lnk via batch in backend tools
+
+launch backend mimizied and only go to front if any print? is possible?
+
+have a look at inital batches for shortcuts to launch. 
 
 
-Install Python at generate shortcuts?
+does the settings.py import even work for non same wdir? mention? does it work for all modes?
 
 test what happends fro prompt of delete_folder_safe. is abort wanted or do i want repeated prompt or print path to fodler and manual prompt and then rechekc ....
 chekc if folder size check and walks are fast enough
-
-cehck ProcessIdRegistry and all in launcehr_common
-if i x terminal it does not remove pid
-double chek that pid stuff is correct with \n missing or being added correctly
 
 check ensure_python_distro
 
@@ -35,8 +86,6 @@ fix erorr print in wrapper mode haveing blac kcolor for tiomestapmo
 dont i always handle a interpreter crash by wrapper and emulator? no need for setting?
 in wrapper. do i want appearance change attempt for error?
 
-crate a wrapper launch cost scrtipt -> ask startup time from start_program instraf of from lnk via batch in backend tools
-
 can main_scirpt just import dev_settings? for all cases?
 -> mention? i guess overkill. do i want to pass more envs?
 
@@ -58,7 +107,6 @@ genrally simplify whole path for normal start and once start that user would see
 
 move up [Python Failure Return] to exception SyntaxError. but i guess make sure to reset input and print before? or do i want warpper prints to end in log? probalby actually
 
-
 make input after every exec(script) at elast for script_has_terminal or make try except with normal input. somehow it should not be able to fail.
 
 # how can i be carefull with python traceback error color red with any bg? how can i make it nicer for older or any python verions error print
@@ -74,11 +122,6 @@ test logic for frontend python and package installation for missing folder
 
 ask ai if case for backend tools paths:
     fix startup time measruemtn: make sure it kills process and removed pid no mather what closing setting is there for on_success
-
-
-move helper functions below code where needed?
-
-have a look at inital batches for shortcuts to launch. 
 
 
 do i still need or handle it via _pth:
@@ -134,8 +177,7 @@ have colors for setup cmds?
 do they wanrt titles
 
 do i really want terminal to stay open so long? cant i just spawn invisible to monitor for immeadiate fail and then oipen a cmd to print thta?
-
-launch backend mimizied and only go to front if any print? is possible?
+i guess i could only spwn inviebl but risky for change
 
 set color and title in Popen alreay
 
@@ -192,14 +234,12 @@ am i using faulthandler correctly? do i need to print that to a log? ask ai if w
 renamed: generate requiremtns to "generate lsit of ...". Add readme that explains what they do 
 think if all tool names appear nice
 
-does the settings.py import even work for non same wdir? mention? does it work for all modes?
-
 add vscode settigns to pyproject.toml?
 update pyproject.toml but not enable the D
 add only usefual stuff to pyproject
 update good settings for pyrefly for pyproject.toml
 
-mention: (but where?)
+mention: (but where? _README in DONT_CHANGE)
 mayor version: remove stuff outside DONT_CHANGE
 minor version: replacement or added outside DONT_CHANGE
 min version: replace DONT_CHANGE enough
@@ -215,6 +255,8 @@ when do i want no cache or no upgrade for pip sintall
 ==== Must do before release (in end) ====
 =========================================
 
+ask AI to check for mistakes and recommend improvemnts. Also chekc spelling and bad coding conventiosns
+
 Reorder features in readme. Also tags. And add description 
 
 never close on backend failur: shoudl be already? ask AI if could ahppend. THat should not happen. always open a new terminal to report. I guess no log then.
@@ -225,11 +267,10 @@ update _README in DONT_CHANGE
 
 add crash icons? and terminal name. i guess they could always do that?
 
-ask AI if i fortgit a featue to emantion
+ask AI if i forgot a featue to mention
 
 udpate size in readme
 
-waht varaible should i make capitalized? all i guess?
 
 make suire first prints which everyone will see are most nice. aks AI for ideas
 
@@ -252,8 +293,6 @@ cehck diff of git to local with code.
 test if still portable/downlaodnable
 
 does python_version="" work?
-
-test wdinows nmotifiartion
 
 bump to version 1.0 afterwards
 
@@ -281,6 +320,10 @@ ask if i can use more input succes/warn
 
 ask it to add comment to code blocks
 
+update all licenses
+
+
+
 
 
 
@@ -300,6 +343,12 @@ ask it to add comment to code blocks
 ==== Future ====
 # make feature triage for future: maybe first implemetn all features such that AI can best copy behaviour for otehr launch options and ask what would be extra possible/current there
 ================
+
+add shortcut for git check if update avaliable and priomopt options
+
+test wdinows nmotifiartion
+
+move helper functions below code where needed?
 
 Make txt which tells what's minimally needed to keep 
 
