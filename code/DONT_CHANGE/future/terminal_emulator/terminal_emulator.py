@@ -1,3 +1,5 @@
+"""Run the configured Python script inside the bundled PySide terminal emulator."""
+
 import subprocess
 import sys
 
@@ -7,6 +9,7 @@ BACKEND_PYTHON_EXE = "py"
 try:
 
     def run_text_in_new_terminal_and_wait(text, python_exe: str = "py"):
+        """Run helper Python code in a separate console window and wait for it to finish."""
         import subprocess
 
         subprocess.run(  # noqa:S603
@@ -89,6 +92,7 @@ try:
     )
 
     def play_windows_sound(wav_path: str) -> None:
+        """Play a Windows .wav notification sound when one is configured."""
         try:
             import winsound
             winsound.PlaySound(
@@ -100,6 +104,7 @@ try:
 
     def send_windows_notification(notification_title: str, message: str, app_id: str) -> None:
 
+        """Send a Windows toast notification for launcher completion events."""
         powershell_script = r"""
 $titleText = if ($args.Count -gt 0) { $args[0] } else { "Python script" }
 $messageText = if ($args.Count -gt 1) { $args[1] } else { "" }
@@ -146,6 +151,7 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
             pass
 
     def open_file_in_default_app(path: str) -> None:
+        """Open the file in default app."""
         if path == "":
             return
 
@@ -282,13 +288,16 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
 
     # classes
     class Input_line(QLineEdit):
+        """Capture terminal input with command history navigation."""
         def __init__(self, parent: QWidget | None = None) -> None:
+            """Initialize the Input_line instance."""
             super().__init__(parent)
             self.history: list[str] = []
             self.history_index: int = 0
             self.current_text_buffer: str = ""
 
         def add_to_history(self, text: str) -> None:
+            """Add a submitted input line to history."""
             if text.strip() and (not self.history or self.history[-1] != text):
                 self.history.append(text)
             self.history_index = len(self.history)
@@ -296,6 +305,7 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
 
         @override
         def keyPressEvent(self, event) -> None:
+            """Handle input history navigation and submit-on-enter behavior."""
             if not self.history:
                 super().keyPressEvent(event)
                 return
@@ -320,6 +330,7 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
                 super().keyPressEvent(event)
 
     class Terminal_window(QMainWindow):
+        """Display and control the PySide terminal emulator window."""
         def __init__(
             self,
             script_path: str,
@@ -354,6 +365,7 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
             #######################
             # local settings
 
+            """Initialize the Terminal_window instance."""
             base_default_button_settings: dict[str, bool] = {
                 "visible": True,
                 "clickable": True,
@@ -678,22 +690,26 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
         # specific button state setters
 
         def set_autoscroll_state(self, state: bool) -> None:
+            """Set the autoscroll state."""
             if self.get_autoscroll_state() != state:
                 self._autoscroll_button.setChecked(state)
                 self._restyle(self._autoscroll_button)
 
         def set_show_input_state(self, state: bool) -> None:
+            """Set the show input state."""
             if self.get_show_input_state() != state:
                 self._show_input_button.setChecked(state)
                 self._restyle(self._show_input_button)
                 self._refresh_terminal_output()
 
         def set_highlight_on_print_state(self, state: bool) -> None:
+            """Set the highlight on print state."""
             if self.get_highlight_on_print_state() != state:
                 self._highlight_on_print_button.setChecked(state)
                 self._restyle(self._highlight_on_print_button)
 
         def set_foreground_on_print_state(self, state: bool) -> None:
+            """Set the foreground on print state."""
             if self.get_foreground_on_print_state() != state:
                 self._foreground_on_print_button.setChecked(state)
                 self._restyle(self._foreground_on_print_button)
@@ -702,36 +718,45 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
         # specific button state getters
 
         def get_highlight_on_print_state(self) -> bool:
+            """Return the highlight on print state."""
             return self._highlight_on_print_button.isChecked()
 
         def get_foreground_on_print_state(self) -> bool:
+            """Return the foreground on print state."""
             return self._foreground_on_print_button.isChecked()
 
         def get_autoscroll_state(self) -> bool:
+            """Return the autoscroll state."""
             return self._autoscroll_button.isChecked()
 
         def get_show_input_state(self) -> bool:
+            """Return the show input state."""
             return self._show_input_button.isChecked()
 
         ###############
         # specific button state togglers
 
         def toggle_autoscroll(self) -> None:
+            """Toggle the autoscroll."""
             self.set_autoscroll_state(not self.get_autoscroll_state())
 
         def toggle_show_input(self) -> None:
+            """Toggle the show input."""
             self.set_show_input_state(not self.get_show_input_state())
 
         def toggle_highlight_on_print(self) -> None:
+            """Toggle the highlight on print."""
             self.set_highlight_on_print_state(not self.get_highlight_on_print_state())
 
         def toggle_foreground_on_print(self) -> None:
+            """Toggle the foreground on print."""
             self.set_foreground_on_print_state(not self.get_foreground_on_print_state())
 
         ###############
         # general button miscellaneous
 
         def press_button(self, label: str) -> None:
+            """Invoke a configured terminal control button."""
             btn = self.get_button_widget(label)
             if btn.isCheckable():
                 btn.setChecked(not btn.isChecked())
@@ -742,19 +767,23 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
         # general button related setters
 
         def set_button_clickable_state(self, label: str, enabled: bool) -> None:
+            """Set the button clickable state."""
             self._buttons[label].setEnabled(enabled)
             self._menu_buttons[label].setEnabled(enabled)
 
         def set_button_state_and_trigger_on_change(self, label: str, enabled: bool) -> None:
+            """Set the button state and trigger on change."""
             if self._buttons[label].isChecked() != enabled:
                 self.press_button(label)
 
         def set_button_pinned_state(self, label: str, checked: bool) -> None:
+            """Set the button pinned state."""
             self._button_pin_states[label] = checked
             self._refresh_menu_controls()
             self._refresh_top_bar()
 
         def set_button_visible_state(self, label: str, visible: bool) -> None:
+            """Set the button visible state."""
             self._button_visible_states[label] = visible
             self._menu_entries[label].setVisible(visible)
             self._refresh_top_bar()
@@ -763,44 +792,55 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
         # general button related getters
 
         def get_button_widget(self, label: str) -> QPushButton:
+            """Return the button widget."""
             return self._buttons[label]
 
         def get_button_clickable_state(self, label: str) -> bool:
+            """Return the button clickable state."""
             return self._buttons[label].isEnabled()
 
         def get_button_pinned_state(self, label: str) -> bool:
+            """Return the button pinned state."""
             return self._button_pin_states[label]
 
         def get_button_state(self, label: str) -> bool:
+            """Return the button state."""
             return self._buttons[label].isChecked()
 
         def get_button_visible_state(self, label: str) -> bool:
+            """Return the button visible state."""
             return self._buttons[label].isVisible()
 
         ###############
         # general button related togglers
 
         def toggle_button_clickable_state(self, label: str):
+            """Toggle the button clickable state."""
             self.set_button_clickable_state(label, not self.get_button_clickable_state(label))
 
         def toggle_button_pinned_state(self, label: str):
+            """Toggle the button pinned state."""
             self.set_button_pinned_state(label, not self.get_button_pinned_state(label))
 
         def toggle_button_state(self, label: str):
+            """Toggle the button state."""
             self.set_button_state_and_trigger_on_change(label, not self.get_button_state(label))
 
         def toggle_button_visible_state(self, label: str):
+            """Toggle the button visible state."""
             self.set_button_visible_state(label, not self.get_button_visible_state(label))
 
         #################
         # terminal (output field) related
 
         def _timestamp_prefix(self, fmt: str | None) -> str:
+            """Return the configured timestamp prefix for a line."""
             if not fmt:
                 return ""
             return datetime.now().astimezone().strftime(fmt)
 
         def _add_line_timestamps(self, text: str, fmt: str | None, state_attr: str) -> str:
+            """Add timestamp prefixes to output lines when configured."""
             if not fmt:
                 if text:
                     setattr(self, state_attr, text.endswith("\n"))
@@ -824,6 +864,7 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
             timestamp_format: str | None = None,
             state_attr: str = "_log_at_line_start",
         ) -> None:
+            """Write the log."""
             if self.log_stream is None:
                 return
 
@@ -833,6 +874,7 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
             self.log_stream.flush()
 
         def clear_terminal(self) -> None:
+            """Clear the terminal output display."""
             self._terminal_output_entries.clear()
             self._terminal_output.clear()
 
@@ -854,6 +896,7 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
             # if isinstance(bg_color,str):
             #     bg_color:QColor=QColor(bg_color) #type:ignore
 
+            """Append styled text to the terminal display and log."""
             if error == True:
                 color = ERROR_PRINT_COLOR
                 bg_color = ERROR_PRINT_BG
@@ -884,6 +927,7 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
             self._insert_text(text=text, color=color, bg_color=bg_color)
 
         def go_to_terminal_bottom(self) -> None:
+            """Scroll the terminal output display to the bottom."""
             sb = self._terminal_output.verticalScrollBar()
             with QSignalBlocker(sb):
                 sb.setValue(sb.maximum())
@@ -892,9 +936,11 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
         # input bar related
 
         def clear_input(self) -> None:
+            """Clear the terminal input box."""
             self.input_line.clear()
 
         def enter_input(self) -> None:
+            """Send the current input box contents to the child process."""
             text = self.input_line.text()
             if not self.process or self.process.state() != QProcess.ProcessState.Running:
                 return
@@ -911,9 +957,11 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
             self.clear_input()
 
         def _set_input_enabled(self, enabled: bool) -> None:
+            """Set the input enabled."""
             self.input_line.setEnabled(enabled and self.terminal_needs_input)
 
         def _normalized_window_title(self) -> str:
+            """Return the window title without completion suffixes."""
             title = self.windowTitle()
             for prefix in ("[Success] ", "[Failure] ", "[Crash] "):
                 if title.startswith(prefix):
@@ -921,12 +969,15 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
             return title
 
         def _clear_completion_title(self) -> None:
+            """Remove the completion marker from the window title."""
             self.setWindowTitle(self._normalized_window_title())
 
         def _set_completion_title(self, status: str) -> None:
+            """Set the completion title."""
             self.setWindowTitle(f"[{status}] {self._normalized_window_title()}")
 
         def _close_automatically(self, exit_code: int = 0) -> None:
+            """Close the automatically."""
             if self._window_is_closing:
                 return
 
@@ -951,12 +1002,14 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
                 self.setWindowIcon(QIcon(self.start_icon_path))
 
         def set_title(self, title: str) -> None:
+            """Set the title."""
             if title != "":
                 self.setWindowTitle(title)
             elif self.start_title != "":
                 self.setWindowTitle(self.start_title)
 
         def set_size(self, width: int | None, height: int | None) -> None:
+            """Set the size."""
             if width is None:
                 width = self.start_width
             if height is None:
@@ -968,23 +1021,28 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
         # window related general getters
 
         def get_icon(self) -> str:
+            """Return the icon."""
             return self.icon_path
 
         def get_title(self) -> str:
+            """Return the title."""
             return self.windowTitle()
 
         def get_size(self) -> tuple[int, int]:
+            """Return the size."""
             return self.size().width(), self.size().height()
 
         ###############
         # taskbar/system tray related
 
         def set_window_system_tray(self) -> None:
+            """Set the window system tray."""
             self._window_is_in_tray = True
             self.hide()
             self.tray_icon.show()
 
         def undo_set_window_system_tray(self) -> None:
+            """Remove the terminal window from the system tray."""
             self._window_is_in_tray = False
             self.show()
             self.activateWindow()
@@ -992,16 +1050,19 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
             self.tray_icon.hide()
 
         def set_window_minimized(self) -> None:
+            """Set the window minimized."""
             if self._window_is_in_tray == True:
                 self.undo_set_window_system_tray()
             self.showMinimized()
 
         def set_window_normal(self) -> None:
+            """Set the window normal."""
             if self._window_is_in_tray == True:
                 self.undo_set_window_system_tray()
             self.showNormal()
 
         def set_window_maximized(self) -> None:
+            """Set the window maximized."""
             if self._window_is_in_tray == True:
                 self.undo_set_window_system_tray()
             self.showMaximized()
@@ -1010,6 +1071,7 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
         # highlighting related
 
         def window_is_active(self) -> bool:
+            """Return whether the terminal window currently has focus."""
             return QApplication.applicationState() == Qt.ApplicationState.ApplicationActive
 
         def bring_window_to_front(self) -> None:
@@ -1037,6 +1099,7 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
                 pass
 
         def highlight_in_taskbar(self) -> None:
+            """Flash the taskbar button when the window is not active."""
             QApplication.alert(self)
 
         def flash_in_taskbar(self, flashes: int = 5, timeout_ms: int = 0, until_foreground: bool = False) -> None:
@@ -1063,6 +1126,7 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
             FLASHW_TIMERNOFG = 0x0000000C  # TIMER | (no foreground stop)
 
             class FLASHWINFO(ctypes.Structure):
+                """Describe the Windows FlashWindowEx structure passed through ctypes."""
                 _fields_ = [
                     ("cbSize", ctypes.wintypes.UINT),
                     ("hwnd", ctypes.wintypes.HWND),
@@ -1099,6 +1163,7 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
             FLASHW_STOP = 0
 
             class FLASHWINFO(ctypes.Structure):
+                """Describe the Windows FlashWindowEx structure passed through ctypes."""
                 _fields_ = [
                     ("cbSize", ctypes.wintypes.UINT),
                     ("hwnd", ctypes.wintypes.HWND),
@@ -1120,6 +1185,7 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
         # script related
 
         def open_python_script_in_editor(self):
+            """Open the python script in editor."""
             try:
                 import shutil  # lazy import because slow
                 if not os.path.exists(self.script_path):
@@ -1138,6 +1204,7 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
                 self.terminal_print("=" * 20, error=True)
 
         def start_script(self) -> None:
+            """Start the configured Python script inside the terminal emulator."""
             if self.process.state() != QProcess.ProcessState.NotRunning:
                 self.stop_script(suppress_finished_event=True)
 
@@ -1179,6 +1246,7 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
                     QTimer.singleShot(0, lambda: self._close_automatically(1))
 
         def stop_script(self, user_requested: bool = False, suppress_finished_event: bool = False) -> None:
+            """Stop the running child script process."""
             if self.process.state() != QProcess.ProcessState.NotRunning:
                 self._stop_requested_by_user = user_requested
                 self._suppress_next_finish_event = suppress_finished_event
@@ -1189,6 +1257,7 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
 
         def restart_script(self) -> None:
             # Set restarting visual state
+            """Restart the child script process."""
             for btn in [self._restart_button, self._menu_buttons.get("restart")]:
                 if btn:
                     btn.setProperty("restarting", "true")
@@ -1204,11 +1273,13 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
         # backend
 
         def _restyle(self, w: QWidget) -> None:
+            """Refresh widget styling after state changes."""
             w.style().unpolish(w)
             w.style().polish(w)
             w.update()
 
         def _sync_menu_button_checked(self, label: str, checked: bool) -> None:
+            """Sync a menu checkbox with its button state."""
             menu_btn = self._menu_buttons.get(label)
             if not menu_btn:
                 return
@@ -1223,11 +1294,13 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
             menu_btn.update()
 
         def _press_button_in_menu(self, label: str) -> None:
+            """Handle a terminal control action triggered from the tray menu."""
             self.press_button(label)
             self._refresh_menu_controls()
 
         def _add_button(self, button_text: str, button_label: str, checkable: bool = False):
             # add attributes if missing
+            """Create and register a terminal control button."""
             if not hasattr(self, "_buttons"):
                 self._buttons: dict[str, QPushButton] = {}
             if not hasattr(self, "_button_pin_states"):
@@ -1253,11 +1326,13 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
             return button
 
         def _on_tray_icon_activated(self, reason) -> None:
+            """Restore the terminal window when the tray icon is activated."""
             if reason == QSystemTrayIcon.ActivationReason.Trigger:
                 self.undo_set_window_system_tray()
 
         def _insert_text(self, text: str, color: str | None = None, bg_color: str | None = None) -> None:
 
+            """Insert process output into the terminal display."""
             if isinstance(color, str):
                 color: QColor = QColor(color)  # type:ignore
             if isinstance(bg_color, str):
@@ -1301,6 +1376,7 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
             # Restore view AFTER Qt updates layout; also avoid calling ensureCursorVisible().
             def restore_view() -> None:
                 # restore scroll first
+                """Restore scroll position and autoscroll state after output updates."""
                 with QSignalBlocker(sb):
                     sb.setValue(old_scroll)
 
@@ -1313,6 +1389,7 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
             QTimer.singleShot(0, restore_view)
 
         def _refresh_terminal_output(self) -> None:
+            """Refresh terminal output from the child process buffer."""
             self._terminal_output.clear()
             for text, color, bg_color, is_user_input in self._terminal_output_entries:
                 if is_user_input and not self.get_show_input_state():
@@ -1321,6 +1398,7 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
 
         def _refresh_menu_controls(self) -> None:
             # Sync pin buttons
+            """Refresh tray menu controls to match current button state."""
             for label, pin_button in self._menu_pin_buttons.items():
                 is_pinned = self._button_pin_states.get(label, False)
 
@@ -1333,6 +1411,7 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
 
         def _refresh_top_bar(self) -> None:
             # remove all items from the layout except the menu button
+            """Refresh top bar visibility and button layout."""
             while self._top_bar.count() > 0:
                 _item = self._top_bar.takeAt(0)
 
@@ -1351,6 +1430,7 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
             self._top_bar.addStretch()
 
         def _read_stdout(self) -> None:
+            """Read the stdout."""
             msg = bytes(self.process.readAllStandardOutput()).decode(errors="replace")  # type: ignore
 
             if msg.startswith("Terminal_window."):
@@ -1364,10 +1444,12 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
                 self.terminal_print(msg, end="")
 
         def _read_stderr(self) -> None:
+            """Read the stderr."""
             data = bytes(self.process.readAllStandardError()).decode(errors="replace")  # type: ignore
             self.terminal_print(data, error=True)
 
         def _on_finished(self, exit_code: int, _exit_status: QProcess.ExitStatus) -> None:
+            """Handle child process completion and update terminal state."""
             if self._suppress_next_finish_event:
                 self._suppress_next_finish_event = False
                 self._stop_requested_by_user = False
@@ -1406,6 +1488,7 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
                     QTimer.singleShot(0, lambda: self._close_automatically(exit_code))
 
         def _run_completion_alerts(self, kind: str, exit_code: int) -> None:
+            """Run configured completion alerts after the child process exits."""
             messages = {
                 "success": "Script finished successfully.",
                 "failure": f"Script exited with code {exit_code}.",
@@ -1426,6 +1509,7 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
                 open_file_in_default_app(self.log_path)
 
         def _cleanup(self) -> None:
+            """Clean up the child process and temporary PID-file entries."""
             if self._window_is_closing:
                 return
             self._window_is_closing = True
@@ -1446,6 +1530,7 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
 
         @override
         def closeEvent(self, event) -> None:
+            """Clean up the terminal emulator before the window closes."""
             if not self._auto_close_requested and self._confirm_close_button.isChecked():
                 reply = QMessageBox.question(
                     self,
@@ -1470,16 +1555,19 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
         """
 
         def __init__(self, *streams, timestamp_format: str = ""):
+            """Initialize the pipe_splitter instance."""
             self.streams = streams
             self.timestamp_format = timestamp_format
             self._at_line_start = True
 
         def _timestamp_prefix(self) -> str:
+            """Return the configured timestamp prefix for a line."""
             if not self.timestamp_format:
                 return ""
             return datetime.now().astimezone().strftime(self.timestamp_format)
 
         def _add_line_timestamps(self, data: str) -> str:
+            """Add timestamp prefixes to output lines when configured."""
             if data is None:
                 data = ""
             if not isinstance(data, str):
@@ -1497,16 +1585,19 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
             return "".join(timestamped_parts)
 
         def write(self, data):
+            """Write text to the wrapped stream or terminal target."""
             data = self._add_line_timestamps(data)
             for stream in self.streams:
                 stream.write(data)
                 stream.flush()
 
         def flush(self):
+            """Flush the wrapped stream when supported."""
             for stream in self.streams:
                 stream.flush()
 
     def prepare_log_path(path: str) -> str:
+        """Create the log folder and apply overwrite behavior."""
         path = datetime.now().astimezone().strftime(path)
         folder = os.path.dirname(path)
         if folder:
@@ -1522,17 +1613,20 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
             pass
 
     def arg_to_bool(index: int, default: bool) -> bool:
+        """Convert a launcher string argument to a boolean value."""
         if len(sys.argv) <= index:
             return default
 
         return sys.argv[index].strip().lower() in {"1", "true", "yes", "on"}
 
     def arg_to_str(index: int, default: str = "") -> str:
+        """Read a launcher argument and translate the empty-argument sentinel."""
         if len(sys.argv) <= index:
             return default
         return sys.argv[index]
 
     def create_signal_file(path: str) -> None:
+        """Create the signal file."""
         if path == "":
             return
 
@@ -1543,6 +1637,7 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
             pass
 
     def remove_own_process_id_file_entries(path: str, process_id: int) -> None:
+        """Remove the own process id file entries."""
         try:
             with open(path, encoding="utf-8") as pid_file:
                 lines = pid_file.readlines()
@@ -1566,6 +1661,7 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
             pass
 
     def write_own_process_id_file_entry(path: str) -> None:
+        """Write the own process id file entry."""
         if path == "":
             return
 
@@ -1575,6 +1671,7 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
         atexit.register(remove_own_process_id_file_entries, path, process_id)
 
     def load_variable_from_file(file_path: str, variable_name: str):
+        """Load the variable from file."""
         path = os.path.abspath(file_path)
         module_name = os.path.splitext(os.path.basename(path))[0]
 
@@ -1588,6 +1685,7 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
         return getattr(module, variable_name)
 
     def normalize_button_settings(button_settings):
+        """Normalize the button settings."""
         if button_settings is None:
             return None
         if isinstance(button_settings, dict):
@@ -1600,6 +1698,7 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
     # main
 
     def main() -> int:
+        """Run this script's command-line workflow."""
         global BACKEND_PYTHON_EXE, INPUT_PRINT_COLOR, INPUT_PRINT_BG, ERROR_PRINT_BG, ERROR_PRINT_COLOR, INPUT_PREPEND, LOG_INPUT_PREPEND  # type:ignore
 
         # process args
