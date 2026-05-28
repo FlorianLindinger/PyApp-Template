@@ -38,6 +38,7 @@ ASSET_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "brow
 
 
 def run_text_in_new_terminal(text: str) -> None:
+    """Launch helper Python code in a separate console window."""
     subprocess.Popen(  # noqa:S603
         [sys.executable, "-X", "faulthandler", "-c", text],
         creationflags=getattr(subprocess, "CREATE_NEW_CONSOLE", 0),
@@ -45,6 +46,7 @@ def run_text_in_new_terminal(text: str) -> None:
 
 
 def show_browser_open_failure(url: str, error: BaseException | None = None) -> None:
+    """Show the browser terminal URL when automatic browser opening fails."""
     error_text = "" if error is None else f"\nAutomatic browser opening failed:\n{error!r}\n"
     script = f"""
 print({error_text!r})
@@ -61,6 +63,7 @@ input("Copy/open the URL above, then press Enter to close this helper window.")
 
 
 def open_browser(url: str, start_minimized: bool) -> bool:
+    """Open the browser terminal URL, minimizing the browser when requested."""
     if start_minimized and os.name == "nt":
         try:
             import ctypes
@@ -75,6 +78,7 @@ def open_browser(url: str, start_minimized: bool) -> bool:
 
 
 def play_windows_sound(wav_path: str) -> None:
+    """Play a Windows .wav notification sound when one is configured."""
     try:
         import winsound
 
@@ -87,6 +91,7 @@ def play_windows_sound(wav_path: str) -> None:
 
 
 def send_windows_notification(notification_title: str, message: str, app_id: str) -> None:
+    """Send a Windows toast notification for launcher completion events."""
     powershell_script = r"""
 $titleText = if ($args.Count -gt 0) { $args[0] } else { "Python script" }
 $messageText = if ($args.Count -gt 1) { $args[1] } else { "" }
@@ -134,6 +139,7 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
 
 
 class BrowserTerminalState:
+    """Track browser terminal process state, output events, and completion behavior."""
     def __init__(
         self,
         *,
@@ -153,6 +159,7 @@ class BrowserTerminalState:
         logger: TerminalLogger,
         registry: ProcessIdRegistry,
     ) -> None:
+        """Initialize the BrowserTerminalState instance."""
         self.title = title
         self.app_id = app_id
         self.close_on_success = close_on_success
@@ -186,9 +193,11 @@ class BrowserTerminalState:
 
     @property
     def process_running(self) -> bool:
+        """Return whether the child process is still active."""
         return self.pty_process is not None and self.pty_process.isalive()
 
     def add_output(self, text: str, *, log: bool = True) -> None:
+        """Record terminal output and notify waiting clients."""
         if text == "":
             return
 
@@ -204,6 +213,7 @@ class BrowserTerminalState:
             self._condition.notify_all()
 
     def get_events_after(self, event_id: int, timeout_seconds: float = 20.0) -> list[dict[str, Any]]:
+        """Return buffered terminal events newer than the supplied event id."""
         deadline = time.monotonic() + timeout_seconds
         with self._condition:
             while not any(event["id"] > event_id for event in self._events):
@@ -216,6 +226,7 @@ class BrowserTerminalState:
             return [event for event in self._events if event["id"] > event_id]
 
     def send_input(self, text: str) -> None:
+        """Write user input to the active child process."""
         if not self.process_running:
             return
 
@@ -226,6 +237,7 @@ class BrowserTerminalState:
             self.add_output(f"\r\n[failed sending input: {error}]\r\n", log=False)
 
     def resize(self, cols: int, rows: int) -> None:
+        """Resize the active terminal session."""
         if cols <= 0 or rows <= 0 or not self.process_running:
             return
 
@@ -236,6 +248,7 @@ class BrowserTerminalState:
             self.add_output(f"\r\n[failed resizing terminal: {error}]\r\n", log=False)
 
     def stop_process(self) -> None:
+        """Terminate the active child process."""
         process = self.pty_process
         if process is None or not process.isalive():
             return
@@ -254,10 +267,12 @@ class BrowserTerminalState:
                 )
 
     def request_shutdown(self, delay_seconds: float = 0.0) -> None:
+        """Request server shutdown after an optional delay."""
         if self.shutdown_server is None:
             return
 
         def shutdown_later() -> None:
+            """Delay and then run the server shutdown callback."""
             if delay_seconds > 0:
                 time.sleep(delay_seconds)
             self.shutdown_server()
@@ -265,6 +280,7 @@ class BrowserTerminalState:
         threading.Thread(target=shutdown_later, daemon=True).start()
 
     def run_completion_alerts(self, kind: str, exit_code: int) -> None:
+        """Run configured notifications, sounds, and log-opening actions."""
         messages = {
             "success": "Script finished successfully.",
             "failure": f"Script exited with code {exit_code}.",
@@ -290,6 +306,7 @@ class BrowserTerminalState:
 
 
 def resolve_pty_python_exe(python_exe: str) -> str:
+    """Resolve the pty python exe."""
     if os.path.basename(python_exe).lower() != "python.bat":
         return python_exe
 
@@ -301,17 +318,22 @@ def resolve_pty_python_exe(python_exe: str) -> str:
 
 
 def make_handler(state: BrowserTerminalState, title: str, token: str, icon_path: str):
+    """Build and return the handler."""
     class BrowserTerminalHandler(BaseHTTPRequestHandler):
+        """Serve browser terminal assets, state, and input endpoints."""
         server_version = "PyAppBrowserTerminal/2.0"
 
         def log_message(self, _format: str, *args: Any) -> None:
+            """Suppress the default HTTP request log line."""
             return
 
         def _token_ok(self) -> bool:
+            """Return whether the request token matches the browser session token."""
             query = parse_qs(urlparse(self.path).query)
             return query.get("token", [""])[0] == token
 
         def _send(self, status: int, content_type: str, body: bytes) -> None:
+            """Send an HTTP response with status, content type, and body."""
             self.send_response(status)
             self.send_header("Content-Type", content_type)
             self.send_header("Content-Length", str(len(body)))
@@ -320,9 +342,11 @@ def make_handler(state: BrowserTerminalState, title: str, token: str, icon_path:
             self.wfile.write(body)
 
         def _send_json(self, data: dict[str, Any], status: int = 200) -> None:
+            """Send a JSON HTTP response."""
             self._send(status, "application/json; charset=utf-8", json.dumps(data).encode("utf-8"))
 
         def _read_json(self) -> dict[str, Any]:
+            """Read and decode a JSON request body."""
             content_length = int(self.headers.get("Content-Length", "0") or "0")
             if content_length <= 0:
                 return {}
@@ -330,6 +354,7 @@ def make_handler(state: BrowserTerminalState, title: str, token: str, icon_path:
             return json.loads(body.decode("utf-8"))
 
         def _send_file(self, path: str, fallback_content_type: str) -> None:
+            """Serve a static asset when the request is authorized."""
             if not self._token_ok() or not os.path.isfile(path):
                 self._send(404, "text/plain; charset=utf-8", b"")
                 return
@@ -345,6 +370,7 @@ def make_handler(state: BrowserTerminalState, title: str, token: str, icon_path:
             self._send(200, content_type, data)
 
         def do_GET(self) -> None:
+            """Handle browser terminal HTTP GET requests."""
             parsed = urlparse(self.path)
             if parsed.path == "/favicon.ico":
                 self._send_file(icon_path, "image/x-icon")
@@ -388,6 +414,7 @@ def make_handler(state: BrowserTerminalState, title: str, token: str, icon_path:
             self._send(404, "text/plain; charset=utf-8", b"Not found")
 
         def do_POST(self) -> None:
+            """Handle browser terminal HTTP POST requests."""
             parsed = urlparse(self.path)
             if not self._token_ok():
                 self._send(403, "text/plain; charset=utf-8", b"Forbidden")
@@ -428,6 +455,7 @@ def make_handler(state: BrowserTerminalState, title: str, token: str, icon_path:
 
 
 def render_html(title: str, token: str) -> str:
+    """Render the browser terminal HTML shell."""
     safe_title = html.escape(title)
     token_json = json.dumps(token)
     favicon_url = f"/favicon.ico?token={token}"
@@ -618,6 +646,7 @@ poll();
 
 
 def read_pty_output(state: BrowserTerminalState) -> None:
+    """Read the pty output."""
     process = state.pty_process
     if process is None:
         return
@@ -643,6 +672,7 @@ def read_pty_output(state: BrowserTerminalState) -> None:
 
 
 def wait_for_process(state: BrowserTerminalState) -> None:
+    """Wait for the child process to finish and publish completion state."""
     process = state.pty_process
     if process is None:
         return
@@ -669,6 +699,7 @@ def start_pty_process(
     python_exe: str,
     wdir_is_script_dir: bool,
 ) -> None:
+    """Start the configured script in a pseudoterminal."""
     cwd = os.path.dirname(script_path) if wdir_is_script_dir else os.getcwd()
     resolved_python_exe = resolve_pty_python_exe(python_exe)
     env = os.environ.copy()
@@ -712,6 +743,7 @@ def start_pty_process(
 
 
 def main() -> None:
+    """Run this script's command-line workflow."""
     if len(sys.argv) < 17:
         raise ValueError(
             "Usage: browser_terminal.py script_path python_exe title icon_path app_id wdir_is_script_dir "
