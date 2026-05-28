@@ -1,3 +1,5 @@
+"""Generate Windows shortcuts for the configured PyApp Template launch modes."""
+
 import os
 import re
 import sys
@@ -21,11 +23,14 @@ from win32com.shell import shellcon  # type:ignore
 
 # import developer_settings
 from developer_settings import (
+    install_python_when_generating_shortcuts,
+    log_path_rel_to_start_folder,
     no_terminal_shortcut_name,
+    open_log_shortcut_name,
     open_settings_shortcut_name,
     program_name,
     stop_running_shortcut_name,
-    # terminal_emulator_shortcut_name,
+    use_global_python,
     user_settings_path,
     windows_terminal_shortcut_name,
 )
@@ -33,6 +38,7 @@ from developer_settings import (
 # browser_shortcut_name = getattr(developer_settings, "browser_shortcut_name", "")  # backwards compatible
 from DONT_CHANGE.specific_scripts.common_code import (
     close_terminal,
+    ensure_frontend_packages,
     make_abs_path_relative_to_file,
     print_traceback,
     sanitize_filename,
@@ -40,12 +46,12 @@ from DONT_CHANGE.specific_scripts.common_code import (
 from DONT_CHANGE.specific_scripts.common_variables import (
     developer_settings_path,
     icon_path,
-    # launcher_browser,
-    # launcher_emulator,
+    launcher_log,
     launcher_no_terminal,
     launcher_settings,
     launcher_stop,
     launcher_terminal,
+    log_icon_path,
     settings_icon_path,
     shortcut_output_dir,
     stop_icon_path,
@@ -62,12 +68,14 @@ SHORTCUT_RETRY_DELAY_SECONDS = 0.1
 
 
 def quote_cmd_argument(value):
+    """Quote the cmd argument."""
     text = os.fspath(value)
     return '"' + text.replace('"', '""') + '"'
 
 
 def sanitize_app_id(input_string):
     # 1. Convert to lowercase and normalize unicode (e.g., convert 'é' to 'e')
+    """Sanitize the program name into a compact Windows AppUserModelID."""
     name = unicodedata.normalize("NFKD", input_string).encode("ascii", "ignore").decode("ascii").lower()
     # 2. Replace spaces and underscores with hyphens
     name = re.sub(r"[\s_]+", "-", name)
@@ -121,8 +129,17 @@ def check_shortcut_was_created(output):
         time.sleep(SHORTCUT_RETRY_DELAY_SECONDS)
 
 
-def create_shortcut_with_appid(output, target, args="", icon_path=None, wdir="", app_id=None, description=""):
-
+def create_shortcut_with_appid(
+    output,
+    target,
+    args="",
+    icon_path=None,
+    wdir="",
+    app_id=None,
+    description="",
+    start_minimized=False,
+):
+    """Create a Windows shortcut and optionally assign an AppUserModelID."""
     if (icon_path is not None) and (not os.path.exists(icon_path)):
         print('[Warning] icon not existing at "{icon_path}"')
         icon_path = None
@@ -144,6 +161,9 @@ def create_shortcut_with_appid(output, target, args="", icon_path=None, wdir="",
     shortcut.Arguments = args
     shortcut.WorkingDirectory = wdir
     shortcut.Description = description
+
+    if start_minimized:
+        shortcut.WindowStyle = 7
     if icon_path:
         shortcut.IconLocation = icon_path
     try:
@@ -182,8 +202,8 @@ def create_shortcut_with_appid(output, target, args="", icon_path=None, wdir="",
                 print(f"[Warning] Failed to set AppID: {e}")
 
 
-def make_lnk(output_path, icon_path, launcher_path, args="", appid=None, description=""):
-
+def make_lnk(output_path, icon_path, launcher_path, args="", appid=None, description="", start_minimized=False):
+    """Create one configured launcher shortcut file."""
     print(f"[Info] Generating: {output_path}")
 
     launcher_args = ["/d", "/k", "call", quote_cmd_argument(launcher_path)]
@@ -198,11 +218,11 @@ def make_lnk(output_path, icon_path, launcher_path, args="", appid=None, descrip
         target=os.environ.get("COMSPEC", "cmd.exe"),
         wdir="",
         description=description,
+        start_minimized=start_minimized,
     )
 
 
 def main():
-
     # generate app-id
     appid = sanitize_app_id(program_name)
     # replace and shorten if too long which might cause path length limit problems (10 is arbitrary)
@@ -210,6 +230,11 @@ def main():
         appid = appid.replace("-", "").replace(".", "")
     if len(appid) > 15:
         appid = appid[:7] + appid[-7:]
+
+    # install frontend python and packages if install_local_python_environment_when_generating_shortcuts
+    if install_python_when_generating_shortcuts and not use_global_python:
+        ensure_frontend_packages(appid)
+        print()
 
     # Shortcut: normal start
     if windows_terminal_shortcut_name not in [None, False, ""]:
@@ -221,32 +246,8 @@ def main():
             args=appid,
             appid=appid,
             description=f"Start {program_name} in Windows Terminal.",
+            start_minimized=True,
         )
-
-    # # Shortcut: start in terminal emulator
-    # if terminal_emulator_shortcut_name not in [None, False, ""]:
-    #     out = shortcut_output_dir + "\\" + sanitize_filename(terminal_emulator_shortcut_name) + ".lnk"
-    #     make_lnk(
-    #         out,
-    #         icon_path,
-    #         launcher_emulator,
-    #         args=appid,
-    #         appid=appid + "E",  # use a separate AppID so the terminal emulator can be pinned separately
-    #         description=f"Start {program_name} in the bundled terminal emulator.",
-    #     )
-
-    # # Shortcut: start in browser terminal
-    # if browser_shortcut_name not in [None, False, ""]:
-    #     out = shortcut_output_dir + "\\" + sanitize_filename(browser_shortcut_name) + ".lnk"
-    #     make_lnk(
-    #         out,
-    #         icon_path,
-    #         launcher_browser,
-    #         args=appid,
-    #         appid=appid
-    #         + "B",  # use a separate AppID so the browser launcher can be pinned separately from terminal mode
-    #         description=f"Start {program_name} with the browser terminal.",
-    #     )
 
     # Shortcut: start without terminal
     if no_terminal_shortcut_name not in [False, None, ""]:
@@ -259,12 +260,24 @@ def main():
             appid=appid
             + "W",  # add "W" for windowless to allow both launchers to pin to taskbar because different app-id (for same shortcut target)
             description=f"Start {program_name} without opening a terminal window.",
+            start_minimized=True,
         )
 
     # Shortcut: stop program started by any generated launcher mode
     if stop_running_shortcut_name not in ["", False, None]:
         out = shortcut_output_dir + "\\" + sanitize_filename(stop_running_shortcut_name) + ".lnk"
         make_lnk(out, stop_icon_path, launcher_stop, description=f"Stop running {program_name} processes.")
+
+    # Shortcut: open current log file
+    if log_path_rel_to_start_folder not in [None, False, ""] and open_log_shortcut_name not in [None, False, ""]:
+        out = shortcut_output_dir + "\\" + sanitize_filename(open_log_shortcut_name) + ".lnk"
+        make_lnk(
+            out,
+            log_icon_path,
+            launcher_log,
+            description=f"Open the current {program_name} log file.",
+            start_minimized=False,
+        )
 
     # Shortcut: open settings
     if user_settings_path not in [None, False, ""] and open_settings_shortcut_name not in [None, False, ""]:
@@ -281,6 +294,7 @@ def main():
             settings_icon_path,
             launcher_settings,
             description=f"Open the {program_name} settings file.",
+            start_minimized=True,
         )
 
 
