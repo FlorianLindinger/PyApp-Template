@@ -2,7 +2,7 @@
 setlocal
 
 set "launcher_dir=%~dp0"
-set "python_exe=%launcher_dir%P\P.exe"
+set "python_exe=%launcher_dir%backend_python\python.exe"
 set "backend_script=%launcher_dir%specific_scripts\open_settings.py"
 
 if not exist "%python_exe%" (

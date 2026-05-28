@@ -55,17 +55,21 @@ _ANSI_RESET = "\033[0m"
 
 
 def print_success(msg, sep: str | None = " ", end: str | None = "\n"):
+    """Print a success-styled console message."""
     print(f"{_ANSI_SUCCESS}{msg}{_ANSI_RESET}", sep=sep, end=end)
 
 def print_warn(msg, sep: str | None = " ", end: str | None = "\n"):
+    """Print a warning-styled console message."""
     print(f"{_ANSI_WARN}{msg}{_ANSI_RESET}", sep=sep, end=end)
 
 
 def input_warn(msg):
+    """Prompt for input using warning console styling."""
     return input(f"{_ANSI_WARN}{msg}{_ANSI_RESET}")
 
 
 def input_success(msg):
+    """Prompt for input using success console styling."""
     return input(f"{_ANSI_SUCCESS}{msg}{_ANSI_RESET}")
 
 
@@ -1034,7 +1038,8 @@ def set_terminal_NAME_APPiD_ICON_once(app_id: str):
             _APP_ID_IS_SET = True
 
 
-def close_terminal() -> bool:
+def close_terminal(exit_code=None) -> bool:
+    """Close the current terminal window when the launcher can safely exit."""
     parent_pid = os.getppid()
     try:
         import ctypes
@@ -1075,8 +1080,10 @@ def close_terminal() -> bool:
     import signal
 
     os.kill(parent_pid, signal.SIGTERM)
-    return True
-
+    
+    import sys
+    sys.exit(exit_code)
+    
 
 # =========================
 # path related/file name related
