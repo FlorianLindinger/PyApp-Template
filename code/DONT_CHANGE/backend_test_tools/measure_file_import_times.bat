@@ -10,7 +10,7 @@ set "specific_scripts_dir=%HERE%..\specific_scripts"
 set "FILES=common_variables common_code get_launcher_settings"
 
 set "HELPER_FILE=%HERE%helper_scripts\measure_file_import_times.py"
-set "BACKEND_PY=%HERE%..\P\P.exe"
+set "BACKEND_PY=%HERE%..\backend_python\python.exe"
 
 :: ==========================
 
