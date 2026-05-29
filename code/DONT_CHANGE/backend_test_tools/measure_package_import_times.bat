@@ -4,7 +4,7 @@ setlocal EnableExtensions EnableDelayedExpansion
 :: ==========================
 :: benchmark settings
 
-set "PYTHON=%~dp0..\P\P.exe"
+set "PYTHON=%~dp0..\backend_python\python.exe"
 set "MODULES=os sys subprocess shutil rich traceback ctypes time re tempfile html.parser urllib.parse urllib.request urllib.error uuid signal threading"
 
 :: ==========================
