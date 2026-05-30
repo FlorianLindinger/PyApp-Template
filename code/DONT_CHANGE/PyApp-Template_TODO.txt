@@ -3,6 +3,8 @@
 # wrap up and move as much as possible to future:
 ======================================
 
+rname stuff to GIT_IGNORED
+
 remove test.py from git recotrds
 
 add common_variables stuff like:
