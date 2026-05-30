@@ -1,3 +1,15 @@
+# send_Windows_notification_on_crash,
+# send_Windows_notification_on_failure,
+# send_Windows_notification_on_success,
+
+# taskbar_flashing_on_crash,
+# taskbar_flashing_on_failure,
+# taskbar_flashing_on_success,
+# taskbar_highlight_on_crash,
+# taskbar_highlight_on_failure,
+# taskbar_highlight_on_success,
+
+
 def set_window_dwm_color(hwnd: int, attribute: int, rgb: tuple[int, int, int]) -> None:
     """Set one Windows DWM color attribute on a window."""
 
