@@ -34,8 +34,6 @@ from developer_settings import (
     user_settings_path,
     windows_terminal_shortcut_name,
 )
-
-# browser_shortcut_name = getattr(developer_settings, "browser_shortcut_name", "")  # backwards compatible
 from DONT_CHANGE.specific_scripts.common_code import (
     close_terminal,
     ensure_frontend_packages,

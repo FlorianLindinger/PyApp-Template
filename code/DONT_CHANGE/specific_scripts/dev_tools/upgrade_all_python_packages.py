@@ -1,3 +1,5 @@
+"""WIP"""
+
 import os
 import subprocess
 import sys
@@ -20,19 +22,24 @@ ensure_python_distro()
 try:
     path = save_current_packages(with_version=False)
 
-    subprocess.run([frontend_python_exe, "-m", "pip", "install", "pip", "--upgrade", "--disable-pip-version-check"])  # noqa
+    subprocess.run(  # noqa
+        [frontend_python_exe, "-m", "pip", "install", "pip", "--upgrade", "--disable-pip-version-check"],
+        check=True,
+    )
     subprocess.run(  # noqa
         [
             frontend_python_exe,
             "-m",
             "pip",
             "install",
+            "-r",
             path,
             "--target",
             frontend_packages_dir,
             "--upgrade",
             "--disable-pip-version-check",
-        ]
+        ],
+        check=True,
     )
     print()
     input_success("[Success] Press enter to exit")

@@ -1,3 +1,5 @@
+"""WIP"""
+
 import os
 
 
@@ -12,7 +14,9 @@ def make_abs(x: str) -> str:
 # backend related
 # ------------------------
 # on change of all backend: stuff has to be changed manually (see finish_backend_installation.py) or regenerated automatically by deleting the previous folder:
-backend_python_exe = make_abs("..\\backend_python\\python.exe")  # has to match python_exe_name in install_backend_python.bat
+backend_python_exe = make_abs(
+    "..\\backend_python\\python.exe"
+)  # has to match python_exe_name in install_backend_python.bat
 backend_python_dir = os.path.dirname(backend_python_exe)
 backend_python_pth_file = backend_python_dir + "\\python312._pth"
 backend_python_zip_rel_path = "python312.zip"
@@ -102,7 +106,7 @@ python_download_ftp_url = "https://www.python.org/ftp/python/"
 python_download_excluded_base_msi_names = {"path", "appendpath", "pip", "launcher"}
 python_download_timeout_s = 120
 env_var_to_signal_startup_time_measurement = "PYAPP_TEMPLATE_ACTIVE_STARTUP_TIME_MEASUREMENT"
-EMPTY_ARG_INDICATOR = "__EMPTY__"
+EMPTY_ARG_INDICATOR: str = "__EMPTY__"
 
 
 # =============================

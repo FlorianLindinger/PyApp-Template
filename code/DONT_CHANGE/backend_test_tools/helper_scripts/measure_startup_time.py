@@ -1,3 +1,5 @@
+"""Measure startup times for PyApp Template shortcuts and direct launch modes."""
+
 import argparse
 import ctypes
 import json

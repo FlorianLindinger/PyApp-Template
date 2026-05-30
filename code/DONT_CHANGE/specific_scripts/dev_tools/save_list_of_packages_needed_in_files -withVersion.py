@@ -1,3 +1,5 @@
+"""WIP"""
+
 import os
 import sys
 
@@ -13,7 +15,9 @@ from DONT_CHANGE.specific_scripts.common_code import (
 )
 
 try:
-    save_requirements_of_root_folder_withVersion()
+    success = save_requirements_of_root_folder_withVersion()
+    if not success:
+        raise RuntimeError("Failed to determine needed packages with versions.")
     print()
     input_success("[Success] Press enter to exit")
 except Exception as e:
