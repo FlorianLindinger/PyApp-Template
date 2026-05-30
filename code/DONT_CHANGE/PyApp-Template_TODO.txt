@@ -3,6 +3,57 @@
 # wrap up and move as much as possible to future:
 ======================================
 
+detialed docstring for dev scripts
+
+chagne clear_folder_contents in finish_backend_osntallion into delte folder safe
+
+summarize in file >100 lines docstring what scritps do
+
+double chack that everything in both common_code thjing are common. maybe change for frontend into sometinh like process args and common code
+
+review  if close_already_running_instances_on_start or prevent_start_if_already_running:
+in start_program
+
+do i want to remove stale PID lines in start_rpgram? test how slow i guess
+
+creationflags = subprocess.CREATE_NO_WINDOW for modern terminal?
+
+in staret_program docsating: """WIP: Add args and defaults""" and what it all does in the script 
+Same detail in wraoper
+
+
+maybe just have print2? no that would not work for imported sub functions.
+i need to know if started minimizeda and that not raised yet and then raise. i guess i could just raise once regardelss if start minimized. but all script have defined if minitmized so they know defintie. i gues replacing prtints and erros + global variable (test if works for subsciropt printing funciton) and raosei onece. local variable could be used to know if minimized. but then also variable in common_varialbes would do and pass to generate_shoerttus
+
+do i want that mayn try expcet levels in start_program and wrapper?
+
+do i care about 
+ensure_frontend_packages(appid) # appid probably doesnt matter but it still triggers icon change and title change when appid!=""
+in generate_shortcuts.py. i guess i go for conhost either way.
+
+for frontend terminal: do i need to set title and icon for conhost?
+
+ask AI if i cna harmonize coeeing conventions al lotittle more
+
+renamed to backend_py_pckgs to backend_packages?
+
+for all the shortcuts: what do i want for appearance. does wt or conhost have better taskbar appearance: icon , name?
+do i want to rename and icon ... for scripts that dont launc program?
+conhost takes icon and title from shorctu. wt does not? but i can set title manually
+conhost just better i guess-> wisscht
+shortcuts have terminal preferance
+checkout terminal tab in shorctu
+
+look why setting .py is not same as other .py?
+
+fix that is not moving to forgorund for first print
+
+is working:
+# Delete first so a locked shortcut fails with a clear timeout instead of hanging.
+    delete_existing_shortcut(output)
+does it warn with color if wronig??? doe it notice?
+
+
 add description to all __inits__
 
 update HOW_TO_CHANGE_ICONS.txt

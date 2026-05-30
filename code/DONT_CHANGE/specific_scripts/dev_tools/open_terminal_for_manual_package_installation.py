@@ -1,3 +1,5 @@
+"""WIP"""
+
 import os
 import subprocess
 import sys
@@ -7,7 +9,11 @@ root_dir = os.path.dirname(__file__) + "\\..\\..\\.."
 if root_dir not in sys.path:
     sys.path.insert(0, root_dir)
 
-from DONT_CHANGE.specific_scripts.common_code import ensure_python_distro, print_traceback
+from DONT_CHANGE.specific_scripts.common_code import (
+    create_frontend_python_tool_scripts,
+    ensure_python_distro,
+    print_traceback,
+)
 from DONT_CHANGE.specific_scripts.common_variables import (
     frontend_python_exe,
     frontend_script_for_set_python_and_pip_target,
@@ -15,6 +21,7 @@ from DONT_CHANGE.specific_scripts.common_variables import (
 
 try:
     ensure_python_distro()
+    create_frontend_python_tool_scripts()
 
     # upgrade pip
     try:
@@ -37,10 +44,7 @@ try:
     print('Install packages with "pip install package_name"')
     print()
 
-    subprocess.run(  # noqa
-        ["cmd", "/k", "call", frontend_script_for_set_python_and_pip_target],
-        shell=True,
-    )
+    subprocess.run(["cmd", "/k", "call", frontend_script_for_set_python_and_pip_target])  # noqa
 except Exception as e:
     print_traceback(
         f"[Error] Failed to open terminal for manual package installation: {e}", add_press_enter_to_exit=True

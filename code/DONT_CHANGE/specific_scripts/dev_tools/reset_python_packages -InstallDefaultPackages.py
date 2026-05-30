@@ -1,3 +1,5 @@
+"""WIP"""
+
 import os
 import sys
 
@@ -8,6 +10,7 @@ if root_dir not in sys.path:
 
 from DONT_CHANGE.specific_scripts.common_code import (
     delete_packages,
+    ensure_python_distro,
     input_success,
     install_packages_from_file,
     print_traceback,
@@ -15,6 +18,7 @@ from DONT_CHANGE.specific_scripts.common_code import (
 from DONT_CHANGE.specific_scripts.common_variables import default_packages_file_path
 
 try:
+    ensure_python_distro()
     delete_packages()
     install_packages_from_file(default_packages_file_path)
     print()
