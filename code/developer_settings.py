@@ -1,3 +1,5 @@
+"""WIP"""
+
 # ============================
 # ==== Important Settings ====
 # ============================
@@ -45,8 +47,6 @@ start_in_shortcut_folder = False
 # -------------------------------------------------
 # Logging behavior:
 enable_log_for_Windows_terminal_start = True
-enable_log_for_terminal_emulator_start = True
-enable_log_for_browser_start = True
 enable_log_for_no_terminal_start = True
 overwrite_log = True
 # Accepts datetime.datetime.strftime usage: e.g. "log_%Y_%m_%d". Affected by start_in_shortcut_folder setting above. None to disable:
@@ -59,8 +59,8 @@ log_path_rel_to_start_folder: str | None = r"..\logs\log_%Y_%m_%d.txt"
 
 # -------------------------------------------------
 # How to treat alredy running program instances:
-prevent_launch_if_existing_instances_running = False
-close_existing_instances_on_start = False
+prevent_start_if_already_running = False
+close_already_running_instances_on_start = False
 prompt_to_close_existing_instances = False
 # -------------------------------------------------
 # Decide if global default (any version) Python should be used instead of automatic localized download and installation of Python/packages:
