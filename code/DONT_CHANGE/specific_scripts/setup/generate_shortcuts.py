@@ -129,7 +129,7 @@ def check_shortcut_was_created(output):
 
 def create_shortcut_with_appid(
     output,
-    target,
+    target="cmd.exe",
     args="",
     icon_path=None,
     wdir="",
@@ -137,9 +137,11 @@ def create_shortcut_with_appid(
     description="",
     start_minimized=False,
 ):
-    """Create a Windows shortcut and optionally assign an AppUserModelID."""
+    """Create a Windows shortcut and optionally assign an AppUserModelID.
+
+    Note: start_minimized=True seems to make Windows launch it in conhost.exe instead of wt.exe for cmd.exe target."""
     if (icon_path is not None) and (not os.path.exists(icon_path)):
-        print('[Warning] icon not existing at "{icon_path}"')
+        print(f'[Warning] icon not existing at "{icon_path}"')
         icon_path = None
 
     if icon_path and not os.path.isabs(icon_path):
@@ -200,21 +202,44 @@ def create_shortcut_with_appid(
                 print(f"[Warning] Failed to set AppID: {e}")
 
 
-def make_lnk(output_path, icon_path, launcher_path, args="", appid=None, description="", start_minimized=False):
-    """Create one configured launcher shortcut file."""
+def make_lnk(
+    output_path,
+    icon_path,
+    launcher_path,
+    args="",
+    appid=None,
+    description="",
+    start_minimized=False,
+    classic_terminal=True,
+    wdir="",
+):
+    """Create one configured launcher shortcut file.
+
+    Note that classic_terminal will be forced by Windows when start_minimized == True -> raise if start_minimized==True and classic_terminal==False,"""
     print(f"[Info] Generating: {output_path}")
 
-    launcher_args = ["/d", "/k", "call", quote_cmd_argument(launcher_path)]
+    if classic_terminal:
+        launcher_args = [quote_cmd_argument(launcher_path)]
+        target = "conhost.exe"
+    else:
+        launcher_args = ["/d", "/k", "call", quote_cmd_argument(launcher_path)]
+        target = "cmd.exe"
+
     if args not in ["", None]:
         launcher_args.append(quote_cmd_argument(args))
+
+    if start_minimized == True and classic_terminal == False:
+        raise ValueError(
+            "classic_terminal will be forced by Windows when start_minimized == True but start_minimized==True + classic_terminal==False"
+        )
 
     create_shortcut_with_appid(
         args=" ".join(launcher_args),
         output=output_path,
         app_id=appid,
         icon_path=icon_path,
-        target=os.environ.get("COMSPEC", "cmd.exe"),
-        wdir="",
+        target=target,
+        wdir=wdir,
         description=description,
         start_minimized=start_minimized,
     )
@@ -229,10 +254,11 @@ def main():
     if len(appid) > 15:
         appid = appid[:7] + appid[-7:]
 
-    # install frontend python and packages if install_local_python_environment_when_generating_shortcuts
+    # install frontend python and packages if install_python_when_generating_shortcuts==True
     if install_python_when_generating_shortcuts and not use_global_python:
-        ensure_frontend_packages(appid)
-        print()
+        ensure_frontend_packages(
+            appid
+        )  # appid probably doesnt matter but it still triggers icon change and title change when appid!=""
 
     # Shortcut: normal start
     if windows_terminal_shortcut_name not in [None, False, ""]:
@@ -243,7 +269,7 @@ def main():
             launcher_terminal,
             args=appid,
             appid=appid,
-            description=f"Start {program_name} in Windows Terminal.",
+            description=f"Start {program_name} in Windows Terminal",
             start_minimized=True,
         )
 
@@ -257,14 +283,20 @@ def main():
             args=appid,
             appid=appid
             + "W",  # add "W" for windowless to allow both launchers to pin to taskbar because different app-id (for same shortcut target)
-            description=f"Start {program_name} without opening a terminal window.",
+            description=f"Start {program_name} without opening a terminal window",
             start_minimized=True,
         )
 
     # Shortcut: stop program started by any generated launcher mode
     if stop_running_shortcut_name not in ["", False, None]:
         out = shortcut_output_dir + "\\" + sanitize_filename(stop_running_shortcut_name) + ".lnk"
-        make_lnk(out, stop_icon_path, launcher_stop, description=f"Stop running {program_name} processes.")
+        make_lnk(
+            out,
+            stop_icon_path,
+            launcher_stop,
+            description=f"Stop running {program_name} processes",
+            start_minimized=False,
+        )
 
     # Shortcut: open current log file
     if log_path_rel_to_start_folder not in [None, False, ""] and open_log_shortcut_name not in [None, False, ""]:
@@ -273,8 +305,8 @@ def main():
             out,
             log_icon_path,
             launcher_log,
-            description=f"Open the current {program_name} log file.",
-            start_minimized=False,
+            description=f"Open the current {program_name} log file",
+            start_minimized=True,
         )
 
     # Shortcut: open settings
@@ -291,7 +323,7 @@ def main():
             out,
             settings_icon_path,
             launcher_settings,
-            description=f"Open the {program_name} settings file.",
+            description=f"Open the {program_name} settings file",
             start_minimized=True,
         )
 
