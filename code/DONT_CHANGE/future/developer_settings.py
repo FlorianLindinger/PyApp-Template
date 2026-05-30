@@ -1,4 +1,4 @@
-
+"""Experimental developer settings kept for future launcher work."""
 
 taskbar_flashing_on_success = False
 taskbar_flashing_on_failure = True
@@ -14,6 +14,9 @@ send_Windows_notification_on_crash = True
 
 
 terminal_emulator_shortcut_name: str | None = f"{program_name} (Terminal Emulator)"
+
+enable_log_for_terminal_emulator_start = True
+enable_log_for_browser_start = True
 
 # ---------------------------
 # ---- Terminal Emulator ----
