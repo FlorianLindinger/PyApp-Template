@@ -15,7 +15,7 @@ dev = ["ruff","pyrefly"]
 cache-dir = ".ruff_cache"
 
 include = ["*.py", "*.pyi", "*.pyw", "*.ipynb"] # files to check/correct
-exclude = [".git", ".mypy_cache", ".ruff_cache", "__pycache__", "*.build", "*.dist","DO_NOT_SYNC","py_env","P","python_packages","compiled"] # files to exclude from check/correct
+exclude = [".git", ".mypy_cache", ".ruff_cache", "__pycache__", "*.build", "*.dist","GIT_IGNORED","py_env","P","python_packages","compiled"] # files to exclude from check/correct
 line-length = 120  # max line length before wrapping
 [tool.ruff.lint]
 # Rule families to enable:

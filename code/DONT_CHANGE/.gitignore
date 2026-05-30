@@ -4,8 +4,8 @@ tmp.txt
 *.build
 # terminal compilation error report:
 nuitka-crash-report.xml
-# DO_NOT_SYNC folders:
-DO_NOT_SYNC
+# GIT_IGNORED folders:
+GIT_IGNORED
 # package installation records:
 RECORD
 # scratchpad test script:
