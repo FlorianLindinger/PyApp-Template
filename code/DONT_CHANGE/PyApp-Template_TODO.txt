@@ -3,11 +3,26 @@
 # wrap up and move as much as possible to future:
 ======================================
 
-detialed docstring for dev scripts
+st terminal appearance for shortcut geneatn. color but also icon and tritle?
+
+split spectifgic_scrtipt folder into frontend_script/backend_scripts
+
+setting to appedn number to log if existing
+
+cxonhost cant do color ansi!!!! but i can enable in python
+
+should i do ansi colors insteaf of fg bg coloir of terminal?
+
+do i want all initail python start script and all dev tools and all to change terminal bg? via common funciton . including generatior shprtctu. also increase size for conhost launch
+
+genrtation shortcut try multiple times?
+
+logging in no terminal mode does not work
+
 
 chagne clear_folder_contents in finish_backend_osntallion into delte folder safe
 
-summarize in file >100 lines docstring what scritps do
+
 
 double chack that everything in both common_code thjing are common. maybe change for frontend into sometinh like process args and common code
 
@@ -15,12 +30,6 @@ review  if close_already_running_instances_on_start or prevent_start_if_already_
 in start_program
 
 do i want to remove stale PID lines in start_rpgram? test how slow i guess
-
-creationflags = subprocess.CREATE_NO_WINDOW for modern terminal?
-
-in staret_program docsating: """WIP: Add args and defaults""" and what it all does in the script 
-Same detail in wraoper
-
 
 maybe just have print2? no that would not work for imported sub functions.
 i need to know if started minimizeda and that not raised yet and then raise. i guess i could just raise once regardelss if start minimized. but all script have defined if minitmized so they know defintie. i gues replacing prtints and erros + global variable (test if works for subsciropt printing funciton) and raosei onece. local variable could be used to know if minimized. but then also variable in common_varialbes would do and pass to generate_shoerttus
@@ -204,11 +213,14 @@ do i still need or handle it via _pth:
                 os.add_dll_directory(path)
 
 ask long think AI for docstring improvements
-
+detialed docstring for dev scripts
+summarize in file >100 lines docstring what scritps do
+add docstring to everything even files;
+in staret_program docsating: """WIP: Add args and defaults""" and what it all does in the script 
+Same detail in wraoper
 
 do i wnat user to give chance to delte folder themselfves before raising error. Like reprint path and not deleted until deleted. but also they are prompted and they should not be able to do more. maybe chekc after prompt if sucess and reprompt otherwise -> yes
 
-add docstring to everything even files;
 
 fix and test all dev tools
 
@@ -395,6 +407,10 @@ update all licenses
 
 
 
+
+
+
+
 ===============================================================================================================================
 ===============================================================================================================================
 ===============================================================================================================================
@@ -402,6 +418,7 @@ update all licenses
 ==== Future ====
 # make feature triage for future: maybe first implemetn all features such that AI can best copy behaviour for otehr launch options and ask what would be extra possible/current there
 ================
+
 
 add shortcut for git check if update avaliable and priomopt options
 
