@@ -58,7 +58,7 @@ launcher_browser = make_abs("..\\B.bat")
 launcher_no_terminal = make_abs("..\\N.bat")
 launcher_stop = make_abs("..\\Q.bat")
 launcher_log = make_abs("..\\L.bat")
-start_time_dummy_main_script = make_abs("start_time_dummy_main_script.py")
+start_time_dummy_main_script = make_abs("..\\backend_test_tools\\helper_scripts\\start_time_dummy_main_script.py")
 
 # files
 # ------------------------
