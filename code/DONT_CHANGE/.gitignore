@@ -8,6 +8,8 @@ nuitka-crash-report.xml
 DO_NOT_SYNC
 # package installation records:
 RECORD
+# scratchpad test script:
+backend_scripts\test.py
 # generated caches:
 __pycache__
 *.pyc
