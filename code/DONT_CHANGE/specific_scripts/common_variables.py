@@ -43,6 +43,7 @@ python_scripts_dir = make_abs("..\\..")
 developer_tools_dir = make_abs("..\\..\\developer_tools")  # UPDATE GITIGNORE
 DONT_CHANGE_dir = make_abs("..")
 shortcut_output_dir = make_abs("..\\..\\..")  # UPDATE GITIGNORE
+starter_batches_folder = make_abs("..\\B")
 
 # scripts
 # ------------------------
@@ -51,14 +52,14 @@ script_wrapper_path = make_abs("script_wrapper.py")
 browser_terminal_path = make_abs("..\\browser_terminal\\browser_terminal.py")
 compiled_terminal_path = make_abs("..\\terminal_emulator\\compiled\\run.exe")
 uncompiled_terminal_path = make_abs("..\\terminal_emulator\\terminal_emulator.py")
-launcher_terminal = make_abs("..\\W.bat")
-launcher_emulator = make_abs("..\\E.bat")
-launcher_settings = make_abs("..\\S.bat")
-launcher_browser = make_abs("..\\B.bat")
-launcher_no_terminal = make_abs("..\\N.bat")
-launcher_stop = make_abs("..\\Q.bat")
-launcher_log = make_abs("..\\L.bat")
 start_time_dummy_main_script = make_abs("..\\backend_test_tools\\helper_scripts\\start_time_dummy_main_script.py")
+launcher_terminal = starter_batches_folder + "\\W.bat"
+launcher_emulator = starter_batches_folder + "\\E.bat"
+launcher_settings = starter_batches_folder + "\\S.bat"
+launcher_browser = starter_batches_folder + "\\B.bat"
+launcher_no_terminal = starter_batches_folder + "\\N.bat"
+launcher_stop = starter_batches_folder + "\\Q.bat"
+launcher_log = starter_batches_folder + "\\L.bat"
 
 # files
 # ------------------------
