@@ -1,4 +1,4 @@
-"""Measure startup times for PyApp Template shortcuts and direct launch modes."""
+"""Measure startup times for PyApp Template shortcuts and compare to direct launch."""
 
 import argparse
 import ctypes
@@ -10,41 +10,49 @@ import statistics
 import subprocess
 import sys
 import time
-from pathlib import Path
+import unicodedata
+
+# ========================
 
 # Add code dir for debug cases where this script is called on its own.
-root_dir = os.path.dirname(__file__) + "\\..\\..\\.."
+root_dir = os.path.dirname(__file__) + "\\..\\.."
 if root_dir not in sys.path:
     sys.path.insert(0, root_dir)
 
 import developer_settings
 from DONT_CHANGE.specific_scripts.common_variables import (
+    backend_python_exe,
     env_var_to_signal_startup_time_measurement,
+    frontend_python_exe,
+    start_program_script,
     start_time_dummy_main_script,
 )
 
-HELPER_DIR = Path(__file__).resolve().parent
-BACKEND_TEST_TOOLS_DIR = HELPER_DIR.parent
-DONT_CHANGE_DIR = BACKEND_TEST_TOOLS_DIR.parent
-CODE_DIR = DONT_CHANGE_DIR.parent
-REPO_DIR = CODE_DIR.parent
-PY_DIST_PYTHON = CODE_DIR / "py_env" / "py_dist" / "python.exe"
-WORK_DIR = BACKEND_TEST_TOOLS_DIR / ".startup_time_markers"
+# ========================
+
+FILE_DIR = os.path.dirname(os.path.abspath(__file__))
+CODE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(FILE_DIR)))
+REPO_DIR = os.path.dirname(CODE_DIR)
+WORK_DIR = os.path.normpath(FILE_DIR + "..\\.startup_time_markers")
 
 VERSION_SCRIPT = (
     "import platform, sys; print(f'{platform.python_implementation()} {sys.version.split()[0]} ({sys.executable})')"
 )
 
+# ========================
 
-def setting_to_shortcut_path(setting_name: str) -> Path | None:
+
+def setting_to_shortcut_path(setting_name: str) -> str | None:
+    """Resolve a shortcut setting into a repository shortcut path."""
     shortcut_name = getattr(developer_settings, setting_name, None)
     if shortcut_name in {None, False, ""}:
         return None
-    return REPO_DIR / f"{shortcut_name}.lnk"
+    return os.path.join(REPO_DIR, f"{shortcut_name}.lnk")
 
 
-def shortcut_paths_from_developer_settings(args: argparse.Namespace) -> list[Path]:
-    shortcut_paths: list[Path] = []
+def shortcut_paths_from_developer_settings(args: argparse.Namespace) -> list[str]:
+    """Collect shortcut paths enabled by developer settings."""
+    shortcut_paths: list[str] = []
     shortcut_settings = [
         (args.measure_windows_terminal_shortcut, "windows_terminal_shortcut_name"),
         (args.measure_no_terminal_shortcut, "no_terminal_shortcut_name"),
@@ -60,11 +68,43 @@ def shortcut_paths_from_developer_settings(args: argparse.Namespace) -> list[Pat
     return shortcut_paths
 
 
-def shortcut_paths_from_explicit_args(shortcut_paths: list[str]) -> list[Path]:
-    return [Path(path).expanduser().resolve() for path in shortcut_paths]
+def start_program_modes_from_developer_settings(args: argparse.Namespace) -> list[tuple[str, str]]:
+    """Collect direct start_program modes enabled by settings."""
+    modes: list[tuple[str, str]] = []
+    shortcut_settings = [
+        (args.measure_windows_terminal_shortcut, "windows_terminal_shortcut_name", "terminal"),
+        (args.measure_no_terminal_shortcut, "no_terminal_shortcut_name", "no_terminal"),
+        (args.measure_terminal_emulator_shortcut, "terminal_emulator_shortcut_name", "terminal_emulator"),
+        (args.measure_browser_shortcut, "browser_shortcut_name", "browser"),
+    ]
+    for enabled, setting_name, launch_mode in shortcut_settings:
+        if enabled and setting_to_shortcut_path(setting_name) is not None:
+            modes.append((f"Direct start_program {launch_mode}", launch_mode))
+    return modes
 
 
-def warn_missing_shortcuts(shortcuts: list[Path]) -> None:
+def sanitize_app_id(input_string: str) -> str:
+    """Sanitize the program name into a compact Windows AppUserModelID."""
+    name = unicodedata.normalize("NFKD", input_string).encode("ascii", "ignore").decode("ascii").lower()
+    name = re.sub(r"[\s_]+", "-", name)
+    name = re.sub(r"[^a-z0-9\-\.]", "", name)
+    name = re.sub(r"-+", "-", name)
+    name = re.sub(r"\.+", ".", name)
+    name = name.strip("-.")
+    if len(name) > 15:
+        name = name.replace("-", "").replace(".", "")
+    if len(name) > 15:
+        name = name[:7] + name[-7:]
+    return name
+
+
+def shortcut_paths_from_explicit_args(shortcut_paths: list[str]) -> list[str]:
+    """Resolve shortcut paths supplied on the command line."""
+    return [os.path.abspath(os.path.expanduser(path)) for path in shortcut_paths]
+
+
+def warn_missing_shortcuts(shortcuts: list[str]) -> None:
+    """Print diagnostics for missing shortcut targets."""
     print("[Error] Missing shortcut(s):")
     for shortcut_path in shortcuts:
         print(f"  {shortcut_path}")
@@ -73,10 +113,12 @@ def warn_missing_shortcuts(shortcuts: list[Path]) -> None:
 
 
 def safe_marker_name(label: str) -> str:
+    """Convert a measurement label into a safe marker filename."""
     return re.sub(r"[^A-Za-z0-9_.-]+", "_", label).strip("_.-") or "measurement"
 
 
-def print_marker_help(target_script: Path) -> None:
+def print_marker_help(target_script: str) -> None:
+    """Print the marker help."""
     print()
     print("[Hint] The measured script must write the startup marker.")
     print(f"Expected marker script: {target_script}")
@@ -84,6 +126,7 @@ def print_marker_help(target_script: Path) -> None:
 
 
 def parse_args() -> argparse.Namespace:
+    """Parse the args."""
     parser = argparse.ArgumentParser(description="Measure PyApp startup time.")
     parser.add_argument("runs", nargs="?", type=int, default=5)
     parser.add_argument("timeout", nargs="?", type=float, default=5.0)
@@ -95,8 +138,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("measure_direct_global_py", nargs="?", type=int, default=1)
     parser.add_argument("run_setup_warmup", nargs="?", type=int, default=1)
     parser.add_argument("setup_timeout", nargs="?", type=float, default=600.0)
+    parser.add_argument("measure_direct_start_program", nargs="?", type=int, default=1)
     parser.add_argument("--shortcut", action="append", default=[])
     parser.add_argument("--skip-launcher", action="store_true")
+    parser.add_argument("--skip-start-program", action="store_true")
     parser.add_argument("--skip-py-dist", action="store_true")
     parser.add_argument("--skip-global", action="store_true")
     parser.add_argument("--skip-setup-warmup", action="store_true")
@@ -107,20 +152,22 @@ def parse_args() -> argparse.Namespace:
     args.measure_browser_shortcut = bool(args.measure_browser_shortcut)
     args.skip_py_dist = args.skip_py_dist or not bool(args.measure_direct_py_dist)
     args.skip_global = args.skip_global or not bool(args.measure_direct_global_py)
+    args.skip_start_program = args.skip_start_program or not bool(args.measure_direct_start_program)
     args.run_setup_warmup = bool(args.run_setup_warmup) and not args.skip_setup_warmup
     if args.setup_timeout <= 0:
         args.setup_timeout = None
     return args
 
 
-def python_command(python_path: Path | str, args: list[str]) -> list[str]:
-    python_text = str(python_path)
-    if python_text.lower().endswith((".bat", ".cmd")):
-        return ["cmd.exe", "/d", "/c", "call", python_text, *args]
-    return [python_text, *args]
+def python_command(python_path: str, args: list[str]) -> list[str]:
+    """Build a command for a Python executable or batch wrapper."""
+    if python_path.lower().endswith((".bat", ".cmd")):
+        return ["cmd.exe", "/d", "/c", "call", python_path, *args]
+    return [python_path, *args]
 
 
 def split_command_line_arguments(arguments: str) -> list[str]:
+    """Split the command line arguments."""
     if arguments.strip() == "":
         return []
 
@@ -142,8 +189,9 @@ def split_command_line_arguments(arguments: str) -> list[str]:
         local_free(argv)
 
 
-def resolve_shortcut(shortcut_path: Path) -> tuple[list[str], Path]:
-    if not shortcut_path.exists():
+def resolve_shortcut(shortcut_path: str) -> tuple[list[str], str]:
+    """Resolve a Windows .lnk shortcut into a command and working directory."""
+    if not os.path.exists(shortcut_path):
         raise FileNotFoundError(f'PyApp shortcut not found: "{shortcut_path}"')
     if os.name != "nt":
         raise RuntimeError(".lnk startup measurement is only supported on Windows.")
@@ -159,7 +207,7 @@ def resolve_shortcut(shortcut_path: Path) -> tuple[list[str], Path]:
         "} | ConvertTo-Json -Compress"
     )
     env = os.environ.copy()
-    env["PYAPP_SHORTCUT_TO_RESOLVE"] = str(shortcut_path)
+    env["PYAPP_SHORTCUT_TO_RESOLVE"] = shortcut_path
     result = subprocess.run(  # noqa:S603
         ["powershell", "-NoProfile", "-Command", command],
         cwd=REPO_DIR,
@@ -181,13 +229,14 @@ def resolve_shortcut(shortcut_path: Path) -> tuple[list[str], Path]:
 
     arguments = split_command_line_arguments(shortcut_data.get("Arguments", ""))
     working_directory = shortcut_data.get("WorkingDirectory", "")
-    cwd = Path(working_directory) if working_directory else REPO_DIR
+    cwd = working_directory if working_directory else REPO_DIR
     if target_path.lower().endswith((".bat", ".cmd")):
         return ["cmd.exe", "/d", "/c", "call", target_path, *arguments], cwd
     return [target_path, *arguments], cwd
 
 
-def describe_python(python_path: Path | str) -> str:
+def describe_python(python_path: str) -> str:
+    """Return a description for the python."""
     try:
         result = subprocess.run(  # noqa:S603
             python_command(python_path, ["-c", VERSION_SCRIPT]),
@@ -208,16 +257,19 @@ def describe_python(python_path: Path | str) -> str:
     return output
 
 
-def parse_marker(marker_path: Path) -> dict[str, str]:
+def parse_marker(marker_path: str) -> dict[str, str]:
+    """Parse the marker."""
     values: dict[str, str] = {}
-    for line in marker_path.read_text(encoding="utf-8").splitlines():
-        key, separator, value = line.partition("=")
-        if separator:
-            values[key] = value
+    with open(marker_path, encoding="utf-8") as marker_file:
+        for line in marker_file.read().splitlines():
+            key, separator, value = line.partition("=")
+            if separator:
+                values[key] = value
     return values
 
 
 def kill_process_tree(pid: int) -> None:
+    """Terminate a process tree for measurement cleanup."""
     if pid <= 0:
         return
     if os.name == "nt":
@@ -235,6 +287,7 @@ def kill_process_tree(pid: int) -> None:
 
 
 def cleanup_process(proc: subprocess.Popen, marker_values: dict[str, str]) -> None:
+    """Terminate and reap a process after a failed measurement."""
     marker_pid = marker_values.get("pid", "")
     if marker_pid.isdigit():
         kill_process_tree(int(marker_pid))
@@ -247,15 +300,16 @@ def cleanup_process(proc: subprocess.Popen, marker_values: dict[str, str]) -> No
 
 
 def wait_for_marker(
-    marker_path: Path,
+    marker_path: str,
     timeout: float | None,
     proc: subprocess.Popen | None = None,
     *,
     fail_on_process_exit: bool = True,
 ) -> tuple[dict[str, str], float]:
+    """Wait for the measured script to write its startup marker."""
     deadline = None if timeout is None else time.perf_counter() + timeout
     while deadline is None or time.perf_counter() < deadline:
-        if marker_path.exists() and marker_path.stat().st_size > 0:
+        if os.path.exists(marker_path) and os.path.getsize(marker_path) > 0:
             return parse_marker(marker_path), time.perf_counter()
         if proc is not None and proc.poll() is not None and fail_on_process_exit:
             raise RuntimeError(f"Process exited with code {proc.returncode} before writing the startup marker.")
@@ -264,21 +318,23 @@ def wait_for_marker(
 
 
 def raise_if_marker_error(marker_values: dict[str, str]) -> None:
+    """Raise the if marker error."""
     error = marker_values.get("error", "")
     if error:
         raise RuntimeError(error)
 
 
-def run_one(command: list[str], marker_path: Path, timeout: float) -> float:
-    if marker_path.exists():
-        marker_path.unlink()
+def run_one(command: list[str], marker_path: str, timeout: float) -> float:
+    """Run the one."""
+    if os.path.exists(marker_path):
+        os.remove(marker_path)
 
     env = os.environ.copy()
     start_ns = time.perf_counter_ns()
-    env["PYAPP_STARTUP_BENCHMARK_MARKER"] = str(marker_path)
+    env["PYAPP_STARTUP_BENCHMARK_MARKER"] = marker_path
     env["PYAPP_STARTUP_BENCHMARK_START_NS"] = str(start_ns)
     env[env_var_to_signal_startup_time_measurement] = "1"
-    env["PYTHONPATH"] = str(CODE_DIR) + os.pathsep + env.get("PYTHONPATH", "")
+    env["PYTHONPATH"] = CODE_DIR + os.pathsep + env.get("PYTHONPATH", "")
 
     creationflags = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
     proc = subprocess.Popen(  # noqa:S603
@@ -306,21 +362,22 @@ def run_one(command: list[str], marker_path: Path, timeout: float) -> float:
 
 def run_one_shortcut(
     shortcut_launch_command: list[str],
-    shortcut_cwd: Path,
-    marker_path: Path,
+    shortcut_cwd: str,
+    marker_path: str,
     timeout: float | None,
     *,
     show_output: bool = False,
 ) -> float:
-    if marker_path.exists():
-        marker_path.unlink()
+    """Run the one shortcut."""
+    if os.path.exists(marker_path):
+        os.remove(marker_path)
 
     env = os.environ.copy()
     start_ns = time.perf_counter_ns()
-    env["PYAPP_STARTUP_BENCHMARK_MARKER"] = str(marker_path)
+    env["PYAPP_STARTUP_BENCHMARK_MARKER"] = marker_path
     env["PYAPP_STARTUP_BENCHMARK_START_NS"] = str(start_ns)
     env[env_var_to_signal_startup_time_measurement] = "1"
-    env["PYTHONPATH"] = str(CODE_DIR) + os.pathsep + env.get("PYTHONPATH", "")
+    env["PYTHONPATH"] = CODE_DIR + os.pathsep + env.get("PYTHONPATH", "")
 
     creationflags = 0 if show_output else subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
     starter_proc = subprocess.Popen(  # noqa:S603
@@ -346,25 +403,30 @@ def run_one_shortcut(
         cleanup_marker(marker_path)
 
 
-def cleanup_marker(marker_path: Path) -> None:
+def cleanup_marker(marker_path: str) -> None:
+    """Delete one startup measurement marker file if it exists."""
     try:
-        marker_path.unlink(missing_ok=True)
+        if os.path.exists(marker_path):
+            os.remove(marker_path)
     except OSError as error:
         print(f'[Warning] Could not remove startup marker "{marker_path}": {error}')
 
 
 def cleanup_stale_markers() -> None:
-    if not WORK_DIR.exists():
+    """Remove stale startup measurement marker files."""
+    if not os.path.exists(WORK_DIR):
         return
-    for marker_path in WORK_DIR.glob("startup_marker_*.txt"):
-        cleanup_marker(marker_path)
+    for file_name in os.listdir(WORK_DIR):
+        if file_name.startswith("startup_marker_") and file_name.endswith(".txt"):
+            cleanup_marker(os.path.join(WORK_DIR, file_name))
 
 
 def measure(label: str, command: list[str], runs: int, timeout: float) -> list[float]:
+    """Run repeated measurements for one launch target."""
     results: list[float] = []
     print(f"\n{label}")
     for run_index in range(1, runs + 1):
-        marker_path = WORK_DIR / f"startup_marker_{safe_marker_name(label)}_{run_index}.txt"
+        marker_path = os.path.join(WORK_DIR, f"startup_marker_{safe_marker_name(label)}_{run_index}.txt")
         elapsed_ms = run_one(command, marker_path, timeout)
         results.append(elapsed_ms)
         print(f"  run {run_index}: {elapsed_ms:.1f} ms")
@@ -374,14 +436,15 @@ def measure(label: str, command: list[str], runs: int, timeout: float) -> list[f
 def measure_shortcut(
     label: str,
     shortcut_launch_command: list[str],
-    shortcut_cwd: Path,
+    shortcut_cwd: str,
     runs: int,
     timeout: float,
 ) -> list[float]:
+    """Run repeated startup measurements for one shortcut target."""
     results: list[float] = []
     print(f"\n{label}")
     for run_index in range(1, runs + 1):
-        marker_path = WORK_DIR / f"startup_marker_{safe_marker_name(label)}_{run_index}.txt"
+        marker_path = os.path.join(WORK_DIR, f"startup_marker_{safe_marker_name(label)}_{run_index}.txt")
         elapsed_ms = run_one_shortcut(
             shortcut_launch_command,
             shortcut_cwd,
@@ -394,15 +457,17 @@ def measure_shortcut(
 
 
 def run_setup_warmup(
-    shortcut_path: Path,
+    shortcut_path: str,
     shortcut_launch_command: list[str],
-    shortcut_cwd: Path,
+    shortcut_cwd: str,
     timeout: float | None,
 ) -> None:
-    marker_path = WORK_DIR / f"startup_marker_setup_{safe_marker_name(shortcut_path.name)}.txt"
+    """Run the setup warmup."""
+    shortcut_name = os.path.basename(shortcut_path)
+    marker_path = os.path.join(WORK_DIR, f"startup_marker_setup_{safe_marker_name(shortcut_name)}.txt")
     timeout_text = "no timeout" if timeout is None else f"{timeout:.0f}s timeout"
     print("\nSetup warmup")
-    print(f"  shortcut: {shortcut_path.name}")
+    print(f"  shortcut: {shortcut_name}")
     print(f"  mode: unmeasured, {timeout_text}")
     print("  purpose: let ensure_frontend_packages finish setup before timed runs")
     elapsed_ms = run_one_shortcut(
@@ -416,6 +481,7 @@ def run_setup_warmup(
 
 
 def print_summary(results: dict[str, list[float]]) -> None:
+    """Print aggregate measurement statistics."""
     print("\nSummary")
     print("Mode                                      median      mean       min       max")
     print("----                                      ------      ----       ---       ---")
@@ -430,50 +496,54 @@ def print_summary(results: dict[str, list[float]]) -> None:
 
 
 def main() -> int:
+    """Run this script's command-line workflow."""
     args = parse_args()
     if args.runs < 1:
         raise ValueError("--runs must be at least 1")
 
-    target_script = Path(start_time_dummy_main_script)
-    shortcut_paths: list[Path] = []
+    target_script = os.path.normpath(start_time_dummy_main_script)
+    shortcut_paths: list[str] = []
     if not args.skip_launcher:
         if args.shortcut:
             shortcut_paths = shortcut_paths_from_explicit_args(args.shortcut)
         else:
             shortcut_paths = shortcut_paths_from_developer_settings(args)
 
-    if not target_script.exists():
+    if not os.path.exists(target_script):
         raise FileNotFoundError(f'Target script not found: "{target_script}"')
-    if not args.skip_py_dist and not PY_DIST_PYTHON.exists():
-        raise FileNotFoundError(f'Python distro exe not found: "{PY_DIST_PYTHON}"')
+    if not args.skip_start_program and not os.path.exists(backend_python_exe):
+        raise FileNotFoundError(f'Backend Python exe not found: "{backend_python_exe}"')
+    if not args.skip_start_program and not os.path.exists(start_program_script):
+        raise FileNotFoundError(f'start_program.py not found: "{start_program_script}"')
+    if not args.skip_py_dist and not os.path.exists(frontend_python_exe):
+        raise FileNotFoundError(f'Python distro exe not found: "{frontend_python_exe}"')
 
-    WORK_DIR.mkdir(parents=True, exist_ok=True)
+    os.makedirs(WORK_DIR, exist_ok=True)
     cleanup_stale_markers()
-    shortcut_measurements: list[tuple[Path, list[str], Path]] = []
-    missing_shortcuts = [shortcut_path for shortcut_path in shortcut_paths if not shortcut_path.exists()]
+
+    shortcut_measurements: list[tuple[str, list[str], str]] = []
+    missing_shortcuts = [shortcut_path for shortcut_path in shortcut_paths if not os.path.exists(shortcut_path)]
     if missing_shortcuts:
         warn_missing_shortcuts(missing_shortcuts)
         return 1
+
     for shortcut_path in shortcut_paths:
         shortcut_launch_command, shortcut_cwd = resolve_shortcut(shortcut_path)
         shortcut_measurements.append((shortcut_path, shortcut_launch_command, shortcut_cwd))
 
     measurements: list[tuple[str, list[str]]] = []
+    app_id = sanitize_app_id(getattr(developer_settings, "program_name", ""))
+    if not args.skip_start_program:
+        for label, launch_mode in start_program_modes_from_developer_settings(args):
+            measurements.append((label, [backend_python_exe, start_program_script, app_id, launch_mode]))
     if not args.skip_py_dist:
-        measurements.append(("Direct py_dist python", python_command(PY_DIST_PYTHON, [str(target_script)])))
+        measurements.append(("Direct py_dist python", python_command(frontend_python_exe, [target_script])))
     if not args.skip_global and shutil.which("py") is not None:
-        measurements.append(("Direct global py", ["py", str(target_script)]))
+        measurements.append(("Direct global py", ["py", target_script]))
 
     print(f"Target script: {target_script}")
     print(f"Runs per mode: {args.runs}")
-    print(
-        "Setup warmup: "
-        + (
-            "enabled"
-            if args.run_setup_warmup and shortcut_measurements
-            else "skipped"
-        )
-    )
+    print("Setup warmup: " + ("enabled" if args.run_setup_warmup and shortcut_measurements else "skipped"))
     if shortcut_measurements:
         print("PyApp shortcuts:")
         for shortcut_path, shortcut_launch_command, shortcut_cwd in shortcut_measurements:
@@ -482,15 +552,24 @@ def main() -> int:
             print(f"    working directory: {shortcut_cwd}")
     else:
         print("PyApp shortcuts: skipped")
+
     print(
         "This uses the .lnk files as the source of truth, then launches their stored targets/arguments with benchmark env."
     )
     print("That includes the shortcut stub, start_program.py, and configured terminal/script path.")
+    print("Direct start_program rows skip the shortcut/cmd/bat layer and start from start_program.py.")
     print("Timing point: import of startup_benchmark_marker in the target script.")
+
+    if args.skip_start_program:
+        print("direct start_program: skipped")
+    else:
+        print(f"direct start_program Python: {describe_python(backend_python_exe)}")
+
     if args.skip_py_dist:
         print("py_dist Python: skipped")
     else:
-        print(f"py_dist Python: {describe_python(PY_DIST_PYTHON)}")
+        print(f"py_dist Python: {describe_python(frontend_python_exe)}")
+
     if shutil.which("py") is None:
         print("global py: unavailable (not on PATH)")
     else:
@@ -510,20 +589,21 @@ def main() -> int:
 
     results: dict[str, list[float]] = {}
     for shortcut_path, shortcut_launch_command, shortcut_cwd in shortcut_measurements:
+        shortcut_name = os.path.basename(shortcut_path)
         try:
-            results[shortcut_path.name] = measure_shortcut(
-                shortcut_path.name,
+            results[shortcut_name] = measure_shortcut(
+                shortcut_name,
                 shortcut_launch_command,
                 shortcut_cwd,
                 args.runs,
                 args.timeout,
             )
         except TimeoutError as error:
-            print(f"\n[Error] {shortcut_path.name}: {error}")
+            print(f"\n[Error] {shortcut_name}: {error}")
             print_marker_help(target_script)
             return 1
         except (FileNotFoundError, RuntimeError) as error:
-            print(f"\n[Error] {shortcut_path.name}: {error}")
+            print(f"\n[Error] {shortcut_name}: {error}")
             return 1
 
     for label, command in measurements:
