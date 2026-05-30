@@ -1,11 +1,15 @@
 @echo off
 setlocal
 
+:: =================================
+
 set "launcher_dir=%~dp0"
-set "python_exe=%launcher_dir%backend_python\python.exe"
-set "backend_script=%launcher_dir%specific_scripts\start_program.py"
+set "python_exe=%launcher_dir%..\backend_python\python.exe"
+set "backend_script=%launcher_dir%..\specific_scripts\start_program.py"
 set "app_id=%~1"
 set "launch_mode=terminal"
+
+:: =================================
 
 if not exist "%python_exe%" (
     echo [Error] Backend Python not found:
