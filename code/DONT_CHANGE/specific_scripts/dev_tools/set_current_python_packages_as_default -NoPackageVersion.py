@@ -1,3 +1,5 @@
+"""WIP"""
+
 import os
 import sys
 
@@ -6,9 +8,15 @@ root_dir = os.path.dirname(__file__) + "\\..\\..\\.."
 if root_dir not in sys.path:
     sys.path.insert(0, root_dir)
 
-from DONT_CHANGE.specific_scripts.common_code import input_success, print_traceback, save_current_packages_as_default
+from DONT_CHANGE.specific_scripts.common_code import (
+    ensure_python_distro,
+    input_success,
+    print_traceback,
+    save_current_packages_as_default,
+)
 
 try:
+    ensure_python_distro()
     save_current_packages_as_default(with_version=False)
 
     print()

@@ -1,3 +1,5 @@
+"""Measure import times for imported python scripts"""
+
 import os
 import statistics
 import subprocess

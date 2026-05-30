@@ -1,3 +1,5 @@
+"""Shared code in scripts that are run in Python backend of this PyApp-Template"""
+
 # code here should raise an error instead of handling terminal closing or press enter to exit logic. Other than the function definitions that are defined here to do that in the callers like close_terminal and print_traceback.
 # imports are mostly lazy because it is not clear what will be needed
 

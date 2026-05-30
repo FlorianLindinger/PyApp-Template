@@ -1,3 +1,5 @@
+"""Finish installation of backend Python"""
+
 import os
 import subprocess
 import sys
@@ -153,7 +155,7 @@ import site""")
         [backend_python_exe, "-m", "pip", "uninstall", "pip", "packaging", "setuptools", "wheel", "-y"], check=True
     )
 
-    # update python3xx._pth
+    # update python3xx._pth (for path to packages and pywin32 fixes)
     with open(backend_python_pth_file, "w", encoding="utf-8") as f:
         f.write(rf"""{backend_python_zip_rel_path}
 .

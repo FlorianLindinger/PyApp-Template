@@ -1,4 +1,4 @@
-# todo: docstring
+"""Common code for scripts that are run with frontend Python in PyApp-Template"""
 
 # ====================================
 # import packages
@@ -68,6 +68,7 @@ if print_prepend in [None, False, ""]:
 if input_prepend in [None, False, ""]:
     input_prepend = ""
 
+# Normalize optional sound settings to concrete .wav paths. Each setting accepts False/None/"", True for the template default, a media filename, or an absolute path.
 if play_sound_on_crash is True:
     wav_on_crash = play_sound_on_crash_default
 elif play_sound_on_crash in [False, None, ""]:
@@ -75,13 +76,13 @@ elif play_sound_on_crash in [False, None, ""]:
 elif not os.path.isabs(play_sound_on_crash):
     wav_on_crash = os.path.normpath(windows_dir + "\\Media\\" + play_sound_on_crash)
 else:
-    wav_on_crash=play_sound_on_crash
+    wav_on_crash = play_sound_on_crash
 if wav_on_crash != "":
     if wav_on_crash[-4:] != ".wav":
         wav_on_crash += ".wav"
     if not os.path.exists(wav_on_crash):
         print(f"[Warning] Sound file does not exist: {wav_on_crash}")
-        wav_on_crash=""
+        wav_on_crash = ""
 
 if play_sound_on_success is True:
     wav_on_success = play_sound_on_success_default
@@ -90,14 +91,14 @@ elif play_sound_on_success in [False, None, ""]:
 elif not os.path.isabs(play_sound_on_success):
     wav_on_success = os.path.normpath(windows_dir + "\\Media\\" + play_sound_on_success)
 else:
-    wav_on_success=play_sound_on_success
+    wav_on_success = play_sound_on_success
 if wav_on_success != "":
     if wav_on_success[-4:] != ".wav":
         wav_on_success += ".wav"
     if not os.path.exists(wav_on_success):
         print(f"[Warning] Sound file does not exist: {wav_on_success}")
-        wav_on_success=""
-        
+        wav_on_success = ""
+
 if play_sound_on_failure is True:
     wav_on_failure = play_sound_on_failure_default
 elif play_sound_on_failure in [False, None, ""]:
@@ -105,25 +106,28 @@ elif play_sound_on_failure in [False, None, ""]:
 elif not os.path.isabs(play_sound_on_failure):
     wav_on_failure = os.path.normpath(windows_dir + "\\Media\\" + play_sound_on_failure)
 else:
-    wav_on_failure=play_sound_on_failure
+    wav_on_failure = play_sound_on_failure
 if wav_on_failure != "":
     if wav_on_failure[-4:] != ".wav":
         wav_on_failure += ".wav"
     if not os.path.exists(wav_on_failure):
         print(f"[Warning] Sound file does not exist: {wav_on_failure}")
-        wav_on_failure=""
+        wav_on_failure = ""
 
 # ====================================
 #  define common code
 
 
 class _ProcessIdRegistry:
+    """Maintain the PID file entries created by this launcher process."""
+
     def __init__(self, path: str) -> None:
         self.path = path
         self._process_ids: set[int] = set()
         self._lock = threading.RLock()
 
     def add(self, process_id: int) -> None:
+        """Add a pid value to the local collection when valid and new."""
         if self.path == "" or process_id <= 0:
             return
 
@@ -139,6 +143,7 @@ class _ProcessIdRegistry:
                 pid_file.write(f"{process_id}\n")
 
     def remove(self, process_id: int) -> None:
+        """Remove a value from the local collection and backing file."""
         if self.path == "" or process_id <= 0:
             return
 
@@ -170,12 +175,13 @@ class _ProcessIdRegistry:
                 pass
 
     def cleanup(self) -> None:
+        """Remove registered process IDs during interpreter shutdown."""
         for process_id in list(self._process_ids):
             self.remove(process_id)
 
 
-def process_finish(wav_path: str = "", log_path: str = "",open_log:bool=False):
-
+def process_finish(wav_path: str = "", log_path: str = "", open_log: bool = False):
+    """Run completion side effects such as sounds and opening logs."""
     if wav_path:
         try:
             import winsound
@@ -195,6 +201,7 @@ def process_finish(wav_path: str = "", log_path: str = "",open_log:bool=False):
 
 
 def looks_like_interpreter_crash(returncode) -> bool:
+    """Return whether a process return code matches common Windows crash codes. A Python crash is meant to be a Python interpreter crash as opposed to a exit with a failure code for exampel with sys.exit(1)."""
     _WINDOWS_CRASH_CODES = {
         0xC0000005,  # access violation
         0xC00000FD,  # stack overflow
@@ -203,10 +210,11 @@ def looks_like_interpreter_crash(returncode) -> bool:
         0xC0000409,  # stack buffer overrun
     }
 
-    def _unsigned32(n: int) -> int:
+    def _int_to_unsigned32(n: int) -> int:
+        """Convert a signed return code to an unsigned 32-bit value."""
         return n & 0xFFFFFFFF
 
-    return isinstance(returncode, int) and (_unsigned32(returncode) in _WINDOWS_CRASH_CODES)
+    return isinstance(returncode, int) and (_int_to_unsigned32(returncode) in _WINDOWS_CRASH_CODES)
 
 
 # ====================================
@@ -216,7 +224,7 @@ def looks_like_interpreter_crash(returncode) -> bool:
 # ====================================
 #  execute common code
 
-# tell the backend terminal to close because successful start via a signal file
+# tell the backend terminal via a signal file to close because successful start
 if CORRECT_START_SIGNAL_FILE_PATH:
     folder = os.path.dirname(CORRECT_START_SIGNAL_FILE_PATH)
     if folder:
