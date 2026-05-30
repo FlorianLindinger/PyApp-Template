@@ -3,9 +3,9 @@
 # wrap up and move as much as possible to future:
 ======================================
 
-rname stuff to GIT_IGNORED
+do i want the .gitattributes
 
-remove test.py from git recotrds
+remove test.py from git recotrds. 
 
 add common_variables stuff like:
 PY_DIST_PYTHON = CODE_DIR / "py_env" / "py_dist" / "python.exe"
