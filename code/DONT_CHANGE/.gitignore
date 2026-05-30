@@ -9,7 +9,7 @@ GIT_IGNORED
 # package installation records:
 RECORD
 # scratchpad test script:
-backend_scripts\test.py
+backend_scripts/test.py
 # generated caches:
 __pycache__
 *.pyc
