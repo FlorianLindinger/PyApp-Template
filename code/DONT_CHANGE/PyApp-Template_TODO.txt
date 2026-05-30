@@ -3,6 +3,39 @@
 # wrap up and move as much as possible to future:
 ======================================
 
+remove test.py from git recotrds
+
+add common_variables stuff like:
+PY_DIST_PYTHON = CODE_DIR / "py_env" / "py_dist" / "python.exe"
+BACKEND_PYTHON = DONT_CHANGE_DIR / "backend_python" / "python.exe"
+START_PROGRAM_SCRIPT = DONT_CHANGE_DIR / "specific_scripts" / "start_program.py"
+WORK_DIR = BACKEND_TEST_TOOLS_DIR / ".startup_time_markers"
+
+make all from pathlib import Path to os
+
+do i want a common_vartailes in frontend???? probably not actually.
+maybe i want in scoipts:
+    common_variables.py
+    backend
+    frontend
+or maybe just scripts
+    common_variables.py
+    ...
+    frontend/
+
+
+how do i give nice rich traceback in fails of main_script? launch in same terminal a backend python?
+somehow pass the e
+i cant just run another wrapper for rich traceback
+
+harmoinzie launcher pys. including shortcut generator: see _script_template.py
+
+test that that error print also unminimiuzes
+
+ask AI to harmonoze alll fail print messages
+
+chekc open_log.py
+
 st terminal appearance for shortcut geneatn. color but also icon and tritle?
 
 split spectifgic_scrtipt folder into frontend_script/backend_scripts
