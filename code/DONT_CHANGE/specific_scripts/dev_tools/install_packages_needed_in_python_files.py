@@ -1,3 +1,5 @@
+"""WIP"""
+
 import os
 import sys
 
@@ -19,9 +21,11 @@ from DONT_CHANGE.specific_scripts.common_variables import (
 
 try:
     ensure_python_distro()
-    save_requirements_of_root_folder_noVersion(determined_needed_packages_output_file_path_noVersion)
+    success, output_path = save_requirements_of_root_folder_noVersion(determined_needed_packages_output_file_path_noVersion)
+    if not success:
+        raise RuntimeError("Failed to determine needed packages.")
 
-    install_packages_from_file(determined_needed_packages_output_file_path_noVersion)
+    install_packages_from_file(output_path)
     print()
     input_success("[Success] Press enter to exit")
 except Exception as e:

@@ -1,3 +1,5 @@
+"""WIP"""
+
 import os
 import sys
 
@@ -8,6 +10,7 @@ if root_dir not in sys.path:
 
 from DONT_CHANGE.specific_scripts.common_code import (
     delete_packages,
+    ensure_python_distro,
     input_success,
     install_packages_from_file,
     print_traceback,
@@ -15,9 +18,10 @@ from DONT_CHANGE.specific_scripts.common_code import (
 )
 
 try:
-    success,output_path = save_requirements_of_root_folder_noVersion()
-    if success==False:
+    success, output_path = save_requirements_of_root_folder_noVersion()
+    if success == False:
         raise RuntimeError("Failed to determine needed packages.")
+    ensure_python_distro()
     delete_packages()
     install_packages_from_file(output_path)
     print()

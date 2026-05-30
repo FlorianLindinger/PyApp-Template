@@ -1,3 +1,5 @@
+"""Stop running PyApp Template program instances recorded in the PID file."""
+
 # ==========================================================================
 # local settings
 
