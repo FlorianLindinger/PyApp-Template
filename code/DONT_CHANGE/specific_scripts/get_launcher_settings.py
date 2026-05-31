@@ -1,8 +1,16 @@
-"""Common code for scripts that are run with frontend Python in PyApp-Template"""
+"""Common code for scripts that are run with frontend Python in PyApp-Template.
+
+This script is supposed to be as compatible as feasable for lower Python versions:
+- No type annotations (for >= 3.y)
+- No "from __future__ import annotations" (for >= 3.7)
+- No f-strings with backslashes in the {} (for >= 3.x)
+- No f-strings (for >= 3.6)
+- No .astimezone() (for >= 3.5)
+
+"""
 
 # ====================================
 # import packages
-
 import atexit
 import os
 import sys
@@ -121,12 +129,12 @@ if wav_on_failure != "":
 class _ProcessIdRegistry:
     """Maintain the PID file entries created by this launcher process."""
 
-    def __init__(self, path: str) -> None:
+    def __init__(self, path):
         self.path = path
-        self._process_ids: set[int] = set()
+        self._process_ids = set()
         self._lock = threading.RLock()
 
-    def add(self, process_id: int) -> None:
+    def add(self, process_id):
         """Add a pid value to the local collection when valid and new."""
         if self.path == "" or process_id <= 0:
             return
@@ -142,7 +150,7 @@ class _ProcessIdRegistry:
             with open(self.path, "a", encoding="utf-8") as pid_file:
                 pid_file.write(f"{process_id}\n")
 
-    def remove(self, process_id: int) -> None:
+    def remove(self, process_id):
         """Remove a value from the local collection and backing file."""
         if self.path == "" or process_id <= 0:
             return
@@ -174,13 +182,13 @@ class _ProcessIdRegistry:
             except Exception:
                 pass
 
-    def cleanup(self) -> None:
+    def cleanup(self):
         """Remove registered process IDs during interpreter shutdown."""
         for process_id in list(self._process_ids):
             self.remove(process_id)
 
 
-def process_finish(wav_path: str = "", log_path: str = "", open_log: bool = False):
+def process_finish(wav_path="", log_path="", open_log=False):
     """Run completion side effects such as sounds and opening logs."""
     if wav_path:
         try:
@@ -200,7 +208,7 @@ def process_finish(wav_path: str = "", log_path: str = "", open_log: bool = Fals
             print(f"[Error] Failed to open log: {e}")
 
 
-def looks_like_interpreter_crash(returncode) -> bool:
+def looks_like_interpreter_crash(returncode):
     """Return whether a process return code matches common Windows crash codes. A Python crash is meant to be a Python interpreter crash as opposed to a exit with a failure code for exampel with sys.exit(1)."""
     _WINDOWS_CRASH_CODES = {
         0xC0000005,  # access violation
@@ -210,7 +218,7 @@ def looks_like_interpreter_crash(returncode) -> bool:
         0xC0000409,  # stack buffer overrun
     }
 
-    def _int_to_unsigned32(n: int) -> int:
+    def _int_to_unsigned32(n):
         """Convert a signed return code to an unsigned 32-bit value."""
         return n & 0xFFFFFFFF
 
