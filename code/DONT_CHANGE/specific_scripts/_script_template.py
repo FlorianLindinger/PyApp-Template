@@ -19,7 +19,7 @@ try:
     # imports from files
     # ==============================
 
-    # add root dir to resolve file imports for debug cases where this script is called on its own
+    # add root dir to resolve file imports for debug cases where this script is called on its own:
     root_dir = os.path.dirname(__file__) + "\\..\\.."
     if root_dir not in sys.path:
         sys.path.insert(0, root_dir)
@@ -28,7 +28,8 @@ try:
         close_terminal,
         input_warn,
         print_traceback,
-        setup_terminal_colors_and_unminimize_on_print,
+        setup_terminal_colors,
+        setup_unminimize_and_foreground_on_first_print,
     )
 
     # ==============================
@@ -39,16 +40,16 @@ try:
     # define local functions
     # ==============================
 
-    def main():
+    # ==============================
+    # define main function
+    # ==============================
+
+    def main() -> None:
 
         # ==============================
-        # script is inteded to be launched minimized and will un minimize on first print/error
+        # code block description
 
-        setup_terminal_colors_and_unminimize_on_print()
-
-        # ==============================
-
-        code
+        pass
 
     # ==============================
     # execute main function
@@ -56,11 +57,12 @@ try:
 
     if __name__ == "__main__":
         try:
+            setup_terminal_colors()
+            setup_unminimize_and_foreground_on_first_print()
             main()
         except Exception as e:
             print_traceback(fail_message.format(e=e))
-
-        input_warn("[Error] Press enter to exit")
+            input_warn("[Error] Press enter to exit")
         close_terminal()
 
     # ==============================
@@ -68,8 +70,6 @@ try:
 except Exception as e:
     import os
     import traceback
-
-    # more low tech to brinog to foregorund?
 
     print()
     print()
