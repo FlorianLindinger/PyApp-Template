@@ -3,9 +3,25 @@
 # wrap up and move as much as possible to future:
 ======================================
 
-do i want the .gitattributes
+renamed commonc code and vatiables to _common_code
 
-remove test.py from git recotrds. 
+what if i dont want to foregorund on first print? becasue alread foregound? shpould not matter since first print gets thta out of the sstem iimediatly anyway
+
+    # more low tech to brinog to foregorund? on outer most exceptijn
+
+add setting: foreground_on_ ....
+
+mihgt as well unminimuize+forgorund on bg=unexepcedt errors
+do i generally want to bring to froground aswell for error? also change appearnace?
+but setup_terminal_colors_and_unminimize_on_print already does that anyway?
+
+does all thermaninal appearnce change work for multiple open? or notmal temrnial open?
+
+review backend test tools at some point
+
+have a template for teh dev tools and backend test tools?
+
+do i want the .gitattributes
 
 add common_variables stuff like:
 PY_DIST_PYTHON = CODE_DIR / "py_env" / "py_dist" / "python.exe"
