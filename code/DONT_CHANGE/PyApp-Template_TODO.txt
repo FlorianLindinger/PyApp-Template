@@ -3,6 +3,53 @@
 # wrap up and move as much as possible to future:
 ======================================
 
+when it sees that 3.4 does not existt online. it has already delete the last. Only delete indicator and dist at last point
+
+is 3.5 lower limit?
+
+better message: inlcude link to wrapper/otehr i guess:
+    ====================
+    [Error] Backend code did not seem to launch properly
+    --------------------
+    Launch mode: terminal
+    Error code (potentially meaningless): "0"
+    ====================
+    [Error] Press enter to exit
+
+for option 2: reinstall python and not packages: does it spawn the packages installer file?
+
+spawn missing python bersion for every get_python_version usage
+
+the python version indicated by the python file did not update for failed reinstall fro m3.6 to 3.5. but py_dist was 3.5 . So either updte even for failed or removed the old indication when i delete old? and make it possibel for no python version indicator file
+
+earlier gnerate th note where to change packages. wasnt tjere after packge fail
+
+better error message for pyavkage version not exsiinting in that python version
+
+maybe make easier to reset versions of default packages for current version. does the option prompt. test the python version change prompt
+
+rich cant dispaly long error message
+
+link to developer settings: [Warning] Python version in settings (3.6) is not matching the current one (3.14.5). Please enter how to proceed:
+
+go lower than 3.7 for python. i guess download limited
+
+make test tthat test oldest supported python version
+
+how do i pass stuff from common_variables and dev settings to frontend. maaybe just file
+
+i cant import common_code because it might not be safe for specfic versions.
+but how do i plan to be safe for all versionas. I have to use AI and ask if something changed since 3.7 or whatever i support. I must keep it simpler.
+what if i always just launch backend when mainend want to report for safety?
+how was browser supposed to work? should i run it in backend somehow?
+i could just run invisible backend. but somehow still pass a successful start file wrapper in child. that should be safe. but how do i print in the child terminal ? cant
+does developer settins work to be imported in frontend?????
+
+do i want to  move terminal_colors code in start_Scropt to get_launcerh_settings or do i want to have there only siutf all launc modes have in copmmon? i could also just pass launch mode into get_launcerh_settings and process only there if needed. better for stuff like passing stryölesbheet.
+only app_id must be passed. but how do i pass an arg then top get_launcerh_settings
+
+review PID in start_program
+
 renamed commonc code and vatiables to _common_code
 
 what if i dont want to foregorund on first print? becasue alread foregound? shpould not matter since first print gets thta out of the sstem iimediatly anyway

@@ -24,7 +24,6 @@ from DONT_CHANGE.specific_scripts.common_variables import (
     determined_needed_packages_output_file_path_withVersion,
     dev_tools_referal_note_path,
     excluded_folders_for_package_search,
-    frontend_env_dir,
     frontend_packages_are_installed_marker_path,
     frontend_packages_dir,
     frontend_python_dir,
@@ -1631,16 +1630,11 @@ def install_full_python(
             print(f"Installing {msi_name}")
 
         # Administrative extraction installs the MSI contents into TARGETDIR.
+        # Windows Installer needs only the property value quoted when TARGETDIR
+        # contains spaces; Python's argv quoting quotes the whole key=value arg.
+        command = f'msiexec /a "{msi_path}" TARGETDIR="{python_dir_abs_path}" /qn /L*V "{log_path}"'
         result = subprocess.run(  # noqa
-            [
-                "msiexec",
-                "/a",
-                msi_path,
-                f"TARGETDIR={python_dir_abs_path}",
-                "/qn",
-                "/L*V",
-                log_path,
-            ],
+            command,
             check=False,
         )
 
@@ -1768,7 +1762,7 @@ def recreate_python_distro() -> None:
 
     install_full_python(
         python_version=python_version,
-        python_dir_abs_path=frontend_env_dir,
+        python_dir_abs_path=frontend_python_dir,
         install_tkinter=install_tkinter,
         install_tests=install_tests,
         install_tools=install_tools,
