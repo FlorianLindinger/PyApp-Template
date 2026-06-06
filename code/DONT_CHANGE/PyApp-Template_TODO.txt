@@ -3,6 +3,8 @@
 # wrap up and move as much as possible to future:
 ======================================
 
+_make_file_to_indicate_frontend_pckgs_installed otuside install packages from file?
+
 test how low versions go. hardcode error message for too low in start
 
 make blacklisted_file_patterns more like wildcard tban file name
