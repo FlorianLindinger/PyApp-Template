@@ -1,16 +1,24 @@
+:: disable printing of commands
 @echo off
+
+:: make variables local
 setlocal
+
+:: move to folder of this file
 cd /d "%~dp0"
 
 :: ===========================
 :: local variables
 
-set "VERSION=3.12.10" @REM 3.12.11+ don't have a Windows embeddable zip available
+:: version must have embeddible zip available:
+set "VERSION=3.12.10"
 set "INSTALL_DIR=%cd%\..\..\backend_python"
+set "PYTHON_EXE=%INSTALL_DIR%\python.exe"
 set "ZIP=%INSTALL_DIR%\tmp.zip"
 set "URL=https://www.python.org/ftp/python/%VERSION%/python-%VERSION%-embed-amd64.zip"
 
 :: ===========================
+:: code execution
 
 :: print
 echo Installing backend Python...
@@ -26,7 +34,7 @@ if /i "%INSTALL_DIR_FULL%"=="%cd%\" (
     echo Refusing to delete current directory.
     goto :error_exit
 )
-if not "%INSTALL_DIR_FULL:~-2%"=="\P" (
+if not "%INSTALL_DIR_FULL:~-15%"=="\backend_python" (
     echo Refusing to delete unexpected install dir:
     echo %INSTALL_DIR_FULL%
     goto :error_exit
@@ -73,10 +81,11 @@ if errorlevel 1 (
 exit /b 0
 
 :: ===========================
+:: functions
 
 :error_exit
-:: python_exe missing indicated that not installed -> delete
-del "%python_exe%" > nul 2>&1
+:: python.exe missing indicates that it is not installed -> delete
+del "%PYTHON_EXE%" > nul 2>&1
 echo [Error] Backend Python installation failed. Aborting. Press any key to exit.
 pause > nul
 exit 1
