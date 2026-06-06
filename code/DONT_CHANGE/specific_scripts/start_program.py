@@ -203,7 +203,7 @@ try:
 
     def make_empty_args_safe(args: list[str]) -> list[str]:
         """Needed because passing empty args as "" in Windows can be flimsy -> replace "" with EMPTY_ARG_INDICATOR and decode in child."""
-        return [a if a else EMPTY_ARG_INDICATOR for a in args]
+        return [a if a != "" else EMPTY_ARG_INDICATOR for a in args]
 
     def generate_minimized_startupinfo():
         """Creates subprocess.Popen STARTUPINFO that opens a child process minimized."""
@@ -213,7 +213,6 @@ try:
         return startupinfo
 
     def bool_to_string(value: bool) -> str:
-        """Convert a boolean value to the launcher string argument format."""
         return "true" if value else "false"
 
     # ==============================

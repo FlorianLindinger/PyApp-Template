@@ -9,7 +9,7 @@ if root_dir not in sys.path:
     sys.path.insert(0, root_dir)
 
 from DONT_CHANGE.specific_scripts.common_code import (
-    delete_packages,
+    delete_frontend_packages,
     ensure_python_distro,
     input_success,
     install_packages_from_file,
@@ -19,7 +19,7 @@ from DONT_CHANGE.specific_scripts.common_variables import default_packages_file_
 
 try:
     ensure_python_distro()
-    delete_packages()
+    delete_frontend_packages()
     install_packages_from_file(default_packages_file_path)
     print()
     input_success("[Success] Press enter to exit")

@@ -1,7 +1,7 @@
 """WIP"""
 
 # {e} will be formatted to exception:
-fail_message = "[Error] Failed to open current log file: {e}"
+fail_message = "[Error] Failed WIP: {e}"
 
 try:
     # ==============================
@@ -37,7 +37,7 @@ try:
     # ==============================
 
     # ==============================
-    # define local functions
+    # define local functions/classes
     # ==============================
 
     # ==============================
@@ -73,10 +73,10 @@ except Exception as e:
 
     print()
     print()
-    print("=" * 20)
+    print("=" * 30)
     print(fail_message.format(e=e))
-    print("-" * 20)
+    print("-" * 30)
     print(traceback.format_exc())
-    print("=" * 20)
+    print("=" * 30)
     input("[Error] Press enter to exit")
     os._exit(1)  # instead of sys.exit(1) to prevent exception by script calling this script

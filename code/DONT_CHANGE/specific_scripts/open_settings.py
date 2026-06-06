@@ -9,7 +9,7 @@ try:
     import subprocess
     import sys
     import traceback
-    
+
     # ==========================================================================
     # add root dir for debug cases where this script is called on its own:
     root_dir = os.path.dirname(__file__) + "\\..\\.."
@@ -19,7 +19,10 @@ try:
     # ==========================================================================
     # import from common variables and developer settings
     import developer_settings
-    from DONT_CHANGE.specific_scripts.common_code import close_terminal
+    from DONT_CHANGE.specific_scripts.common_code import (
+        close_terminal,
+        setup_terminal_colors_and_unminimize_plus_foreground_on_first_print,
+    )
     from DONT_CHANGE.specific_scripts.common_variables import developer_settings_path
 
     # ==========================================================================
@@ -46,6 +49,13 @@ try:
 
     # ==========================================================================
     # code execution
+
+    # =============================
+    # script is inteded to be launched minimized and will un minimize on frist print/error
+
+    setup_terminal_colors_and_unminimize_plus_foreground_on_first_print()
+
+    # =============================
 
     if not hasattr(developer_settings, "user_settings_path"):
         print("[Warning] Settings file is not implemented in program.")
