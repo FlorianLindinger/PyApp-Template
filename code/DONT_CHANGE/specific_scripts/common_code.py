@@ -33,11 +33,11 @@ from DONT_CHANGE.specific_scripts.common_variables import (
     determined_needed_packages_output_file_path_withVersion,
     dev_tools_referal_note_path,
     excluded_folders_for_package_search,
+    frontend_launcher_for_pip_install_terminal,
     frontend_packages_are_installed_marker_path,
     frontend_packages_dir,
     frontend_python_dir,
     frontend_python_exe,
-    frontend_script_for_set_python_and_pip_target,
     icon_path,
     python_scripts_dir,
     python_version_indicator_file_path,
@@ -1430,11 +1430,6 @@ def read_python_version_from_file():
         return get_python_version()
 
 
-def save_python_version_to_file():
-    current_version = get_python_version()
-    write_lines(python_version_indicator_file_path, [current_version])
-
-
 def is_python_version_correct(target_version: str | float | int) -> tuple[bool, str | None]:
     """
     Returns whether the Python executable at ``exe_path`` matches ``target_version`` and the actual version:
@@ -1746,7 +1741,7 @@ def install_full_python(
                     check=False,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.STDOUT,
-                    universal_newlines=True,
+                    text=True,
                 )
                 if result.returncode != 0:
                     raise RuntimeError("Python installation failed: pip is not available after ensurepip.")
@@ -1771,7 +1766,7 @@ def install_full_python(
                     check=False,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.STDOUT,
-                    universal_newlines=True,
+                    text=True,
                 )
                 if result.returncode != 0:
                     raise RuntimeError("Python installation failed: pip is not available after upgrade.")
@@ -1894,10 +1889,44 @@ def install_full_python(
 # python distribution related
 
 
-def create_frontend_python_tool_scripts() -> None:
-    """Create a batch file that launches a terminal that has python and pip install target set"""
+def delete_python_distro():
+    delete_folder_safe(
+        frontend_python_dir,
+        always_prompt_for_confirmation=False,
+        allowed_base_abs_path=python_scripts_dir,
+        expected_folder_name=None,
+        required_included_files=None,
+        required_included_dirs=None,
+        require_direct_child_of_allowed_base=False,
+        max_size_GB_before_prompt=1.2,
+        min_path_depth=6,
+    )
+    os.makedirs(frontend_python_dir, exist_ok=True)
 
-    batch_content = r"""
+
+def recreate_python_distro() -> None:
+    delete_python_distro()
+
+    rel_path_dist_to_packages = os.path.relpath(path=frontend_packages_dir, start=frontend_python_dir)
+
+    install_full_python(
+        python_version=python_version,
+        python_dir_abs_path=frontend_python_dir,
+        install_tkinter=install_tkinter,
+        install_tests=install_tests,
+        install_tools=install_tools,
+        install_docs=False,
+        rel_path_to_packages=rel_path_dist_to_packages,
+    )
+
+    if not os.path.exists(frontend_python_exe):
+        raise RuntimeError(f'Python installation did not produce expected file at "{frontend_python_exe}"')
+    else:
+        # save python verion to file
+        with open(python_version_indicator_file_path, "w", encoding="utf-8") as f:
+            f.write(get_python_version())
+        # Create a batch file that launches a terminal that has python and pip install target set:
+        batch_content = r"""
 :: turn off command print and make variables local
 @echo off & setlocal
 
@@ -1935,48 +1964,8 @@ echo.
 :: don't close terminal
 cmd /k
 """
-
-    os.makedirs(os.path.dirname(frontend_script_for_set_python_and_pip_target), exist_ok=True)
-
-    with open(frontend_script_for_set_python_and_pip_target, "w", encoding="utf-8") as f:
-        f.write(batch_content)
-
-
-def delete_python_distro():
-    delete_folder_safe(
-        frontend_python_dir,
-        always_prompt_for_confirmation=False,
-        allowed_base_abs_path=python_scripts_dir,
-        expected_folder_name=None,
-        required_included_files=None,
-        required_included_dirs=None,
-        require_direct_child_of_allowed_base=False,
-        max_size_GB_before_prompt=1.2,
-        min_path_depth=6,
-    )
-    os.makedirs(frontend_python_dir, exist_ok=True)
-
-
-def recreate_python_distro() -> None:
-    delete_python_distro()
-
-    rel_path_dist_to_packages = os.path.relpath(path=frontend_packages_dir, start=frontend_python_dir)
-
-    install_full_python(
-        python_version=python_version,
-        python_dir_abs_path=frontend_python_dir,
-        install_tkinter=install_tkinter,
-        install_tests=install_tests,
-        install_tools=install_tools,
-        install_docs=False,
-        rel_path_to_packages=rel_path_dist_to_packages,
-    )
-
-    if not os.path.exists(frontend_python_exe):
-        raise RuntimeError(f'Python installation did not produce expected file at "{frontend_python_exe}"')
-    else:
-        create_frontend_python_tool_scripts()
-        save_python_version_to_file()
+        with open(frontend_launcher_for_pip_install_terminal, "w", encoding="utf-8") as f:
+            f.write(batch_content)
 
 
 def prompt_for_distro_reinstall(msg="Reinstall distro / recreate virtual environment?"):
