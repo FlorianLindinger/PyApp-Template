@@ -22,18 +22,6 @@ conhost just better i guess-> wisscht
 shortcuts have terminal preferance
 checkout terminal tab in shorctu
 
-renaed stuff in common code wiht _ before if only local used
-
-rename python_packages to backend_py_packages?
-
-renameed get_launcerh_settings to common_launcher
-
-renamed to backend_py_pckgs to backend_packages?
-
-renamed commonc code and vatiables to _common_code. smae with common_varaibles
-
-rename? backend_packages_requirements
-backend_packages_list.txt
 
 renamed: generate requiremtns to "generate lsit of ...". Add readme that explains what they do 
 think if all tool names appear nice
