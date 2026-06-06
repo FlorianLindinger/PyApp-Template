@@ -20,7 +20,7 @@ if root_dir not in sys.path:
     sys.path.insert(0, root_dir)
 
 import developer_settings
-from DONT_CHANGE.specific_scripts.common_variables import (
+from DONT_CHANGE.scripts._common_variables import (
     backend_python_exe,
     env_var_to_signal_startup_time_measurement,
     frontend_python_exe,

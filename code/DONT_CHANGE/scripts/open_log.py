@@ -20,13 +20,13 @@ try:
     # import from files
 
     import developer_settings
+    from DONT_CHANGE.scripts._common_variables import python_script_path, shortcut_output_dir
     from DONT_CHANGE.specific_scripts.common_code import (
         close_terminal,
         input_warn,
         print_warn,
         setup_terminal_colors_and_unminimize_plus_foreground_on_first_print,
     )
-    from DONT_CHANGE.specific_scripts.common_variables import python_script_path, shortcut_output_dir
 
     # =============================
     # define local functions

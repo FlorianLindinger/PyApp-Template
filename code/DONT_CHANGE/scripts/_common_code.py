@@ -25,7 +25,7 @@ from developer_settings import (
     terminal_bg_color,
     terminal_text_color,
 )
-from DONT_CHANGE.specific_scripts.common_variables import (
+from DONT_CHANGE.scripts._common_variables import (
     default_packages_file_path,
     determined_current_packages_file_path_noVersion,
     determined_current_packages_file_path_withVersion,

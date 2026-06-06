@@ -9,14 +9,14 @@ root_dir = os.path.dirname(__file__) + "\\..\\..\\.."
 if root_dir not in sys.path:
     sys.path.insert(0, root_dir)
 
+from DONT_CHANGE.scripts._common_variables import (
+    frontend_launcher_for_pip_install_terminal,
+    frontend_python_exe,
+)
 from DONT_CHANGE.specific_scripts.common_code import (
     create_frontend_python_tool_scripts,
     ensure_python_distro,
     print_traceback,
-)
-from DONT_CHANGE.specific_scripts.common_variables import (
-    frontend_launcher_for_pip_install_terminal,
-    frontend_python_exe,
 )
 
 try:

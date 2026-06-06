@@ -45,6 +45,14 @@ try:
         use_classic_terminal,
         use_global_python,
     )
+    from DONT_CHANGE.scripts._common_variables import (
+        CORRECT_START_SIGNAL_FILE_PATH,
+        EMPTY_ARG_INDICATOR,
+        frontend_python_exe,
+        process_id_file_path,
+        python_script_path,
+        script_wrapper_path,
+    )
     from DONT_CHANGE.specific_scripts.common_code import (
         close_terminal,
         ensure_frontend_packages,
@@ -55,14 +63,6 @@ try:
         setup_terminal_colors,
         setup_unminimize_and_foreground_on_first_print,
         stop_processes_from_pid_file,
-    )
-    from DONT_CHANGE.specific_scripts.common_variables import (
-        CORRECT_START_SIGNAL_FILE_PATH,
-        EMPTY_ARG_INDICATOR,
-        frontend_python_exe,
-        process_id_file_path,
-        python_script_path,
-        script_wrapper_path,
     )
 
     # ==============================
@@ -92,7 +92,7 @@ try:
             print_prepend,
             python_version,
         )
-        from DONT_CHANGE.specific_scripts.common_variables import (
+        from DONT_CHANGE.scripts._common_variables import (
             env_var_to_signal_startup_time_measurement,
             icon_path,
             play_sound_on_crash_default,

@@ -20,6 +20,7 @@ if root_dir not in sys.path:
 
 # ==========================================================================
 # import from common variables and developer settings
+from DONT_CHANGE.scripts._common_variables import developer_settings_path, process_id_file_path
 from DONT_CHANGE.specific_scripts.common_code import (
     close_terminal,
     make_abs_path_relative_to_file,
@@ -28,7 +29,6 @@ from DONT_CHANGE.specific_scripts.common_code import (
     setup_terminal_colors_and_unminimize_plus_foreground_on_first_print,
     stop_processes_from_pid_file,
 )
-from DONT_CHANGE.specific_scripts.common_variables import developer_settings_path, process_id_file_path
 
 # ==========================================================================
 # code execution

@@ -13,15 +13,15 @@ def make_abs(x: str) -> str:
 
 # backend related
 # ------------------------
-# on change of all backend: stuff has to be changed manually (see finish_backend_installation.py) or regenerated automatically by deleting the previous folder:
-backend_python_exe = make_abs(
-    "..\\backend_python\\python.exe"
-)  # has to match python_exe_name in install_backend_python.bat
-backend_python_dir = os.path.dirname(backend_python_exe)
-backend_python_pth_file = backend_python_dir + "\\python312._pth"
-backend_python_zip_rel_path = "python312.zip"
-backend_packages_dir = make_abs("..\\backend_py_pckgs")
+# Change backend Python version in install_backend_python.bat.
+backend_python_dir = make_abs("..\\backend_python")  # Update contents of backend_python_pth_file
+backend_python_pth_file = (
+    backend_python_dir + "\\python312._pth"
+)  # must match Python version in install_backend_python.bat
+backend_python_zip_rel_path = "python312.zip"  # must match Python version in install_backend_python.bat
+backend_packages_dir = make_abs("..\\backend_packages")  # Update contents of backend_python_pth_file
 backend_package_requirements_file = make_abs("..\\backend_packages_requirements.txt")
+backend_files_to_delete_on_install = ["sqlite3.dll", "python.cat"]
 
 # frontend related
 # ------------------------
@@ -48,7 +48,7 @@ starter_batches_folder = make_abs("..\\B")
 # ------------------------
 start_program_script = make_abs("start_program.py")
 python_script_path = make_abs("..\\..\\main_script.py")
-script_wrapper_path = make_abs("script_wrapper.py")
+script_wrapper_path = make_abs("frontend\\script_wrapper.py")
 browser_terminal_path = make_abs("..\\browser_terminal\\browser_terminal.py")
 compiled_terminal_path = make_abs("..\\terminal_emulator\\compiled\\run.exe")
 uncompiled_terminal_path = make_abs("..\\terminal_emulator\\terminal_emulator.py")
@@ -111,6 +111,7 @@ EMPTY_ARG_INDICATOR: str = "__EMPTY__"
 # === derived/less-flexible variables ===
 # =============================
 
+backend_python_exe = backend_python_dir + "\\python.exe"
 developer_settings_dir = os.path.dirname(developer_settings_path)
 frontend_python_exe = frontend_python_dir + "\\python.exe"
 rel_path_from_backend_python_to_backend_packages = os.path.relpath(backend_packages_dir, backend_python_dir)

@@ -16,7 +16,9 @@ if root_dir not in sys.path:
 # import variables
 
 from DONT_CHANGE.specific_scripts.common_code import delete_folder_safe
-from DONT_CHANGE.specific_scripts.common_variables import (
+
+from DONT_CHANGE.scripts._common_variables import (
+    backend_files_to_delete_on_install,
     backend_package_requirements_file,
     backend_packages_dir,
     backend_python_dir,
@@ -57,14 +59,10 @@ import site""")
         raise
 
     # remove unneeded files to save space
-    if os.path.exists(backend_python_dir + r"\sqlite3.dll"):
-        os.remove(backend_python_dir + r"\sqlite3.dll")
-    else:
-        print("sqlite3.dll not found to remove.")
-    if os.path.exists(backend_python_dir + r"\python.cat"):
-        os.remove(backend_python_dir + r"\python.cat")
-    else:
-        print("python.cat not found to remove.")
+    for filename in backend_files_to_delete_on_install:
+        if os.path.exists(backend_python_dir + "\\" + filename):
+            os.remove(backend_python_dir + "\\" + filename)
+            print(f"[Info] Deleted {filename} to save space")
 
     # clear packages folder
     def clear_folder_contents(folder):
@@ -142,8 +140,7 @@ import site""")
         check=True,
     )
 
-    # Console entry points are generated into python_packages\bin by pip --target.
-    # The embedded runtime imports packages directly and does not use those scripts.
+    # Remove console entry points are generated into python_packages\bin by pip --target. The embedded runtime imports packages directly and does not use those scripts.
     generated_bin_folder = os.path.join(backend_packages_dir, "bin")
     if os.path.isdir(generated_bin_folder):
         import shutil  # lazy import because slow

@@ -1,9 +1,9 @@
 python312.zip
 .
-..\backend_py_pckgs
-..\backend_py_pckgs\win32
-..\backend_py_pckgs\win32\lib
-..\backend_py_pckgs\Pythonwin
+..\backend_packages
+..\backend_packages\win32
+..\backend_packages\win32\lib
+..\backend_packages\Pythonwin
 
 # Uncomment to run site.main() automatically
 # import site
