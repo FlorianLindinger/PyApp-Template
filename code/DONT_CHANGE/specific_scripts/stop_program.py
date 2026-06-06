@@ -25,6 +25,7 @@ from DONT_CHANGE.specific_scripts.common_code import (
     make_abs_path_relative_to_file,
     print_success,
     print_traceback,
+    setup_terminal_colors_and_unminimize_plus_foreground_on_first_print,
     stop_processes_from_pid_file,
 )
 from DONT_CHANGE.specific_scripts.common_variables import developer_settings_path, process_id_file_path
@@ -35,6 +36,13 @@ from DONT_CHANGE.specific_scripts.common_variables import developer_settings_pat
 pid_path = make_abs_path_relative_to_file(process_id_file_path, developer_settings_path)
 
 try:
+    # =============================
+    # script is inteded to be launched minimized and will un minimize on frist print/error
+
+    setup_terminal_colors_and_unminimize_plus_foreground_on_first_print()
+
+    # =============================
+
     stopped_count, stale_count, failed_messages = stop_processes_from_pid_file(pid_path)
 
     if failed_messages:
@@ -42,7 +50,7 @@ try:
 
     if stopped_count == 0:
         if stale_count == 0:
-            print(f"[Info] No PID file found at {pid_path}.")
+            print(f'[Info] No PID file found at "{pid_path}".')
             print("This could mean it was already stopped via this script.")
         else:
             print(f"[Info] Nothing to stop. Removed {stale_count} stale PID entries from {pid_path}.")
