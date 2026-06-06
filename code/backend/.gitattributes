@@ -1,0 +1,10 @@
+# Auto detect text files and perform LF normalization:
+* text=auto
+# Force git to use CRLF for batch files to not break them:
+*.bat text eol=crlf
+# In oder that GitHub treats these as vendored and Git does not try to diff binaries:
+python_packages/** linguist-vendored
+python_packages/**/*.dll binary
+python_packages/**/*.pyd binary
+python_packages/**/*.exe binary
+python_packages/**/*.chm binary
