@@ -28,7 +28,7 @@ backend_package_requirements_file = make_abs("..\\backend_packages_requirements.
 frontend_packages_dir = make_abs("..\\..\\py_env\\packages")  # UPDATE GITIGNORE
 frontend_python_dir = make_abs("..\\..\\py_env\\py_dist")  # UPDATE GITIGNORE
 frontend_packages_are_installed_marker_filename = "_DELETE_THIS_TO_REINSTALL_ONLY_DEFAULT_PACKAGES_"
-frontend_script_for_set_python_and_pip_target = (
+frontend_launcher_for_pip_install_terminal = (
     frontend_python_dir + "\\tools\\open_terminal_with_set_python_and_pip_target.bat"
 )
 dev_tools_referal_note_path = (
