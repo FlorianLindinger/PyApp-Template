@@ -14,6 +14,13 @@ if root_dir not in sys.path:
 # =============================
 # imports third-party packages
 
+from DONT_CHANGE.specific_scripts.common_code import (
+    close_terminal,
+    ensure_frontend_packages,
+    make_abs_path_relative_to_file,
+    print_traceback,
+    sanitize_filename,
+)
 from win32com.client import Dispatch  # type:ignore
 from win32com.propsys import (  # type:ignore
     propsys,
@@ -35,14 +42,7 @@ from developer_settings import (
     user_settings_path,
     windows_terminal_shortcut_name,
 )
-from DONT_CHANGE.specific_scripts.common_code import (
-    close_terminal,
-    ensure_frontend_packages,
-    make_abs_path_relative_to_file,
-    print_traceback,
-    sanitize_filename,
-)
-from DONT_CHANGE.specific_scripts.common_variables import (
+from DONT_CHANGE.scripts._common_variables import (
     developer_settings_path,
     icon_path,
     launcher_log,
@@ -327,6 +327,7 @@ def main():
             description=f"Open the {program_name} settings file",
             start_minimized=True,
         )
+
 
 print()
 print(f"Shortcut(s) created in: {shortcut_output_dir}")
