@@ -8,16 +8,15 @@ import urllib.request
 # ====================================
 # add root dir for debug cases where this script is called on its own:
 
-root_dir = os.path.dirname(__file__) + "\\..\\..\\.."
+root_dir = os.path.dirname(__file__) + "\\..\\..\\..\\.."
 if root_dir not in sys.path:
     sys.path.insert(0, root_dir)
 
 # ====================================
 # import variables
 
-from DONT_CHANGE.specific_scripts.common_code import delete_folder_safe
-
-from DONT_CHANGE.scripts._common_variables import (
+from backend.DONT_CHANGE.scripts._common_code import delete_folder_safe
+from backend.DONT_CHANGE.scripts._common_variables import (
     backend_files_to_delete_on_install,
     backend_package_requirements_file,
     backend_packages_dir,

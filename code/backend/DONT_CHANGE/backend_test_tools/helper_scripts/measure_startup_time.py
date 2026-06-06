@@ -15,12 +15,12 @@ import unicodedata
 # ========================
 
 # Add code dir for debug cases where this script is called on its own.
-root_dir = os.path.dirname(__file__) + "\\..\\.."
+root_dir = os.path.dirname(__file__) + "\\..\\..\\.."
 if root_dir not in sys.path:
     sys.path.insert(0, root_dir)
 
-import developer_settings
-from DONT_CHANGE.scripts._common_variables import (
+import backend.developer_settings
+from backend.DONT_CHANGE.scripts._common_variables import (
     backend_python_exe,
     env_var_to_signal_startup_time_measurement,
     frontend_python_exe,
@@ -44,7 +44,7 @@ VERSION_SCRIPT = (
 
 def setting_to_shortcut_path(setting_name: str) -> str | None:
     """Resolve a shortcut setting into a repository shortcut path."""
-    shortcut_name = getattr(developer_settings, setting_name, None)
+    shortcut_name = getattr(backend.developer_settings, setting_name, None)
     if shortcut_name in {None, False, ""}:
         return None
     return os.path.join(REPO_DIR, f"{shortcut_name}.lnk")
@@ -532,7 +532,7 @@ def main() -> int:
         shortcut_measurements.append((shortcut_path, shortcut_launch_command, shortcut_cwd))
 
     measurements: list[tuple[str, list[str]]] = []
-    app_id = sanitize_app_id(getattr(developer_settings, "program_name", ""))
+    app_id = sanitize_app_id(getattr(backend.developer_settings, "program_name", ""))
     if not args.skip_start_program:
         for label, launch_mode in start_program_modes_from_developer_settings(args):
             measurements.append((label, [backend_python_exe, start_program_script, app_id, launch_mode]))
