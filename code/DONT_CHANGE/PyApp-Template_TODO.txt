@@ -13,14 +13,7 @@ backend\
     icons
     developer_tools
 
-or maybe just scripts
-    _common_variables.py
-    _common_code.py
-    ...
-    dev_tools
-    setup/
-    frontend/
-        script_wrapper.py
+
 
 for all the shortcuts: what do i want for appearance. does wt or conhost have better taskbar appearance: icon , name?
 do i want to rename and icon ... for scripts that dont launc program?
