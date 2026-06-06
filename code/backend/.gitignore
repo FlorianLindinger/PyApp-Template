@@ -1,4 +1,20 @@
-# generated caches:
+# python cache:
 __pycache__
 *.pyc
 *.pyo
+# generated Python distro and packages:
+/py_env/
+# whitelist indicator file:
+!/py_env/_USE developer_tools FOLDER (IN PARENT FOLDER) TO CHANGE PACKAGES_
+# output files of developer tools:
+/developer_tools/*.txt
+# whitelist specific files in developer tools folder:
+!/developer_tools/_README_.txt
+!developer_tools/_DEFAULT_PYHON_PACKAGES_.txt
+# ===================================================
+
+# =============================
+# ==== specific gitignores ====
+# =============================
+
+# ADD YOUR GITIGNORES HERE

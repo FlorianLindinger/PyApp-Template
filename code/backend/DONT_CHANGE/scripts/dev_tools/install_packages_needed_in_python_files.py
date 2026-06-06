@@ -4,19 +4,19 @@ import os
 import sys
 
 # add root dir for imports:
-root_dir = os.path.dirname(__file__) + "\\..\\..\\.."
+root_dir = os.path.dirname(__file__) + "\\..\\..\\..\\.."
 if root_dir not in sys.path:
     sys.path.insert(0, root_dir)
 
-from DONT_CHANGE.scripts._common_variables import (
-    determined_needed_packages_output_file_path_noVersion,
-)
-from DONT_CHANGE.specific_scripts.common_code import (
+from backend.DONT_CHANGE.scripts._common_code import (
     ensure_python_distro,
     input_success,
     install_packages_from_file,
     print_traceback,
     save_requirements_of_root_folder_noVersion,
+)
+from backend.DONT_CHANGE.scripts._common_variables import (
+    determined_needed_packages_output_file_path_noVersion,
 )
 
 try:

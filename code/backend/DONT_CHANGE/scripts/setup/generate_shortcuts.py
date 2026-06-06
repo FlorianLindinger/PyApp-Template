@@ -6,21 +6,8 @@ import sys
 import time
 import unicodedata
 
-# add root dir for debug cases where this script is called on its own:
-root_dir = os.path.dirname(__file__) + "\\..\\..\\.."
-if root_dir not in sys.path:
-    sys.path.insert(0, root_dir)
-
 # =============================
 # imports third-party packages
-
-from DONT_CHANGE.specific_scripts.common_code import (
-    close_terminal,
-    ensure_frontend_packages,
-    make_abs_path_relative_to_file,
-    print_traceback,
-    sanitize_filename,
-)
 from win32com.client import Dispatch  # type:ignore
 from win32com.propsys import (  # type:ignore
     propsys,
@@ -30,7 +17,13 @@ from win32com.shell import shellcon  # type:ignore
 
 # =============================
 # import from files
-from developer_settings import (
+
+# add root dir for debug cases where this script is called on its own:
+root_dir = os.path.dirname(__file__) + "\\..\\..\\..\\.."
+if root_dir not in sys.path:
+    sys.path.insert(0, root_dir)
+
+from backend.developer_settings import (
     install_python_when_generating_shortcuts,
     log_path_rel_to_start_folder,
     no_terminal_shortcut_name,
@@ -42,7 +35,14 @@ from developer_settings import (
     user_settings_path,
     windows_terminal_shortcut_name,
 )
-from DONT_CHANGE.scripts._common_variables import (
+from backend.DONT_CHANGE.scripts._common_code import (
+    close_terminal,
+    ensure_frontend_packages,
+    make_abs_path_relative_to_file,
+    print_traceback,
+    sanitize_filename,
+)
+from backend.DONT_CHANGE.scripts._common_variables import (
     developer_settings_path,
     icon_path,
     launcher_log,
