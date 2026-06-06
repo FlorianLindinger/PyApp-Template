@@ -1,7 +1,8 @@
-"""Shared code in scripts that are run in Python backend of this PyApp-Template"""
+"""Shared code in scripts that are run in Python backend of this PyApp-Template
 
-# code here should raise an error instead of handling terminal closing or press enter to exit logic. Other than the function definitions that are defined here to do that in the callers like close_terminal and print_traceback.
-# imports are mostly lazy because it is not clear what will be needed
+Code here should raise an error instead of handling terminal closing or press-enter-to-exit logic.
+Imports are mostly lazy because it is not clear what will be needed
+"""
 
 # =========================
 
@@ -15,7 +16,15 @@ if root_dir not in sys.path:
     sys.path.insert(0, root_dir)
 # =========================
 
-from developer_settings import install_tests, install_tkinter, install_tools, program_name, python_version
+from developer_settings import (
+    install_tests,
+    install_tkinter,
+    install_tools,
+    program_name,
+    python_version,
+    terminal_bg_color,
+    terminal_text_color,
+)
 from DONT_CHANGE.specific_scripts.common_variables import (
     default_packages_file_path,
     determined_current_packages_file_path_noVersion,
@@ -28,10 +37,8 @@ from DONT_CHANGE.specific_scripts.common_variables import (
     frontend_packages_dir,
     frontend_python_dir,
     frontend_python_exe,
+    frontend_script_for_set_python_and_pip_target,
     icon_path,
-    python_download_excluded_base_msi_names,
-    python_download_ftp_url,
-    python_download_timeout_s,
     python_scripts_dir,
     python_version_indicator_file_path,
     variable_in_default_packages_path_that_triggers_search_if_true,
@@ -40,12 +47,18 @@ from DONT_CHANGE.specific_scripts.common_variables import (
 # =========================
 # global variables
 
-_ICON_WAS_SET = False
-_APP_ID_IS_SET = False
+_TERMINAL_APPEARANCE_WAS_SET = False
 
 _ANSI_WARN = "\x1b[1;37;41m"  # white text, red bg, bold
 _ANSI_SUCCESS = "\x1b[1;37;42m"  # white text, green bg, bold
 _ANSI_RESET = "\033[0m"
+
+
+TERMINAL_COLORS = ""
+if terminal_bg_color:
+    TERMINAL_COLORS += terminal_bg_color
+if terminal_text_color:
+    TERMINAL_COLORS += terminal_text_color
 
 # =========================
 # general helper functions
@@ -58,6 +71,7 @@ _ANSI_RESET = "\033[0m"
 def print_success(msg, sep: str | None = " ", end: str | None = "\n"):
     """Print a success-styled console message."""
     print(f"{_ANSI_SUCCESS}{msg}{_ANSI_RESET}", sep=sep, end=end)
+
 
 def print_warn(msg, sep: str | None = " ", end: str | None = "\n"):
     """Print a warning-styled console message."""
@@ -74,10 +88,11 @@ def input_success(msg):
     return input(f"{_ANSI_SUCCESS}{msg}{_ANSI_RESET}")
 
 
-def print_traceback(message="Error", add_press_enter_to_exit=False) -> None:
+def print_traceback(message="Error") -> None:
     """colored traceback via "rich" package"""
 
     exc_type, exc_value, tb = sys.exc_info()
+
     try:
         import rich.box
         import rich.console
@@ -86,11 +101,10 @@ def print_traceback(message="Error", add_press_enter_to_exit=False) -> None:
         import rich.traceback
 
         if exc_type is None or exc_value is None:
+            print()
             rich.console.Console().print(
-                "[yellow][Warning] Running print_traceback function without active exception.[/yellow]"
+                "[yellow][Warning] Ran print_traceback function without active exception.[/yellow]"
             )
-            if add_press_enter_to_exit:
-                rich.console.Console().print("[red]Press enter to exit[/red]")
         else:
             panel = rich.panel.Panel(
                 rich.traceback.Traceback.from_exception(
@@ -101,29 +115,29 @@ def print_traceback(message="Error", add_press_enter_to_exit=False) -> None:
                 ),
                 title=rich.text.Text(message, style="bold red on white"),
                 title_align="left",
-                subtitle=rich.text.Text("Press Enter to exit", style="bold red on white")
-                if add_press_enter_to_exit
-                else None,
+                subtitle=rich.text.Text(message, style="bold red on white"),
                 subtitle_align="left",
                 box=rich.box.HEAVY,
                 border_style="bold red",
                 padding=(1, 2),
                 expand=False,
+                safe_box=True,
             )
+
+            print()
             rich.console.Console().print(panel)
 
     # fallback
     except Exception:
         import traceback
 
-        print(traceback.print_exception(exc_type, exc_value, tb))
-
-    # close and potetniall prompt before
-    finally:
-        if add_press_enter_to_exit:
-            input()
-        close_terminal()
-        sys.exit(1)  # should not be reached after close_terminal()
+        print()
+        print()
+        print("=" * 20)
+        print(message)
+        print("-" * 20)
+        print(traceback.format_exc())
+        print("=" * 20)
 
 
 # =========================
@@ -188,9 +202,8 @@ def delete_folder_safe(
     when the user cancels an interactive prompt.
     """
 
-    # Local helpers for the deletion safety checks: formatting, marker validation,
-    # reparse-point detection, and bounded folder-size scans.
     def _format_bytes(num_bytes) -> str:
+        """Format bytes to for example kB and GB."""
         units = ["B", "KB", "MB", "GB", "TB"]
         size = float(num_bytes)
         for unit in units:
@@ -207,6 +220,7 @@ def delete_folder_safe(
         return path_text == os.path.abspath(os.path.join(path_text, os.pardir))
 
     def _validate_required_child_names(names: list[str] | tuple[str, ...], label: str) -> tuple[str, ...]:
+        """WIP"""
         validated_names = []
         for name in names:
             name_text = os.fspath(name)
@@ -223,6 +237,7 @@ def delete_folder_safe(
         return tuple(validated_names)
 
     def _is_symlink_or_junction(path: str | os.PathLike[str]) -> bool:
+        """Return whether path is a Windows symlink or junction."""
         path_text = os.fspath(path)
         if os.path.islink(path_text):
             return True
@@ -253,9 +268,6 @@ def delete_folder_safe(
             if deadline is not None and get_time is not None and get_time() > deadline:
                 return True
             return False
-
-        def _raise_walk_error(error: OSError) -> None:
-            raise error
 
         for root, _dirs, files in os.walk(folder, onerror=_raise_walk_error):
             if _scan_timed_out():
@@ -410,7 +422,7 @@ def delete_folder_safe(
                 empty_check_get_time = time.monotonic
                 empty_check_deadline = empty_check_get_time() + max_size_check_seconds
 
-            def check_empty_scan_timeout() -> None:
+            def _check_empty_scan_timeout() -> None:
                 if (
                     empty_check_deadline is not None
                     and empty_check_get_time is not None
@@ -418,13 +430,13 @@ def delete_folder_safe(
                 ):
                     raise TimeoutError
 
-            def raise_walk_error(error: OSError) -> None:
+            def _raise_walk_error(error: OSError) -> None:
                 raise error
 
-            for root, _dirs, files in os.walk(target_path, onerror=raise_walk_error):
-                check_empty_scan_timeout()
+            for root, _dirs, files in os.walk(target_path, onerror=_raise_walk_error):
+                _check_empty_scan_timeout()
                 for filename in files:
-                    check_empty_scan_timeout()
+                    _check_empty_scan_timeout()
                     file_path = os.path.join(root, filename)
                     if os.path.isfile(file_path) and os.path.getsize(file_path) > 0:
                         is_empty = False
@@ -593,13 +605,164 @@ def delete_folder_safe(
 # terminal related
 
 
-def set_terminal_app_id_safe(app_id: str) -> int:
-    """Try to set System.AppUserModel.ID on the terminal window itself."""
+def setup_unminimize_and_foreground_on_first_print():
+
+    # this will unminimize and foreground on first print/error
+    sys.stdout = unminimize_plus_foreground_terminal_on_first_output(sys.stdout)  # type:ignore
+    sys.stderr = unminimize_plus_foreground_terminal_on_first_output(sys.stderr)  # type:ignore
+
+
+def setup_terminal_colors():
+    """set terminal text and bg colors to TERMINAL_COLORS"""
+    if TERMINAL_COLORS:
+        try:
+            os.system(f"color {TERMINAL_COLORS}")  # noqa:S605
+        except Exception:
+            pass
+
+
+def get_candidate_hwnds() -> list[int]:
+    """Return the candidate hwnds (handle to a Window in the Windows API).
+    Needed to modify the current terminal."""
     import ctypes
+
+    kernel32_DLL = ctypes.WinDLL("kernel32", use_last_error=True)  # type:ignore
+    user32_DLL = ctypes.WinDLL("user32", use_last_error=True)
+
+    candidate_hwnds: list[int] = []
+    console_hwnd = int(kernel32_DLL.GetConsoleWindow() or 0)
+
+    # get console title
+    buffer = ctypes.create_unicode_buffer(1024)
+    title_length = kernel32_DLL.GetConsoleTitleW(buffer, len(buffer))
+    if title_length == 0:
+        console_title = ""
+    else:
+        console_title = buffer.value
+
+    def _add(hwnd: int) -> None:
+        if hwnd == 0 or not user32_DLL.IsWindow(hwnd) or hwnd in candidate_hwnds:
+            return
+        candidate_hwnds.append(hwnd)
+
+    def _get_root_owner(hwnd: int) -> int:
+        GA_ROOTOWNER = 3
+        if hwnd == 0:
+            return 0
+        return int(user32_DLL.GetAncestor(hwnd, GA_ROOTOWNER) or 0)
+
+    _add(console_hwnd)
+    _add(_get_root_owner(console_hwnd))
+
+    if console_title:
+        hwnd_by_console_class = int(user32_DLL.FindWindowW("ConsoleWindowClass", console_title) or 0)
+        _add(hwnd_by_console_class)
+        _add(_get_root_owner(hwnd_by_console_class))
+
+        hwnd_by_title = int(user32_DLL.FindWindowW(None, console_title) or 0)
+        _add(hwnd_by_title)
+        _add(_get_root_owner(hwnd_by_title))
+
+    return candidate_hwnds
+
+
+class unminimize_plus_foreground_terminal_on_first_output:
+    """Unminimize a minimized terminal and set to foreground when output is written for the first time."""
+
+    def __init__(self, stream):
+        self.stream = stream
+        self._restored = False
+
+    def _restore_if_needed(self, data: object) -> None:
+        if self._restored or data in ("", b""):
+            return
+        self._restored = True
+        unminimize_and_foreground_terminal()
+
+    def write(self, data):
+        """Write text to the wrapped stream or terminal target."""
+        self._restore_if_needed(data)
+        return self.stream.write(data)
+
+    def flush(self) -> None:
+        """Flush the wrapped stream when supported."""
+        if hasattr(self.stream, "flush"):
+            self.stream.flush()
+
+    def isatty(self) -> bool:
+        """Return whether the wrapped stream behaves like a terminal."""
+        return bool(getattr(self.stream, "isatty", lambda: False)())
+
+    def writable(self) -> bool:
+        """Return whether the wrapped stream accepts writes."""
+        return True
+
+    def fileno(self) -> int:
+        """Return the wrapped stream file descriptor."""
+        if hasattr(self.stream, "fileno"):
+            return self.stream.fileno()
+        raise OSError("Underlying stream does not support fileno()")
+
+    def __getattr__(self, name: str):
+        """Forward unknown attribute lookups to the wrapped stream."""
+        return getattr(self.stream, name)
+
+
+def unminimize_and_foreground_terminal(candidate_hwnds: list[int] | None = None):
+
+    if candidate_hwnds is None:
+        candidate_hwnds = get_candidate_hwnds()
+
+    unminimize_window(candidate_hwnds)
+    foreground_window(candidate_hwnds)
+
+
+def foreground_window(candidate_hwnds: list[int] | None = None):
+    if candidate_hwnds is None:
+        candidate_hwnds = get_candidate_hwnds()
+
+    if candidate_hwnds:
+        import ctypes
+
+        for hwnd in candidate_hwnds:
+            try:
+                ctypes.windll.user32.SetForegroundWindow(hwnd)
+            except Exception:
+                pass
+
+
+def unminimize_window(candidate_hwnds: list[int] | None = None):
+    if candidate_hwnds is None:
+        candidate_hwnds = get_candidate_hwnds()
+
+    if candidate_hwnds:
+        import ctypes
+
+        for hwnd in candidate_hwnds:
+            try:
+                ctypes.windll.user32.ShowWindow(hwnd, 9)  # 9 means unminimized
+            except Exception:
+                pass
+
+
+def set_terminal_app_id(app_id: str, candidate_hwnds: list[int]) -> None:
+    """Try to set System.AppUserModel.ID on the terminal window itself."""
+
+    if app_id == "":
+        return
+
+    import ctypes
+    import uuid
     from ctypes import wintypes
 
-    def _helper_refresh_nonclient_area(hwnd: int) -> None:
+    HRESULT = ctypes.c_long
+    VT_LPWSTR = 31
+    S_OK = 0
+    S_FALSE = 1
+    RPC_E_CHANGED_MODE = 0x80010106
 
+    def _helper_refresh_nonclient_area(hwnd: int) -> None:
+        """Run the helper refresh nonclient area step."""
         user32_DLL = ctypes.WinDLL("user32", use_last_error=True)
 
         SWP_NOMOVE = 0x0002
@@ -618,63 +781,9 @@ def set_terminal_app_id_safe(app_id: str) -> int:
             SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED,
         )
 
-    def _get_candidate_hwnds() -> list[int]:
+    class _GUID(ctypes.Structure):
+        """Represent a Windows GUID/UUID structure used by COM APIs."""
 
-        kernel32_DLL = ctypes.WinDLL("kernel32", use_last_error=True)  # type:ignore
-        user32_DLL = ctypes.WinDLL("user32", use_last_error=True)
-
-        candidate_hwnds: list[int] = []
-
-        def add(hwnd: int) -> None:
-            if hwnd == 0 or not user32_DLL.IsWindow(hwnd) or hwnd in candidate_hwnds:
-                return
-            candidate_hwnds.append(hwnd)
-
-        console_hwnd = int(kernel32_DLL.GetConsoleWindow() or 0)
-
-        def get_console_title() -> str:
-            buffer = ctypes.create_unicode_buffer(1024)
-            title_length = kernel32_DLL.GetConsoleTitleW(buffer, len(buffer))
-            if title_length == 0:
-                return ""
-            return buffer.value
-
-        def get_root_owner(hwnd: int) -> int:
-            GA_ROOTOWNER = 3
-            if hwnd == 0:
-                return 0
-            return int(user32_DLL.GetAncestor(hwnd, GA_ROOTOWNER) or 0)
-
-        console_title = get_console_title()
-
-        add(console_hwnd)
-        add(get_root_owner(console_hwnd))
-
-        if console_title:
-            hwnd_by_console_class = int(user32_DLL.FindWindowW("ConsoleWindowClass", console_title) or 0)
-            add(hwnd_by_console_class)
-            add(get_root_owner(hwnd_by_console_class))
-
-            hwnd_by_title = int(user32_DLL.FindWindowW(None, console_title) or 0)
-            add(hwnd_by_title)
-            add(get_root_owner(hwnd_by_title))
-
-        return candidate_hwnds
-
-    candidate_hwnds = _get_candidate_hwnds()
-
-    import uuid
-
-    if app_id == "":
-        return 0
-
-    HRESULT = ctypes.c_long
-    VT_LPWSTR = 31
-    S_OK = 0
-    S_FALSE = 1
-    RPC_E_CHANGED_MODE = 0x80010106
-
-    class GUID(ctypes.Structure):
         _fields_ = [
             ("Data1", ctypes.c_ulong),
             ("Data2", ctypes.c_ushort),
@@ -682,10 +791,14 @@ def set_terminal_app_id_safe(app_id: str) -> int:
             ("Data4", ctypes.c_ubyte * 8),
         ]
 
-    class PROPERTYKEY(ctypes.Structure):
-        _fields_ = [("fmtid", GUID), ("pid", wintypes.DWORD)]
+    class _PROPERTYKEY(ctypes.Structure):
+        """WIP"""
 
-    class PROPVARIANT(ctypes.Structure):
+        _fields_ = [("fmtid", _GUID), ("pid", wintypes.DWORD)]
+
+    class _PROPVARIANT(ctypes.Structure):
+        """WIP"""
+
         _fields_ = [
             ("vt", ctypes.c_ushort),
             ("wReserved1", ctypes.c_ushort),
@@ -694,19 +807,21 @@ def set_terminal_app_id_safe(app_id: str) -> int:
             ("pwszVal", ctypes.c_wchar_p),
         ]
 
-    class IPropertyStore(ctypes.Structure):
-        pass
+    class _IPropertyStore(ctypes.Structure):
+        """WIP"""
 
-    IPropertyStorePtr = ctypes.POINTER(IPropertyStore)
+    IPropertyStorePtr = ctypes.POINTER(_IPropertyStore)
 
-    class IPropertyStoreVtbl(ctypes.Structure):
+    class _IPropertyStoreVtbl(ctypes.Structure):
+        """WIP"""
+
         _fields_ = [
             (
                 "QueryInterface",
                 ctypes.WINFUNCTYPE(
                     HRESULT,
                     IPropertyStorePtr,
-                    ctypes.POINTER(GUID),
+                    ctypes.POINTER(_GUID),
                     ctypes.POINTER(ctypes.c_void_p),
                 ),
             ),
@@ -719,7 +834,7 @@ def set_terminal_app_id_safe(app_id: str) -> int:
                     HRESULT,
                     IPropertyStorePtr,
                     wintypes.DWORD,
-                    ctypes.POINTER(PROPERTYKEY),
+                    ctypes.POINTER(_PROPERTYKEY),
                 ),
             ),
             (
@@ -727,8 +842,8 @@ def set_terminal_app_id_safe(app_id: str) -> int:
                 ctypes.WINFUNCTYPE(
                     HRESULT,
                     IPropertyStorePtr,
-                    ctypes.POINTER(PROPERTYKEY),
-                    ctypes.POINTER(PROPVARIANT),
+                    ctypes.POINTER(_PROPERTYKEY),
+                    ctypes.POINTER(_PROPVARIANT),
                 ),
             ),
             (
@@ -736,25 +851,26 @@ def set_terminal_app_id_safe(app_id: str) -> int:
                 ctypes.WINFUNCTYPE(
                     HRESULT,
                     IPropertyStorePtr,
-                    ctypes.POINTER(PROPERTYKEY),
-                    ctypes.POINTER(PROPVARIANT),
+                    ctypes.POINTER(_PROPERTYKEY),
+                    ctypes.POINTER(_PROPVARIANT),
                 ),
             ),
             ("Commit", ctypes.WINFUNCTYPE(HRESULT, IPropertyStorePtr)),
         ]
 
-    IPropertyStore._fields_ = [("lpVtbl", ctypes.POINTER(IPropertyStoreVtbl))]
+    _IPropertyStore._fields_ = [("lpVtbl", ctypes.POINTER(_IPropertyStoreVtbl))]
 
-    def make_guid(value: str) -> GUID:
+    def _make_guid(value: str) -> _GUID:
+        """Build and return the guid."""
         parsed = uuid.UUID(value)
-        return GUID(
+        return _GUID(
             parsed.time_low,
             parsed.time_mid,
             parsed.time_hi_version,
             (ctypes.c_ubyte * 8)(*parsed.bytes[8:]),
         )
 
-    def format_hresult(hr: int) -> str:
+    def _format_hresult(hr: int) -> str:
         code = hr & 0xFFFFFFFF
         try:
             message = ctypes.FormatError(code).strip()
@@ -762,16 +878,16 @@ def set_terminal_app_id_safe(app_id: str) -> int:
             message = "unknown error"
         return f"0x{code:08X}: {message}"
 
-    def check_hresult(hr: int, action: str) -> None:
+    def _check_hresult(hr: int, action: str) -> None:
         if hr < 0:
-            raise OSError(f"{action} failed with HRESULT {format_hresult(hr)}")
+            raise OSError(f"{action} failed with HRESULT {_format_hresult(hr)}")
 
     shell32 = ctypes.WinDLL("shell32", use_last_error=True)
     ole32 = ctypes.WinDLL("ole32", use_last_error=True)
 
     shell32.SHGetPropertyStoreForWindow.argtypes = [
         wintypes.HWND,
-        ctypes.POINTER(GUID),
+        ctypes.POINTER(_GUID),
         ctypes.POINTER(IPropertyStorePtr),
     ]
     shell32.SHGetPropertyStoreForWindow.restype = HRESULT
@@ -781,21 +897,20 @@ def set_terminal_app_id_safe(app_id: str) -> int:
     ole32.CoUninitialize.argtypes = []
     ole32.CoUninitialize.restype = None
 
-    iid_property_store = make_guid("886D8EEB-8CF2-4446-8D02-CDBA1DBDCF99")
-    pkey_app_user_model_id = PROPERTYKEY(
-        make_guid("9F4C2855-9F79-4B39-A8D0-E1D42DE1D5F3"),
+    iid_property_store = _make_guid("886D8EEB-8CF2-4446-8D02-CDBA1DBDCF99")
+    pkey_app_user_model_id = _PROPERTYKEY(
+        _make_guid("9F4C2855-9F79-4B39-A8D0-E1D42DE1D5F3"),
         5,
     )
-    prop_var = PROPVARIANT()
+    prop_var = _PROPVARIANT()
     prop_var.vt = VT_LPWSTR
     prop_var.pwszVal = app_id
 
     coinitialize_result = ole32.CoInitialize(None)
     should_uninitialize = coinitialize_result in {S_OK, S_FALSE}
     if coinitialize_result < 0 and (coinitialize_result & 0xFFFFFFFF) != RPC_E_CHANGED_MODE:
-        raise OSError(f"CoInitialize failed with HRESULT {format_hresult(coinitialize_result)}")
+        raise OSError(f"CoInitialize failed with HRESULT {_format_hresult(coinitialize_result)}")
 
-    changed_count = 0
     try:
         for hwnd in candidate_hwnds:
             try:
@@ -805,7 +920,7 @@ def set_terminal_app_id_safe(app_id: str) -> int:
                     ctypes.byref(iid_property_store),
                     ctypes.byref(property_store),
                 )
-                check_hresult(hr, f"SHGetPropertyStoreForWindow for hwnd 0x{hwnd:016X}")
+                _check_hresult(hr, f"SHGetPropertyStoreForWindow for hwnd 0x{hwnd:016X}")
 
                 try:
                     hr = property_store.contents.lpVtbl.contents.SetValue(
@@ -813,13 +928,12 @@ def set_terminal_app_id_safe(app_id: str) -> int:
                         ctypes.byref(pkey_app_user_model_id),
                         ctypes.byref(prop_var),
                     )
-                    check_hresult(hr, f"SetValue System.AppUserModel.ID for hwnd 0x{hwnd:016X}")
+                    _check_hresult(hr, f"SetValue System.AppUserModel.ID for hwnd 0x{hwnd:016X}")
 
                     hr = property_store.contents.lpVtbl.contents.Commit(property_store)
-                    check_hresult(hr, f"Commit System.AppUserModel.ID for hwnd 0x{hwnd:016X}")
+                    _check_hresult(hr, f"Commit System.AppUserModel.ID for hwnd 0x{hwnd:016X}")
 
                     _helper_refresh_nonclient_area(hwnd)
-                    changed_count += 1
                 finally:
                     if property_store:
                         property_store.contents.lpVtbl.contents.Release(property_store)
@@ -829,49 +943,22 @@ def set_terminal_app_id_safe(app_id: str) -> int:
         if should_uninitialize:
             ole32.CoUninitialize()
 
-    return changed_count
 
-
-def set_terminal_icon(window_title: str, icon_path: str) -> int:
-    """Best-effort update of the current Windows terminal icon using ctypes only."""
+def set_terminal_icon(icon_path: str, candidate_hwnds=list[int]) -> None:
+    """Best-effort icon update of the current Windows terminal icon using ctypes only."""
     if icon_path == "":
-        return 0
-
-    normalized_icon_path = os.path.abspath(os.path.expanduser(icon_path))
-    if not os.path.isfile(normalized_icon_path):
-        return 0
+        return
+    else:
+        icon_path = os.path.normpath(icon_path)
 
     try:
         import ctypes
-        import time
-        import uuid
         from ctypes import wintypes
 
-        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
         user32 = ctypes.WinDLL("user32", use_last_error=True)
 
-        kernel32.GetConsoleWindow.restype = wintypes.HWND
-        kernel32.GetConsoleTitleW.argtypes = [wintypes.LPWSTR, wintypes.DWORD]
-        kernel32.GetConsoleTitleW.restype = wintypes.DWORD
-        kernel32.SetConsoleTitleW.argtypes = [wintypes.LPCWSTR]
-        kernel32.SetConsoleTitleW.restype = wintypes.BOOL
-
-        user32.FindWindowW.argtypes = [wintypes.LPCWSTR, wintypes.LPCWSTR]
-        user32.FindWindowW.restype = wintypes.HWND
-        lparam_type = getattr(wintypes, "LPARAM", ctypes.c_ssize_t)
-        enum_windows_proc = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, lparam_type)
-        user32.EnumWindows.argtypes = [enum_windows_proc, lparam_type]
-        user32.EnumWindows.restype = wintypes.BOOL
-        user32.GetAncestor.argtypes = [wintypes.HWND, ctypes.c_uint]
-        user32.GetAncestor.restype = wintypes.HWND
         user32.GetSystemMetrics.argtypes = [ctypes.c_int]
         user32.GetSystemMetrics.restype = ctypes.c_int
-        user32.GetWindowTextLengthW.argtypes = [wintypes.HWND]
-        user32.GetWindowTextLengthW.restype = ctypes.c_int
-        user32.GetWindowTextW.argtypes = [wintypes.HWND, wintypes.LPWSTR, ctypes.c_int]
-        user32.GetWindowTextW.restype = ctypes.c_int
-        user32.IsWindow.argtypes = [wintypes.HWND]
-        user32.IsWindow.restype = wintypes.BOOL
         user32.LoadImageW.argtypes = [
             wintypes.HINSTANCE,
             wintypes.LPCWSTR,
@@ -904,100 +991,30 @@ def set_terminal_icon(window_title: str, icon_path: str) -> int:
         SM_CYSMICON = 50
         SM_CXICON = 11
         SM_CYICON = 12
-        GA_ROOTOWNER = 3
         SWP_NOMOVE = 0x0002
         SWP_NOSIZE = 0x0001
         SWP_NOZORDER = 0x0004
         SWP_NOACTIVATE = 0x0010
         SWP_FRAMECHANGED = 0x0020
 
-        def get_console_title() -> str:
-            buffer = ctypes.create_unicode_buffer(1024)
-            title_length = kernel32.GetConsoleTitleW(buffer, len(buffer))
-            return buffer.value if title_length else ""
-
-        original_title = get_console_title()
-        final_title = window_title or original_title
-        marker_title = f"PyAppTemplate-{os.getpid()}-{uuid.uuid4().hex}"
-
-        def add_candidate(candidates: list[int], hwnd: int) -> None:
-            if hwnd and user32.IsWindow(hwnd) and hwnd not in candidates:
-                candidates.append(int(hwnd))  # type:ignore
-
-        def add_with_root(candidates: list[int], hwnd: int) -> None:
-            add_candidate(candidates, hwnd)
-            if hwnd:
-                add_candidate(candidates, int(user32.GetAncestor(hwnd, GA_ROOTOWNER) or 0))
-
-        def get_window_text(hwnd: int) -> str:
-            text_length = user32.GetWindowTextLengthW(hwnd)
-            if text_length <= 0:
-                return ""
-            buffer = ctypes.create_unicode_buffer(text_length + 1)
-            user32.GetWindowTextW(hwnd, buffer, len(buffer))
-            return buffer.value
-
-        def find_windows_by_exact_title(title: str) -> list[int]:
-            matching_hwnds: list[int] = []
-            if title == "":
-                return matching_hwnds
-
-            hwnd = int(user32.FindWindowW("ConsoleWindowClass", title) or 0)
-            add_with_root(matching_hwnds, hwnd)
-            hwnd = int(user32.FindWindowW(None, title) or 0)
-            add_with_root(matching_hwnds, hwnd)
-            return matching_hwnds
-
-        def find_windows_by_title_fragment(title: str) -> list[int]:
-            matching_hwnds: list[int] = []
-            if title == "":
-                return matching_hwnds
-
-            def enum_proc(hwnd: int, _lparam: int) -> bool:
-                try:
-                    if title in get_window_text(hwnd):
-                        add_with_root(matching_hwnds, int(hwnd))  # type:ignore
-                except Exception:
-                    pass
-                return True
-
-            callback = enum_windows_proc(enum_proc)
-            user32.EnumWindows(callback, 0)
-            return matching_hwnds
-
-        candidates: list[int] = []
-        console_hwnd = int(kernel32.GetConsoleWindow() or 0)
-        add_with_root(candidates, console_hwnd)
-
-        try:
-            kernel32.SetConsoleTitleW(marker_title)
-            time.sleep(0.05)
-            for hwnd in find_windows_by_exact_title(marker_title):
-                add_with_root(candidates, hwnd)
-            for hwnd in find_windows_by_title_fragment(marker_title):
-                add_with_root(candidates, hwnd)
-        finally:
-            kernel32.SetConsoleTitleW(final_title)
-
-        def load_icon(width: int, height: int) -> int:
-            icon = user32.LoadImageW(None, normalized_icon_path, IMAGE_ICON, width, height, LR_LOADFROMFILE)
+        def _load_icon(width: int, height: int) -> int:
+            icon = user32.LoadImageW(None, icon_path, IMAGE_ICON, width, height, LR_LOADFROMFILE)
             if not icon:
-                icon = user32.LoadImageW(None, normalized_icon_path, IMAGE_ICON, 0, 0, LR_LOADFROMFILE | LR_DEFAULTSIZE)
+                icon = user32.LoadImageW(None, icon_path, IMAGE_ICON, 0, 0, LR_LOADFROMFILE | LR_DEFAULTSIZE)
             return int(icon or 0)
 
-        small_icon = load_icon(
+        small_icon = _load_icon(
             user32.GetSystemMetrics(SM_CXSMICON),
             user32.GetSystemMetrics(SM_CYSMICON),
         )
-        large_icon = load_icon(
+        large_icon = _load_icon(
             user32.GetSystemMetrics(SM_CXICON),
             user32.GetSystemMetrics(SM_CYICON),
         )
         if small_icon == 0 and large_icon == 0:
-            return 0
+            return
 
-        changed_count = 0
-        for hwnd in candidates:
+        for hwnd in candidate_hwnds:
             if small_icon:
                 user32.SendMessageW(hwnd, WM_SETICON, ICON_SMALL, small_icon)
             if large_icon:
@@ -1011,11 +1028,9 @@ def set_terminal_icon(window_title: str, icon_path: str) -> int:
                 0,
                 SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED,
             )
-            changed_count += 1
 
-        return changed_count
     except Exception:
-        return 0
+        pass
 
 
 def set_terminal_name(name: str) -> None:
@@ -1026,17 +1041,31 @@ def set_terminal_name(name: str) -> None:
         pass
 
 
-def set_terminal_NAME_APPiD_ICON_once(app_id: str):
-    global _ICON_WAS_SET
-    global _APP_ID_IS_SET
-    if _ICON_WAS_SET == False:
+def get_terminal_name():
+    import ctypes
+
+    try:
+        buffer = ctypes.create_unicode_buffer(1024)
+        ctypes.windll.kernel32.GetConsoleTitleW(buffer, len(buffer))
+        return str(buffer.value)
+    except Exception:
+        return "Terminal"
+
+
+def set_terminal_appearance_once(app_id: str):
+    """Apply terminal title, AppID, and icon once per process."""
+    global _TERMINAL_APPEARANCE_WAS_SET
+
+    if not _TERMINAL_APPEARANCE_WAS_SET:
+        candidate_hwnds = get_candidate_hwnds()
+
         set_terminal_name(program_name)
-        set_terminal_icon(program_name, icon_path)
-        _ICON_WAS_SET = True
-    if _APP_ID_IS_SET == False:
+        set_terminal_icon(icon_path, candidate_hwnds)
+
         if app_id:
-            set_terminal_app_id_safe(app_id)
-            _APP_ID_IS_SET = True
+            set_terminal_app_id(app_id, candidate_hwnds)
+
+        _TERMINAL_APPEARANCE_WAS_SET = True
 
 
 def close_terminal(exit_code=None) -> bool:
@@ -1081,10 +1110,11 @@ def close_terminal(exit_code=None) -> bool:
     import signal
 
     os.kill(parent_pid, signal.SIGTERM)
-    
+
     import sys
+
     sys.exit(exit_code)
-    
+
 
 # =========================
 # path related/file name related
@@ -1099,6 +1129,7 @@ def make_abs_path_relative_to_file(path, file):
 
 
 def sanitize_filename(filename, replacement="_"):
+    """Sanitize a string so it can be used as a Windows filename."""
     import re
 
     # 1. Characters illegal in Windows: < > : " / \ | ? *
@@ -1148,14 +1179,11 @@ def sanitize_filename(filename, replacement="_"):
 # file read/write
 
 
-def write_lines(path: str, lines: list[str], override=True, create_folder=True):
+def write_lines(path: str, lines: list[str], override=True):
     """lines are a list of strings without the endline symbol ("\n") added.
     If override==False it will append instead of recreating the file (default:  override=True)."""
 
-    if create_folder == True:
-        parent = os.path.dirname(path)
-        if parent:
-            os.makedirs(parent, exist_ok=True)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
 
     lines_str = "\n".join(lines) + "\n"
 
@@ -1200,7 +1228,12 @@ def get_running_processes_from_pid_file(pid_path: str) -> tuple[list[int], int]:
         else:
             stale_count += 1
 
-    _write_process_id_lines(pid_path, [f"{process_id}" for process_id in running_process_ids])
+    non_empty_lines = [str(pid) for pid in running_process_ids if str(pid).strip()]
+    if non_empty_lines:
+        write_lines(pid_path, non_empty_lines)
+    elif os.path.exists(pid_path):
+        os.remove(pid_path)
+
     return running_process_ids, stale_count
 
 
@@ -1208,8 +1241,18 @@ def stop_processes_from_pid_file(pid_path: str) -> tuple[int, int, list[str]]:
     """returns (stopped_count, stale_count, failed_messages)"""
     import subprocess
 
-    def _stop_process_tree(pid: int) -> str:
+    def _wait_until_process_stops(pid: int, timeout_seconds: float) -> bool:
+        import time
 
+        deadline = time.monotonic() + timeout_seconds
+        while time.monotonic() < deadline:
+            if not _process_is_running(pid):
+                return True
+            time.sleep(0.1)
+        return not _process_is_running(pid)
+
+    def _stop_process_tree(pid: int) -> str:
+        """WIP"""
         if not _process_is_running(pid):
             return ""
         cmd = ["taskkill", "/PID", str(pid), "/T"]
@@ -1282,7 +1325,12 @@ def stop_processes_from_pid_file(pid_path: str) -> tuple[int, int, list[str]]:
             failed_lines.extend(lines)
             failed_messages.append(f"{process_id}: {process_error}")
 
-    _write_process_id_lines(pid_path, failed_lines)
+    non_empty_lines = [l for l in failed_lines if l.strip()]
+    if non_empty_lines:
+        write_lines(pid_path, non_empty_lines)
+    elif os.path.exists(pid_path):
+        os.remove(pid_path)
+
     return stopped_count, stale_count, failed_messages
 
 
@@ -1319,19 +1367,7 @@ def _process_is_running(pid: int) -> bool:
         return False
 
 
-def _wait_until_process_stops(pid: int, timeout_seconds: float) -> bool:
-    import time
-
-    deadline = time.monotonic() + timeout_seconds
-    while time.monotonic() < deadline:
-        if not _process_is_running(pid):
-            return True
-        time.sleep(0.1)
-    return not _process_is_running(pid)
-
-
 def _read_process_id_entries(path: str) -> list[tuple[int, str]]:
-
     lines = read_lines(path)
 
     out = []
@@ -1344,14 +1380,6 @@ def _read_process_id_entries(path: str) -> list[tuple[int, str]]:
             except ValueError:
                 pass
     return out
-
-
-def _write_process_id_lines(path: str, lines: list[str]) -> None:
-    non_empty_lines = [line for line in lines if line.strip()]
-    if non_empty_lines:
-        write_lines(path, non_empty_lines)
-    elif os.path.exists(path):
-        os.remove(path)
 
 
 # =========================
@@ -1391,9 +1419,8 @@ def is_python_version_compatible(actual_version, required_version):
 
 
 def read_python_version_from_file():
-
     if not os.path.exists(python_version_indicator_file_path):
-        print_warn(f'[Error] missing file "{python_version_indicator_file_path}". Using Fallback determination.')
+        print_warn(f'[Warning] missing file "{python_version_indicator_file_path}". Using Fallback determination.')
         return get_python_version()
 
     try:
@@ -1444,18 +1471,20 @@ def install_full_python(
     install_tests: bool = True,
     install_tools: bool = True,
     install_docs: bool = False,
-    print_=True,
+    print_: bool = True,
 ) -> None:
     r"""
     Create a local full Windows Python installation from python.org MSI files.
 
-    The function finds the newest matching Python version from:
+    The function finds the newest matching Python version in the form of:
 
-        https://www.python.org/ftp/python/{version}/amd64/
+        https://www.python.org/ftp/python/{version}/amd64/<some-file>.msi or
+        https://www.python.org/ftp/python/<version>/<some-file>.amd64.msi
 
     It downloads the selected amd64 MSI packages, extracts them into
-    ``python_dir_abs_path``, bootstraps/upgrades pip, and optionally writes a ``.pth``
-    file that adds another relative package directory to Python's import path if parameter rel_path_to_packages is given.
+    ``python_dir_abs_path``, bootstraps pip through ensurepip or get-pip.py,
+    and optionally writes a ``.pth`` file that adds another relative package
+    directory to Python's import path if parameter rel_path_to_packages is given.
 
     Args:
         python_dir_abs_path: Target directory. Existing contents are deleted after a
@@ -1470,12 +1499,17 @@ def install_full_python(
         install_docs (optional, default False): Include documentation.
         print_ (default True): Whether to print info messages
 
+    For lower python versions (3.4-), there is no option to for example not install tkinter. It will ignore the parameter
+
     Raises:
         RuntimeError: If version discovery, download, extraction, or pip setup
         fails.
     """
 
+    # ---------------------------
     # lazy imports
+
+    import fnmatch
     import html.parser
     import re
     import shutil
@@ -1485,107 +1519,150 @@ def install_full_python(
     import urllib.parse
     import urllib.request
 
-    user_agent = "install-full-python/1.0"
-
     # ---------------------------
-    # process parameters
+    # local variables
 
-    if not os.path.isabs(python_dir_abs_path):
-        raise RuntimeError(f'Paramter "python_dir_abs_path" must be an absolute path. Got "{python_dir_abs_path}"')
-
+    python_file_download_url_patterns = [  # lower index preferred
+        "https://www.python.org/ftp/python/{version}/amd64/*.msi",  # python 3.5+ 64bit
+        "https://www.python.org/ftp/python/{version}/*.amd64.msi",  # python 3.4- 64bit
+    ]
+    blacklisted_file_patterns = [
+        "*/appendpath.msi",  # PATH modification helper, skipped because this install uses a local target directory.
+        "*/launcher.msi",  # Global Python launcher component, skipped for this local extracted install.
+        "*/path.msi",  # PATH modification helper, skipped because this install uses a local target directory.
+        "*/pip.msi",  # Pip is installed later through ensurepip or get-pip.py.
+        "*_d.msi",  # Debug build MSI, not the normal runtime package.
+        "*_pdb.msi",  # Debug symbols MSI, not needed for normal runtime use.
+        "*arm64*",  # ARM64 package, skipped because this installer uses the amd64 package directory.
+        "*[0-9]rc[0-9]*",  # Release candidate, not a final release.
+        "*win32*",  # 32-bit package, skipped because this installer uses the amd64 package directory.
+    ]
+    if not install_tkinter:
+        blacklisted_file_patterns.append("*/tcltk.msi")  # Tkinter component disabled.
+    if not install_tests:
+        blacklisted_file_patterns.append("*/test.msi")  # Test suite component disabled.
+    if not install_tools:
+        blacklisted_file_patterns.append("*/tools.msi")  # Tools component disabled.
+    if not install_docs:
+        blacklisted_file_patterns.append("*/doc.msi")  # Documentation component disabled.
     python_exe = python_dir_abs_path + "\\python.exe"
     site_packages_dir = python_dir_abs_path + "\\Lib\\site-packages"
     path_to_packages_file = site_packages_dir + "\\_PATH_TO_PACKAGES_.pth"
-
-    # Add optional packages to the exclusion list when they are disabled.
-    excluded_msi_files = set(python_download_excluded_base_msi_names)
-    if not install_tkinter:
-        excluded_msi_files.add("tcltk")
-    if not install_tests:
-        excluded_msi_files.add("test")
-    if not install_tools:
-        excluded_msi_files.add("tools")
-    if not install_docs:
-        excluded_msi_files.add("doc")
+    ruff_config = python_dir_abs_path + "\\Lib\\test\\.ruff.toml"
+    python_download_timeout_s = 120
+    user_agent = "install-full-python/1.0"
 
     # ---------------------------
     # define helper functions
 
-    class _LinkParser(html.parser.HTMLParser):
-        """Extract href values from a simple HTML directory listing."""
-
-        def __init__(self) -> None:
-            super().__init__()
-            self.links: list[str] = []
-
-        def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-            if tag.lower() == "a":
-                self.links.extend(value for name, value in attrs if name.lower() == "href" and value)
-
-    def _fetch_links(url: str) -> list[str]:
-        request = urllib.request.Request(url, headers={"User-Agent": user_agent})  # noqa
-
-        with urllib.request.urlopen(request, timeout=python_download_timeout_s) as response:  # noqa
-            html_text = response.read().decode("utf-8", errors="replace")
-
-        parser = _LinkParser()
-        parser.feed(html_text)
-        return parser.links
-
     def _find_python_version_and_download_links() -> tuple[str, str, list[str]]:
 
-        # get pattern of python_version
-        if python_version == "":
-            py_version_pattern = re.compile(r"^\d+\.\d+\.\d+/$")
-        if re.fullmatch(r"\d+", python_version):
-            py_version_pattern = re.compile(rf"^{re.escape(python_version)}\.\d+\.\d+/$")
-        if re.fullmatch(r"\d+\.\d+", python_version):
-            py_version_pattern = re.compile(rf"^{re.escape(python_version)}\.\d+/$")
-        if re.fullmatch(r"\d+\.\d+\.\d+", python_version):
-            py_version_pattern = re.compile(rf"^{re.escape(python_version)}/$")
-        else:
-            raise RuntimeError(
-                f'[Error] Could not find a matching Python version pattern for parameter python_version: "{python_version}".'
-            )
+        def _get_download_links_from_url(url: str) -> list[str]:
+            request = urllib.request.Request(url, headers={"User-Agent": user_agent})  # noqa
 
-        # find the matching download links for the python version pattern matches
-        try:
-            links_for_versions = [
-                link.strip("/") for link in _fetch_links(python_download_ftp_url) if py_version_pattern.match(link)
-            ]
-        except (OSError, urllib.error.URLError) as error:
-            raise RuntimeError(
-                f'[Error] Could not find a matching Python amd64 MSI set for paramter python_version: "{python_version}".'
-            ) from error
+            with urllib.request.urlopen(request, timeout=python_download_timeout_s) as response:  # noqa
+                html_text = response.read().decode("utf-8", errors="replace")
+
+            class _LinkParser(html.parser.HTMLParser):
+                """Extract href values from a simple HTML directory listing."""
+
+                def __init__(self) -> None:
+                    super().__init__()
+                    self.links: list[str] = []
+
+                def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+                    """WIP"""
+                    if tag.lower() == "a":
+                        self.links.extend(value for name, value in attrs if name.lower() == "href" and value)
+
+            parser = _LinkParser()
+            parser.feed(html_text)
+            return parser.links
 
         # define key to sort download links: prefer newest version that matches pattern
         def _version_key(version: str) -> tuple[int, int, int]:
             major, minor, patch = version.split(".")
             return int(major), int(minor), int(patch)
 
-        # define function that excludes download links for unwanted files
-        def _is_wanted_msi(link: str) -> bool:
+        def _find_matching_versions() -> list[str]:
+            """Find all matching version folders from the configured download URL patterns."""
+            versions = set()
+            errors = []
+            for url_pattern in python_file_download_url_patterns:
+                version_list_url = url_pattern.split("{version}", 1)[0]
+                try:
+                    versions.update(
+                        link.strip("/")
+                        for link in _get_download_links_from_url(version_list_url)
+                        if target_version_pattern.match(link)
+                    )
+                except (OSError, urllib.error.URLError) as error:
+                    errors.append(error)
 
+            if versions:
+                return sorted(versions, key=_version_key, reverse=True)
+            if errors:
+                raise RuntimeError(
+                    f'[Error] Could not find a matching Python MSI set for parameter python_version: "{python_version}".'
+                ) from errors[0]
+            raise RuntimeError(
+                f'[Error] No Python download URL patterns configured for parameter python_version: "{python_version}".'
+            )
+
+        def _is_wanted_file(link: str) -> bool:
+            """Return whether wanted msi."""
             if link.endswith("/"):  # reject folders
                 return False
 
-            base, ext = os.path.splitext(os.path.basename(urllib.parse.urlparse(link).path).lower())
+            filename = os.path.basename(urllib.parse.urlparse(link).path).lower()
 
-            # Skip non-MSI files, debug MSIs, symbol MSIs, and disabled components.
-            return ext == ".msi" and not base.endswith(("_d", "_pdb")) and base not in excluded_msi_files
+            # return False if filename matches any blacklisted pattern
+            if any(fnmatch.fnmatchcase(filename.lower(), pattern) for pattern in blacklisted_file_patterns):
+                return False
+
+            _base, extension = os.path.splitext(filename)
+            if extension == ".msi":
+                return True
+            else:
+                return False
+
+        def _find_msi_urls_from_pattern(url_pattern: str, version: str) -> tuple[str, list[str]]:
+            """Find matching MSI URLs from a URL pattern such as .../{version}/amd64/*.msi."""
+            resolved_pattern = url_pattern.format(version=version)
+            folder_url, filename_pattern = resolved_pattern.rsplit("/", 1)
+            folder_url += "/"
+            links = _get_download_links_from_url(folder_url)
+            msi_urls = []
+            for link in links:
+                filename = os.path.basename(urllib.parse.urlparse(link).path).lower()
+                if fnmatch.fnmatchcase(filename, filename_pattern.lower()) and _is_wanted_file(link):
+                    msi_urls.append(urllib.parse.urljoin(folder_url, link))
+            return folder_url, sorted(msi_urls)
+
+        if python_version == "":
+            target_version_pattern = re.compile(r"^\d+\.\d+\.\d+/$")
+        elif re.fullmatch(r"\d+", python_version):
+            target_version_pattern = re.compile(rf"^{re.escape(python_version)}\.\d+\.\d+/$")
+        elif re.fullmatch(r"\d+\.\d+", python_version):
+            target_version_pattern = re.compile(rf"^{re.escape(python_version)}\.\d+/$")
+        elif re.fullmatch(r"\d+\.\d+\.\d+", python_version):
+            target_version_pattern = re.compile(rf"^{re.escape(python_version)}/$")
+        else:
+            raise RuntimeError(
+                f'[Error] Could not find a matching Python version pattern for parameter python_version: "{python_version}".'
+            )
 
         # sort download links and take first working
-        for version in sorted(links_for_versions, key=_version_key, reverse=True):
-            url = urllib.parse.urljoin(python_download_ftp_url, f"{version}/amd64/")
+        for version in _find_matching_versions():
+            for url_pattern in python_file_download_url_patterns:
+                try:
+                    url, msi_urls = _find_msi_urls_from_pattern(url_pattern, version)
+                except (OSError, urllib.error.URLError):
+                    continue
 
-            try:
-                msi_urls = [urllib.parse.urljoin(url, link) for link in _fetch_links(url) if _is_wanted_msi(link)]
-            except (OSError, urllib.error.URLError):
-                continue
-
-            # return found download links and pyhton version
-            if msi_urls:
-                return version, url, sorted(msi_urls)
+                # return found download links and pyhton version
+                if msi_urls:
+                    return version, url, msi_urls
         else:
             raise RuntimeError(
                 f'[Error] Could not find msi-downloadable Python for python_version: "{python_version}".'
@@ -1609,68 +1686,145 @@ def install_full_python(
 
         return output_path
 
-    def _patch_test_package_for_Ruff() -> None:
-        r"""needed to prevent Ruff from complaining/failing for ".ruff.toml" files in Pythons "test" package/folder because this local python installation does not follow the global python source-tree layout.
-        -> it comments out lines starting with "extend" in "Lib\test\.ruff.toml", e.g., "extend = "../.ruff.toml"."""
-        ruff_config = python_dir_abs_path + "\\Lib\\test\\.ruff.toml"
-
-        if not os.path.exists(ruff_config):
-            return
-
-        lines = read_lines(ruff_config)
-        lines = ["# " + line if re.match(r"^\s*extend\s*=", line) else line for line in lines]
-        write_lines(ruff_config, lines)
-
-    def _extract_msi(msi_path: str) -> None:
-        """extracting .msi files is like installing them"""
+    def _install_msi_file(msi_path: str) -> None:
         msi_name = os.path.basename(msi_path)
         log_path = os.path.splitext(msi_path)[0] + ".msi.log"
 
         if print_:
             print(f"Installing {msi_name}")
 
-        # Administrative extraction installs the MSI contents into TARGETDIR.
-        # Windows Installer needs only the property value quoted when TARGETDIR
-        # contains spaces; Python's argv quoting quotes the whole key=value arg.
+        # install msi files in python_dir_abs_path
         command = f'msiexec /a "{msi_path}" TARGETDIR="{python_dir_abs_path}" /qn /L*V "{log_path}"'
         result = subprocess.run(  # noqa
             command,
             check=False,
         )
-
         if result.returncode != 0:
             raise RuntimeError(f"msiexec failed for {msi_name} with exit code {result.returncode}. Log: {log_path}")
 
         if msi_name.lower() == "test.msi":
-            _patch_test_package_for_Ruff()
+            # needed to prevent Ruff from complaining/failing for ".ruff.toml" files in Pythons "test" package/folder because this local python installation does not follow the global python source-tree layout.-> it comments out lines starting with "extend" in "Lib\test\.ruff.toml", e.g., "extend = "../.ruff.toml"."""
+            if os.path.exists(ruff_config):
+                lines = read_lines(ruff_config)
+                lines = ["# " + line if re.match(r"^\s*extend\s*=", line) else line for line in lines]
+                write_lines(ruff_config, lines)
 
-        # Remove any MSI copy that administrative extraction left in TARGETDIR.
+        # Remove any MSI copy that install left in TARGETDIR.
         copied_msi = os.path.join(python_dir_abs_path, msi_name)
         if os.path.exists(copied_msi):
             os.remove(copied_msi)
 
-    def _install_pip() -> None:
-        result = subprocess.run([python_exe, "-m", "ensurepip", "--upgrade"], check=False)  # noqa
-        if result.returncode != 0:
-            raise RuntimeError("Python installation failed: ensurepip failed.")
+    def _install_pip(target_version: str) -> None:
+        """Bootstrap pip using the best method for the installed Python version."""
+        version_match = re.fullmatch(r"(\d+)\.(\d+)(?:\.(\d+))?", target_version)
+        if not version_match:
+            raise RuntimeError(f'Could not parse Python version "{target_version}".')
 
-        # Try quiet/log-friendly pip upgrade first, then retry without progress progress.
-        upgrade_args = ["-m", "pip", "install", "--upgrade", "pip", "--ignore-installed"]
-        result = subprocess.run(  # noqa
-            [python_exe, *upgrade_args, "--progress-bar", "off"],
-            check=False,
+        major = int(version_match.group(1))
+        minor = int(version_match.group(2))
+        patch = int(version_match.group(3) or 0)
+
+        # Python includes ensurepip starting with 3.4 and 2.7.9.
+        supports_ensurepip = (
+            major > 3 or (major == 3 and minor >= 4) or (major == 2 and (minor > 7 or (minor == 7 and patch >= 9)))
         )
+        if supports_ensurepip:
+            if print_:
+                print("Bootstrapping pip with ensurepip")
 
-        # retry pip installation if failed without progress baar
-        if result.returncode != 0:
-            result = subprocess.run([python_exe, *upgrade_args], check=False)  # noqa
+            result = subprocess.run([python_exe, "-m", "ensurepip", "--upgrade"], check=False)  # noqa
+            if result.returncode != 0:
+                raise RuntimeError("Python installation failed: ensurepip failed.")
 
-        # raise if failed pip installation
+            upgrade_args = ["-m", "pip", "install", "--upgrade", "pip", "--ignore-installed"]
+
+            # One upgrade is normally enough. Repeat a few times only if each upgrade
+            # actually changes the installed pip version.
+            for _pip_upgrade_attempt in range(5):
+                result = subprocess.run(  # noqa
+                    [python_exe, "-m", "pip", "--version"],
+                    check=False,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    universal_newlines=True,
+                )
+                if result.returncode != 0:
+                    raise RuntimeError("Python installation failed: pip is not available after ensurepip.")
+                pip_version_output = result.stdout.split()
+                if len(pip_version_output) < 2 or pip_version_output[0].lower() != "pip":
+                    raise RuntimeError(f"Python installation failed: could not parse pip version: {result.stdout}")
+                pip_version_before = pip_version_output[1]
+
+                # Try quiet/log-friendly pip upgrade first, then retry without the progress-bar flag.
+                result = subprocess.run(  # noqa
+                    [python_exe, *upgrade_args, "--progress-bar", "off"], check=False, stderr=subprocess.DEVNULL
+                )
+                # retry pip installation if failed without progress bar (for example if that flag is not there yet in the old pip version)
+                if result.returncode != 0:
+                    result = subprocess.run([python_exe, *upgrade_args], check=False)  # noqa
+                # raise if failed pip installation
+                if result.returncode != 0:
+                    raise RuntimeError("Python installation failed: pip upgrade failed.")
+
+                result = subprocess.run(  # noqa
+                    [python_exe, "-m", "pip", "--version"],
+                    check=False,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    universal_newlines=True,
+                )
+                if result.returncode != 0:
+                    raise RuntimeError("Python installation failed: pip is not available after upgrade.")
+                pip_version_output = result.stdout.split()
+                if len(pip_version_output) < 2 or pip_version_output[0].lower() != "pip":
+                    raise RuntimeError(f"Python installation failed: could not parse pip version: {result.stdout}")
+                pip_version_after = pip_version_output[1]
+
+                if pip_version_after == pip_version_before:
+                    break
+            else:
+                raise RuntimeError("Python installation failed: pip upgrade did not stabilize.")
+
+            return
+
+        # Python 3.3 and older do not have ensurepip. Use PyPA's versioned
+        # legacy get-pip.py bootstrapper so pip itself still supports the interpreter.
+        if print_:
+            print(f"Bootstrapping pip with get-pip.py for Python {target_version}")
+
+        get_pip_urls = [
+            f"https://bootstrap.pypa.io/pip/{major}.{minor}/get-pip.py",
+            f"https://bootstrap.pypa.io/{major}.{minor}/get-pip.py",
+        ]
+        errors = []
+        with tempfile.TemporaryDirectory(prefix="tmp_get_pip_") as tmp:
+            for get_pip_url in get_pip_urls:
+                try:
+                    get_pip_path = _download_file_from_url(get_pip_url, tmp)
+                    break
+                except (OSError, RuntimeError, urllib.error.URLError) as error:
+                    errors.append(f"{get_pip_url}: {error}")
+            else:
+                raise RuntimeError(
+                    f"Python installation failed: could not download get-pip.py for Python {target_version}. "
+                    f"Tried: {'; '.join(errors)}"
+                )
+
+            result = subprocess.run([python_exe, get_pip_path], check=False)  # noqa
+
         if result.returncode != 0:
-            raise RuntimeError("Python installation failed: pip upgrade failed.")
+            raise RuntimeError("Python installation failed: get-pip.py failed.")
+
+        # Verify that pip can be imported and run by the installed Python:
+        result = subprocess.run([python_exe, "-m", "pip", "--version"], check=False)  # noqa
+        if result.returncode != 0:
+            raise RuntimeError("Python installation failed: pip is not available after bootstrap.")
 
     # ----------------------------
     # execute code of function
+
+    if not os.path.isabs(python_dir_abs_path):
+        raise RuntimeError(f'Paramter "python_dir_abs_path" must be an absolute path. Got "{python_dir_abs_path}"')
 
     # find compatible python version and download links
     compatible_full_py_vers, download_url, msi_urls = _find_python_version_and_download_links()
@@ -1705,7 +1859,7 @@ def install_full_python(
             msi_paths = [_download_file_from_url(url, tmp) for url in msi_urls]
             # install
             for msi_path in sorted(msi_paths, key=lambda path: os.path.basename(path).lower()):
-                _extract_msi(msi_path)
+                _install_msi_file(msi_path)
     except Exception as error:
         raise RuntimeError(f"Local Python installation failed: {error}") from error
 
@@ -1723,7 +1877,7 @@ def install_full_python(
     )
 
     # install pip
-    _install_pip()
+    _install_pip(compatible_full_py_vers)
 
     # tell python where to look for third party packages
     if rel_path_to_packages:
@@ -1733,10 +1887,59 @@ def install_full_python(
     if print_:
         print()
         print(f'Successfully created local Python {compatible_full_py_vers} at "{python_dir_abs_path}".')
+        print()
 
 
 # =========================
 # python distribution related
+
+
+def create_frontend_python_tool_scripts() -> None:
+    """Create a batch file that launches a terminal that has python and pip install target set"""
+
+    batch_content = r"""
+:: turn off command print and make variables local
+@echo off & setlocal
+
+:: settings (%~dp0 is file dir with "\" at end)
+set "PYTHON_DIR=%~dp0.."
+set "PACKAGES_TARGET=%~dp0..\..\packages"
+
+:: local variables + resolve paths
+for %%I in ("%PYTHON_DIR%") do set "PYTHON_DIR=%%~fI"
+for %%I in ("%PACKAGES_TARGET%") do set "PACKAGES_TARGET=%%~fI"
+set "PYTHON_EXE=%PYTHON_DIR%\python.exe"
+
+:: create folder
+if not exist "%PACKAGES_TARGET%" mkdir "%PACKAGES_TARGET%"
+
+:: set global variables withing terminal to tell set python and package target and disable pip version check
+set "PATH=%PYTHON_DIR%;%PYTHON_DIR%\Scripts;%PATH%"
+set "PIP_TARGET=%PACKAGES_TARGET%"
+set "PIP_DISABLE_PIP_VERSION_CHECK=1"
+if defined PYTHONPATH (
+    set "PYTHONPATH=%PACKAGES_TARGET%;%PYTHONPATH%"
+) else (
+    set "PYTHONPATH=%PACKAGES_TARGET%"
+)
+
+:: prints
+echo Python exe:
+echo "%PYTHON_EXE%"
+echo Package install target:
+echo "%PACKAGES_TARGET%"
+echo.
+echo Note: pip install commands in this terminal use the local package target. Install packages via "pip install {package-name}"
+echo.
+
+:: don't close terminal
+cmd /k
+"""
+
+    os.makedirs(os.path.dirname(frontend_script_for_set_python_and_pip_target), exist_ok=True)
+
+    with open(frontend_script_for_set_python_and_pip_target, "w", encoding="utf-8") as f:
+        f.write(batch_content)
 
 
 def delete_python_distro():
@@ -1755,7 +1958,6 @@ def delete_python_distro():
 
 
 def recreate_python_distro() -> None:
-
     delete_python_distro()
 
     rel_path_dist_to_packages = os.path.relpath(path=frontend_packages_dir, start=frontend_python_dir)
@@ -1773,6 +1975,7 @@ def recreate_python_distro() -> None:
     if not os.path.exists(frontend_python_exe):
         raise RuntimeError(f'Python installation did not produce expected file at "{frontend_python_exe}"')
     else:
+        create_frontend_python_tool_scripts()
         save_python_version_to_file()
 
 
@@ -1806,18 +2009,20 @@ def prompt_for_distro_reinstall(msg="Reinstall distro / recreate virtual environ
         print_warn("Invalid choice. Please enter 0, 1, 2, 3, 4, 5, or 6.")
 
 
-def ensure_python_distro(check_auto_determine_flag_for_default_package_install:bool=True, used_appid_if_slow: str = ""):
+def ensure_python_distro(
+    check_auto_determine_flag_for_default_package_install: bool = True, used_appid_if_slow: str = ""
+):
     """returns if python version is correct"""
 
     if not os.path.exists(frontend_python_exe):  # no python distro existing case:
-        set_terminal_NAME_APPiD_ICON_once(used_appid_if_slow)
+        set_terminal_appearance_once(used_appid_if_slow)
         print("\n" * 5)
         print("[Info] Python distribution not found. Installing Python:")
         recreate_python_distro()
 
         if are_frontend_packages_installed() == True:
             print("Deleting packages because are not connected to a Python exe.")
-            delete_packages()
+            delete_frontend_packages()
         return
 
     else:  # alread existing python distro case:
@@ -1842,23 +2047,23 @@ def ensure_python_distro(check_auto_determine_flag_for_default_package_install:b
                 if answer == 0:
                     return
                 elif answer in [1, 2, 3, 4, 5]:
-                    set_terminal_NAME_APPiD_ICON_once(used_appid_if_slow)
+                    set_terminal_appearance_once(used_appid_if_slow)
                     recreate_python_distro()
                     if answer == 1:
-                        delete_packages()
+                        delete_frontend_packages()
                         install_default_packages(
                             check_auto_determine_flag=check_auto_determine_flag_for_default_package_install
                         )
                     elif answer == 2:
-                        delete_packages()
+                        delete_frontend_packages()
                     elif answer in [3, 4]:
                         p = save_current_packages(with_version=False)
-                        delete_packages()
+                        delete_frontend_packages()
                         install_packages_from_file(p)
                         if answer == 4:
                             save_current_packages_as_default()
                     elif answer in [5, 6]:
-                        delete_packages()
+                        delete_frontend_packages()
                         success, p = save_requirements_of_root_folder_noVersion()
                         if success == True:
                             install_packages_from_file(p)
@@ -1894,7 +2099,8 @@ def can_reach_pip_url(url: str = "https://pypi.org/simple/pip/", timeout_s: floa
         return False
 
 
-def delete_packages():
+def delete_frontend_packages():
+    """Delete the packages."""
     delete_folder_safe(
         frontend_packages_dir,
         always_prompt_for_confirmation=False,
@@ -1929,7 +2135,6 @@ def are_frontend_packages_installed() -> bool:
 
 
 def ensure_frontend_packages(used_appid_if_slow: str = ""):
-
     ensure_python_distro(used_appid_if_slow=used_appid_if_slow)
 
     if not os.path.exists(frontend_packages_dir):  # packages folder not existing - case
@@ -1940,7 +2145,7 @@ def ensure_frontend_packages(used_appid_if_slow: str = ""):
             return
         else:
             print("[Info] Resetting Python packages:")
-            delete_packages()  # resetting packages
+            delete_frontend_packages()  # resetting packages
             install_default_packages(check_auto_determine_flag=True, app_id_for_slow=used_appid_if_slow)
 
     # create file to note where to change packages if missing
@@ -1948,35 +2153,40 @@ def ensure_frontend_packages(used_appid_if_slow: str = ""):
         open(dev_tools_referal_note_path, "w", encoding="utf-8").close()
 
 
-def install_packages_from_file(path: str, no_cache: bool = True, app_id_for_slow: str = "") -> None:
+def install_packages_from_file(path: str, no_cache: bool = True, app_id_for_slow: str = "", print_=True) -> None:
     """raises if failur"""
 
     import subprocess
 
-    if not os.path.exists(frontend_packages_dir):
-        os.makedirs(frontend_packages_dir)
+    os.makedirs(frontend_packages_dir, exist_ok=True)
 
     if not os.path.exists(path):
         raise FileNotFoundError(f'Package list not found: "{path}"')
 
-    print()
-    print(f'[Info] Package list file: "{path}"')
-
     packages = read_lines(path)
     actual_packgages = [l for l in packages if (not l.strip().startswith("#") and l.strip() != "")]
-    if len(actual_packgages) > 0:
-        print("-" * 20)
-        print(*actual_packgages, sep="\n")
-        print("-" * 20)
+
+    if print_:
         print()
-    else:
-        print("[Info] No packages to install.")
-        print("-" * 20)
-        print()
+        print(f'[Info] Package list file: "{path}"')
+        if len(actual_packgages) > 0:
+            print("-" * 20)
+            print(*actual_packgages, sep="\n")
+            print("-" * 20)
+            print()
+        else:
+            print("[Info] No packages to install.")
+            print("-" * 20)
+            print()
+
+    # create file to indicate frontend packages as installed. (Needed to differentiate 0 packages from not yet installed)
+    open(frontend_packages_are_installed_marker_path, "w", encoding="utf-8").close()
+
+    if len(actual_packgages) == 0:
         return
 
     if app_id_for_slow:
-        set_terminal_NAME_APPiD_ICON_once(app_id_for_slow)
+        set_terminal_appearance_once(app_id_for_slow)
 
     args = [
         frontend_python_exe,
@@ -2003,16 +2213,11 @@ def install_packages_from_file(path: str, no_cache: bool = True, app_id_for_slow
         else:
             raise RuntimeError(f"Failed to install packages: {e}") from e
 
-    # add indicator that packages were installed
-    if not os.path.exists(frontend_packages_are_installed_marker_path):
-        open(frontend_packages_are_installed_marker_path, "w", encoding="utf-8").close()
-
 
 def install_default_packages(check_auto_determine_flag: bool, app_id_for_slow: str = ""):
-
     if check_auto_determine_flag == True:
         if get_auto_find_pckgs_phrase_state() == True:
-            set_terminal_NAME_APPiD_ICON_once(app_id_for_slow)
+            set_terminal_appearance_once(app_id_for_slow)
             print(
                 f'[Info] Found flag "{variable_in_default_packages_path_that_triggers_search_if_true} = True" in default packages file "{default_packages_file_path}"'
             )
@@ -2035,6 +2240,7 @@ def install_default_packages(check_auto_determine_flag: bool, app_id_for_slow: s
 
 
 def get_auto_find_pckgs_phrase_state() -> bool | None:
+    """WIP"""
     if not os.path.exists(default_packages_file_path):
         return None
 
@@ -2228,6 +2434,22 @@ def save_requirements_of_root_folder_withVersion(
         print()
         print_warn(f"[Error] Failed to auto determine packages: {e}")
         return False
+
+
+# ========================
+# debug test area
+# ========================
+
+# if __name__ == "__main__":
+#     install_full_python(
+#         python_version="3.3",
+#         python_dir_abs_path=r"C:\Users\Flo\Documents\Repositories\PyApp Template\code\test",
+#         install_tkinter=False,
+#         install_tests=False,
+#         install_tools=False,
+#         install_docs=False,
+#         rel_path_to_packages="test",
+#     )
 
 
 # ========================
