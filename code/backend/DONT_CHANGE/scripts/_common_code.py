@@ -11,12 +11,12 @@ import sys
 
 # =========================
 # add root dir for debug cases where this script is called on its own:
-root_dir = os.path.dirname(__file__) + "\\..\\.."
+root_dir = os.path.dirname(__file__) + "\\..\\..\\.."
 if root_dir not in sys.path:
     sys.path.insert(0, root_dir)
 # =========================
 
-from developer_settings import (
+from backend.developer_settings import (
     install_tests,
     install_tkinter,
     install_tools,
@@ -25,7 +25,7 @@ from developer_settings import (
     terminal_bg_color,
     terminal_text_color,
 )
-from DONT_CHANGE.scripts._common_variables import (
+from backend.DONT_CHANGE.scripts._common_variables import (
     default_packages_file_path,
     determined_current_packages_file_path_noVersion,
     determined_current_packages_file_path_withVersion,

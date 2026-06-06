@@ -12,7 +12,7 @@ try:
     # =============================
     # add root dir for debug cases where this script is called on its own
 
-    root_dir = os.path.dirname(__file__) + "\\..\\.."
+    root_dir = os.path.dirname(__file__) + "\\..\\..\\.."
     if root_dir not in sys.path:
         sys.path.insert(0, root_dir)
 
@@ -20,13 +20,14 @@ try:
     # import from files
 
     import developer_settings
-    from DONT_CHANGE.scripts._common_variables import python_script_path, shortcut_output_dir
-    from DONT_CHANGE.specific_scripts.common_code import (
+
+    from backend.DONT_CHANGE.scripts._common_code import (
         close_terminal,
         input_warn,
         print_warn,
         setup_terminal_colors_and_unminimize_plus_foreground_on_first_print,
     )
+    from backend.DONT_CHANGE.scripts._common_variables import python_script_path, shortcut_output_dir
 
     # =============================
     # define local functions

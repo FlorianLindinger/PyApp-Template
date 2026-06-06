@@ -3,16 +3,11 @@
 # wrap up and move as much as possible to future:
 ======================================
 
+ask ai for more in gitiignore for python
+
 do i´need  init
 
 log icon invert for differentiation
-
-backend\
-    DONT_CHANGE
-    py_env
-    icons
-    developer_tools
-
 
 
 for all the shortcuts: what do i want for appearance. does wt or conhost have better taskbar appearance: icon , name?
@@ -26,15 +21,14 @@ checkout terminal tab in shorctu
 renamed: generate requiremtns to "generate lsit of ...". Add readme that explains what they do 
 think if all tool names appear nice
 
-add text inside: _VERSION_0.8a. maybe renamed to indice backend. do i want to distinguish backend and freamwork. backend shoulkd alawys be framework i guess. dev stuff is kind of not backend? only dont chagne is framewokr? hmm. i kind of only differnentiat there what is already there to be modified from tempplate aka dev stuff files and what needs to be added new my dev
+add text inside: _VERSION_0.8a. maybe renamed to indice backend.
 do i want text in all the signal files and so on? maybe onily if i dont care about speedup
 
 ask AI for more test ideas/featues. Ask for recommneatiodbs to test the main_scripts. test via compile? easy way for git actions.... simular stuff
 
-what if i move evrything that only dev cares about into FOR_DEVELOPERS and rest is code but i guess that also only for devs. only thing that end user cares aabout is settings. but also nice to have acessible dev_settings. not sure think about. waht if i put everything but "settings.py" and "main_script.yp" into "backend" ? makes paths longer tho.
-how high do i want pyproject.toml? new gitignore? want multiple? new README would be nice thehre
-also nicer for updating.
-new license?
+ask ai about pyrpoejct setttings. how much do i want to prescribe? do i want at all or just emtpy?
+
+updaet license paths
 
 ==================================================================================================================
 

@@ -12,7 +12,7 @@ program_name = "PyApp-Template"
 python_version: str = "3.14"
 # -------------------------------------------------
 # Path to end-user settings file (None to disable). File type can be anything openable by vscode/editor:
-user_settings_path: str | None = "settings.py"
+user_settings_path: str | None = "..\\settings.py"
 # -------------------------------------------------
 # Names of created shortcuts (None to disable). Accepts for example f"{program_name}":
 windows_terminal_shortcut_name: str | None = f"{program_name}"
@@ -50,7 +50,7 @@ enable_log_for_Windows_terminal_start = True
 enable_log_for_no_terminal_start = True
 overwrite_log = True
 # Accepts datetime.datetime.strftime usage: e.g. "log_%Y_%m_%d". Affected by start_in_shortcut_folder setting above. None to disable:
-log_path_rel_to_start_folder: str | None = r"..\logs\log_%Y_%m_%d.txt"
+log_path_rel_to_start_folder: str | None = "..\\..\\logs\\log_%Y_%m_%d.txt"
 # ------------------------------------------------
 
 # =================================

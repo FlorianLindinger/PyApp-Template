@@ -14,12 +14,12 @@ def make_abs(x: str) -> str:
 # backend related
 # ------------------------
 # Change backend Python version in install_backend_python.bat.
-backend_python_dir = make_abs("..\\backend_python")  # Update contents of backend_python_pth_file
+backend_python_dir = make_abs("..\\backend_python")  # Update contents of backend_python_pth_file and pyproject.toml
 backend_python_pth_file = (
     backend_python_dir + "\\python312._pth"
 )  # must match Python version in install_backend_python.bat
 backend_python_zip_rel_path = "python312.zip"  # must match Python version in install_backend_python.bat
-backend_packages_dir = make_abs("..\\backend_packages")  # Update contents of backend_python_pth_file
+backend_packages_dir = make_abs("..\\backend_packages")  # Update contents of backend_python_pth_file and pyproject.toml
 backend_package_requirements_file = make_abs("..\\backend_packages_list.txt")
 backend_files_to_delete_on_install = ["sqlite3.dll", "python.cat"]
 
@@ -38,10 +38,10 @@ dev_tools_referal_note_path = (
 # folders
 # ------------------------
 windows_dir = os.environ.get("WINDIR", default="C:\\Windows")
-python_scripts_dir = make_abs("..\\..")
+python_scripts_dir = make_abs("..\\..\\..")
 developer_tools_dir = make_abs("..\\..\\developer_tools")  # UPDATE GITIGNORE
 DONT_CHANGE_dir = make_abs("..")
-shortcut_output_dir = make_abs("..\\..\\..")  # UPDATE GITIGNORE
+shortcut_output_dir = make_abs("..\\..\\..\\..")  # UPDATE GITIGNORE
 starter_batches_folder = make_abs("..\\B")
 
 # scripts
@@ -49,9 +49,6 @@ starter_batches_folder = make_abs("..\\B")
 start_program_script = make_abs("start_program.py")
 python_script_path = make_abs("..\\..\\main_script.py")
 script_wrapper_path = make_abs("frontend\\script_wrapper.py")
-browser_terminal_path = make_abs("..\\browser_terminal\\browser_terminal.py")
-compiled_terminal_path = make_abs("..\\terminal_emulator\\compiled\\run.exe")
-uncompiled_terminal_path = make_abs("..\\terminal_emulator\\terminal_emulator.py")
 start_time_dummy_main_script = make_abs("..\\backend_test_tools\\helper_scripts\\start_time_dummy_main_script.py")
 launcher_terminal = starter_batches_folder + "\\W.bat"
 launcher_emulator = starter_batches_folder + "\\E.bat"
