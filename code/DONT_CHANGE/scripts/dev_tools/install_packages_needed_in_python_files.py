@@ -8,6 +8,9 @@ root_dir = os.path.dirname(__file__) + "\\..\\..\\.."
 if root_dir not in sys.path:
     sys.path.insert(0, root_dir)
 
+from DONT_CHANGE.scripts._common_variables import (
+    determined_needed_packages_output_file_path_noVersion,
+)
 from DONT_CHANGE.specific_scripts.common_code import (
     ensure_python_distro,
     input_success,
@@ -15,13 +18,12 @@ from DONT_CHANGE.specific_scripts.common_code import (
     print_traceback,
     save_requirements_of_root_folder_noVersion,
 )
-from DONT_CHANGE.specific_scripts.common_variables import (
-    determined_needed_packages_output_file_path_noVersion,
-)
 
 try:
     ensure_python_distro()
-    success, output_path = save_requirements_of_root_folder_noVersion(determined_needed_packages_output_file_path_noVersion)
+    success, output_path = save_requirements_of_root_folder_noVersion(
+        determined_needed_packages_output_file_path_noVersion
+    )
     if not success:
         raise RuntimeError("Failed to determine needed packages.")
 

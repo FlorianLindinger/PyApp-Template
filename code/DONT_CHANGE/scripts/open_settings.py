@@ -19,11 +19,11 @@ try:
     # ==========================================================================
     # import from common variables and developer settings
     import developer_settings
+    from DONT_CHANGE.scripts._common_variables import developer_settings_path
     from DONT_CHANGE.specific_scripts.common_code import (
         close_terminal,
         setup_terminal_colors_and_unminimize_plus_foreground_on_first_print,
     )
-    from DONT_CHANGE.specific_scripts.common_variables import developer_settings_path
 
     # ==========================================================================
     # needed functions
