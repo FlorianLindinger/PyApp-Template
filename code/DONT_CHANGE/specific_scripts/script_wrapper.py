@@ -1089,7 +1089,13 @@ def get_terminal_name():
             exit_code = e.code
             if exit_code is None:
                 exit_code = 0
-        except SyntaxError as e:  # catches synatx error in script_path or raise by script_path
+        except SyntaxError as e:  # catches synatx error in script_path or raised by script_path
+            
+            finished changes in main part: error handling
+            
+            
+            
+            
             # WIP!!
 
             import traceback
