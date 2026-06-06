@@ -15,8 +15,8 @@ from DONT_CHANGE.specific_scripts.common_code import (
     print_traceback,
 )
 from DONT_CHANGE.specific_scripts.common_variables import (
+    frontend_launcher_for_pip_install_terminal,
     frontend_python_exe,
-    frontend_script_for_set_python_and_pip_target,
 )
 
 try:
@@ -44,7 +44,7 @@ try:
     print('Install packages with "pip install package_name"')
     print()
 
-    subprocess.run(["cmd", "/k", "call", frontend_script_for_set_python_and_pip_target])  # noqa
+    subprocess.run(["cmd", "/k", "call", frontend_launcher_for_pip_install_terminal])  # noqa
 except Exception as e:
     print_traceback(
         f"[Error] Failed to open terminal for manual package installation: {e}", add_press_enter_to_exit=True

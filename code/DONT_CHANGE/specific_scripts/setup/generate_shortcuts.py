@@ -12,7 +12,7 @@ if root_dir not in sys.path:
     sys.path.insert(0, root_dir)
 
 # =============================
-# imports
+# imports third-party packages
 
 from win32com.client import Dispatch  # type:ignore
 from win32com.propsys import (  # type:ignore
@@ -21,7 +21,8 @@ from win32com.propsys import (  # type:ignore
 )
 from win32com.shell import shellcon  # type:ignore
 
-# import developer_settings
+# =============================
+# import from files
 from developer_settings import (
     install_python_when_generating_shortcuts,
     log_path_rel_to_start_folder,
@@ -327,15 +328,18 @@ def main():
             start_minimized=True,
         )
 
+print()
+print(f"Shortcut(s) created in: {shortcut_output_dir}")
+print()
+print("=============================")
+input("[Success] Press enter to exit")
+
 
 if __name__ == "__main__":
     try:
         main()
-        print()
-        print(f"Shortcut(s) created in: {shortcut_output_dir}")
-        print()
-        print("=============================")
-        input("[Success] Press enter to exit")
         close_terminal()
     except Exception as e:
-        print_traceback(f"[Error] {e}", add_press_enter_to_exit=True)
+        print_traceback(f"[Error] {e}")
+        input("[Success] Press enter to exit")
+        close_terminal()

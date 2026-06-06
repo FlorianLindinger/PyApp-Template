@@ -9,17 +9,17 @@ if root_dir not in sys.path:
     sys.path.insert(0, root_dir)
 
 from DONT_CHANGE.specific_scripts.common_code import (
-    delete_packages,
+    delete_frontend_packages,
     ensure_python_distro,
     input_success,
-    mark_frontend_packages_installed,
+    make_file_to_indicate_frontend_pckgs_installed,
     print_traceback,
 )
 
 try:
     ensure_python_distro()
-    delete_packages()
-    mark_frontend_packages_installed()
+    delete_frontend_packages()
+    make_file_to_indicate_frontend_pckgs_installed()
     print()
     input_success("[Success] Press enter to exit")
 except Exception as e:
