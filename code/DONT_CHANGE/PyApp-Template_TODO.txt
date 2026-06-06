@@ -3,6 +3,14 @@
 # wrap up and move as much as possible to future:
 ======================================
 
+test how low versions go. hardcode error message for too low in start
+
+make blacklisted_file_patterns more like wildcard tban file name
+
+chain pip upgrades in  until newst installed
+
+is admin needed to install python? any way around?
+
 when it sees that 3.4 does not existt online. it has already delete the last. Only delete indicator and dist at last point
 
 is 3.5 lower limit?

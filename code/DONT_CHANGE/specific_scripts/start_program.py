@@ -1,7 +1,7 @@
 """WIP"""
 
 # {e} will be formatted to exception:
-fail_message = "[Error] Failed to start program: {e}"
+fail_message = "[Error] Failed during program start: {e}"
 
 try:
     # ==============================
@@ -70,12 +70,140 @@ try:
     # ==============================
 
     # ==============================
-    # define local functions
+    # define local functions/classes
     # ==============================
 
-    def make_empty_args_safe(args: list) -> list[str]:
+    def get_frontend_args(app_id: str, log_path: str) -> list[str]:
+
+        from developer_settings import (
+            close_on_crash,
+            close_on_failure,
+            close_on_success,
+            input_prepend,
+            log_input_prepend,
+            log_print_prepend,
+            open_log_file_after_crash,
+            open_log_file_after_failure,
+            open_log_file_after_success,
+            overwrite_log,
+            play_sound_on_crash,
+            play_sound_on_failure,
+            play_sound_on_success,
+            print_prepend,
+            python_version,
+        )
+        from DONT_CHANGE.specific_scripts.common_variables import (
+            env_var_to_signal_startup_time_measurement,
+            icon_path,
+            play_sound_on_crash_default,
+            play_sound_on_failure_default,
+            play_sound_on_success_default,
+            python_script_path,
+            start_time_dummy_main_script,
+            windows_dir,
+        )
+
+        # change main_script if in startup time measurement mode
+        if os.environ.get(env_var_to_signal_startup_time_measurement):
+            python_script_path = start_time_dummy_main_script
+
+        # raise error if script not found
+        if not os.path.exists(python_script_path):
+            raise FileNotFoundError(f'[Error] Python script not found at "{python_script_path}"')
+
+        if start_in_shortcut_folder == True:
+            wdir_is_script_dir = False
+        else:
+            wdir_is_script_dir = True
+
+        if python_version in [None, False, ""]:
+            python_version = ""
+        if log_print_prepend in [None, False, ""]:
+            log_print_prepend = ""
+        if log_input_prepend in [None, False, ""]:
+            log_input_prepend = ""
+        if print_prepend in [None, False, ""]:
+            print_prepend = ""
+        if input_prepend in [None, False, ""]:
+            input_prepend = ""
+
+        # Normalize optional sound settings to concrete .wav paths. Each setting accepts False/None/"", True for the template default, a media filename, or an absolute path.
+        if play_sound_on_crash is True:
+            wav_on_crash = play_sound_on_crash_default
+        elif play_sound_on_crash in [False, None, ""]:
+            wav_on_crash = ""
+        elif not os.path.isabs(play_sound_on_crash):
+            wav_on_crash = os.path.normpath(windows_dir + "\\Media\\" + play_sound_on_crash)
+        else:
+            wav_on_crash = play_sound_on_crash
+        if wav_on_crash != "":
+            if wav_on_crash[-4:] != ".wav":
+                wav_on_crash += ".wav"
+            if not os.path.exists(wav_on_crash):
+                print(f"[Warning] Sound file does not exist: {wav_on_crash}")
+                wav_on_crash = ""
+
+        if play_sound_on_success is True:
+            wav_on_success = play_sound_on_success_default
+        elif play_sound_on_success in [False, None, ""]:
+            wav_on_success = ""
+        elif not os.path.isabs(play_sound_on_success):
+            wav_on_success = os.path.normpath(windows_dir + "\\Media\\" + play_sound_on_success)
+        else:
+            wav_on_success = play_sound_on_success
+        if wav_on_success != "":
+            if wav_on_success[-4:] != ".wav":
+                wav_on_success += ".wav"
+            if not os.path.exists(wav_on_success):
+                print(f"[Warning] Sound file does not exist: {wav_on_success}")
+                wav_on_success = ""
+
+        if play_sound_on_failure is True:
+            wav_on_failure = play_sound_on_failure_default
+        elif play_sound_on_failure in [False, None, ""]:
+            wav_on_failure = ""
+        elif not os.path.isabs(play_sound_on_failure):
+            wav_on_failure = os.path.normpath(windows_dir + "\\Media\\" + play_sound_on_failure)
+        else:
+            wav_on_failure = play_sound_on_failure
+        if wav_on_failure != "":
+            if wav_on_failure[-4:] != ".wav":
+                wav_on_failure += ".wav"
+            if not os.path.exists(wav_on_failure):
+                print(f"[Warning] Sound file does not exist: {wav_on_failure}")
+                wav_on_failure = ""
+
+        out: list[str] = [
+            EMPTY_ARG_INDICATOR,
+            app_id,
+            log_path,
+            bool_to_string(close_on_crash),
+            bool_to_string(close_on_failure),
+            bool_to_string(close_on_success),
+            icon_path,
+            input_prepend,
+            log_input_prepend,
+            log_print_prepend,
+            bool_to_string(open_log_file_after_crash),
+            bool_to_string(open_log_file_after_failure),
+            bool_to_string(open_log_file_after_success),
+            bool_to_string(overwrite_log),
+            print_prepend,
+            program_name,
+            python_script_path,
+            wav_on_crash,
+            wav_on_failure,
+            wav_on_success,
+            bool_to_string(wdir_is_script_dir),
+            CORRECT_START_SIGNAL_FILE_PATH,
+            process_id_file_path,
+        ]
+
+        return make_empty_args_safe(out)
+
+    def make_empty_args_safe(args: list[str]) -> list[str]:
         """Needed because passing empty args as "" in Windows can be flimsy -> replace "" with EMPTY_ARG_INDICATOR and decode in child."""
-        return [str(a) if a else EMPTY_ARG_INDICATOR for a in args]
+        return [a if a else EMPTY_ARG_INDICATOR for a in args]
 
     def generate_minimized_startupinfo():
         """Creates subprocess.Popen STARTUPINFO that opens a child process minimized."""
@@ -84,7 +212,7 @@ try:
         startupinfo.wShowWindow = getattr(subprocess, "SW_SHOWMINNOACTIVE", 7)
         return startupinfo
 
-    def bool_to_arg(value: bool) -> str:
+    def bool_to_string(value: bool) -> str:
         """Convert a boolean value to the launcher string argument format."""
         return "true" if value else "false"
 
@@ -186,22 +314,27 @@ try:
         # ==============================
         # setup passed args that all launch modes have in common
 
-        args = [app_id, log_path]
+        args = get_frontend_args(app_id, log_path)
 
         # ==============================
         # launch main_script in specific launch mode
 
         if launch_mode in ["terminal", "no_terminal"]:
-            if launch_mode == "terminal":
-                
-                # add terminal appearance to args:
-                terminal_colors = ""
-                if terminal_bg_color:
-                    terminal_colors += terminal_bg_color
-                if terminal_text_color:
-                    terminal_colors += terminal_text_color
-                args += [terminal_colors, classic_terminal_cols, classic_terminal_lines]
+            # add terminal appearance to args:
+            terminal_colors = ""
+            if terminal_bg_color:
+                terminal_colors += terminal_bg_color
+            if terminal_text_color:
+                terminal_colors += terminal_text_color
 
+            args += [
+                terminal_colors,
+                classic_terminal_cols,
+                classic_terminal_lines,
+                (launch_mode == "terminal"),
+            ]
+
+            if launch_mode == "terminal":
                 # get terminal launch command:
                 if use_classic_terminal:
                     terminal_command = ["conhost.exe"]
@@ -227,7 +360,7 @@ try:
 
             # open new separate process and don't wait:
             process = subprocess.Popen(  # noqa:S603 #type:ignore
-                make_empty_args_safe(terminal_command),
+                terminal_command,
                 creationflags=creationflags,
                 startupinfo=startupinfo,
             )
