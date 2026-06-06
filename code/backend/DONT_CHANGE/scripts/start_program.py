@@ -23,11 +23,11 @@ try:
     # ==============================
 
     # add root dir to resolve file imports for debug cases where this script is called on its own:
-    root_dir = os.path.dirname(__file__) + "\\..\\.."
+    root_dir = os.path.dirname(__file__) + "\\..\\..\\.."
     if root_dir not in sys.path:
         sys.path.insert(0, root_dir)
 
-    from developer_settings import (
+    from backend.developer_settings import (
         classic_terminal_cols,
         classic_terminal_lines,
         close_already_running_instances_on_start,
@@ -45,15 +45,7 @@ try:
         use_classic_terminal,
         use_global_python,
     )
-    from DONT_CHANGE.scripts._common_variables import (
-        CORRECT_START_SIGNAL_FILE_PATH,
-        EMPTY_ARG_INDICATOR,
-        frontend_python_exe,
-        process_id_file_path,
-        python_script_path,
-        script_wrapper_path,
-    )
-    from DONT_CHANGE.specific_scripts.common_code import (
+    from backend.DONT_CHANGE.scripts._common_code import (
         close_terminal,
         ensure_frontend_packages,
         get_running_processes_from_pid_file,
@@ -63,6 +55,14 @@ try:
         setup_terminal_colors,
         setup_unminimize_and_foreground_on_first_print,
         stop_processes_from_pid_file,
+    )
+    from backend.DONT_CHANGE.scripts._common_variables import (
+        CORRECT_START_SIGNAL_FILE_PATH,
+        EMPTY_ARG_INDICATOR,
+        frontend_python_exe,
+        process_id_file_path,
+        python_script_path,
+        script_wrapper_path,
     )
 
     # ==============================
@@ -75,7 +75,7 @@ try:
 
     def get_frontend_args(app_id: str, log_path: str) -> list[str]:
 
-        from developer_settings import (
+        from backend.developer_settings import (
             close_on_crash,
             close_on_failure,
             close_on_success,
@@ -92,7 +92,7 @@ try:
             print_prepend,
             python_version,
         )
-        from DONT_CHANGE.scripts._common_variables import (
+        from backend.DONT_CHANGE.scripts._common_variables import (
             env_var_to_signal_startup_time_measurement,
             icon_path,
             play_sound_on_crash_default,
