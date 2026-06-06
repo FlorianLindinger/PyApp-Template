@@ -3,6 +3,8 @@
 # wrap up and move as much as possible to future:
 ======================================
 
+do i´need  init
+
 log icon invert for differentiation
 
 backend\
@@ -11,6 +13,14 @@ backend\
     icons
     developer_tools
 
+or maybe just scripts
+    _common_variables.py
+    _common_code.py
+    ...
+    dev_tools
+    setup/
+    frontend/
+        script_wrapper.py
 
 for all the shortcuts: what do i want for appearance. does wt or conhost have better taskbar appearance: icon , name?
 do i want to rename and icon ... for scripts that dont launc program?
@@ -26,15 +36,6 @@ rename python_packages to backend_py_packages?
 renameed get_launcerh_settings to common_launcher
 
 renamed to backend_py_pckgs to backend_packages?
-
-or maybe just scripts
-    _common_variables.py
-    _common_code.py
-    ...
-    dev_tools
-    setup/
-    frontend/
-        script_wrapper.py
 
 renamed commonc code and vatiables to _common_code. smae with common_varaibles
 
