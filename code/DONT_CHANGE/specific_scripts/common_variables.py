@@ -25,15 +25,14 @@ backend_package_requirements_file = make_abs("..\\backend_packages_requirements.
 
 # frontend related
 # ------------------------
-frontend_env_dir = make_abs("..\\..\\py_env")  # UPDATE GITIGNORE
-frontend_packages_dir = frontend_env_dir + "\\packages"
-frontend_python_dir = frontend_env_dir + "\\py_dist"
+frontend_packages_dir = make_abs("..\\..\\py_env\\packages")  # UPDATE GITIGNORE
+frontend_python_dir = make_abs("..\\..\\py_env\\py_dist")  # UPDATE GITIGNORE
 frontend_packages_are_installed_marker_filename = "_DELETE_THIS_TO_REINSTALL_ONLY_DEFAULT_PACKAGES_"
 frontend_script_for_set_python_and_pip_target = (
     frontend_python_dir + "\\tools\\open_terminal_with_set_python_and_pip_target.bat"
 )
 dev_tools_referal_note_path = (
-    frontend_env_dir + "\\_USE developer_tools FOLDER (IN PARENT FOLDER) TO CHANGE PACKAGES_"
+    os.path.dirname(frontend_packages_dir) + "\\_USE developer_tools FOLDER (IN PARENT FOLDER) TO CHANGE PACKAGES_"
 )  # UPDATE GITIGNORE
 
 # folders
@@ -47,6 +46,7 @@ starter_batches_folder = make_abs("..\\B")
 
 # scripts
 # ------------------------
+start_program_script = make_abs("start_program.py")
 python_script_path = make_abs("..\\..\\main_script.py")
 script_wrapper_path = make_abs("script_wrapper.py")
 browser_terminal_path = make_abs("..\\browser_terminal\\browser_terminal.py")
@@ -103,9 +103,6 @@ excluded_folders_for_package_search = [
 variable_in_default_packages_path_that_triggers_search_if_true = (
     "# auto_find_required_packages_here_and_reset_installed_packages_to_them"
 )
-python_download_ftp_url = "https://www.python.org/ftp/python/"
-python_download_excluded_base_msi_names = {"path", "appendpath", "pip", "launcher"}
-python_download_timeout_s = 120
 env_var_to_signal_startup_time_measurement = "PYAPP_TEMPLATE_ACTIVE_STARTUP_TIME_MEASUREMENT"
 EMPTY_ARG_INDICATOR: str = "__EMPTY__"
 
@@ -115,7 +112,7 @@ EMPTY_ARG_INDICATOR: str = "__EMPTY__"
 # =============================
 
 developer_settings_dir = os.path.dirname(developer_settings_path)
-frontend_python_exe = os.path.normpath(frontend_python_dir + "\\python.exe")
+frontend_python_exe = frontend_python_dir + "\\python.exe"
 rel_path_from_backend_python_to_backend_packages = os.path.relpath(backend_packages_dir, backend_python_dir)
 frontend_packages_are_installed_marker_path = (
     frontend_packages_dir + "\\" + frontend_packages_are_installed_marker_filename
