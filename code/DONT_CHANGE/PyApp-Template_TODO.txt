@@ -3,7 +3,60 @@
 # wrap up and move as much as possible to future:
 ======================================
 
-renamed commonc code and vatiables to _common_code
+log icon invert for differentiation
+
+backend\
+    DONT_CHANGE
+    py_env
+    icons
+    developer_tools
+
+
+for all the shortcuts: what do i want for appearance. does wt or conhost have better taskbar appearance: icon , name?
+do i want to rename and icon ... for scripts that dont launc program?
+conhost takes icon and title from shorctu. wt does not? but i can set title manually
+conhost just better i guess-> wisscht
+shortcuts have terminal preferance
+checkout terminal tab in shorctu
+
+renaed stuff in common code wiht _ before if only local used
+
+rename python_packages to backend_py_packages?
+
+renameed get_launcerh_settings to common_launcher
+
+renamed to backend_py_pckgs to backend_packages?
+
+or maybe just scripts
+    _common_variables.py
+    _common_code.py
+    ...
+    dev_tools
+    setup/
+    frontend/
+        script_wrapper.py
+
+renamed commonc code and vatiables to _common_code. smae with common_varaibles
+
+rename? backend_packages_requirements
+backend_packages_list.txt
+
+renamed: generate requiremtns to "generate lsit of ...". Add readme that explains what they do 
+think if all tool names appear nice
+
+add text inside: _VERSION_0.8a. maybe renamed to indice backend. do i want to distinguish backend and freamwork. backend shoulkd alawys be framework i guess. dev stuff is kind of not backend? only dont chagne is framewokr? hmm. i kind of only differnentiat there what is already there to be modified from tempplate aka dev stuff files and what needs to be added new my dev
+do i want text in all the signal files and so on? maybe onily if i dont care about speedup
+
+ask AI for more test ideas/featues. Ask for recommneatiodbs to test the main_scripts. test via compile? easy way for git actions.... simular stuff
+
+what if i move evrything that only dev cares about into FOR_DEVELOPERS and rest is code but i guess that also only for devs. only thing that end user cares aabout is settings. but also nice to have acessible dev_settings. not sure think about. waht if i put everything but "settings.py" and "main_script.yp" into "backend" ? makes paths longer tho.
+how high do i want pyproject.toml? new gitignore? want multiple? new README would be nice thehre
+also nicer for updating.
+new license?
+
+==================================================================================================================
+
+move batch creator function inside install python function
 
 do i want to run SCRIPT_BASE in new terminal in backend or frontend?
 
@@ -11,7 +64,6 @@ check and test python install
 test how low versions go. hardcode error message for too low in start
 check if pip install is overkil
 chain pip upgrades in  until newst installed
-
 
 when it sees that 3.4 does not existt online. it has already delete the last. Only delete indicator and dist at last point
 
@@ -70,15 +122,8 @@ WORK_DIR = BACKEND_TEST_TOOLS_DIR / ".startup_time_markers"
 
 make all from pathlib import Path to os
 
-do i want a common_vartailes in frontend???? probably not actually.
-maybe i want in scoipts:
-    common_variables.py
-    backend
-    frontend
-or maybe just scripts
-    common_variables.py
-    ...
-    frontend/
+
+
 
 
 how do i give nice rich traceback in fails of main_script? launch in same terminal a backend python?
@@ -94,8 +139,6 @@ ask AI to harmonoze alll fail print messages
 chekc open_log.py
 
 st terminal appearance for shortcut geneatn. color but also icon and tritle?
-
-split spectifgic_scrtipt folder into frontend_script/backend_scripts
 
 setting to appedn number to log if existing
 
@@ -134,14 +177,8 @@ for frontend terminal: do i need to set title and icon for conhost?
 
 ask AI if i cna harmonize coeeing conventions al lotittle more
 
-renamed to backend_py_pckgs to backend_packages?
 
-for all the shortcuts: what do i want for appearance. does wt or conhost have better taskbar appearance: icon , name?
-do i want to rename and icon ... for scripts that dont launc program?
-conhost takes icon and title from shorctu. wt does not? but i can set title manually
-conhost just better i guess-> wisscht
-shortcuts have terminal preferance
-checkout terminal tab in shorctu
+
 
 look why setting .py is not same as other .py?
 
@@ -161,11 +198,6 @@ press enter to exit does not exit dev tools. addd prints that file was save and 
 
 how do i realese a clean main_script while WIP dev. do i go dev branch i guess
 
-rename? backend_packages_requirements
-backend_packages_list.txt
-
-move all batches to sub folder with short name?
-B?
 
 ask AI where bottlenack for length. Wait do i still need shroty python folder???????
 mention shoemwher eaxmple of too long path so one can compare? at this point i can hcek again in shortcut craeation. 
@@ -173,15 +205,7 @@ mention shoemwher eaxmple of too long path so one can compare? at this point i c
 do i want _ in _RUN BEFORE FIRST START AND AFTER FOLDER MOVE TO GENERATE SHORTCUTS? kind of no püurpoe and layman could be ticked off by "_"?
 also renmaed to "RUN TO GENERATE SHORTCUTS BEFORE FIRST START AND AFTER FOLDER MOVE". aks AI if better name
 
-add text inside: _VERSION_0.8a. maybe renamed to indice backend. do i want to distinguish backend and freamwork. backend shoulkd alawys be framework i guess. dev stuff is kind of not backend? only dont chagne is framewokr? hmm. i kind of only differnentiat there what is already there to be modified from tempplate aka dev stuff files and what needs to be added new my dev
-do i want text in all the signal files and so on? maybe onily if i dont care about speedup
 
-ask AI for more test ideas/featues. Ask for recommneatiodbs to test the main_scripts. test via compile? easy way for git actions.... simular stuff
-
-what if i move evrything that only dev cares about into FOR_DEVELOPERS and rest is code but i guess that also only for devs. only thing that end user cares aabout is settings. but also nice to have acessible dev_settings. not sure think about. waht if i put everything but "settings.py" and "main_script.yp" into "backend" ? makes paths longer tho.
-how high do i want pyproject.toml? new gitignore? want multiple? new README would be nice thehre
-also nicer for updating.
-new license?
 
 removed unnecessary/useless __init__.pys
 
@@ -195,7 +219,6 @@ is backend terminal minimization as fast as possibel? do i want to set appid ico
 
 waht varaible should i make capitalized? in common_variables. all i guess? generally all vars that i imoprt i guess but not in dev settings tho
 
-renameed get_launcerh_settings to common_launcher
 
 ask AI if anything would break for frontend low. I guess wrapper needs to be very lowend safe
 
@@ -392,8 +415,7 @@ test no terminal error print
 
 am i using faulthandler correctly? do i need to print that to a log? ask ai if works
 
-renamed: generate requiremtns to "generate lsit of ...". Add readme that explains what they do 
-think if all tool names appear nice
+
 
 add vscode settigns to pyproject.toml?
 update pyproject.toml but not enable the D
@@ -411,6 +433,10 @@ cehck for fail of install_packages_from_file and hadnle error
 
 ask if "--disable-pip-version-check", everyhwerhe
 when do i want no cache or no upgrade for pip sintall
+
+do i want more in .attributes
+
+
 
 =========================================
 ==== Must do before release (in end) ====
@@ -482,6 +508,14 @@ ask if i can use more input succes/warn
 ask it to add comment to code blocks
 
 update all licenses
+
+ask for emtpy readmeas and WIPs
+
+
+
+
+
+
 
 
 
@@ -620,7 +654,6 @@ somehjow make it not install default packages during setup of venv
 C:\Users\Flo\Documents\Repositories\PyApp Template\code\DONT_CHANGE\specific_scripts\dev_tools\save_list_of_packages_needed_in_files -withVersion.py
 
 
-renaed stuff in common code wiht _ before if only local used
 
 maybe readd readlines;writelines
 
@@ -664,7 +697,6 @@ ship_backend_python_and_backend_packages = True
 
 read whole main workflow for terminal laucn and setting and stop and setupo
 
-rename python_packages to backend_py_packages?
 
 mname if backend_common_code and launcher_common_code,
 backend_common_variables?
