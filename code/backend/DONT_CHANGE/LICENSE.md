@@ -11,7 +11,7 @@ All files in this folder, **except for files in the folders described in the sec
 ```
 MIT License
 
-Copyright (c) 2025 [Florian Lindinger]
+Copyright (c) 2026 [Florian Lindinger]
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -36,13 +36,13 @@ THE SOFTWARE.
 
 ## Section 2: Embeddable Python Distribution (PSF License)
 
-The contents of the folder `P` are files from an embeddable Python distribution which has been modified by renaming and removing some files. All remaining files fall under the license located at `P/LICENSE.txt`.
+The contents of the folder `backend_python` are files from an embeddable Python distribution which has been modified by renaming and removing some files. All remaining files fall under the license located at `backend_python/LICENSE.txt`.
 
 ---
 
 ## Section 3: Third-Party Python Packages
 
-The folder `python_packages` contains third-party Python packages. These packages are not relicensed by this file. Each package remains under its own license, and the bundled license or metadata files listed below should be kept with the package when distributing it.
+The folder `backend_packages` contains third-party Python packages. These packages are not relicensed by this file. Each package remains under its own license, and the bundled license or metadata files listed below should be kept with the package when distributing it.
 
 | Package or component | Bundled version | License shown by bundled metadata or license file | Bundled license / notice files |
 | --- | --- | --- | --- |
@@ -85,7 +85,7 @@ This section is a practical summary, not legal advice. For an important commerci
 
 ### Sharing the repository via Git
 
-This repository may be shared through Git with `python_packages` included. Keep the package metadata, license files, copyright notices, and notice files listed in Section 3. Do not remove `.dist-info` folders or bundled `LICENSE`, `NOTICE`, `AUTHORS`, or `license.txt` files.
+This repository may be shared through Git with `backend_packages` included. Keep the package metadata, license files, copyright notices, and notice files listed in Section 3. Do not remove `.dist-info` folders or bundled `LICENSE`, `NOTICE`, `AUTHORS`, or `license.txt` files.
 
 Sharing through Git is distribution of these third-party packages, so the same license obligations still apply. In source-form Git distribution, the most important practical requirement is preserving the license and notice files. For MPL/LGPL-covered parts, also preserve source availability for those covered files and any modifications to them.
 
