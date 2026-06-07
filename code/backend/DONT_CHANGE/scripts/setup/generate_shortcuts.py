@@ -328,19 +328,17 @@ def main():
             start_minimized=True,
         )
 
-
-print()
-print(f"Shortcut(s) created in: {shortcut_output_dir}")
-print()
-print("=============================")
-input("[Success] Press enter to exit")
+    print()
+    print(f"Shortcut(s) created in: {shortcut_output_dir}")
+    print()
+    print("=============================")
+    input("[Success] Press enter to exit")
 
 
 if __name__ == "__main__":
     try:
         main()
-        close_terminal()
     except Exception as e:
         print_traceback(f"[Error] {e}")
         input("[Success] Press enter to exit")
-        close_terminal()
+    close_terminal()
