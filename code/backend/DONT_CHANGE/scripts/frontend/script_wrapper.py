@@ -145,7 +145,7 @@ def get_terminal_name():
         )
 
     def _helper_refresh_nonclient_area(hwnd):
-        """Refresh a window frame after terminal metadata changes."""
+        """WIP"""
         SWP_NOMOVE = 0x0002
         SWP_NOSIZE = 0x0001
         SWP_NOZORDER = 0x0004
@@ -179,7 +179,7 @@ def get_terminal_name():
             pass
 
     def restore_current_console():
-        """Restore the current console window when possible."""
+        """WIP"""
         try:
             hwnd = kernel32_DLL.GetConsoleWindow()
             if hwnd:
@@ -188,11 +188,9 @@ def get_terminal_name():
             pass
 
     def get_candidate_hwnds():
-        """Return the candidate hwnds."""
         candidate_hwnds = []
 
         def add(hwnd):
-            """Add a value to the local collection when valid and new."""
             if hwnd == 0 or not user32_DLL.IsWindow(hwnd) or hwnd in candidate_hwnds:
                 return
             candidate_hwnds.append(hwnd)
@@ -411,7 +409,6 @@ def get_terminal_name():
         return changed_count
 
     def set_terminal_icon(candidate_hwnds, icon_path):
-        """Change the icon of the current terminal window"""
 
         WM_SETICON = 0x0080
         ICON_SMALL = 0

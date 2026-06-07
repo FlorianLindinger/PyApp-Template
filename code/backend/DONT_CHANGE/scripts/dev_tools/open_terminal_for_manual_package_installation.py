@@ -10,7 +10,6 @@ if root_dir not in sys.path:
     sys.path.insert(0, root_dir)
 
 from backend.DONT_CHANGE.scripts._common_code import (
-    create_frontend_python_tool_scripts,
     ensure_python_distro,
     print_traceback,
 )
@@ -21,7 +20,6 @@ from backend.DONT_CHANGE.scripts._common_variables import (
 
 try:
     ensure_python_distro()
-    create_frontend_python_tool_scripts()
 
     # upgrade pip
     try:

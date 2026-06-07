@@ -1,0 +1,942 @@
+================
+==== Future ====
+# make feature triage for future: maybe first implemetn all features such that AI can best copy behaviour for otehr launch options and ask what would be extra possible/current there
+================
+
+
+add shortcut for git check if update avaliable and priomopt options
+
+test wdinows nmotifiartion
+
+move helper functions below code where needed?
+
+Make txt which tells what's minimally needed to keep 
+
+do i want delete_folder_safe to retrun succes/user_refuse/error ...?
+
+###### move all backend installation featurs and fixes to future since anyway there is no option to not ship implemented i guess:
+i guess add backend python installation to genrtated shoretuctus
+cut down on backend installatikn packages and not ship? kind of too risky for no gain
+make backend installtion more robust for fails by delting folder and redoing i guess. i guess already implem,enwed
+add chekc for backend python folder and install them automatically for shortcus
+make backend packages installtion indepomendent chekc and fail delete
+
+i gurss i cant driectly renaemd python.exe since shoprtcuts and batches have hardcoded python name
+
+add setting: foreground on print
+
+is sound playing + log opening + remain open on success somewhat slow?
+
+readd windwos notifications
+
+make faster start for more lazy defintion and import
+
+Medium/security: terminal_emulator.py (line 1359) runs eval(f"self.{rest}") on text emitted by the child process. Replace this with an explicit command protocol.
+
+integrate settings.py in emulator
+
+ask ai to draw a flwochart of whoel prpgram
+
+change color of tabbed temrinal for error or finish
+
+do i need get_candidate_hwnds()[0] if 0 seems to work? can i ask when needed or if i can detect working and stop?
+
+in wt.exe i want to change the corlor to green for success i guess? for that taskbar colring
+
+highlight or altert in taskabr in wiondwos terminal? can i set it to highlight and not flash? flash until opend i guess
+
+pbar options:
+cycling
+any % accent
+yellow
+red
+none
+
+
+test what featues break for lower versions of fronent python. ask AI
+
+i can choose tab title
+
+i guess no need for pbar and error if i can falshj. unless i want to distinguies flash
+
+also set newly opened terminal to warn appearance. do i want wt or conhost?
+
+implemetn setting. "flash in taskbar on"?
+
+i can pass name to pyside5 via exe but not tkinter via rename of python.exe -> yes on replace shortcuts and python distro installation. . meantion somewhere?
+but chekc if sigantrues stay same. i guess via frsh python
+is kind of less av safe
+
+# compile script needs to be adjusted to take stuff live for import somehow i guess
+
+add arg setting in dev setting to pass to scropt
+
+
+what prevents me from python 3.6-? hardcode solution?
+
+reimplement terminal emulatr and make parity
+
+
+can i pass the icon via chagnign python.exe to pyqt defualt gui?
+
+
+jump list for right click on shortcut
+
+
+setting to run in admin mode?
+
+builtin profiling of code?
+
+profiling of backend?
+
+craete tests in bvakcned test folder
+
+sort common variables more
+
+
+checkl if stuff in baclend debug tools should be in common code
+
+use more input succes/warn
+
+do i want a "dont close any terminal" flag for start_program? for debug
+
+no gil option in dev settings.
+
+make a batch that compiles main:scirpt wiht its dependecies and using managed python->output with and wihtout terminal. i guess that leaves out all extra features
+or maybe a thing that convertts the folder to cloickable
+
+maybe have seciotns in the wrapper/terminal/browser scripts that say "common code" insteaf of imoprtign stuff
+i guess i want comprehenvsive launcher_common. i have to test if compulation handles that
+
+do i want to raise insteadf of manging closeure somehwer bc outer most handles?
+
+somehjow make it not install default packages during setup of venv in
+C:\Users\Flo\Documents\Repositories\PyApp Template\code\DONT_CHANGE\specific_scripts\dev_tools\save_list_of_packages_needed_in_files -withVersion.py
+
+
+
+maybe readd readlines;writelines
+
+chekck if something does nto need to be extra function in common code
+
+
+how much can i reducte time.sleep(0.8). or can wrapper soemhow indicate egferything is working?
+
+mabye avoid overhead in Portable_Scripts/python.bat for app process:      ~60 ms extra vs Scripts/python.exe
+by checking in python?
+Best approach: use a fast validity check, then direct .exe on the normal path, and only fall back to .bat repair when needed.
+also better printing that way
+maybe better to have separate repair scritpt insteaf of alternate launcehr. i guess add a file to DONT_CHANGE that indicates the path of isntallation. but dont sync that.
+
+add nogil option with chekc if veriosn compatible adn warn if not 
+
+
+also set app id for slow
+
+how much does it cost to check python vertison. do i want setting to not check?
+
+remove function overkill in commin code
+
+read all codes
+
+can set_terminal_icon work wihtouzt terminal name?
+
+make tmerinual emumaltr fully self sufficient
+
+is checked?:
+    prevent_launch_if_existing_instances_running = False
+    close_existing_instances_on_start = False
+    prompt_to_close_existing_instances = True
+
+add asci font print
+
+some kind of setting for global python version choice?
+
+ship_compiled_fancy_terminal_emulator = True
+ship_backend_python_and_backend_packages = True
+
+read whole main workflow for terminal laucn and setting and stop and setupo
+
+
+mname if backend_common_code and launcher_common_code,
+backend_common_variables?
+
+mkae closing terminals less long open
+
+does temrinal icon change have to be so complicated. how was it before?
+
+i get double error for protable batches-> maybe fix by making python verions or add no wait option in batch
+
+ask AI for speedup and safety and robustness improvmens and also comments and docsttirngs
+
+is there way way to make compile faster for repeeated compile
+
+Check for module missing error and prompt install script
+
+Make terminal output searchable .maybe search box
+
+Typewriter effect
+
+Transparency button: prompt for alpja. Maybe slicer. 
+
+Also add transparency to Windows termianl
+
+Compile via GitHub action for proof of exe content
+
+Setuptools for av safe args passing?
+
+Make txt which tells what's minimally needed to keep 
+
+spawn batch shortcuts such that one can pass args.
+
+ask AI if more lazy imports are usefull
+lazy import pywin32 module path setup
+# needed ? # needed for pywin32 to find its modules
+
+is anything in common_code slow that should be other scirpt or lazy import?
+
+i have 2 terminal at some point? i guess one get converted to app id. problaby must be. maybe make all fasrter
+
+re add browser:
+start_browser_shortcut_name: str | None = f"{program_name} (Browser)"  # start program in default browser
+
+print:
+    ====================
+    [Error] Failed launching terminal_emulator backend:
+    C:\Users\Flo\Documents\Repositories\PyApp Template\code\DONT_CHANGE\terminal_emulator\compiled\run.exe
+    --------------------
+    [Error (see above)] Press enter to exit. 
+it opened a window but closed opened temrinal immediataly afterwads. probalby exe just got wrong amount of args. maybe make safer genrally the exe. test by deliberatly gvigin it crap or soemtihn
+
+ask ai if safe right now or if i want t oforce classicterminal for safety
+
+fix color in python part of terminal
+ask AI for better reliably
+
+add to notes that you can delete after_python_crash_code.py
+what happens for emopty sciptr? should be same as no scipt
+
+updated readme in py_env how to hcange packages. or maybe not there and menion that on can delete py_env
+
+on otherh hand the script can easily do that. porobabloy no:
+add setting: success_print=[Program finished successfully]
+failur_print= f"[Program finished with failure] Programm exited with code "{exit_code}"
+and explain that no print if "" and that will 
+
+impl,ment wdinows nmotifiartion
+
+how do i make terminal easliy updateable of defaults while giving user all options easliy accesible to change. maybe only base settings in decveloper_settings and a lot in hidden defaults in terminal.py
+developer_settings:add button settings as dict? or mabye easyer?
+
+when do i want or need "os.kill(os.getppid(), signal.SIGTERM)"?
+
+add,ove ins start_program:
+    # restart_main_script_on_crash,
+    # after_python_crash_code_path
+
+remove. restart_main_script_on_crash. just mention that one can name main_script and it will get 
+sys.argv[-1] == "crash"
+clarify that restart on crash only appeas on python crsahj not regular crahs of script
+make it that way
+
+Finish crash handling parity. script_wrapper.py (line 881) still has a real WIP branch for interpreter crashes. Also script_after_interpreter_crash_path is parsed but not really used consistently between wrapper and terminal emulator.
+
+what am i catching that windwos temrinal does noit?
+
+is expceioptn handline mentioned in readem
+
+ask for generall improivements and comments and oragnaizing and docstrings
+
+does anything require admin
+
+ask AI if there are featurs in wrapper or emulator that i can add to otehr
+
+add script_after_interpreter_crash_path
+
+ask if there is possiblity for maore fail ehcks and error prints and input exits
+
+add after pyton crash in next release
+
+meniton that one can add package to backaPODNE_PACKAGES_REQUIREMNT:RT AND DELTE p NAD PYTHON_PACVKGES
+
+print script name and path when error possible?
+
+add DONT_CHANGE license summary info to main license
+mention what the effective license allows and difference to MIT
+
+add doctrings to scripts
+
+add more explanation text to gitignores
+
+Add Syntax Checker to git and even linting?
+
+prompt if user wants to update git if available. Add git checks
+genrally add chekc for update on gitr on start which link. and option to print no new option or nothing. maybe even print changlogs and so on
+
+no?:
+auto fork option? hm maybe just actually copy via a batch file (new folder and copy (dont overwrite at all), and delete .git)
+But fork allows for contributing changes back to original template. Git remplate does not but allows for own forking
+
+confirmation question via windows popup? fragile?
+
+maybe have program Name as asci art
+
+Change color if there's an error (e.g., red background).
+also fir browser and terminal
+
+For python reinstall. Add auto reinstall all installed packages and warn if not possible. Try first with old  packages or no reinstall. Mentioned that and possibly to use upgrade->just prompt. i think i like more deliberate whre i write in the dev seetingthat one has to reset. how do is unlokc versions of packges when moving to ohter vreiosn?->"reset venv_wiht_same_poakcages_noFixed_veriosn" somehow inidcatre that this chekc if pyhon verions does not macth and gets replced
+
+Add block of Ctrl c
+
+make shortcut generator run that setup batch?
+
+asci art only for initial run? maybe shortcut gen? or whenenve it has to reset the venv? somehow only for first time. maybe via file. maybe jsut also add setting in dev_setting to print alwys
+add asci character previcew of name for every batch that is not for normal start after setup. add space for unknow character? or also add äöü? add - and _ and numbers. maybe full printable ascii chars
+
+Maybe add 4 normal launchers that then don't need recreation for offline sharing. Can I fix icon for that? maybe have genrally local launchger sitting in code?
+
+ask AI oif logging package useful here
+
+maybe i dont want aurtoamtic python version change. maybe i wirte in dev settings that one has to reset it watgfewrawsd intools? how slow is chekc? like it shoud never happend at end user actually
+
+check if unicode log output
+
+check install via git package possible?->add to readme if
+
+install needed packages did not work for pyboson
+
+add confirmation to all folder removal?
+
+fix warniong for following after git clone. maybe fix needed for derivative repos:
+  'code/DONT_CHANGE/PyApp-Template_VERSION.txt'
+  'code/DONT_CHANGE/PyApp-Template_version.txt'
+  'code/DONT_CHANGE/README.txt'
+  'code/DONT_CHANGE/readme.txt'
+  'code/VERSION.txt'
+  'code/version.txt'
+
+check if works for windows not allowed long paths
+and explain limits then
+
+test if it works for 3.6 and update min in github text
+
+does it accept and warn if log is not accessible?
+
+are there ways to make embeded python more trusted so it does not prompt for first time?
+
+check tools scitps and heir ptrint
+
+print lsit of packages whenever they are install from list
+print apps that will be installed with [Info] Installing packages (see below):
+
+mkae clickable link to script for main_script crash. or at least press enter "y" to open 
+
+i guess i dont want to reinstall same packages for changes in python version? warn that if changed it will reset venv to defauölt in dev settings? version change is only as developer so shuld be not to bad if prompted
+
+chgeck that all prints in start_program are in new terminal
+
+how is pysie6 crash handles/catched?
+
+check that:disable all the terminal name settin when unneded in wrapper?
+
+do i even want setting for faulthandler?
+
+# move over arg_to_str,arg_to_bool
+    def arg_to_bool(index: int, default: bool) -> bool:
+        if len(sys.argv) <= index:
+            return default
+
+        return sys.argv[index].strip().lower() in {"1", "true", "yes", "on"}
+
+    def arg_to_str(index: int, default: str="") -> str:
+        if len(sys.argv) <= index:
+            return default
+        return sys.argv[index]
+
+
+mention that args get passed to called script:
+  sys.argv=[script_path,icon_path,title,close_on_crash,close_on_failure,close_on_success]
+          runpy.run_path(script_path, run_name="__main__")
+
+add option to restart on xyz on normal terminal already?
+
+chekc what path search does the main_script get
+
+do i have os._exit(1) at ecvery input exit?
+
+i guess i want restart and python_fail script no in same popen since it is kind of only needed if python completely crsahes. i guess i make the after script still for normal error exit? but there could be deliberate non 0 exit and they could always catch if they want
+
+setting to open log on crash
+
+is every developer_settings import safe? should be able to warn for changed by other devs that break stuff
+
+allow disabling adding sub icons by deleting sub icons. add print that missing 
+
+make log.txt visible in windwos preview somehow. It is openable
+
+add link to settings file button
+-> i guess i need a way to add a new button to terminal_emulator Probavbly just new button spawning if name not in current ones
+
+make user settings different again? re add convert features?
+
+check if all possible errors in dev settings are handled
+
+is there rsomething usefull i can pass in the globals of main_script? crashed varaible? exit code of previouis? icon and name i guess
+
+chack all log paths work. 
+
+mkae everything hard requhriement in decveloper settings because  safety. Only for future ones i guess we can be flexible
+
+mention that scroipt can tak to fancy terminal via ....
+add more functions to that
+
+add info print if  settings dont make sense together 
+
+can i do hihglighting of terminal also on windwos terminal?
+
+
+add clickable thing to windfwos notifaction.
+
+ask AI if script is efficient. some arguemnt to compile backend?
+
+
+trim pyhton packages folder
+trim again python folder
+
+dont dopuble error mesasge for no internet pyhton vresion checm. also fugure out why FULL_VER in batch is " " on no internet
+
+what if developer_tools scripts just interact with list in its folder?
+->spawn and load a requirements.txt and reflect that in name
+move default packages to "code" folder??
+do i somehow want default python_palckages in developers? or even whole env folder??? but then i also move icon to that . maybe yes? at this point i can also move everything there??? including script
+make develper tools fodler to actual folder with structute and shortcuts to call everyrginh
+developer_tools:I guess make all to shortcut of python.exe and script? hm i made it like it is at the moment to be able to add or remove at any moment
+
+easy way to add buttons i guess
+
+
+move batches to some kind of folder in utulities repo
+
+
+does terminal -u save it not logging`? maybe too much -u. does it somehow depend on global py test
+
+descripbe dieffence beerewwen close_on_failure and crash. does it work in terminal? ask AI if same behaveios as in script wrapper. 
+what is a crash that is not a interpreter crash. THat is just an error in the wrapper which i guess should always appear? or option to backend_crash?
+
+maybe just have faulthandler in call of main_script?? but earlier better might as well i guess
+
+do i need to add faulthandler to terminal script?
+do i need unbuffered flag in nuitka compile? other flag optiopns for nuitka?
+how to have faulthandler in compiled
+dose faulthandler transfer to sub calls?
+i cant catch a python crash if i dont spawn another python in betwenn that is hidden terminal
+->make a setting to do an extra instance in between
+
+make all error prints on wrapper print in new terminal if needed: see "if app_id != "":" : print(e)
+
+make ANSI_WARN that changes BG aswell and use everywherer even in emulatro i guess to have safety against bg color? but eiter way not changeable i guess. does the terminal emulator have better options than ansi?
+
+check if def run_text_in_new_terminal_and_wait needs to be always executed
+
+i dont log when i run_text_in_new_terminal_and_wait? probably intended? i could just print. thta should do it. But i use "script" at the moment. it would just wait for an input that will never happen. subtract out input i guess. but also terminal changing stuff in therer that was not laoded then. 
+
+
+allways log for log activated in case of backend crash. Or do i create new log for backend? or do i always create new windwo for backend?
+
+make emulator resatrt button restart main not after_crsah script
+
+
+maybe prompt if reinstall with current packages if verison not match or reinstall with default packages. Check if same i guess to not ask then
+
+i guess i want asci art back
+
+
+fix: it gave e.code = 0 (for outdated compiled terminal)->catch better
+-->
+in  
+    try:
+        runpy.run_path(script_path, run_name="__main__")
+        exit_code = 0
+    except SystemExit as e:
+        
+        print("exit2",e)
+        
+        if isinstance(e.code, int):
+            exit_code = e.code
+        elif e.code is None:
+            exit_code = 0
+        else:
+            # e.code can be something else which is treated as error
+            exit_code = 1
+    
+printing:
+    
+            C:\Users\Flo\Documents\Repositories\PyApp Template\code\DONT_CHANGE\P\python312.zip
+            C:\Users\Flo\Documents\Repositories\PyApp Template\code\DONT_CHANGE\P
+            C:\Users\Flo\Documents\Repositories\PyApp Template\code\DONT_CHANGE\python_packages
+            C:\Users\Flo\Documents\Repositories\PyApp Template\code
+            C:\Users\Flo\AppData\Roaming\Python\Python312\site-packages
+            C:\Users\Flo\AppData\Roaming\Python\Python312\site-packages\win32
+            C:\Users\Flo\AppData\Roaming\Python\Python312\site-packages\win32\lib
+            C:\Users\Flo\AppData\Roaming\Python\Python312\site-packages\Pythonwin
+            exit2 0
+            2[Error] Failed in terminal_emulator script with error: [Errno 22] Invalid argument: '%H:%M:%S\t':
+            ====================
+            Traceback (most recent call last):
+            File "C:\Users\Flo\DOCUME~1\REPOSI~1\PYAPPT~1\code\DO_NOT~1\TERMIN~1\compiled\terminal_emulator.py", line 1350, in <module>
+            File "C:\Users\Flo\DOCUME~1\REPOSI~1\PYAPPT~1\code\DO_NOT~1\TERMIN~1\compiled\terminal_emulator.py", line 1296, in main
+            OSError: [Errno 22] Invalid argument: '%H:%M:%S\t'
+
+            ====================
+            Press enter to exitTraceback (most recent call last):
+            File "C:\Users\Flo\DOCUME~1\REPOSI~1\PYAPPT~1\code\DO_NOT~1\TERMIN~1\compiled\terminal_emulator.py", line 1350, in <module>
+            File "C:\Users\Flo\DOCUME~1\REPOSI~1\PYAPPT~1\code\DO_NOT~1\TERMIN~1\compiled\terminal_emulator.py", line 1296, in main
+            OSError: [Errno 22] Invalid argument: '%H:%M:%S\t'
+
+            During handling of the above exception, another exception occurred:
+
+            Traceback (most recent call last):
+            File "C:\Users\Flo\DOCUME~1\REPOSI~1\PYAPPT~1\code\DO_NOT~1\TERMIN~1\compiled\terminal_emulator.py", line 1360, in <module>
+            EOFError: EOF when reading a line
+
+add rich traceback to emulator? or compile in 3.13 for better traceback color?
+
+is there stiuff thjat is in fancy termina and in wrapper that i rather have in start_programm i guess?
+
+
+
+make terminal emulator input inverse bg and fg. Might be decent option?
+
+
+in emulatro add defaults:
+INPUT_PREPEND=">>> "
+    INPUT_PRINT_BG="none" # will be replaced later if accent settings is set
+    INPUT_PRINT_COLOR="none" # will be replaced later if accent settings is set
+    ERROR_PRINT_COLOR = "#FF5252"
+    ERROR_PRINT_BG = "#FFFFFF"
+
+fix no error message for broken terminal_emulator sctip
+
+add rich traceback everyhwere. does it work nicely on emulator? waht are alternatives
+
+add option for log to be realtive to scriopt and not shrotcut but wdir is shrotctu.
+should i do setting same as log with rel path. or should i create shortcuts to logs?
+
+how do i make long messages better for print_traceback. can it do multiloine?
+
+current kill in print_traceback is too stinrg?
+maybe i only need strenght for cmd terminal generate shrtcuts and dev tools.
+
+better to continue after pipreqs failure i guess. maybe after enter confiramtion
+
+Reduce lint ignores over time. pyproject.toml (line 64) enables a strong Ruff rule set but then disables many important checks. Keep the pragmatic ignores, but shrink them around the backend code once the crash/logging paths are stable.
+
+Clean README/onboarding. README.md (line 46) still has a terminal-emulator TODO, and the repo currently has encoding/typo polish issues. Add “what happens on first run”, “what files are generated”, “what can be deleted”, and “how to update backend/template code safely”
+
+Tighten batch safety. The Python installer batch downloads via Invoke-WebRequest, extracts MSI files, and deletes folders with rmdir /s /q. Add unique temp dirs, hash/size verification where possible, clearer network failure messages, and maybe move the installer logic to Python for testability.
+
+Add smoke tests. The best test matrix would cover: fresh clone, path with spaces, moved folder, no internet, wrong Python version, missing package, no-terminal stop button, normal terminal crash, fancy terminal crash, and shortcut regeneration. Syntax currently passes with code/DONT_CHANGE/backend_python\python.exe -m py_compile on the main scripts.
+
+Improve the first-run package flow. Catch ModuleNotFoundError from user code and offer: install once, add to default packages, open manual install terminal, or abort. This would be a big usability win for the template.
+
+
+Unify wrapper and emulator behavior. Logging, timestamps, close-on-success/failure/crash, PID handling, faulthandler, and “after crash” behavior should be specified once and shared. There are currently separate implementations in script_wrapper.py, terminal_emulator.py, and start_program.py.
+
+Make settings typed and validated. developer_settings.py is user-friendly, but validation is spread around runtime code. A Settings dataclass plus validate_settings() would catch conflicts early: missing scripts, invalid app names, bad colors, impossible log paths, incompatible crash settings.
+
+
+Replace the terminal control eval. terminal_emulator.py (line 1243) executes text printed by the child process via eval. A small explicit command protocol would be much safer, e.g. JSON lines like {"command": "set_button_visible", "name": "stop", "value": false}.
+
+Reduce lint ignores over time. pyproject.toml (line 64) enables a strong Ruff rule set but then disables many important checks. Keep the pragmatic ignores, but shrink them around the backend code once the crash/logging paths are stable.
+
+is there an option to not ship temrinal_emulatro if dev setting say no. like maaybe a batch that deletes that or a way to auto sync that settign wiht gitignore?
+kind of same with pipreqs and size . kind of want to keep backend together tho
+
+add explanation for pyqt6 license. do i even mention that in license of DONT_CHANGE
+
+ does it still do that???:make somehow shortcut generation lnk not require admin. Maybe icon is ont worth it and batch would do.. maybe a safe fallback version for no admin pcs
+
+even notepad.exe for dev_tools required confirmation i guess? better ways? maybe also same embeddded python
+
+in wrapper add a try except for module not found error. should i offer piperes or run pipreqs mapping over the name and offer to install and offer to add to default. maybe via "0" "1" "2". also offer 4 to manually install via opened terminal and 5 to open defualt settings ...
+
+test what faulthandler changes
+
+mention that one can delete compiled folder and pipresqs folder: hm maybe automate and also allow code to fail and mention that not enabled?
+
+make allö variables iwhtout \\ at end in common_variable: like python_scripts_folder_path = make_abs("..\\..\\")
+
+fopr use_global_python mesntion that packages have to be installed manually and that dev tols will abort. Add to dev tools that they will abort? or maybe just warn message that use_global_python=True is better
+
+parity and fixes in browser versionm
+
+add print timestmp to browser all thats missing
+
+add shortcut to log? make it open the log if only one in folder and the foldfer if multiple. that some how requires rthere to alawy  be a fodler
+
+i have to ship emualtreo since craetion needs vscdoe tools . so disable somehow via settings but no guaranteed rebiulding
+
+optimize startup times: especially wrapper by setting incon and so on afterwards- problabsy need non stopping execution for that and paus eafterwards.
+
+how much do i really need to catch externally seomthing. is eems like windwos terminal anyway ycatches taht. mabye dont auto close soemhow and do wihtt pyrgon closing temrianl. what was reason there again?
+
+make it smarter print for no compiled terminal present. amybe mention compilation script. also make compilation go via venv of default python
+
+# overkill:
+is git pre push synced? for do not ship backend
+how do i not sync
+maybe just for app start change .gitignore in DONT_CHANGE? maybe all start should chekc that so also generator i guess.
+do o ahve to kill historty
+git rm --cached path/to/file
+git add .gitignore
+git commit -m "Stop tracking ignored files"
+git push
+maybe just have a backend ish folder outside and people can delete that. worse for changes in backend and clarity in code folder. also shorter path than DONT_CHANGE
+                       backend
+->better to explain in readme that one can delte P and or packages
+->just add detection for emtpy paclages or no packages folder...
+->tool in dev tools to make script smalles size->del P, packages, py_env, also terminal emutlar do not sync
+i guess i dont kill terminal emulator since nuitka is not guarantted to be found. mabye i jsut comile wiht backend? option would be kind of nice
+
+maybe a ship terminal option? 
+
+make it do ruff auto for git commits?
+
+any way to detect no emulator and not spawn shortcut.? add print to shortcut why it was skipped. want that?
+
+impleemt ship_backend_python_and_packages = True and add all comnmets in dev settings
+
+is there a wy to optimize porject size for AI usage. or tell it to use gititnoerr or something
+
+make stuf in start_program to lazy import where it is only used in one spot and not always executed
+addd pre commit hooks and actions. is there seomething like check wtih AI? ask for AI setup
+
+ask if more prints somewhere usefull
+
+google drawbacks of -u
+
+ask AI for ideas for total thing
+
+add uniquer error codes in end
+
+ask ai to make all prints homogneouse. let it ask me whcih way i want
+
+convert protablbe batch to python
+
+update pip after pyrgoin download or venv?
+
+===================================
+terminal emulator
+===================================
+
+call emulator WIP and dont fix proiblems there yet
+
+add opne log button to emulator
+
+show input is not working. add timestamp at same time. how to deal iwth prints that dont have \n?
+
+it does not respct settong on highlihgt and foregorund?
+
+change order of buttons and defaulöts in fancy termina
+
+not working hihglihgt whne only needed-> fix is_active_window?
+
+check if implementes:
+implement 
+        error_catcher_wrapper = error_catcher_wrapper_template.format(
+            python_exe_for_script_path=python_exe_for_script_path,
+            script_path=script_path,
+            close_on_crash=close_on_crash,
+            close_on_failure=close_on_failure,
+            close_on_success=close_on_success,
+            wdir_is_script_dir=wdir_is_script_dir,
+            RED=repr(RED),
+            GREEN=repr(GREEN),
+            RESET=repr(RESET),
+
+change color of taskbar app bar. Makes easy option to change the main backgound colror. main field color. Button color.
+
+add always ontop button. ->alllow for "allow minimize button". 
+
+add button (restart with last button settings: "Remember Buttons") and save in file
+save last button state and pos and size in file and try to reload. maybe safe in DONT_CHANGE
+
+log to file as option and clickable link i guess
+
+add timestamps button setting.
+
+remember last window state
+
+disable somehwo windows button as launch options
+
+add  _ _ _ symobl. "3 bars" to Menu button=?
+
+add bulb for running and stopped and done and failed i guess? and fionished?
+
+does fallback_terminal_icon work for compiled?
+
+add wrap text to next line option
+
+terminal emulator first menu click is slow
+
+make it prompt for closureof "terminal title" in fancy termianl
+
+add fading for print as launch setting
+
+# how to add button settings?
+
+google more ideas for fancy stylesheet
+
+# sort stuff in terminal_emulator
+
+for fancy terminal: reduce padding and optimise a litte thje style while respecting windows dark theme
+seome padding clip in top right corner
+make buttoins also 3d where they stick out if disabled and stick in for enabled. maybe hard to do with color
+text input somehow alos scaleable
+change accent slightl yfor shadow effectr
+make down arrow of menu not overlap with text
+more hove texz for to tzray
+
+change all nones in default style sheet
+
+make error print bold in fancy terminal
+
+move out terminal emulator part to compiled and leave rest python and run via runtime. but drawback is that there is no attached terminal mode. drawback is also long target path to call python and a script
+
+add p.returncode also for terminal eumlatopr. Make it return the errors of the python script but also ones for my crsahes?
+
+add comments to stylesheet
+
+seomhow have a help button that asks the script?
+
+print clickable link to script on crsh
+
+enabled buttons dont change color opn hover because choice
+
+prompt window on crash:
+ def _show_critical_error(self, title: str, message: str) -> None:
+        msg = QMessageBox(None)
+        msg.setIcon(QMessageBox.Icon.Critical)
+        msg.setWindowTitle(title)
+        msg.setText(message)
+        msg.setTextInteractionFlags(
+            Qt.TextInteractionFlag.TextSelectableByMouse | Qt.TextInteractionFlag.TextSelectableByKeyboard
+        )
+        msg.setWindowFlags(msg.windowFlags() | Qt.WindowType.Window)
+        QApplication.alert(msg)
+        msg.exec()
+
+option for no extra buttons: aka no menu?
+
+check ideas list for terminal? was it in notes or main todo?
+
+on crash make it go to foreground and altert
+
+indicate what is toggle and what trigger button
+
+add search
+
+test if error handled if shortcut passes no args
+
+if open new terminal fails, at least print i in dubug console i guess
+
+make buttons scrollable on too small
+same in menu
+
+mkae top bar disappearable and only come when close with mounse. also pin for that. General option for no buttons visible
+
+add prompt windows
+
+does taskbar highlighting have color?
+maybe hihgligh green on finsihed and also toggle if put to foregound on finihsed?
+
+make minimize to taskbar not hiddin in up arrow. but it remember if once set. Maybe foprce it to be always not hidden in tray on start
+# slight Animations especially for moving to system tray. Explain tray more in hint
+
+#Option to print to file parallel and link to that file->no becasue called script can also do that?
+#Option to open logged file for crash->no because windwo should never crash?
+
+add correct color formatting like traceback on vscode
+
+#transparency option -> maxbe as option ontop under "Window"
+
+#Auto clickable links and paths?
+
+in menu make unpinned first automatically. At least on start?  only refresh on open
+make label centered in menu row and save space when possible horizonally
+
+ask AI if features missing form old fancy_terminl in tkinter
+
+#Option to remember last state? Safe history? Relaod?
+
+can python somehow plot in terminal
+
+implement options to ship backend. ship venv packages and not ship termial.
+
+#Does progressbars work? Maybe build one in
+
+#Give option to change color of taskbar icon during runtime and before. tell user how to change icon and name during runtime and also color
+
+get parity in both window mode error msges:
+""""
+except Exception as e:
+    if close_on_crash:
+        sys.exit(1)
+    else:
+        set_terminal_name(f"[Crash] {{get_terminal_name()}}")
+        print()
+        print_red("="*40)
+        print_red(f"CRITICAL LAUNCH ERROR: {{e}}")
+        print_red("="*40)
+        traceback.print_exc()
+        print_red("="*40)
+        print(f"[Info] Python Exe/Command: {{python_exe_for_script_path}}")
+        print(f"[Info] Script: {{script_path}}")
+        print()
+        input_red("[Python Crash] See above. Press 
+        Enter to exit.")
+"""
+
+add comments to error_catcher_wrapper_template
+
+can the shortcut pass the remaining_args???
+can at least the exe????
+
+get wdir_for_script = sys.argv[4] instaed from settings
+
+relative path local python_exe becasue why not 
+
+relative path local script_path becasue why not and maybe allow then for settings
+
+app id should stay as arg since it should come from shortcut
+
+also look at todo in old fancy termionl 
+copy features form fancy terminal
+
+add app name to opnedd crash terminal
+
+make ====== as long as msg and retrun legnt
+
+highlight windows temrinal on crahs
+
+add setting to stay open for errorcode!=0
+
+does this work as expected:
+"""
+       except Exception as e:
+            error_msg = f"{e}\n\n{traceback.format_exc()}\n"
+
+            # print error in new terminal (because this script might be launched without terminal)
+            print_msg_in_new_terminal(error_msg)
+
+            #return (SystemExit does not raise Exception)
+            raise SystemExit(app.exec())
+            
+    else:
+"""
+
+test if global python works and allow for py and python
+
+ahve travebakc error also inside qt tetrminalk
+
+change to global error icon with try excpet of crash
+
+add title and struff to terminal opemneer
+
+add print to script where the errror occured. can i make link?
+
+fix errors not spawining a terminal to dispaly errrors
+
+test if taskbar grouping works for:
+p = subprocess.Popen(
+            [python_exe, script_path],
+            creationflags=subprocess.CREATE_NEW_CONSOLE,
+
+addd debug mode launch that lkaunches it in attached mode. add a debug launcehr shortcut to code folder
+
+use nuitka mode attach to have 2 exe in one. Not sure if teriminal emuatr can still combine with launcher. also better for AV safety
+
+maybne only python script that calls qt terminal needs to change app id. lets cehck if anything can be launched maybe this exe gernaetor thing agian
+
+add always foregorind option
+is cls implemetned?
+
+can i somehow process ansi codes?
+
+add temrinal emuilatr image to readme
+split reamde into main features and additional features
+maybe also meantion in readme of windows notifacation ...
+
+===================================
+browser emulator
+===================================
+
+Run terminal in Browser . ask ai if there is easy way to run as tab
++ start with bookmark 
+
+call WIP and dnont fix problems there
+
+is cls implemetned?
+
+add all buttons form fancy temrinal to browser. maybe more
+
+Behavior	Current browser terminal	xterm.js + pywinpty
+print() output	Works	Works
+input()	Works line-by-line	Works like terminal
+Arrow keys	Browser text box only	Sent to program
+Ctrl+C	Not real Ctrl+C	Real terminal interrupt
+ANSI colors	Printed as raw escape codes unless parsed	Rendered by xterm.js
+Progress bars	Often messy	Usually correct
+Interactive CLIs	Mostly bad	Good
+sys.stdin.isatty()	Usually False	Usually terminal-like
+Resize behavior	No real terminal resize	Can resize PTY cols/rows
+Complexity	Low	Medium
+Dependencies	None	pywinpty + bundled xterm.js
+
+===================================
+unrealated
+===================================
+
+chekc what functions to copy to fun_flo in terminal scriopt
+
+add venv to "python->exe" (see folder compiler)
+test if 
+  --nofollow-import-to=*.tests ^
+for all
+
+add docstrings to "python to exe" scripts
+
+create license template for folder exe compiler
+also check for template
+
+in python compialtion batches. make input a txt file for additional nuitka args
+
+add upgrad pip to virtual env? or diable chec i guess better
+
+deleted old python folder.   ->add where in portavlav python
+
+vscode ruff
+2025-11-12 14:51:26.911650000  INFO Registering workspace: c:\Users\agpup\Documents\Repositories
+2025-11-12 14:51:26.978416400  INFO Configuration file watcher successfully registered
+2025-11-12 14:51:27.024018800  INFO Server shut down
+[Error - 2:51:27 PM] Server process exited with code 0.
+2025-11-12 14:51:27.215409000  INFO Registering workspace: c:\Users\agpup\Documents\Repositories
+2025-11-12 14:51:27.216785600  INFO Configuration file watcher successfully registered
+2025-11-12 15:11:42.427337600 ERROR Failed to load settings from `configuration`: error looking key 'env:USERPROFILE' up: environment variable not found
+2025-11-12 15:11:42.427384900  WARN No settings available for file:///c%3A/Users/agpup/AppData/Local/Programs/Python/Python313/Lib/ctypes/__init__.py - falling back to default settings
+
+can i make interactiev turn into non interactiev on reopen?
+
+make side grouvps in vscode smaller for scolling over. or add maximize button
+
+combine stuff from PyBoson and rest in GUI folder in utilites
+
+in create venv batch for no rg make better print:
+ [Error] "C:\Users\Flo\Documents\Repositories\PyApp-Template\code\DONT_CHANGE\general_utilities\python_environment\portable_python\python.exe" does not exist. Aborting. Press any key to exit.
+
+make robust against pople deleting python_enviroment parent folder. does portavle batch already do that
+
+fix portable creatos batches actually not having args path for the batches they create but default path.
+Mention that paths have to be relative to work as portable. On other hand it will fail if abs input. one could want fixed pytthn and portable venv?
++ copy over changes
+

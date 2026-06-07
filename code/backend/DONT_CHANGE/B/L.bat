@@ -5,7 +5,7 @@ setlocal
 
 set "launcher_dir=%~dp0"
 set "python_exe=%launcher_dir%..\backend_python\python.exe"
-set "backend_script=%launcher_dir%..\specific_scripts\open_log.py"
+set "backend_script=%launcher_dir%..\scripts\open_log.py"
 
 :: =================================
 
