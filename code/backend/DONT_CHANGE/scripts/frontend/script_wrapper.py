@@ -925,6 +925,196 @@ def get_terminal_name():
         if faulthandler.is_enabled():
             faulthandler.enable(file=log_file, all_threads=True)
 
+    def get_package_install_name(import_name, mappings_file_path):
+        """Uses pipreqs mapping to convert from import name to install name: e.g., "cv2" -> "opencv-python"."""
+
+        with open(mappings_file_path, encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line or ":" not in line:
+                    continue
+                import_package_name, install_package_name = line.split(":", 1)
+                if import_package_name.strip() == import_name:
+                    return install_package_name.strip()
+
+        return import_name  # if not found in mappings
+
+    def _norm_traceback_path(path):
+        """Normalize a path for traceback frame comparison."""
+        return os.path.normcase(os.path.abspath(path))
+
+    def _get_target_script_traceback(error, script_path):
+        """Return the traceback starting at the target script, dropping wrapper/runpy frames."""
+        target_script_path = _norm_traceback_path(script_path)
+        tb = error.__traceback__
+
+        while tb is not None:
+            frame_path = _norm_traceback_path(tb.tb_frame.f_code.co_filename)
+            if frame_path == target_script_path:
+                return tb
+            tb = tb.tb_next
+
+        return error.__traceback__
+
+    def _traceback_has_script_frame(error, script_path):
+        """Return whether an exception traceback contains the child script."""
+        target_script_path = _norm_traceback_path(script_path)
+        tb = error.__traceback__
+
+        while tb is not None:
+            frame_path = _norm_traceback_path(tb.tb_frame.f_code.co_filename)
+            if frame_path == target_script_path:
+                return True
+            tb = tb.tb_next
+
+        return False
+
+    def _traceback_exception_title(error):
+        """Return a compact exception title."""
+        exception_name = type(error).__name__
+        message = str(error)
+        if message:
+            return "{}: {}".format(exception_name, message)
+        return exception_name
+
+    def _traceback_iter_frames(tb):
+        """Return traceback frames as a list for Python 3.5 compatibility."""
+        frames = []
+        while tb is not None:
+            frames.append(tb)
+            tb = tb.tb_next
+        return frames
+
+    def _traceback_get_line(filename, lineno):
+        """Read one source line for traceback display."""
+        import linecache
+
+        line = linecache.getline(filename, lineno)
+        return line.rstrip("\r\n")
+
+    def _traceback_snapshot_error(error, child_script_path, relation_text=""):
+        """Serialize exception data so backend Python can render it without rerunning the child."""
+        is_compile_syntax_error = (
+            isinstance(error, SyntaxError)
+            and _norm_traceback_path(getattr(error, "filename", "") or "") == _norm_traceback_path(child_script_path)
+            and not _traceback_has_script_frame(error, child_script_path)
+        )
+
+        frames = []
+        if not is_compile_syntax_error:
+            tb = _get_target_script_traceback(error, child_script_path)
+            for tb_item in _traceback_iter_frames(tb):
+                frame = tb_item.tb_frame
+                filename = frame.f_code.co_filename
+                lineno = tb_item.tb_lineno
+                frames.append(
+                    {
+                        "filename": filename,
+                        "lineno": lineno,
+                        "function": frame.f_code.co_name,
+                        "source": _traceback_get_line(filename, lineno),
+                    }
+                )
+
+        syntax = None
+        if is_compile_syntax_error:
+            syntax_filename = getattr(error, "filename", None) or "<unknown>"
+            syntax_lineno = getattr(error, "lineno", None)
+            syntax_text = getattr(error, "text", None)
+            syntax_offset = getattr(error, "offset", None)
+            if syntax_text is None:
+                syntax_text = _traceback_get_line(syntax_filename, syntax_lineno)
+            syntax = {
+                "filename": syntax_filename,
+                "lineno": syntax_lineno,
+                "offset": syntax_offset,
+                "text": syntax_text,
+            }
+
+        return {
+            "relation": relation_text,
+            "type": type(error).__name__,
+            "message": str(error),
+            "title": _traceback_exception_title(error),
+            "frames": frames,
+            "syntax": syntax,
+        }
+
+    def _traceback_snapshot_chain(error, child_script_path):
+        """Serialize an exception chain in normal display order."""
+        snapshots = []
+        seen = set()
+
+        def add(current_error, relation_text=""):
+            if id(current_error) in seen:
+                return
+            seen.add(id(current_error))
+
+            cause = getattr(current_error, "__cause__", None)
+            context = getattr(current_error, "__context__", None)
+            suppress_context = getattr(current_error, "__suppress_context__", False)
+
+            if cause is not None:
+                add(cause)
+                snapshots.append(_traceback_snapshot_error(current_error, child_script_path, relation_text))
+            elif context is not None and not suppress_context:
+                add(context)
+                snapshots.append(_traceback_snapshot_error(current_error, child_script_path, relation_text))
+            else:
+                snapshots.append(_traceback_snapshot_error(current_error, child_script_path, relation_text))
+
+        def add_with_relation(current_error):
+            cause = getattr(current_error, "__cause__", None)
+            context = getattr(current_error, "__context__", None)
+            suppress_context = getattr(current_error, "__suppress_context__", False)
+
+            if cause is not None:
+                add_with_relation(cause)
+                snapshots.append(
+                    _traceback_snapshot_error(
+                        current_error,
+                        child_script_path,
+                        "The above exception was the direct cause of the following exception:",
+                    )
+                )
+            elif context is not None and not suppress_context:
+                add_with_relation(context)
+                snapshots.append(
+                    _traceback_snapshot_error(
+                        current_error,
+                        child_script_path,
+                        "During handling of the above exception, another exception occurred:",
+                    )
+                )
+            else:
+                add(current_error)
+
+        add_with_relation(error)
+        return snapshots
+
+    def print_rich_traceback_via_backend(error, child_script_path, backend_python_exe):
+        import json
+        import subprocess
+
+        payload = {
+            "errors": _traceback_snapshot_chain(error, child_script_path),
+        }
+        process = subprocess.Popen(  # noqa:S603
+            [
+                backend_python_exe,
+                RICH_TRACEBACK_SCRIPT_PATH,
+            ],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            universal_newlines=True,
+        )
+        stdout_text, stderr_text = process.communicate(json.dumps(payload))
+        if stdout_text:
+            print(stdout_text, end="")
+        if stderr_text:
+            sys.stderr.write(stderr_text)
+
     # ==============================
     # define main function
     # ==============================
@@ -1080,77 +1270,75 @@ def get_terminal_name():
 
         try:
             runpy.run_path(python_script_path, run_name="__main__")
-            exit_code = 0  # meaning no crash
-        except SystemExit as e:  # catches sys.exit
+
+            # success_exit()
+            sys.exit()
+
+            exit_code = 0  # no raised exception -> success aka exit code 0
+
+        except SystemExit as e:  # catches explicit sys.exit(exit_code) in called script
             exit_code = e.code
-            if exit_code is None:
-                exit_code = 0
-        except SyntaxError as e:  # catches synatx error in script_path or raised by script_path
-            
-            finished changes in main part: error handling
-            
-            
-            
-            
-            # WIP!!
-
-            import traceback
-
-            print("-" * 20)
-
-            # SyntaxError is special for older python versions: Python normally prints it without a normal traceback.
-            if isinstance(e, SyntaxError):
-                print("".join(traceback.format_exception_only(type(e), e)), end="")
+            if exit_code in [0, None]:  # sys.exit() is assumed to be success aka exit code 0
+                # success_exit()
+                sys.exit()
             else:
-                tb = e.__traceback__
+                sys.exit()
 
-                # Drop frames from this launcher/wrapper/runpy until the script's first frame.
-                while tb is not None:
-                    frame_path = os.path.abspath(tb.tb_frame.f_code.co_filename)
+                # i guess still print where the sys.exit was
+                # if looks_like_interpreter_crash(exit_code):
 
-                    if frame_path == python_script_path:
-                        break
+                #     interpreter_crash_exit()
 
-                    tb = tb.tb_next
+                # else:
 
-                traceback.print_exception(type(e), e, tb)
+                #     failure_exit()
 
-            print("-" * 20)
-            print("".join(traceback.format_exception_only(type(e), e)), end="")
-
-            print("-" * 20)
-            print(traceback.format_exc())
-            print("-" * 20)
+        except SyntaxError as e:  # catches syntax error in script_path or raised by script_path
+            print_rich_traceback_via_backend(e, python_script_path, backend_python_exe)
+            
+            
+            
+            input()
+            close_terminal()
 
             exit_code = 1
+
+            # handle here?
+
+            # SyntaxError_exit()
+            sys.exit()
+
+        except ImportError as e:  # ImportError is parent class of ModuleNotFoundError and works for Python 3.5+
+            # options:
+            # 1) install missing package->use pipreqs mappings if needed i guess
+            # 2) auto search packages needed
+            # 3) open terminal for manual installation
+            # 4) quit
+
+            package_name = e.name  # can be None if child script raises ImportError explicitly
+            if package_name:
+                get_package_install_name(package_name, mappings_file_path=backend_packages_dir + "\\pipreqs\\mapping")
+
+            else:
+                # TODO: handle explicit ImportError raised by the child script.
+                pass
+
+            # handle here?
+            sys.exit()
+
         except KeyboardInterrupt as e:
+            print_rich_traceback_via_backend(e, python_script_path, backend_python_exe, backend_packages_dir)
             exit_code = 1
 
-        except BaseException as e:
+            # handle here?
+            sys.exit()
+
+        except BaseException as e:  # BaseException includes SystemExit,KeyboardInterrupt,GeneratorExit,normal Exception
+            print_rich_traceback_via_backend(e, python_script_path, backend_python_exe, backend_packages_dir)
             exit_code = 1
 
-            import traceback
-
-            print(traceback.format_exc())
-
-        # # SyntaxError is special: Python normally prints it without a normal traceback.
-        # if isinstance(error, SyntaxError):
-        #     print("".join(traceback.format_exception_only(type(error), error)), end="")
-        #     return
-
-        # script_path = os.path.abspath(script_path)
-        # tb = error.__traceback__
-
-        # # Drop frames from this launcher/wrapper/runpy until the script's first frame.
-        # while tb is not None:
-        #     frame_path = os.path.abspath(tb.tb_frame.f_code.co_filename)
-
-        #     if frame_path == script_path:
-        #         break
-
-        #     tb = tb.tb_next
-
-        # traceback.print_exception(type(error), error, tb)
+            sys.exit()
+            # handle here?
 
         finally:
             builtins.input = original_input
