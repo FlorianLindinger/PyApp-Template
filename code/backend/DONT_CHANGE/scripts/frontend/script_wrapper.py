@@ -672,7 +672,6 @@ def get_terminal_name():
             self,
             print_stream,  # TextIO object
             log_stream=None,  # TextIO object or None
-            *,
             print_timestamp_format="[%H:%M:%S] ",
             log_timestamp_format="[%H:%M:%S]\t",
             input_timestamp_format="",
@@ -798,11 +797,11 @@ def get_terminal_name():
     def looks_like_interpreter_crash(returncode):
         """Return whether a process return code matches common Windows crash codes. A Python crash is meant to be a Python interpreter crash as opposed to a exit with a failure code for exampel with sys.exit(1)."""
         _WINDOWS_CRASH_CODES = {
-            0xC0000005,  # access violation
-            0xC00000FD,  # stack overflow
-            0xC000001D,  # illegal instruction
-            0xC0000096,  # privileged instruction
-            0xC0000409,  # stack buffer overrun
+            0xC0000005,  # exit code: -1073741819: access violation
+            0xC00000FD,  # exit code: -1073741571: stack overflow
+            0xC000001D,  # exit code: -1073741795: illegal instruction
+            0xC0000096,  # exit code: -1073741674: privileged instruction
+            0xC0000409,  # exit code: -1073740791: stack buffer overrun
         }
 
         def _int_to_unsigned32(n):
@@ -960,6 +959,8 @@ def get_terminal_name():
             wdir_is_script_dir,
             CORRECT_START_SIGNAL_FILE_PATH,
             process_id_file_path,
+            backend_packages_dir,
+            backend_python_exe,
             #
             # launch mode specific args:
             #
@@ -1002,27 +1003,25 @@ def get_terminal_name():
         if program_has_terminal:
             # set terminal name
             if program_name:
-                os.system("title {}".format(program_name))  # noqa:S605
-
-            os.system("color {}".format(terminal_colors))  # noqa:S605
+                os.system("title {}".format(program_name))  # noqa:S605 # pyrefly: ignore[deprecated]
+            # set terminal colors
+            os.system("color {}".format(terminal_colors))  # noqa:S605 # pyrefly: ignore[deprecated]
             mode_parts = []
             if classic_terminal_cols:
                 mode_parts.append("cols={}".format(classic_terminal_cols))
             if classic_terminal_lines != "":
                 mode_parts.append("lines={}".format(classic_terminal_lines))
             if mode_parts:
-                os.system("mode con: " + " ".join(mode_parts))  # noqa:S605
+                os.system("mode con: " + " ".join(mode_parts))  # noqa:S605 # pyrefly: ignore[deprecated]
 
-            # set terminal appearance in new thread because slow: terminal icon+appID (for taskabr grouping):
+            # set terminal icon + app-ID (for taskabr grouping of terminal) in new thread because slow:
             def _set_terminal_icon_and_app_id():
-                """set AppID, and icon."""
                 try:
                     candidate_hwnds = get_candidate_hwnds()
                     set_terminal_icon(candidate_hwnds, icon_path)  # type:ignore
                     set_terminal_app_id_safe(candidate_hwnds, app_id)  # type:ignore
-
                 except Exception as error:
-                    print("[Error] During terminal appearance update: {}".format(error))
+                    print("[Warning] Error during terminal appearance update: {}".format(error))
 
             terminal_appearance_thread = threading.Thread(target=_set_terminal_icon_and_app_id)
             terminal_appearance_thread.start()
@@ -1034,7 +1033,7 @@ def get_terminal_name():
             try:
                 ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(app_id)  # type:ignore
             except Exception as e:
-                print("[Info] Failed to set app id for taskbar grouping: {}".format(e))
+                print("[Warning] Failed to set app id for taskbar grouping: {}".format(e))
 
         # set working directory:
         if wdir_is_script_dir:
@@ -1046,7 +1045,7 @@ def get_terminal_name():
                 log_path, overwrite_log, print_prepend, log_print_prepend, input_prepend, log_input_prepend
             )  # type:ignore
 
-        # change pythons builtin "input" function:
+        # change pythons builtin "input" function to add a prepend:
         original_input = builtins.input
         if input_prepend != "" or log_input_prepend != "" or hasattr(sys.stdout, "complete_input_line"):
 

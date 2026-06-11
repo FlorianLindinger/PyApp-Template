@@ -49,6 +49,7 @@ starter_batches_folder = make_abs("..\\B")
 start_program_script = make_abs("start_program.py")
 python_script_path = make_abs("..\\..\\..\\main_script.py")
 script_wrapper_path = make_abs("frontend\\script_wrapper.py")
+script_wrapper_watchdog_path= make_abs("script_wrapper_washdog.py")
 start_time_dummy_main_script = make_abs("..\\backend_test_tools\\helper_scripts\\start_time_dummy_main_script.py")
 launcher_terminal = starter_batches_folder + "\\W.bat"
 launcher_emulator = starter_batches_folder + "\\E.bat"
