@@ -8,7 +8,7 @@
 # Name of this program:
 program_name = "PyApp-Template"
 # -------------------------------------------------
-# Python version ("x"/"x.y"/"x.y.z"). Finds latest matching(msi-install-available) Python version. "" -> latest:
+# Python version (""/"x"/"x.y"/"x.y.z"). Finds latest matching(msi-install-available) Python version ("" == latest):
 python_version: str = "3.14"
 # -------------------------------------------------
 # Path to end-user settings file (None to disable). File type can be anything openable by vscode/editor:
