@@ -88,58 +88,27 @@ def input_success(msg):
     return input(f"{_ANSI_SUCCESS}{msg}{_ANSI_RESET}")
 
 
-def print_traceback(message="Error") -> None:
-    """colored traceback via "rich" package"""
+def print_traceback(message:str = "") -> None:
+    """colored traceback via "rich" package. Does not print newlines after traceback but 2 before."""
+        
+    from rich.console import Console
+    from rich.traceback import Traceback
+    console = Console()
+    
+    exc_type, exc_value, traceback_ = sys.exc_info()
 
-    exc_type, exc_value, tb = sys.exc_info()
+    print()
+    print()
+    print_warn("="*30)
 
-    try:
-        import rich.box
-        import rich.console
-        import rich.panel
-        import rich.text
-        import rich.traceback
+    if message:
+        print_warn(message)
+        print("-"*30)
+    
+    console.print(Traceback.from_exception(exc_type, exc_value, traceback_, show_locals=False)) #type:ignore
 
-        if exc_type is None or exc_value is None:
-            print()
-            rich.console.Console().print(
-                "[yellow][Warning] Ran print_traceback function without active exception.[/yellow]"
-            )
-        else:
-            panel = rich.panel.Panel(
-                rich.traceback.Traceback.from_exception(
-                    exc_type,
-                    exc_value,
-                    tb,
-                    show_locals=False,
-                ),
-                title=rich.text.Text(message, style="bold red on white"),
-                title_align="left",
-                subtitle=rich.text.Text(message, style="bold red on white"),
-                subtitle_align="left",
-                box=rich.box.HEAVY,
-                border_style="bold red",
-                padding=(1, 2),
-                expand=False,
-                safe_box=True,
-            )
-
-            print()
-            rich.console.Console().print(panel)
-
-    # fallback
-    except Exception:
-        import traceback
-
-        print()
-        print()
-        print("=" * 20)
-        print(message)
-        print("-" * 20)
-        print(traceback.format_exc())
-        print("=" * 20)
-
-
+    print_warn("="*30)
+    
 # =========================
 # folder deletion function
 
