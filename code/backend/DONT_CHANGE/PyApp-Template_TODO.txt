@@ -2,6 +2,24 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+what is the convention with _ infron to script. shouldnt wrapepr and watchdog get also. or maybe just not the print richt traceback. but htat either way will disappear now.
+
+ask AI what i can do to make whole thing leaner and simpler
+
+when can i ever get interpreter_crsah?. ask AI?-> i should just do subprocess.run in child script and interpet the exit code. but at that point i might as well use backend for wrapper again. but for fancy traceback passing i need an wrapper the does run_path. So i need 1 start terminal in visible for short time, 1 backend watcher, 1 frontend wrapper that runs in itself the main scriot. so 2 longterm running. actually subprocess.run can capture the stderr but thats only text that rich can color. 
+I can have the watcher print the traceback since it is in the same terminal i guess. that can also handle all the otehr stuff like icon and all that i dont want any wrapper to do if i can avoid.->script_wrapper_watcher.py
+maybe have setting to capture interpreter crash or not via additional backend watcher. kind of not because needs two different wrapper then if one handles icons and stuff in frontend and one in backend. carefull with capuitre output and large prints. maybe better in frontend?
+I guess that also makes the signal file for correct start useless? but still helps agains any bug in watcher. also for furue proff it is better if wrapper is as small as possible i guess
+i guess i still need start terminal to always show error for safety and cant continue that because i might have invisible terminal. also better to have clear terminal but coudl also cls.
+kind of overkill but needed to handle interpreter crashes. i mean a normal terminal also handler interpreter crashes but invisible terminal would not spawn one: only advantage is for invisible terminal and color traceback and on_crash settings.
+Do i really care about failure and crash distinction?nooo. but maybe deoending on code differen msg for interp crsh
+
+only have basic traceback for outer most exception
+
+just run the backend in the wrapper to do the traceback
+
+i guess i want fancy modern traceback and not close to originl without wrapper at that verison
+
 try popen after setting app id very early and maybe sleep before popen
 
 can backend modify the terminal id for the frontend?
