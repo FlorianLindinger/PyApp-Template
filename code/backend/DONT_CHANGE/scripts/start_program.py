@@ -93,6 +93,8 @@ try:
             python_version,
         )
         from backend.DONT_CHANGE.scripts._common_variables import (
+            backend_packages_dir,
+            backend_python_exe,
             env_var_to_signal_startup_time_measurement,
             icon_path,
             play_sound_on_crash_default,
@@ -197,6 +199,8 @@ try:
             bool_to_string(wdir_is_script_dir),
             CORRECT_START_SIGNAL_FILE_PATH,
             process_id_file_path,
+            backend_packages_dir,
+            backend_python_exe,
         ]
 
         return make_empty_args_safe(out)
