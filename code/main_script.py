@@ -1,21 +1,49 @@
-# ==============================
-
-# asda asd
 
 
 # ==============================
 import sys
 import time
 
-for i in range(5):
-    print(i)
-    time.sleep(0.05)
+print("Ready")
 while True:
     msg = input()
     if msg == "error1":
-        raise Exception("error")
+        raise ImportError("error")
     elif msg == "error2":
-        raise RuntimeError("intentional crash test")
+        raise SyntaxError("error")
+    elif msg == "error3":
+        raise KeyboardInterrupt("error")
+    elif msg == "error4":
+        sys.exit(1)
+    elif msg == "error5":
+        import definitely_missing_package_abc123 #noqa #type:ignore
+    elif msg == "error6":
+        try:
+            raise ValueError("inner")
+        except ValueError as e:
+            raise RuntimeError("outer") from e
+    elif msg == "error7":
+        1 / 0 #noqa # type:ignore
+    elif msg == "error8":
+        sys.exit("exit with message")
+        
+        
+    elif msg == "exit_crash_code":
+        sys.exit(0xC0000005)
+
+    elif msg == "exit_crash_code_signed":
+        sys.exit(-1073741819)
+
+    elif msg == "fake_crash_code":
+        import os
+        os._exit(0xC0000005)
+        
+    elif msg == "stderr":
+        print("this is stderr", file=sys.stderr)
+        
+    elif msg == "unicode":
+        print("unicode test: äöü ß €")
+    
     elif msg == "crash1":
         import os
 
@@ -27,7 +55,7 @@ while True:
     elif msg == "crash3":
         import ctypes
 
-        ctypes.string_at(0)  # dereference NULL -> segfault on most platforms
+        ctypes.string_at(0)
     elif msg == "crash4":
         a = []
         while True:
@@ -54,6 +82,8 @@ sys.exit()
 # ==============================
 
 # import tkinter as tk
+
+# print("test")
 
 
 # def main() -> None:
