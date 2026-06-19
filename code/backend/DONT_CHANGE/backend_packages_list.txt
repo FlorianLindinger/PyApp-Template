@@ -1,14 +1,42 @@
+# Backend-only packages installed into backend_packages by scripts/setup/finish_backend_installation.py:
+
+# ===========================
+# Rich traceback/console rendering for backend errors and wrapper failures.
+# ---------------------------
+rich==15.0.0
+# Rich dependency: Markdown parsing support used by Rich's renderables.
+markdown-it-py==4.0.0
+# markdown-it-py dependency: URL parsing/formatting helper.
+mdurl==0.1.2
+# Rich dependency: syntax highlighting for tracebacks and code snippets.
+Pygments==2.20.0
+# ===========================
+
+# ===========================
+# Windows COM/API bindings used by scripts/setup/generate_shortcuts.py to create .lnk files and set AppUserModelID.
+# finish_backend_installation.py prunes pywin32 docs, demos, tests, PythonWin, and unused extension modules after install.
+# ---------------------------
+pywin32==311
+# ===========================
+
+# ===========================
+# Developer tooling: scans project imports to infer frontend package requirements.
+# ---------------------------
+pipreqs==0.5.0
+# pipreqs dependency: command-line argument parsing.
+docopt==0.6.2
+# pipreqs dependency: package metadata lookup helper.
+yarg==0.1.10
+# yarg/pipreqs dependency: HTTP client for package metadata lookups.
+requests==2.33.1
+# requests dependencies for HTTP, TLS certificates, domain names, and response text encodings.
 certifi==2026.4.22
 charset-normalizer==3.4.7
-docopt==0.6.2
 idna==3.13
-markdown-it-py==4.0.0
-mdurl==0.1.2
-pipreqs==0.5.0
-Pygments==2.20.0
-pywin32==311
-requests==2.33.1
-rich==15.0.0
-typing_extensions==4.15.0
 urllib3==2.6.3
-yarg==0.1.10
+
+# ===========================
+# Compatibility typing backports imported by kept dependencies.
+# ---------------------------
+typing_extensions==4.15.0
+# ===========================
