@@ -26,6 +26,7 @@ from backend.DONT_CHANGE.scripts._common_variables import (
     frontend_python_exe,
     start_program_script,
     start_time_dummy_main_script,
+    temporary_folder,
 )
 
 # ========================
@@ -33,7 +34,7 @@ from backend.DONT_CHANGE.scripts._common_variables import (
 FILE_DIR = os.path.dirname(os.path.abspath(__file__))
 CODE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(FILE_DIR)))
 REPO_DIR = os.path.dirname(CODE_DIR)
-WORK_DIR = os.path.normpath(FILE_DIR + "..\\.startup_time_markers")
+WORK_DIR = temporary_folder + "\\startup_time_markers"
 
 VERSION_SCRIPT = (
     "import platform, sys; print(f'{platform.python_implementation()} {sys.version.split()[0]} ({sys.executable})')"
