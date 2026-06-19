@@ -58,20 +58,6 @@ The folder `backend_packages` contains third-party Python packages. These packag
 | `rich` | 15.0.0 | MIT | `rich-15.0.0.dist-info/licenses/LICENSE` |
 | `typing_extensions` | 4.15.0 | PSF-2.0 | `typing_extensions-4.15.0.dist-info/licenses/LICENSE` |
 | `urllib3` | 2.6.3 | MIT | `urllib3-2.6.3.dist-info/licenses/LICENSE.txt` |
-| `win11toast` | 0.36.3 | MIT | `win11toast-0.36.3.dist-info/licenses/LICENSE` |
-| `winrt-runtime` | 3.2.1 | MIT | `winrt_runtime-3.2.1.dist-info/METADATA` |
-| `winrt-Windows.Data.Xml.Dom` | 3.2.1 | MIT | `winrt_windows_data_xml_dom-3.2.1.dist-info/METADATA` |
-| `winrt-Windows.Foundation` | 3.2.1 | MIT | `winrt_windows_foundation-3.2.1.dist-info/METADATA` |
-| `winrt-Windows.Foundation.Collections` | 3.2.1 | MIT | `winrt_windows_foundation_collections-3.2.1.dist-info/METADATA` |
-| `winrt-Windows.Globalization` | 3.2.1 | MIT | `winrt_windows_globalization-3.2.1.dist-info/METADATA` |
-| `winrt-Windows.Graphics.Imaging` | 3.2.1 | MIT | `winrt_windows_graphics_imaging-3.2.1.dist-info/METADATA` |
-| `winrt-Windows.Media.Core` | 3.2.1 | MIT | `winrt_windows_media_core-3.2.1.dist-info/METADATA` |
-| `winrt-Windows.Media.Ocr` | 3.2.1 | MIT | `winrt_windows_media_ocr-3.2.1.dist-info/METADATA` |
-| `winrt-Windows.Media.Playback` | 3.2.1 | MIT | `winrt_windows_media_playback-3.2.1.dist-info/METADATA` |
-| `winrt-Windows.Media.SpeechSynthesis` | 3.2.1 | MIT | `winrt_windows_media_speechsynthesis-3.2.1.dist-info/METADATA` |
-| `winrt-Windows.Storage` | 3.2.1 | MIT | `winrt_windows_storage-3.2.1.dist-info/METADATA` |
-| `winrt-Windows.Storage.Streams` | 3.2.1 | MIT | `winrt_windows_storage_streams-3.2.1.dist-info/METADATA` |
-| `winrt-Windows.UI.Notifications` | 3.2.1 | MIT | `winrt_windows_ui_notifications-3.2.1.dist-info/METADATA` |
 | `yarg` | 0.1.10 | MIT, with bundled Apache-2.0 notice for requests-derived material | `yarg-0.1.10.dist-info/LICENSE`, `yarg-0.1.10.dist-info/LICENSE-REQUESTS` |
 
 ---
@@ -84,7 +70,7 @@ This section is a practical summary, not legal advice. For an important commerci
 
 This repository may be shared through Git with `backend_packages` included. Keep the package metadata, license files, copyright notices, and notice files listed in Section 3. Do not remove `.dist-info` folders or bundled `LICENSE`, `NOTICE`, `AUTHORS`, or `license.txt` files.
 
-Sharing through Git is distribution of these third-party packages, so the same license obligations still apply. In source-form Git distribution, the most important practical requirement is preserving the license and notice files. For MPL/LGPL-covered parts, also preserve source availability for those covered files and any modifications to them.
+Sharing through Git is distribution of these third-party packages, so the same license obligations still apply. In source-form Git distribution, the most important practical requirement is preserving the license and notice files. For MPL-covered parts, also preserve source availability for those covered files and any modifications to them.
 
 ### Selling a product
 
@@ -92,10 +78,8 @@ Most packages listed here are permissive licenses such as MIT, BSD, Apache-2.0, 
 
 The `certifi` package is MPL-2.0. MPL-2.0 is a file-level copyleft license: you can combine it with proprietary code, but if you distribute modified MPL-covered files, those files and their modifications must remain available under MPL-2.0, and recipients must be told how to get the source for the MPL-covered parts.
 
-The bundled `adodbapi` component is LGPL-2.1-or-later. If you distribute it as part of a product, keep the LGPL license text and notices, provide or offer the corresponding source for that LGPL component and any modifications to it, and avoid packaging it in a way that prevents users from replacing or modifying that LGPL component. If the product does not need `adodbapi`, excluding it from the shipped product can reduce license-compliance work.
+For binary installers, zip files, or compiled applications, include a third-party notices file or license bundle containing the license files listed in Section 3. Also keep source or source-offer handling for MPL-covered parts if those parts are distributed.
 
-For binary installers, zip files, or compiled applications, include a third-party notices file or license bundle containing the license files listed in Section 3. Also keep source or source-offer handling for MPL/LGPL-covered parts if those parts are distributed.
-
-No package listed here appears to require the whole application to be open sourced merely because it is shared on Git or sold as a product. The main obligations are notice preservation, source availability for MPL/LGPL-covered parts, and not using upstream author or project names to imply endorsement.
+No package listed here appears to require the whole application to be open sourced merely because it is shared on Git or sold as a product. The main obligations are notice preservation, source availability for MPL-covered parts, and not using upstream author or project names to imply endorsement.
 
 ---
