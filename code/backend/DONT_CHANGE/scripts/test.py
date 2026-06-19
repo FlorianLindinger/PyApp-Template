@@ -2,174 +2,13 @@ import base64
 import ctypes
 import json
 import os
+import re
 import subprocess
 import threading
 import uuid
 from ctypes import wintypes
-from dataclasses import dataclass
-from pathlib import Path
+from types import SimpleNamespace
 from xml.sax.saxutils import escape as _xml_escape
-
-
-@dataclass(frozen=True)
-class _WinConstants:
-    gwl_style: int
-    gwl_exstyle: int
-    ws_caption: int
-    ws_thickframe: int
-    ws_minimizebox: int
-    ws_maximizebox: int
-    ws_ex_layered: int
-    ws_ex_topmost: int
-    lwa_alpha: int
-    sc_size: int
-    sc_minimize: int
-    sc_maximize: int
-    sc_close: int
-    mf_bycommand: int
-    mf_enabled: int
-    mf_grayed: int
-    mf_disabled: int
-    swp_nosize: int
-    swp_nomove: int
-    swp_nozorder: int
-    swp_noactivate: int
-    swp_framechanged: int
-    hwnd_topmost: int
-    hwnd_notopmost: int
-    ga_root: int
-    wm_null: int
-    wm_destroy: int
-    wm_close: int
-    wm_contextmenu: int
-    wm_lbuttonup: int
-    wm_lbuttondblclk: int
-    wm_rbuttonup: int
-    nin_select: int
-    nin_keyselect: int
-    tray_callback: int
-    hide_target_message: int
-    nim_add: int
-    nim_delete: int
-    nim_setversion: int
-    nif_message: int
-    nif_icon: int
-    nif_tip: int
-    nif_guid: int
-    nif_showtip: int
-    notifyicon_version_4: int
-    event_system_minimizestart: int
-    winevent_outofcontext: int
-    sw_hide: int
-    sw_minimize: int
-    sw_restore: int
-    flashw_stop: int
-    flashw_caption: int
-    flashw_tray: int
-    flashw_all: int
-    flashw_timer: int
-    flashw_timernofg: int
-    image_icon: int
-    lr_loadfromfile: int
-    lr_defaultsize: int
-    idi_application: int
-    mf_string: int
-    mf_separator: int
-    tpm_rightbutton: int
-    tpm_returncmd: int
-    cmd_restore: int
-    cmd_hide: int
-    cmd_stop: int
-    dwmwa_border_color: int
-    dwmwa_caption_color: int
-    dwmwa_text_color: int
-    dwmwa_color_default: int
-    dwmwcp_default: int
-    dwmwcp_donotround: int
-    dwmwcp_round: int
-    dwmwcp_roundsmall: int
-
-
-@dataclass(frozen=True)
-class _NativeTypes:
-    lresult: type
-    wparam: type
-    lparam: type
-    wndproc: object
-    wineventproc: object
-    enum_windows_proc: object
-    flashwinfo: type
-    wndclassex: type
-    notifyicondata: type
-
-
-@dataclass(frozen=True)
-class _WinApi:
-    user32: object
-    kernel32: object
-    shell32: object
-    gdi32: object
-    dwmapi: object
-    get_window_long: object
-    set_window_long: object
-
-
-@dataclass(frozen=True)
-class _WindowInfo:
-    hwnd: int
-    class_name: str
-    title: str
-    source: str
-
-
-@dataclass(frozen=True)
-class TerminalWindow:
-    hwnd: int
-    host: str
-    class_name: str
-    title: str
-    source: str
-
-
-@dataclass
-class _WindowState:
-    original_style: int
-    original_ex_style: int
-    original_topmost: bool
-    title_bar_hidden: bool = False
-    minimize_disabled: bool = False
-    maximize_disabled: bool = False
-    resize_disabled: bool = False
-    close_disabled: bool = False
-    opacity_percent: int | None = None
-    frame_changed: bool = False
-
-
-@dataclass
-class _CommandContext:
-    window: TerminalWindow
-    tray_icon_path: Path | None
-    tray_controller: "NativeMinimizeToTray | None" = None
-
-
-@dataclass(frozen=True)
-class ModernToastSettings:
-    title: str = "Python notification"
-    message: str = "Notification from test.py"
-    app_id: str = "Microsoft.Windows.PowerShell"
-    duration: str = "short"
-    scenario: str = "default"
-    silent: bool = False
-    attribution: str = ""
-
-
-@dataclass(frozen=True)
-class FigletFont:
-    name: str
-    hardblank: str
-    height: int
-    glyphs: dict[str, tuple[str, ...]]
-
 
 ASCII_FONT_FILES = {
     "big money-ne": ("Big Money-ne", "big_money-ne.flf"),
@@ -181,15 +20,20 @@ ASCII_FONT_FILES = {
 }
 
 
+_WIN_CONSTANTS = None
+_NATIVE_TYPES = None
+_WINDOWS_API = None
+_WINDOW_STATES = {}
 
-def _constants() -> _WinConstants:
-    cached = getattr(_constants, "_cached", None)
-    if cached is not None:
-        return cached
+
+def _constants():
+    global _WIN_CONSTANTS
+    if _WIN_CONSTANTS is not None:
+        return _WIN_CONSTANTS
 
     wm_user = 0x0400
     wm_app = 0x8000
-    constants = _WinConstants(
+    constants = SimpleNamespace(
         gwl_style=-16,
         gwl_exstyle=-20,
         ws_caption=0x00C00000,
@@ -266,14 +110,14 @@ def _constants() -> _WinConstants:
         dwmwcp_round=2,
         dwmwcp_roundsmall=3,
     )
-    setattr(_constants, "_cached", constants)
+    _WIN_CONSTANTS = constants
     return constants
 
 
-def _native_types() -> _NativeTypes:
-    cached = getattr(_native_types, "_cached", None)
-    if cached is not None:
-        return cached
+def _native_types():
+    global _NATIVE_TYPES
+    if _NATIVE_TYPES is not None:
+        return _NATIVE_TYPES
 
     lresult = ctypes.c_ssize_t
     wparam = ctypes.c_size_t
@@ -343,7 +187,7 @@ def _native_types() -> _NativeTypes:
             ("dwTimeout", wintypes.DWORD),
         ]
 
-    types = _NativeTypes(
+    types = SimpleNamespace(
         lresult=lresult,
         wparam=wparam,
         lparam=lparam,
@@ -354,14 +198,14 @@ def _native_types() -> _NativeTypes:
         wndclassex=WNDCLASSEXW,
         notifyicondata=NOTIFYICONDATAW,
     )
-    setattr(_native_types, "_cached", types)
+    _NATIVE_TYPES = types
     return types
 
 
-def _windows_api() -> _WinApi:
-    cached = getattr(_windows_api, "_cached", None)
-    if cached is not None:
-        return cached
+def _windows_api():
+    global _WINDOWS_API
+    if _WINDOWS_API is not None:
+        return _WINDOWS_API
 
     types = _native_types()
     user32 = ctypes.WinDLL("user32", use_last_error=True)
@@ -551,7 +395,7 @@ def _windows_api() -> _WinApi:
     set_window_long.argtypes = [wintypes.HWND, ctypes.c_int, long_ptr]
     set_window_long.restype = long_ptr
 
-    api = _WinApi(
+    api = SimpleNamespace(
         user32=user32,
         kernel32=kernel32,
         shell32=shell32,
@@ -560,18 +404,12 @@ def _windows_api() -> _WinApi:
         get_window_long=get_window_long,
         set_window_long=set_window_long,
     )
-    setattr(_windows_api, "_cached", api)
+    _WINDOWS_API = api
     return api
 
 
-def _window_states() -> dict[int, _WindowState]:
-    states = getattr(_window_states, "_states", None)
-    if states is None:
-        states = {}
-        setattr(_window_states, "_states", states)
-    return states
-
-
+def _window_states():
+    return _WINDOW_STATES
 
 
 def _raise_last_error(operation: str) -> None:
@@ -583,9 +421,6 @@ def _raise_last_error(operation: str) -> None:
 
 def _integer_resource(value: int) -> wintypes.LPCWSTR:
     return ctypes.cast(ctypes.c_void_p(value), wintypes.LPCWSTR)
-
-
-
 
 
 def _tray_icon_guid() -> uuid.UUID:
@@ -600,16 +435,16 @@ def _set_notify_icon_guid(notify_icon_data: object, guid: uuid.UUID) -> None:
         notify_icon_data.guidItem.Data4[index] = value
 
 
-def _load_icon_from_file(icon_path: str | Path) -> int:
-    path = Path(icon_path).resolve()
-    if not path.is_file():
+def _load_icon_from_file(icon_path: str) -> int:
+    path = os.path.abspath(os.fspath(icon_path))
+    if not os.path.isfile(path):
         raise FileNotFoundError(path)
 
     api = _windows_api()
     constants = _constants()
     icon = api.user32.LoadImageW(
         None,
-        str(path),
+        path,
         constants.image_icon,
         0,
         0,
@@ -620,50 +455,122 @@ def _load_icon_from_file(icon_path: str | Path) -> int:
     return int(icon)
 
 
-def _validate_modern_toast_settings(settings: ModernToastSettings) -> None:
+def _default_notification_settings():
+    return SimpleNamespace(
+        title="Python notification",
+        message="Notification from test.py",
+        app_id="",
+        app_name="",
+        duration="short",
+        scenario="default",
+        silent=False,
+        sound="default",
+        attribution="",
+        logo="",
+        hero="",
+    )
+
+
+_TOAST_SOUND_ALIASES = {
+    "default": "",
+    "mail": "ms-winsoundevent:Notification.Mail",
+    "sms": "ms-winsoundevent:Notification.SMS",
+    "reminder": "ms-winsoundevent:Notification.Reminder",
+    "alarm": "ms-winsoundevent:Notification.Looping.Alarm",
+    "call": "ms-winsoundevent:Notification.Looping.Call",
+}
+
+
+def _validate_windows_notification_settings(settings) -> None:
+    settings.duration = getattr(settings, "duration", "short")
+    settings.scenario = getattr(settings, "scenario", "default")
+    settings.silent = bool(getattr(settings, "silent", False))
+    settings.app_id = str(getattr(settings, "app_id", "") or "")
+    settings.app_name = str(getattr(settings, "app_name", "") or "")
+    settings.sound = str(getattr(settings, "sound", "default") or "default").lower().replace("-", "_")
+    settings.attribution = str(getattr(settings, "attribution", "") or "")
+    settings.logo = str(getattr(settings, "logo", "") or "")
+    settings.hero = str(getattr(settings, "hero", "") or "")
+
     if settings.duration not in {"short", "long"}:
         raise ValueError("Toast duration must be short or long.")
     if settings.scenario not in {"default", "alarm", "reminder", "incomingCall"}:
         raise ValueError("Toast scenario must be default, alarm, reminder, or incomingCall.")
-    if not settings.app_id.strip():
-        raise ValueError("Toast app_id cannot be empty.")
+    if settings.sound not in _TOAST_SOUND_ALIASES:
+        available = ", ".join(sorted(_TOAST_SOUND_ALIASES))
+        raise ValueError(f"Toast sound must be one of: {available}.")
 
 
-def _xml_text(value: str) -> str:
-    return _xml_escape(value, {'"': "&quot;", "'": "&apos;"})
+def _read_hkcu_dword(subkey: str, name: str) -> int | None:
+    try:
+        import winreg
+    except ImportError:
+        return None
 
-
-def _modern_toast_xml(settings: ModernToastSettings) -> str:
-    _validate_modern_toast_settings(settings)
-
-    toast_attributes = [f'duration="{settings.duration}"']
-    if settings.scenario != "default":
-        toast_attributes.append(f'scenario="{settings.scenario}"')
-
-    lines = [
-        f"<toast {' '.join(toast_attributes)}>",
-        "  <visual>",
-        '    <binding template="ToastGeneric">',
-        f"      <text>{_xml_text(settings.title[:200])}</text>",
-        f"      <text>{_xml_text(settings.message[:600])}</text>",
+    view_flags = [
+        winreg.KEY_READ | getattr(winreg, "KEY_WOW64_64KEY", 0),
+        winreg.KEY_READ,
+        winreg.KEY_READ | getattr(winreg, "KEY_WOW64_32KEY", 0),
     ]
-    if settings.attribution:
-        lines.append(f'      <text placement="attribution">{_xml_text(settings.attribution[:200])}</text>')
-    lines.extend(
-        [
-            "    </binding>",
-            "  </visual>",
-        ]
+    seen_flags: set[int] = set()
+    for access in view_flags:
+        if access in seen_flags:
+            continue
+        seen_flags.add(access)
+        try:
+            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, subkey, 0, access) as key:
+                value, value_type = winreg.QueryValueEx(key, name)
+        except FileNotFoundError:
+            continue
+        except OSError:
+            continue
+
+        if value_type == winreg.REG_DWORD:
+            return int(value)
+
+    return None
+
+
+def _windows_toast_block_reason(app_id: str | None = None) -> str | None:
+    toast_enabled = _read_hkcu_dword(
+        r"Software\Microsoft\Windows\CurrentVersion\PushNotifications",
+        "ToastEnabled",
     )
-    if settings.silent:
-        lines.append('  <audio silent="true" />')
-    lines.append("</toast>")
-    return "\n".join(lines)
+    if toast_enabled == 0:
+        return "Windows notifications are disabled globally."
+
+    app_id = str(app_id or "").strip()
+    if not app_id:
+        return None
+
+    app_enabled = _read_hkcu_dword(
+        rf"Software\Microsoft\Windows\CurrentVersion\Notifications\Settings\{app_id}",
+        "Enabled",
+    )
+    if app_enabled == 0:
+        return f"Windows notifications are disabled for app id {app_id!r}."
+
+    return None
 
 
-def _run_encoded_powershell(script: str, *, timeout: int = 10) -> None:
+def get_windows_notification_disabled_reason(app_id: str | None = None) -> str | None:
+    """Return why Windows toast notifications are blocked, or None if they look enabled."""
+
+    return _windows_toast_block_reason(app_id)
+
+
+def are_windows_notifications_enabled(app_id: str | None = None) -> bool:
+    """Return True when Windows toast notifications appear enabled for the app id."""
+
+    return get_windows_notification_disabled_reason(app_id) is None
+
+
+def _default_toast_app_id() -> str:
+    return ""
+
+
+def _run_encoded_powershell(script: str, *, timeout: int = 10) -> str:
     encoded_script = base64.b64encode(script.encode("utf-16le")).decode("ascii")
-    creationflags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
     completed = subprocess.run(
         [
             "powershell.exe",
@@ -675,28 +582,287 @@ def _run_encoded_powershell(script: str, *, timeout: int = 10) -> None:
         ],
         capture_output=True,
         timeout=timeout,
-        creationflags=creationflags,
+        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
     )
     if completed.returncode != 0:
         stderr = completed.stderr.decode("utf-8", errors="replace") if completed.stderr else ""
         stdout = completed.stdout.decode("utf-8", errors="replace") if completed.stdout else ""
         detail = (stderr or stdout).strip()
         if detail:
-            raise RuntimeError(f"PowerShell toast notification failed: {detail}")
-        raise RuntimeError(f"PowerShell toast notification failed with exit code {completed.returncode}.")
+            raise RuntimeError(f"PowerShell notification failed: {detail}")
+        raise RuntimeError(f"PowerShell notification failed with exit code {completed.returncode}.")
+    return completed.stdout.decode("utf-8", errors="replace").strip() if completed.stdout else ""
 
 
-def show_modern_windows_notification(settings: ModernToastSettings | None = None) -> None:
-    """Show a modern Windows toast notification without creating a tray icon."""
+def _sanitize_toast_identity_name(name: str) -> str:
+    name = " ".join(str(name or "").split()).strip()
+    if not name:
+        return "Python notification"
 
-    if settings is None:
-        settings = ModernToastSettings()
+    invalid_filename_chars = '<>:"/\\|?*'
+    cleaned = "".join("_" if char in invalid_filename_chars or ord(char) < 32 else char for char in name)
+    return cleaned.strip(" .")[:80] or "Python notification"
 
+
+def _toast_app_id_from_name(name: str) -> str:
+    normalized = re.sub(r"[^a-z0-9.]+", "-", name.lower()).strip("-.")
+    normalized = re.sub(r"-+", "-", normalized) or "python-notification"
+    return f"pyapp-template.toast.{normalized[:80]}"
+
+
+def _toast_identity_shortcut_path(app_name: str) -> str:
+    appdata = os.environ.get("APPDATA")
+    if not appdata:
+        raise RuntimeError("APPDATA is not set; cannot create a Windows toast identity.")
+
+    return os.path.join(
+        appdata,
+        "Microsoft",
+        "Windows",
+        "Start Menu",
+        "Programs",
+        "PyApp Template",
+        f"{_sanitize_toast_identity_name(app_name)}.lnk",
+    )
+
+
+def _create_toast_identity_shortcut(shortcut_path: str, app_name: str) -> None:
+    icon_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "icons", "icon.ico")
+    payload = {
+        "shortcut_path": shortcut_path,
+        "target_path": os.environ.get("ComSpec", r"C:\Windows\System32\cmd.exe"),
+        "arguments": "/c exit",
+        "working_directory": os.getcwd(),
+        "description": f"{app_name} notification identity",
+        "icon_path": icon_path if os.path.exists(icon_path) else "",
+    }
+    payload_base64 = base64.b64encode(json.dumps(payload).encode("utf-8")).decode("ascii")
+    script = f"""
+$ErrorActionPreference = "Stop"
+$payloadJson = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String("{payload_base64}"))
+$payload = $payloadJson | ConvertFrom-Json
+$parent = Split-Path -Parent ([string]$payload.shortcut_path)
+if (-not [System.IO.Directory]::Exists($parent)) {{
+    [System.IO.Directory]::CreateDirectory($parent) | Out-Null
+}}
+$shell = New-Object -ComObject WScript.Shell
+$shortcut = $shell.CreateShortcut([string]$payload.shortcut_path)
+$shortcut.TargetPath = [string]$payload.target_path
+$shortcut.Arguments = [string]$payload.arguments
+$shortcut.WorkingDirectory = [string]$payload.working_directory
+$shortcut.Description = [string]$payload.description
+if (-not [string]::IsNullOrWhiteSpace([string]$payload.icon_path)) {{
+    $shortcut.IconLocation = [string]$payload.icon_path
+}}
+$shortcut.Save()
+"""
+    _run_encoded_powershell(script)
+
+
+def _set_shortcut_app_user_model_id(shortcut_path: str, app_id: str) -> None:
+    hresult = ctypes.c_long
+    vt_lpwstr = 31
+    s_ok = 0
+    s_false = 1
+    rpc_e_changed_mode = 0x80010106
+    gps_readwrite = 0x00000002
+
+    class GUID(ctypes.Structure):
+        _fields_ = [
+            ("Data1", wintypes.DWORD),
+            ("Data2", wintypes.WORD),
+            ("Data3", wintypes.WORD),
+            ("Data4", ctypes.c_ubyte * 8),
+        ]
+
+    class PROPERTYKEY(ctypes.Structure):
+        _fields_ = [("fmtid", GUID), ("pid", wintypes.DWORD)]
+
+    class PROPVARIANT(ctypes.Structure):
+        _fields_ = [
+            ("vt", ctypes.c_ushort),
+            ("wReserved1", ctypes.c_ushort),
+            ("wReserved2", ctypes.c_ushort),
+            ("wReserved3", ctypes.c_ushort),
+            ("pwszVal", ctypes.c_wchar_p),
+        ]
+
+    class IPropertyStore(ctypes.Structure):
+        pass
+
+    property_store_ptr = ctypes.POINTER(IPropertyStore)
+
+    class IPropertyStoreVtbl(ctypes.Structure):
+        _fields_ = [
+            (
+                "QueryInterface",
+                ctypes.WINFUNCTYPE(
+                    hresult,
+                    property_store_ptr,
+                    ctypes.POINTER(GUID),
+                    ctypes.POINTER(ctypes.c_void_p),
+                ),
+            ),
+            ("AddRef", ctypes.WINFUNCTYPE(ctypes.c_ulong, property_store_ptr)),
+            ("Release", ctypes.WINFUNCTYPE(ctypes.c_ulong, property_store_ptr)),
+            ("GetCount", ctypes.WINFUNCTYPE(hresult, property_store_ptr, ctypes.POINTER(wintypes.DWORD))),
+            (
+                "GetAt",
+                ctypes.WINFUNCTYPE(hresult, property_store_ptr, wintypes.DWORD, ctypes.POINTER(PROPERTYKEY)),
+            ),
+            (
+                "GetValue",
+                ctypes.WINFUNCTYPE(
+                    hresult,
+                    property_store_ptr,
+                    ctypes.POINTER(PROPERTYKEY),
+                    ctypes.POINTER(PROPVARIANT),
+                ),
+            ),
+            (
+                "SetValue",
+                ctypes.WINFUNCTYPE(
+                    hresult,
+                    property_store_ptr,
+                    ctypes.POINTER(PROPERTYKEY),
+                    ctypes.POINTER(PROPVARIANT),
+                ),
+            ),
+            ("Commit", ctypes.WINFUNCTYPE(hresult, property_store_ptr)),
+        ]
+
+    IPropertyStore._fields_ = [("lpVtbl", ctypes.POINTER(IPropertyStoreVtbl))]
+
+    def make_guid(value: str) -> GUID:
+        parsed = uuid.UUID(value)
+        return GUID(
+            parsed.time_low,
+            parsed.time_mid,
+            parsed.time_hi_version,
+            (ctypes.c_ubyte * 8)(*parsed.bytes[8:]),
+        )
+
+    def check_hresult(hr: int, action: str) -> None:
+        if hr < 0:
+            raise OSError(f"{action} failed with HRESULT 0x{hr & 0xFFFFFFFF:08X}")
+
+    shell32 = ctypes.WinDLL("shell32", use_last_error=True)
+    ole32 = ctypes.WinDLL("ole32", use_last_error=True)
+
+    shell32.SHGetPropertyStoreFromParsingName.argtypes = [
+        wintypes.LPCWSTR,
+        ctypes.c_void_p,
+        wintypes.DWORD,
+        ctypes.POINTER(GUID),
+        ctypes.POINTER(property_store_ptr),
+    ]
+    shell32.SHGetPropertyStoreFromParsingName.restype = hresult
+
+    ole32.CoInitialize.argtypes = [ctypes.c_void_p]
+    ole32.CoInitialize.restype = hresult
+    ole32.CoUninitialize.argtypes = []
+    ole32.CoUninitialize.restype = None
+
+    iid_property_store = make_guid("886D8EEB-8CF2-4446-8D02-CDBA1DBDCF99")
+    pkey_app_user_model_id = PROPERTYKEY(make_guid("9F4C2855-9F79-4B39-A8D0-E1D42DE1D5F3"), 5)
+    prop_var = PROPVARIANT()
+    prop_var.vt = vt_lpwstr
+    prop_var.pwszVal = app_id
+
+    coinitialize_result = ole32.CoInitialize(None)
+    should_uninitialize = coinitialize_result in {s_ok, s_false}
+    if coinitialize_result < 0 and (coinitialize_result & 0xFFFFFFFF) != rpc_e_changed_mode:
+        raise OSError(f"CoInitialize failed with HRESULT 0x{coinitialize_result & 0xFFFFFFFF:08X}")
+
+    try:
+        property_store = property_store_ptr()
+        hr = shell32.SHGetPropertyStoreFromParsingName(
+            os.path.abspath(shortcut_path),
+            None,
+            gps_readwrite,
+            ctypes.byref(iid_property_store),
+            ctypes.byref(property_store),
+        )
+        check_hresult(hr, f"SHGetPropertyStoreFromParsingName for {shortcut_path!r}")
+        try:
+            hr = property_store.contents.lpVtbl.contents.SetValue(
+                property_store,
+                ctypes.byref(pkey_app_user_model_id),
+                ctypes.byref(prop_var),
+            )
+            check_hresult(hr, "SetValue System.AppUserModel.ID")
+            hr = property_store.contents.lpVtbl.contents.Commit(property_store)
+            check_hresult(hr, "Commit System.AppUserModel.ID")
+        finally:
+            if property_store:
+                property_store.contents.lpVtbl.contents.Release(property_store)
+    finally:
+        if should_uninitialize:
+            ole32.CoUninitialize()
+
+
+def _ensure_toast_identity_for_name(app_name: str) -> str:
+    app_name = _sanitize_toast_identity_name(app_name)
+    app_id = _toast_app_id_from_name(app_name)
+    shortcut_path = _toast_identity_shortcut_path(app_name)
+    if not os.path.exists(shortcut_path):
+        _create_toast_identity_shortcut(shortcut_path, app_name)
+    _set_shortcut_app_user_model_id(shortcut_path, app_id)
+    return app_id
+
+
+def _toast_image_source(value: str) -> str:
+    value = str(value or "").strip()
+    if not value:
+        return ""
+    if "://" in value or value.startswith(("ms-appx:", "ms-appdata:")):
+        return value
+
+    path = os.path.abspath(os.path.expandvars(os.path.expanduser(value)))
+    return "file:///" + path.replace("\\", "/")
+
+
+def _modern_toast_xml(settings) -> str:
+    xml_escape = lambda value: _xml_escape(value, {'"': "&quot;", "'": "&apos;"})
+    toast_attributes = [f'duration="{settings.duration}"']
+    if settings.scenario != "default":
+        toast_attributes.append(f'scenario="{settings.scenario}"')
+
+    logo = _toast_image_source(settings.logo)
+    hero = _toast_image_source(settings.hero)
+    toast_xml_lines = [
+        f"<toast {' '.join(toast_attributes)}>",
+        "  <visual>",
+        '    <binding template="ToastGeneric">',
+    ]
+    if logo:
+        toast_xml_lines.append(f'      <image placement="appLogoOverride" src="{xml_escape(logo)}" />')
+    if hero:
+        toast_xml_lines.append(f'      <image placement="hero" src="{xml_escape(hero)}" />')
+    toast_xml_lines.extend(
+        [
+            f"      <text>{xml_escape(settings.title[:200])}</text>",
+            f"      <text>{xml_escape(settings.message[:600])}</text>",
+        ]
+    )
+    if settings.attribution:
+        toast_xml_lines.append(f'      <text placement="attribution">{xml_escape(settings.attribution[:200])}</text>')
+    toast_xml_lines.extend(["    </binding>", "  </visual>"])
+    if settings.silent:
+        toast_xml_lines.append('  <audio silent="true" />')
+    elif _TOAST_SOUND_ALIASES[settings.sound]:
+        toast_xml_lines.append(f'  <audio src="{_TOAST_SOUND_ALIASES[settings.sound]}" />')
+    toast_xml_lines.append("</toast>")
+    return "\n".join(toast_xml_lines)
+
+
+def _show_winrt_toast(settings) -> None:
     payload = {
         "app_id": settings.app_id,
         "xml": _modern_toast_xml(settings),
     }
     payload_base64 = base64.b64encode(json.dumps(payload).encode("utf-8")).decode("ascii")
+
     script = f"""
 $ErrorActionPreference = "Stop"
 $payloadJson = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String("{payload_base64}"))
@@ -708,13 +874,50 @@ $null = [Windows.Data.Xml.Dom.XmlDocument, Windows.Data.Xml.Dom.XmlDocument, Con
 $xml = New-Object Windows.Data.Xml.Dom.XmlDocument
 $xml.LoadXml([string]$payload.xml)
 $toast = [Windows.UI.Notifications.ToastNotification]::new($xml)
-$notifier = [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier([string]$payload.app_id)
+$resolvedAppId = [string]$payload.app_id
+if ([string]::IsNullOrWhiteSpace($resolvedAppId)) {{
+    $startApp = Get-StartApps | Where-Object {{ $_.Name -eq "Windows PowerShell" }} | Select-Object -First 1
+    if ($null -eq $startApp) {{
+        $startApp = Get-StartApps | Where-Object {{ $_.Name -like "*PowerShell*" }} | Select-Object -First 1
+    }}
+    if ($null -ne $startApp) {{
+        $resolvedAppId = [string]$startApp.AppID
+    }}
+}}
+if ([string]::IsNullOrWhiteSpace($resolvedAppId)) {{
+    $notifier = [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier()
+}} else {{
+    $notifier = [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier($resolvedAppId)
+}}
 $notifier.Show($toast)
+Write-Output ("TOAST_APP_ID=" + $resolvedAppId)
 """
-    _run_encoded_powershell(script)
+    stdout = _run_encoded_powershell(script)
+    if stdout:
+        print(stdout)
 
 
-def get_terminal_window() -> TerminalWindow:
+def show_modern_windows_notification(settings=None) -> None:
+    """Show a Windows toast notification through the standard WinRT API."""
+
+    if settings is None:
+        settings = _default_notification_settings()
+
+    _validate_windows_notification_settings(settings)
+    if settings.app_name:
+        settings.app_id = _ensure_toast_identity_for_name(settings.app_name)
+    else:
+        settings.app_id = str(settings.app_id or "").strip()
+
+    toast_block_reason = get_windows_notification_disabled_reason(settings.app_id)
+    if toast_block_reason is not None:
+        print(f"Windows toast suppressed: {toast_block_reason}")
+        return
+
+    _show_winrt_toast(settings)
+
+
+def get_terminal_window():
     """Return the visible host window that owns the current terminal session."""
 
     api = _windows_api()
@@ -751,21 +954,21 @@ def get_terminal_window() -> TerminalWindow:
             return 0
         return int(user32.GetAncestor(hwnd, constants.ga_root) or hwnd)
 
-    def window_info(hwnd: int, source: str) -> _WindowInfo | None:
+    def window_info(hwnd: int, source: str):
         hwnd = root_window(hwnd)
         if not hwnd or not user32.IsWindow(hwnd):
             return None
-        return _WindowInfo(
+        return SimpleNamespace(
             hwnd=int(hwnd),
             class_name=get_window_class(hwnd),
             title=get_window_title(hwnd),
             source=source,
         )
 
-    def is_windows_terminal(info: _WindowInfo) -> bool:
+    def is_windows_terminal(info) -> bool:
         return "CASCADIA" in info.class_name.upper()
 
-    def is_conhost(info: _WindowInfo) -> bool:
+    def is_conhost(info) -> bool:
         return info.class_name == "ConsoleWindowClass"
 
     def title_matches(window_title: str, console_title: str) -> bool:
@@ -773,8 +976,8 @@ def get_terminal_window() -> TerminalWindow:
             return False
         return window_title == console_title or console_title in window_title
 
-    def visible_top_level_windows() -> list[_WindowInfo]:
-        windows: list[_WindowInfo] = []
+    def visible_top_level_windows() -> list:
+        windows = []
 
         @native_types.enum_windows_proc
         def callback(hwnd: int, _lparam: int) -> bool:
@@ -789,8 +992,8 @@ def get_terminal_window() -> TerminalWindow:
 
         return windows
 
-    def candidate_windows(console_title: str) -> list[_WindowInfo]:
-        candidates: list[_WindowInfo] = []
+    def candidate_windows(console_title: str) -> list:
+        candidates = []
         seen: set[int] = set()
 
         def add(hwnd: int, source: str) -> None:
@@ -813,7 +1016,7 @@ def get_terminal_window() -> TerminalWindow:
 
         return candidates
 
-    def format_window_infos(windows: list[_WindowInfo]) -> str:
+    def format_window_infos(windows: list) -> str:
         if not windows:
             return "none"
         return "\n".join(
@@ -821,8 +1024,8 @@ def get_terminal_window() -> TerminalWindow:
             for info in windows
         )
 
-    def as_terminal_window(info: _WindowInfo, host: str) -> TerminalWindow:
-        return TerminalWindow(
+    def as_terminal_window(info, host: str):
+        return SimpleNamespace(
             hwnd=info.hwnd,
             host=host,
             class_name=info.class_name,
@@ -891,22 +1094,29 @@ def _set_window_long(hwnd: int, index: int, value: int) -> None:
         raise ctypes.WinError(error)
 
 
-def _get_state(hwnd: int) -> _WindowState:
+def _get_state(hwnd: int):
     constants = _constants()
     states = _window_states()
     state = states.get(hwnd)
     if state is None:
         original_ex_style = _get_window_long(hwnd, constants.gwl_exstyle)
-        state = _WindowState(
+        state = SimpleNamespace(
             original_style=_get_window_long(hwnd, constants.gwl_style),
             original_ex_style=original_ex_style,
             original_topmost=bool(original_ex_style & constants.ws_ex_topmost),
+            title_bar_hidden=False,
+            minimize_disabled=False,
+            maximize_disabled=False,
+            resize_disabled=False,
+            close_disabled=False,
+            opacity_percent=None,
+            frame_changed=False,
         )
         states[hwnd] = state
     return state
 
 
-def _resolve_window(window: TerminalWindow | None) -> TerminalWindow:
+def _resolve_window(window=None):
     return window if window is not None else get_terminal_window()
 
 
@@ -966,26 +1176,7 @@ def _apply_state(hwnd: int) -> None:
     _refresh_frame(hwnd)
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-def set_always_on_top(enabled: bool = True, window: TerminalWindow | None = None) -> str:
+def set_always_on_top(enabled: bool = True, window=None) -> str:
     terminal_window = _resolve_window(window)
     constants = _constants()
     api = _windows_api()
@@ -998,7 +1189,7 @@ def set_always_on_top(enabled: bool = True, window: TerminalWindow | None = None
     return terminal_window.host
 
 
-def set_title_bar_hidden(hidden: bool = True, window: TerminalWindow | None = None) -> str:
+def set_title_bar_hidden(hidden: bool = True, window=None) -> str:
     terminal_window = _resolve_window(window)
     state = _get_state(terminal_window.hwnd)
     state.title_bar_hidden = hidden
@@ -1006,8 +1197,7 @@ def set_title_bar_hidden(hidden: bool = True, window: TerminalWindow | None = No
     return terminal_window.host
 
 
-
-def set_minimize_button_disabled(disabled: bool = True, window: TerminalWindow | None = None) -> str:
+def set_minimize_button_disabled(disabled: bool = True, window=None) -> str:
     terminal_window = _resolve_window(window)
     state = _get_state(terminal_window.hwnd)
     state.minimize_disabled = disabled
@@ -1015,7 +1205,7 @@ def set_minimize_button_disabled(disabled: bool = True, window: TerminalWindow |
     return terminal_window.host
 
 
-def set_maximize_button_disabled(disabled: bool = True, window: TerminalWindow | None = None) -> str:
+def set_maximize_button_disabled(disabled: bool = True, window=None) -> str:
     terminal_window = _resolve_window(window)
     state = _get_state(terminal_window.hwnd)
     state.maximize_disabled = disabled
@@ -1023,7 +1213,7 @@ def set_maximize_button_disabled(disabled: bool = True, window: TerminalWindow |
     return terminal_window.host
 
 
-def set_resize_disabled(disabled: bool = True, window: TerminalWindow | None = None) -> str:
+def set_resize_disabled(disabled: bool = True, window=None) -> str:
     terminal_window = _resolve_window(window)
     state = _get_state(terminal_window.hwnd)
     state.resize_disabled = disabled
@@ -1031,7 +1221,7 @@ def set_resize_disabled(disabled: bool = True, window: TerminalWindow | None = N
     return terminal_window.host
 
 
-def set_x_button_disabled(disabled: bool = True, window: TerminalWindow | None = None) -> str:
+def set_x_button_disabled(disabled: bool = True, window=None) -> str:
     terminal_window = _resolve_window(window)
     state = _get_state(terminal_window.hwnd)
     state.close_disabled = disabled
@@ -1039,9 +1229,7 @@ def set_x_button_disabled(disabled: bool = True, window: TerminalWindow | None =
     return terminal_window.host
 
 
-
-
-def set_window_opacity(percent: int, window: TerminalWindow | None = None) -> str:
+def set_window_opacity(percent: int, window=None) -> str:
     terminal_window = _resolve_window(window)
     constants = _constants()
     api = _windows_api()
@@ -1059,9 +1247,7 @@ def set_window_opacity(percent: int, window: TerminalWindow | None = None) -> st
     return terminal_window.host
 
 
-
-
-def restore_and_foreground_window(window: TerminalWindow | None = None) -> str:
+def restore_and_foreground_window(window=None) -> str:
     terminal_window = _resolve_window(window)
     api = _windows_api()
     constants = _constants()
@@ -1072,10 +1258,8 @@ def restore_and_foreground_window(window: TerminalWindow | None = None) -> str:
     return terminal_window.host
 
 
-
-
 def flash_taskbar(
-    window: TerminalWindow | None = None,
+    window=None,
     *,
     count: int = 0,
     timeout_ms: int = 0,
@@ -1105,9 +1289,6 @@ def flash_taskbar(
     return terminal_window.host
 
 
-
-
-
 def _parse_colorref(value: str) -> int:
     normalized = value.strip().removeprefix("#").removeprefix("0x")
     if len(normalized) != 6:
@@ -1127,7 +1308,7 @@ def _set_dwm_int_attribute(hwnd: int, attribute: int, value: int) -> None:
         raise OSError(f"DwmSetWindowAttribute failed with HRESULT 0x{result & 0xFFFFFFFF:08X}")
 
 
-def set_frame_border_color(color: str, window: TerminalWindow | None = None) -> str:
+def set_frame_border_color(color: str, window=None) -> str:
     terminal_window = _resolve_window(window)
     constants = _constants()
     _get_state(terminal_window.hwnd).frame_changed = True
@@ -1135,7 +1316,7 @@ def set_frame_border_color(color: str, window: TerminalWindow | None = None) -> 
     return terminal_window.host
 
 
-def set_frame_caption_color(color: str, window: TerminalWindow | None = None) -> str:
+def set_frame_caption_color(color: str, window=None) -> str:
     terminal_window = _resolve_window(window)
     constants = _constants()
     _get_state(terminal_window.hwnd).frame_changed = True
@@ -1143,7 +1324,7 @@ def set_frame_caption_color(color: str, window: TerminalWindow | None = None) ->
     return terminal_window.host
 
 
-def set_frame_text_color(color: str, window: TerminalWindow | None = None) -> str:
+def set_frame_text_color(color: str, window=None) -> str:
     terminal_window = _resolve_window(window)
     constants = _constants()
     _get_state(terminal_window.hwnd).frame_changed = True
@@ -1151,32 +1332,19 @@ def set_frame_text_color(color: str, window: TerminalWindow | None = None) -> st
     return terminal_window.host
 
 
-
-
-
-
-def _normalize_ascii_font_name(font_name: str) -> str:
-    return " ".join(font_name.strip().lower().replace("_", " ").split())
-
-
-def _ascii_font_dir() -> Path:
-    return Path(__file__).with_name("ascii_fonts")
-
-
-def _load_figlet_font(font_name: str) -> FigletFont:
-    normalized = _normalize_ascii_font_name(font_name)
+def _load_figlet_font(font_name: str):
+    # Normalize friendly font names such as "big_money-ne" and "Big Money-ne".
+    normalized = " ".join(font_name.strip().lower().replace("_", " ").split())
     font_info = ASCII_FONT_FILES.get(normalized)
     if font_info is None:
         available = ", ".join(name for name, _filename in ASCII_FONT_FILES.values())
         raise ValueError(f"Unknown ASCII font {font_name!r}. Available fonts: {available}.")
 
     display_name, filename = font_info
-    cached = getattr(_load_figlet_font, "_cached", {})
-    if normalized in cached:
-        return cached[normalized]
-
-    font_path = _ascii_font_dir() / filename
-    lines = font_path.read_text(encoding="utf-8").splitlines()
+    # Load from this script's local ascii_fonts directory.
+    font_path = os.path.join(os.path.dirname(__file__), "ascii_fonts", filename)
+    with open(font_path, encoding="utf-8") as font_file:
+        lines = font_file.read().splitlines()
     if not lines:
         raise ValueError(f"ASCII font file is empty: {font_path}")
 
@@ -1202,14 +1370,12 @@ def _load_figlet_font(font_name: str) -> FigletFont:
         endmark = glyph_lines[-1][-1:] if glyph_lines[-1] else ""
         glyphs[chr(codepoint)] = tuple(line.rstrip(endmark) for line in glyph_lines)
 
-    font = FigletFont(name=display_name, hardblank=hardblank, height=height, glyphs=glyphs)
-    cached = dict(cached)
-    cached[normalized] = font
-    setattr(_load_figlet_font, "_cached", cached)
-    return font
+    return SimpleNamespace(name=display_name, hardblank=hardblank, height=height, glyphs=glyphs)
 
 
 def render_ascii_message(message: str, font_name: str = "Standard") -> str:
+    """Render text with one of the local FIGlet-style ASCII fonts."""
+
     font = _load_figlet_font(font_name)
     fallback = font.glyphs.get("?", font.glyphs[" "])
     rendered_lines: list[str] = []
@@ -1226,6 +1392,8 @@ def render_ascii_message(message: str, font_name: str = "Standard") -> str:
 
 
 def print_in_ASCII_font(message: str, font_name: str = "Standard") -> None:
+    """Print a message using a local FIGlet-style ASCII font."""
+
     print(render_ascii_message(message, font_name))
 
 
@@ -1234,7 +1402,8 @@ def _parse_ascii_message_command(argument_text: str) -> tuple[str, str]:
     if not argument_text:
         return "Standard", "Type Something"
 
-    normalized_argument = _normalize_ascii_font_name(argument_text)
+    # Normalize user-entered font names without a separate one-use helper.
+    normalized_argument = " ".join(argument_text.lower().replace("_", " ").split())
     for normalized_font, (display_name, _filename) in sorted(
         ASCII_FONT_FILES.items(),
         key=lambda item: len(item[0]),
@@ -1247,7 +1416,8 @@ def _parse_ascii_message_command(argument_text: str) -> tuple[str, str]:
             return display_name, argument_text[font_prefix_length:].strip()
 
     first, separator, remainder = argument_text.partition("=")
-    if separator and _normalize_ascii_font_name(first) in {"font", "ascii_font"}:
+    normalized_key = " ".join(first.lower().replace("_", " ").split())
+    if separator and normalized_key in {"font", "ascii font"}:
         font_value, _separator, message = remainder.partition(" ")
         return font_value.strip(), message.strip() or "Type Something"
 
@@ -1262,8 +1432,8 @@ def apply_window_controls(
     disable_maximize_button: bool = False,
     disable_resize: bool = False,
     disable_x_button: bool = False,
-    window: TerminalWindow | None = None,
-) -> TerminalWindow:
+    window=None,
+):
     terminal_window = _resolve_window(window)
     state = _get_state(terminal_window.hwnd)
     state.title_bar_hidden = hide_title_bar
@@ -1277,14 +1447,15 @@ def apply_window_controls(
     return terminal_window
 
 
-
 class NativeMinimizeToTray:
+    """Hidden message-window controller for hide-to-tray behavior."""
+
     def __init__(
         self,
         target_hwnd: int,
         *,
         tooltip: str = "Python program",
-        icon_path: str | Path | None = None,
+        icon_path: str | None = None,
         restore_on_stop: bool = True,
     ) -> None:
         api = _windows_api()
@@ -1293,7 +1464,7 @@ class NativeMinimizeToTray:
 
         self.target_hwnd = target_hwnd
         self.tooltip = tooltip[:127]
-        self.icon_path = Path(icon_path).resolve() if icon_path is not None else None
+        self.icon_path = os.path.abspath(os.fspath(icon_path)) if icon_path is not None else None
         self.restore_on_stop = restore_on_stop
 
         self._window: int | None = None
@@ -1605,9 +1776,9 @@ class NativeMinimizeToTray:
 def enable_minimize_to_tray(
     *,
     tooltip: str = "Python program",
-    icon_path: str | Path | None = None,
+    icon_path: str | None = None,
     hwnd: int | None = None,
-    window: TerminalWindow | None = None,
+    window=None,
     restore_on_stop: bool = True,
 ) -> NativeMinimizeToTray:
     """Convert the terminal's minimize action into hide-to-tray."""
@@ -1623,8 +1794,7 @@ def enable_minimize_to_tray(
     ).start()
 
 
-
-def _ensure_tray_controller(context: _CommandContext) -> NativeMinimizeToTray:
+def _ensure_tray_controller(context) -> NativeMinimizeToTray:
     if context.tray_controller is None:
         context.tray_controller = enable_minimize_to_tray(
             tooltip=context.window.title,
@@ -1635,32 +1805,24 @@ def _ensure_tray_controller(context: _CommandContext) -> NativeMinimizeToTray:
     return context.tray_controller
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 def _parse_modern_toast_settings(
     argument_text: str,
     *,
     default_title: str,
-) -> ModernToastSettings:
+):
+    """Parse the REPL notify command into toast settings."""
+
     title = default_title or "Python notification"
     message = "Notification from test.py"
-    app_id = "Microsoft.Windows.PowerShell"
+    app_id = ""
+    app_name = ""
     duration = "short"
     scenario = "default"
     silent = False
+    sound = "default"
     attribution = ""
+    logo = ""
+    hero = ""
 
     tokens = argument_text.split()
     remainder_start = 0
@@ -1671,16 +1833,31 @@ def _parse_modern_toast_settings(
 
         if separator and key in {"app_id", "appid", "aumid"}:
             app_id = original_value
+        elif separator and key in {"app_name", "appname", "toast_name"}:
+            app_name = original_value
         elif separator and key == "duration":
             duration = value
         elif separator and key == "scenario":
             scenario = "incomingCall" if value in {"incoming_call", "incomingcall"} else value
+        elif separator and key == "sound":
+            sound = "default" if value in {"", "default"} else value
+            if value in {"none", "silent", "off", "false"}:
+                silent = True
+                sound = "default"
+            else:
+                silent = False
         elif separator and key == "attribution":
             attribution = original_value
+        elif separator and key in {"logo", "image", "app_logo"}:
+            logo = original_value
+        elif separator and key in {"hero", "hero_image"}:
+            hero = original_value
         elif normalized in {"silent", "no_sound", "nosound"}:
             silent = True
+            sound = "default"
         elif normalized in {"sound", "with_sound"}:
             silent = False
+            sound = "default"
         elif normalized in {"long", "long_duration"}:
             duration = "long"
         elif normalized in {"short", "short_duration"}:
@@ -1700,16 +1877,19 @@ def _parse_modern_toast_settings(
         else:
             title = remainder
 
-    settings = ModernToastSettings(
+    settings = SimpleNamespace(
         title=title,
         message=message,
         app_id=app_id,
+        app_name=app_name,
         duration=duration,
         scenario=scenario,
         silent=silent,
+        sound=sound,
         attribution=attribution,
+        logo=logo,
+        hero=hero,
     )
-    _validate_modern_toast_settings(settings)
     return settings
 
 
@@ -1717,24 +1897,44 @@ def _print_windows_notification_help() -> None:
     print()
     print("Modern Windows toast command:")
     print("  notify [options] title | message")
+    print("  notify_status")
     print()
     print("Options must come before the title:")
-    print("  app_id=<id>                         toast AppUserModelID")
+    print("  app_id=<id>                         optional AppUserModelID; default uses PowerShell identity")
+    print("  app_name=<name|terminal>            register/use a toast banner name; overrides app_id")
     print("  duration=short|long                 toast duration")
     print("  scenario=default|alarm|reminder|incomingCall")
+    print("  sound=default|mail|sms|reminder|alarm|call")
     print("  silent|no_sound|nosound             suppress notification sound")
     print("  sound                               allow notification sound")
     print("  attribution=<text>                  attribution line without spaces")
+    print("  logo=<path_or_uri>                  app logo image")
+    print("  hero=<path_or_uri>                  wide hero image")
     print()
     print("Examples:")
     print("  notify Build finished | Your script completed.")
+    print("  notify app_name=terminal Build finished | Your script completed.")
     print("  notify silent Build finished | Your script completed.")
     print("  notify duration=long scenario=reminder Reminder | Check the terminal output.")
+    print("  notify sound=mail logo=C:\\path\\icon.png Mail | New message received.")
 
 
+def _print_windows_notification_status(app_id: str | None = None) -> None:
+    app_id = str(app_id or "").strip()
+    reason = get_windows_notification_disabled_reason(app_id)
+    if reason is None:
+        if app_id:
+            print(f"Windows notifications enabled for {app_id!r}.")
+        else:
+            print("Windows notifications enabled globally.")
+    else:
+        if app_id:
+            print(f"Windows notifications disabled for {app_id!r}: {reason}")
+        else:
+            print(f"Windows notifications disabled: {reason}")
 
 
-def _print_commands(context: _CommandContext) -> None:
+def _print_commands(context) -> None:
     print()
     print("Commands:")
     print("  enable_always_on_top         make window topmost")
@@ -1746,6 +1946,7 @@ def _print_commands(context: _CommandContext) -> None:
     print("  enable_x_button              restore classic close/X command")
     print("  enable_minimize_to_tray      hide to tray when minimized")
     print("  notify [options] title | msg show modern Windows toast")
+    print("  notify_status                check whether Windows toast notifications are enabled")
     print("  notify_help                  print modern toast options")
     print("  ascii [font] message print message using a local ASCII font")
     print("  opacity 0-100                set whole-window opacity")
@@ -1757,7 +1958,7 @@ def _print_commands(context: _CommandContext) -> None:
     print("  text_color #RRGGBB           set DWM caption text color")
 
 
-def _run_command(command: str, context: _CommandContext) -> bool:
+def _run_command(command: str, context) -> bool:
     raw_command = command
 
     parts = raw_command.split()
@@ -1769,18 +1970,27 @@ def _run_command(command: str, context: _CommandContext) -> bool:
             raise ValueError(f"{name} needs an argument.")
         return args[0]
 
-
-
     def notification_command() -> None:
         argument_text = raw_command[len(parts[0]) :].strip()
         settings = _parse_modern_toast_settings(
             argument_text,
             default_title=context.window.title or "Python notification",
         )
-        
+        if settings.app_name.lower() in {"terminal", "terminal_title", "window", "window_title"}:
+            settings.app_name = context.window.title or "Python notification"
 
-        
         show_modern_windows_notification(settings)
+
+    def notification_status_command() -> None:
+        app_id = ""
+        if args:
+            first = args[0]
+            key, separator, value = first.partition("=")
+            if separator and key.lower().replace("-", "_") in {"app_id", "appid", "aumid"}:
+                app_id = value
+            else:
+                app_id = first
+        _print_windows_notification_status(app_id)
 
     def ascii_message_command() -> None:
         argument_text = raw_command[len(parts[0]) :].strip()
@@ -1806,17 +2016,17 @@ def _run_command(command: str, context: _CommandContext) -> bool:
     def text_color_command() -> None:
         set_frame_text_color(require_arg("text_color"), context.window)
 
-
     commands = {
-        "enable_always_on_top": lambda: set_always_on_top(True,context.window),
-        "disable_resize": lambda: set_resize_disabled(True,context.window),
-        "hide_title_bar": lambda: set_title_bar_hidden(True,context.window),
-        "disable_minimize_button": lambda: set_minimize_button_disabled(True,context.window),
-        "disable_maximize_button": lambda: set_maximize_button_disabled(True,context.window),
-        "disable_x_button": lambda: set_x_button_disabled(True,context.window),
-        "enable_x_button": lambda: set_x_button_disabled(False,context.window),
+        "enable_always_on_top": lambda: set_always_on_top(True, context.window),
+        "disable_resize": lambda: set_resize_disabled(True, context.window),
+        "hide_title_bar": lambda: set_title_bar_hidden(True, context.window),
+        "disable_minimize_button": lambda: set_minimize_button_disabled(True, context.window),
+        "disable_maximize_button": lambda: set_maximize_button_disabled(True, context.window),
+        "disable_x_button": lambda: set_x_button_disabled(True, context.window),
+        "enable_x_button": lambda: set_x_button_disabled(False, context.window),
         "enable_minimize_to_tray": lambda: _ensure_tray_controller(context),
         "notify": notification_command,
+        "notify_status": notification_status_command,
         "notify_help": _print_windows_notification_help,
         "ascii": ascii_message_command,
         "opacity": opacity_command,
@@ -1846,20 +2056,18 @@ def _run_command(command: str, context: _CommandContext) -> bool:
 
 
 def main() -> None:
+    """Run the interactive terminal window-control smoke test."""
 
-
-    
     tray_icon = r"C:\Users\Flo\Documents\Repositories\PyApp Template\code\backend\icons\icon.ico"
 
     window = get_terminal_window()
-    context = _CommandContext(window=window, tray_icon_path=tray_icon)
+    context = SimpleNamespace(window=window, tray_icon_path=tray_icon, tray_controller=None)
     _print_commands(context)
 
     while True:
         command = input("> ")
         if not _run_command(command, context):
             break
-
 
 
 if __name__ == "__main__":
