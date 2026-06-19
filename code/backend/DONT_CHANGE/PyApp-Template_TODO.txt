@@ -314,6 +314,8 @@ add setting to start minimizied and unminimize on forst print? for main sript
 
 add image of richt tracebacj to redme. add image of shortcut how it looks like a terminal next to the shortcut to that. compared to combined.
 
+ask AI what faetues are acatully better than would otherwise have with soemthawt easy solutioms
+
 i dont need fancy traceback for errors outside of main_script
 
 rorder main in washdog
