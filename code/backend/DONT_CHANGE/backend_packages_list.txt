@@ -13,13 +13,6 @@ Pygments==2.20.0
 # ===========================
 
 # ===========================
-# Windows COM/API bindings used by scripts/setup/generate_shortcuts.py to create .lnk files and set AppUserModelID.
-# finish_backend_installation.py prunes pywin32 docs, demos, tests, PythonWin, and unused extension modules after install.
-# ---------------------------
-pywin32==311
-# ===========================
-
-# ===========================
 # Developer tooling: scans project imports to infer frontend package requirements.
 # ---------------------------
 pipreqs==0.5.0

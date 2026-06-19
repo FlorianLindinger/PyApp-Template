@@ -54,9 +54,6 @@ The folder `backend_packages` contains third-party Python packages. These packag
 | `mdurl` | 0.1.2 | MIT | `mdurl-0.1.2.dist-info/LICENSE` |
 | `pipreqs` | 0.5.0 | Apache-2.0 | `pipreqs-0.5.0.dist-info/LICENSE` |
 | `Pygments` | 2.20.0 | BSD-2-Clause | `pygments-2.20.0.dist-info/licenses/LICENSE`, `pygments-2.20.0.dist-info/licenses/AUTHORS` |
-| `pywin32` | 311 | PSF, with bundled component notices | `pywin32-311.dist-info/METADATA`; see also the component rows below |
-| `pywin32` component: `adodbapi` | bundled with pywin32 311 | LGPL-2.1-or-later | `adodbapi/license.txt` |
-| `pywin32` components: `pythonwin`, `win32`, `win32com` | bundled with pywin32 311 | BSD-3-Clause-style notices | `pythonwin/license.txt`, `win32/license.txt`, `win32com/License.txt` |
 | `requests` | 2.33.1 | Apache-2.0 | `requests-2.33.1.dist-info/licenses/LICENSE`, `requests-2.33.1.dist-info/licenses/NOTICE` |
 | `rich` | 15.0.0 | MIT | `rich-15.0.0.dist-info/licenses/LICENSE` |
 | `typing_extensions` | 4.15.0 | PSF-2.0 | `typing_extensions-4.15.0.dist-info/licenses/LICENSE` |
