@@ -2,6 +2,358 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+prune pywin32 and rich stuff
+
+add explacaiton of what the baclklend packages are sepcifically used for in readme
+
+why is my backend packages so large?
+
+
+ask AI if anything would requreies folder craeiotn in case not syneced in git and so on
+
+shoudl i sync current python verion? what if i put that in python folder as indication that sucesfuly created and not deleted->yes
+
+add sorce and license to fonts. print them on slow backend once.
+
+do i handle pipreqs fail gracefully
+generate a minimla pigar version by quasotm sql mappings
+
+think about going to a minimal pigar verison bc size
+
+add use_free-threaded_python_if_available. what to do for global? could be added?
+
+rname py_dist to python?
+
+i shouldnt care about function defs because compuield once?
+
+foreground should always unminimite and restor from tray
+
+remove cahche code and patjlib in test 
+remove dataclasses and simplify. remove caching. is there anything really worht cacing?
+mmove singluie use functions as inline and add comennt to replace description that function name provieded.
+add docstiongs
+is anytihng slow to import or definone?
+
+change title bg and text + border color on x
+-> yes green adn red  
+->also colors for start setgings
+
+reenamble x button on finsih?
+
+add settingh for titlebar color and text color there. is it better defualt to have title colror thatn bg color? 
+
+remove washdog
+
+udpate pyproject for updated pyrefly
+
+udpate readme in dont change
+
+what are all options for the taskbar appearncace. isnt there seomthing like colors and progess states
+
+add erorr message for error in developer settings import everywher it imports. but still ruff. can be critical bec even in genrate shortcuts
+
+ask ai: is anything in common_code slow that should be other scirpt or lazy import?
+
+implemetn setting. "flash in taskbar on"?
+
+split reamde into main features and additional features
+
+do i want optionas as windoes prompt?
+do i want setting for windwos window notivation insteaf of notifivation area?
+
+check that only main scirpt errors are rich shc that ugly erros are more obivouse unexepced.. but do i want some to be rich that could happen with wrong user settings? maybe actaulyl do rich wherever user settings are involed. 
+
+implement ship_backend_python_and_packages
+###### move all backend installation featurs and fixes to future since anyway there is no option to not ship implemented i guess:
+i guess ad d backend python installation to genrtated shoretuctus
+cut down on backend installatikn packages and not ship? kind of too risky for no gain
+make backend installtion more robust for fails by delting folder and redoing i guess. i guess already implem,enwed
+ad d chekc for backend python folder and install them automatically for shortcus
+make backend packages installtion indepomendent chekc and fail delete
+
+do i want to print path to log folder soemthwer or even shrotcut to fodler?
+
+take care that i dont offer wrong stuff for use_global_python: print info that glboal used and global need to nbe installed and what global cerions ....
+
+add option to not matcjhign pyrton vetriosn: cange python version to match current (do i want to open dev_setrtings?)
+
+"future smooth" asci font
+
+wrap terminal prints option
+
+confirm font license
+
+add option for log to be realtive to scriopt and not shrotcut but wdir is shrotctu.-> log_relaitev_to_shortcut = False
+
+ask AI if script is efficient
+
+add clickable thing to windfwos notifaction.
+
+asci art maybe only for install. replace not implementec chars. but at least - and _ and !?.,
+
+offer install terminal open for missing package
+
+reorder dev settings
+
+for git check make options:
+link to githutb
+1) dont check again
+2) dont ask for that update
+2) show changes
+    -> install
+    -
+3) ask AI for more
+
+add doctrings to scripts
+
+
+implement
+
+add script_after_interpreter_crash_path
+
+add: restart_on_crash/restart_on_failure with stop detection for immediate fail again and max repeat try and rate and max allwod in soem time interval 
+
+add setting: success_print=[Program finished successfully]
+failur_print= f"[Program finished with failure] Programm exited with code "{exit_code}"
+and explain that no print if "" and that will 
+
+some kind of setting for global python version choice? -> in setting a string
+
+add asci font print. 
+
+add nogil option with chekc if veriosn compatible adn warn if not 
+
+
+add shortcut for git check if update avaliable and priomopt options
+
+ask AI if template can be imporved?
+
+do: Single-instance mutex name: use a stable UUID in a named mutex so only one copy of the app runs.
+
+Stable window/layout profile IDs: save window position, opacity, shape, on-top state, etc. under a GUID.
+Rule of thumb: use uuid.uuid5(...) when Windows should remember something across runs; use uuid.uuid4() when you want a new unique ID for this run only.
+
+make sure tray remebers position if overflow
+
+conhost can change outline
+
+do i want in conhost to define shape? do i want that via cols and lines and setting like ratio?
+
+implement opacity
+
+check if i still need hwnd_candidates
+
+can i impleemtnt system tray as somehow intercepted command? i can replace the minimize button i guess
+-> chek if i can avoiud packages
+
+ask for settings ideas and feature ides
+
+implmentet watchdog imported settgins
+
+add "windows notifcation on ... = "Message""
+
+implement highlihgting: Foregprund and warning state? see future. ask AI if more ways
+
+
+do i want a open log on frist print? for no terminal?
+
+most of the stuff i do could be just once on shortcut craretion and then shortcut directly from installed pytrhon to main_script.
+-> uniqures stuff is taskbar combining bc need shortcut gernator
+-> interpereter crash watcher is improvemtns for no terminal case
+-> easily portable/git-shareable: shorcut craetion from not very easy bc shortcut to batch/.py does not pin and everyhing else needs specifc target then which is not noob proof->manual would work well.
+-> sum of quaitly of life like stoppers and termila for installation
+-> auto isntall of packagse that are too large to share or not allowd
+-> cna handle low verison without comprimises on backgorund stuff
+- loggging and prepends i could always do in main
+- rich traceback could also be installed
+- crash handling for no terminal could also be just handled in main
+
+failed start of main does not go to front on print
+
+apply tempalte to backgrund washdog
+
+
+
+time to print excpetion semes slow
+
+somehwo fix: [Info] AppID update skipped for hwnd 0x00000000009600E0: SetValue System.AppUserModel.ID for hwnd 0x00000000009600E0 failed with HRESULT 0x80070578: unknown error
+
+make warning for os.abort .... also fancy
+
+make lcikcalbe lins kfor wt
+
+fix frontend packages being tracked and remove form hjsitroy
+
+it does not handle keyboerad uinterrupt?
+
+handle script wrapper self-run fail better
+what does watchdog self-run do?
+
+add more surrounding stuff betwen packages and dist install
+
+
+[Info] Python distribution not found. Installing Python:
+Found Python 3.14.6 (Target: 3.14).
+Download URL: https://www.python.org/ftp/python/3.14.6/amd64/
+Found 7 MSI package(s).
+Downloading core.msi
+Downloading dev.msi
+Downloading exe.msi
+Downloading freethreaded.msi
+Downloading lib.msi
+Downloading tcltk.msi
+Downloading ucrt.msi
+Installing core.msi
+Installing dev.msi
+Installing exe.msi
+Installing freethreaded.msi
+Installing lib.msi
+Installing tcltk.msi
+Installing ucrt.msi
+Looking in links: c:\Users\Flo\AppData\Local\Temp\tmpcqek3cko
+Processing C:\Users\Flo\AppData\Local\Temp\tmpcqek3cko\pip-26.1.2-py3-none-any.whl
+Installing collected packages: pip
+  WARNING: The scripts pip3.14.exe and pip3.exe are installed in 'C:\Users\Flo\Documents\Repositories\PyApp Template\code\backend\py_env\py_dist\Scripts' which is not on PATH.
+  Consider adding this directory to PATH or, if you prefer to suppress this warning, use --no-warn-script-location.
+Successfully installed pip-26.1.2
+Collecting pip
+  Using cached pip-26.1.2-py3-none-any.whl.metadata (4.6 kB)
+Using cached pip-26.1.2-py3-none-any.whl (1.8 MB)
+Installing collected packages: pip
+Successfully installed pip-26.1.2
+
+Successfully created local Python 3.14.6 at "C:\Users\Flo\Documents\Repositories\PyApp Template\code\backend\py_env\py_dist".
+
+
+[Info] Package list file: "C:\Users\Flo\Documents\Repositories\PyApp Template\code\backend\developer_tools\_DEFAULT_PYHON_PACKAGES_.txt"
+--------------------
+PySide6==6.11.0
+PySide6_Addons==6.11.0
+PySide6_Essentials==6.11.0
+shiboken6==6.11.0
+--------------------
+
+Collecting PySide6==6.11.0 (from -r C:\Users\Flo\Documents\Repositories\PyApp Template\code\backend\developer_tools\_DEFAULT_PYHON_PACKAGES_.txt (line 3))
+  Downloading pyside6-6.11.0-cp310-abi3-win_amd64.whl.metadata (5.5 kB)
+Collecting PySide6_Addons==6.11.0 (from -r C:\Users\Flo\Documents\Repositories\PyApp Template\code\backend\developer_tools\_DEFAULT_PYHON_PACKAGES_.txt (line 4))
+  Downloading pyside6_addons-6.11.0-cp310-abi3-win_amd64.whl.metadata (4.2 kB)
+Collecting PySide6_Essentials==6.11.0 (from -r C:\Users\Flo\Documents\Repositories\PyApp Template\code\backend\developer_tools\_DEFAULT_PYHON_PACKAGES_.txt (line 5))
+  Downloading pyside6_essentials-6.11.0-cp310-abi3-win_amd64.whl.metadata (3.8 kB)
+Collecting shiboken6==6.11.0 (from -r C:\Users\Flo\Documents\Repositories\PyApp Template\code\backend\developer_tools\_DEFAULT_PYHON_PACKAGES_.txt (line 6))
+  Downloading shiboken6-6.11.0-cp310-abi3-win_amd64.whl.metadata (2.5 kB)
+Downloading pyside6-6.11.0-cp310-abi3-win_amd64.whl (577 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 578.0/578.0 kB 26.8 MB/s  0:00:00
+Downloading pyside6_addons-6.11.0-cp310-abi3-win_amd64.whl (168.7 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 168.7/168.7 MB 29.8 MB/s  0:00:05
+Downloading pyside6_essentials-6.11.0-cp310-abi3-win_amd64.whl (75.8 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 75.8/75.8 MB 78.5 MB/s  0:00:00
+Downloading shiboken6-6.11.0-cp310-abi3-win_amd64.whl (1.2 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.2/1.2 MB 105.0 MB/s  0:00:00
+Installing collected packages: shiboken6, PySide6_Essentials, PySide6_Addons, PySide6
+   ━━━━━━━━━━━━━━━━━━━━╺━━━━━━━━━━━━━━━━━━━ 2/4 [PySide6_Addons]
+
+
+
+
+
+
+
+
+
+make install prints nicer
+
+when python install fails how does it indicate? maybe just rcreate somehitng in end to show succes?? not working at the moment. maybye really create a successfull yphron installation file that gets removed with delete_distro -> yes
+might as well do succes install indicator in python file in case soemeone delte all entries for better check tehn. maybe also still ehckf for python.exe addtrioanlly
+
+
+for conhost dont print extra lines for progressbar for donwlaod
+
+ask AI for prborms wti deelte forlder safer
+
+
+make it do abs pathj in travecaabkac not:  C:\Users\Flo\Documents\Repositories\PyApp                                                        │
+    │ Template\code\backend\DONT_CHANGE\B\..\scripts\start_program.py:190 in <module>
+
+
+for traceback i guess i want at least one line beofre and after offender
+
+change " Python child script traceback"
+print python veriosn? on travecaback and path and clickable link.
+print link to open main_scriopt on error
+i can open on specific line with np++ and vscode and pycharm
+i can have setting to open script in specific program
+
+ask AI for optimizaitons
+
+implement highlight_window_on_first_print. where do i do?
+        # def minimize_current_console():
+        #     try:
+        #         hwnd = kernel32_DLL.GetConsoleWindow()
+        #         if hwnd:
+        #             user32_DLL.ShowWindow(hwnd, 2)
+        #     except Exception:
+        #         pass
+
+        # def restore_current_console():
+        #     """WIP"""
+        #     try:
+        #         hwnd = kernel32_DLL.GetConsoleWindow()
+        #         if hwnd:
+        #             user32_DLL.ShowWindow(hwnd, 9)
+        #     except Exception:
+        #         pass
+
+# test if i can set app id here in save_traceback for terminal and child gui in tkinter and pyqt
+
+# move imports to after start in washdog
+
+delete traceback json before start
+
+ # checkl if wdir = None is what is expected 
+
+setting how to deal with KeyboardInterrupt?
+
+log the rich traceback error still to file i guess unless it already is
+
+add setting to start minimizied and unminimize on forst print? for main sript
+
+add image of richt tracebacj to redme. add image of shortcut how it looks like a terminal next to the shortcut to that. compared to combined.
+
+i dont need fancy traceback for errors outside of main_script
+
+rorder main in washdog
+
+have settingh to unminimize on first pritn
+
+move set_terminal_colors to mnain in template. also setup_unminimize_and_foreground_on_first_print?
+
+do i want to change anything for dev tools? probably not, should look like terminal
+
+chekc if all variavles in common vatiables are actually commmon somwhre. ssame with funcitons
+
+make subsetting for what broser mode has window and so on?
+
+do i need to make terminal_args safe?
+
+set the batches to respect the terminal_mode and launch_mode
+
+make start: This script is inteded to be launched in a visible terminal that is minimized on start. It will go to foreground on first print"""
+
+dont allow for empty app id?
+
+i guess i still want stat_pgoram to start minimitzed and foregorund on forst print and also install there such that visible but not staying
+
+move stuff maximall to watchdog so visible terminal can disappera fastest. since i always will have the watchdog for all modes i guess. on other hand i have to spawn stuff for exception. but that shoudl be anyway only the excepitponm
+i guess porint of start program is only to decide what of 3 terminal modes the watcher will be in. but everything that prints should run in start bc might be invisible. but for example if i print how many old instances were closed it is useless if i immediately close that terminal.
+
+set tab color in wt start . i guess worse becasue have to redo shrotcut to change
+
+also would have to redo shortcuts for continuous use of start terminal to chagne wt to conhost. thats bad and will alawys be unexpected. i can only solve this if i always launch a new terminal. and also since i want temrinal to start minimized for backend stuff and show on print and also hte option to start minimized woulöd  have to minimize afterwas i guess. should be okay to . i gues i prefer to not have install in terminal history bc should not be relevant
+
+rewrite stuff that was compatible in newer pyhont vertsion
+
+chekc if terminal app id in thread is actualyl faster. check if i even need fancy app id stuff if i stay in orioginal terminal
+
 what is the convention with _ infron to script. shouldnt wrapepr and watchdog get also. or maybe just not the print richt traceback. but htat either way will disappear now.
 
 ask AI what i can do to make whole thing leaner and simpler
@@ -14,12 +366,20 @@ i guess i still need start terminal to always show error for safety and cant con
 kind of overkill but needed to handle interpreter crashes. i mean a normal terminal also handler interpreter crashes but invisible terminal would not spawn one: only advantage is for invisible terminal and color traceback and on_crash settings.
 Do i really care about failure and crash distinction?nooo. but maybe deoending on code differen msg for interp crsh
 But how do i pass args to watchdog? do i handle everything in invisibel watchdog and create a terminal if error print? but all args i will pass to the different modes should be done in start_program so other start modes dont have duplicate. I guess i can just pass through the args.
+think about where i still need setup_terminal_colors()
+setup_unminimize_and_foreground_on_first_print()
+shouldne watchdog watch for every launch mode. so it should handle the splitting into the modes. but also it could also continue in that terminal and only launch invisible_watchdog if no-terminal mode.
+but i guess conhost and wt are fixed if i stay in same temrinal. cant i make shortcuts obey and generally for all start follow their appearance changes. maybe functioN set_appearance_wt/conhost
+apparently finding out if conhsot vs wt is not necessarily reliably ->pass via shortcut. it is reliable to tell if there is a terminal tho (maybe).
+
+chekc what still needed to be passed in args
 
 shortcut->batch->start_program.py 
-    -(new process invisible) watchdog 
-        -(new process (in)visible) wrapper
-            -(run in same process) main_script.py
-    - close
+    1) terminal: continue in terminal and 
+        self do watchdogging while launching frontend wrapper
+    2) no terminal: launcher invisible watchdog and close
+        watchdog do watchdogging while launching frontend wrapper
+
 
 only have basic traceback for outer most exception. ask AI for all paths of error handlöing
 
