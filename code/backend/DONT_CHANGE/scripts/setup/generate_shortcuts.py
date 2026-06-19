@@ -3,17 +3,7 @@
 import os
 import re
 import sys
-import time
 import unicodedata
-
-# =============================
-# imports third-party packages
-from win32com.client import Dispatch  # type:ignore
-from win32com.propsys import (  # type:ignore
-    propsys,
-    pscon,
-)
-from win32com.shell import shellcon  # type:ignore
 
 # =============================
 # import from files
@@ -55,17 +45,11 @@ from backend.DONT_CHANGE.scripts._common_variables import (
     shortcut_output_dir,
     stop_icon_path,
 )
+from backend.DONT_CHANGE.scripts.setup.windows_shortcut_ctypes import (
+    create_shortcut_with_appid,
+)
 
 # =============================
-# local variables:
-
-SHORTCUT_DELETE_TIMEOUT_SECONDS = 5.0
-SHORTCUT_CREATE_TIMEOUT_SECONDS = 5.0
-SHORTCUT_RETRY_DELAY_SECONDS = 0.1
-
-# =============================
-
-
 def quote_cmd_argument(value):
     """Quote the cmd argument."""
     text = os.fspath(value)
@@ -86,121 +70,6 @@ def sanitize_app_id(input_string):
     # 5. Trim hyphens/dots from the start and end
     name = name.strip("-.")
     return name
-
-
-def delete_existing_shortcut(output):
-    if not os.path.exists(output):
-        return
-
-    deadline = time.monotonic() + SHORTCUT_DELETE_TIMEOUT_SECONDS
-    last_error = None
-
-    while os.path.exists(output):
-        try:
-            os.remove(output)
-        except FileNotFoundError:
-            return
-        except OSError as e:
-            last_error = e
-
-        if not os.path.exists(output):
-            return
-
-        if time.monotonic() >= deadline:
-            detail = f" Last Windows error: {last_error}" if last_error else ""
-            raise RuntimeError(
-                f'Failed to delete existing shortcut within {SHORTCUT_DELETE_TIMEOUT_SECONDS:.1f} seconds: "{output}". '
-                f"Close the shortcut Properties window or any program using the file and try again.{detail}"
-            )
-
-        time.sleep(SHORTCUT_RETRY_DELAY_SECONDS)
-
-
-def check_shortcut_was_created(output):
-    deadline = time.monotonic() + SHORTCUT_CREATE_TIMEOUT_SECONDS
-
-    while not os.path.exists(output):
-        if time.monotonic() >= deadline:
-            raise RuntimeError(
-                f'Failed to create shortcut within {SHORTCUT_CREATE_TIMEOUT_SECONDS:.1f} seconds: "{output}".'
-            )
-
-        time.sleep(SHORTCUT_RETRY_DELAY_SECONDS)
-
-
-def create_shortcut_with_appid(
-    output,
-    target="cmd.exe",
-    args="",
-    icon_path=None,
-    wdir="",
-    app_id=None,
-    description="",
-    start_minimized=False,
-):
-    """Create a Windows shortcut and optionally assign an AppUserModelID.
-
-    Note: start_minimized=True seems to make Windows launch it in conhost.exe instead of wt.exe for cmd.exe target."""
-    if (icon_path is not None) and (not os.path.exists(icon_path)):
-        print(f'[Warning] icon not existing at "{icon_path}"')
-        icon_path = None
-
-    if icon_path and not os.path.isabs(icon_path):
-        icon_path = os.path.abspath(icon_path)
-    if output and not os.path.isabs(output):
-        output = os.path.abspath(output)
-    if wdir != "" and not os.path.isabs(wdir):
-        wdir = os.path.abspath(wdir)
-
-    # Delete first so a locked shortcut fails with a clear timeout instead of hanging.
-    delete_existing_shortcut(output)
-
-    # 1. Create the shortcut file via WScript.Shell (Standard)
-    shell = Dispatch("WScript.Shell")
-    shortcut = shell.CreateShortcut(output)
-    shortcut.TargetPath = target
-    shortcut.Arguments = args
-    shortcut.WorkingDirectory = wdir
-    shortcut.Description = description
-
-    if start_minimized:
-        shortcut.WindowStyle = 7
-    if icon_path:
-        shortcut.IconLocation = icon_path
-    try:
-        shortcut.Save()
-    except Exception as e:
-        raise RuntimeError(
-            f'Failed to save shortcut: "{output}". Close the shortcut Properties window or any program using the file '
-            f"and try again. Windows error: {e}"
-        ) from e
-    check_shortcut_was_created(output)
-
-    # 2. Add AppUserModelID via IPropertyStore (Advanced)
-    if app_id is not None:
-        # Wait for Windows to release file lock before property store access
-        time.sleep(1.0)
-        try:
-            pStore = propsys.SHGetPropertyStoreFromParsingName(
-                output, None, shellcon.GPS_READWRITE, propsys.IID_IPropertyStore
-            )
-            key = pscon.PKEY_AppUserModel_ID
-            prop_var = propsys.PROPVARIANTType(app_id)
-            pStore.SetValue(key, prop_var)
-            pStore.Commit()
-        except Exception:
-            # try again
-            time.sleep(1.0)
-            try:
-                pStore = propsys.SHGetPropertyStoreFromParsingName(
-                    output, None, shellcon.GPS_READWRITE, propsys.IID_IPropertyStore
-                )
-                key = pscon.PKEY_AppUserModel_ID
-                prop_var = propsys.PROPVARIANTType(app_id)
-                pStore.SetValue(key, prop_var)
-                pStore.Commit()
-            except Exception as e:
-                print(f"[Warning] Failed to set AppID: {e}")
 
 
 def make_lnk(
