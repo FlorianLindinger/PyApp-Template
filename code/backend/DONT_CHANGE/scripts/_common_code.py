@@ -26,6 +26,7 @@ from backend.developer_settings import (
     terminal_text_color,
 )
 from backend.DONT_CHANGE.scripts._common_variables import (
+    EMPTY_ARG_INDICATOR,
     default_packages_file_path,
     determined_current_packages_file_path_noVersion,
     determined_current_packages_file_path_withVersion,
@@ -64,6 +65,11 @@ if terminal_text_color:
 # general helper functions
 
 
+def make_empty_args_safe(args: list[str]) -> list[str]:
+    """Needed because passing empty args as "" in Windows can be flimsy -> replace "" with EMPTY_ARG_INDICATOR and decode in child."""
+    return [a if a != "" else EMPTY_ARG_INDICATOR for a in args]
+
+
 # =========================
 # colored print and input and general print related
 
@@ -88,27 +94,29 @@ def input_success(msg):
     return input(f"{_ANSI_SUCCESS}{msg}{_ANSI_RESET}")
 
 
-def print_traceback(message:str = "") -> None:
+def print_traceback(message: str = "") -> None:
     """colored traceback via "rich" package. Does not print newlines after traceback but 2 before."""
-        
+
     from rich.console import Console
     from rich.traceback import Traceback
+
     console = Console()
-    
+
     exc_type, exc_value, traceback_ = sys.exc_info()
 
     print()
     print()
-    print_warn("="*30)
+    print_warn("=" * 30)
 
     if message:
         print_warn(message)
-        print("-"*30)
-    
-    console.print(Traceback.from_exception(exc_type, exc_value, traceback_, show_locals=False)) #type:ignore
+        print("-" * 30)
 
-    print_warn("="*30)
-    
+    console.print(Traceback.from_exception(exc_type, exc_value, traceback_, show_locals=False))  # type:ignore
+
+    print_warn("=" * 30)
+
+
 # =========================
 # folder deletion function
 
@@ -170,6 +178,9 @@ def delete_folder_safe(
     Returns ``True`` if the folder was absent or deleted, and ``False`` only
     when the user cancels an interactive prompt.
     """
+    
+    def _raise_walk_error(error: OSError) -> None:
+        raise error
 
     def _format_bytes(num_bytes) -> str:
         """Format bytes to for example kB and GB."""
@@ -399,8 +410,7 @@ def delete_folder_safe(
                 ):
                     raise TimeoutError
 
-            def _raise_walk_error(error: OSError) -> None:
-                raise error
+            
 
             for root, _dirs, files in os.walk(target_path, onerror=_raise_walk_error):
                 _check_empty_scan_timeout()
@@ -581,7 +591,7 @@ def setup_unminimize_and_foreground_on_first_print():
     sys.stderr = unminimize_plus_foreground_terminal_on_first_output(sys.stderr)  # type:ignore
 
 
-def setup_terminal_colors():
+def set_terminal_colors():
     """set terminal text and bg colors to TERMINAL_COLORS"""
     if TERMINAL_COLORS:
         try:
@@ -1491,10 +1501,10 @@ def install_full_python(
         "https://www.python.org/ftp/python/{version}/*.amd64.msi",  # python 3.4- 64bit
     ]
     blacklisted_file_patterns = [
-        "*/appendpath.msi",  # PATH modification helper, skipped because this install uses a local target directory.
-        "*/launcher.msi",  # Global Python launcher component, skipped for this local extracted install.
-        "*/path.msi",  # PATH modification helper, skipped because this install uses a local target directory.
-        "*/pip.msi",  # Pip is installed later through ensurepip or get-pip.py.
+        "appendpath.msi",  # PATH modification helper, skipped because this install uses a local target directory.
+        "launcher.msi",  # Global Python launcher component, skipped for this local extracted install.
+        "path.msi",  # PATH modification helper, skipped because this install uses a local target directory.
+        "pip.msi",  # Pip is installed later through ensurepip or get-pip.py.
         "*_d.msi",  # Debug build MSI, not the normal runtime package.
         "*_pdb.msi",  # Debug symbols MSI, not needed for normal runtime use.
         "*arm64*",  # ARM64 package, skipped because this installer uses the amd64 package directory.
@@ -1502,13 +1512,13 @@ def install_full_python(
         "*win32*",  # 32-bit package, skipped because this installer uses the amd64 package directory.
     ]
     if not install_tkinter:
-        blacklisted_file_patterns.append("*/tcltk.msi")  # Tkinter component disabled.
+        blacklisted_file_patterns.append("tcltk.msi")  # Tkinter component disabled.
     if not install_tests:
-        blacklisted_file_patterns.append("*/test.msi")  # Test suite component disabled.
+        blacklisted_file_patterns.append("test.msi")  # Test suite component disabled.
     if not install_tools:
-        blacklisted_file_patterns.append("*/tools.msi")  # Tools component disabled.
+        blacklisted_file_patterns.append("tools.msi")  # Tools component disabled.
     if not install_docs:
-        blacklisted_file_patterns.append("*/doc.msi")  # Documentation component disabled.
+        blacklisted_file_patterns.append("doc.msi")  # Documentation component disabled.
     python_exe = python_dir_abs_path + "\\python.exe"
     site_packages_dir = python_dir_abs_path + "\\Lib\\site-packages"
     path_to_packages_file = site_packages_dir + "\\_PATH_TO_PACKAGES_.pth"
@@ -1693,10 +1703,15 @@ def install_full_python(
             major > 3 or (major == 3 and minor >= 4) or (major == 2 and (minor > 7 or (minor == 7 and patch >= 9)))
         )
         if supports_ensurepip:
-            if print_:
-                print("Bootstrapping pip with ensurepip")
+            
+            env = os.environ.copy()
+            env["PIP_NO_WARN_SCRIPT_LOCATION"] = "1" #supress warning that pip is not global
 
-            result = subprocess.run([python_exe, "-m", "ensurepip", "--upgrade"], check=False)  # noqa
+            result = subprocess.run( #noqa:S603
+                [python_exe, "-m", "ensurepip", "--upgrade"],
+                check=False,
+                env=env,
+            )
             if result.returncode != 0:
                 raise RuntimeError("Python installation failed: ensurepip failed.")
 
@@ -1794,7 +1809,7 @@ def install_full_python(
     compatible_full_py_vers, download_url, msi_urls = _find_python_version_and_download_links()
 
     if print_:
-        print(f"Found Python {compatible_full_py_vers}.")
+        print(f"Found Python {compatible_full_py_vers} (Target: {python_version}).")
         print(f"Download URL: {download_url}")
         print(f"Found {len(msi_urls)} MSI package(s).")
 
@@ -1933,6 +1948,7 @@ echo.
 :: don't close terminal
 cmd /k
 """
+        os.makedirs(os.path.dirname(frontend_launcher_for_pip_install_terminal),exist_ok=True)
         with open(frontend_launcher_for_pip_install_terminal, "w", encoding="utf-8") as f:
             f.write(batch_content)
 
@@ -1959,7 +1975,7 @@ def prompt_for_distro_reinstall(msg="Reinstall distro / recreate virtual environ
     print_warn("6: Change Python version + Reset packages + Install auto-determined needed packages + set them default")
 
     while True:
-        choice = input_warn("Choose an option [1-6]: ").strip()
+        choice = input_warn("Choose an option [0-6]: ").strip()
 
         if choice in {"0", "1", "2", "3", "4", "5", "6"}:
             return int(choice)
