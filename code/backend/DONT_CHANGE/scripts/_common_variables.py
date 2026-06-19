@@ -25,6 +25,7 @@ backend_files_to_delete_on_install = ["sqlite3.dll", "python.cat"]
 
 # frontend related
 # ------------------------
+frontend_script_wrapper_path = make_abs("frontend\\script_wrapper.py")
 frontend_packages_dir = make_abs("..\\..\\py_env\\packages")  # UPDATE GITIGNORE
 frontend_python_dir = make_abs("..\\..\\py_env\\py_dist")  # UPDATE GITIGNORE
 frontend_packages_are_installed_marker_filename = "_DELETE_THIS_TO_REINSTALL_ONLY_DEFAULT_PACKAGES_"
@@ -43,13 +44,13 @@ developer_tools_dir = make_abs("..\\..\\developer_tools")  # UPDATE GITIGNORE
 DONT_CHANGE_dir = make_abs("..")
 shortcut_output_dir = make_abs("..\\..\\..\\..")  # UPDATE GITIGNORE
 starter_batches_folder = make_abs("..\\B")
+temporary_folder = DONT_CHANGE_dir = make_abs("..\\temporary")
 
 # scripts
 # ------------------------
 start_program_script = make_abs("start_program.py")
 python_script_path = make_abs("..\\..\\..\\main_script.py")
-script_wrapper_path = make_abs("frontend\\script_wrapper.py")
-script_wrapper_watchdog_path= make_abs("script_wrapper_washdog.py")
+background_watchdog_path = make_abs("background_washdog.py")
 start_time_dummy_main_script = make_abs("..\\backend_test_tools\\helper_scripts\\start_time_dummy_main_script.py")
 launcher_terminal = starter_batches_folder + "\\W.bat"
 launcher_emulator = starter_batches_folder + "\\E.bat"
@@ -61,6 +62,7 @@ launcher_log = starter_batches_folder + "\\L.bat"
 
 # files
 # ------------------------
+
 developer_settings_path = make_abs("..\\..\\developer_settings.py")
 icon_path = make_abs("..\\..\\icons\\icon.ico")
 settings_icon_path = make_abs("..\\..\\icons\\settings.ico")
@@ -69,10 +71,11 @@ log_icon_path = make_abs("..\\..\\icons\\log.ico")
 process_id_file_path = make_abs("..\\..\\..\\_CURRENTLY_RUNNING_.pid")
 default_packages_file_path = make_abs("..\\..\\developer_tools\\_DEFAULT_PYHON_PACKAGES_.txt")  # UPDATE GITIGNORE
 python_version_indicator_file_path = developer_tools_dir + "\\_CURRENT_PYTHON_VERSION_.txt"
-CORRECT_START_SIGNAL_FILE_PATH = make_abs("..\\signal_that_program_started_correctly.signal")
-play_sound_on_crash_default = windows_dir + "\\Media\\Windows Critical Stop.wav"
-play_sound_on_failure_default = windows_dir + "\\Media\\Windows Critical Stop.wav"
-play_sound_on_success_default = windows_dir + "\\Media\\notify.wav"
+CORRECT_START_SIGNAL_FILE_PATH = temporary_folder + "\\signal_that_program_started_correctly.signal"
+traceback_json_path = temporary_folder + "\\traceback_info.json"
+play_sound_after_crash_default = windows_dir + "\\Media\\Windows Critical Stop.wav"
+play_sound_after_failure_default = windows_dir + "\\Media\\Windows Critical Stop.wav"
+play_sound_after_success_default = windows_dir + "\\Media\\notify.wav"
 determined_current_packages_file_path_withVersion = (
     developer_tools_dir + "\\determined_current_packages_withVersion.txt"
 )
