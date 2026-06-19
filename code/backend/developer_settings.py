@@ -28,19 +28,33 @@ log_print_prepend: str | None = "%H:%M:%S | "
 log_input_prepend: str | None = "%H:%M:%S > "
 # -------------------------------------------------
 # Program exit behavior:
-# success = sys.exit(0)/sys.exit()/file end.
-# failure = sys.exit(not-a-zero) e.g. raised Exception.Exception.
-# crash   = python interpreter crash (where even try/except fails).
-close_on_success = True
-close_on_failure = False
-close_on_crash = False
+# success = sys.exit(0)/sys.exit()/file-end
+# failure = sys.exit(not-a-zero) e.g. raised Exception.Exception
+# crash   = python interpreter crash (aka where even try/except fails)
+close_after_success = True
+close_after_failure = False
+close_after_crash = False
 open_log_file_after_success = False
 open_log_file_after_failure = False
 open_log_file_after_crash = False
+open_script_after_crash = False
+open_script_after_failure = False
+foreground_after_success = False
+foreground_after_failure = False
+foreground_after_crash = False
+flash_in_taskbar_after_success = False
+flash_in_taskbar_after_failure = True
+flash_in_taskbar_after_crash = True
+print_message_after_success: str | None = None
+print_message_after_failure: str | None = None
+print_message_after_crash: str | None = None
+windows_notification_after_success: str | None = None
+windows_notification_after_failure: str | None = None
+windows_notification_after_crash: str | None = None
 # False for off. True for default. String for rel. path to .wav in C:\Windows\Media:
-play_sound_on_success: str | bool = False
-play_sound_on_failure: str | bool = True
-play_sound_on_crash: str | bool = True
+play_sound_after_success: str | bool = False
+play_sound_after_failure: str | bool = True
+play_sound_after_crash: str | bool = True
 # -------------------------------------------------
 # Start script in scipt folder or folder of the starting shortcut. (affects log_path_rel_to_start_folder setting below):
 start_in_shortcut_folder = False
@@ -65,12 +79,17 @@ prompt_to_close_existing_instances = False
 # -------------------------------------------------
 # Decide if global default (any version) Python should be used instead of automatic localized download and installation of Python/packages:
 use_global_python = False
+use_free_threaded_python_if_available = False
 # -------------------------------------------------
 # Install Python environment while generating shortcuts instead of for first start (Ignored when use_global_python = True):
 install_python_when_generating_shortcuts = True
 # -------------------------------------------------
-# Start program minimized:
-start_minimized = False
+# Unminimize and forground program on first print:
+highlight_window_on_first_print = False
+# supress keyboard interrupt (CTRL+C):
+supress_keyboard_interrupt = False
+# args passed to main script:
+main_script_args = []
 # -------------------------------------------------
 # Decide what parts of vanilla full Python to install:
 # --
@@ -92,15 +111,36 @@ install_tools = False
 
 # use_classic_terminal=True uses classic old-style terminal (conhost.exe) with no tabs (looks more like an app and less like a terminal but text rendering and zooming are worse).
 # use_classic_terminal=False uses modern Windows Terminal (wt.exe): tabs and modern text rendering and zoom:
-use_classic_terminal: bool = True
-# Classic terminal window size. None uses the Windows default:
-classic_terminal_cols: int | None = 120
-classic_terminal_lines: int | None = 30
-# Modern terminal tab color. None uses the Windows Terminal profile default (e.g. "#3B78FF"):
-modern_terminal_tab_color: str | None = "#3B78FF"
+use_classic_terminal = True
 # Background color: 0=Black,1=Blue,2=Green,3=Aqua,4=Red,5=Purple,6=Yellow,8=Gray,7=White,9=LightBlue:
 terminal_bg_color: str | None = "9"
 # Text color: A=LightGreen,B=LightAqua,C=LightRed,,D=LightPurple,E=LightYellow,F=BrightWhite:
 terminal_text_color: str | None = "F"
+
+
+start_minimized = False
+start_maximized = False
+
+disable_resize = False
+always_on_top = False
+
+
+# --------------------------------
+
+# dont resize
+# ontop
+
+hide_title_bar = False
+disable_minimize_button = False
+disable_maximize_button = False
+disable_x_button = False
+
+
+# --------------------------------
+
+# Terminal tab bar color. None uses the Windows Terminal profile default (e.g. "#3B78FF"):
+tab_bar_color: str | None = "#3B78FF"
+
+# --------------------------------
 
 # =========================================
