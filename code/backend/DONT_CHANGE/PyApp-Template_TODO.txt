@@ -2,15 +2,14 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
-udapte license fiel in DONT_CHANGE
+i could do minimize via thumbnail buttons acutally.
+also log,main_scirpt,
 
 for iwndows toast use the appid so prints under saem? also to prevent sopam
 
 minimite button to tray is kind of problemaric. what if i prompt alway to minimize to tray or normal when tray enabled? or as option to do that? what if i pin genraitc function to buttons. or tray on x like many apps do? but also x shoudl be avaible if wanted
 
-rename to PyApp-Framework
-
-now windwos notifcation shows under powershell. it used to show under app name
+make windwos notifaction show under good name and correct app id
 
 rename readmes to README.txt?
 
@@ -20,18 +19,16 @@ for windwos notifactioan warn if not allwod by windwos and meantion in setting t
 
 apply temrplate evyethwher
 
-try to replace pywin32 for 6MB
-
 ask AI if anything would requreies folder craeiotn in case not syneced in git and so on
 
 shoudl i sync current python verion? what if i put that in python folder as indication that sucesfuly created and not deleted->yes
 
-add sorce and license to fonts. print them on slow backend once.
+print asci fonts them on slow backend once.
 
 do i handle pipreqs fail gracefully
 generate a minimla pigar version by quasotm sql mappings
 
-think about going to a minimal pigar verison bc size
+think about going to a minimal pigar verison bc size? what is really adanvata if its just optional feature. it would add large isntall for backend if install?
 
 add use_free-threaded_python_if_available. what to do for global? could be added?
 
@@ -41,25 +38,16 @@ i shouldnt care about function defs because compuield once?
 
 foreground should always unminimite and restor from tray
 
-remove cahche code and patjlib in test 
-remove dataclasses and simplify. remove caching. is there anything really worht cacing?
-mmove singluie use functions as inline and add comennt to replace description that function name provieded.
-add docstiongs
-is anytihng slow to import or definone?
-
 change title bg and text + border color on x
 -> yes green adn red  
 ->also colors for start setgings
+add settingh for titlebar color and text color there. is it better defualt to have title colror thatn bg color? 
 
 reenamble x button on finsih?
-
-add settingh for titlebar color and text color there. is it better defualt to have title colror thatn bg color? 
 
 remove washdog
 
 udpate pyproject for updated pyrefly
-
-udpate readme in dont change
 
 what are all options for the taskbar appearncace. isnt there seomthing like colors and progess states
 
@@ -73,6 +61,8 @@ split reamde into main features and additional features
 
 do i want optionas as windoes prompt?
 do i want setting for windwos window notivation insteaf of notifivation area?
+
+make flowchart for developer folder. for normal start. for shrotcut genations. for ... ask AI
 
 check that only main scirpt errors are rich shc that ugly erros are more obivouse unexepced.. but do i want some to be rich that could happen with wrong user settings? maybe actaulyl do rich wherever user settings are involed. 
 
@@ -92,17 +82,13 @@ add option to not matcjhign pyrton vetriosn: cange python version to match curre
 
 "future smooth" asci font
 
-wrap terminal prints option
-
-confirm font license
+wrap text in terminal prints option as settings
 
 add option for log to be realtive to scriopt and not shrotcut but wdir is shrotctu.-> log_relaitev_to_shortcut = False
 
 ask AI if script is efficient
 
 add clickable thing to windfwos notifaction.
-
-asci art maybe only for install. replace not implementec chars. but at least - and _ and !?.,
 
 offer install terminal open for missing package
 
@@ -138,6 +124,7 @@ add nogil option with chekc if veriosn compatible adn warn if not
 
 
 add shortcut for git check if update avaliable and priomopt options
+maybe just info print that veriosn is abalievael and link and so on?
 
 ask AI if template can be imporved?
 
@@ -148,11 +135,7 @@ Rule of thumb: use uuid.uuid5(...) when Windows should remember something across
 
 make sure tray remebers position if overflow
 
-conhost can change outline
-
 do i want in conhost to define shape? do i want that via cols and lines and setting like ratio?
-
-implement opacity
 
 check if i still need hwnd_candidates
 
@@ -166,7 +149,6 @@ implmentet watchdog imported settgins
 add "windows notifcation on ... = "Message""
 
 implement highlihgting: Foregprund and warning state? see future. ask AI if more ways
-
 
 do i want a open log on frist print? for no terminal?
 
