@@ -8,12 +8,9 @@ nuitka-crash-report.xml
 GIT_IGNORED
 # package installation records:
 RECORD
-# scratchpad test script:
-scripts/test.py
 # generated caches:
 __pycache__
 *.pyc
 *.pyo
-# temporary signal file to signal correct program start:
-*.signal
-.startup_time_markers/*
+# temporary files:
+temporary/*
