@@ -35,85 +35,6 @@ get_pip_url = "https://bootstrap.pypa.io/get-pip.py"
 pipreqs_mapping_path = backend_packages_dir + "\\pipreqs\\mapping"
 get_pip_path = backend_python_dir + "\\get-pip.py"
 
-# ===========================
-
-
-def prune_pywin32_installation(packages_dir: str) -> None:
-    """Remove pywin32 files that are not needed by shortcut generation."""
-    import shutil  # lazy import because slow
-
-    packages_dir = os.path.abspath(packages_dir)
-    win32comext_dir = os.path.join(packages_dir, "win32comext")
-
-    if not os.path.isdir(win32comext_dir):
-        return
-
-    def get_size(path: str) -> int:
-        if not os.path.exists(path):
-            return 0
-        if os.path.isfile(path) or os.path.islink(path):
-            return os.path.getsize(path)
-
-        total = 0
-        for folder_path, _folder_names, file_names in os.walk(path):
-            for file_name in file_names:
-                file_path = os.path.join(folder_path, file_name)
-                try:
-                    total += os.path.getsize(file_path)
-                except OSError:
-                    pass
-        return total
-
-    def delete_path(rel_path: str) -> int:
-        path = os.path.abspath(os.path.join(packages_dir, rel_path))
-
-        if not path.startswith(packages_dir + os.sep):
-            raise ValueError(f'Refusing to delete outside backend packages: "{path}"')
-
-        size = get_size(path)
-        if os.path.isdir(path) and not os.path.islink(path):
-            shutil.rmtree(path)
-        elif os.path.exists(path):
-            os.remove(path)
-        return size
-
-    # Keep win32com.client, win32com.propsys, and win32com.shell. The shortcut generator uses those to create .lnk
-    # files and set System.AppUserModel.ID. Everything below is documentation, demos, tests, or unrelated pywin32
-    # extension modules.
-    removable_paths = [
-        "PyWin32.chm",
-        "adodbapi",
-        "isapi",
-        "pythonwin",
-        "win32\\Demos",
-        "win32\\include",
-        "win32\\libs",
-        "win32\\scripts",
-        "win32\\test",
-        "win32com\\demos",
-        "win32com\\HTML",
-        "win32com\\include",
-        "win32com\\libs",
-        "win32com\\makegw",
-        "win32com\\test",
-    ]
-    removable_paths.extend(
-        f"win32comext\\{folder_name}"
-        for folder_name in os.listdir(win32comext_dir)
-        if folder_name not in {"propsys", "shell"}
-    )
-
-    saved_size = 0
-    removed_count = 0
-    for rel_path in removable_paths:
-        path = os.path.join(packages_dir, rel_path)
-        if os.path.exists(path):
-            saved_size += delete_path(rel_path)
-            removed_count += 1
-
-    print(f"[Info] Pruned pywin32 extras: removed {removed_count} paths, saved {saved_size / 1024 / 1024:.2f} MB")
-
-
 try:
     # update pth_file_path temporily to include packages folder for pip installation
     with open(backend_python_pth_file, "w", encoding="utf-8") as f:
@@ -223,21 +144,16 @@ import site""")
 
         shutil.rmtree(generated_bin_folder)
 
-    prune_pywin32_installation(backend_packages_dir)
-
     # uninstall pip, setuptools and wheel from the embedded python to save space
     subprocess.run(  # noqa:S603
         [backend_python_exe, "-m", "pip", "uninstall", "pip", "packaging", "setuptools", "wheel", "-y"], check=True
     )
 
-    # update python3xx._pth (for path to packages and pywin32 fixes)
+    # update python3xx._pth
     with open(backend_python_pth_file, "w", encoding="utf-8") as f:
         f.write(rf"""{backend_python_zip_rel_path}
 .
 {rel_path_from_backend_python_to_backend_packages}
-{rel_path_from_backend_python_to_backend_packages}\win32
-{rel_path_from_backend_python_to_backend_packages}\win32\lib
-{rel_path_from_backend_python_to_backend_packages}\Pythonwin
 
 # Uncomment to run site.main() automatically
 # import site""")
