@@ -2,8 +2,25 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+udapte license fiel in DONT_CHANGE
+
+for iwndows toast use the appid so prints under saem? also to prevent sopam
+
+minimite button to tray is kind of problemaric. what if i prompt alway to minimize to tray or normal when tray enabled? or as option to do that? what if i pin genraitc function to buttons. or tray on x like many apps do? but also x shoudl be avaible if wanted
+
+rename to PyApp-Framework
+
+now windwos notifcation shows under powershell. it used to show under app name
+
+rename readmes to README.txt?
+
+add iwndwos promps for sucdces/failure/crash in settings
+
+for windwos notifactioan warn if not allwod by windwos and meantion in setting that has to be enables and where that settign
+
 apply temrplate evyethwher
 
+try to replace pywin32 for 6MB
 
 ask AI if anything would requreies folder craeiotn in case not syneced in git and so on
 
