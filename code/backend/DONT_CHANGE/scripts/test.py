@@ -94,6 +94,11 @@ def _constants():
         lr_loadfromfile=0x0010,
         lr_defaultsize=0x0040,
         idi_application=32512,
+        idi_error=32513,
+        idi_question=32514,
+        idi_warning=32515,
+        idi_information=32516,
+        idi_shield=32518,
         mf_string=0x0000,
         mf_separator=0x0800,
         tpm_rightbutton=0x0002,
@@ -109,6 +114,14 @@ def _constants():
         dwmwcp_donotround=1,
         dwmwcp_round=2,
         dwmwcp_roundsmall=3,
+        clsctx_inproc_server=0x1,
+        tbpf_noprogress=0x0,
+        tbpf_indeterminate=0x1,
+        tbpf_normal=0x2,
+        tbpf_error=0x4,
+        tbpf_paused=0x8,
+        std_output_handle=-11,
+        enable_wrap_at_eol_output=0x0002,
     )
     _WIN_CONSTANTS = constants
     return constants
@@ -219,8 +232,14 @@ def _windows_api():
     kernel32.GetConsoleWindow.restype = wintypes.HWND
     kernel32.GetConsoleTitleW.argtypes = [wintypes.LPWSTR, wintypes.DWORD]
     kernel32.GetConsoleTitleW.restype = wintypes.DWORD
+    kernel32.GetConsoleMode.argtypes = [wintypes.HANDLE, ctypes.POINTER(wintypes.DWORD)]
+    kernel32.GetConsoleMode.restype = wintypes.BOOL
+    kernel32.GetStdHandle.argtypes = [wintypes.DWORD]
+    kernel32.GetStdHandle.restype = wintypes.HANDLE
     kernel32.GetModuleHandleW.argtypes = [wintypes.LPCWSTR]
     kernel32.GetModuleHandleW.restype = wintypes.HANDLE
+    kernel32.SetConsoleMode.argtypes = [wintypes.HANDLE, wintypes.DWORD]
+    kernel32.SetConsoleMode.restype = wintypes.BOOL
 
     user32.AppendMenuW.argtypes = [wintypes.HANDLE, wintypes.UINT, ctypes.c_size_t, wintypes.LPCWSTR]
     user32.AppendMenuW.restype = wintypes.BOOL
@@ -296,6 +315,19 @@ def _windows_api():
         wintypes.UINT,
     ]
     user32.LoadImageW.restype = wintypes.HANDLE
+    user32.MessageBoxW.argtypes = [wintypes.HWND, wintypes.LPCWSTR, wintypes.LPCWSTR, wintypes.UINT]
+    user32.MessageBoxW.restype = ctypes.c_int
+    message_box_timeout = getattr(user32, "MessageBoxTimeoutW", None)
+    if message_box_timeout is not None:
+        message_box_timeout.argtypes = [
+            wintypes.HWND,
+            wintypes.LPCWSTR,
+            wintypes.LPCWSTR,
+            wintypes.UINT,
+            wintypes.WORD,
+            wintypes.DWORD,
+        ]
+        message_box_timeout.restype = ctypes.c_int
     user32.PostMessageW.argtypes = [wintypes.HWND, wintypes.UINT, types.wparam, types.lparam]
     user32.PostMessageW.restype = wintypes.BOOL
     user32.PostQuitMessage.argtypes = [ctypes.c_int]
@@ -403,6 +435,7 @@ def _windows_api():
         dwmapi=dwmapi,
         get_window_long=get_window_long,
         set_window_long=set_window_long,
+        message_box_timeout=message_box_timeout,
     )
     _WINDOWS_API = api
     return api
@@ -471,7 +504,7 @@ def _default_notification_settings():
     )
 
 
-_TOAST_SOUND_ALIASES = {
+_TOAST_SOUNDS = {
     "default": "",
     "mail": "ms-winsoundevent:Notification.Mail",
     "sms": "ms-winsoundevent:Notification.SMS",
@@ -487,7 +520,7 @@ def _validate_windows_notification_settings(settings) -> None:
     settings.silent = bool(getattr(settings, "silent", False))
     settings.app_id = str(getattr(settings, "app_id", "") or "")
     settings.app_name = str(getattr(settings, "app_name", "") or "")
-    settings.sound = str(getattr(settings, "sound", "default") or "default").lower().replace("-", "_")
+    settings.sound = str(getattr(settings, "sound", "default") or "default").lower()
     settings.attribution = str(getattr(settings, "attribution", "") or "")
     settings.logo = str(getattr(settings, "logo", "") or "")
     settings.hero = str(getattr(settings, "hero", "") or "")
@@ -496,8 +529,8 @@ def _validate_windows_notification_settings(settings) -> None:
         raise ValueError("Toast duration must be short or long.")
     if settings.scenario not in {"default", "alarm", "reminder", "incomingCall"}:
         raise ValueError("Toast scenario must be default, alarm, reminder, or incomingCall.")
-    if settings.sound not in _TOAST_SOUND_ALIASES:
-        available = ", ".join(sorted(_TOAST_SOUND_ALIASES))
+    if settings.sound not in _TOAST_SOUNDS:
+        available = ", ".join(sorted(_TOAST_SOUNDS))
         raise ValueError(f"Toast sound must be one of: {available}.")
 
 
@@ -850,8 +883,8 @@ def _modern_toast_xml(settings) -> str:
     toast_xml_lines.extend(["    </binding>", "  </visual>"])
     if settings.silent:
         toast_xml_lines.append('  <audio silent="true" />')
-    elif _TOAST_SOUND_ALIASES[settings.sound]:
-        toast_xml_lines.append(f'  <audio src="{_TOAST_SOUND_ALIASES[settings.sound]}" />')
+    elif _TOAST_SOUNDS[settings.sound]:
+        toast_xml_lines.append(f'  <audio src="{_TOAST_SOUNDS[settings.sound]}" />')
     toast_xml_lines.append("</toast>")
     return "\n".join(toast_xml_lines)
 
@@ -1247,6 +1280,30 @@ def set_window_opacity(percent: int, window=None) -> str:
     return terminal_window.host
 
 
+def set_terminal_text_wrapping(enabled: bool = True) -> str:
+    """Toggle whether console output wraps at the right edge of the screen buffer."""
+
+    constants = _constants()
+    api = _windows_api()
+    handle = api.kernel32.GetStdHandle(wintypes.DWORD(constants.std_output_handle))
+    if not handle or handle == wintypes.HANDLE(-1).value:
+        _raise_last_error("GetStdHandle")
+
+    mode = wintypes.DWORD()
+    if not api.kernel32.GetConsoleMode(handle, ctypes.byref(mode)):
+        _raise_last_error("GetConsoleMode")
+
+    if enabled:
+        new_mode = mode.value | constants.enable_wrap_at_eol_output
+    else:
+        new_mode = mode.value & ~constants.enable_wrap_at_eol_output
+
+    if not api.kernel32.SetConsoleMode(handle, wintypes.DWORD(new_mode)):
+        _raise_last_error("SetConsoleMode")
+
+    return "enabled" if enabled else "disabled"
+
+
 def restore_and_foreground_window(window=None) -> str:
     terminal_window = _resolve_window(window)
     api = _windows_api()
@@ -1256,6 +1313,112 @@ def restore_and_foreground_window(window=None) -> str:
     api.user32.BringWindowToTop(terminal_window.hwnd)
     api.user32.SetForegroundWindow(terminal_window.hwnd)
     return terminal_window.host
+
+
+_WINDOWS_PROMPT_BUTTONS = {
+    "ok": 0x00000000,
+    "ok_cancel": 0x00000001,
+    "abort_retry_ignore": 0x00000002,
+    "yes_no_cancel": 0x00000003,
+    "yes_no": 0x00000004,
+    "retry_cancel": 0x00000005,
+    "cancel_try_continue": 0x00000006,
+}
+
+_WINDOWS_PROMPT_ICONS = {
+    "none": 0x00000000,
+    "error": 0x00000010,
+    "question": 0x00000020,
+    "warning": 0x00000030,
+    "info": 0x00000040,
+}
+
+_WINDOWS_PROMPT_RESULTS = {
+    1: "ok",
+    2: "cancel",
+    3: "abort",
+    4: "retry",
+    5: "ignore",
+    6: "yes",
+    7: "no",
+    10: "try_again",
+    11: "continue",
+    32000: "timeout",
+}
+
+
+def _normalize_windows_prompt_option(value: str) -> str:
+    return str(value or "").strip().lower()
+
+
+def _windows_prompt_flag(name: str, value: str, options: dict[str, int]) -> int:
+    key = _normalize_windows_prompt_option(value)
+    if key not in options:
+        available = ", ".join(sorted(options))
+        raise ValueError(f"Prompt {name} must be one of: {available}.")
+    return options[key]
+
+
+def show_windows_prompt(
+    message: str = "Continue?",
+    *,
+    title: str = "Python prompt",
+    buttons: str = "ok_cancel",
+    icon: str = "question",
+    default_button: int = 1,
+    topmost: bool = True,
+    foreground: bool = True,
+    right_align: bool = False,
+    rtl_reading: bool = False,
+    system_modal: bool = False,
+    task_modal: bool = False,
+    timeout_ms: int | None = None,
+    hwnd: int | None = None,
+    window=None,
+) -> str:
+    """Show a native Windows prompt and return the clicked button name."""
+
+    api = _windows_api()
+    if hwnd is None and window is not None:
+        hwnd = _resolve_window(window).hwnd
+
+    flags = _windows_prompt_flag("buttons", buttons, _WINDOWS_PROMPT_BUTTONS)
+    flags |= _windows_prompt_flag("icon", icon, _WINDOWS_PROMPT_ICONS)
+
+    default_button = int(default_button)
+    if default_button < 1 or default_button > 4:
+        raise ValueError("Prompt default_button must be between 1 and 4.")
+    flags |= (default_button - 1) * 0x00000100
+
+    if system_modal and task_modal:
+        raise ValueError("Prompt can use system_modal or task_modal, not both.")
+    if system_modal:
+        flags |= 0x00001000
+    elif task_modal:
+        flags |= 0x00002000
+
+    if foreground:
+        flags |= 0x00010000
+    if topmost:
+        flags |= 0x00040000
+    if right_align:
+        flags |= 0x00080000
+    if rtl_reading:
+        flags |= 0x00100000
+
+    if timeout_ms is None:
+        result = api.user32.MessageBoxW(hwnd or None, str(message), str(title), flags)
+    else:
+        timeout_ms = int(timeout_ms)
+        if timeout_ms <= 0:
+            raise ValueError("Prompt timeout_ms must be greater than zero.")
+        if api.message_box_timeout is None:
+            raise RuntimeError("MessageBoxTimeoutW is not available on this Windows installation.")
+        result = api.message_box_timeout(hwnd or None, str(message), str(title), flags, 0, timeout_ms)
+
+    if result == 0:
+        _raise_last_error("MessageBoxW")
+    return _WINDOWS_PROMPT_RESULTS.get(int(result), f"unknown:{int(result)}")
 
 
 def flash_taskbar(
@@ -1286,6 +1449,226 @@ def flash_taskbar(
     if not api.user32.FlashWindowEx(ctypes.byref(info)):
         _raise_last_error("FlashWindowEx")
 
+    return terminal_window.host
+
+
+_TASKBAR_CLSID = "{56FDF344-FD6D-11D0-958A-006097C9A090}"
+_TASKBAR_IID = "{EA1AFB91-9E28-4B86-90E9-9E9F8A5EEA84}"
+_TASKBAR_PROGRESS_STATES = {
+    "none": "tbpf_noprogress",
+    "indeterminate": "tbpf_indeterminate",
+    "normal": "tbpf_normal",
+    "error": "tbpf_error",
+    "paused": "tbpf_paused",
+}
+_TASKBAR_STOCK_OVERLAY_ICONS = {
+    "app": "idi_application",
+    "error": "idi_error",
+    "question": "idi_question",
+    "warning": "idi_warning",
+    "info": "idi_information",
+    "shield": "idi_shield",
+}
+_TASKBAR_OVERLAY_ICON_HANDLES = {}
+
+
+def _guid_from_string(value: str):
+    types = _native_types()
+    guid_value = uuid.UUID(value)
+    guid = types.GUID()
+    guid.Data1 = guid_value.time_low
+    guid.Data2 = guid_value.time_mid
+    guid.Data3 = guid_value.time_hi_version
+    for index, byte in enumerate(guid_value.bytes[8:]):
+        guid.Data4[index] = byte
+    return guid
+
+
+def _check_hresult(result: int, operation: str) -> None:
+    if result < 0:
+        raise OSError(f"{operation} failed with HRESULT 0x{result & 0xFFFFFFFF:08X}")
+
+
+class TaskbarList3:
+    """Minimal ITaskbarList3 wrapper for taskbar progress appearance."""
+
+    def __init__(self):
+        types = _native_types()
+        self._ole32 = ctypes.WinDLL("ole32", use_last_error=True)
+        self._ole32.CoInitialize.argtypes = [ctypes.c_void_p]
+        self._ole32.CoInitialize.restype = ctypes.c_long
+        self._ole32.CoCreateInstance.argtypes = [
+            ctypes.POINTER(types.GUID),
+            ctypes.c_void_p,
+            wintypes.DWORD,
+            ctypes.POINTER(types.GUID),
+            ctypes.POINTER(ctypes.c_void_p),
+        ]
+        self._ole32.CoCreateInstance.restype = ctypes.c_long
+
+        self._com_initialized = False
+        result = self._ole32.CoInitialize(None)
+        if result in {0, 1}:
+            self._com_initialized = True
+        elif result != -2147417850:  # RPC_E_CHANGED_MODE; COM is already initialized for this thread.
+            _check_hresult(result, "CoInitialize")
+
+        clsid = _guid_from_string(_TASKBAR_CLSID)
+        iid = _guid_from_string(_TASKBAR_IID)
+        self._pointer = ctypes.c_void_p()
+        _check_hresult(
+            self._ole32.CoCreateInstance(
+                ctypes.byref(clsid),
+                None,
+                _constants().clsctx_inproc_server,
+                ctypes.byref(iid),
+                ctypes.byref(self._pointer),
+            ),
+            "CoCreateInstance(ITaskbarList3)",
+        )
+        self._vtable = ctypes.cast(self._pointer, ctypes.POINTER(ctypes.POINTER(ctypes.c_void_p))).contents
+        self._call(3, ctypes.c_long, "ITaskbarList3.HrInit")
+
+    def close(self) -> None:
+        if self._pointer:
+            self._call(2, wintypes.ULONG, "IUnknown.Release", check_result=False)
+            self._pointer = ctypes.c_void_p()
+        if self._com_initialized:
+            self._ole32.CoUninitialize.argtypes = []
+            self._ole32.CoUninitialize.restype = None
+            self._ole32.CoUninitialize()
+            self._com_initialized = False
+
+    def _call(self, index: int, result_type, operation: str, *argtypes, check_result: bool = True, args=()):
+        prototype = ctypes.WINFUNCTYPE(result_type, ctypes.c_void_p, *argtypes)
+        method = prototype(self._vtable[index])
+        result = method(self._pointer, *args)
+        if check_result:
+            _check_hresult(int(result), operation)
+        return result
+
+    def set_progress_state(self, hwnd: int, state: int) -> None:
+        self._call(
+            10,
+            ctypes.c_long,
+            "ITaskbarList3.SetProgressState",
+            wintypes.HWND,
+            wintypes.DWORD,
+            args=(hwnd, state),
+        )
+
+    def set_progress_value(self, hwnd: int, completed: int, total: int) -> None:
+        self._call(
+            9,
+            ctypes.c_long,
+            "ITaskbarList3.SetProgressValue",
+            wintypes.HWND,
+            ctypes.c_ulonglong,
+            ctypes.c_ulonglong,
+            args=(hwnd, completed, total),
+        )
+
+    def set_overlay_icon(self, hwnd: int, icon: int | None, description: str = "") -> None:
+        self._call(
+            18,
+            ctypes.c_long,
+            "ITaskbarList3.SetOverlayIcon",
+            wintypes.HWND,
+            wintypes.HICON,
+            wintypes.LPCWSTR,
+            args=(hwnd, icon or None, str(description)),
+        )
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, _exc_type, _exc, _traceback) -> None:
+        self.close()
+
+
+def _taskbar_progress_state_value(state: str) -> int:
+    normalized = str(state or "").strip().lower()
+    constant_name = _TASKBAR_PROGRESS_STATES.get(normalized)
+    if constant_name is None:
+        available = ", ".join(sorted(_TASKBAR_PROGRESS_STATES))
+        raise ValueError(f"Taskbar progress state must be one of: {available}.")
+    return getattr(_constants(), constant_name)
+
+
+def set_taskbar_progress_state(state: str = "normal", window=None) -> str:
+    terminal_window = _resolve_window(window)
+    with TaskbarList3() as taskbar:
+        taskbar.set_progress_state(terminal_window.hwnd, _taskbar_progress_state_value(state))
+    return terminal_window.host
+
+
+def set_taskbar_progress(completed: int, total: int = 100, state: str = "normal", window=None) -> str:
+    terminal_window = _resolve_window(window)
+    completed = int(completed)
+    total = int(total)
+    if total <= 0:
+        raise ValueError("Taskbar progress total must be greater than zero.")
+    if completed < 0:
+        raise ValueError("Taskbar progress completed value cannot be negative.")
+    if completed > total:
+        completed = total
+
+    progress_state = _taskbar_progress_state_value(state)
+    with TaskbarList3() as taskbar:
+        taskbar.set_progress_value(terminal_window.hwnd, completed, total)
+        taskbar.set_progress_state(terminal_window.hwnd, progress_state)
+    return terminal_window.host
+
+
+def clear_taskbar_progress(window=None) -> str:
+    return set_taskbar_progress_state("none", window)
+
+
+def _load_stock_overlay_icon(name: str) -> int:
+    normalized = str(name or "").strip().lower()
+    constant_name = _TASKBAR_STOCK_OVERLAY_ICONS.get(normalized)
+    if constant_name is None:
+        available = ", ".join(sorted(_TASKBAR_STOCK_OVERLAY_ICONS))
+        raise ValueError(f"Stock overlay icon must be one of: {available}.")
+
+    api = _windows_api()
+    icon = api.user32.LoadIconW(None, _integer_resource(getattr(_constants(), constant_name)))
+    if not icon:
+        raise ctypes.WinError(ctypes.get_last_error())
+    return int(icon)
+
+
+def _taskbar_overlay_icon_handle(icon: str) -> tuple[int, bool]:
+    normalized = str(icon or "").strip()
+    if not normalized:
+        raise ValueError("Taskbar overlay icon needs a stock icon name or .ico path.")
+
+    stock_icon_name = normalized.lower()
+    if stock_icon_name in _TASKBAR_STOCK_OVERLAY_ICONS:
+        return _load_stock_overlay_icon(stock_icon_name), False
+    return _load_icon_from_file(normalized), True
+
+
+def set_taskbar_overlay_icon(icon: str, description: str = "", window=None) -> str:
+    terminal_window = _resolve_window(window)
+    icon_handle, owns_icon = _taskbar_overlay_icon_handle(icon)
+    previous_icon = _TASKBAR_OVERLAY_ICON_HANDLES.pop(terminal_window.hwnd, None)
+    with TaskbarList3() as taskbar:
+        taskbar.set_overlay_icon(terminal_window.hwnd, icon_handle, description or str(icon))
+    if previous_icon is not None:
+        _windows_api().user32.DestroyIcon(previous_icon)
+    if owns_icon:
+        _TASKBAR_OVERLAY_ICON_HANDLES[terminal_window.hwnd] = icon_handle
+    return terminal_window.host
+
+
+def clear_taskbar_overlay_icon(window=None) -> str:
+    terminal_window = _resolve_window(window)
+    with TaskbarList3() as taskbar:
+        taskbar.set_overlay_icon(terminal_window.hwnd, None, "")
+    previous_icon = _TASKBAR_OVERLAY_ICON_HANDLES.pop(terminal_window.hwnd, None)
+    if previous_icon is not None:
+        _windows_api().user32.DestroyIcon(previous_icon)
     return terminal_window.host
 
 
@@ -1334,7 +1717,7 @@ def set_frame_text_color(color: str, window=None) -> str:
 
 def _load_figlet_font(font_name: str):
     # Normalize friendly font names such as "big_money-ne" and "Big Money-ne".
-    normalized = " ".join(font_name.strip().lower().replace("_", " ").split())
+    normalized = " ".join(font_name.strip().lower().split())
     font_info = ASCII_FONT_FILES.get(normalized)
     if font_info is None:
         available = ", ".join(name for name, _filename in ASCII_FONT_FILES.values())
@@ -1403,7 +1786,7 @@ def _parse_ascii_message_command(argument_text: str) -> tuple[str, str]:
         return "Standard", "Type Something"
 
     # Normalize user-entered font names without a separate one-use helper.
-    normalized_argument = " ".join(argument_text.lower().replace("_", " ").split())
+    normalized_argument = " ".join(argument_text.lower().split())
     for normalized_font, (display_name, _filename) in sorted(
         ASCII_FONT_FILES.items(),
         key=lambda item: len(item[0]),
@@ -1416,8 +1799,8 @@ def _parse_ascii_message_command(argument_text: str) -> tuple[str, str]:
             return display_name, argument_text[font_prefix_length:].strip()
 
     first, separator, remainder = argument_text.partition("=")
-    normalized_key = " ".join(first.lower().replace("_", " ").split())
-    if separator and normalized_key in {"font", "ascii font"}:
+    normalized_key = " ".join(first.lower().split())
+    if separator and normalized_key == "font":
         font_value, _separator, message = remainder.partition(" ")
         return font_value.strip(), message.strip() or "Type Something"
 
@@ -1827,40 +2210,37 @@ def _parse_modern_toast_settings(
     tokens = argument_text.split()
     remainder_start = 0
     for index, token in enumerate(tokens):
-        normalized = token.lower().replace("-", "_")
-        key, separator, value = normalized.partition("=")
+        normalized = token.lower()
+        key, separator, value = token.partition("=")
+        key = key.lower()
         original_value = token.partition("=")[2] if separator else ""
 
-        if separator and key in {"app_id", "appid", "aumid"}:
+        if separator and key == "app_id":
             app_id = original_value
-        elif separator and key in {"app_name", "appname", "toast_name"}:
+        elif separator and key == "app_name":
             app_name = original_value
         elif separator and key == "duration":
-            duration = value
+            duration = value.lower()
         elif separator and key == "scenario":
-            scenario = "incomingCall" if value in {"incoming_call", "incomingcall"} else value
+            scenario = value
         elif separator and key == "sound":
-            sound = "default" if value in {"", "default"} else value
-            if value in {"none", "silent", "off", "false"}:
-                silent = True
-                sound = "default"
-            else:
-                silent = False
+            sound = value.lower()
+            silent = False
         elif separator and key == "attribution":
             attribution = original_value
-        elif separator and key in {"logo", "image", "app_logo"}:
+        elif separator and key == "logo":
             logo = original_value
-        elif separator and key in {"hero", "hero_image"}:
+        elif separator and key == "hero":
             hero = original_value
-        elif normalized in {"silent", "no_sound", "nosound"}:
+        elif normalized == "silent":
             silent = True
             sound = "default"
-        elif normalized in {"sound", "with_sound"}:
+        elif normalized == "sound":
             silent = False
             sound = "default"
-        elif normalized in {"long", "long_duration"}:
+        elif normalized == "long":
             duration = "long"
-        elif normalized in {"short", "short_duration"}:
+        elif normalized == "short":
             duration = "short"
         else:
             remainder_start = index
@@ -1905,7 +2285,7 @@ def _print_windows_notification_help() -> None:
     print("  duration=short|long                 toast duration")
     print("  scenario=default|alarm|reminder|incomingCall")
     print("  sound=default|mail|sms|reminder|alarm|call")
-    print("  silent|no_sound|nosound             suppress notification sound")
+    print("  silent                              suppress notification sound")
     print("  sound                               allow notification sound")
     print("  attribution=<text>                  attribution line without spaces")
     print("  logo=<path_or_uri>                  app logo image")
@@ -1913,10 +2293,128 @@ def _print_windows_notification_help() -> None:
     print()
     print("Examples:")
     print("  notify Build finished | Your script completed.")
-    print("  notify app_name=terminal Build finished | Your script completed.")
     print("  notify silent Build finished | Your script completed.")
     print("  notify duration=long scenario=reminder Reminder | Check the terminal output.")
     print("  notify sound=mail logo=C:\\path\\icon.png Mail | New message received.")
+
+
+def _parse_bool_option(value: str) -> bool:
+    normalized = str(value or "").strip().lower()
+    if normalized == "true":
+        return True
+    if normalized == "false":
+        return False
+    raise ValueError(f"Expected a boolean value, got {value!r}.")
+
+
+def _parse_windows_prompt_settings(argument_text: str, *, default_title: str):
+    title = default_title or "Python prompt"
+    message = "Choose an option."
+    buttons = "ok_cancel"
+    icon = "question"
+    default_button = 1
+    topmost = True
+    foreground = True
+    right_align = False
+    rtl_reading = False
+    system_modal = False
+    task_modal = False
+    timeout_ms = None
+
+    tokens = argument_text.split()
+    remainder_start = 0
+    for index, token in enumerate(tokens):
+        normalized = token.lower()
+        key, separator, value = token.partition("=")
+        key = key.lower()
+
+        if separator and key == "buttons":
+            buttons = value
+        elif separator and key == "icon":
+            icon = value
+        elif separator and key == "default":
+            default_button = int(value)
+        elif separator and key == "title":
+            title = value
+        elif separator and key == "message":
+            message = value
+        elif separator and key == "timeout":
+            timeout_ms = int(value)
+        elif separator and key == "topmost":
+            topmost = _parse_bool_option(value)
+        elif separator and key == "foreground":
+            foreground = _parse_bool_option(value)
+        elif separator and key == "right_align":
+            right_align = _parse_bool_option(value)
+        elif separator and key == "rtl":
+            rtl_reading = _parse_bool_option(value)
+        elif separator and key == "system_modal":
+            system_modal = _parse_bool_option(value)
+        elif separator and key == "task_modal":
+            task_modal = _parse_bool_option(value)
+        elif normalized == "topmost":
+            topmost = True
+        elif normalized == "foreground":
+            foreground = True
+        elif normalized == "right_align":
+            right_align = True
+        elif normalized == "rtl":
+            rtl_reading = True
+        elif normalized == "system_modal":
+            system_modal = True
+        elif normalized == "task_modal":
+            task_modal = True
+        else:
+            remainder_start = index
+            break
+    else:
+        remainder_start = len(tokens)
+
+    remainder = " ".join(tokens[remainder_start:]).strip()
+    if remainder:
+        if "|" in remainder:
+            title_text, message_text = remainder.split("|", 1)
+            title = title_text.strip() or title
+            message = message_text.strip() or message
+        else:
+            message = remainder
+
+    return SimpleNamespace(
+        title=title,
+        message=message,
+        buttons=buttons,
+        icon=icon,
+        default_button=default_button,
+        topmost=topmost,
+        foreground=foreground,
+        right_align=right_align,
+        rtl_reading=rtl_reading,
+        system_modal=system_modal,
+        task_modal=task_modal,
+        timeout_ms=timeout_ms,
+    )
+
+
+def _print_windows_prompt_help() -> None:
+    print()
+    print("Native Windows prompt command:")
+    print("  prompt [options] title | message")
+    print()
+    print("Options must come before the title:")
+    print("  buttons=ok|ok_cancel|yes_no|yes_no_cancel|retry_cancel")
+    print("          abort_retry_ignore|cancel_try_continue")
+    print("  icon=none|info|warning|error|question")
+    print("  default=1|2|3|4                  default focused button")
+    print("  topmost=true|false               keep above other windows; default true")
+    print("  foreground=true|false            request foreground; default true")
+    print("  timeout=<milliseconds>           auto-close when supported")
+    print("  right_align|rtl                  right-align/RTL text")
+    print("  system_modal|task_modal          modal style")
+    print()
+    print("Examples:")
+    print("  prompt Continue? | Run the next step?")
+    print("  prompt buttons=yes_no icon=warning default=2 Delete files? | This cannot be undone.")
+    print("  prompt buttons=cancel_try_continue icon=info timeout=10000 Pick one | Auto timeout in 10s.")
 
 
 def _print_windows_notification_status(app_id: str | None = None) -> None:
@@ -1948,11 +2446,20 @@ def _print_commands(context) -> None:
     print("  notify [options] title | msg show modern Windows toast")
     print("  notify_status                check whether Windows toast notifications are enabled")
     print("  notify_help                  print modern toast options")
+    print("  prompt [options] title | msg show native Windows prompt")
+    print("  prompt_help                  print native prompt options")
     print("  ascii [font] message print message using a local ASCII font")
     print("  opacity 0-100                set whole-window opacity")
+    print("  wrap_text true|false         enable/disable wrapping printed text at line end")
     print("  foreground                   restore, bring to top, request foreground")
     print("  taskbar_alarm                flash caption/taskbar until foreground")
     print("  flash_taskbar [count]        flash caption/taskbar count times")
+    print("  taskbar_progress done [total] [state]")
+    print("                               set taskbar progress: normal|paused|error")
+    print("  taskbar_state state          set state: none|indeterminate|normal|paused|error")
+    print("  taskbar_clear                remove taskbar progress")
+    print("  taskbar_overlay icon [text]  set overlay: error|warning|info|shield|app or .ico path")
+    print("  taskbar_overlay_clear        remove taskbar overlay icon")
     print("  border_color #RRGGBB         set DWM border/outline color")
     print("  caption_color #RRGGBB        set DWM caption color")
     print("  text_color #RRGGBB           set DWM caption text color")
@@ -1962,7 +2469,9 @@ def _run_command(command: str, context) -> bool:
     raw_command = command
 
     parts = raw_command.split()
-    command = parts[0].lower().replace("-", "_")
+    if not parts:
+        return True
+    command = parts[0].lower()
     args = parts[1:]
 
     def require_arg(name: str) -> str:
@@ -1976,9 +2485,6 @@ def _run_command(command: str, context) -> bool:
             argument_text,
             default_title=context.window.title or "Python notification",
         )
-        if settings.app_name.lower() in {"terminal", "terminal_title", "window", "window_title"}:
-            settings.app_name = context.window.title or "Python notification"
-
         show_modern_windows_notification(settings)
 
     def notification_status_command() -> None:
@@ -1986,11 +2492,34 @@ def _run_command(command: str, context) -> bool:
         if args:
             first = args[0]
             key, separator, value = first.partition("=")
-            if separator and key.lower().replace("-", "_") in {"app_id", "appid", "aumid"}:
+            if separator and key.lower() == "app_id":
                 app_id = value
             else:
                 app_id = first
         _print_windows_notification_status(app_id)
+
+    def prompt_command() -> None:
+        argument_text = raw_command[len(parts[0]) :].strip()
+        settings = _parse_windows_prompt_settings(
+            argument_text,
+            default_title=context.window.title or "Python prompt",
+        )
+        result = show_windows_prompt(
+            settings.message,
+            title=settings.title,
+            buttons=settings.buttons,
+            icon=settings.icon,
+            default_button=settings.default_button,
+            topmost=settings.topmost,
+            foreground=settings.foreground,
+            right_align=settings.right_align,
+            rtl_reading=settings.rtl_reading,
+            system_modal=settings.system_modal,
+            task_modal=settings.task_modal,
+            timeout_ms=settings.timeout_ms,
+            window=context.window,
+        )
+        print(f"Prompt result: {result}")
 
     def ascii_message_command() -> None:
         argument_text = raw_command[len(parts[0]) :].strip()
@@ -2000,12 +2529,33 @@ def _run_command(command: str, context) -> bool:
     def opacity_command() -> None:
         set_window_opacity(int(require_arg("opacity")), context.window)
 
+    def wrap_text_command(default_enabled: bool | None = None) -> None:
+        enabled = default_enabled if default_enabled is not None else _parse_bool_option(require_arg("wrap_text"))
+        state = set_terminal_text_wrapping(enabled)
+        print(f"Text wrapping {state}.")
+
     def flash_taskbar_command() -> None:
         count = int(args[0]) if args else 5
         flash_taskbar(context.window, count=count, until_foreground=False)
 
     def taskbar_alarm_command() -> None:
         flash_taskbar(context.window, count=0, until_foreground=True)
+
+    def taskbar_progress_command() -> None:
+        completed = int(require_arg("taskbar_progress"))
+        total = int(args[1]) if len(args) > 1 and re.fullmatch(r"\d+", args[1]) else 100
+        state_index = 2 if len(args) > 1 and re.fullmatch(r"\d+", args[1]) else 1
+        state = args[state_index] if len(args) > state_index else "normal"
+        set_taskbar_progress(completed, total, state, context.window)
+
+    def taskbar_state_command() -> None:
+        state = require_arg("taskbar_state")
+        set_taskbar_progress_state(state, context.window)
+
+    def taskbar_overlay_command() -> None:
+        icon = require_arg("taskbar_overlay")
+        description = " ".join(args[1:])
+        set_taskbar_overlay_icon(icon, description, context.window)
 
     def border_color_command() -> None:
         set_frame_border_color(require_arg("border_color"), context.window)
@@ -2028,16 +2578,22 @@ def _run_command(command: str, context) -> bool:
         "notify": notification_command,
         "notify_status": notification_status_command,
         "notify_help": _print_windows_notification_help,
+        "prompt": prompt_command,
+        "prompt_help": _print_windows_prompt_help,
         "ascii": ascii_message_command,
         "opacity": opacity_command,
+        "wrap_text": wrap_text_command,
         "foreground": lambda: restore_and_foreground_window(context.window),
+        "taskbar_alarm": taskbar_alarm_command,
         "flash_taskbar": flash_taskbar_command,
+        "taskbar_progress": taskbar_progress_command,
+        "taskbar_state": taskbar_state_command,
+        "taskbar_clear": lambda: clear_taskbar_progress(context.window),
+        "taskbar_overlay": taskbar_overlay_command,
+        "taskbar_overlay_clear": lambda: clear_taskbar_overlay_icon(context.window),
         "border_color": border_color_command,
-        "outline_color": border_color_command,
         "caption_color": caption_color_command,
-        "title_color": caption_color_command,
         "text_color": text_color_command,
-        "title_text_color": text_color_command,
     }
 
     action = commands.get(command)
