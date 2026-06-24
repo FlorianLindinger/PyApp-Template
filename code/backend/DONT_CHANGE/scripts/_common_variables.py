@@ -65,10 +65,12 @@ launcher_log = starter_batches_folder + "\\L.bat"
 
 developer_settings_path = make_abs("..\\..\\developer_settings.py")
 icon_path = make_abs("..\\..\\icons\\icon.ico")
-warning_icon_path = make_abs("..\\..\\icons\\warning.ico")
 settings_icon_path = make_abs("..\\..\\icons\\settings.ico")
 stop_icon_path = make_abs("..\\..\\icons\\stop.ico")
 log_icon_path = make_abs("..\\..\\icons\\log.ico")
+success_icon_path = make_abs("..\\..\\icons\\success.ico")
+failure_icon_path = make_abs("..\\..\\icons\\failure.ico")
+crash_icon_path = make_abs("..\\..\\icons\\crash.ico")
 process_id_file_path = make_abs("..\\..\\..\\_CURRENTLY_RUNNING_.pid")
 default_packages_file_path = make_abs("..\\..\\developer_tools\\_DEFAULT_PYHON_PACKAGES_.txt")  # UPDATE GITIGNORE
 python_version_indicator_file_path = developer_tools_dir + "\\_CURRENT_PYTHON_VERSION_.txt"
