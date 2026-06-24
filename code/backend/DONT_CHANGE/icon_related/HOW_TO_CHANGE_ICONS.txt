@@ -7,7 +7,14 @@ Replace icon.png in code/icons/ with the image you want and run:
 
     code/icons/regenerate icons.lnk
 
-You can also replace settings.png and stop.png in code/icons/ if you want custom overlay icons.
+You can also replace these overlay PNGs in code/icons/ if you want custom sub-icons:
+
+    settings.png
+    stop.png
+    log.png
+    success.png
+    failure.png
+    crash.png
 
 The icon generator creates these .ico files in code/icons/:
 
@@ -20,6 +27,18 @@ The icon generator creates these .ico files in code/icons/:
     stop.ico
         Icon version of icon.png with stop.png overlaid in the bottom-right corner.
 
+    log.ico
+        Icon version of icon.png with log.png overlaid in the bottom-right corner.
+
+    success.ico
+        Icon version of icon.png with success.png overlaid in the bottom-right corner.
+
+    failure.ico
+        Icon version of icon.png with failure.png overlaid in the bottom-right corner.
+
+    crash.ico
+        Icon version of icon.png with crash.png overlaid in the bottom-right corner.
+
 The shortcut generator uses those .ico files for the generated program shortcuts.
 
 =======================================
@@ -31,14 +50,22 @@ User-editable input images:
     code/icons/icon.png
     code/icons/settings.png
     code/icons/stop.png
+    code/icons/log.png
+    code/icons/success.png
+    code/icons/failure.png
+    code/icons/crash.png
 
 Keep the file names unchanged.
 
-If icon.png, settings.png, or stop.png is missing, the generator uses the fallback images from:
+If an input PNG is missing, the generator uses the matching fallback image from:
 
     code/DONT_CHANGE/icon_related/default_icon.png
     code/DONT_CHANGE/icon_related/default_settings.png
     code/DONT_CHANGE/icon_related/default_stop.png
+    code/DONT_CHANGE/icon_related/default_log.png
+    code/DONT_CHANGE/icon_related/default_success.png
+    code/DONT_CHANGE/icon_related/default_failure.png
+    code/DONT_CHANGE/icon_related/default_crash.png
 
 If a user image is still exactly the template fallback image, the generator also treats it as fallback.
 
@@ -82,9 +109,9 @@ icons need multiple embedded sizes to scale well in shortcuts, taskbar entries, 
 The current generator above does not need Pillow. If you prefer a shorter script that is easier
 to edit manually, this Pillow version has virtually identical behavior:
 
-    - reads icon.png, settings.png, and stop.png from code/icons/
+    - reads icon.png and overlay PNGs from code/icons/
     - falls back to the default images when user images are missing or unchanged from the template
-    - writes icon.ico, settings.ico, and stop.ico to code/icons/
+    - writes icon.ico and overlay .ico files to code/icons/
     - keeps aspect ratio, transparent padding, and the same icon sizes
     - uses the same bottom-right overlay behavior and overlay scale factor
 

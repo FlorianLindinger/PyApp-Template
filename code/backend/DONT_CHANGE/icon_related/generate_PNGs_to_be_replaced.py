@@ -38,9 +38,21 @@ items = {
         '"regenerate icons"',
         "afterwards",
     ],
-    "warning.png": [
+    "success.png": [
         "Replace to change",
-        "warning sub-icon. Run",
+        "success sub-icon. Run",
+        '"regenerate icons"',
+        "afterwards",
+    ],
+    "failure.png": [
+        "Replace to change",
+        "failure sub-icon. Run",
+        '"regenerate icons"',
+        "afterwards",
+    ],
+    "crash.png": [
+        "Replace to change",
+        "crash sub-icon. Run",
         '"regenerate icons"',
         "afterwards",
     ],
@@ -93,7 +105,7 @@ for filename, lines in items.items():
     make_icon(filename, lines)
     created_paths.append(os.path.join(OUT_DIR, filename))
 
-print("Created icon.png, settings.png, stop.png, log.png, warning.png")
+print("Created icon.png, settings.png, stop.png, log.png, success.png, failure.png, crash.png")
 print("Image IDs:")
 for path in created_paths:
     print(f"  {os.path.basename(path)}: {image_id(path)}")

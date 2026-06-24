@@ -2,6 +2,8 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+add icons for success and failed and crashed
+
 intercept x and replace with prompt if close
 
 i could do minimize via thumbnail buttons acutally.
