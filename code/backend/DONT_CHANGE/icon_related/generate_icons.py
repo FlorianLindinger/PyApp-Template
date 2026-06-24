@@ -24,10 +24,20 @@ fallback_base_png_id = "512x512:697b74ef"
 fallback_settings_png_id = "512x512:68617905"
 fallback_stop_png_id = "512x512:18389952"
 fallback_log_png_id = "512x512:3d23c1a5"
-fallback_warning_png_id = "512x512:95d801d3"
+fallback_success_png_id = "512x512:87ba9782"
+fallback_failure_png_id = "512x512:1a35061c"
+fallback_crash_png_id = "512x512:1e0682c4"
 ICON_DELETE_TIMEOUT_SECONDS = 5.0
 ICON_RETRY_DELAY_SECONDS = 0.1
-GENERATED_ICON_FILENAMES = ("icon.ico", "settings.ico", "stop.ico", "log.ico", "warning.ico")
+GENERATED_OVERLAY_ICONS = {
+    "settings": ("settings.png", "default_settings.png", fallback_settings_png_id),
+    "stop": ("stop.png", "default_stop.png", fallback_stop_png_id),
+    "log": ("log.png", "default_log.png", fallback_log_png_id),
+    "success": ("success.png", "default_success.png", fallback_success_png_id),
+    "failure": ("failure.png", "default_failure.png", fallback_failure_png_id),
+    "crash": ("crash.png", "default_crash.png", fallback_crash_png_id),
+}
+GENERATED_ICON_FILENAMES = ("icon.ico", *(f"{name}.ico" for name in GENERATED_OVERLAY_ICONS))
 
 file_path = os.path.dirname(os.path.abspath(__file__))
 os.chdir(file_path)
@@ -436,30 +446,15 @@ if __name__ == "__main__":
         fallback_base_png_id,
         "base",
     )
-    settings_icon_path = _pick_icon_path(
-        user_png_folder_path + "settings.png",
-        fallback_png_folder_path + "default_settings.png",
-        fallback_settings_png_id,
-        "settings",
-    )
-    stop_icon_path = _pick_icon_path(
-        user_png_folder_path + "stop.png",
-        fallback_png_folder_path + "default_stop.png",
-        fallback_stop_png_id,
-        "stop",
-    )
-    log_icon_path = _pick_icon_path(
-        user_png_folder_path + "log.png",
-        fallback_png_folder_path + "default_log.png",
-        fallback_log_png_id,
-        "log",
-    )
-    warning_icon_path = _pick_icon_path(
-        user_png_folder_path + "warning.png",
-        fallback_png_folder_path + "default_warning.png",
-        fallback_warning_png_id,
-        "warning",
-    )
+    overlay_icon_paths = {
+        name: _pick_icon_path(
+            user_png_folder_path + user_filename,
+            fallback_png_folder_path + fallback_filename,
+            fallback_image_id,
+            name,
+        )
+        for name, (user_filename, fallback_filename, fallback_image_id) in GENERATED_OVERLAY_ICONS.items()
+    }
 
     try:
         create_icon(base_icon_path, output_path + "icon.ico")
@@ -467,28 +462,12 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"Error creating icon.ico: {e}")
 
-    try:
-        create_composite_icon(base_icon_path, settings_icon_path, output_path + "settings.ico", overlay_scale_factor)
-        print("Generated: settings.ico")
-    except Exception as e:
-        print(f"Error creating settings.ico: {e}")
-
-    try:
-        create_composite_icon(base_icon_path, stop_icon_path, output_path + "stop.ico", overlay_scale_factor)
-        print("Generated: stop.ico")
-    except Exception as e:
-        print(f"Error creating stop.ico: {e}")
-
-    try:
-        create_composite_icon(base_icon_path, log_icon_path, output_path + "log.ico", overlay_scale_factor)
-        print("Generated: log.ico")
-    except Exception as e:
-        print(f"Error creating log.ico: {e}")
-
-    try:
-        create_composite_icon(base_icon_path, warning_icon_path, output_path + "warning.ico", overlay_scale_factor)
-        print("Generated: warning.ico")
-    except Exception as e:
-        print(f"Error creating warning.ico: {e}")
+    for name, overlay_icon_path in overlay_icon_paths.items():
+        filename = f"{name}.ico"
+        try:
+            create_composite_icon(base_icon_path, overlay_icon_path, output_path + filename, overlay_scale_factor)
+            print(f"Generated: {filename}")
+        except Exception as e:
+            print(f"Error creating {filename}: {e}")
 
     _pause_before_exit()
