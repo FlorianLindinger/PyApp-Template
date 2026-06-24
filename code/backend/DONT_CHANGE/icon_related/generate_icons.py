@@ -10,7 +10,7 @@ import time
 import zlib
 from urllib.parse import quote
 
-root_dir = os.path.normpath(os.path.dirname(os.path.abspath(__file__)) + "\\..\\..")
+root_dir = os.path.normpath(os.path.dirname(os.path.abspath(__file__)) + "\\..\\..\\..")
 if root_dir not in sys.path:
     sys.path.insert(0, root_dir)
 
@@ -24,9 +24,10 @@ fallback_base_png_id = "512x512:697b74ef"
 fallback_settings_png_id = "512x512:68617905"
 fallback_stop_png_id = "512x512:18389952"
 fallback_log_png_id = "512x512:3d23c1a5"
+fallback_warning_png_id = "512x512:95d801d3"
 ICON_DELETE_TIMEOUT_SECONDS = 5.0
 ICON_RETRY_DELAY_SECONDS = 0.1
-GENERATED_ICON_FILENAMES = ("icon.ico", "settings.ico", "stop.ico", "log.ico")
+GENERATED_ICON_FILENAMES = ("icon.ico", "settings.ico", "stop.ico", "log.ico", "warning.ico")
 
 file_path = os.path.dirname(os.path.abspath(__file__))
 os.chdir(file_path)
@@ -453,6 +454,12 @@ if __name__ == "__main__":
         fallback_log_png_id,
         "log",
     )
+    warning_icon_path = _pick_icon_path(
+        user_png_folder_path + "warning.png",
+        fallback_png_folder_path + "default_warning.png",
+        fallback_warning_png_id,
+        "warning",
+    )
 
     try:
         create_icon(base_icon_path, output_path + "icon.ico")
@@ -477,5 +484,11 @@ if __name__ == "__main__":
         print("Generated: log.ico")
     except Exception as e:
         print(f"Error creating log.ico: {e}")
+
+    try:
+        create_composite_icon(base_icon_path, warning_icon_path, output_path + "warning.ico", overlay_scale_factor)
+        print("Generated: warning.ico")
+    except Exception as e:
+        print(f"Error creating warning.ico: {e}")
 
     _pause_before_exit()

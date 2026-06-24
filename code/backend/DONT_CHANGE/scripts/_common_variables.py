@@ -65,6 +65,7 @@ launcher_log = starter_batches_folder + "\\L.bat"
 
 developer_settings_path = make_abs("..\\..\\developer_settings.py")
 icon_path = make_abs("..\\..\\icons\\icon.ico")
+warning_icon_path = make_abs("..\\..\\icons\\warning.ico")
 settings_icon_path = make_abs("..\\..\\icons\\settings.ico")
 stop_icon_path = make_abs("..\\..\\icons\\stop.ico")
 log_icon_path = make_abs("..\\..\\icons\\log.ico")
