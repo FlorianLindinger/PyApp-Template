@@ -2,6 +2,8 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+intercept x and replace with prompt if close
+
 i could do minimize via thumbnail buttons acutally.
 also log,main_scirpt,
 
