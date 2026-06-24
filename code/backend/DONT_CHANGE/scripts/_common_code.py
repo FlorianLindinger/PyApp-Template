@@ -595,7 +595,9 @@ def set_terminal_colors():
     """set terminal text and bg colors to TERMINAL_COLORS"""
     if TERMINAL_COLORS:
         try:
-            os.system(f"color {TERMINAL_COLORS}")  # noqa:S605
+            import subprocess
+
+            subprocess.run(["cmd.exe", "/c", "color", TERMINAL_COLORS], check=False)  # noqa:S603
         except Exception:
             pass
 
@@ -1014,8 +1016,10 @@ def set_terminal_icon(icon_path: str, candidate_hwnds=list[int]) -> None:
 
 def set_terminal_name(name: str) -> None:
     try:
+        import ctypes
+
         clean_name = name.replace("\r\n", "").replace("\r", "")
-        os.system(f"title {clean_name}")  # noqa:S605
+        ctypes.windll.kernel32.SetConsoleTitleW(clean_name)
     except Exception:
         pass
 
