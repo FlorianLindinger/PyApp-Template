@@ -3,27 +3,12 @@ import ctypes
 import json
 import os
 import re
-import shlex
 import subprocess
 import threading
 import uuid
 from ctypes import wintypes
 from types import SimpleNamespace
 from xml.sax.saxutils import escape as _xml_escape
-
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-BACKEND_INTERNAL_DIR = os.path.dirname(SCRIPT_DIR)
-BACKEND_DIR = os.path.dirname(BACKEND_INTERNAL_DIR)
-ASCII_FONTS_DIR = os.path.join(BACKEND_INTERNAL_DIR, "ascii_fonts")
-DEFAULT_ICON_PATH = os.path.join(BACKEND_DIR, "icons", "icon.ico")
-
-ASCII_FONT_FILES = {
-    "standard": ("Standard", "standard.flf"),
-    "coder mini": ("Coder Mini", "coder_mini.flf"),
-    "future": ("Future", "future.tlf"),
-    "future smooth": ("Future Smooth", "future_smooth.tlf"),
-}
-
 
 _WIN_CONSTANTS = None
 _NATIVE_TYPES = None
@@ -454,18 +439,6 @@ def _raise_last_error(operation: str) -> None:
     raise RuntimeError(f"{operation} failed.")
 
 
-def _split_command_text(text: str) -> list[str]:
-    lexer = shlex.shlex(text, posix=True)
-    lexer.whitespace_split = True
-    lexer.commenters = ""
-    lexer.escape = ""
-    return list(lexer)
-
-
-def _integer_resource(value: int) -> wintypes.LPCWSTR:
-    return ctypes.cast(ctypes.c_void_p(value), wintypes.LPCWSTR)
-
-
 def _load_icon_from_file(icon_path: str) -> int:
     path = os.path.abspath(os.fspath(icon_path))
     if not os.path.isfile(path):
@@ -486,48 +459,37 @@ def _load_icon_from_file(icon_path: str) -> int:
     return int(icon)
 
 
-_TOAST_SOUNDS = {
-    "default": "",
-    "mail": "ms-winsoundevent:Notification.Mail",
-    "sms": "ms-winsoundevent:Notification.SMS",
-    "reminder": "ms-winsoundevent:Notification.Reminder",
-    "alarm": "ms-winsoundevent:Notification.Looping.Alarm",
-    "call": "ms-winsoundevent:Notification.Looping.Call",
-}
-
-
-def _read_hkcu_dword(subkey: str, name: str) -> int | None:
-    try:
-        import winreg
-    except ImportError:
-        return None
-
-    view_flags = [
-        winreg.KEY_READ | getattr(winreg, "KEY_WOW64_64KEY", 0),
-        winreg.KEY_READ,
-        winreg.KEY_READ | getattr(winreg, "KEY_WOW64_32KEY", 0),
-    ]
-    seen_flags: set[int] = set()
-    for access in view_flags:
-        if access in seen_flags:
-            continue
-        seen_flags.add(access)
-        try:
-            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, subkey, 0, access) as key:
-                value, value_type = winreg.QueryValueEx(key, name)
-        except FileNotFoundError:
-            continue
-        except OSError:
-            continue
-
-        if value_type == winreg.REG_DWORD:
-            return int(value)
-
-    return None
-
-
 def get_windows_notification_disabled_reason(app_id: str | None = None) -> str | None:
     """Return why Windows toast notifications are blocked, or None if they look enabled."""
+
+    def _read_hkcu_dword(subkey: str, name: str) -> int | None:
+        try:
+            import winreg
+        except ImportError:
+            return None
+
+        view_flags = [
+            winreg.KEY_READ | getattr(winreg, "KEY_WOW64_64KEY", 0),
+            winreg.KEY_READ,
+            winreg.KEY_READ | getattr(winreg, "KEY_WOW64_32KEY", 0),
+        ]
+        seen_flags: set[int] = set()
+        for access in view_flags:
+            if access in seen_flags:
+                continue
+            seen_flags.add(access)
+            try:
+                with winreg.OpenKey(winreg.HKEY_CURRENT_USER, subkey, 0, access) as key:
+                    value, value_type = winreg.QueryValueEx(key, name)
+            except FileNotFoundError:
+                continue
+            except OSError:
+                continue
+
+            if value_type == winreg.REG_DWORD:
+                return int(value)
+
+        return None
 
     # Check the Windows notification registry switches for global and per-app blocks.
     toast_enabled = _read_hkcu_dword(
@@ -537,7 +499,7 @@ def get_windows_notification_disabled_reason(app_id: str | None = None) -> str |
     if toast_enabled == 0:
         return "Windows notifications are disabled globally."
 
-    app_id = str(app_id or "").strip()
+    app_id = (app_id or "").strip()
     if not app_id:
         return None
 
@@ -557,44 +519,53 @@ def are_windows_notifications_enabled(app_id: str | None = None) -> bool:
     return get_windows_notification_disabled_reason(app_id) is None
 
 
-def _run_encoded_powershell(script: str, *, timeout: int = 10) -> str:
-    encoded_script = base64.b64encode(script.encode("utf-16le")).decode("ascii")
-    completed = subprocess.run(
-        [
-            "powershell.exe",
-            "-NoProfile",
-            "-ExecutionPolicy",
-            "Bypass",
-            "-EncodedCommand",
-            encoded_script,
-        ],
-        capture_output=True,
-        timeout=timeout,
-        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
-    )
-    if completed.returncode != 0:
-        stderr = completed.stderr.decode("utf-8", errors="replace") if completed.stderr else ""
-        stdout = completed.stdout.decode("utf-8", errors="replace") if completed.stdout else ""
-        detail = (stderr or stdout).strip()
-        if detail:
-            raise RuntimeError(f"PowerShell notification failed: {detail}")
-        raise RuntimeError(f"PowerShell notification failed with exit code {completed.returncode}.")
-    return completed.stdout.decode("utf-8", errors="replace").strip() if completed.stdout else ""
-
-
-def _toast_image_source(value: str) -> str:
-    value = str(value or "").strip()
-    if not value:
-        return ""
-    if "://" in value or value.startswith(("ms-appx:", "ms-appdata:")):
-        return value
-
-    path = os.path.abspath(os.path.expandvars(os.path.expanduser(value)))
-    return "file:///" + path.replace("\\", "/")
-
-
-def show_modern_windows_notification(settings=None) -> None:
+def show_windows_notification(settings=None) -> None:
     """Show a Windows toast notification through the standard WinRT API."""
+
+    DEFAULT_ICON_PATH = os.path.abspath(__file__) + "\\..\\..\\icons\\icon.ico"
+
+    _TOAST_SOUNDS = {
+        "default": "",
+        "mail": "ms-winsoundevent:Notification.Mail",
+        "sms": "ms-winsoundevent:Notification.SMS",
+        "reminder": "ms-winsoundevent:Notification.Reminder",
+        "alarm": "ms-winsoundevent:Notification.Looping.Alarm",
+        "call": "ms-winsoundevent:Notification.Looping.Call",
+    }
+
+    def _toast_image_source(value: str) -> str:
+        value = (value or "").strip()
+        if not value:
+            return ""
+        if "://" in value or value.startswith(("ms-appx:", "ms-appdata:")):
+            return value
+
+        path = os.path.abspath(os.path.expandvars(os.path.expanduser(value)))
+        return "file:///" + path.replace("\\", "/")
+
+    def _run_encoded_powershell(script: str, *, timeout: int = 10) -> str:
+        encoded_script = base64.b64encode(script.encode("utf-16le")).decode("ascii")
+        completed = subprocess.run(  # noqa:S603
+            [
+                "powershell.exe",
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-EncodedCommand",
+                encoded_script,
+            ],
+            capture_output=True,
+            timeout=timeout,
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+        )
+        if completed.returncode != 0:
+            stderr = completed.stderr.decode("utf-8", errors="replace") if completed.stderr else ""
+            stdout = completed.stdout.decode("utf-8", errors="replace") if completed.stdout else ""
+            detail = (stderr or stdout).strip()
+            if detail:
+                raise RuntimeError(f"PowerShell notification failed: {detail}")
+            raise RuntimeError(f"PowerShell notification failed with exit code {completed.returncode}.")
+        return completed.stdout.decode("utf-8", errors="replace").strip() if completed.stdout else ""
 
     if settings is None:
         settings = SimpleNamespace(
@@ -660,7 +631,7 @@ def show_modern_windows_notification(settings=None) -> None:
         if not os.path.exists(shortcut_path):
             payload = {
                 "shortcut_path": shortcut_path,
-                "target_path": os.environ.get("ComSpec", r"C:\Windows\System32\cmd.exe"),
+                "target_path": os.environ.get("COMSPEC", r"C:\Windows\System32\cmd.exe"),
                 "arguments": "/c exit",
                 "working_directory": os.getcwd(),
                 "description": f"{app_name} notification identity",
@@ -837,7 +808,8 @@ $shortcut.Save()
         return
 
     # Build the ToastGeneric XML and send it through the WinRT notification APIs.
-    xml_escape = lambda value: _xml_escape(value, {'"': "&quot;", "'": "&apos;"})
+    def xml_escape(value):
+        return _xml_escape(value, {'"': "&quot;", "'": "&apos;"})
     toast_attributes = [f'duration="{settings.duration}"']
     if settings.scenario != "default":
         toast_attributes.append(f'scenario="{settings.scenario}"')
@@ -917,14 +889,14 @@ def get_terminal_window():
     user32 = api.user32
     kernel32 = api.kernel32
 
-    def get_console_title() -> str:
+    def _get_console_title() -> str:
         buffer = ctypes.create_unicode_buffer(1024)
         length = kernel32.GetConsoleTitleW(buffer, len(buffer))
         if length == 0:
             return ""
         return buffer.value
 
-    def get_window_class(hwnd: int) -> str:
+    def _get_window_class(hwnd: int) -> str:
         if not hwnd:
             return ""
         buffer = ctypes.create_unicode_buffer(256)
@@ -932,7 +904,7 @@ def get_terminal_window():
             return ""
         return buffer.value
 
-    def get_window_title(hwnd: int) -> str:
+    def _get_window_title(hwnd: int) -> str:
         if not hwnd:
             return ""
         length = user32.GetWindowTextLengthW(hwnd)
@@ -940,40 +912,40 @@ def get_terminal_window():
         user32.GetWindowTextW(hwnd, buffer, len(buffer))
         return buffer.value
 
-    def root_window(hwnd: int) -> int:
+    def _root_window(hwnd: int) -> int:
         if not hwnd:
             return 0
         return int(user32.GetAncestor(hwnd, constants.ga_root) or hwnd)
 
-    def window_info(hwnd: int, source: str):
-        hwnd = root_window(hwnd)
+    def _window_info(hwnd: int, source: str):
+        hwnd = _root_window(hwnd)
         if not hwnd or not user32.IsWindow(hwnd):
             return None
         return SimpleNamespace(
             hwnd=hwnd,
-            class_name=get_window_class(hwnd),
-            title=get_window_title(hwnd),
+            class_name=_get_window_class(hwnd),
+            title=_get_window_title(hwnd),
             source=source,
         )
 
-    def is_windows_terminal(info) -> bool:
+    def _is_windows_terminal(info) -> bool:
         return "CASCADIA" in info.class_name.upper()
 
-    def is_conhost(info) -> bool:
+    def _is_conhost(info) -> bool:
         return info.class_name == "ConsoleWindowClass"
 
-    def title_matches(window_title: str, console_title: str) -> bool:
+    def _title_matches(window_title: str, console_title: str) -> bool:
         if not console_title:
             return False
         return window_title == console_title or console_title in window_title
 
-    def visible_top_level_windows() -> list:
+    def _visible_top_level_windows() -> list:
         windows = []
 
         @native_types.enum_windows_proc
         def callback(hwnd: int, _lparam: int) -> bool:
             if user32.IsWindowVisible(hwnd):
-                info = window_info(int(hwnd), "enum")
+                info = _window_info(hwnd, "enum")
                 if info is not None:
                     windows.append(info)
             return True
@@ -983,12 +955,12 @@ def get_terminal_window():
 
         return windows
 
-    def candidate_windows(console_title: str) -> list:
+    def _candidate_windows(console_title: str) -> list:
         candidates = []
         seen: set[int] = set()
 
         def add(hwnd: int, source: str) -> None:
-            info = window_info(hwnd, source)
+            info = _window_info(hwnd, source)
             if info is None or info.hwnd in seen:
                 return
             seen.add(info.hwnd)
@@ -1001,13 +973,13 @@ def get_terminal_window():
             add(int(user32.FindWindowW("ConsoleWindowClass", console_title) or 0), "console-title-class")
             add(int(user32.FindWindowW(None, console_title) or 0), "window-title")
 
-        for info in visible_top_level_windows():
-            if is_windows_terminal(info) and title_matches(info.title, console_title):
+        for info in _visible_top_level_windows():
+            if _is_windows_terminal(info) and _title_matches(info.title, console_title):
                 add(info.hwnd, "windows-terminal-title")
 
         return candidates
 
-    def format_window_infos(windows: list) -> str:
+    def _format_window_infos(windows: list) -> str:
         if not windows:
             return "none"
         return "\n".join(
@@ -1015,7 +987,7 @@ def get_terminal_window():
             for info in windows
         )
 
-    def as_terminal_window(info, host: str):
+    def _as_terminal_window(info, host: str):
         return SimpleNamespace(
             hwnd=info.hwnd,
             host=host,
@@ -1024,45 +996,45 @@ def get_terminal_window():
             source=info.source,
         )
 
-    console_title = get_console_title()
-    candidates = candidate_windows(console_title)
+    console_title = _get_console_title()
+    candidates = _candidate_windows(console_title)
 
     if os.environ.get("WT_SESSION"):
         for info in candidates:
-            if is_windows_terminal(info) and title_matches(info.title, console_title):
-                return as_terminal_window(info, "windows-terminal")
+            if _is_windows_terminal(info) and _title_matches(info.title, console_title):
+                return _as_terminal_window(info, "windows-terminal")
 
-        wt_windows = [info for info in visible_top_level_windows() if is_windows_terminal(info)]
-        matching_wt_windows = [info for info in wt_windows if title_matches(info.title, console_title)]
+        wt_windows = [info for info in _visible_top_level_windows() if _is_windows_terminal(info)]
+        matching_wt_windows = [info for info in wt_windows if _title_matches(info.title, console_title)]
 
         if len(matching_wt_windows) == 1:
-            return as_terminal_window(matching_wt_windows[0], "windows-terminal")
+            return _as_terminal_window(matching_wt_windows[0], "windows-terminal")
 
         if len(wt_windows) == 1:
-            return as_terminal_window(wt_windows[0], "windows-terminal")
+            return _as_terminal_window(wt_windows[0], "windows-terminal")
 
         raise RuntimeError(
             "Windows Terminal was detected via WT_SESSION, but the outer wt.exe "
             "window could not be identified safely.\n"
             f"Console title: {console_title!r}\n"
-            f"Candidates:\n{format_window_infos(candidates)}\n"
-            f"Visible Windows Terminal windows:\n{format_window_infos(wt_windows)}"
+            f"Candidates:\n{_format_window_infos(candidates)}\n"
+            f"Visible Windows Terminal windows:\n{_format_window_infos(wt_windows)}"
         )
 
     for info in candidates:
-        if is_conhost(info):
-            return as_terminal_window(info, "conhost")
+        if _is_conhost(info):
+            return _as_terminal_window(info, "conhost")
 
     console_hwnd = int(kernel32.GetConsoleWindow() or 0)
     if console_hwnd:
-        info = window_info(console_hwnd, "console")
+        info = _window_info(console_hwnd, "console")
         if info is not None:
-            return as_terminal_window(info, "conhost")
+            return _as_terminal_window(info, "conhost")
 
     raise RuntimeError(
         "The process does not appear to have a visible terminal window.\n"
         f"Console title: {console_title!r}\n"
-        f"Candidates:\n{format_window_infos(candidates)}"
+        f"Candidates:\n{_format_window_infos(candidates)}"
     )
 
 
@@ -1111,24 +1083,23 @@ def _resolve_window(window=None):
     return window if window is not None else get_terminal_window()
 
 
-def _set_menu_command_enabled(hwnd: int, command: int, enabled: bool) -> None:
-    api = _windows_api()
-    constants = _constants()
-
-    menu = api.user32.GetSystemMenu(hwnd, False)
-    if not menu:
-        return
-
-    flags = constants.mf_bycommand
-    if enabled:
-        flags |= constants.mf_enabled
-    else:
-        flags |= constants.mf_disabled | constants.mf_grayed
-
-    api.user32.EnableMenuItem(menu, command, flags)
-
-
 def _apply_state(hwnd: int) -> None:
+    def _set_menu_command_enabled(hwnd: int, command: int, enabled: bool) -> None:
+        api = _windows_api()
+        constants = _constants()
+
+        menu = api.user32.GetSystemMenu(hwnd, False)
+        if not menu:
+            return
+
+        flags = constants.mf_bycommand
+        if enabled:
+            flags |= constants.mf_enabled
+        else:
+            flags |= constants.mf_disabled | constants.mf_grayed
+
+        api.user32.EnableMenuItem(menu, command, flags)
+
     constants = _constants()
     state = _get_state(hwnd)
     style = state.original_style
@@ -1421,47 +1392,29 @@ def flash_taskbar(
     return terminal_window.host
 
 
-_TASKBAR_CLSID = "{56FDF344-FD6D-11D0-958A-006097C9A090}"
-_TASKBAR_IID = "{EA1AFB91-9E28-4B86-90E9-9E9F8A5EEA84}"
-_TASKBAR_PROGRESS_STATES = {
-    "none": "tbpf_noprogress",
-    "indeterminate": "tbpf_indeterminate",
-    "normal": "tbpf_normal",
-    "error": "tbpf_error",
-    "paused": "tbpf_paused",
-}
-_TASKBAR_STOCK_OVERLAY_ICONS = {
-    "app": "idi_application",
-    "error": "idi_error",
-    "question": "idi_question",
-    "warning": "idi_warning",
-    "info": "idi_information",
-    "shield": "idi_shield",
-}
-_TASKBAR_OVERLAY_ICON_HANDLES = {}
-
-
-def _guid_from_string(value: str):
-    types = _native_types()
-    guid_value = uuid.UUID(value)
-    guid = types.GUID()
-    guid.Data1 = guid_value.time_low
-    guid.Data2 = guid_value.time_mid
-    guid.Data3 = guid_value.time_hi_version
-    for index, byte in enumerate(guid_value.bytes[8:]):
-        guid.Data4[index] = byte
-    return guid
-
-
-def _check_hresult(result: int, operation: str) -> None:
-    if result < 0:
-        raise OSError(f"{operation} failed with HRESULT 0x{result & 0xFFFFFFFF:08X}")
-
-
 class TaskbarList3:
     """Minimal ITaskbarList3 wrapper for taskbar progress appearance."""
 
+    def _guid_from_string(self, value: str):
+        types = _native_types()
+        guid_value = uuid.UUID(value)
+        guid = types.GUID()
+        guid.Data1 = guid_value.time_low
+        guid.Data2 = guid_value.time_mid
+        guid.Data3 = guid_value.time_hi_version
+        for index, byte in enumerate(guid_value.bytes[8:]):
+            guid.Data4[index] = byte
+        return guid
+
+    def _check_hresult(self, result: int, operation: str) -> None:
+        if result < 0:
+            raise OSError(f"{operation} failed with HRESULT 0x{result & 0xFFFFFFFF:08X}")
+
     def __init__(self):
+        
+        _TASKBAR_CLSID = "{56FDF344-FD6D-11D0-958A-006097C9A090}"
+        _TASKBAR_IID = "{EA1AFB91-9E28-4B86-90E9-9E9F8A5EEA84}"
+        
         types = _native_types()
         self._ole32 = ctypes.WinDLL("ole32", use_last_error=True)
         self._ole32.CoInitialize.argtypes = [ctypes.c_void_p]
@@ -1480,12 +1433,12 @@ class TaskbarList3:
         if result in {0, 1}:
             self._com_initialized = True
         elif result != -2147417850:  # RPC_E_CHANGED_MODE; COM is already initialized for this thread.
-            _check_hresult(result, "CoInitialize")
+            self._check_hresult(result, "CoInitialize")
 
-        clsid = _guid_from_string(_TASKBAR_CLSID)
-        iid = _guid_from_string(_TASKBAR_IID)
+        clsid = self._guid_from_string(_TASKBAR_CLSID)
+        iid = self._guid_from_string(_TASKBAR_IID)
         self._pointer = ctypes.c_void_p()
-        _check_hresult(
+        self._check_hresult(
             self._ole32.CoCreateInstance(
                 ctypes.byref(clsid),
                 None,
@@ -1513,7 +1466,7 @@ class TaskbarList3:
         method = prototype(self._vtable[index])
         result = method(self._pointer, *args)
         if check_result:
-            _check_hresult(int(result), operation)
+            self._check_hresult(int(result), operation)
         return result
 
     def set_progress_state(self, hwnd: int, state: int) -> None:
@@ -1545,7 +1498,7 @@ class TaskbarList3:
             wintypes.HWND,
             wintypes.HICON,
             wintypes.LPCWSTR,
-            args=(hwnd, icon or None, str(description)),
+            args=(hwnd, icon or None, description),
         )
 
     def __enter__(self):
@@ -1556,7 +1509,15 @@ class TaskbarList3:
 
 
 def _taskbar_progress_state_value(state: str) -> int:
-    normalized = str(state or "").strip().lower()
+    _TASKBAR_PROGRESS_STATES = {
+        "none": "tbpf_noprogress",
+        "indeterminate": "tbpf_indeterminate",
+        "normal": "tbpf_normal",
+        "error": "tbpf_error",
+        "paused": "tbpf_paused",
+    }
+
+    normalized = (state or "").strip().lower()
     constant_name = _TASKBAR_PROGRESS_STATES.get(normalized)
     if constant_name is None:
         available = ", ".join(sorted(_TASKBAR_PROGRESS_STATES))
@@ -1573,8 +1534,6 @@ def set_taskbar_progress_state(state: str = "normal", window=None) -> str:
 
 def set_taskbar_progress(completed: int, total: int = 100, state: str = "normal", window=None) -> str:
     terminal_window = _resolve_window(window)
-    completed = int(completed)
-    total = int(total)
     if total <= 0:
         raise ValueError("Taskbar progress total must be greater than zero.")
     if completed < 0:
@@ -1593,18 +1552,33 @@ def clear_taskbar_progress(window=None) -> str:
     return set_taskbar_progress_state("none", window)
 
 
+_TASKBAR_OVERLAY_ICON_HANDLES = {}
+
 def set_taskbar_overlay_icon(icon: str, description: str = "", window=None) -> str:
+    """Set a small tarkbar overlay icon ontop of taskbar icon"""
+
+    _TASKBAR_STOCK_OVERLAY_ICONS = {
+        "app": "idi_application",
+        "error": "idi_error",
+        "question": "idi_question",
+        "warning": "idi_warning",
+        "info": "idi_information",
+        "shield": "idi_shield",
+    }
+
     terminal_window = _resolve_window(window)
 
     # Resolve the overlay icon from either a Windows stock icon name or a .ico path.
-    normalized_icon = str(icon or "").strip()
+    normalized_icon = (icon or "").strip()
     if not normalized_icon:
         raise ValueError("Taskbar overlay icon needs a stock icon name or .ico path.")
 
     stock_icon_name = normalized_icon.lower()
     if stock_icon_name in _TASKBAR_STOCK_OVERLAY_ICONS:
         constant_name = _TASKBAR_STOCK_OVERLAY_ICONS[stock_icon_name]
-        icon_handle = _windows_api().user32.LoadIconW(None, _integer_resource(getattr(_constants(), constant_name)))
+        icon_handle = _windows_api().user32.LoadIconW(
+            None, ctypes.cast(ctypes.c_void_p(getattr(_constants(), constant_name)), wintypes.LPCWSTR)
+        )
         if not icon_handle:
             raise ctypes.WinError(ctypes.get_last_error())
         icon_handle = int(icon_handle)
@@ -1615,7 +1589,7 @@ def set_taskbar_overlay_icon(icon: str, description: str = "", window=None) -> s
 
     previous_icon = _TASKBAR_OVERLAY_ICON_HANDLES.pop(terminal_window.hwnd, None)
     with TaskbarList3() as taskbar:
-        taskbar.set_overlay_icon(terminal_window.hwnd, icon_handle, description or str(icon))
+        taskbar.set_overlay_icon(terminal_window.hwnd, icon_handle, description or icon)
     if previous_icon is not None:
         _windows_api().user32.DestroyIcon(previous_icon)
     if owns_icon:
@@ -1676,30 +1650,15 @@ def set_frame_text_color(color: str, window=None) -> str:
     return terminal_window.host
 
 
-def _normalize_ascii_font_name(font_name: str) -> str:
-    return " ".join(str(font_name or "").replace("_", " ").strip().lower().split())
-
-
-def render_ascii_message(message: str, font_name: str = "Standard") -> str:
+def print_in_ASCII_font(message: str, font_path: str = "Standard") -> str:
     """Render text with one of the local FIGlet-style ASCII fonts."""
 
-    # Load and parse the selected local FIGlet/TLF font before rendering text rows.
-    normalized = _normalize_ascii_font_name(font_name)
-    font_info = ASCII_FONT_FILES.get(normalized)
-    if font_info is None:
-        available = ", ".join(name for name, _filename in ASCII_FONT_FILES.values())
-        raise ValueError(f"Unknown ASCII font {font_name!r}. Available fonts: {available}.")
-
-    display_name, filename = font_info
-    font_path = os.path.join(ASCII_FONTS_DIR, filename)
-    with open(font_path, encoding="utf-8") as font_file:
-        lines = font_file.read().splitlines()
-    if not lines:
-        raise ValueError(f"ASCII font file is empty: {font_path}")
+    with open(font_path, encoding="utf-8") as f:
+        lines = f.read().splitlines()
 
     header_parts = lines[0].split()
     signature = header_parts[0]
-    if not (signature.startswith("flf2a") or signature.startswith("tlf2a")):
+    if not signature.startswith(("flf2a", "tlf2a")):
         raise ValueError(f"Unsupported ASCII font header in {font_path}: {signature!r}")
     if len(header_parts) < 6:
         raise ValueError(f"ASCII font header is incomplete in {font_path}.")
@@ -1714,12 +1673,12 @@ def render_ascii_message(message: str, font_name: str = "Standard") -> str:
         start = glyph_start + offset * height
         glyph_lines = lines[start : start + height]
         if len(glyph_lines) < height:
-            raise ValueError(f"ASCII font {display_name} is missing glyph data for {chr(codepoint)!r}.")
+            raise ValueError(f'ASCII font from "{font_path}" is missing glyph data for {chr(codepoint)!r}.')
 
         endmark = glyph_lines[-1][-1:] if glyph_lines[-1] else ""
         glyphs[chr(codepoint)] = tuple(line.rstrip(endmark) for line in glyph_lines)
 
-    font = SimpleNamespace(name=display_name, hardblank=hardblank, height=height, glyphs=glyphs)
+    font = SimpleNamespace(hardblank=hardblank, height=height, glyphs=glyphs)
     fallback = font.glyphs.get("?", font.glyphs[" "])
     rendered_lines: list[str] = []
 
@@ -1732,12 +1691,6 @@ def render_ascii_message(message: str, font_name: str = "Standard") -> str:
         rendered_lines.extend(row.replace(font.hardblank, " ").rstrip() for row in output_rows)
 
     return "\n".join(rendered_lines)
-
-
-def print_in_ASCII_font(message: str, font_name: str = "Standard") -> None:
-    """Print a message using a local FIGlet-style ASCII font."""
-
-    print(render_ascii_message(message, font_name))
 
 
 def apply_window_controls(
@@ -1763,7 +1716,7 @@ def apply_window_controls(
     return terminal_window
 
 
-class NativeMinimizeToTray:
+class _NativeMinimizeToTray:
     """Hidden message-window controller for hide-to-tray behavior."""
 
     def __init__(
@@ -1798,7 +1751,7 @@ class NativeMinimizeToTray:
         self._hidden_to_tray = False
         self._thread = threading.Thread(target=self._message_loop, name="NativeTrayController", daemon=True)
 
-    def start(self) -> "NativeMinimizeToTray":
+    def start(self) -> "_NativeMinimizeToTray":
         self._thread.start()
 
         if not self._ready.wait(timeout=5):
@@ -1851,9 +1804,9 @@ class NativeMinimizeToTray:
         if self.icon_path is not None:
             icon = _load_icon_from_file(self.icon_path)
             self._owns_icon = True
-            return int(icon)
+            return icon
 
-        icon = api.user32.LoadIconW(None, _integer_resource(constants.idi_application))
+        icon = api.user32.LoadIconW(None, ctypes.cast(ctypes.c_void_p(constants.idi_application), wintypes.LPCWSTR))
         if not icon:
             raise ctypes.WinError(ctypes.get_last_error())
 
@@ -1946,7 +1899,7 @@ class NativeMinimizeToTray:
         constants = _constants()
 
         if message == constants.tray_callback:
-            event = int(lparam) & 0xFFFF
+            event = lparam & 0xFFFF
             if event in (
                 constants.wm_lbuttonup,
                 constants.wm_lbuttondblclk,
@@ -2011,7 +1964,6 @@ class NativeMinimizeToTray:
 
     def _message_loop(self) -> None:
         api = _windows_api()
-        constants = _constants()
         types = _native_types()
         instance = api.kernel32.GetModuleHandleW(None)
         class_registered = False
@@ -2102,13 +2054,13 @@ def enable_minimize_to_tray(
     hwnd: int | None = None,
     window=None,
     restore_on_stop: bool = True,
-) -> NativeMinimizeToTray:
+) -> _NativeMinimizeToTray:
     """Convert the terminal's minimize action into hide-to-tray."""
 
     if hwnd is None:
         hwnd = _resolve_window(window).hwnd
 
-    return NativeMinimizeToTray(
+    return _NativeMinimizeToTray(
         hwnd,
         tooltip=tooltip,
         icon_path=icon_path,
@@ -2116,22 +2068,7 @@ def enable_minimize_to_tray(
     ).start()
 
 
-def _parse_bool_option(value: str) -> bool:
-    normalized = str(value or "").strip().lower()
-    if normalized == "true":
-        return True
-    if normalized == "false":
-        return False
-    raise ValueError(f"Expected a boolean value, got {value!r}.")
-
-
 def main() -> None:
-    """Run the interactive terminal window-control smoke test."""
-
-    window = get_terminal_window()
-    context = SimpleNamespace(window=window, tray_icon_path=DEFAULT_ICON_PATH, tray_controller=None)
-
-    # Print the interactive command menu once before entering the REPL loop.
     print()
     print("Commands:")
     print("  enable_always_on_top         make window topmost")
@@ -2162,401 +2099,6 @@ def main() -> None:
     print("  border_color #RRGGBB         set DWM border/outline color")
     print("  caption_color #RRGGBB        set DWM caption color")
     print("  text_color #RRGGBB           set DWM caption text color")
-
-    while True:
-        command = input("> ")
-        # Parse and dispatch one REPL command directly inside the interactive loop.
-        raw_command = command
-
-        try:
-            parts = _split_command_text(raw_command)
-        except ValueError as error:
-            print(f"Error: {error}")
-            continue
-        if not parts:
-            continue
-        command = parts[0].lower()
-        args = parts[1:]
-
-        def require_arg(name: str) -> str:
-            if not args:
-                raise ValueError(f"{name} needs an argument.")
-            return args[0]
-
-        def notification_command() -> None:
-            argument_text = raw_command[len(parts[0]) :].strip()
-            title = context.window.title or "Python notification"
-            message = "Notification from test.py"
-            app_id = ""
-            app_name = ""
-            duration = "short"
-            scenario = "default"
-            silent = False
-            sound = "default"
-            attribution = ""
-            logo = ""
-            hero = ""
-
-            # Parse notify options before the title/message payload.
-            tokens = _split_command_text(argument_text)
-            remainder_start = 0
-            for index, token in enumerate(tokens):
-                normalized = token.lower()
-                key, separator, value = token.partition("=")
-                key = key.lower()
-                original_value = token.partition("=")[2] if separator else ""
-
-                if separator and key == "app_id":
-                    app_id = original_value
-                elif separator and key == "app_name":
-                    app_name = original_value
-                elif separator and key == "duration":
-                    duration = value.lower()
-                elif separator and key == "scenario":
-                    scenario = value
-                elif separator and key == "sound":
-                    sound = value.lower()
-                    silent = False
-                elif separator and key == "attribution":
-                    attribution = original_value
-                elif separator and key == "logo":
-                    logo = original_value
-                elif separator and key == "hero":
-                    hero = original_value
-                elif normalized == "silent":
-                    silent = True
-                    sound = "default"
-                elif normalized == "sound":
-                    silent = False
-                    sound = "default"
-                elif normalized == "long":
-                    duration = "long"
-                elif normalized == "short":
-                    duration = "short"
-                else:
-                    remainder_start = index
-                    break
-            else:
-                remainder_start = len(tokens)
-
-            remainder = " ".join(tokens[remainder_start:]).strip()
-            if remainder:
-                if "|" in remainder:
-                    title_text, message_text = remainder.split("|", 1)
-                    title = title_text.strip() or title
-                    message = message_text.strip() or message
-                else:
-                    title = remainder
-
-            settings = SimpleNamespace(
-                title=title,
-                message=message,
-                app_id=app_id,
-                app_name=app_name,
-                duration=duration,
-                scenario=scenario,
-                silent=silent,
-                sound=sound,
-                attribution=attribution,
-                logo=logo,
-                hero=hero,
-            )
-            show_modern_windows_notification(settings)
-
-        def notification_status_command() -> None:
-            app_id = ""
-            if args:
-                first = args[0]
-                key, separator, value = first.partition("=")
-                if separator and key.lower() == "app_id":
-                    app_id = value
-                else:
-                    app_id = first
-            # Report the same global/per-app notification status check used before showing toasts.
-            app_id = str(app_id or "").strip()
-            reason = get_windows_notification_disabled_reason(app_id)
-            if reason is None:
-                if app_id:
-                    print(f"Windows notifications enabled for {app_id!r}.")
-                else:
-                    print("Windows notifications enabled globally.")
-            else:
-                if app_id:
-                    print(f"Windows notifications disabled for {app_id!r}: {reason}")
-                else:
-                    print(f"Windows notifications disabled: {reason}")
-
-        def prompt_command() -> None:
-            argument_text = raw_command[len(parts[0]) :].strip()
-
-            # Parse prompt options before the title/message payload.
-            title = context.window.title or "Python prompt"
-            message = "Choose an option."
-            buttons = "ok_cancel"
-            icon = "question"
-            default_button = 1
-            topmost = True
-            foreground = True
-            right_align = False
-            rtl_reading = False
-            system_modal = False
-            task_modal = False
-            timeout_ms = None
-
-            tokens = _split_command_text(argument_text)
-            remainder_start = 0
-            for index, token in enumerate(tokens):
-                normalized = token.lower()
-                key, separator, value = token.partition("=")
-                key = key.lower()
-
-                if separator and key == "buttons":
-                    buttons = value
-                elif separator and key == "icon":
-                    icon = value
-                elif separator and key == "default":
-                    default_button = int(value)
-                elif separator and key == "title":
-                    title = value
-                elif separator and key == "message":
-                    message = value
-                elif separator and key == "timeout":
-                    timeout_ms = int(value)
-                elif separator and key == "topmost":
-                    topmost = _parse_bool_option(value)
-                elif separator and key == "foreground":
-                    foreground = _parse_bool_option(value)
-                elif separator and key == "right_align":
-                    right_align = _parse_bool_option(value)
-                elif separator and key == "rtl":
-                    rtl_reading = _parse_bool_option(value)
-                elif separator and key == "system_modal":
-                    system_modal = _parse_bool_option(value)
-                elif separator and key == "task_modal":
-                    task_modal = _parse_bool_option(value)
-                elif normalized == "topmost":
-                    topmost = True
-                elif normalized == "foreground":
-                    foreground = True
-                elif normalized == "right_align":
-                    right_align = True
-                elif normalized == "rtl":
-                    rtl_reading = True
-                elif normalized == "system_modal":
-                    system_modal = True
-                elif normalized == "task_modal":
-                    task_modal = True
-                else:
-                    remainder_start = index
-                    break
-            else:
-                remainder_start = len(tokens)
-
-            remainder = " ".join(tokens[remainder_start:]).strip()
-            if remainder:
-                if "|" in remainder:
-                    title_text, message_text = remainder.split("|", 1)
-                    title = title_text.strip() or title
-                    message = message_text.strip() or message
-                else:
-                    message = remainder
-
-            result = prompt(
-                message,
-                title=title,
-                buttons=buttons,
-                icon=icon,
-                default_button=default_button,
-                topmost=topmost,
-                foreground=foreground,
-                right_align=right_align,
-                rtl_reading=rtl_reading,
-                system_modal=system_modal,
-                task_modal=task_modal,
-                timeout_ms=timeout_ms,
-                hwnd=_resolve_window(context.window).hwnd,
-            )
-            print(f"Prompt result: {result}")
-
-        def ascii_message_command() -> None:
-            argument_text = raw_command[len(parts[0]) :].strip()
-
-            # Parse an optional ASCII font prefix, then treat the rest as the message.
-            if not argument_text:
-                font_name, message = "Standard", "Type Something"
-            else:
-                tokens = _split_command_text(argument_text)
-                if not tokens:
-                    font_name, message = "Standard", "Type Something"
-                else:
-                    first, separator, value = tokens[0].partition("=")
-                    if separator and _normalize_ascii_font_name(first) == "font":
-                        font_name = value.strip() or "Standard"
-                        message = " ".join(tokens[1:]).strip() or "Type Something"
-                    else:
-                        font_name = "Standard"
-                        message = argument_text
-                        for end_index in range(len(tokens), 0, -1):
-                            candidate = _normalize_ascii_font_name(" ".join(tokens[:end_index]))
-                            font_info = ASCII_FONT_FILES.get(candidate)
-                            if font_info is not None:
-                                font_name, _filename = font_info
-                                message = " ".join(tokens[end_index:]).strip() or "Type Something"
-                                break
-            print_in_ASCII_font(message, font_name)
-
-        def opacity_command() -> None:
-            set_window_opacity(int(require_arg("opacity")), context.window)
-
-        def wrap_text_command(default_enabled: bool | None = None) -> None:
-            enabled = default_enabled if default_enabled is not None else _parse_bool_option(require_arg("wrap_text"))
-            state = set_terminal_text_wrapping(enabled)
-            print(f"Text wrapping {state}.")
-
-        def flash_taskbar_command() -> None:
-            count = int(args[0]) if args else 5
-            flash_taskbar(context.window, count=count, until_foreground=False)
-
-        def taskbar_alarm_command() -> None:
-            flash_taskbar(context.window, count=0, until_foreground=True)
-
-        def taskbar_progress_command() -> None:
-            completed = int(require_arg("taskbar_progress"))
-            total = int(args[1]) if len(args) > 1 and re.fullmatch(r"\d+", args[1]) else 100
-            state_index = 2 if len(args) > 1 and re.fullmatch(r"\d+", args[1]) else 1
-            state = args[state_index] if len(args) > state_index else "normal"
-            set_taskbar_progress(completed, total, state, context.window)
-
-        def taskbar_state_command() -> None:
-            state = require_arg("taskbar_state")
-            set_taskbar_progress_state(state, context.window)
-
-        def taskbar_overlay_command() -> None:
-            icon = require_arg("taskbar_overlay")
-            description = " ".join(args[1:])
-            if icon.lower() not in _TASKBAR_STOCK_OVERLAY_ICONS:
-                for end_index in range(len(args), 0, -1):
-                    candidate = " ".join(args[:end_index])
-                    if candidate.lower().endswith(".ico") and os.path.isfile(candidate):
-                        icon = candidate
-                        description = " ".join(args[end_index:])
-                        break
-            set_taskbar_overlay_icon(icon, description, context.window)
-
-        def border_color_command() -> None:
-            set_frame_border_color(require_arg("border_color"), context.window)
-
-        def caption_color_command() -> None:
-            set_frame_caption_color(require_arg("caption_color"), context.window)
-
-        def text_color_command() -> None:
-            set_frame_text_color(require_arg("text_color"), context.window)
-
-        # Inline help blocks for commands that only print usage text.
-        notification_help_command = lambda: (
-            print(),
-            print("Modern Windows toast command:"),
-            print("  notify [options] title | message"),
-            print("  notify_status"),
-            print(),
-            print("Options must come before the title:"),
-            print("  app_id=<id>                         optional AppUserModelID; default uses PowerShell identity"),
-            print("  app_name=<name|terminal>            register/use a toast banner name; overrides app_id"),
-            print("  duration=short|long                 toast duration"),
-            print("  scenario=default|alarm|reminder|incomingCall"),
-            print("  sound=default|mail|sms|reminder|alarm|call"),
-            print("  silent                              suppress notification sound"),
-            print("  sound                               allow notification sound"),
-            print("  attribution=<text>                  attribution line without spaces"),
-            print("  logo=<path_or_uri>                  app logo image"),
-            print("  hero=<path_or_uri>                  wide hero image"),
-            print(),
-            print("Examples:"),
-            print("  notify Build finished | Your script completed."),
-            print("  notify silent Build finished | Your script completed."),
-            print("  notify duration=long scenario=reminder Reminder | Check the terminal output."),
-            print("  notify sound=mail logo=C:\\path\\icon.png Mail | New message received."),
-        )
-        prompt_help_command = lambda: (
-            print(),
-            print("Native Windows prompt command:"),
-            print("  prompt [options] title | message"),
-            print(),
-            print("Options must come before the title:"),
-            print("  buttons=ok|ok_cancel|yes_no|yes_no_cancel|retry_cancel"),
-            print("          abort_retry_ignore|cancel_try_continue"),
-            print("  icon=none|info|warning|error|question"),
-            print("  default=1|2|3|4                  default focused button"),
-            print("  topmost=true|false               keep above other windows; default true"),
-            print("  foreground=true|false            request foreground; default true"),
-            print("  timeout=<milliseconds>           auto-close when supported"),
-            print("  right_align|rtl                  right-align/RTL text"),
-            print("  system_modal|task_modal          modal style"),
-            print(),
-            print("Examples:"),
-            print("  prompt Continue? | Run the next step?"),
-            print("  prompt buttons=yes_no icon=warning default=2 Delete files? | This cannot be undone."),
-            print("  prompt buttons=cancel_try_continue icon=info timeout=10000 Pick one | Auto timeout in 10s."),
-        )
-
-        commands = {
-            "enable_always_on_top": lambda: set_always_on_top(True, context.window),
-            "disable_resize": lambda: set_resize_disabled(True, context.window),
-            "hide_title_bar": lambda: set_title_bar_hidden(True, context.window),
-            "disable_minimize_button": lambda: set_minimize_button_disabled(True, context.window),
-            "disable_maximize_button": lambda: set_maximize_button_disabled(True, context.window),
-            "disable_x_button": lambda: set_x_button_disabled(True, context.window),
-            "enable_x_button": lambda: set_x_button_disabled(False, context.window),
-            "enable_minimize_to_tray": lambda: (
-                # Lazily create the minimize-to-tray controller only once for this REPL session.
-                context.tray_controller
-                if context.tray_controller is not None
-                else setattr(
-                    context,
-                    "tray_controller",
-                    enable_minimize_to_tray(
-                        tooltip=context.window.title,
-                        icon_path=context.tray_icon_path,
-                        window=context.window,
-                        restore_on_stop=True,
-                    ),
-                )
-                or context.tray_controller
-            ),
-            "notify": notification_command,
-            "notify_status": notification_status_command,
-            "notify_help": notification_help_command,
-            "prompt": prompt_command,
-            "prompt_help": prompt_help_command,
-            "ascii": ascii_message_command,
-            "opacity": opacity_command,
-            "wrap_text": wrap_text_command,
-            "foreground": lambda: restore_and_foreground_window(context.window),
-            "taskbar_alarm": taskbar_alarm_command,
-            "flash_taskbar": flash_taskbar_command,
-            "taskbar_progress": taskbar_progress_command,
-            "taskbar_state": taskbar_state_command,
-            "taskbar_clear": lambda: clear_taskbar_progress(context.window),
-            "taskbar_overlay": taskbar_overlay_command,
-            "taskbar_overlay_clear": lambda: clear_taskbar_overlay_icon(context.window),
-            "border_color": border_color_command,
-            "caption_color": caption_color_command,
-            "text_color": text_color_command,
-        }
-
-        action = commands.get(command)
-        if action is None:
-            print(f"Unknown command: {command!r}")
-            continue
-
-        try:
-            action()
-        except Exception as error:
-            print(f"Error: {error}")
-            continue
-
-        print(f"Done: {raw_command}")
-        continue
 
 
 if __name__ == "__main__":
