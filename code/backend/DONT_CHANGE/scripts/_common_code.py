@@ -926,7 +926,7 @@ def set_terminal_app_id(app_id: str, candidate_hwnds: list[int]) -> None:
 
 
 def set_terminal_icon(icon_path: str, candidate_hwnds=list[int]) -> None:
-    """Best-effort icon update of the current Windows terminal icon using ctypes only."""
+    """Best-effort icon update of the current Windows terminal icon"""
     if icon_path == "":
         return
     else:
@@ -1014,17 +1014,19 @@ def set_terminal_icon(icon_path: str, candidate_hwnds=list[int]) -> None:
         pass
 
 
-def set_terminal_name(name: str) -> None:
+def set_terminal_title(title: str) -> None:
     try:
         import ctypes
 
-        clean_name = name.replace("\r\n", "").replace("\r", "")
+        clean_name = title.replace("\r\n", "").replace("\r", "")
         ctypes.windll.kernel32.SetConsoleTitleW(clean_name)
     except Exception:
         pass
 
 
-def get_terminal_name():
+def get_terminal_title()->str:
+    """Returns "" if it fails to get the title."""
+    
     import ctypes
 
     try:
@@ -1032,7 +1034,7 @@ def get_terminal_name():
         ctypes.windll.kernel32.GetConsoleTitleW(buffer, len(buffer))
         return str(buffer.value)
     except Exception:
-        return "Terminal"
+        return ""
 
 
 def set_terminal_appearance_once(app_id: str):
@@ -1042,7 +1044,7 @@ def set_terminal_appearance_once(app_id: str):
     if not _TERMINAL_APPEARANCE_WAS_SET:
         candidate_hwnds = get_candidate_hwnds()
 
-        set_terminal_name(program_name)
+        set_terminal_title(program_name)
         set_terminal_icon(icon_path, candidate_hwnds)
 
         if app_id:
