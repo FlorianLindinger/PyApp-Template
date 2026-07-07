@@ -86,7 +86,7 @@ try:
         if len(sys.argv) == 3:
             app_id = sys.argv[1]
             launch_mode = sys.argv[2]
-        elif len(sys.argv) == 1:
+        elif len(sys.argv) == 1: # script is run on its own - mode
             app_id = ""
             launch_mode = "terminal"
         else:
