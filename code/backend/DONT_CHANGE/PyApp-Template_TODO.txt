@@ -2,6 +2,15 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+maybe shorter time wait for start. 
+
+test all options in python verison not matchign case
+
+it failedt to not install pakcages after i choose that in wrong python verison thing. Also it shoudl roitn what dont get instlaled
+there: "Reset packages" -> remoe packages
+
+open settings fails
+
 apply to pyboson
 
 add uv. make setting
