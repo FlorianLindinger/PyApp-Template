@@ -2,6 +2,23 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+rename main_code to main. ask AI
+
+make quick generate_shortcut.py that you give app id as flag and potentiall python verision of pythpn path. maybe better as internal setting in .py. also bake in icon and stuff and if minimiuzed and everything. it should find .py if not given and if multple prefer main.py main_script.py and start.py.
+write line what to do to change app id.
+
+check if i still need elaborate appi id setting or if simple works for both
+
+how should the watchdog set the title for fancy termianl and browser 
+
+can i raise in watchdog and directly call the rihc functiomn for that?
+
+add setting for failure+crash bg colro and text color and termninal... colors and titles ...
+
+readd forgorund on print on start_program
+
+make looks_like_interpreter_crash again
+
 add icons for success and failed and crashed
 
 intercept x and replace with prompt if close
