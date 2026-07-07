@@ -2,41 +2,21 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+apply to pyboson
+
+add uv. make setting
+
+use dev branch afterwards
+
+fix crash icon
+
 rename main_code to main. ask AI
-
-make quick generate_shortcut.py that you give app id as flag and potentiall python verision of pythpn path. maybe better as internal setting in .py. also bake in icon and stuff and if minimiuzed and everything. it should find .py if not given and if multple prefer main.py main_script.py and start.py.
-write line what to do to change app id.
-
-check if i still need elaborate appi id setting or if simple works for both
-
-how should the watchdog set the title for fancy termianl and browser 
 
 can i raise in watchdog and directly call the rihc functiomn for that?
 
-add setting for failure+crash bg colro and text color and termninal... colors and titles ...
-
-readd forgorund on print on start_program
-
-make looks_like_interpreter_crash again
-
-add icons for success and failed and crashed
-
-intercept x and replace with prompt if close
-
-i could do minimize via thumbnail buttons acutally.
-also log,main_scirpt,
-
-for iwndows toast use the appid so prints under saem? also to prevent sopam
-
-minimite button to tray is kind of problemaric. what if i prompt alway to minimize to tray or normal when tray enabled? or as option to do that? what if i pin genraitc function to buttons. or tray on x like many apps do? but also x shoudl be avaible if wanted
-
-make windwos notifaction show under good name and correct app id
+disable icons for sucess and so on for now. dont generate
 
 rename readmes to README.txt?
-
-add iwndwos promps for sucdces/failure/crash in settings
-
-for windwos notifactioan warn if not allwod by windwos and meantion in setting that has to be enables and where that settign
 
 apply temrplate evyethwher
 
@@ -44,134 +24,41 @@ ask AI if anything would requreies folder craeiotn in case not syneced in git an
 
 shoudl i sync current python verion? what if i put that in python folder as indication that sucesfuly created and not deleted->yes
 
-print asci fonts them on slow backend once.
-
 do i handle pipreqs fail gracefully
-generate a minimla pigar version by quasotm sql mappings
-
-think about going to a minimal pigar verison bc size? what is really adanvata if its just optional feature. it would add large isntall for backend if install?
-
-add use_free-threaded_python_if_available. what to do for global? could be added?
 
 rname py_dist to python?
-
-i shouldnt care about function defs because compuield once?
-
-foreground should always unminimite and restor from tray
-
-change title bg and text + border color on x
--> yes green adn red  
-->also colors for start setgings
-add settingh for titlebar color and text color there. is it better defualt to have title colror thatn bg color? 
-
-reenamble x button on finsih?
 
 remove washdog
 
 udpate pyproject for updated pyrefly
 
-what are all options for the taskbar appearncace. isnt there seomthing like colors and progess states
-
 add erorr message for error in developer settings import everywher it imports. but still ruff. can be critical bec even in genrate shortcuts
 
 ask ai: is anything in common_code slow that should be other scirpt or lazy import?
 
-implemetn setting. "flash in taskbar on"?
-
 split reamde into main features and additional features
 
-do i want optionas as windoes prompt?
-do i want setting for windwos window notivation insteaf of notifivation area?
-
-make flowchart for developer folder. for normal start. for shrotcut genations. for ... ask AI
-
 check that only main scirpt errors are rich shc that ugly erros are more obivouse unexepced.. but do i want some to be rich that could happen with wrong user settings? maybe actaulyl do rich wherever user settings are involed. 
-
-implement ship_backend_python_and_packages
-###### move all backend installation featurs and fixes to future since anyway there is no option to not ship implemented i guess:
-i guess ad d backend python installation to genrtated shoretuctus
-cut down on backend installatikn packages and not ship? kind of too risky for no gain
-make backend installtion more robust for fails by delting folder and redoing i guess. i guess already implem,enwed
-ad d chekc for backend python folder and install them automatically for shortcus
-make backend packages installtion indepomendent chekc and fail delete
 
 do i want to print path to log folder soemthwer or even shrotcut to fodler?
 
 take care that i dont offer wrong stuff for use_global_python: print info that glboal used and global need to nbe installed and what global cerions ....
 
-add option to not matcjhign pyrton vetriosn: cange python version to match current (do i want to open dev_setrtings?)
-
-"future smooth" asci font
-
-wrap text in terminal prints option as settings
-
 add option for log to be realtive to scriopt and not shrotcut but wdir is shrotctu.-> log_relaitev_to_shortcut = False
 
 ask AI if script is efficient
-
-add clickable thing to windfwos notifaction.
 
 offer install terminal open for missing package
 
 reorder dev settings
 
-for git check make options:
-link to githutb
-1) dont check again
-2) dont ask for that update
-2) show changes
-    -> install
-    -
-3) ask AI for more
-
 add doctrings to scripts
-
-
-implement
-
-add script_after_interpreter_crash_path
-
-add: restart_on_crash/restart_on_failure with stop detection for immediate fail again and max repeat try and rate and max allwod in soem time interval 
-
-add setting: success_print=[Program finished successfully]
-failur_print= f"[Program finished with failure] Programm exited with code "{exit_code}"
-and explain that no print if "" and that will 
 
 some kind of setting for global python version choice? -> in setting a string
 
-add asci font print. 
-
-add nogil option with chekc if veriosn compatible adn warn if not 
-
-
-add shortcut for git check if update avaliable and priomopt options
-maybe just info print that veriosn is abalievael and link and so on?
-
 ask AI if template can be imporved?
 
-do: Single-instance mutex name: use a stable UUID in a named mutex so only one copy of the app runs.
-
-Stable window/layout profile IDs: save window position, opacity, shape, on-top state, etc. under a GUID.
-Rule of thumb: use uuid.uuid5(...) when Windows should remember something across runs; use uuid.uuid4() when you want a new unique ID for this run only.
-
-make sure tray remebers position if overflow
-
-do i want in conhost to define shape? do i want that via cols and lines and setting like ratio?
-
-check if i still need hwnd_candidates
-
-can i impleemtnt system tray as somehow intercepted command? i can replace the minimize button i guess
--> chek if i can avoiud packages
-
 ask for settings ideas and feature ides
-
-implmentet watchdog imported settgins
-
-add "windows notifcation on ... = "Message""
-
-implement highlihgting: Foregprund and warning state? see future. ask AI if more ways
-
-do i want a open log on frist print? for no terminal?
 
 most of the stuff i do could be just once on shortcut craretion and then shortcut directly from installed pytrhon to main_script.
 -> uniqures stuff is taskbar combining bc need shortcut gernator
@@ -188,193 +75,48 @@ failed start of main does not go to front on print
 
 apply tempalte to backgrund washdog
 
-
-
 time to print excpetion semes slow
 
 somehwo fix: [Info] AppID update skipped for hwnd 0x00000000009600E0: SetValue System.AppUserModel.ID for hwnd 0x00000000009600E0 failed with HRESULT 0x80070578: unknown error
 
 make warning for os.abort .... also fancy
 
-make lcikcalbe lins kfor wt
-
 fix frontend packages being tracked and remove form hjsitroy
 
 it does not handle keyboerad uinterrupt?
 
-handle script wrapper self-run fail better
-what does watchdog self-run do?
-
-add more surrounding stuff betwen packages and dist install
-
-
-[Info] Python distribution not found. Installing Python:
-Found Python 3.14.6 (Target: 3.14).
-Download URL: https://www.python.org/ftp/python/3.14.6/amd64/
-Found 7 MSI package(s).
-Downloading core.msi
-Downloading dev.msi
-Downloading exe.msi
-Downloading freethreaded.msi
-Downloading lib.msi
-Downloading tcltk.msi
-Downloading ucrt.msi
-Installing core.msi
-Installing dev.msi
-Installing exe.msi
-Installing freethreaded.msi
-Installing lib.msi
-Installing tcltk.msi
-Installing ucrt.msi
-Looking in links: c:\Users\Flo\AppData\Local\Temp\tmpcqek3cko
-Processing C:\Users\Flo\AppData\Local\Temp\tmpcqek3cko\pip-26.1.2-py3-none-any.whl
-Installing collected packages: pip
-  WARNING: The scripts pip3.14.exe and pip3.exe are installed in 'C:\Users\Flo\Documents\Repositories\PyApp Template\code\backend\py_env\py_dist\Scripts' which is not on PATH.
-  Consider adding this directory to PATH or, if you prefer to suppress this warning, use --no-warn-script-location.
-Successfully installed pip-26.1.2
-Collecting pip
-  Using cached pip-26.1.2-py3-none-any.whl.metadata (4.6 kB)
-Using cached pip-26.1.2-py3-none-any.whl (1.8 MB)
-Installing collected packages: pip
-Successfully installed pip-26.1.2
-
-Successfully created local Python 3.14.6 at "C:\Users\Flo\Documents\Repositories\PyApp Template\code\backend\py_env\py_dist".
-
-
-[Info] Package list file: "C:\Users\Flo\Documents\Repositories\PyApp Template\code\backend\developer_tools\_DEFAULT_PYHON_PACKAGES_.txt"
---------------------
-PySide6==6.11.0
-PySide6_Addons==6.11.0
-PySide6_Essentials==6.11.0
-shiboken6==6.11.0
---------------------
-
-Collecting PySide6==6.11.0 (from -r C:\Users\Flo\Documents\Repositories\PyApp Template\code\backend\developer_tools\_DEFAULT_PYHON_PACKAGES_.txt (line 3))
-  Downloading pyside6-6.11.0-cp310-abi3-win_amd64.whl.metadata (5.5 kB)
-Collecting PySide6_Addons==6.11.0 (from -r C:\Users\Flo\Documents\Repositories\PyApp Template\code\backend\developer_tools\_DEFAULT_PYHON_PACKAGES_.txt (line 4))
-  Downloading pyside6_addons-6.11.0-cp310-abi3-win_amd64.whl.metadata (4.2 kB)
-Collecting PySide6_Essentials==6.11.0 (from -r C:\Users\Flo\Documents\Repositories\PyApp Template\code\backend\developer_tools\_DEFAULT_PYHON_PACKAGES_.txt (line 5))
-  Downloading pyside6_essentials-6.11.0-cp310-abi3-win_amd64.whl.metadata (3.8 kB)
-Collecting shiboken6==6.11.0 (from -r C:\Users\Flo\Documents\Repositories\PyApp Template\code\backend\developer_tools\_DEFAULT_PYHON_PACKAGES_.txt (line 6))
-  Downloading shiboken6-6.11.0-cp310-abi3-win_amd64.whl.metadata (2.5 kB)
-Downloading pyside6-6.11.0-cp310-abi3-win_amd64.whl (577 kB)
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 578.0/578.0 kB 26.8 MB/s  0:00:00
-Downloading pyside6_addons-6.11.0-cp310-abi3-win_amd64.whl (168.7 MB)
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 168.7/168.7 MB 29.8 MB/s  0:00:05
-Downloading pyside6_essentials-6.11.0-cp310-abi3-win_amd64.whl (75.8 MB)
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 75.8/75.8 MB 78.5 MB/s  0:00:00
-Downloading shiboken6-6.11.0-cp310-abi3-win_amd64.whl (1.2 MB)
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.2/1.2 MB 105.0 MB/s  0:00:00
-Installing collected packages: shiboken6, PySide6_Essentials, PySide6_Addons, PySide6
-   ━━━━━━━━━━━━━━━━━━━━╺━━━━━━━━━━━━━━━━━━━ 2/4 [PySide6_Addons]
-
-
-
-
-
-
-
-
-
-make install prints nicer
-
 when python install fails how does it indicate? maybe just rcreate somehitng in end to show succes?? not working at the moment. maybye really create a successfull yphron installation file that gets removed with delete_distro -> yes
 might as well do succes install indicator in python file in case soemeone delte all entries for better check tehn. maybe also still ehckf for python.exe addtrioanlly
 
-
-for conhost dont print extra lines for progressbar for donwlaod
-
 ask AI for prborms wti deelte forlder safer
+ask AI what faetues are acatully better than would otherwise have with soemthawt easy solutiomsask AI for optimizaitons
+ask AI what i can do to make whole thing leaner and simpler
+only have basic traceback for outer most exception. ask AI for all paths of error handlöing
+ask ai about pyrpoejct setttings. how much do i want to prescribe? do i want at all or just emtpy?
+ask AI for more test ideas/featues. Ask for recommneatiodbs to test the main_scripts. test via compile? easy way for git actions.... simular stuff
+ask AI if i cna harmonize coeeing conventions al lotittle more
 
-
-make it do abs pathj in travecaabkac not:  C:\Users\Flo\Documents\Repositories\PyApp                                                        │
-    │ Template\code\backend\DONT_CHANGE\B\..\scripts\start_program.py:190 in <module>
-
-
-for traceback i guess i want at least one line beofre and after offender
-
-change " Python child script traceback"
-print python veriosn? on travecaback and path and clickable link.
-print link to open main_scriopt on error
-i can open on specific line with np++ and vscode and pycharm
-i can have setting to open script in specific program
-
-ask AI for optimizaitons
-
-implement highlight_window_on_first_print. where do i do?
-        # def minimize_current_console():
-        #     try:
-        #         hwnd = kernel32_DLL.GetConsoleWindow()
-        #         if hwnd:
-        #             user32_DLL.ShowWindow(hwnd, 2)
-        #     except Exception:
-        #         pass
-
-        # def restore_current_console():
-        #     """WIP"""
-        #     try:
-        #         hwnd = kernel32_DLL.GetConsoleWindow()
-        #         if hwnd:
-        #             user32_DLL.ShowWindow(hwnd, 9)
-        #     except Exception:
-        #         pass
-
-# test if i can set app id here in save_traceback for terminal and child gui in tkinter and pyqt
-
-# move imports to after start in washdog
 
 delete traceback json before start
 
  # checkl if wdir = None is what is expected 
 
-setting how to deal with KeyboardInterrupt?
-
 log the rich traceback error still to file i guess unless it already is
-
-add setting to start minimizied and unminimize on forst print? for main sript
 
 add image of richt tracebacj to redme. add image of shortcut how it looks like a terminal next to the shortcut to that. compared to combined.
 
-ask AI what faetues are acatully better than would otherwise have with soemthawt easy solutioms
-
-i dont need fancy traceback for errors outside of main_script
+i dont need fancy traceback for errors outside of main_script i guess but dev settigns could cause crasehs
 
 rorder main in washdog
 
-have settingh to unminimize on first pritn
-
-move set_terminal_colors to mnain in template. also setup_unminimize_and_foreground_on_first_print?
-
-do i want to change anything for dev tools? probably not, should look like terminal
-
-chekc if all variavles in common vatiables are actually commmon somwhre. ssame with funcitons
-
-make subsetting for what broser mode has window and so on?
-
-do i need to make terminal_args safe?
-
 set the batches to respect the terminal_mode and launch_mode
-
-make start: This script is inteded to be launched in a visible terminal that is minimized on start. It will go to foreground on first print"""
 
 dont allow for empty app id?
 
 i guess i still want stat_pgoram to start minimitzed and foregorund on forst print and also install there such that visible but not staying
 
-move stuff maximall to watchdog so visible terminal can disappera fastest. since i always will have the watchdog for all modes i guess. on other hand i have to spawn stuff for exception. but that shoudl be anyway only the excepitponm
-i guess porint of start program is only to decide what of 3 terminal modes the watcher will be in. but everything that prints should run in start bc might be invisible. but for example if i print how many old instances were closed it is useless if i immediately close that terminal.
-
-set tab color in wt start . i guess worse becasue have to redo shrotcut to change
-
-also would have to redo shortcuts for continuous use of start terminal to chagne wt to conhost. thats bad and will alawys be unexpected. i can only solve this if i always launch a new terminal. and also since i want temrinal to start minimized for backend stuff and show on print and also hte option to start minimized woulöd  have to minimize afterwas i guess. should be okay to . i gues i prefer to not have install in terminal history bc should not be relevant
-
-rewrite stuff that was compatible in newer pyhont vertsion
-
-chekc if terminal app id in thread is actualyl faster. check if i even need fancy app id stuff if i stay in orioginal terminal
-
 what is the convention with _ infron to script. shouldnt wrapepr and watchdog get also. or maybe just not the print richt traceback. but htat either way will disappear now.
 
-ask AI what i can do to make whole thing leaner and simpler
 
 when can i ever get interpreter_crsah?. ask AI?-> i should just do subprocess.run in child script and interpet the exit code. but at that point i might as well use backend for wrapper again. but for fancy traceback passing i need an wrapper the does run_path. So i need 1 start terminal in visible for short time, 1 backend watcher, 1 frontend wrapper that runs in itself the main scriot. so 2 longterm running. actually subprocess.run can capture the stderr but thats only text that rich can color. 
 I can have the watcher print the traceback since it is in the same terminal i guess. that can also handle all the otehr stuff like icon and all that i dont want any wrapper to do if i can avoid.->script_wrapper_watcher.py
@@ -390,21 +132,6 @@ shouldne watchdog watch for every launch mode. so it should handle the splitting
 but i guess conhost and wt are fixed if i stay in same temrinal. cant i make shortcuts obey and generally for all start follow their appearance changes. maybe functioN set_appearance_wt/conhost
 apparently finding out if conhsot vs wt is not necessarily reliably ->pass via shortcut. it is reliable to tell if there is a terminal tho (maybe).
 
-chekc what still needed to be passed in args
-
-shortcut->batch->start_program.py 
-    1) terminal: continue in terminal and 
-        self do watchdogging while launching frontend wrapper
-    2) no terminal: launcher invisible watchdog and close
-        watchdog do watchdogging while launching frontend wrapper
-
-
-only have basic traceback for outer most exception. ask AI for all paths of error handlöing
-
-just run the backend in the wrapper to do the traceback
-
-i guess i want fancy modern traceback and not close to originl without wrapper at that verison
-
 try popen after setting app id very early and maybe sleep before popen
 
 can backend modify the terminal id for the frontend?
@@ -412,11 +139,6 @@ can backend modify the terminal id for the frontend?
 recheck logic in tools
 
 harmoinzie launcher pys. including shortcut generator: see _script_template.py
-
-ask ai for extensive tests:Add a startup smoke-test script for: path with spaces, moved folder, missing package, no internet, no-terminal log, normal crash, interpreter crash, shortcut regeneration.
-
-
-log icon invert for differentiation
 
 for all the shortcuts: what do i want for appearance. does wt or conhost have better taskbar appearance: icon , name?
 do i want to rename and icon ... for scripts that dont launc program?
@@ -428,16 +150,7 @@ checkout terminal tab in shorctu properties
 renamed: generate requiremtns to "generate lsit of ...". Add readme that explains what they do 
 think if all tool names appear nice
 
-add text inside: _VERSION_0.8a. maybe renamed to indice backend.
-do i want text in all the signal files and so on? maybe onily if i dont care about speedup
-
-ask AI for more test ideas/featues. Ask for recommneatiodbs to test the main_scripts. test via compile? easy way for git actions.... simular stuff
-
-ask ai about pyrpoejct setttings. how much do i want to prescribe? do i want at all or just emtpy?
-
 move batch creator function inside install python function
-
-do i want to run SCRIPT_BASE in new terminal in backend or frontend?
 
 check and test python install
 test how low versions go. hardcode error message for too low in start
@@ -467,8 +180,6 @@ earlier gnerate th note where to change packages. wasnt tjere after packge fail
 better error message for pyavkage version not exsiinting in that python version
 
 maybe make easier to reset versions of default packages for current version. does the option prompt. test the python version change prompt
-
-rich cant dispaly long error message
 
 add link to developer settings: [Warning] Python version in settings (3.6) is not matching the current one (3.14.5). Please enter how to proceed:
 
@@ -543,10 +254,6 @@ ensure_frontend_packages(appid) # appid probably doesnt matter but it still trig
 in generate_shortcuts.py. i guess i go for conhost either way.
 
 for frontend terminal: do i need to set title and icon for conhost?
-
-ask AI if i cna harmonize coeeing conventions al lotittle more
-
-
 
 
 look why setting .py is not same as other .py?
@@ -699,7 +406,7 @@ do they wanrt titles
 do i really want terminal to stay open so long? cant i just spawn invisible to monitor for immeadiate fail and then oipen a cmd to print thta?
 i guess i could only spwn inviebl but risky for change
 
-set color and title in Popen alreay
+set color and title in Popen alreay?
 
 set cwd in  crartion of temrinla?
 
