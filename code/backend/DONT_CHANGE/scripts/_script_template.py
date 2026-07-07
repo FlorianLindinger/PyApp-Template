@@ -28,8 +28,6 @@ try:
         close_terminal,
         input_warn,
         print_traceback,
-        setup_terminal_colors,
-        setup_unminimize_and_foreground_on_first_print,
     )
 
     # ==============================
@@ -49,7 +47,7 @@ try:
         # ==============================
         # code block description
 
-        pass
+        ...
 
     # ==============================
     # execute main function
@@ -57,11 +55,9 @@ try:
 
     if __name__ == "__main__":
         try:
-            setup_terminal_colors()
-            setup_unminimize_and_foreground_on_first_print()
             main()
         except Exception as e:
-            print_traceback(fail_message.format(e=e))
+            print_traceback(fail_message.format(e=e)) #WIP function to be in new terminal?
             input_warn("[Error] Press enter to exit")
         close_terminal()
 
