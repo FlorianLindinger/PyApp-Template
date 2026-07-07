@@ -2,7 +2,215 @@
 ==== Future ====
 ================
 
-        # do i want timeout settings?
+
+
+add text inside: _VERSION_0.8a. maybe renamed to indice backend.
+do i want text in all the signal files and so on? maybe onily if i dont care about speedup
+
+make log icon darker for more differnitation
+
+ask ai for extensive tests:Add a startup smoke-test script for: path with spaces, moved folder, missing package, no internet, no-terminal log, normal crash, interpreter crash, shortcut regeneration.
+
+chekc if terminal app id in thread is actualyl faster. check if i even need fancy app id stuff if i stay in orioginal terminal
+
+move stuff maximall to watchdog so visible terminal can disappera fastest. since i always will have the watchdog for all modes i guess. on other hand i have to spawn stuff for exception. but that shoudl be anyway only the excepitponm
+i guess porint of start program is only to decide what of 3 terminal modes the watcher will be in. but everything that prints should run in start bc might be invisible. but for example if i print how many old instances were closed it is useless if i immediately close that terminal.
+
+rewrite stuff that was compatible in newer pyhont vertsion
+
+make start: This script is inteded to be launched in a visible terminal that is minimized on start. It will go to foreground on first print"""
+
+do i need to make terminal_args safe?
+
+make subsetting for what broser mode has window and so on?
+
+
+chekc if all variavles in common vatiables are actually commmon somwhre. ssame with funcitons
+
+move set_terminal_colors to mnain in template. also setup_unminimize_and_foreground_on_first_print?
+
+
+have settingh to unminimize on first pritn
+
+
+
+add setting to start minimizied and unminimize on forst print? for main sript
+
+# test if i can set app id here in save_traceback for terminal and child gui in tkinter and pyqt
+
+# move imports to after start in washdog
+
+setting how to deal with KeyboardInterrupt?
+
+implement highlight_window_on_first_print. where do i do?
+        # def minimize_current_console():
+        #     try:
+        #         hwnd = kernel32_DLL.GetConsoleWindow()
+        #         if hwnd:
+        #             user32_DLL.ShowWindow(hwnd, 2)
+        #     except Exception:
+        #         pass
+
+        # def restore_current_console():
+        #     """WIP"""
+        #     try:
+        #         hwnd = kernel32_DLL.GetConsoleWindow()
+        #         if hwnd:
+        #             user32_DLL.ShowWindow(hwnd, 9)
+        #     except Exception:
+        #         pass
+
+change " Python child script traceback"
+print python veriosn? on travecaback and path and clickable link.
+print link to open main_scriopt on error
+i can open on specific line with np++ and vscode and pycharm
+i can have setting to open script in specific program
+
+make it do abs pathj in travecaabkac not:  C:\Users\Flo\Documents\Repositories\PyApp                                                        │
+    │ Template\code\backend\DONT_CHANGE\B\..\scripts\start_program.py:190 in <module>
+
+
+for traceback i guess i want at least one line beofre and after offender
+
+for conhost dont print extra lines for progressbar for donwlaod
+
+
+add more surrounding stuff betwen packages and dist install
+
+
+make install prints nicer
+
+handle script wrapper self-run fail better
+what does watchdog self-run do?
+
+make clickable lins for wt
+
+setting for git version cheack
+
+do i want a open log on frist print? for no terminal?
+
+implement highlihgting: Foregprund and warning state? see future. ask AI if more ways
+
+add shortcut for git check if update avaliable and priomopt options
+maybe just info print that veriosn is abalievael and link and so on?
+
+add: restart_on_crash/restart_on_failure with stop detection for immediate fail again and max repeat try and rate and max allwod in soem time interval 
+
+add setting: success_print=[Program finished successfully]
+failur_print= f"[Program finished with failure] Programm exited with code "{exit_code}"
+and explain that no print if "" and that will 
+
+add asci font print. 
+
+add nogil option with chekc if veriosn compatible adn warn if not 
+
+do: Single-instance mutex name: use a stable UUID in a named mutex so only one copy of the app runs.
+
+Stable window/layout profile IDs: save window position, opacity, shape, on-top state, etc. under a GUID.
+Rule of thumb: use uuid.uuid5(...) when Windows should remember something across runs; use uuid.uuid4() when you want a new unique ID for this run only.
+
+do i want in conhost to define shape? do i want that via cols and lines and setting like ratio?
+
+make sure tray remebers position if overflow
+
+
+check if i still need hwnd_candidates
+
+
+can i impleemtnt system tray as somehow intercepted command? i can replace the minimize button i guess
+-> chek if i can avoiud packages
+
+add "windows notifcation on ... = "Message""
+
+
+add script_after_interpreter_crash_path
+
+for git check make options:
+link to githutb
+1) dont check again
+2) dont ask for that update
+2) show changes
+    -> install
+    -
+3) ask AI for more
+
+add clickable thing to windfwos notifaction.
+
+
+add option to not matcjhign pyrton vetriosn: cange python version to match current (do i want to open dev_setrtings?)
+
+wrap text in terminal prints option as settings
+
+
+"future smooth" asci font
+
+
+implement ship_backend_python_and_packages
+###### move all backend installation featurs and fixes to future since anyway there is no option to not ship implemented i guess:
+i guess ad d backend python installation to genrtated shoretuctus
+cut down on backend installatikn packages and not ship? kind of too risky for no gain
+make backend installtion more robust for fails by delting folder and redoing i guess. i guess already implem,enwed
+ad d chekc for backend python folder and install them automatically for shortcus
+make backend packages installtion indepomendent chekc and fail delete
+
+make flowchart for developer folder. for normal start. for shrotcut genations. for ... ask AI
+
+do i want optionas as windoes prompt?
+do i want setting for windwos window notivation insteaf of notifivation area?
+
+implemetn setting. "flash in taskbar on"?
+
+what are all options for the taskbar appearncace. isnt there seomthing like colors and progess states
+
+i shouldnt care about function defs because compuield once?
+
+change title bg and text + border color on x
+-> yes green adn red  
+->also colors for start setgings
+add settingh for titlebar color and text color there. is it better defualt to have title colror thatn bg color? 
+
+reenamble x button on finsih?
+
+foreground should always unminimite and restor from tray
+
+add use_free-threaded_python_if_available. what to do for global? could be added?
+
+print asci fonts them on slow backend once.
+
+for windwos notifactioan warn if not allwod by windwos and meantion in setting that has to be enables and where that settign
+
+readd forgorund on print on start_program
+
+make looks_like_interpreter_crash again
+
+add icons for success and failed and crashed
+
+add setting for failure+crash bg colro and text color and termninal... colors and titles ...
+
+how should the watchdog set the title for fancy termianl and browser 
+
+for iwndows toast use the appid so prints under saem? also to prevent sopam
+
+minimite button to tray is kind of problemaric. what if i prompt alway to minimize to tray or normal when tray enabled? or as option to do that? what if i pin genraitc function to buttons. or tray on x like many apps do? but also x shoudl be avaible if wanted
+
+make windwos notifaction show under good name and correct app id
+
+add iwndwos promps for sucdces/failure/crash in settings
+
+
+intercept x and replace with prompt if close
+
+i could do minimize via thumbnail buttons acutally.
+also log,main_scirpt,
+
+        
+check if i still need elaborate appi id setting or if simple works for both
+
+        
+make quick generate_shortcut.py that you give app id as flag and potentiall python verision of pythpn path. maybe better as internal setting in .py. also bake in icon and stuff and if minimiuzed and everything. it should find .py if not given and if multple prefer main.py main_script.py and start.py.
+write line what to do to change app id.
+
+# do i want timeout settings?
 
 
 
