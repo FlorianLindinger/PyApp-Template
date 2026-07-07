@@ -2,7 +2,9 @@
 ==== Future ====
 ================
 
+maybe launch mode dependent wait time beofer no launc warning
 
+chekc speed differences in using pymanger if avaialble. probably installing not worth it bc time. check if wirht it
 
 add text inside: _VERSION_0.8a. maybe renamed to indice backend.
 do i want text in all the signal files and so on? maybe onily if i dont care about speedup
