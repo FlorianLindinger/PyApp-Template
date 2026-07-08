@@ -65,9 +65,11 @@ if terminal_text_color:
 # general helper functions
 
 
-def make_empty_args_safe(args: list[str]) -> list[str]:
-    """Needed because passing empty args as "" in Windows can be flimsy -> replace "" with EMPTY_ARG_INDICATOR and decode in child."""
-    return [a if a != "" else EMPTY_ARG_INDICATOR for a in args]
+def make_empty_args_safe(args:list[str|None]) -> list[str]:
+    """Needed because passing empty args as "" in Windows can be flimsy -> replace "" with EMPTY_ARG_INDICATOR and decode in child.
+    
+    None get conveted to EMPTY_ARG_INDICATOR as well."""
+    return [a if a not in ("",None) else EMPTY_ARG_INDICATOR for a in args]
 
 
 # =========================
