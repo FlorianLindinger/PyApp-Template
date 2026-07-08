@@ -2,6 +2,8 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+add comment to check for synatx error in watchdog at aspecifc path if did not show up
+
 maybe shorter time wait for start. 
 
 test all options in python verison not matchign case
