@@ -8,6 +8,7 @@ contract and serialized traceback data.
 
 import json
 import os
+import shutil
 import subprocess
 import sys
 from typing import Any
@@ -60,6 +61,15 @@ def _int_or_default(value: object, default: int) -> int:
         return default
 
 
+def _message_rule(message: str,symbol="=") -> str:
+    """Return an equals-sign rule matching message width without wrapping."""
+    longest_message_line = max((len(line.expandtabs(4)) for line in message.splitlines()), default=0)
+    terminal_columns = shutil.get_terminal_size(fallback=(80, 20)).columns
+    max_rule_width = max(1, terminal_columns - 1)
+    rule_width = min(max(1, longest_message_line), max_rule_width)
+    return symbol * rule_width
+
+
 def _load_payload() -> dict[str, Any]:
     """Load and validate the watchdog payload JSON path passed in sys.argv[1]."""
     if len(sys.argv) != 2:
@@ -88,6 +98,35 @@ def _split_exception_title(error_data: dict[str, Any]) -> tuple[str, str]:
     return title, exception_value
 
 
+def _traceback_heading(traceback_payload: dict[str, Any], wrapper_exit_code: int) -> str:
+    """Return a user-facing traceback heading based on the target script."""
+    origin = traceback_payload.get("origin") or ("child" if wrapper_exit_code == 1 else "")
+    script_path = str(traceback_payload.get("script_path") or "")
+    script_name = os.path.basename(script_path)
+
+    if origin == "child" and script_name:
+        return f"{script_name} traceback"
+    return "Python traceback"
+
+
+def _display_filename(filename: str, script_path: str) -> str:
+    """Return a frame filename from the target script's perspective."""
+    if filename in ("", "?"):
+        return "?"
+
+    if script_path:
+        script_dir = os.path.dirname(os.path.abspath(script_path))
+        try:
+            relative_filename = os.path.relpath(os.path.abspath(filename), script_dir)
+        except ValueError:
+            relative_filename = ""
+
+        if relative_filename and not relative_filename.startswith("..") and not os.path.isabs(relative_filename):
+            return relative_filename
+
+    return filename
+
+
 def _print_exception_line(error_data: dict[str, Any]) -> None:
     """Print the final exception line for a serialized exception entry."""
     exception_type, exception_value = _split_exception_title(error_data)
@@ -99,17 +138,12 @@ def _print_exception_line(error_data: dict[str, Any]) -> None:
 
 def _print_plain_traceback_payload(traceback_payload: dict[str, Any], wrapper_exit_code: int) -> None:
     """Render serialized traceback data using only built-in print output."""
-    origin = traceback_payload.get("origin") or ("child" if wrapper_exit_code == 1 else "wrapper")
-    if origin == "child":
-        print_warn("Python child script traceback")
-    elif origin == "wrapper":
-        print_warn("Python wrapper traceback")
-    else:
-        print_warn("Python traceback")
+    script_path = str(traceback_payload.get("script_path") or "")
+    print_warn(_traceback_heading(traceback_payload, wrapper_exit_code))
 
     errors = traceback_payload.get("errors") or []
     if not errors:
-        print_warn("The wrapper reported a failure, but the traceback JSON did not contain errors.")
+        print_warn("No traceback frames were captured.")
         return
 
     for index, error_data in enumerate(errors):
@@ -128,7 +162,7 @@ def _print_plain_traceback_payload(traceback_payload: dict[str, Any], wrapper_ex
             for frame_data in frames:
                 if not isinstance(frame_data, dict):
                     continue
-                filename = str(frame_data.get("filename") or "?")
+                filename = _display_filename(str(frame_data.get("filename") or "?"), script_path)
                 lineno = _int_or_default(frame_data.get("lineno"), 0)
                 function = str(frame_data.get("function") or "<module>")
                 source = str(frame_data.get("source") or "")
@@ -138,7 +172,7 @@ def _print_plain_traceback_payload(traceback_payload: dict[str, Any], wrapper_ex
 
         syntax = error_data.get("syntax")
         if isinstance(syntax, dict):
-            filename = str(syntax.get("filename") or "?")
+            filename = _display_filename(str(syntax.get("filename") or "?"), script_path)
             lineno = _int_or_default(syntax.get("lineno"), 0)
             offset = _int_or_default(syntax.get("offset"), 0)
             source = str(syntax.get("text") or "")
@@ -151,7 +185,7 @@ def _print_plain_traceback_payload(traceback_payload: dict[str, Any], wrapper_ex
         _print_exception_line(error_data)
 
 
-def _stack_from_error(error_data: dict[str, Any]) -> Any:
+def _stack_from_error(error_data: dict[str, Any], script_path: str) -> Any:
     """Build one Rich traceback Stack from a serialized exception entry."""
     from rich.traceback import Frame, Stack, _SyntaxError
 
@@ -162,7 +196,7 @@ def _stack_from_error(error_data: dict[str, Any]) -> Any:
     if isinstance(syntax, dict):
         stack.syntax_error = _SyntaxError(
             offset=_int_or_default(syntax.get("offset"), 0),
-            filename=str(syntax.get("filename") or "?"),
+            filename=_display_filename(str(syntax.get("filename") or "?"), script_path),
             line=str(syntax.get("text") or ""),
             lineno=_int_or_default(syntax.get("lineno"), 0),
             msg=exception_value or exception_type,
@@ -173,7 +207,7 @@ def _stack_from_error(error_data: dict[str, Any]) -> Any:
             continue
         stack.frames.append(
             Frame(
-                filename=str(frame_data.get("filename") or "?"),
+                filename=_display_filename(str(frame_data.get("filename") or "?"), script_path),
                 lineno=_int_or_default(frame_data.get("lineno"), 0),
                 name=str(frame_data.get("function") or "<module>"),
                 line=str(frame_data.get("source") or ""),
@@ -183,11 +217,11 @@ def _stack_from_error(error_data: dict[str, Any]) -> Any:
     return stack
 
 
-def _traceback_from_errors(errors: list[dict[str, Any]]) -> Any:
+def _traceback_from_errors(errors: list[dict[str, Any]], script_path: str) -> Any:
     """Build a Rich Traceback object from serialized exception-chain entries."""
     from rich.traceback import Trace, Traceback
 
-    display_stacks = [_stack_from_error(error_data) for error_data in errors]
+    display_stacks = [_stack_from_error(error_data, script_path) for error_data in errors]
     for index, error_data in enumerate(errors[1:], 1):
         relation = str(error_data.get("relation") or "")
         if "direct cause" in relation:
@@ -207,24 +241,23 @@ def _print_rich_traceback_payload(traceback_payload: dict[str, Any], wrapper_exi
     from rich.text import Text
 
     console = Console(legacy_windows=True)
-    origin = traceback_payload.get("origin") or ("child" if wrapper_exit_code == 1 else "wrapper")
-    if origin == "child":
-        heading = "Python child script traceback"
-    elif origin == "wrapper":
-        heading = "Python wrapper traceback"
-    else:
-        heading = "Python traceback"
+    heading = _traceback_heading(traceback_payload, wrapper_exit_code)
+    script_path = str(traceback_payload.get("script_path") or "")
 
     raw_errors = traceback_payload.get("errors") or []
     errors = [error_data for error_data in raw_errors if isinstance(error_data, dict)]
     console.rule(Text(heading, style="bold red"), style="red")
     if not errors:
-        console.print(
-            Text("The wrapper reported a failure, but the traceback JSON did not contain errors.", style="red")
-        )
+        console.print(Text("No traceback frames were captured.", style="red"))
         return
 
-    console.print(_traceback_from_errors(errors))
+    old_cwd = os.getcwd()
+    try:
+        if script_path:
+            os.chdir(os.path.dirname(os.path.abspath(script_path)))
+        console.print(_traceback_from_errors(errors, script_path))
+    finally:
+        os.chdir(old_cwd)
 
 
 def _has_serialized_syntax_error(traceback_payload: dict[str, Any]) -> bool:
@@ -267,9 +300,10 @@ def _render_watchdog_warning_payload(payload: dict[str, Any]) -> None:
         pass
 
     print()
-    print_warn("=" * 30)
+    message_rule = _message_rule(message)
+    print_warn(message_rule)
     print_warn(message)
-    print_warn("=" * 30)
+    print_warn(message_rule)
     print()
 
     if isinstance(traceback_payload, dict):
