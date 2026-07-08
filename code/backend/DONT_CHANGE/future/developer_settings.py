@@ -15,27 +15,27 @@ send_Windows_notification_on_crash = True
 foreground_after_success = False
 foreground_after_failure = False
 foreground_after_crash = False
-foreground_after_KeyBoardInterrupt = False
+foreground_after_KeyboardInterrupt = False
 
 flash_in_taskbar_after_success = False
 flash_in_taskbar_after_failure = True
 flash_in_taskbar_after_crash = True
-flash_in_taskbar_after_KeyBoardInterrupt = True
+flash_in_taskbar_after_KeyboardInterrupt = True
 
 open_main_py_after_success = False
 open_main_py_after_failure = False
 open_main_py_after_crash = False
-open_main_py_after_KeyBoardInterrupt = False
+open_main_py_after_KeyboardInterrupt = False
 
 print_message_after_success: str | None = None
 print_message_after_failure: str | None = None
 print_message_after_crash: str | None = None
-print_message_after_KeyBoardInterrupt: str | None = None
+print_message_after_KeyboardInterrupt: str | None = None
 
 windows_notification_after_success: str | None = None
 windows_notification_after_failure: str | None = None
 windows_notification_after_crash: str | None = None
-windows_notification_after_KeyBoardInterrupt: str | None = None
+windows_notification_after_KeyboardInterrupt: str | None = None
 
 terminal_emulator_shortcut_name: str | None = f"{program_name} (Terminal Emulator)"
 

@@ -31,7 +31,7 @@ try:
 
     from backend.developer_settings import (
         close_after_failure,
-        close_after_KeyBoardInterrupt,
+        close_after_KeyboardInterrupt,
         close_after_success,
         close_already_running_instances_on_start,
         enable_log_for_no_terminal_start,
@@ -42,12 +42,12 @@ try:
         log_print_prepend,
         open_log_file_after_crash,
         open_log_file_after_failure,
-        open_log_file_after_KeyBoardInterrupt,
+        open_log_file_after_KeyboardInterrupt,
         open_log_file_after_success,
         overwrite_log,
         play_sound_after_crash,
         play_sound_after_failure,
-        play_sound_after_KeyBoardInterrupt,
+        play_sound_after_KeyboardInterrupt,
         play_sound_after_success,
         prevent_start_if_already_running,
         print_prepend,
@@ -77,7 +77,7 @@ try:
         icon_path,
         play_sound_after_crash_default,
         play_sound_after_failure_default,
-        play_sound_after_KeyBoardInterrupt_default,
+        play_sound_after_KeyboardInterrupt_default,
         play_sound_after_success_default,
         process_id_file_path,
         python_script_path,
@@ -710,8 +710,8 @@ def input_success(msg):
         title: str | None = None,
         app_id: str = "",
         icon_file_path: str = "",
-        create_terminal: bool = False,
-        wait_for_input: bool = False,
+        create_terminal: bool = True,
+        wait_for_input: bool = True,
     ) -> None:
         """Print a watchdog warning here, or open a warning-styled terminal and print it there.
 
@@ -873,19 +873,19 @@ def input_success(msg):
             if wav_after_failure[-4:] != ".wav":
                 wav_after_failure += ".wav"
 
-        if play_sound_after_KeyBoardInterrupt is True:
-            wav_after_KeyBoardInterrupt = play_sound_after_KeyBoardInterrupt_default
-        elif play_sound_after_KeyBoardInterrupt in (False, None, ""):
-            wav_after_KeyBoardInterrupt = ""
-        elif not os.path.isabs(play_sound_after_KeyBoardInterrupt):
-            wav_after_KeyBoardInterrupt = os.path.normpath(
-                windows_dir + "\\Media\\" + play_sound_after_KeyBoardInterrupt
+        if play_sound_after_KeyboardInterrupt is True:
+            wav_after_KeyboardInterrupt = play_sound_after_KeyboardInterrupt_default
+        elif play_sound_after_KeyboardInterrupt in (False, None, ""):
+            wav_after_KeyboardInterrupt = ""
+        elif not os.path.isabs(play_sound_after_KeyboardInterrupt):
+            wav_after_KeyboardInterrupt = os.path.normpath(
+                windows_dir + "\\Media\\" + play_sound_after_KeyboardInterrupt
             )
         else:
-            wav_after_KeyBoardInterrupt = play_sound_after_KeyBoardInterrupt
-        if wav_after_KeyBoardInterrupt != "":
-            if wav_after_KeyBoardInterrupt[-4:] != ".wav":
-                wav_after_KeyBoardInterrupt += ".wav"
+            wav_after_KeyboardInterrupt = play_sound_after_KeyboardInterrupt
+        if wav_after_KeyboardInterrupt != "":
+            if wav_after_KeyboardInterrupt[-4:] != ".wav":
+                wav_after_KeyboardInterrupt += ".wav"
 
         # ==============================
         # tell the backend terminal via a signal file to close because successful start
@@ -1115,17 +1115,18 @@ def input_success(msg):
                     # 3) open terminal for manual installation
                     # 4) quit
 
-                elif exception_type == "KeyBoardInterrupt":
-                    process_finish(wav_after_KeyBoardInterrupt, log_path, open_log_file_after_KeyBoardInterrupt)
+                elif exception_type == "KeyboardInterrupt":
+                    process_finish(wav_after_KeyboardInterrupt, log_path, open_log_file_after_KeyboardInterrupt)
 
                     print_error_here_or_new_terminal(
                         "[Warning] Program was interrupted by user (KeyboardInterrupt)",
                         traceback_payload=traceback_payload,
                         wrapper_exit_code=exit_code,
-                        title=f"KeyBoardInterrupted - {program_name}",
+                        title=f"KeyboardInterrupt - {program_name}",
                         app_id=app_id,
                         icon_file_path=failure_icon_path,
-                        wait_for_input=not close_after_KeyBoardInterrupt,
+                        create_terminal=not PROGRAM_HAS_TERMINAL,
+                        wait_for_input=not close_after_KeyboardInterrupt,
                     )
 
                 elif exception_type == "SyntaxError":
