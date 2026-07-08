@@ -702,7 +702,6 @@ def input_success(msg):
     def print_error_here_or_new_terminal(
         message: str,
         traceback_payload: dict | None = None,
-        rich_traceback=None,
         missing_traceback_path: str = "",
         wrapper_exit_code: int = 1,
         title: str | None = None,
@@ -722,26 +721,27 @@ def input_success(msg):
             "wrapper_exit_code": wrapper_exit_code,
             "app_id": app_id,
             "icon_file_path": icon_file_path,
+            "wait_for_input": wait_for_input,
         }
 
+        # Persist the warning data and let the printer script consume the same argv contract in both paths.
+        import json
+        import uuid
+
+        os.makedirs(temporary_folder, exist_ok=True)
+        payload_path = os.path.join(temporary_folder, f"watchdog_warning_{os.getpid()}_{uuid.uuid4().hex}.json")
+        with open(payload_path, "w", encoding="utf-8") as f:
+            json.dump(payload, f, ensure_ascii=False)
+
+        command = [
+            sys.executable,
+            "-X",
+            "faulthandler",
+            rich_traceback_printer_path,
+            payload_path,
+        ]
+
         if create_terminal:
-            # Persist the warning data and launch a dedicated warning-styled terminal to render it.
-            import json
-            import uuid
-
-            os.makedirs(temporary_folder, exist_ok=True)
-            payload_path = os.path.join(temporary_folder, f"watchdog_warning_{os.getpid()}_{uuid.uuid4().hex}.json")
-            with open(payload_path, "w", encoding="utf-8") as f:
-                json.dump(payload, f, ensure_ascii=False)
-
-            command = [
-                sys.executable,
-                "-X",
-                "faulthandler",
-                rich_traceback_printer_path,
-                payload_path,
-            ]
-
             subprocess.Popen(  # noqa:S603
                 ["conhost.exe", *command],
                 creationflags=subprocess.CREATE_NEW_CONSOLE,
@@ -752,7 +752,12 @@ def input_success(msg):
         else:
             import runpy
 
-            runpy.run_path(rich_traceback_printer_path)
+            old_argv = sys.argv[:]
+            try:
+                sys.argv = [rich_traceback_printer_path, payload_path]
+                runpy.run_path(rich_traceback_printer_path, run_name="__main__")
+            finally:
+                sys.argv = old_argv
 
     def run_here_or_new_terminal(
         script: str,
