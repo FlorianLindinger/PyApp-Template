@@ -89,7 +89,8 @@ determined_needed_packages_output_file_path_noVersion = (
 )
 determined_needed_packages_output_file_path_withVersion = (
     developer_tools_dir + "\\auto_found_required_packages_withVersion.txt"
-)
+) 
+play_sound_after_KeyBoardInterrupt_default =""
 
 
 # variables
