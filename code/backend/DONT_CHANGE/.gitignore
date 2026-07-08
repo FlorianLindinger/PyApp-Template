@@ -14,3 +14,4 @@ __pycache__
 *.pyo
 # temporary files:
 temporary/*
+!temporary/.gitkeep
