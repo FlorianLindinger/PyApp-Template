@@ -178,7 +178,7 @@ def delete_folder_safe(
     Returns ``True`` if the folder was absent or deleted, and ``False`` only
     when the user cancels an interactive prompt.
     """
-    
+
     def _raise_walk_error(error: OSError) -> None:
         raise error
 
@@ -410,8 +410,6 @@ def delete_folder_safe(
                 ):
                     raise TimeoutError
 
-            
-
             for root, _dirs, files in os.walk(target_path, onerror=_raise_walk_error):
                 _check_empty_scan_timeout()
                 for filename in files:
@@ -585,7 +583,6 @@ def delete_folder_safe(
 
 
 def setup_unminimize_and_foreground_on_first_print():
-
     # this will unminimize and foreground on first print/error
     sys.stdout = unminimize_plus_foreground_terminal_on_first_output(sys.stdout)  # type:ignore
     sys.stderr = unminimize_plus_foreground_terminal_on_first_output(sys.stderr)  # type:ignore
@@ -690,7 +687,6 @@ class unminimize_plus_foreground_terminal_on_first_output:
 
 
 def unminimize_and_foreground_terminal(candidate_hwnds: list[int] | None = None):
-
     if candidate_hwnds is None:
         candidate_hwnds = get_candidate_hwnds()
 
@@ -1024,9 +1020,9 @@ def set_terminal_title(title: str) -> None:
         pass
 
 
-def get_terminal_title()->str:
+def get_terminal_title() -> str:
     """Returns "" if it fails to get the title."""
-    
+
     import ctypes
 
     try:
@@ -1386,7 +1382,6 @@ def get_python_version():
 
 
 def is_python_version_compatible(actual_version, required_version):
-
     actual_parts = actual_version.split(".")
     required_parts = required_version.strip().split(".")
 
@@ -1536,7 +1531,6 @@ def install_full_python(
     # define helper functions
 
     def _find_python_version_and_download_links() -> tuple[str, str, list[str]]:
-
         def _get_download_links_from_url(url: str) -> list[str]:
             request = urllib.request.Request(url, headers={"User-Agent": user_agent})  # noqa
 
@@ -1709,11 +1703,10 @@ def install_full_python(
             major > 3 or (major == 3 and minor >= 4) or (major == 2 and (minor > 7 or (minor == 7 and patch >= 9)))
         )
         if supports_ensurepip:
-            
             env = os.environ.copy()
-            env["PIP_NO_WARN_SCRIPT_LOCATION"] = "1" #supress warning that pip is not global
+            env["PIP_NO_WARN_SCRIPT_LOCATION"] = "1"  # supress warning that pip is not global
 
-            result = subprocess.run( #noqa:S603
+            result = subprocess.run(  # noqa:S603
                 [python_exe, "-m", "ensurepip", "--upgrade"],
                 check=False,
                 env=env,
@@ -1954,7 +1947,7 @@ echo.
 :: don't close terminal
 cmd /k
 """
-        os.makedirs(os.path.dirname(frontend_launcher_for_pip_install_terminal),exist_ok=True)
+        os.makedirs(os.path.dirname(frontend_launcher_for_pip_install_terminal), exist_ok=True)
         with open(frontend_launcher_for_pip_install_terminal, "w", encoding="utf-8") as f:
             f.write(batch_content)
 
@@ -2297,7 +2290,6 @@ def get_current_packages(with_version=True):
 
 
 def save_installed_packages(exe_path, output_path=None, with_version=True):
-
     if output_path is None:
         if with_version == True:
             output_path = determined_current_packages_file_path_withVersion
