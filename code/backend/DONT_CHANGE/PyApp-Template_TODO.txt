@@ -2,6 +2,8 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+fix gitignore for version indicatror of pyghtron whne change
+
 check once the full flow
 
 write in docstring what all thje scriopts do
