@@ -1,4 +1,10 @@
-"""Render traceback payloads passed by background_watchdog."""
+"""Render watchdog warning payloads.
+
+The background watchdog writes a JSON payload to disk and runs this script with
+that payload path as the only argument. This script can be run in a new terminal
+process or through runpy in the current process; both paths use the same argv
+contract and serialized traceback data.
+"""
 
 import json
 import os
@@ -16,10 +22,12 @@ _ANSI_RESET = "\033[0m"
 
 
 def _fallback_print_warn(msg: object, sep: str | None = " ", end: str | None = "\n") -> None:
+    """Print a warning-styled message without importing the shared helpers."""
     print(f"{_ANSI_WARN}{msg}{_ANSI_RESET}", sep=sep, end=end)
 
 
 def _fallback_input_warn(msg: object) -> str:
+    """Prompt for input with warning styling when shared helpers are unavailable."""
     return input(f"{_ANSI_WARN}{msg}{_ANSI_RESET}")
 
 
@@ -35,6 +43,7 @@ except Exception:
     print_warn = _fallback_print_warn
 
     def set_terminal_title(title: str) -> None:
+        """Best-effort console title setter used when shared helpers fail to import."""
         try:
             import ctypes
 
@@ -44,6 +53,7 @@ except Exception:
 
 
 def _int_or_default(value: object, default: int) -> int:
+    """Return value as int, or default when conversion fails."""
     try:
         return int(value)  # type: ignore[arg-type]
     except Exception:
@@ -51,19 +61,21 @@ def _int_or_default(value: object, default: int) -> int:
 
 
 def _load_payload() -> dict[str, Any]:
+    """Load and validate the watchdog payload JSON path passed in sys.argv[1]."""
     if len(sys.argv) != 2:
-        raise ValueError("Expected a watchdog traceback payload JSON path as the only argument.")
+        raise TypeError("Expected a watchdog traceback payload JSON path as the only argument.")
 
     with open(sys.argv[1], encoding="utf-8-sig") as f:
         loaded_payload = json.load(f)
 
     if not isinstance(loaded_payload, dict):
-        raise ValueError("Expected the watchdog traceback payload JSON to contain an object.")
+        raise TypeError("Expected the watchdog traceback payload JSON to contain an object.")
 
     return loaded_payload
 
 
 def _split_exception_title(error_data: dict[str, Any]) -> tuple[str, str]:
+    """Return exception type and message from one serialized exception entry."""
     exception_type = str(error_data.get("type") or "")
     exception_value = str(error_data.get("message") or "")
     if exception_type:
@@ -77,6 +89,7 @@ def _split_exception_title(error_data: dict[str, Any]) -> tuple[str, str]:
 
 
 def _print_exception_line(error_data: dict[str, Any]) -> None:
+    """Print the final exception line for a serialized exception entry."""
     exception_type, exception_value = _split_exception_title(error_data)
     if exception_value:
         print(f"{exception_type}: {exception_value}")
@@ -85,6 +98,7 @@ def _print_exception_line(error_data: dict[str, Any]) -> None:
 
 
 def _print_plain_traceback_payload(traceback_payload: dict[str, Any], wrapper_exit_code: int) -> None:
+    """Render serialized traceback data using only built-in print output."""
     origin = traceback_payload.get("origin") or ("child" if wrapper_exit_code == 1 else "wrapper")
     if origin == "child":
         print_warn("Python child script traceback")
@@ -138,6 +152,7 @@ def _print_plain_traceback_payload(traceback_payload: dict[str, Any], wrapper_ex
 
 
 def _stack_from_error(error_data: dict[str, Any]) -> Any:
+    """Build one Rich traceback Stack from a serialized exception entry."""
     from rich.traceback import Frame, Stack, _SyntaxError
 
     exception_type, exception_value = _split_exception_title(error_data)
@@ -169,6 +184,7 @@ def _stack_from_error(error_data: dict[str, Any]) -> Any:
 
 
 def _traceback_from_errors(errors: list[dict[str, Any]]) -> Any:
+    """Build a Rich Traceback object from serialized exception-chain entries."""
     from rich.traceback import Trace, Traceback
 
     display_stacks = [_stack_from_error(error_data) for error_data in errors]
@@ -186,6 +202,7 @@ def _traceback_from_errors(errors: list[dict[str, Any]]) -> Any:
 
 
 def _print_rich_traceback_payload(traceback_payload: dict[str, Any], wrapper_exit_code: int) -> None:
+    """Render serialized traceback data with Rich."""
     from rich.console import Console
     from rich.text import Text
 
@@ -211,6 +228,7 @@ def _print_rich_traceback_payload(traceback_payload: dict[str, Any], wrapper_exi
 
 
 def _has_serialized_syntax_error(traceback_payload: dict[str, Any]) -> bool:
+    """Return true when any serialized exception entry contains SyntaxError data."""
     for error_data in traceback_payload.get("errors") or []:
         if isinstance(error_data, dict) and isinstance(error_data.get("syntax"), dict):
             return True
@@ -218,6 +236,7 @@ def _has_serialized_syntax_error(traceback_payload: dict[str, Any]) -> bool:
 
 
 def _render_traceback_payload(traceback_payload: dict[str, Any], wrapper_exit_code: int) -> None:
+    """Render traceback data with Rich when reliable, otherwise fall back to plain output."""
     if _has_serialized_syntax_error(traceback_payload):
         _print_plain_traceback_payload(traceback_payload, wrapper_exit_code)
         return
@@ -231,6 +250,7 @@ def _render_traceback_payload(traceback_payload: dict[str, Any], wrapper_exit_co
 
 
 def _render_watchdog_warning_payload(payload: dict[str, Any]) -> None:
+    """Render the full watchdog warning payload and any serialized traceback."""
     title = str(payload.get("title") or f"{program_name} - Warning")
     message = str(payload.get("message") or "[Warning]")
     wrapper_exit_code = _int_or_default(payload.get("wrapper_exit_code"), 1)
@@ -257,6 +277,7 @@ def _render_watchdog_warning_payload(payload: dict[str, Any]) -> None:
 
 
 def main() -> None:
+    """Load the payload, render it, and optionally wait for user input."""
     loaded_payload = _load_payload()
 
     _render_watchdog_warning_payload(loaded_payload)
