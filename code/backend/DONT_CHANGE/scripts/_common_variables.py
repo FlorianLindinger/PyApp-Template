@@ -59,7 +59,7 @@ launcher_browser = starter_batches_folder + "\\B.bat"
 launcher_no_terminal = starter_batches_folder + "\\N.bat"
 launcher_stop = starter_batches_folder + "\\Q.bat"
 launcher_log = starter_batches_folder + "\\L.bat"
-rich_traceback_printer_path=make_abs("_print_rich_traceback.py")
+rich_traceback_printer_path = make_abs("_print_rich_traceback.py")
 
 # files
 # ------------------------
@@ -89,8 +89,8 @@ determined_needed_packages_output_file_path_noVersion = (
 )
 determined_needed_packages_output_file_path_withVersion = (
     developer_tools_dir + "\\auto_found_required_packages_withVersion.txt"
-) 
-play_sound_after_KeyBoardInterrupt_default =""
+)
+play_sound_after_KeyboardInterrupt_default = ""
 
 
 # variables
