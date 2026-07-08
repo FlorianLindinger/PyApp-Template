@@ -6,7 +6,6 @@ import subprocess
 import sys
 from typing import Any
 
-
 root_dir = os.path.normpath(os.path.dirname(os.path.normpath(__file__)) + "\\..\\..\\..")
 if root_dir not in sys.path:
     sys.path.insert(0, root_dir)
@@ -203,7 +202,9 @@ def _print_rich_traceback_payload(traceback_payload: dict[str, Any], wrapper_exi
     errors = [error_data for error_data in raw_errors if isinstance(error_data, dict)]
     console.rule(Text(heading, style="bold red"), style="red")
     if not errors:
-        console.print(Text("The wrapper reported a failure, but the traceback JSON did not contain errors.", style="red"))
+        console.print(
+            Text("The wrapper reported a failure, but the traceback JSON did not contain errors.", style="red")
+        )
         return
 
     console.print(_traceback_from_errors(errors))
@@ -227,24 +228,6 @@ def _render_traceback_payload(traceback_payload: dict[str, Any], wrapper_exit_co
         print_warn(f"[Warning] Rich traceback rendering failed: {error}")
         print()
         _print_plain_traceback_payload(traceback_payload, wrapper_exit_code)
-
-
-def _render_missing_traceback_message(payload: dict[str, Any], wrapper_exit_code: int) -> None:
-    missing_traceback_path = str(payload["missing_traceback_path"])
-    print_warn("=" * 30)
-    print_warn("[Error] Python process exited without a captured traceback")
-    print_warn("-" * 30)
-    print_warn(f'Wrapper exit code: "{wrapper_exit_code}"')
-    print_warn(f'Expected traceback JSON: "{missing_traceback_path}"')
-    print_warn("-" * 30)
-    if wrapper_exit_code == 1:
-        print_warn("The child script ended before the wrapper could write traceback data.")
-        print_warn("Common causes: os._exit(...), os.abort(), native crash, or forced process kill.")
-    elif wrapper_exit_code == 2:
-        print_warn("The wrapper failed before it could write traceback data.")
-    else:
-        print_warn("The process ended before traceback data was available.")
-    print_warn("=" * 30)
 
 
 def _render_watchdog_warning_payload(payload: dict[str, Any]) -> None:
@@ -271,8 +254,6 @@ def _render_watchdog_warning_payload(payload: dict[str, Any]) -> None:
 
     if isinstance(traceback_payload, dict):
         _render_traceback_payload(traceback_payload, wrapper_exit_code)
-    elif payload.get("missing_traceback_path"):
-        _render_missing_traceback_message(payload, wrapper_exit_code)
 
 
 def main() -> None:
