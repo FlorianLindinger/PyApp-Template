@@ -2,6 +2,17 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+make color choices and so on for on finishi. also maybe sort them by finish type
+
+
+is rich tracevack good looking=?
+
+chjeck if more stuff from backgorund_watchdog shoudl be in commmon_code
+
+where do i choose error colors?
+
+i randomly get soemtinems: [Info] AppID update skipped for hwnd 0x0000000000B1089C: SetValue System.AppUserModel.ID for hwnd 0x0000000000B1089C failed with HRESULT 0x80070578: unknown error
+
 in backend make the processing in main again as matter of principle and pass as arg
 
 

@@ -1061,7 +1061,16 @@ def input_success(msg):
         # ==============================
         # wait for finish of wrapper
 
-        process.wait()
+        # Ctrl+C is delivered to every process attached to this console.
+        # Ignore it in the watchdog while waiting so main.py receives the first interrupt.
+        import signal
+
+        old_sigint_handler = signal.getsignal(signal.SIGINT)
+        signal.signal(signal.SIGINT, signal.SIG_IGN)
+        try:
+            process.wait()
+        finally:
+            signal.signal(signal.SIGINT, old_sigint_handler)
 
         # ==============================
         # handle exit of wrapper
@@ -1115,20 +1124,6 @@ def input_success(msg):
                     # 3) open terminal for manual installation
                     # 4) quit
 
-                elif exception_type == "KeyboardInterrupt":
-                    process_finish(wav_after_KeyboardInterrupt, log_path, open_log_file_after_KeyboardInterrupt)
-
-                    print_error_here_or_new_terminal(
-                        "[Warning] Program was interrupted by user (KeyboardInterrupt)",
-                        traceback_payload=traceback_payload,
-                        wrapper_exit_code=exit_code,
-                        title=f"KeyboardInterrupt - {program_name}",
-                        app_id=app_id,
-                        icon_file_path=failure_icon_path,
-                        create_terminal=not PROGRAM_HAS_TERMINAL,
-                        wait_for_input=not close_after_KeyboardInterrupt,
-                    )
-
                 elif exception_type == "SyntaxError":
                     process_finish(wav_after_failure, log_path, open_log_file_after_failure)
 
@@ -1140,6 +1135,20 @@ def input_success(msg):
                         app_id=app_id,
                         icon_file_path=failure_icon_path,
                         wait_for_input=not close_after_failure,
+                    )
+                    
+                elif exception_type == "KeyboardInterrupt":
+                    process_finish(wav_after_KeyboardInterrupt, log_path, open_log_file_after_KeyboardInterrupt)
+
+                    print_error_here_or_new_terminal(
+                        "[Warning] Program was interrupted by user with Ctrl+C (KeyboardInterrupt)",
+                        traceback_payload=traceback_payload,
+                        wrapper_exit_code=exit_code,
+                        title=f"KeyboardInterrupt - {program_name}",
+                        app_id=app_id,
+                        icon_file_path=failure_icon_path,
+                        create_terminal=not PROGRAM_HAS_TERMINAL,
+                        wait_for_input=not close_after_KeyboardInterrupt,
                     )
 
             else:
