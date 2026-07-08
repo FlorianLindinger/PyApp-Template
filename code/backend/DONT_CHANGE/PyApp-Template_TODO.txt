@@ -8,7 +8,7 @@ write in docstring what all thje scriopts do
 
 add comment to check for synatx error in watchdog at aspecifc path if did not show up
 
-maybe shorter time wait for start. 
+maybe shorter time wait for start before complaining
 
 test all options in python verison not matchign case
 
@@ -24,8 +24,6 @@ add uv. make setting
 use dev branch afterwards
 
 fix crash icon
-
-rename main_code to main. ask AI
 
 can i raise in watchdog and directly call the rihc functiomn for that?
 
