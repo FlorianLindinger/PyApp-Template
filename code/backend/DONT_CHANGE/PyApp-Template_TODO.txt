@@ -2,6 +2,8 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+fix keyboradinterrupt being slow to rich traceback. are alls slow?
+
 make color choices and so on for on finishi. also maybe sort them by finish type
 
 
