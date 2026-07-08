@@ -21,7 +21,7 @@
         foreground_after_success,
         hide_title_bar,
         highlight_window_on_first_print,
-        main_script_args,
+        args_for_main_py,
         open_script_after_crash,
         open_script_after_failure,
         print_message_after_crash,
