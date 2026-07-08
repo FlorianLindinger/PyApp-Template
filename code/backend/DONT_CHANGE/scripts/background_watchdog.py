@@ -31,6 +31,7 @@ try:
 
     from backend.developer_settings import (
         close_after_failure,
+        close_after_KeyBoardInterrupt,
         close_after_success,
         close_already_running_instances_on_start,
         enable_log_for_no_terminal_start,
@@ -792,7 +793,7 @@ def input_success(msg):
 
         try:
             if PROGRAM_HAS_TERMINAL:
-                exec(script) #noqa:S102
+                exec(script)  # noqa:S102
             else:
                 process = subprocess.Popen(  # noqa:S603
                     ["conhost.exe", sys.executable, "-c", script],
@@ -986,7 +987,6 @@ def input_success(msg):
         # ==============================
         # setup variables used in launches
 
-
         selected_python_script_path = python_script_path
         if os.environ.get(env_var_to_signal_startup_time_measurement):
             selected_python_script_path = start_time_dummy_main_script
@@ -994,8 +994,8 @@ def input_success(msg):
         if not os.path.exists(selected_python_script_path):
             raise FileNotFoundError(f'[Error] Python script not found at "{selected_python_script_path}"')
 
-        passed_args = get_frontend_args(selected_python_script_path,app_id, log_path)
-        
+        passed_args = get_frontend_args(selected_python_script_path, app_id, log_path)
+
         if start_in_shortcut_folder:
             wdir_is_script_dir = False
             cwd = None
@@ -1098,28 +1098,46 @@ def input_success(msg):
                     # 3) open terminal for manual installation
                     # 4) quit
 
-                elif exception_type in ["KeyBoardInterrupt", "SyntaxError"]:
+                elif exception_type == "KeyBoardInterrupt":
                     process_finish(wav_after_failure, log_path, open_log_file_after_failure)
 
                     print_error_here_or_new_terminal(
-                        "[Error] Python child script failed",
+                        "[Warning] Program was interrupted by user (KeyboardInterrupt)",
                         traceback_payload=traceback_payload,
                         wrapper_exit_code=exit_code,
-                        title=f"{program_name} - Python warning",
+                        title=f"KeyBoardInterrupted - {program_name}",
                         app_id=app_id,
                         icon_file_path=failure_icon_path,
-                        wait_for_input=False,
+                        wait_for_input=not close_after_KeyBoardInterrupt,
+                    )
+
+                elif exception_type == "SyntaxError":
+                    process_finish(wav_after_failure, log_path, open_log_file_after_failure)
+
+                    print_error_here_or_new_terminal(
+                        f"[Error] Program failed due to a syntax error in {selected_python_script_path.split(os.sep)[-1]}",
+                        traceback_payload=traceback_payload,
+                        wrapper_exit_code=exit_code,
+                        title=f"SyntaxError - {program_name}",
+                        app_id=app_id,
+                        icon_file_path=failure_icon_path,
+                        wait_for_input=not close_after_failure,
                     )
 
             else:
                 ...
 
-            if close_after_failure:
-                sys.exit(exit_code)
-            else:
-                if PROGRAM_HAS_TERMINAL:
-                    input_warn("[Error] Press enter to exit")
-                sys.exit(exit_code)
+            # WIP: i need to close this after opening new window and that is being closed or waited for
+
+            # waiting and printing is handled by print_error_here_or_new_terminal, for which this script waits
+            sys.exit(exit_code)
+
+            # if close_after_failure:
+            #     sys.exit(exit_code)
+            # else:
+            #     if PROGRAM_HAS_TERMINAL:
+            #         input_warn("[Error] Press enter to exit")
+            #     sys.exit(exit_code)
 
         elif exit_code == 2:  # exception in wrapper
             import json
