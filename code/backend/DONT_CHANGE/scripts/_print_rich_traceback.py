@@ -1,5 +1,5 @@
-"""WIP
-"""
+"""WIP"""
+
 
 def _render_watchdog_warning_payload(payload: dict) -> None:
     title = str(payload.get("title") or f"{program_name} - Warning")

@@ -65,11 +65,11 @@ if terminal_text_color:
 # general helper functions
 
 
-def make_empty_args_safe(args:list[str|None]) -> list[str]:
+def make_empty_args_safe(args: list[str | None]) -> list[str]:
     """Needed because passing empty args as "" in Windows can be flimsy -> replace "" with EMPTY_ARG_INDICATOR and decode in child.
-    
+
     None get conveted to EMPTY_ARG_INDICATOR as well."""
-    return [a if a not in ("",None) else EMPTY_ARG_INDICATOR for a in args]
+    return [a if a not in ("", None) else EMPTY_ARG_INDICATOR for a in args]
 
 
 # =========================
@@ -763,28 +763,28 @@ def set_terminal_app_id(app_id: str, candidate_hwnds: list[int]) -> None:
     class _GUID(ctypes.Structure):
         """Represent a Windows GUID/UUID structure used by COM APIs."""
 
-        _fields_ = [
+        _fields_ = (
             ("Data1", ctypes.c_ulong),
             ("Data2", ctypes.c_ushort),
             ("Data3", ctypes.c_ushort),
             ("Data4", ctypes.c_ubyte * 8),
-        ]
+        )
 
     class _PROPERTYKEY(ctypes.Structure):
         """WIP"""
 
-        _fields_ = [("fmtid", _GUID), ("pid", wintypes.DWORD)]
+        _fields_ = (("fmtid", _GUID), ("pid", wintypes.DWORD))
 
     class _PROPVARIANT(ctypes.Structure):
         """WIP"""
 
-        _fields_ = [
+        _fields_ = (
             ("vt", ctypes.c_ushort),
             ("wReserved1", ctypes.c_ushort),
             ("wReserved2", ctypes.c_ushort),
             ("wReserved3", ctypes.c_ushort),
             ("pwszVal", ctypes.c_wchar_p),
-        ]
+        )
 
     class _IPropertyStore(ctypes.Structure):
         """WIP"""
@@ -794,7 +794,7 @@ def set_terminal_app_id(app_id: str, candidate_hwnds: list[int]) -> None:
     class _IPropertyStoreVtbl(ctypes.Structure):
         """WIP"""
 
-        _fields_ = [
+        _fields_ = (
             (
                 "QueryInterface",
                 ctypes.WINFUNCTYPE(
@@ -835,7 +835,7 @@ def set_terminal_app_id(app_id: str, candidate_hwnds: list[int]) -> None:
                 ),
             ),
             ("Commit", ctypes.WINFUNCTYPE(HRESULT, IPropertyStorePtr)),
-        ]
+        )
 
     _IPropertyStore._fields_ = [("lpVtbl", ctypes.POINTER(_IPropertyStoreVtbl))]
 

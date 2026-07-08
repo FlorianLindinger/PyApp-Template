@@ -292,28 +292,28 @@ def input_success(msg):
         class GUID(ctypes.Structure):
             """WIP"""
 
-            _fields_ = [
+            _fields_ = (
                 ("Data1", ctypes.c_ulong),
                 ("Data2", ctypes.c_ushort),
                 ("Data3", ctypes.c_ushort),
                 ("Data4", ctypes.c_ubyte * 8),
-            ]
+            )
 
         class PROPERTYKEY(ctypes.Structure):
             """WIP"""
 
-            _fields_ = [("fmtid", GUID), ("pid", wintypes.DWORD)]
+            _fields_ = (("fmtid", GUID), ("pid", wintypes.DWORD))
 
         class PROPVARIANT(ctypes.Structure):
             """WIP"""
 
-            _fields_ = [
+            _fields_ = (
                 ("vt", ctypes.c_ushort),
                 ("wReserved1", ctypes.c_ushort),
                 ("wReserved2", ctypes.c_ushort),
                 ("wReserved3", ctypes.c_ushort),
                 ("pwszVal", ctypes.c_wchar_p),
-            ]
+            )
 
         class IPropertyStore(ctypes.Structure):
             """WIP"""
@@ -323,7 +323,7 @@ def input_success(msg):
         class IPropertyStoreVtbl(ctypes.Structure):
             """Describe the IPropertyStore COM vtable layout."""
 
-            _fields_ = [
+            _fields_ = (
                 (
                     "QueryInterface",
                     ctypes.WINFUNCTYPE(
@@ -364,7 +364,7 @@ def input_success(msg):
                     ),
                 ),
                 ("Commit", ctypes.WINFUNCTYPE(HRESULT, IPropertyStorePtr)),
-            ]
+            )
 
         IPropertyStore._fields_ = [("lpVtbl", ctypes.POINTER(IPropertyStoreVtbl))]
 
@@ -699,9 +699,6 @@ def input_success(msg):
         except Exception:
             return "Terminal"
 
-    def set_terminal_title(title: str) -> None:
-        KERNEL32_DLL.SetConsoleTitleW(title)
-
     def print_error_here_or_new_terminal(
         message: str,
         traceback_payload: dict | None = None,
@@ -779,7 +776,7 @@ def input_success(msg):
 
         try:
             if PROGRAM_HAS_TERMINAL:
-                exec(script)
+                exec(script) #noqa:S102
             else:
                 process = subprocess.Popen(  # noqa:S603
                     ["conhost.exe", sys.executable, "-c", script],
@@ -787,7 +784,7 @@ def input_success(msg):
                 )
                 process.wait()
 
-        except Exception as e:
+        except Exception:
             import traceback
 
             print(traceback.format_exc)
