@@ -702,7 +702,6 @@ def input_success(msg):
     def print_error_here_or_new_terminal(
         message: str,
         traceback_payload: dict | None = None,
-        missing_traceback_path: str = "",
         wrapper_exit_code: int = 1,
         title: str | None = None,
         app_id: str = "",
@@ -710,14 +709,27 @@ def input_success(msg):
         create_terminal: bool = False,
         wait_for_input: bool = False,
     ) -> None:
-        """Print a watchdog warning here, or open a warning-styled terminal and print it there."""
+        """Print a watchdog warning here, or open a warning-styled terminal and print it there.
+
+        Parameters:
+            message: Main warning/error message printed above any traceback details.
+            traceback_payload: Serialized traceback data from the frontend wrapper. When present, the
+                printer reconstructs the child or wrapper traceback from this data.
+            wrapper_exit_code: Exit code returned by the frontend wrapper. Used to distinguish child
+                failures from wrapper failures and abrupt exits in the warning text.
+            title: Console title for the warning output. Defaults to "<program_name> - Warning".
+            app_id: AppUserModelID to apply when a separate warning terminal is created.
+            icon_file_path: Preferred icon for a separate warning terminal.
+            create_terminal: If true, launch a new conhost.exe window for the warning. If false,
+                render through the same printer script in the current process.
+            wait_for_input: If true, keep the warning output open with a final input prompt.
+        """
 
         title = title or f"{program_name} - Warning"
         payload = {
             "title": title,
             "message": message,
             "traceback_payload": traceback_payload,
-            "missing_traceback_path": missing_traceback_path,
             "wrapper_exit_code": wrapper_exit_code,
             "app_id": app_id,
             "icon_file_path": icon_file_path,
@@ -728,7 +740,6 @@ def input_success(msg):
         import json
         import uuid
 
-        os.makedirs(temporary_folder, exist_ok=True)
         payload_path = os.path.join(temporary_folder, f"watchdog_warning_{os.getpid()}_{uuid.uuid4().hex}.json")
         with open(payload_path, "w", encoding="utf-8") as f:
             json.dump(payload, f, ensure_ascii=False)
