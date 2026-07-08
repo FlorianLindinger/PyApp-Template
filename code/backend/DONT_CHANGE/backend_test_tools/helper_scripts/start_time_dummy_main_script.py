@@ -1,4 +1,4 @@
-"""Dummy script as standin for main_script.py which is needed for backend test tool to measure startup times"""
+"""Dummy script as standin for main.py which is needed for backend test tool to measure startup times"""
 
 import os
 import sys

@@ -49,7 +49,7 @@ temporary_folder = DONT_CHANGE_dir = make_abs("..\\temporary")
 # scripts
 # ------------------------
 start_program_script = make_abs("start_program.py")
-python_script_path = make_abs("..\\..\\..\\main_script.py")
+python_script_path = make_abs("..\\..\\..\\main.py")
 background_watchdog_path = make_abs("background_watchdog.py")
 start_time_dummy_main_script = make_abs("..\\backend_test_tools\\helper_scripts\\start_time_dummy_main_script.py")
 launcher_terminal = starter_batches_folder + "\\W.bat"
