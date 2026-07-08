@@ -2,6 +2,8 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+write in docstring what all thje scriopts do
+
 add comment to check for synatx error in watchdog at aspecifc path if did not show up
 
 maybe shorter time wait for start. 
