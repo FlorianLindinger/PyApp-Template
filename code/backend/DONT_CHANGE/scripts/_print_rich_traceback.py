@@ -299,11 +299,11 @@ def _render_watchdog_warning_payload(payload: dict[str, Any]) -> None:
     except Exception:
         pass
 
+    divider = _message_rule(message)
     print()
-    message_rule = _message_rule(message)
-    print_warn(message_rule)
+    print_warn(divider)
     print_warn(message)
-    print_warn(message_rule)
+    print_warn(divider)
     print()
 
     if isinstance(traceback_payload, dict):
