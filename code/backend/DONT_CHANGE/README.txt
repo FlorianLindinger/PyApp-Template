@@ -7,7 +7,7 @@ https://github.com/FlorianLindinger/PyApp-Template
 It is named DONT_CHANGE because normal app customization should happen in
 the files outside this folder, especially:
 
-- code/main_script.py
+- code/main.py
 - code/settings.py
 - code/developer_settings.py
 - code/icons
@@ -25,7 +25,7 @@ In this project, "backend" means the launcher and support code that makes the
 app portable and easy to start.
 
 Inside this folder, "backend Python" means the small embedded Python runtime
-used to run the launcher/support scripts. "Frontend Python" means the full local Python installation that runs code/main_script.py.
+used to run the launcher/support scripts. "Frontend Python" means the full local Python installation that runs code/main.py.
 
 
 Folder contents

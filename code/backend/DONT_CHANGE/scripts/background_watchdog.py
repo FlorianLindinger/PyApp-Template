@@ -1037,7 +1037,7 @@ def input_success(msg):
 
         # exit_code:
         # 0 = success -> handle
-        # 1 = failure in wrappped child (main_script.py) -> handle (expecting info via json)
+        # 1 = failure in wrappped child (main.py) -> handle (expecting info via json)
         # 2 = failure in wrapper -> handle (expecting info via json)
         # 3 = failure in wrapper error handler (has "input(...)"" -> close here)
 
