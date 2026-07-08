@@ -2,6 +2,14 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+in backend make the processing in main again as matter of principle and pass as arg
+
+
+
+ask AI if all in decv settings is used
+
+add settings for keyboradinterruot for wiar for ... colror sound ...
+
 fix gitignore for version indicatror of pyghtron whne change
 
 check once the full flow
