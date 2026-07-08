@@ -42,10 +42,12 @@ try:
         log_print_prepend,
         open_log_file_after_crash,
         open_log_file_after_failure,
+        open_log_file_after_KeyBoardInterrupt,
         open_log_file_after_success,
         overwrite_log,
         play_sound_after_crash,
         play_sound_after_failure,
+        play_sound_after_KeyBoardInterrupt,
         play_sound_after_success,
         prevent_start_if_already_running,
         print_prepend,
@@ -75,6 +77,7 @@ try:
         icon_path,
         play_sound_after_crash_default,
         play_sound_after_failure_default,
+        play_sound_after_KeyBoardInterrupt_default,
         play_sound_after_success_default,
         process_id_file_path,
         python_script_path,
@@ -870,6 +873,20 @@ def input_success(msg):
             if wav_after_failure[-4:] != ".wav":
                 wav_after_failure += ".wav"
 
+        if play_sound_after_KeyBoardInterrupt is True:
+            wav_after_KeyBoardInterrupt = play_sound_after_KeyBoardInterrupt_default
+        elif play_sound_after_KeyBoardInterrupt in (False, None, ""):
+            wav_after_KeyBoardInterrupt = ""
+        elif not os.path.isabs(play_sound_after_KeyBoardInterrupt):
+            wav_after_KeyBoardInterrupt = os.path.normpath(
+                windows_dir + "\\Media\\" + play_sound_after_KeyBoardInterrupt
+            )
+        else:
+            wav_after_KeyBoardInterrupt = play_sound_after_KeyBoardInterrupt
+        if wav_after_KeyBoardInterrupt != "":
+            if wav_after_KeyBoardInterrupt[-4:] != ".wav":
+                wav_after_KeyBoardInterrupt += ".wav"
+
         # ==============================
         # tell the backend terminal via a signal file to close because successful start
 
@@ -1099,7 +1116,7 @@ def input_success(msg):
                     # 4) quit
 
                 elif exception_type == "KeyBoardInterrupt":
-                    process_finish(wav_after_failure, log_path, open_log_file_after_failure)
+                    process_finish(wav_after_KeyBoardInterrupt, log_path, open_log_file_after_KeyBoardInterrupt)
 
                     print_error_here_or_new_terminal(
                         "[Warning] Program was interrupted by user (KeyboardInterrupt)",

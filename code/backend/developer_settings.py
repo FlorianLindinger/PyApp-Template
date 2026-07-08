@@ -34,27 +34,16 @@ log_input_prepend: str | None = "%H:%M:%S > "
 close_after_success = True
 close_after_failure = False
 close_after_crash = False
+close_after_KeyBoardInterrupt = False
 open_log_file_after_success = False
 open_log_file_after_failure = False
 open_log_file_after_crash = False
-open_script_after_crash = False
-open_script_after_failure = False
-foreground_after_success = False
-foreground_after_failure = False
-foreground_after_crash = False
-flash_in_taskbar_after_success = False
-flash_in_taskbar_after_failure = True
-flash_in_taskbar_after_crash = True
-print_message_after_success: str | None = None
-print_message_after_failure: str | None = None
-print_message_after_crash: str | None = None
-windows_notification_after_success: str | None = None
-windows_notification_after_failure: str | None = None
-windows_notification_after_crash: str | None = None
+open_log_file_after_KeyBoardInterrupt = False
 # False for off. True for default. String for rel. path to .wav in C:\Windows\Media:
 play_sound_after_success: str | bool = False
 play_sound_after_failure: str | bool = True
 play_sound_after_crash: str | bool = True
+play_sound_after_KeyBoardInterrupt: str | bool = False
 # -------------------------------------------------
 # Start script in scipt folder or folder of the starting shortcut. (affects log_path_rel_to_start_folder setting below):
 start_in_shortcut_folder = False
