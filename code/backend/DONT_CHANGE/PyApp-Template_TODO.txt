@@ -2,6 +2,8 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+maybe never ship packages or anything
+
 how to deal syncing of uv that might or mioght not be using in setting in deev
 
 for not foiund python exe make better print what folder to search for and where was last time. resolve path. it also does not go to foregorund:
