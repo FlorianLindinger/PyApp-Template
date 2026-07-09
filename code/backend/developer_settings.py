@@ -91,6 +91,9 @@ install_tools = False
 # -------------------------------------------------
 # Use uv to install packages:
 use_uv_to_install_packages = True
+# -------------------------------------------------
+# Allow Git commits to include the generated backend Python runtime and backend packages:
+sync_backend_python_and_backend_packages_to_git = False
 
 # =========================================
 # ==== Launcher Mode Specific Settings ====
