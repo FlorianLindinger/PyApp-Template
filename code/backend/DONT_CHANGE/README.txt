@@ -76,6 +76,11 @@ Important files
 - backend_packages_list.txt
   Source list for backend-only Python packages.
 
+- backend_build_tools_list.txt
+  Source list for temporary backend Python build/install tools. These are used
+  during backend package installation and removed before finalizing backend
+  Python.
+
 - PyApp-Template_TODO.txt
   Development notes for the template itself.
 

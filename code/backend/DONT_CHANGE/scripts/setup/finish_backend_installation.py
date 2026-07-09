@@ -17,6 +17,7 @@ if root_dir not in sys.path:
 
 from backend.DONT_CHANGE.scripts._common_code import delete_folder_safe
 from backend.DONT_CHANGE.scripts._common_variables import (
+    backend_build_tools_requirements_file,
     backend_files_to_delete_on_install,
     backend_package_requirements_file,
     backend_packages_dir,
@@ -103,16 +104,15 @@ import site""")
     print("==============================")
     print()
 
-    # install "setuptools" and its dependency "wheel" for "docopt" package installation
+    # install temporary build tools for packages that need legacy build support
     subprocess.run(  # noqa:S603
         [
             backend_python_exe,
             "-m",
             "pip",
             "install",
-            "packaging==26.2",
-            "setuptools==82.0.1",
-            "wheel==0.47.0",
+            "-r",
+            backend_build_tools_requirements_file,
             "--upgrade",
             "--no-warn-script-location",
             "--no-deps",
@@ -144,9 +144,19 @@ import site""")
 
         shutil.rmtree(generated_bin_folder)
 
-    # uninstall pip, setuptools and wheel from the embedded python to save space
+    # uninstall pip and temporary build tools from the embedded python to save space
     subprocess.run(  # noqa:S603
-        [backend_python_exe, "-m", "pip", "uninstall", "pip", "packaging", "setuptools", "wheel", "-y"], check=True
+        [
+            backend_python_exe,
+            "-m",
+            "pip",
+            "uninstall",
+            "pip",
+            "-r",
+            backend_build_tools_requirements_file,
+            "-y",
+        ],
+        check=True,
     )
 
     # update python3xx._pth
