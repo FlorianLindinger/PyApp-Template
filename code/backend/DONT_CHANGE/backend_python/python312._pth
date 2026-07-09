@@ -1,9 +1,6 @@
 python312.zip
 .
 ..\backend_packages
-..\backend_packages\win32
-..\backend_packages\win32\lib
-..\backend_packages\Pythonwin
 
 # Uncomment to run site.main() automatically
 # import site
