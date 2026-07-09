@@ -2,6 +2,8 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+make it somehow safer for aborted installltion of stuff. maynbe folder deleation and end file signal creation
+
 make better print for default run
 
 is lnk icon working
