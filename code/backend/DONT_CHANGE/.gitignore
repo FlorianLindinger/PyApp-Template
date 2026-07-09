@@ -15,5 +15,7 @@ __pycache__
 # temporary files:
 temporary/*
 !temporary/.gitkeep
-# build output file:
-*dist-info/INSTALLER
+# build output folders:
+**/*dist-info/
+# uv generated file:
+.lock
