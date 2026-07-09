@@ -143,6 +143,7 @@ import site""")
     with open(backend_python_pth_file, "w", encoding="utf-8") as f:
         f.write(rf"""{backend_python_zip_rel_path}
 .
+Lib\site-packages
 {rel_path_from_backend_python_to_backend_packages}
 
 # Uncomment to run site.main() automatically
