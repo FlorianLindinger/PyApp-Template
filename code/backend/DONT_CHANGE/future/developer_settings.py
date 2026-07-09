@@ -42,6 +42,9 @@ terminal_emulator_shortcut_name: str | None = f"{program_name} (Terminal Emulato
 enable_log_for_terminal_emulator_start = True
 enable_log_for_browser_start = True
 
+
+use_free_threaded_python_if_available = False
+
 # ---------------------------
 # ---- Terminal Emulator ----
 # ---------------------------
