@@ -61,8 +61,6 @@ open settings fails
 
 apply to pyboson
 
-add uv. make setting
-
 use dev branch afterwards
 
 fix crash icon
@@ -82,8 +80,6 @@ shoudl i sync current python verion? what if i put that in python folder as indi
 do i handle pipreqs fail gracefully
 
 rname py_dist to python?
-
-remove washdog
 
 udpate pyproject for updated pyrefly
 
@@ -336,8 +332,6 @@ mention shoemwher eaxmple of too long path so one can compare? at this point i c
 do i want _ in _RUN BEFORE FIRST START AND AFTER FOLDER MOVE TO GENERATE SHORTCUTS? kind of no püurpoe and layman could be ticked off by "_"?
 also renmaed to "RUN TO GENERATE SHORTCUTS BEFORE FIRST START AND AFTER FOLDER MOVE". aks AI if better name
 
-
-
 removed unnecessary/useless __init__.pys
 
 wait. stop closes instalngly? or opens mimiimized? make stopper and settings be open. or maybe not setting.lnk. test if it does not creat setting.lnk if something
@@ -352,8 +346,6 @@ waht varaible should i make capitalized? in common_variables. all i guess? gener
 
 
 ask AI if anything would break for frontend low. I guess wrapper needs to be very lowend safe
-
-have all readme names same convention
 
 add shortcut to logs folder
 i guess that script should look for live setting wher next log woud be produced. need new icon
