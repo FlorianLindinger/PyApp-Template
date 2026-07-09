@@ -2,5 +2,6 @@
 * text=auto
 # Force git to use CRLF for batch files to not break them:
 *.bat text eol=crlf
+*.cmd text eol=crlf
 # Keep Windows shortcuts byte-for-byte intact.
 *.lnk binary
