@@ -2179,29 +2179,39 @@ def install_packages(
             uv_command = [global_uv, "pip", "uninstall" if uninstall else "install", "--python", python_exe]
 
     if uv_command is None and use_uv and install_uv_locally_if_global_not_available:
-        uv_install_args = [
+        local_uv_command = [
             local_uv_python_exe,
             "-m",
-            "pip",
-            "install",
             "uv",
-            "--upgrade",
-            "--disable-pip-version-check",
-            "--no-warn-script-location",
+            "pip",
+            "uninstall" if uninstall else "install",
+            "--python",
+            python_exe,
         ]
-        if no_cache:
-            uv_install_args.append("--no-cache-dir")
         try:
-            subprocess.run(uv_install_args, check=True)  # noqa:S603
-            uv_command = [
-                local_uv_python_exe,
-                "-m",
-                "uv",
-                "pip",
-                "uninstall" if uninstall else "install",
-                "--python",
-                python_exe,
-            ]
+            local_uv_probe = subprocess.run(  # noqa:S603
+                [local_uv_python_exe, "-m", "uv", "--version"],
+                check=False,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+            if local_uv_probe.returncode == 0:
+                uv_command = local_uv_command
+            else:
+                uv_install_args = [
+                    local_uv_python_exe,
+                    "-m",
+                    "pip",
+                    "install",
+                    "uv",
+                    "--upgrade",
+                    "--disable-pip-version-check",
+                    "--no-warn-script-location",
+                ]
+                if no_cache:
+                    uv_install_args.append("--no-cache-dir")
+                subprocess.run(uv_install_args, check=True)  # noqa:S603
+                uv_command = local_uv_command
         except Exception as error:
             print(f"[Warning] local uv installation failed. Falling back to pip. Error: {error}")
 
@@ -2220,6 +2230,7 @@ def install_packages(
                 uv_args.append("--no-deps")
             if no_cache:
                 uv_args.append("--no-cache")
+            uv_args.extend(["--link-mode", "copy"])
         else:
             uv_args.append("-y")
         uv_args.extend(extra_args_list)
