@@ -2,7 +2,7 @@
 @echo off
 
 :: make variables local
-setlocal
+setlocal EnableExtensions DisableDelayedExpansion
 
 :: move to folder of this file
 cd /d "%~dp0"
@@ -12,7 +12,8 @@ cd /d "%~dp0"
 
 :: version must have embeddible zip available:
 set "VERSION=3.12.10"
-set "INSTALL_DIR=%cd%\..\..\backend_python"
+set "SETUP_DIR=%~dp0"
+set "INSTALL_DIR=%SETUP_DIR%..\..\backend_python"
 set "PYTHON_EXE=%INSTALL_DIR%\python.exe"
 set "ZIP=%INSTALL_DIR%\tmp.zip"
 set "URL=https://www.python.org/ftp/python/%VERSION%/python-%VERSION%-embed-amd64.zip"
@@ -30,18 +31,10 @@ if not exist "%INSTALL_DIR%" mkdir "%INSTALL_DIR%"
 
 :: Safely clear install dir
 for %%I in ("%INSTALL_DIR%") do set "INSTALL_DIR_FULL=%%~fI"
-if /i "%INSTALL_DIR_FULL%"=="%cd%\" (
-    echo Refusing to delete current directory.
-    goto :error_exit
-)
-if not "%INSTALL_DIR_FULL:~-15%"=="\backend_python" (
-    echo Refusing to delete unexpected install dir:
-    echo %INSTALL_DIR_FULL%
-    goto :error_exit
-)
-if exist "%INSTALL_DIR_FULL%" (
-    rmdir /s /q "%INSTALL_DIR_FULL%"
-)
+for %%I in ("%SETUP_DIR%.") do set "SETUP_DIR_FULL=%%~fI\"
+if /i "%INSTALL_DIR_FULL%"=="%SETUP_DIR_FULL%" goto :refuse_current_dir
+if /i not "%INSTALL_DIR_FULL:~-15%"=="\backend_python" goto :refuse_unexpected_dir
+if exist "%INSTALL_DIR_FULL%" rmdir /s /q "%INSTALL_DIR_FULL%"
 mkdir "%INSTALL_DIR_FULL%"
 
 :: print empty lines because terminal download adds banner ontop
@@ -70,7 +63,7 @@ if errorlevel 1 (
 if exist "%ZIP%" del "%ZIP%"
 
 :: finish backend installation in python because easier
-"%INSTALL_DIR%\python.exe" "%cd%\finish_backend_installation.py"
+"%INSTALL_DIR%\python.exe" "%SETUP_DIR%finish_backend_installation.py"
 if errorlevel 1 (
     :: delete the python exe to indicate that installation needs to be retried
     echo Backend Python installation failed during finalization step.
@@ -82,6 +75,15 @@ exit /b 0
 
 :: ===========================
 :: functions
+
+:refuse_current_dir
+echo Refusing to delete current directory.
+goto :error_exit
+
+:refuse_unexpected_dir
+echo Refusing to delete unexpected install dir:
+echo "%INSTALL_DIR_FULL%"
+goto :error_exit
 
 :error_exit
 :: python.exe missing indicates that it is not installed -> delete
