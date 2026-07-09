@@ -2,6 +2,8 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+how to deal syncing of uv that might or mioght not be using in setting in deev
+
 for not foiund python exe make better print what folder to search for and where was last time. resolve path. it also does not go to foregorund:
 [Error] Backend Python not found:
 "C:\Users\Flo\Documents\Repositories\PyApp Template\code\backend\DONT_CHANGE\B\..\backend_python\python.exe"
