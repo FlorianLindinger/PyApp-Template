@@ -444,7 +444,9 @@ def create_shortcut_with_appid(
             )
 
             if icon_path:
-                check_hresult(shell_link_vtbl.SetIconLocation(shell_link, icon_path, 0), f'SetIconLocation("{icon_path}")')
+                check_hresult(
+                    shell_link_vtbl.SetIconLocation(shell_link, icon_path, 0), f'SetIconLocation("{icon_path}")'
+                )
 
             if app_id is not None:
                 set_app_user_model_id(shell_link, app_id)
@@ -535,6 +537,11 @@ def main():
         ensure_frontend_packages(
             appid
         )  # appid probably doesnt matter but it still triggers icon change and title change when appid!=""
+
+    # prints:
+    print()
+    print("="*30)
+    print()
 
     # Shortcut: normal start
     if windows_terminal_shortcut_name not in [None, False, ""]:
