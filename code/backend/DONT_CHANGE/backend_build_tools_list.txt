@@ -1,0 +1,14 @@
+# Temporary build/install tools used by scripts/setup/finish_backend_installation.py.
+#
+# The backend installer installs this list into backend_python before installing
+# backend_packages_list.txt into backend_packages. These tools help pip handle
+# packages that need setuptools/wheel-style build support during installation.
+#
+# This file is intentionally separate from backend_packages_list.txt: packages
+# listed here are build-time tools, not backend runtime dependencies. The same
+# installer uninstalls them from backend_python before finalizing the embedded
+# backend Python.
+
+packaging==26.2
+setuptools==82.0.1
+wheel==0.47.0
