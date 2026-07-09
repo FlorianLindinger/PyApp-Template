@@ -1709,6 +1709,13 @@ def install_full_python(
         if supports_ensurepip:
             env = os.environ.copy()
             env["PIP_NO_WARN_SCRIPT_LOCATION"] = "1"  # supress warning that pip is not global
+            env["PATH"] = os.pathsep.join(
+                [
+                    python_dir_abs_path,
+                    os.path.join(python_dir_abs_path, "Scripts"),
+                    env.get("PATH", ""),
+                ]
+            )
 
             result = subprocess.run(  # noqa:S603
                 [python_exe, "-m", "ensurepip", "--upgrade"],
@@ -1747,11 +1754,14 @@ def install_full_python(
 
                 # Try quiet/log-friendly pip upgrade first, then retry without the progress-bar flag.
                 result = subprocess.run(  # noqa
-                    [python_exe, *upgrade_args, "--progress-bar", "off"], check=False, stderr=subprocess.DEVNULL
+                    [python_exe, *upgrade_args, "--progress-bar", "off"],
+                    check=False,
+                    stderr=subprocess.DEVNULL,
+                    env=env,
                 )
                 # retry pip installation if failed without progress bar (for example if that flag is not there yet in the old pip version)
                 if result.returncode != 0:
-                    result = subprocess.run([python_exe, *upgrade_args], check=False)  # noqa
+                    result = subprocess.run([python_exe, *upgrade_args], check=False, env=env)  # noqa
                 # raise if failed pip installation
                 if result.returncode != 0:
                     raise RuntimeError("Python installation failed: pip upgrade failed.")
@@ -1787,6 +1797,15 @@ def install_full_python(
             f"https://bootstrap.pypa.io/{major}.{minor}/get-pip.py",
         ]
         errors = []
+        env = os.environ.copy()
+        env["PIP_NO_WARN_SCRIPT_LOCATION"] = "1"
+        env["PATH"] = os.pathsep.join(
+            [
+                python_dir_abs_path,
+                os.path.join(python_dir_abs_path, "Scripts"),
+                env.get("PATH", ""),
+            ]
+        )
         with tempfile.TemporaryDirectory(prefix="tmp_get_pip_") as tmp:
             for get_pip_url in get_pip_urls:
                 try:
@@ -1800,7 +1819,7 @@ def install_full_python(
                     f"Tried: {'; '.join(errors)}"
                 )
 
-            result = subprocess.run([python_exe, get_pip_path], check=False)  # noqa
+            result = subprocess.run([python_exe, get_pip_path, "--no-warn-script-location"], check=False, env=env)  # noqa
 
         if result.returncode != 0:
             raise RuntimeError("Python installation failed: get-pip.py failed.")
