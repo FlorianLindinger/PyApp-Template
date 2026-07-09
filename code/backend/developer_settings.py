@@ -69,7 +69,6 @@ prompt_to_close_existing_instances = False
 # -------------------------------------------------
 # Decide if global default (any version) Python should be used instead of automatic localized download and installation of Python/packages:
 use_global_python = False
-use_free_threaded_python_if_available = False
 # -------------------------------------------------
 # Install Python environment while generating shortcuts instead of for first start (Ignored when use_global_python = True):
 install_python_when_generating_shortcuts = True
@@ -90,6 +89,7 @@ install_tests = False
 #   Tools folder: Needed for: Language translation workflows/Python's code demos/old editors/old exe converters. (~1 MB, some installation time):
 install_tools = False
 # -------------------------------------------------
+# Use uv to install packages 
 
 # =========================================
 # ==== Launcher Mode Specific Settings ====
