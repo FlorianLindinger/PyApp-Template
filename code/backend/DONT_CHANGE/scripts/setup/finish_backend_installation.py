@@ -15,7 +15,8 @@ if root_dir not in sys.path:
 # ====================================
 # import variables
 
-from backend.DONT_CHANGE.scripts._common_code import delete_folder_safe
+from backend.developer_settings import use_uv_to_install_packages
+from backend.DONT_CHANGE.scripts._common_code import delete_folder_safe, install_packages
 from backend.DONT_CHANGE.scripts._common_variables import (
     backend_build_tools_requirements_file,
     backend_files_to_delete_on_install,
@@ -105,36 +106,22 @@ import site""")
     print()
 
     # install temporary build tools for packages that need legacy build support
-    subprocess.run(  # noqa:S603
-        [
-            backend_python_exe,
-            "-m",
-            "pip",
-            "install",
-            "-r",
-            backend_build_tools_requirements_file,
-            "--upgrade",
-            "--no-warn-script-location",
-            "--no-deps",
-        ],
-        check=True,
+    install_packages(
+        python_exe=backend_python_exe,
+        requirements_file=backend_build_tools_requirements_file,
+        upgrade=True,
+        no_deps=True,
+        use_uv=use_uv_to_install_packages
     )
 
     # install backend packages
-    subprocess.run(  # noqa:S603
-        [
-            backend_python_exe,
-            "-m",
-            "pip",
-            "install",
-            "-r",
-            backend_package_requirements_file,
-            "--target",
-            backend_packages_dir,
-            "--upgrade",
-            "--no-deps",
-        ],
-        check=True,
+    install_packages(
+        python_exe=backend_python_exe,
+        requirements_file=backend_package_requirements_file,
+        target=backend_packages_dir,
+        upgrade=True,
+        no_deps=True,
+        use_uv=use_uv_to_install_packages
     )
 
     # Remove console entry points are generated into python_packages\bin by pip --target. The embedded runtime imports packages directly and does not use those scripts.
@@ -145,18 +132,11 @@ import site""")
         shutil.rmtree(generated_bin_folder)
 
     # uninstall pip and temporary build tools from the embedded python to save space
-    subprocess.run(  # noqa:S603
-        [
-            backend_python_exe,
-            "-m",
-            "pip",
-            "uninstall",
-            "pip",
-            "-r",
-            backend_build_tools_requirements_file,
-            "-y",
-        ],
-        check=True,
+    install_packages(
+        python_exe=backend_python_exe,
+        packages="pip",
+        requirements_file=backend_build_tools_requirements_file,
+        uninstall=True,
     )
 
     # update python3xx._pth
