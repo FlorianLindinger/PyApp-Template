@@ -23,7 +23,16 @@ try:
     path = save_current_packages(with_version=False)
 
     subprocess.run(  # noqa
-        [frontend_python_exe, "-m", "pip", "install", "pip", "--upgrade", "--disable-pip-version-check"],
+        [
+            frontend_python_exe,
+            "-m",
+            "pip",
+            "install",
+            "pip",
+            "--upgrade",
+            "--disable-pip-version-check",
+            "--no-warn-script-location",
+        ],
         check=True,
     )
     subprocess.run(  # noqa
