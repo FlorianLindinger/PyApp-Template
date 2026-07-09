@@ -89,7 +89,8 @@ install_tests = False
 #   Tools folder: Needed for: Language translation workflows/Python's code demos/old editors/old exe converters. (~1 MB, some installation time):
 install_tools = False
 # -------------------------------------------------
-# Use uv to install packages 
+# Use uv to install packages:
+use_uv_to_install_packages = True
 
 # =========================================
 # ==== Launcher Mode Specific Settings ====
