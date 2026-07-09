@@ -24,9 +24,11 @@ from backend.developer_settings import (
     python_version,
     terminal_bg_color,
     terminal_text_color,
+    use_uv_to_install_packages,
 )
 from backend.DONT_CHANGE.scripts._common_variables import (
     EMPTY_ARG_INDICATOR,
+    backend_python_exe,
     default_packages_file_path,
     determined_current_packages_file_path_noVersion,
     determined_current_packages_file_path_withVersion,
@@ -2074,6 +2076,163 @@ def can_reach_pip_url(url: str = "https://pypi.org/simple/pip/", timeout_s: floa
         return False
 
 
+def install_packages(
+    python_exe: str,
+    packages: str | list[str] | tuple[str, ...] | None = None,
+    requirements_file: str | None = None,
+    target: str | None = None,
+    upgrade: bool = False,
+    no_deps: bool = False,
+    no_cache: bool = False,
+    use_uv: bool = False,
+    install_uv_locally_if_global_not_available: bool = True,
+    local_uv_python_exe: str | None = None,
+    extra_args: str | list[str] | tuple[str, ...] | None = None,
+    disable_pip_version_check: bool = True,
+    no_warn_script_location: bool = True,
+    uninstall: bool = False,
+):
+    """Install or uninstall packages with pip, optionally trying uv first.
+
+    ``python_exe`` is the interpreter whose package environment should be
+    changed. For normal backend runtime packages this is still the backend
+    Python executable, while ``target`` points pip/uv at the separate
+    ``backend_packages`` runtime folder. Build/install tools should usually be
+    installed without ``target`` so they land in the interpreter environment and
+    can be removed again after the targeted runtime install is finished.
+
+    ``packages`` may be one package string or a sequence of package strings.
+    ``requirements_file`` may be one requirements file path. At least one of
+    those inputs is required. The requirements file is passed to pip/uv with
+    ``-r``, so pip/uv handle normal requirement parsing instead of this helper
+    trying to parse the file.
+
+    Set ``uninstall=True`` to run uninstall instead of install. Uninstalls are
+    confirmed automatically with ``-y`` because these scripts run unattended.
+    Install-only options are ignored for uninstall: ``target``, ``upgrade``,
+    ``no_deps``, ``no_cache``, ``disable_pip_version_check``, and
+    ``no_warn_script_location``.
+
+    pip is the default and final fallback. If ``use_uv`` is true, a globally
+    available ``uv`` executable is tried first. If no global uv is found and
+    ``install_uv_locally_if_global_not_available`` is true (default), uv is
+    installed into ``local_uv_python_exe`` and run as
+    ``local_uv_python_exe -m uv``. If ``local_uv_python_exe`` is not given,
+    ``python_exe`` is used for local uv as well. The local uv install is kept
+    after the package operation; this helper does not uninstall it.
+
+    ``local_uv_python_exe`` is useful when the Python that runs uv should be
+    different from the Python being modified. For example, backend Python can
+    run ``uv`` while uv installs frontend packages with ``--python`` pointing at
+    frontend Python.
+
+    If local uv cannot be installed or the uv command fails, this helper prints
+    a warning and retries the same package operation with pip.
+
+    ``extra_args`` are appended last to the selected pip/uv command. Use them
+    for uncommon flags only; prefer the named options above for behavior that
+    this repo relies on.
+    """
+    import shutil
+    import subprocess
+
+    def _as_list(value: str | list[str] | tuple[str, ...] | None) -> list[str]:
+        if value is None:
+            return []
+        if isinstance(value, str):
+            return [value]
+        return list(value)
+
+    package_args = _as_list(packages)
+    extra_args_list = _as_list(extra_args)
+    if not package_args and requirements_file is None:
+        raise ValueError("No packages or requirements file was given.")
+
+    local_uv_python_exe = local_uv_python_exe or python_exe
+
+    pip_args = [python_exe, "-m", "pip", "uninstall" if uninstall else "install"]
+    if requirements_file is not None:
+        pip_args.extend(["-r", requirements_file])
+    pip_args.extend(package_args)
+
+    if not uninstall:
+        if target is not None:
+            pip_args.extend(["--target", target])
+        if upgrade:
+            pip_args.append("--upgrade")
+        if no_deps:
+            pip_args.append("--no-deps")
+        if no_cache:
+            pip_args.append("--no-cache-dir")
+        if disable_pip_version_check:
+            pip_args.append("--disable-pip-version-check")
+        if no_warn_script_location:
+            pip_args.append("--no-warn-script-location")
+    else:
+        pip_args.append("-y")
+    pip_args.extend(extra_args_list)
+
+    uv_command: list[str] | None = None
+    if use_uv:
+        global_uv = shutil.which("uv")
+        if global_uv:
+            uv_command = [global_uv, "pip", "uninstall" if uninstall else "install", "--python", python_exe]
+
+    if uv_command is None and use_uv and install_uv_locally_if_global_not_available:
+        uv_install_args = [
+            local_uv_python_exe,
+            "-m",
+            "pip",
+            "install",
+            "uv",
+            "--upgrade",
+            "--disable-pip-version-check",
+            "--no-warn-script-location",
+        ]
+        if no_cache:
+            uv_install_args.append("--no-cache-dir")
+        try:
+            subprocess.run(uv_install_args, check=True)  # noqa:S603
+            uv_command = [
+                local_uv_python_exe,
+                "-m",
+                "uv",
+                "pip",
+                "uninstall" if uninstall else "install",
+                "--python",
+                python_exe,
+            ]
+        except Exception as error:
+            print(f"[Warning] local uv installation failed. Falling back to pip. Error: {error}")
+
+    if uv_command is not None:
+        uv_args = [*uv_command]
+        if requirements_file is not None:
+            uv_args.extend(["-r", requirements_file])
+        uv_args.extend(package_args)
+
+        if not uninstall:
+            if target is not None:
+                uv_args.extend(["--target", target])
+            if upgrade:
+                uv_args.append("--upgrade")
+            if no_deps:
+                uv_args.append("--no-deps")
+            if no_cache:
+                uv_args.append("--no-cache")
+        else:
+            uv_args.append("-y")
+        uv_args.extend(extra_args_list)
+
+        uv_result = subprocess.run(uv_args, check=False)  # noqa:S603
+        if uv_result.returncode == 0:
+            return uv_result
+
+        print(f"[Warning] uv package {'uninstall' if uninstall else 'install'} failed. Falling back to pip.")
+
+    return subprocess.run(pip_args, check=True)  # noqa:S603
+
+
 def delete_frontend_packages():
     """Delete the packages."""
     delete_folder_safe(
@@ -2131,8 +2290,6 @@ def ensure_frontend_packages(used_appid_if_slow: str = ""):
 def install_packages_from_file(path: str, no_cache: bool = True, app_id_for_slow: str = "", print_=True) -> None:
     """raises if failur"""
 
-    import subprocess
-
     os.makedirs(frontend_packages_dir, exist_ok=True)
 
     if not os.path.exists(path):
@@ -2163,23 +2320,16 @@ def install_packages_from_file(path: str, no_cache: bool = True, app_id_for_slow
     if app_id_for_slow:
         set_terminal_appearance_once(app_id_for_slow)
 
-    args = [
-        frontend_python_exe,
-        "-m",
-        "pip",
-        "install",
-        "-r",
-        path,
-        "--target",
-        frontend_packages_dir,
-        "--disable-pip-version-check",
-        "--upgrade",
-    ]
-    if no_cache:
-        args.append("--no-cache-dir")
-
     try:
-        subprocess.run(args, check=True)  # raises if failure #noqa
+        install_packages(
+            python_exe=frontend_python_exe,
+            requirements_file=path,
+            target=frontend_packages_dir,
+            upgrade=True,
+            no_cache=no_cache,
+            use_uv=use_uv_to_install_packages,
+            local_uv_python_exe=backend_python_exe,
+        )
     except Exception as e:
         if not can_reach_pip_url():
             raise RuntimeError(
