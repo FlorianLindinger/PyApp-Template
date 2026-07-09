@@ -5,8 +5,6 @@
 # ============================
 # shortcuts in root folder:
 /*.lnk
-# whitelist shorcut generator shortcut:
-!_RUN BEFORE FIRST START AND AFTER FOLDER MOVE TO GENERATE SHORTCUTS.lnk
 # log files:
 logs/*.txt
 # temporary id files for no-terminal start:
