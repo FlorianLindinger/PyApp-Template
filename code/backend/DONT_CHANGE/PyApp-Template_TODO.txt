@@ -2,6 +2,8 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+udpate license for non syncing backend
+
 maybe never ship packages or anything
 
 how to deal syncing of uv that might or mioght not be using in setting in deev
