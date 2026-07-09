@@ -2,6 +2,38 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+i have hardcoded:
+    subprocess.run(  # noqa:S603
+        [
+            backend_python_exe,
+            "-m",
+            "pip",
+            "install",
+            "packaging==26.2",
+            "setuptools==82.0.1",
+            "wheel==0.47.0",
+            "--upgrade",
+            "--no-warn-script-location",
+            "--no-deps",
+        ],
+        check=True,
+    )
+
+in finish_backend_installation. how to make folder deletion safe-> maybe mentioned hardcoded name there in common_variables -> jusdt import safe delete function
+
+what if i dont ship backend python and packages at all and isntall also uv there. that might be faster in total. i can use uv for frontend packages. make setting if one wants uv. maybe other setting for not wantoing something else. do i still have pruning list somewher what i deleted in backend packages?
+(backend python and packages ar 15 MB each)
+-> find commit of pruning backend packages. aks AI if more to prune anywhere
+-> compare to new installation what changed i guess also works to deduct. amybe AI
+-> wait pruning is in commit. where did it go
+->ask AI generally about pruning stuff
+
+i could check for global uv and not donwload uv if found and working if setting  on ->yes
+for uv globla cahche problems i have no solution
+is there more stuff i could use if global?
+
+consider cleaning pycache. where usefull for singleu run stuff?
+
 fix keyboradinterrupt being slow to rich traceback. are alls slow?
 
 make color choices and so on for on finishi. also maybe sort them by finish type
