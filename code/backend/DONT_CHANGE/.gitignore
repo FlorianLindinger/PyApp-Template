@@ -15,5 +15,5 @@ __pycache__
 # temporary files:
 temporary/*
 !temporary/.gitkeep
-# build output:
-/INSTALLER/
+# build output file:
+*dist-info/INSTALLER
