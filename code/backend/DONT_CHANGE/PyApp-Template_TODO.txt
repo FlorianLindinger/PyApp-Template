@@ -2,6 +2,10 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+make better print for default run
+
+is lnk icon working
+
 udpate license for non syncing backend
 
 maybe never ship packages or anything
