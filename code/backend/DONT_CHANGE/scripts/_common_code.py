@@ -1718,7 +1718,15 @@ def install_full_python(
             if result.returncode != 0:
                 raise RuntimeError("Python installation failed: ensurepip failed.")
 
-            upgrade_args = ["-m", "pip", "install", "--upgrade", "pip", "--ignore-installed"]
+            upgrade_args = [
+                "-m",
+                "pip",
+                "install",
+                "--upgrade",
+                "pip",
+                "--ignore-installed",
+                "--no-warn-script-location",
+            ]
 
             # One upgrade is normally enough. Repeat a few times only if each upgrade
             # actually changes the installed pip version.
@@ -1854,7 +1862,7 @@ def install_full_python(
         python_dir_abs_path + "\\pip.ini",
         [
             "[global]",
-            "no-warn-script-location = false",
+            "no-warn-script-location = true",
         ],
     )
 
@@ -2298,7 +2306,7 @@ def ensure_frontend_packages(used_appid_if_slow: str = ""):
         open(dev_tools_referal_note_path, "w", encoding="utf-8").close()
 
 
-def install_packages_from_file(path: str, no_cache: bool = True, app_id_for_slow: str = "", print_=True) -> None:
+def install_packages_from_file(path: str, no_cache: bool = False, app_id_for_slow: str = "", print_=True) -> None:
     """raises if failur"""
 
     os.makedirs(frontend_packages_dir, exist_ok=True)
@@ -2557,7 +2565,16 @@ def save_requirements_of_root_folder_withVersion(
                 raise RuntimeError(f'Temporary environment did not create "{temp_python}"')
 
             subprocess.run(  # noqa
-                [temp_python, "-m", "pip", "install", "-r", output_path_noVersion, "--disable-pip-version-check"],
+                [
+                    temp_python,
+                    "-m",
+                    "pip",
+                    "install",
+                    "-r",
+                    output_path_noVersion,
+                    "--disable-pip-version-check",
+                    "--no-warn-script-location",
+                ],
                 check=True,
             )
 
