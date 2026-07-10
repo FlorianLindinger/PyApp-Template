@@ -2,8 +2,10 @@
 __pycache__
 *.pyc
 *.pyo
-# generated Python distro and packages:
-/py_env/
+# generated Python distro and packages folder:
+/python_and_packages/
+# whitelist file in Python distro and packages folder:
+!/python_and_packages/USE developer_tools FOLDER (IN PARENT FOLDER) TO CHANGE PACKAGES
 # output files of developer tools:
 /developer_tools/*.txt
 # whitelist specific files in developer tools folder:

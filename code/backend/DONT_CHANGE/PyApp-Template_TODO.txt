@@ -2,6 +2,8 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+fix measrure startupo time script
+
 addd to raedme that appid works for GUI
 
 where do i wirte how main.py can acess globals like icon and so on
@@ -97,8 +99,6 @@ ask AI if anything would requreies folder craeiotn in case not syneced in git an
 shoudl i sync current python verion? what if i put that in python folder as indication that sucesfuly created and not deleted->yes
 
 do i handle pipreqs fail gracefully
-
-rname py_dist to python?
 
 udpate pyproject for updated pyrefly
 
