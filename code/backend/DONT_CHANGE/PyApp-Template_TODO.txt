@@ -2,6 +2,25 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+addd to raedme that appid works for GUI
+
+where do i wirte how main.py can acess globals like icon and so on
+
+write in common_varaible to syn git:
+# backend_python folder:
+backend_python/
+# backend_packages folder:
+backend_packages/
+. I guess also in README and LICENSE
+
+license is not uptodtae. there is no venv anmore
+
+
+any more featurs missing in README->backend washdog, rich 
+-> didfferentiat into mayor/minor featues
+
+add uv as feature in README and that it can use global cache
+
 make it somehow safer for aborted installltion of stuff. maynbe folder deleation and end file signal creation
 
 make better print for default run
@@ -121,6 +140,8 @@ most of the stuff i do could be just once on shortcut craretion and then shortcu
 - loggging and prepends i could always do in main
 - rich traceback could also be installed
 - crash handling for no terminal could also be just handled in main
+->>>>>> add to README 
+
 
 failed start of main does not go to front on print
 
