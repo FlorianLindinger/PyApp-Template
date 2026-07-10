@@ -27,14 +27,14 @@ backend_files_to_delete_on_install = ["sqlite3.dll", "python.cat"]
 # frontend related
 # ------------------------
 frontend_script_wrapper_path = make_abs("frontend\\script_wrapper.py")
-frontend_packages_dir = make_abs("..\\..\\py_env\\packages")  # UPDATE GITIGNORE
-frontend_python_dir = make_abs("..\\..\\py_env\\py_dist")  # UPDATE GITIGNORE
+frontend_packages_dir = make_abs("..\\..\\python_and_packages\\packages")  # UPDATE GITIGNORE
+frontend_python_dir = make_abs("..\\..\\python_and_packages\\python")  # UPDATE GITIGNORE
 frontend_packages_are_installed_marker_filename = "_DELETE_THIS_TO_REINSTALL_ONLY_DEFAULT_PACKAGES_"
 frontend_launcher_for_pip_install_terminal = (
     frontend_python_dir + "\\tools\\open_terminal_with_set_python_and_pip_target.bat"
 )
 dev_tools_referal_note_path = (
-    os.path.dirname(frontend_packages_dir) + "\\_USE developer_tools FOLDER (IN PARENT FOLDER) TO CHANGE PACKAGES_"
+    os.path.dirname(frontend_packages_dir) + "\\USE developer_tools FOLDER (IN PARENT FOLDER) TO CHANGE PACKAGES"
 )  # UPDATE GITIGNORE
 
 # folders
@@ -97,10 +97,7 @@ play_sound_after_KeyboardInterrupt_default = ""
 # variables
 # ------------------------
 excluded_folders_for_package_search = [
-    "DONT_CHANGE",
-    "py_env",
-    "icons",
-    "developer_tools",
+    "backend",
     "__pycache__",
     ".git",
     ".hg",
