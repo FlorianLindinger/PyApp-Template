@@ -2,6 +2,8 @@
 ==== Future ====
 ================
 
+license of ascii art in license file
+
 maybe launch mode dependent wait time beofer no launc warning
 
 chekc speed differences in using pymanger if avaialble. probably installing not worth it bc time. check if wirht it

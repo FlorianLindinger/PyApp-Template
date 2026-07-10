@@ -10,7 +10,8 @@
 - **Portable** folder that can be shared offline after first setup execution.
 - **100%-isolated**. Usually full python uses a globally installed python.exe, even for virtual environments. This template avoids that and doesn't mess with anything global.
 - **No prior Python installation required**. Python and packages are automatically installed.
-- **Pretty small size** (~120 MB) and **git-shareable** with .gitignore files that prevents sharing of (potentially unlicensed) python distribution and package files, that are auto downloaded at user end.
+- **Minimal Git size and license-safe Git sharing**: Python runtimes, virtual environments, and third-party Python packages are not meant to be committed. They are excluded by `.gitignore` and installed/generated on the user's machine, keeping the repository source-focused and avoiding accidental Git distribution of bulky or separately licensed dependency files.
+- **Fast package installation with uv support**: package installs use `uv` by default when globally available or installs it into the repository locally if not disabled in settings. It can benefit from uv's global cache across projects.
 - Ready to use: **Just insert your python code file** and optionally quickly change settings like python version or app name.
 - **Runs fully accessible source code**. This template makes python files behave effectively as if they were compiled with an included python environment while remaining 100% accessible, avoiding compilation time, and simplifying end-user modifications.
 - **Quality of life features for python environment management** (under `code/developer_tools`: environment reset, pip-install launcher, saving current packages, auto-installing packages needed in Python files, ...)
