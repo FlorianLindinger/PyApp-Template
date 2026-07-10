@@ -7,8 +7,8 @@ rem benchmark settings
 set "HERE=%~dp0"
 set "CODE_DIR=%HERE%..\.."
 set "BENCHMARK_PY=%HERE%helper_scripts\measure_startup_time.py"
-set "VENV_PY=%HERE%..\..\py_env\virt_env\Portable_Scripts\python.bat"
-set "DIST_PY=%HERE%..\..\py_env\py_dist\python.exe"
+se t "VENV_PY=%HERE%..\..\py_env\virt_env\Portable_Scripts\python.bat"
+se t "DIST_PY=%HERE%..\..\py_env\py_dist\python.exe"
 
 set "RUNS=10"
 set "TIMEOUT_SECONDS=5"

@@ -24,7 +24,7 @@ exclude = [
   "*.build",
   "*.dist",
   "GIT_IGNORED",
-  "py_env",
+  "python_and_packages",
   "backend_python",
   "backend_packages",
   "compiled",
