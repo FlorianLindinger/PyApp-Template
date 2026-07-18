@@ -2,6 +2,10 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+ask for more ideas for developer_tools so no replacement needed later
+
+i guess i should levae backend pyhton and poackages in DONT_change. otherwiese change in requivemnts dont automatically update pyhtron 
+
 fix measrure startupo time script
 
 addd to raedme that appid works for GUI
