@@ -22,7 +22,7 @@
 - **Option for no-terminal execution with stop-button and logging** (print & errors) to file.
 - Automatic **handling of code & python interpreter crashes** with the option to restart the main file or execute a crash-handling python file.
 - **Small launch overhead** of all features: ~+0.2 s (global python start is ~0.15 s)
-- Plug and play **license template**, where all backend template code parts fall under the **permissive licenses**.
+- Plug-and-play **license template** with the template-owned backend available under the permissive `MIT OR Apache-2.0` dual license.
 - Avoids opaque executables to minimize antivirus false positives that compiled python code can suffer from.
 - Choice to have the working directory be the script folder or the shortcut folder.
 - Option to save prints/errors in log files.
@@ -37,11 +37,21 @@
 2. Add the python code you want to execute to `code/main.py`
 3. (Optional: Change program settings like Python version or program name under `code/developer_settings.py`)
 4. (Optional: Add user settings under `code/settings.py`. Import them in `main.py` via `import settings`)
-5. Execute `RUN BEFORE FIRST START AND AFTER FOLDER MOVE TO GENERATE SHORTCUTS.cmd` to generate shortcuts
+5. Execute `▶️ RUN BEFORE FIRST START AND AFTER FOLDER MOVE TO GENERATE SHORTCUTS.cmd` to generate shortcuts
 6. Run program via the generated shortcuts (it will auto install needed packages)
+
+The leading `▶️` is a portable play-button marker in the filename. The launcher itself remains a fully reviewable batch file and resolves the repository folder from its own location, so moving the repository does not break it.
 
 ---
 
 ## Notes
 
 Tested to work in current Windows 11 Home and Python 3.14. This repository was originally built by Florian Lindinger and can be accessed under https://github.com/FlorianLindinger/PyApp-Template
+
+---
+
+## Licensing
+
+The template-owned backend files in `code/backend/DONT_CHANGE` are available under your choice of the MIT License or Apache License 2.0 (`MIT OR Apache-2.0`). Python distributions and third-party packages retain their own licenses and are excluded from normal Git tracking.
+
+Projects created from this template must replace the project-license placeholder in [`LICENSE.md`](LICENSE.md) with their chosen license. See that file for the complete scope and third-party exceptions.
