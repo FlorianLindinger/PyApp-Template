@@ -1,45 +1,38 @@
-# Composite License File
+# Licensing
 
-This repository contains components under separate licenses as described in the sections below.
+This repository is a project template and may contain components governed by different licenses. The sections below define which license applies to each part of the repository.
 
----
+## 1. Main project files
 
-## Section 1: Notice on File Distribution
+Except for the paths listed in Sections 2 and 3, all files in this repository are governed by the license chosen by the project author:
 
-This repository may contain, after execution of any of its codes, newly generated files of the **Python distribution** or **third-party Python packages**. These files are not part of the project’s original source code and are **not necessarily allowed to be distributed** under their respective licenses (see Sections 4 and 5 below). **If you distribute this repository, you must**:
-
-1. Ensure the main licenses described in Section 2 and 3 allow for your way of distribution
-2. - When distributing via Git:
-   If the files in `code/backend/DONT_CHANGE` are unaltered, `.gitignore` files are added which auto-exclude files licensed as described in Sections 4 and 5 from distribution via git. If you alter anything in `code/backend/DONT_CHANGE`, make sure this behavior does not change and/or alter this license file accordingly.
-   - When distributing by any other method:
-   Ensure that the licenses described in Sections 4 and 5 allow for your mode of distribution.
-
----
-
-## Section 2: Main Project - License
-
-All files in this repository, **except for files in the folders described in Sections 3,4, and 5**, are governed by the following license:
-
-```
-[Insert your chosen license text here]
+```text
+[Replace this notice with the complete text of your chosen project license.]
 ```
 
----
+Until that placeholder is replaced, no license is granted for those files beyond rights provided by applicable law.
 
-## Section 3: Original Template - License (Composite License)
+## 2. PyApp Template backend
 
-This App is based on the template from https://github.com/FlorianLindinger/PyApp-Template by Florian Lindinger. This backend code is located in the **`code/backend/DONT_CHANGE`** folder and falls under the composite license described in the `LICENSE.md` file within that folder.
+The files in **`code/backend/DONT_CHANGE`**, except for the two third-party directories listed in Section 3, are provided by [PyApp Template](https://github.com/FlorianLindinger/PyApp-Template) and are available under either the MIT License or the Apache License 2.0, at the recipient's choice (`MIT OR Apache-2.0`).
 
----
+The license choice, complete license texts, and applicable exceptions are documented in **`code/backend/DONT_CHANGE/LICENSE.md`** and its **`LICENSES`** directory.
 
-## Section 4: Python Distribution & Virtual Environment - License (likely PSF License)
+## 3. Python distributions and third-party packages
 
-Files inside the folders **`code/backend/py_env/virt_env`** (**except for the folder described in Section 5**) and **`code/backend/py_env/py_dist`** fall under the license of the *Python Software Foundation*, which is usually included as the `LICENSE.txt` file in the latter folder.
+The following directories, including all files and subdirectories within them, are not covered by the licenses described in Sections 1 or 2:
 
----
+* **`code/backend/python_and_packages/python`**
+* **`code/backend/python_and_packages/packages`**
+* **`code/backend/DONT_CHANGE/backend_python`**
+* **`code/backend/DONT_CHANGE/backend_packages`**
 
-## Section 5: Third-Party Python Package - Licenses
+The `python` and `backend_python` directories contain Python distributions. The `packages` and `backend_packages` directories contain third-party Python packages. Any third-party packages located below a distribution's `Lib/site-packages` directory are also included in this exception because they are descendants of the relevant distribution directory.
 
-Files inside **`code/backend/py_env/virt_env/Lib/site-packages`** are third-party Python packages that fall under their respective licenses, which are usually included in their respective folders.
+Each Python distribution and third-party package remains governed by its own license terms. Those terms are normally included in the distribution, package, or associated metadata, such as `LICENSE`, `NOTICE`, or `.dist-info` files. Preserve those files when redistributing the corresponding components.
 
----
+## 4. Git sharing and other distribution
+
+The repository's current `.gitignore` rules exclude all four directories listed in Section 3. The intended Git repository therefore contains the project source and dual-licensed template files, but not installed or generated Python distributions and packages.
+
+`.gitignore` controls which files Git normally tracks; it does not change the license of any file. If you force-add an excluded file, change the ignore rules, or distribute a populated project folder by another method, you are responsible for complying with the license terms of every included Python distribution and third-party package.
