@@ -2,6 +2,8 @@
 ==== Future ====
 ================
 
+prompt more fancy wiht prompt windows
+
 license of ascii art in license file
 
 maybe launch mode dependent wait time beofer no launc warning

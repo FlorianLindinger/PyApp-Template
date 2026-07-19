@@ -2,7 +2,15 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+normalize naming scemes in common_variables
 
+renamed file to process_exit.py
+
+how do i do traceback and running stuff in same terminal.-> one function for bopth
+
+add params to run_here_or_new_terminal
+
+is json gernally as simple as it gets?
 
 chekc in script wrapper if json stuff is simple
 

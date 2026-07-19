@@ -59,7 +59,7 @@ launcher_browser = starter_batches_folder + "\\B.bat"
 launcher_no_terminal = starter_batches_folder + "\\N.bat"
 launcher_stop = starter_batches_folder + "\\Q.bat"
 launcher_log = starter_batches_folder + "\\L.bat"
-rich_traceback_printer_path = make_abs("_print_rich_traceback.py")
+exit_processer_path = make_abs("process_exit.py")
 
 # files
 # ------------------------
