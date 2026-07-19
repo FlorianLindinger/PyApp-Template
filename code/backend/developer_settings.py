@@ -1,4 +1,6 @@
-"""WIP"""
+"""WIP
+
+Relative paths in this file are interpreted as relative to this file."""
 
 # ============================
 # ==== Important Settings ====
@@ -52,10 +54,21 @@ start_in_shortcut_folder = False
 # Logging behavior:
 enable_log_for_Windows_terminal_start = True
 enable_log_for_no_terminal_start = True
+# if overwrite is False it will append instead if a file with that name exists:
 overwrite_log = True
-# Accepts datetime.datetime.strftime usage: e.g. "log_%Y_%m_%d". Affected by start_in_shortcut_folder setting above. None to disable:
-log_path_rel_to_start_folder: str | None = "..\\..\\logs\\log_%Y_%m_%d.txt"
-# ------------------------------------------------
+# decide if log path (below) is relative to start folder (where shortcut is started) or to this file:
+log_path_is_relative_to_start_folder_if_relative = False
+# Accepts datetime.datetime.strftime usage (e.g. "log_%Y-%m-%d_%H-%M-%S.txt"). None to disable:
+log_path: str | None = "..\\..\\logs\\log_%Y-%m-%d_%H-%M-%S.txt"
+# -------------------------------------------------
+# Crash logging behavior:
+# if overwrite is False it will append instead if a file with that name exists:
+overwrite_crash_log = True
+# decide if crash log path (below) is relative to start folder (where shortcut is started) or to this file:
+crash_log_path_is_relative_to_start_folder_if_relative = False
+# Accepts datetime.datetime.strftime usage (e.g. "log_%Y-%m-%d_%H-%M-%S.txt"). None to disable:
+crash_log_path: str | None = "..\\..\\crash logs\\crash_log_%Y-%m-%d_%H-%M-%S.txt"
+# -------------------------------------------------
 
 # =================================
 # ==== Less Important Settings ====
@@ -89,7 +102,7 @@ install_tests = False
 #   Tools folder: Needed for: Language translation workflows/Python's code demos/old editors/old exe converters. (~1 MB, some installation time):
 install_tools = False
 # -------------------------------------------------
-# Use uv to install packages:
+# Use uv (faster replacement of pip) to install packages (it uses global uv if available and installs locally otherwise):
 use_uv_to_install_packages = True
 # -------------------------------------------------
 

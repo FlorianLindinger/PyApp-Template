@@ -35,7 +35,7 @@ try:
     # define local variables
     # ==============================
 
-    traceback_json_path = None
+    crash_log_temp_path = None
     log_file = None
 
     # ==============================
@@ -485,9 +485,6 @@ try:
 
     def save_traceback(error, excepted_script_path, output_path, origin=""):
 
-        if output_path is None:
-            raise RuntimeError("[Error] Failed to save traceback because output file wasn't defined before error")
-
         import json
 
         payload = {
@@ -507,7 +504,7 @@ try:
     # ==============================
 
     def main():
-        global traceback_json_path
+        global crash_log_temp_path
 
         # ==============================
         # import and convert args
@@ -523,7 +520,7 @@ try:
             log_path,
             overwrite_log,
             log_print_prepend,
-            traceback_json_path,
+            crash_log_temp_path,
         ) = process_args(sys.argv)
 
         overwrite_log = string_to_bool(overwrite_log)
@@ -594,11 +591,11 @@ try:
                 sys.exit(0)
             else:
                 # catches: sys.exit(True), sys.exit("a string"),sys.exit(non-0-int)
-                save_traceback(e, python_script_path, traceback_json_path, "child")
+                save_traceback(e, python_script_path, crash_log_temp_path, "child")
                 sys.exit(1)
 
         except BaseException as e:  # BaseException includes KeyboardInterrupt,GeneratorExit,normal Exception
-            save_traceback(e, python_script_path, traceback_json_path, "child")
+            save_traceback(e, python_script_path, crash_log_temp_path, "child")
             sys.exit(1)  # exit code 1 indicates child script error need to process saved traceback to watchdog
 
     # ==============================
@@ -609,7 +606,7 @@ try:
         try:
             main()
         except Exception as e:
-            save_traceback(e, os.path.abspath(__file__), traceback_json_path, "wrapper")
+            save_traceback(e, os.path.abspath(__file__), crash_log_temp_path, "wrapper")
             sys.exit(2)  # exit code 2 indicates wrapper error and need to process saved traceback to watchdog
         finally:  # try close log file
             try:

@@ -1,10 +1,4 @@
-"""Render watchdog warning payloads.
-
-The background watchdog writes a JSON payload to disk and runs this script with
-that payload path as the only argument. This script can be run in a new terminal
-process or through runpy in the current process; both paths use the same argv
-contract and serialized traceback data.
-"""
+"""WIP"""
 
 import json
 import os
@@ -70,16 +64,16 @@ def _message_rule(message: str,symbol="=") -> str:
     return symbol * rule_width
 
 
-def _load_payload() -> dict[str, Any]:
-    """Load and validate the watchdog payload JSON path passed in sys.argv[1]."""
-    if len(sys.argv) != 2:
-        raise TypeError("Expected a watchdog traceback payload JSON path as the only argument.")
+def _load_traceback_payload(payload_path: str) -> dict[str, Any]:
+    """Load and validate the original wrapper traceback JSON, if one was supplied."""
+    if not payload_path:
+        return {}
 
-    with open(sys.argv[1], encoding="utf-8-sig") as f:
+    with open(payload_path, encoding="utf-8-sig") as f:
         loaded_payload = json.load(f)
 
     if not isinstance(loaded_payload, dict):
-        raise TypeError("Expected the watchdog traceback payload JSON to contain an object.")
+        raise TypeError("Expected the wrapper traceback JSON to contain an object.")
 
     return loaded_payload
 
@@ -282,12 +276,10 @@ def _render_traceback_payload(traceback_payload: dict[str, Any], wrapper_exit_co
         _print_plain_traceback_payload(traceback_payload, wrapper_exit_code)
 
 
-def _render_watchdog_warning_payload(payload: dict[str, Any]) -> None:
-    """Render the full watchdog warning payload and any serialized traceback."""
-    title = str(payload.get("title") or f"{program_name} - Warning")
-    message = str(payload.get("message") or "[Warning]")
-    wrapper_exit_code = _int_or_default(payload.get("wrapper_exit_code"), 1)
-    traceback_payload = payload.get("traceback_payload")
+def _render_watchdog_warning(
+    traceback_payload: dict[str, Any], title: str, message: str, wrapper_exit_code: int
+) -> None:
+    """Render display metadata and an optional direct serialized traceback."""
 
     try:
         set_terminal_title(title)
@@ -306,17 +298,29 @@ def _render_watchdog_warning_payload(payload: dict[str, Any]) -> None:
     print_warn(divider)
     print()
 
-    if isinstance(traceback_payload, dict):
+    if traceback_payload:
         _render_traceback_payload(traceback_payload, wrapper_exit_code)
 
 
 def main() -> None:
-    """Load the payload, render it, and optionally wait for user input."""
-    loaded_payload = _load_payload()
+    """Load the direct traceback JSON and render it with explicit display arguments."""
+    if len(sys.argv) != 6:
+        raise TypeError(
+            "Expected: traceback JSON path, title, message, wrapper exit code, and wait-for-input flag."
+        )
 
-    _render_watchdog_warning_payload(loaded_payload)
+    _script_path, payload_path, title, message, wrapper_exit_code_arg, wait_for_input_arg = sys.argv
+    traceback_payload = _load_traceback_payload(payload_path)
+    wrapper_exit_code = _int_or_default(wrapper_exit_code_arg, 1)
 
-    if loaded_payload.get("wait_for_input", False):
+    _render_watchdog_warning(
+        traceback_payload,
+        title or f"{program_name} - Warning",
+        message or "[Warning]",
+        wrapper_exit_code,
+    )
+
+    if wait_for_input_arg.casefold() == "true":
         input_warn("Press enter to exit")
 
 
