@@ -12,18 +12,18 @@ if root_dir not in sys.path:
     sys.path.insert(0, root_dir)
 
 WARNING_TERMINAL_COLORS = "4F"
-_ANSI_WARN = "\x1b[1;37;41m"
-_ANSI_RESET = "\033[0m"
+ANSI_WARN = "\x1b[1;37;41m"
+ANSI_RESET = "\033[0m"
 
 
 def _fallback_print_warn(msg: object, sep: str | None = " ", end: str | None = "\n") -> None:
     """Print a warning-styled message without importing the shared helpers."""
-    print(f"{_ANSI_WARN}{msg}{_ANSI_RESET}", sep=sep, end=end)
+    print(f"{ANSI_WARN}{msg}{ANSI_RESET}", sep=sep, end=end)
 
 
 def _fallback_input_warn(msg: object) -> str:
     """Prompt for input with warning styling when shared helpers are unavailable."""
-    return input(f"{_ANSI_WARN}{msg}{_ANSI_RESET}")
+    return input(f"{ANSI_WARN}{msg}{ANSI_RESET}")
 
 
 try:
@@ -55,7 +55,7 @@ def _int_or_default(value: object, default: int) -> int:
         return default
 
 
-def _message_rule(message: str,symbol="=") -> str:
+def _message_rule(message: str, symbol="=") -> str:
     """Return an equals-sign rule matching message width without wrapping."""
     longest_message_line = max((len(line.expandtabs(4)) for line in message.splitlines()), default=0)
     terminal_columns = shutil.get_terminal_size(fallback=(80, 20)).columns
@@ -305,9 +305,7 @@ def _render_watchdog_warning(
 def main() -> None:
     """Load the direct traceback JSON and render it with explicit display arguments."""
     if len(sys.argv) != 6:
-        raise TypeError(
-            "Expected: traceback JSON path, title, message, wrapper exit code, and wait-for-input flag."
-        )
+        raise TypeError("Expected: traceback JSON path, title, message, wrapper exit code, and wait-for-input flag.")
 
     _script_path, payload_path, title, message, wrapper_exit_code_arg, wait_for_input_arg = sys.argv
     traceback_payload = _load_traceback_payload(payload_path)
@@ -319,6 +317,13 @@ def main() -> None:
         message or "[Warning]",
         wrapper_exit_code,
     )
+
+
+    # WIP: exit_message
+    # mode:Literal["success","failure","crash","KeyboardInterrupt"]
+    # load stuff here. have seetings in common_varaibles or dev_settings
+    # have icon change and title change here.
+    # have color change here
 
     if wait_for_input_arg.casefold() == "true":
         input_warn("Press enter to exit")
