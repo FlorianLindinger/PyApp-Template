@@ -25,7 +25,7 @@ from backend.DONT_CHANGE.scripts._common_variables import (
     env_var_to_signal_startup_time_measurement,
     frontend_python_exe,
     start_program_script,
-    start_time_dummy_main_script,
+    start_time_dummy_main_script_path,
     temporary_folder,
 )
 
@@ -502,7 +502,7 @@ def main() -> int:
     if args.runs < 1:
         raise ValueError("--runs must be at least 1")
 
-    target_script = os.path.normpath(start_time_dummy_main_script)
+    target_script = os.path.normpath(start_time_dummy_main_script_path)
     shortcut_paths: list[str] = []
     if not args.skip_launcher:
         if args.shortcut:
