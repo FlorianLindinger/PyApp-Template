@@ -1,14 +1,21 @@
-# Entries in this file will not be synchronized in git
+# Entries in this file will not be synchronized in git. 
+# "!" before whitelists synchronization
 
 # ============================
 # ==== general gitignores ====
 # ============================
-# shortcuts in root folder:
+
+# shortcuts in this folder:
 /*.lnk
+# whitelist shortcut to generate shortcuts in this folder:
+!/▶*.lnk
 # log files:
-logs/*.txt
-# temporary id files for no-terminal start:
-*.pid
+/logs/*
+# crash log files:
+/crash logs/*
+# whitelist ".gitkeep" files to sync folders:
+!.gitkeep
+
 # ===================================================
 
 # =============================
