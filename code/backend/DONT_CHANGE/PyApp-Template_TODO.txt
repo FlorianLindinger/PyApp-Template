@@ -2,6 +2,42 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+
+
+chekc in script wrapper if json stuff is simple
+
+app id is unused in rich tracevbvack
+
+check if i want impreventns in crash log txt
+
+fix shortcut to open logs? should i also have shortcut for crash folder. maybe it should always open the folder? and live check for both the settings and not the baked in folder
+
+does it handle well if main.py not there?
+
+test if env varaibles get passed
+
+remove env_var_to_signal_startup_time_measurement
+
+make ecvetrything pyrefly strict safe
+
+ask AI where i can simplify code and logic and files and everythiong
+
+waht happens for "overwrite_log = False" just append? write behavior down in developer settings
+
+convert json into readable txt?
+
+is everyginh used in develper_settings?
+
+does it make folder for crash log and log log in worst case?
+
+is implemented ? args_for_main_py
+
+am i checking for global uv and global uv cache. should i write somewher what it does?
+
+rename python_and_packages to "python & packages"
+
+should i make crash reports and logs fixed? how to say in gitignore and in settings at same time?
+
 ask for more ideas for developer_tools so no replacement needed later
 
 i guess i should levae backend pyhton and poackages in DONT_change. otherwiese change in requivemnts dont automatically update pyhtron 

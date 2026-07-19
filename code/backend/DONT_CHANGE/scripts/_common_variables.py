@@ -42,17 +42,16 @@ dev_tools_referal_note_path = (
 windows_dir = os.environ.get("WINDIR", default="C:\\Windows")
 python_scripts_dir = make_abs("..\\..\\..")
 developer_tools_dir = make_abs("..\\..\\developer_tools")  # UPDATE GITIGNORE
-DONT_CHANGE_dir = make_abs("..")
 shortcut_output_dir = make_abs("..\\..\\..\\..")  # UPDATE GITIGNORE
 starter_batches_folder = make_abs("..\\B")
-temporary_folder = DONT_CHANGE_dir = make_abs("..\\temporary")
+temporary_folder = make_abs("..\\temporary")
 
 # scripts
 # ------------------------
 start_program_script = make_abs("start_program.py")
 python_script_path = make_abs("..\\..\\..\\main.py")
 background_watchdog_path = make_abs("background_watchdog.py")
-start_time_dummy_main_script = make_abs("..\\backend_test_tools\\helper_scripts\\start_time_dummy_main_script.py")
+start_time_dummy_main_script_path = make_abs("..\\backend_test_tools\\helper_scripts\\start_time_dummy_main_script.py")
 launcher_terminal = starter_batches_folder + "\\W.bat"
 launcher_emulator = starter_batches_folder + "\\E.bat"
 launcher_settings = starter_batches_folder + "\\S.bat"
@@ -65,6 +64,7 @@ rich_traceback_printer_path = make_abs("_print_rich_traceback.py")
 # files
 # ------------------------
 
+tmp_traceback_json_path = temporary_folder + "\\last_crash_log.json"
 developer_settings_path = make_abs("..\\..\\developer_settings.py")
 icon_path = make_abs("..\\..\\icons\\icon.ico")
 settings_icon_path = make_abs("..\\..\\icons\\settings.ico")
@@ -77,7 +77,6 @@ process_id_file_path = make_abs("..\\..\\..\\_CURRENTLY_RUNNING_.pid")
 default_packages_file_path = make_abs("..\\..\\developer_tools\\_DEFAULT_PYHON_PACKAGES_.txt")  # UPDATE GITIGNORE
 python_version_indicator_file_path = developer_tools_dir + "\\_CURRENT_PYTHON_VERSION_.txt"
 CORRECT_START_SIGNAL_FILE_PATH = temporary_folder + "\\signal_that_program_started_correctly.signal"
-traceback_json_path = temporary_folder + "\\traceback_info.json"
 play_sound_after_crash_default = windows_dir + "\\Media\\Windows Critical Stop.wav"
 play_sound_after_failure_default = windows_dir + "\\Media\\Windows Critical Stop.wav"
 play_sound_after_success_default = windows_dir + "\\Media\\notify.wav"
