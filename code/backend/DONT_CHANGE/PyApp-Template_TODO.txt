@@ -2,6 +2,36 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+it does not handle syntax errorr in wrapepr? handle that somehopw better
+
+does it handly syntax errors in all script where it can? mention the scrioüpt tjat it does not handle it.
+
+Snapshot source context
+Store 2–3 lines before and after every failing line in the JSON. Rich currently reloads source files, which could have changed or become unavailable.
+
+setting how many linees beofre and after to print.
+
+mention rich customizaility
+
+Exception notes and groups
+Support Python 3.11+ features when available:
+exception.__notes__
+ExceptionGroup
+Nested sub-exceptions
+
+make import error fancy:
+Missing import: requests
+Suggested package: requests
+Python executable: C:\...\python.exe
+
+add option to shjow locals in tracback to dev settings
+
+make clcikable path to line in not conhost 
+
+make option which temrinal to prefer for tracebvack and add cklciakble featues. meantion soemthwer. also as gernal drawack of conhost in temrinalc hoice
+
+move travback settings all to dev settings as subcratgoty
+
 choose good RICH_TRACEBACK_COLOR_THEME
 
 can i have rich traveaback nicely scalable in hindsight in conhost? do i want not conhost for newly opended?
