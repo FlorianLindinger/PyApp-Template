@@ -2,6 +2,36 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+maybe i leave exit code 0 to indicate script running to end
+
+except SystemExit as e:
+            if (
+                (e.code is None)
+                or (isinstance(e.code, bool) and e.code == False)
+                or (isinstance(e.code, int) and e.code == 0)
+            ):
+                sys.exit(0)
+            else:
+                # catches: sys.exit(True), sys.exit("a string"),sys.exit(non-0-int)
+                save_traceback(e, python_script_path, crash_log_temp_path)
+                sys.exit(1)
+
+-> undop my changes i guess to get rich tracebakc back but ask it to simplify
+
+# soprt and group functions in all scripts
+
+# how much of window removal of tracback should wrapper handle? can i make minimal? and wnat? simplify that in wrapper
+
+fix # WIP_ save_exception_as_json()
+
+fix: # WIP: assume no terminal and make new windwo and print traceback
+
+move to funciton: # close existing instances or block start if already running, if enabl
+
+write crash logs txt for all not succes ones
+
+check if rich traveback is as nice as possible
+
 shoudl i reuse the function that save txt from payload for printing fallback
 
 do i need 
