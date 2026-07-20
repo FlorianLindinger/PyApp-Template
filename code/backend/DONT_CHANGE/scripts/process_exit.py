@@ -1,4 +1,7 @@
-"""WIP"""
+"""WIP
+
+This script assumes that is always has a terminal to print stuff in since it is called that way.
+"""
 
 # {e} will be formatted to exception:
 fail_message = "[Error] Failed WIP: {e}"
@@ -11,7 +14,7 @@ try:
     import os
     import sys
     from datetime import datetime
-    from typing import Any, Literal
+    from typing import Any, Literal, TextIO, cast
 
     # ==============================
     # import third-party packages
@@ -42,7 +45,6 @@ try:
         play_sound_after_failure,
         play_sound_after_KeyboardInterrupt,
         play_sound_after_success,
-        program_name,
     )
     from backend.DONT_CHANGE.scripts._common_code import (
         input_success,
@@ -95,12 +97,7 @@ try:
 
     def _same_file(first_path: str, second_path: str) -> bool:
         """Compare two real filenames without treating pseudo filenames as paths."""
-        if (
-            not first_path
-            or not second_path
-            or first_path.startswith("<")
-            or second_path.startswith("<")
-        ):
+        if not first_path or not second_path or first_path.startswith("<") or second_path.startswith("<"):
             return False
         return os.path.normcase(os.path.abspath(first_path)) == os.path.normcase(os.path.abspath(second_path))
 
@@ -136,9 +133,7 @@ try:
             lines.append(f"Python: {python_version}")
         return lines
 
-    def _frames_from_traceback_origin(
-        error_data: dict[str, Any], script_path: str
-    ) -> list[dict[str, Any]]:
+    def _frames_from_traceback_origin(error_data: dict[str, Any], script_path: str) -> list[dict[str, Any]]:
         """
         Return frames from the perspective of the script that produced the payload.
 
@@ -181,8 +176,8 @@ try:
                 for frame in frames:
                     lines.append(
                         f'  File "{_display_filename(str(frame.get("filename") or "?"), script_path)}", '
-                        f'line {_as_int(frame.get("lineno")) or "?"}, '
-                        f'in {frame.get("function") or "<module>"}'
+                        f"line {_as_int(frame.get('lineno')) or '?'}, "
+                        f"in {frame.get('function') or '<module>'}"
                     )
                     if source := frame.get("source"):
                         lines.append(f"    {str(source).strip()}")
@@ -191,7 +186,7 @@ try:
             if isinstance(syntax, dict):
                 lines.append(
                     f'  File "{_display_filename(str(syntax.get("filename") or "?"), script_path)}", '
-                    f'line {_as_int(syntax.get("lineno")) or "?"}'
+                    f"line {_as_int(syntax.get('lineno')) or '?'}"
                 )
                 if source := syntax.get("text"):
                     lines.append(f"    {str(source).rstrip()}")
@@ -258,20 +253,30 @@ try:
     class _RichSafeStream:
         """Keep Rich output writable on legacy Windows console encodings."""
 
-        def __init__(self, stream: Any) -> None:
+        def __init__(self, stream: TextIO) -> None:
             self.stream = stream
 
-        def write(self, text: str) -> Any:
-            encoding = getattr(self.stream, "encoding", None)
+        def writable(self) -> bool:
+            return True
+
+        def write(self, text: str) -> int:
+            encoding = getattr(self.stream, "encoding", None) or "utf-8"
             if encoding:
                 try:
                     text.encode(encoding)
                 except UnicodeEncodeError:
                     text = text.replace("\u25b2", "^").encode(encoding, errors="replace").decode(encoding)
-            return self.stream.write(text)
+            written = self.stream.write(text)
+            return len(text) if written is None else written
 
-        def __getattr__(self, name: str) -> Any:
-            return getattr(self.stream, name)
+        def flush(self) -> None:
+            self.stream.flush()
+
+        def isatty(self) -> bool:
+            return self.stream.isatty()
+
+        def fileno(self) -> int:
+            return self.stream.fileno()
 
     def print_traceback_from_json_payload(traceback_payload: dict[str, Any]) -> None:
         """Render the current traceback JSON format, preferring Rich's native layout."""
@@ -291,28 +296,26 @@ try:
 
             background = RICH_TRACEBACK_COLOR_THEME["background"]
             background_style = f"on {background}"
-            border_style = f'{RICH_TRACEBACK_COLOR_THEME["border"]} {background_style}'
-            label_style = f'{RICH_TRACEBACK_COLOR_THEME["label"]} {background_style}'
-            metadata_style = f'{RICH_TRACEBACK_COLOR_THEME["metadata"]} {background_style}'
-            text_style = f'{RICH_TRACEBACK_COLOR_THEME["text"]} {background_style}'
+            border_style = f"{RICH_TRACEBACK_COLOR_THEME['border']} {background_style}"
+            label_style = f"{RICH_TRACEBACK_COLOR_THEME['label']} {background_style}"
+            metadata_style = f"{RICH_TRACEBACK_COLOR_THEME['metadata']} {background_style}"
+            text_style = f"{RICH_TRACEBACK_COLOR_THEME['text']} {background_style}"
             traceback_entries = _traceback_entries(traceback_payload)
             rich_traceback = _rich_traceback(traceback_payload) if traceback_entries else None
             console = Console(
-                file=_RichSafeStream(sys.stdout),
+                file=cast(TextIO, _RichSafeStream(sys.stdout)),
                 legacy_windows=True,
                 theme=Theme(
                     {
                         "traceback.border": border_style,
                         "traceback.border.syntax_error": (
-                            f'{RICH_TRACEBACK_COLOR_THEME["syntax_border"]} {background_style}'
+                            f"{RICH_TRACEBACK_COLOR_THEME['syntax_border']} {background_style}"
                         ),
                         "traceback.text": text_style,
                         "traceback.title": label_style,
                         "traceback.exc_type": label_style,
                         "traceback.exc_value": text_style,
-                        "traceback.offset": (
-                            f'{RICH_TRACEBACK_COLOR_THEME["syntax_pointer"]} {background_style}'
-                        ),
+                        "traceback.offset": (f"{RICH_TRACEBACK_COLOR_THEME['syntax_pointer']} {background_style}"),
                     },
                     inherit=True,
                 ),
@@ -357,12 +360,28 @@ try:
 
     def payload_to_text(traceback_payload: dict[str, Any], title: str, message: str) -> str:
         """Build a plain-text crash report from the current traceback JSON format."""
-        lines = ["=" * 80, title, "=" * 80, "", message, ""]
+        lines = ["=" * 80, title, "-" * 80, "", message, "", "-" * 80]
         lines.extend(_traceback_metadata_lines(traceback_payload))
         lines.append("")
         lines.extend(_plain_traceback_lines(traceback_payload))
         lines.extend(["", "=" * 80])
         return "\n".join(lines)
+
+    def write_txt_crash_log(crash_log_payload, title, message):
+        # write a human readable crash log:
+        crash_log_path_resolved = resolve_log_path(
+            crash_log_path, crash_log_path_is_relative_to_start_folder_if_relative
+        )
+        if crash_log_path_resolved:
+            os.makedirs(os.path.dirname(crash_log_path_resolved), exist_ok=True)
+            with open(crash_log_path_resolved, "w" if overwrite_crash_log else "a") as f:
+                f.write(
+                    payload_to_text(
+                        traceback_payload=crash_log_payload,
+                        title=title,
+                        message=message,
+                    )
+                )
 
     # ==============================
     # miscellaneous
@@ -472,175 +491,120 @@ try:
 
         # ==============================
         # process exit
-        
+
         # exit_mode meaning:
         # 0 = correctly handled end of script in main.py (no json)
         # 1 = correctly handled other exit of main.py (json)
         # 2 = handled failure in wrapper of main.py (json)
         # 3 = unsuccessfully handled failure in wrapper of main.py (no json)
-        # (4 = handled failure in this script. See Exception of main below))
-        
-        # WIP: i have to not spawn a crash report on succes but everywhere else
+        # 4 = handled failure watchdog script (json)
 
-        if os.path.exists(tmp_traceback_json_path):
-            import json
+        if exit_mode == 0:  # 0 = correctly handled end of script in main.py (no json)
+            process_sound_and_log_opening_and_terminal_appearance("success", log_path_resolved)
+            if close_after_success == False:
+                print_success("[Success] Program finished successfully")
+                input_success("Press enter to exit")
+            sys.exit()
 
-            with open(tmp_traceback_json_path, encoding="utf-8") as f:
-                traceback_payload = json.load(f)
-            print_traceback_from_json_payload(traceback_payload)
-            exception_type = str(traceback_payload.get("exception_type"))
-        # else:
-        #     exception_type = 
-        
-        # print_traceback_from_json_payload(traceback_payload)
+        elif exit_mode == 1:  # 1 = correctly handled other exit of main.py (json)
+            if os.path.exists(tmp_traceback_json_path):
+                import json
 
-        # if exit_code == 0:  # success
-        #     process_sound_and_log_opening_and_terminal_appearance("success", log_path_resolved)
-        #     if close_after_success == False:
-        #         print_success("[Success] Program finished successfully")
-        #         input_success("Press enter to exit")
+                with open(tmp_traceback_json_path, encoding="utf-8") as f:
+                    traceback_payload = json.load(f)
 
-        #     sys.exit()
+                traceback_entries = _traceback_entries(traceback_payload)
+                exception_type = (
+                    str(traceback_entries[-1].get("type") or "Exception")
+                    if traceback_entries
+                    else "Exception"
+                )
 
-        
-        input()
-        if 1:
-            pass
+                if exception_type == "SystemExit":  # includes success exits
+                    main_exit_code = traceback_payload.get("system_exit_code")
 
-        elif exit_mode == 0:  # 0 = correctly handled exit of main.py
-            
-            # write a human readable crash log:
-            crash_log_path_resolved = resolve_log_path(
-                crash_log_path, crash_log_path_is_relative_to_start_folder_if_relative
-            )
-            if crash_log_path_resolved:
-                os.makedirs(os.path.dirname(crash_log_path_resolved), exist_ok=True)
-                with open(crash_log_path_resolved, "w" if overwrite_crash_log else "a") as f:
-                    f.write(
-                        payload_to_text(
-                            traceback_payload=crash_log_payload,
-                            title=f"{exception_type} - {program_name}",
-                            message=f"[Error] Program failed due to {exception_type} in {os.path.basename(selected_python_script_path)}",
-                        )
-                    )
+                    # success = main_exit_code: 0, None,False
+                    # failure = main_exit_code: non-0-int, True, float, strings (Anything not mentioned here get converted to string in wrapper)
 
-            if exception_type == "SystemExit":
-                
-                
-                
-                # success-like SystemExit-codes were already onvertecd to exit_code=0 in wrapper:
-                
-                
-                
-                child_exit_code = crash_log_payload.get("system_exit_code")
+                    if main_exit_code in (0, None, False):  # success
+                        process_sound_and_log_opening_and_terminal_appearance("success", log_path_resolved)
+                        print_traceback_from_json_payload(traceback_payload)
+                        if close_after_success == False:
+                            print_success("[Success] Program finished successfully")
+                            input_success("Press enter to exit")
 
-                if exit_code_looks_like_interpreter_crash(child_exit_code):
-                    process_sound_and_log_opening_and_terminal_appearance("crash", log_path_resolved)
-                    if close_after_crash == False:
-                        print_warn(
-                            f'[Crash] It appears like the Python interpreter crashed with exit code "{child_exit_code}" while running "{selected_python_script_path}".'
-                        )
-                        input_warn("Press enter to exit")
-                    sys.exit()
+                    elif exit_code_looks_like_interpreter_crash(main_exit_code):
+                        write_txt_crash_log(traceback_payload, "WIP", "WIP")
+                        process_sound_and_log_opening_and_terminal_appearance("crash", log_path_resolved)
+                        print_traceback_from_json_payload(traceback_payload)
+                        if close_after_crash == False:
+                            print_warn(
+                                f'[Crash] It appears like the Python interpreter crashed with exit code "{main_exit_code}" while running "{selected_python_script_path}".'
+                            )
+                            input_warn("Press enter to exit")
 
-                else:
+                    else:
+                        write_txt_crash_log(traceback_payload, "WIP", "WIP")
+                        process_sound_and_log_opening_and_terminal_appearance("failure", log_path_resolved)
+                        print_traceback_from_json_payload(traceback_payload)
+                        if close_after_failure == False:
+                            print_warn(
+                                f'[Failure] "{selected_python_script_path}" exited with error code "{main_exit_code}".'
+                            )
+                            input_warn("Press enter to exit")
+
+                elif exception_type in ["ImportError", "ModuleNotFoundError"]:
                     process_sound_and_log_opening_and_terminal_appearance("failure", log_path_resolved)
+                    print_traceback_from_json_payload(traceback_payload)
+
+                    # options:
+                    # 1) install missing package->use pipreqs mappings if needed i guess
+                    # 2) auto search packages needed
+                    # 3) open terminal for manual installation
+                    # 4) quit
+                    
+                    input("WIP")
+
+                elif exception_type == "SyntaxError":
+                    write_txt_crash_log(traceback_payload, "WIP", "WIP")
+                    process_sound_and_log_opening_and_terminal_appearance("failure", log_path_resolved)
+                    print_traceback_from_json_payload(traceback_payload)
+                    if close_after_failure == False:
+                        print_warn(f'[Failure] "{selected_python_script_path}" had a syntax error (see above).')
+                        input_warn("Press enter to exit")
+
+                elif exception_type == "KeyboardInterrupt":
+                    write_txt_crash_log(traceback_payload, "WIP", "WIP")
+                    process_sound_and_log_opening_and_terminal_appearance("KeyboardInterrupt", log_path_resolved)
+                    print_traceback_from_json_payload(traceback_payload)
+
+                    if close_after_KeyboardInterrupt == False:
+                        print_warn(f'[Failure] "{selected_python_script_path}" was interrupted by user with Ctrl+C')
+                        input_warn("Press enter to exit")
+
+                else:  # remaining exceptions cases
+                    write_txt_crash_log(traceback_payload, "WIP", "WIP")
+                    process_sound_and_log_opening_and_terminal_appearance("failure", log_path_resolved)
+                    print_traceback_from_json_payload(traceback_payload)
                     if close_after_failure == False:
                         print_warn(
-                            f'[Failure] "{selected_python_script_path}" exited with error code "{child_exit_code}".'
+                            f'[Failure] "{selected_python_script_path}" had exception of type "{exception_type}" (see above).'
                         )
                         input_warn("Press enter to exit")
-                    sys.exit()
 
-            elif exception_type in ["ImportError", "ModuleNotFoundError"]:
-                process_sound_and_log_opening_and_terminal_appearance("failure", log_path_resolved)
+            else:
+                ...  # fialed to generate json ....
 
-                # options:
-                # 1) install missing package->use pipreqs mappings if needed i guess
-                # 2) auto search packages needed
-                # 3) open terminal for manual installation
-                # 4) quit
-
-            elif exception_type == "SyntaxError":
-                process_sound_and_log_opening_and_terminal_appearance("failure", log_path_resolved)
-
-                print_error_here_or_new_terminal(
-                    f"[Error] Program failed due to a syntax error in {selected_python_script_path.split(os.sep)[-1]}",
-                    traceback_json_path=tmp_traceback_json_path,
-                    wrapper_exit_code=exit_code,
-                    title=f"SyntaxError - {program_name}",
-                    app_id=app_id,
-                    icon_file_path=failure_icon_path,
-                    wait_for_input=not close_after_failure,
-                )
-                if close_after_failure == False:
-                    run_here_or_new_terminal(
-                        base_script
-                        + f"print_warn('[Failure] \"{selected_python_script_path}\" had a syntax error (see above).')"
-                        'input_warn("Press enter to exit")'
-                    )
-                sys.exit(1)
-
-            elif exception_type == "KeyboardInterrupt":
-                process_sound_and_log_opening_and_terminal_appearance("KeyboardInterrupt", log_path_resolved)
-
-                print_error_here_or_new_terminal(
-                    "[Warning] Program was interrupted by user with Ctrl+C (KeyboardInterrupt)",
-                    traceback_json_path=tmp_traceback_json_path,
-                    wrapper_exit_code=exit_code,
-                    title=f"KeyboardInterrupt - {program_name}",
-                    app_id=app_id,
-                    icon_file_path=failure_icon_path,
-                    create_terminal=not PROGRAM_HAS_TERMINAL,
-                    wait_for_input=not close_after_KeyboardInterrupt,
-                )
-                if close_after_KeyboardInterrupt == False:
-                    run_here_or_new_terminal(
-                        base_script
-                        + f"print_warn('[Failure] \"{selected_python_script_path}\" was interrupted by user with Ctrl+C')"
-                        'input_warn("Press enter to exit")'
-                    )
-                sys.exit(1)
-
-            else:  # remaining exceptions cases
-                process_sound_and_log_opening_and_terminal_appearance(
-                    wav_after_failure, log_path_resolved, open_log_file_after_failure
-                )
-                if close_after_failure == False:
-                    run_here_or_new_terminal(
-                        base_script
-                        + f'print_warn(\'[Failure] "{selected_python_script_path}" had exception of type {exception_type} (see above).'
-                        'input_warn("Press enter to exit")'
-                    )
-                sys.exit(1)
-                
-            # process_sound_and_log_opening_and_terminal_appearance(exit_type, log_path_resolved)
-
-            # WIP: i need to close this after opening new window and that is being closed or waited for
-
-            # waiting and printing is handled by print_error_here_or_new_terminal, for which this script waits
-            sys.exit(exit_code)
-
-            # if close_after_failure:
-            #     sys.exit(exit_code)
-            # else:
-            #     if PROGRAM_HAS_TERMINAL:
-            #         input_warn("[Error] Press enter to exit")
-            #     sys.exit(exit_code)
-
-        elif exit_mode == 1:  # 1 = handled failure in wrapper of main.py
-            
-            # generic print all? or  proper one?
-            
-            import json
-
-            json
-        elif exit_mode == 2:  # 2 = unsuccessfully handled failure in wrapper of main.py
+        elif exit_mode == 2:  # 2 = handled failure in wrapper of main.py (json)
             ...
-        elif exit_mode == 3:  # 3 = handled failure in background watchdog
+        elif exit_mode == 3:  # 3 = unsuccessfully handled failure in wrapper of main.py (no json)
+            ...
+        elif exit_mode == 4:  # 4 = handled failure watchdog script (json)
             ...
         else:
-            raise ValueError(f'[Error] Specific exit code of wrapper is not implemented: "{exit_mode}"')
+            ...
+            # print
+            # raise ValueError(f'[Error] Specific exit code of wrapper is not implemented: "{exit_mode}"')
 
     # ==============================
     # execute main function
