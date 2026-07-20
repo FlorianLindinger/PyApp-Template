@@ -112,6 +112,17 @@ FAILURE_TERMINAL_COLORS = "4F"
 CRASH_TERMINAL_COLORS = "4F"
 KEYBOARDINTERRUPT_TERMINAL_COLORS = ""
 SUCCESS_TERMINAL_COLORS = "2F"
+ERROR_DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
+RICH_TRACEBACK_COLOR_THEME = {
+    "code": "monokai",
+    "background": "#272822",
+    "border": "bright_red",
+    "syntax_border": "bold bright_red",
+    "label": "bold bright_white",
+    "metadata": "bright_black",
+    "text": "bright_white",
+    "syntax_pointer": "bold bright_yellow",
+}
 
 # =======================================
 # === derived/less-flexible variables ===

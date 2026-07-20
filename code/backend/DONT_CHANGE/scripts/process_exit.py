@@ -10,6 +10,7 @@ try:
 
     import os
     import sys
+    from datetime import datetime
     from typing import Any, Literal
 
     # ==============================
@@ -57,8 +58,10 @@ try:
     )
     from backend.DONT_CHANGE.scripts._common_variables import (
         CRASH_TERMINAL_COLORS,
+        ERROR_DATE_FORMAT,
         FAILURE_TERMINAL_COLORS,
         KEYBOARDINTERRUPT_TERMINAL_COLORS,
+        RICH_TRACEBACK_COLOR_THEME,
         SUCCESS_TERMINAL_COLORS,
         KeyboardInterrupt_icon_path,
         crash_icon_path,
@@ -79,246 +82,290 @@ try:
     # ==============================
     # define local functions/classes
     # ==============================
-    
-    def _int_or_default(value: object, default: int) -> int:
-        """Return value as int, or default when conversion fails."""
+
+    # ==============================
+    # traceback related
+
+    def _as_int(value: Any) -> int:
+        """Return a serialized integer value, or zero if it is invalid."""
         try:
-            return int(value)  # type: ignore[arg-type]
-        except Exception:
-            return default
+            return int(value)
+        except (TypeError, ValueError):
+            return 0
 
-    def _split_exception_title(error_data: dict[str, Any]) -> tuple[str, str]:
-        """Return exception type and message from one serialized exception entry."""
-        exception_type = str(error_data.get("type") or "")
-        exception_value = str(error_data.get("message") or "")
-        if exception_type:
-            return exception_type, exception_value
-
-        title = str(error_data.get("title") or "Exception")
-        if ": " in title:
-            exception_type, exception_value = title.split(": ", 1)
-            return exception_type, exception_value
-        return title, exception_value
+    def _same_file(first_path: str, second_path: str) -> bool:
+        """Compare two real filenames without treating pseudo filenames as paths."""
+        if (
+            not first_path
+            or not second_path
+            or first_path.startswith("<")
+            or second_path.startswith("<")
+        ):
+            return False
+        return os.path.normcase(os.path.abspath(first_path)) == os.path.normcase(os.path.abspath(second_path))
 
     def _display_filename(filename: str, script_path: str) -> str:
-        """Return a frame filename from the target script's perspective."""
-        if filename in ("", "?"):
-            return "?"
+        """Make filenames below the traceback origin relative to its directory."""
+        if not filename or filename.startswith("<") or not script_path:
+            return filename or "?"
 
-        if script_path:
-            script_dir = os.path.dirname(os.path.abspath(script_path))
-            try:
-                relative_filename = os.path.relpath(os.path.abspath(filename), script_dir)
-            except ValueError:
-                relative_filename = ""
+        try:
+            relative_filename = os.path.relpath(
+                os.path.abspath(filename), os.path.dirname(os.path.abspath(script_path))
+            )
+        except ValueError:
+            return filename
 
-            if relative_filename and not relative_filename.startswith("..") and not os.path.isabs(relative_filename):
-                return relative_filename
-
+        if relative_filename != ".." and not relative_filename.startswith(".." + os.sep):
+            return relative_filename
         return filename
 
-    def _print_exception_line(error_data: dict[str, Any]) -> None:
-        """Print the final exception line for a serialized exception entry."""
-        exception_type, exception_value = _split_exception_title(error_data)
-        if exception_value:
-            print(f"{exception_type}: {exception_value}")
-        else:
-            print(exception_type)
+    def _traceback_entries(traceback_payload: dict[str, Any]) -> list[dict[str, Any]]:
+        """Return exception entries from the current traceback JSON format."""
+        return [entry for entry in traceback_payload.get("traceback") or [] if isinstance(entry, dict)]
 
-    def _print_plain_traceback_payload(traceback_payload: dict[str, Any], wrapper_exit_code: int) -> None:
-        """Render serialized traceback data using only built-in print output."""
-        script_path = str(traceback_payload.get("script_path"))
-        print_warn(os.path.basename(str(traceback_payload.get("script_path"))))
+    def _traceback_metadata_lines(traceback_payload: dict[str, Any]) -> list[str]:
+        """Return details about when and where the failure is handled."""
+        lines: list[str] = []
+        if script_path := traceback_payload.get("script_path"):
+            lines.append(f"Script: {os.path.abspath(str(script_path))}")
 
-        errors = traceback_payload.get("errors") or []
-        if not errors:
-            print_warn("No traceback frames were captured.")
-            return
+        error_datetime = datetime.now().astimezone().strftime(ERROR_DATE_FORMAT)
+        lines.append(f"Error date: {error_datetime}")
+        if python_version := traceback_payload.get("python_version"):
+            lines.append(f"Python: {python_version}")
+        return lines
 
-        for index, error_data in enumerate(errors):
-            if not isinstance(error_data, dict):
-                continue
+    def _frames_from_traceback_origin(
+        error_data: dict[str, Any], script_path: str
+    ) -> list[dict[str, Any]]:
+        """
+        Return frames from the perspective of the script that produced the payload.
 
+        ``traceback_payload["script_path"]`` is passed as ``script_path``. Each
+        exception-chain entry is handled independently because a chained inner
+        exception may already start inside the target script while the final
+        exception still contains wrapper and ``runpy`` frames.
+
+        Frames before the first filename matching ``script_path`` are removed.
+        For a compile-time SyntaxError, the target may occur only in the syntax
+        metadata; in that case every outer frame is removed. If neither location
+        matches, all frames are retained so an unknown origin loses no evidence.
+        """
+        frames = [frame for frame in error_data.get("frames") or [] if isinstance(frame, dict)]
+        if not script_path:
+            return frames
+
+        for outer_frames_to_skip, frame in enumerate(frames):
+            if _same_file(str(frame.get("filename") or ""), script_path):
+                return frames[outer_frames_to_skip:]
+
+        syntax = error_data.get("syntax")
+        if isinstance(syntax, dict) and _same_file(str(syntax.get("filename") or ""), script_path):
+            return []
+        return frames
+
+    def _plain_traceback_lines(traceback_payload: dict[str, Any]) -> list[str]:
+        """Format the current traceback JSON as plain text."""
+        script_path = str(traceback_payload.get("script_path") or "")
+        lines: list[str] = []
+
+        for error_index, error_data in enumerate(_traceback_entries(traceback_payload)):
             relation = str(error_data.get("relation") or "")
-            if index > 0 and relation:
-                print()
-                print(relation)
-                print()
+            if error_index and relation:
+                lines.extend(["", relation, ""])
 
-            frames = error_data.get("frames") or []
+            frames = _frames_from_traceback_origin(error_data, script_path)
             if frames:
-                print("Traceback (most recent call last):")
-                for frame_data in frames:
-                    if not isinstance(frame_data, dict):
-                        continue
-                    filename = _display_filename(str(frame_data.get("filename") or "?"), script_path)
-                    lineno = _int_or_default(frame_data.get("lineno"), 0)
-                    function = str(frame_data.get("function") or "<module>")
-                    source = str(frame_data.get("source") or "")
-                    print(f'  File "{filename}", line {lineno}, in {function}')
-                    if source:
-                        print(f"    {source.strip()}")
+                lines.append("Traceback (most recent call last):")
+                for frame in frames:
+                    lines.append(
+                        f'  File "{_display_filename(str(frame.get("filename") or "?"), script_path)}", '
+                        f'line {_as_int(frame.get("lineno")) or "?"}, '
+                        f'in {frame.get("function") or "<module>"}'
+                    )
+                    if source := frame.get("source"):
+                        lines.append(f"    {str(source).strip()}")
 
             syntax = error_data.get("syntax")
             if isinstance(syntax, dict):
-                filename = _display_filename(str(syntax.get("filename") or "?"), script_path)
-                lineno = _int_or_default(syntax.get("lineno"), 0)
-                offset = _int_or_default(syntax.get("offset"), 0)
-                source = str(syntax.get("text") or "")
-                print(f'  File "{filename}", line {lineno}')
-                if source:
-                    print(f"    {source.rstrip()}")
+                lines.append(
+                    f'  File "{_display_filename(str(syntax.get("filename") or "?"), script_path)}", '
+                    f'line {_as_int(syntax.get("lineno")) or "?"}'
+                )
+                if source := syntax.get("text"):
+                    lines.append(f"    {str(source).rstrip()}")
+                    offset = _as_int(syntax.get("offset"))
                     if offset > 0:
-                        print("    " + (" " * (offset - 1)) + "^")
+                        lines.append("    " + " " * (offset - 1) + "^")
 
-            _print_exception_line(error_data)
+            exception_type = str(error_data.get("type") or "Exception")
+            exception_message = str(error_data.get("message") or "")
+            lines.append(f"{exception_type}: {exception_message}" if exception_message else exception_type)
 
-    def _stack_from_error(error_data: dict[str, Any], script_path: str) -> Any:
-        """Build one Rich traceback Stack from a serialized exception entry."""
+        return lines or ["No traceback frames were captured."]
+
+    def _rich_stack(error_data: dict[str, Any], script_path: str) -> Any:
+        """Build one native Rich traceback stack from a serialized exception."""
         from rich.traceback import Frame, Stack, _SyntaxError
 
-        exception_type, exception_value = _split_exception_title(error_data)
-        stack = Stack(exc_type=exception_type, exc_value=exception_value)
+        exception_type = str(error_data.get("type") or "Exception")
+        exception_message = str(error_data.get("message") or "")
+        stack = Stack(exc_type=exception_type, exc_value=exception_message)
 
         syntax = error_data.get("syntax")
         if isinstance(syntax, dict):
             stack.syntax_error = _SyntaxError(
-                offset=_int_or_default(syntax.get("offset"), 0),
+                offset=_as_int(syntax.get("offset")),
                 filename=_display_filename(str(syntax.get("filename") or "?"), script_path),
                 line=str(syntax.get("text") or ""),
-                lineno=_int_or_default(syntax.get("lineno"), 0),
-                msg=exception_value or exception_type,
+                lineno=_as_int(syntax.get("lineno")),
+                msg=exception_message or exception_type,
             )
 
-        for frame_data in error_data.get("frames") or []:
-            if not isinstance(frame_data, dict):
-                continue
+        for frame in _frames_from_traceback_origin(error_data, script_path):
             stack.frames.append(
                 Frame(
-                    filename=_display_filename(str(frame_data.get("filename") or "?"), script_path),
-                    lineno=_int_or_default(frame_data.get("lineno"), 0),
-                    name=str(frame_data.get("function") or "<module>"),
-                    line=str(frame_data.get("source") or ""),
+                    filename=_display_filename(str(frame.get("filename") or "?"), script_path),
+                    lineno=_as_int(frame.get("lineno")),
+                    name=str(frame.get("function") or "<module>"),
+                    line=str(frame.get("source") or ""),
                 )
             )
-
         return stack
 
-    def _traceback_from_errors(errors: list[dict[str, Any]], script_path: str) -> Any:
-        """Build a Rich Traceback object from serialized exception-chain entries."""
+    def _rich_traceback(traceback_payload: dict[str, Any]) -> Any:
+        """Build a native Rich Traceback from the current JSON format."""
         from rich.traceback import Trace, Traceback
 
-        display_stacks = [_stack_from_error(error_data, script_path) for error_data in errors]
-        for index, error_data in enumerate(errors[1:], 1):
-            relation = str(error_data.get("relation") or "")
-            if "direct cause" in relation:
-                display_stacks[index - 1].is_cause = True
+        script_path = str(traceback_payload.get("script_path") or "")
+        errors = _traceback_entries(traceback_payload)
+        stacks = [_rich_stack(error_data, script_path) for error_data in errors]
+
+        for error_index, error_data in enumerate(errors[1:], 1):
+            if "direct cause" in str(error_data.get("relation") or ""):
+                stacks[error_index - 1].is_cause = True
+
         return Traceback(
-            Trace(stacks=list(reversed(display_stacks))),
+            Trace(stacks=list(reversed(stacks))),
             width=None,
             extra_lines=3,
+            theme=RICH_TRACEBACK_COLOR_THEME["code"],
             word_wrap=True,
             show_locals=False,
         )
 
-    def _print_rich_traceback_payload(traceback_payload: dict[str, Any], wrapper_exit_code: int) -> None:
-        """Render serialized traceback data with Rich."""
-        from rich.console import Console
-        from rich.text import Text
+    class _RichSafeStream:
+        """Keep Rich output writable on legacy Windows console encodings."""
 
-        console = Console(legacy_windows=True)
-        heading = _traceback_heading(traceback_payload, wrapper_exit_code)
-        script_path = str(traceback_payload.get("script_path") or "")
+        def __init__(self, stream: Any) -> None:
+            self.stream = stream
 
-        raw_errors = traceback_payload.get("errors") or []
-        errors = [error_data for error_data in raw_errors if isinstance(error_data, dict)]
-        console.rule(Text(heading, style="bold red"), style="red")
-        if not errors:
-            console.print(Text("No traceback frames were captured.", style="red"))
-            return
+        def write(self, text: str) -> Any:
+            encoding = getattr(self.stream, "encoding", None)
+            if encoding:
+                try:
+                    text.encode(encoding)
+                except UnicodeEncodeError:
+                    text = text.replace("\u25b2", "^").encode(encoding, errors="replace").decode(encoding)
+            return self.stream.write(text)
 
-        old_cwd = os.getcwd()
-        try:
-            if script_path:
-                os.chdir(os.path.dirname(os.path.abspath(script_path)))
-            console.print(_traceback_from_errors(errors, script_path))
-        finally:
-            os.chdir(old_cwd)
+        def __getattr__(self, name: str) -> Any:
+            return getattr(self.stream, name)
 
-    def _has_serialized_syntax_error(traceback_payload: dict[str, Any]) -> bool:
-        """Return true when any serialized exception entry contains SyntaxError data."""
-        for error_data in traceback_payload.get("errors") or []:
-            if isinstance(error_data, dict) and isinstance(error_data.get("syntax"), dict):
-                return True
-        return False
-
-    def print_traceback_from_json_payload(traceback_payload: dict[str, Any], mode: int) -> None:
-        """Render traceback data with Rich when reliable, otherwise fall back to plain output."""
-        
+    def print_traceback_from_json_payload(traceback_payload: dict[str, Any]) -> None:
+        """Render the current traceback JSON format, preferring Rich's native layout."""
         if not traceback_payload:
             return
-        
-        if _has_serialized_syntax_error(traceback_payload):
-            _print_plain_traceback_payload(traceback_payload, wrapper_exit_code)
-            return
 
+        script_path = str(traceback_payload.get("script_path") or "")
+        script_path = os.path.abspath(script_path) if script_path else ""
+        script_name = os.path.basename(script_path) or "Python traceback"
+        metadata_lines = _traceback_metadata_lines(traceback_payload)
         try:
-            _print_rich_traceback_payload(traceback_payload, wrapper_exit_code)
+            from rich.align import Align
+            from rich.console import Console
+            from rich.padding import Padding
+            from rich.text import Text
+            from rich.theme import Theme
+
+            background = RICH_TRACEBACK_COLOR_THEME["background"]
+            background_style = f"on {background}"
+            border_style = f'{RICH_TRACEBACK_COLOR_THEME["border"]} {background_style}'
+            label_style = f'{RICH_TRACEBACK_COLOR_THEME["label"]} {background_style}'
+            metadata_style = f'{RICH_TRACEBACK_COLOR_THEME["metadata"]} {background_style}'
+            text_style = f'{RICH_TRACEBACK_COLOR_THEME["text"]} {background_style}'
+            traceback_entries = _traceback_entries(traceback_payload)
+            rich_traceback = _rich_traceback(traceback_payload) if traceback_entries else None
+            console = Console(
+                file=_RichSafeStream(sys.stdout),
+                legacy_windows=True,
+                theme=Theme(
+                    {
+                        "traceback.border": border_style,
+                        "traceback.border.syntax_error": (
+                            f'{RICH_TRACEBACK_COLOR_THEME["syntax_border"]} {background_style}'
+                        ),
+                        "traceback.text": text_style,
+                        "traceback.title": label_style,
+                        "traceback.exc_type": label_style,
+                        "traceback.exc_value": text_style,
+                        "traceback.offset": (
+                            f'{RICH_TRACEBACK_COLOR_THEME["syntax_pointer"]} {background_style}'
+                        ),
+                    },
+                    inherit=True,
+                ),
+            )
+            console.rule(
+                Text(f" {script_name} ", style=label_style),
+                style=border_style,
+            )
+            if metadata_lines:
+                for metadata_line in metadata_lines:
+                    console.print(
+                        Align.left(
+                            Text(metadata_line, style=metadata_style, overflow="fold"),
+                            style=background_style,
+                        ),
+                    )
+            if rich_traceback is not None:
+                old_cwd = os.getcwd()
+                try:
+                    script_folder = os.path.dirname(os.path.abspath(script_path)) if script_path else ""
+                    if os.path.isdir(script_folder):
+                        os.chdir(script_folder)
+                    console.print(
+                        Padding(
+                            rich_traceback,
+                            (0, 0, 1, 0),
+                            style=background_style,
+                            expand=True,
+                        )
+                    )
+                finally:
+                    os.chdir(old_cwd)
+            else:
+                console.print("No traceback frames were captured.", style="red")
         except Exception as error:
             print_warn(f"[Warning] Rich traceback rendering failed: {error}")
             print()
-            _print_plain_traceback_payload(traceback_payload, wrapper_exit_code)
+            print_warn(script_name)
+            for metadata_line in metadata_lines:
+                print(metadata_line)
+            print("\n".join(_plain_traceback_lines(traceback_payload)))
 
-
-    def generate_error_text(traceback_payload: dict[str, Any], title: str, message: str) -> str:
-        import json
-
-        errors = traceback_payload.get("errors") or []
-
-        lines = [
-            "=" * 80,
-            title,
-            "=" * 80,
-            "",
-            message,
-        ]
-
-        for error in errors:
-            frames = error.get("frames") or []
-
-            if frames:
-                lines.extend(["", "Traceback (most recent call last):"])
-
-                for frame in frames:
-                    lines.append(
-                        f'  File "{frame.get("filename", "<unknown>")}", '
-                        f"line {frame.get('lineno', '?')}, "
-                        f"in {frame.get('function', '<unknown>')}"
-                    )
-
-                    if source := frame.get("source"):
-                        lines.append(f"    {str(source).strip()}")
-
-            if syntax := error.get("syntax"):
-                lines.extend(
-                    [
-                        "",
-                        json.dumps(syntax, indent=2, ensure_ascii=False),
-                    ]
-                )
-
-            exception_type = error.get("type", "Exception")
-            exception_message = error.get("message")
-
-            lines.extend(
-                [
-                    "",
-                    (f"{exception_type}: {exception_message}" if exception_message else str(exception_type)),
-                ]
-            )
-
+    def payload_to_text(traceback_payload: dict[str, Any], title: str, message: str) -> str:
+        """Build a plain-text crash report from the current traceback JSON format."""
+        lines = ["=" * 80, title, "=" * 80, "", message, ""]
+        lines.extend(_traceback_metadata_lines(traceback_payload))
+        lines.append("")
+        lines.extend(_plain_traceback_lines(traceback_payload))
         lines.extend(["", "=" * 80])
         return "\n".join(lines)
+
+    # ==============================
+    # miscellaneous
 
     def get_package_install_name(import_name: str, mappings_file_path: str) -> str:
         """Uses pipreqs mapping to convert from import name to install name: e.g., "cv2" -> "opencv-python"."""
@@ -427,10 +474,11 @@ try:
         # process exit
         
         # exit_mode meaning:
-        # 0 = correctly handled exit of main.py
-        # 1 = handled failure in wrapper of main.py
-        # 2 = unsuccessfully handled failure in wrapper of main.py
-        # (3 = handled failure in this script. See Exception of main below)
+        # 0 = correctly handled end of script in main.py (no json)
+        # 1 = correctly handled other exit of main.py (json)
+        # 2 = handled failure in wrapper of main.py (json)
+        # 3 = unsuccessfully handled failure in wrapper of main.py (no json)
+        # (4 = handled failure in this script. See Exception of main below))
         
         # WIP: i have to not spawn a crash report on succes but everywhere else
 
@@ -439,23 +487,27 @@ try:
 
             with open(tmp_traceback_json_path, encoding="utf-8") as f:
                 traceback_payload = json.load(f)
-            print_traceback_from_json_payload(traceback_payload,exit_mode)
+            print_traceback_from_json_payload(traceback_payload)
             exception_type = str(traceback_payload.get("exception_type"))
-        else:
-            exception_type = 
+        # else:
+        #     exception_type = 
+        
+        # print_traceback_from_json_payload(traceback_payload)
 
-        if exit_code == 0:  # success
-            process_sound_and_log_opening_and_terminal_appearance("success", log_path_resolved)
-            if close_after_success == False:
-                print_success("[Success] Program finished successfully")
-                input_success("Press enter to exit")
+        # if exit_code == 0:  # success
+        #     process_sound_and_log_opening_and_terminal_appearance("success", log_path_resolved)
+        #     if close_after_success == False:
+        #         print_success("[Success] Program finished successfully")
+        #         input_success("Press enter to exit")
 
-            sys.exit()
+        #     sys.exit()
+
+        
+        input()
+        if 1:
+            pass
 
         elif exit_mode == 0:  # 0 = correctly handled exit of main.py
-            
-            if 
-            
             
             # write a human readable crash log:
             crash_log_path_resolved = resolve_log_path(
@@ -465,7 +517,7 @@ try:
                 os.makedirs(os.path.dirname(crash_log_path_resolved), exist_ok=True)
                 with open(crash_log_path_resolved, "w" if overwrite_crash_log else "a") as f:
                     f.write(
-                        generate_error_text(
+                        payload_to_text(
                             traceback_payload=crash_log_payload,
                             title=f"{exception_type} - {program_name}",
                             message=f"[Error] Program failed due to {exception_type} in {os.path.basename(selected_python_script_path)}",
@@ -495,7 +547,7 @@ try:
                     process_sound_and_log_opening_and_terminal_appearance("failure", log_path_resolved)
                     if close_after_failure == False:
                         print_warn(
-                            '[Failure] "{selected_python_script_path}" exited with error code "{child_exit_code}".'
+                            f'[Failure] "{selected_python_script_path}" exited with error code "{child_exit_code}".'
                         )
                         input_warn("Press enter to exit")
                     sys.exit()
@@ -511,12 +563,6 @@ try:
 
             elif exception_type == "SyntaxError":
                 process_sound_and_log_opening_and_terminal_appearance("failure", log_path_resolved)
-
-                print_traceback_from_json_payload(
-                    traceback_payload,
-                    message or "[Warning]",
-                    wrapper_exit_code,
-                )
 
                 print_error_here_or_new_terminal(
                     f"[Error] Program failed due to a syntax error in {selected_python_script_path.split(os.sep)[-1]}",
@@ -567,6 +613,8 @@ try:
                         'input_warn("Press enter to exit")'
                     )
                 sys.exit(1)
+                
+            # process_sound_and_log_opening_and_terminal_appearance(exit_type, log_path_resolved)
 
             # WIP: i need to close this after opening new window and that is being closed or waited for
 
@@ -581,6 +629,9 @@ try:
             #     sys.exit(exit_code)
 
         elif exit_mode == 1:  # 1 = handled failure in wrapper of main.py
+            
+            # generic print all? or  proper one?
+            
             import json
 
             json

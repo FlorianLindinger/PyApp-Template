@@ -350,6 +350,7 @@ try:
 
         payload = {
             "script_path": excepted_script_path,
+            "python_version": sys.version.split()[0],
             "system_exit_code": _get_system_exit_code_for_json(error),
             "traceback": _traceback_snapshot_chain(error),
         }
