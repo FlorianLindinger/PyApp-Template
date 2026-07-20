@@ -2,6 +2,36 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+do i want to print the messsage and input belwow rich in rich fomratting? -> yes
+. do i even need my custom message? since script is ontop
+
+how does it handle if main has error in imported file?
+
+can i combine exception_type types?
+->not if i want clickable links.
+
+
+add setting: open main if errror there (excluding keyboerad?)
+-> or just again settings for all cases
+
+fix: 
+    ImportError: error
+
+    [Failure] "C:\Users\Flo\Documents\Repositories\PyApp Template\code\main.py" had exception of type "None" (see above).
+    Press enter to exit
+
+why rich traceback now slow?
+
+fix up icons. are they not set?
+
+it should be able to catch syntax errrors in wrapper and give good suggestion for syntax errro in watchdog
+
+is crash txt reprot everyhwerhe?
+
+add a succes theme for rich traceback
+
+make end messages as variable in common variables?
+
 it does not handle syntax errorr in wrapepr? handle that somehopw better
 
 does it handly syntax errors in all script where it can? mention the scrioüpt tjat it does not handle it.
@@ -45,6 +75,8 @@ checkl rich traveback tempalce color options
 test rich traceback for all options where fail and also all types in main sciorpt
 
 maybe i leave exit code 0 to indicate script running to end
+
+does exit code get passed correctly to string
 
 except SystemExit as e:
             if (
