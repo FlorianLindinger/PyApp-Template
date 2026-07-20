@@ -2,6 +2,18 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+choose good RICH_TRACEBACK_COLOR_THEME
+
+can i have rich traveaback nicely scalable in hindsight in conhost? do i want not conhost for newly opended?
+
+add full path to file somewhere in rich and normal traceback print
+
+checl how it nows how to remove frawmes
+
+checkl rich traveback tempalce color options
+
+test rich traceback for all options where fail and also all types in main sciorpt
+
 maybe i leave exit code 0 to indicate script running to end
 
 except SystemExit as e:
