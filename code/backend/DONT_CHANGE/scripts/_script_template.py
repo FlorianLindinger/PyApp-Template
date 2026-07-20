@@ -43,7 +43,6 @@ try:
     # ==============================
 
     def main() -> None:
-
         # ==============================
         # code block description
 
@@ -57,7 +56,7 @@ try:
         try:
             main()
         except Exception as e:
-            print_traceback(fail_message.format(e=e)) #WIP function to be in new terminal?
+            print_traceback(fail_message.format(e=e))  # WIP function to be in new terminal?
             input_warn("[Error] Press enter to exit")
         close_terminal()
 
