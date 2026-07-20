@@ -70,6 +70,7 @@ icon_path = make_abs("..\\..\\icons\\icon.ico")
 settings_icon_path = make_abs("..\\..\\icons\\settings.ico")
 stop_icon_path = make_abs("..\\..\\icons\\stop.ico")
 log_icon_path = make_abs("..\\..\\icons\\log.ico")
+KeyboardInterrupt_icon_path = "" # "" means no change
 success_icon_path = make_abs("..\\..\\icons\\success.ico")
 failure_icon_path = make_abs("..\\..\\icons\\failure.ico")
 crash_icon_path = make_abs("..\\..\\icons\\crash.ico")
@@ -92,7 +93,6 @@ determined_needed_packages_output_file_path_withVersion = (
 )
 play_sound_after_KeyboardInterrupt_default = ""
 
-
 # variables
 # ------------------------
 excluded_folders_for_package_search = [
@@ -108,11 +108,14 @@ variable_in_default_packages_path_that_triggers_search_if_true = (
 )
 env_var_to_signal_startup_time_measurement = "PYAPP_TEMPLATE_ACTIVE_STARTUP_TIME_MEASUREMENT"
 EMPTY_ARG_INDICATOR: str = "__EMPTY__"
+FAILURE_TERMINAL_COLORS = "4F"
+CRASH_TERMINAL_COLORS = "4F"
+KEYBOARDINTERRUPT_TERMINAL_COLORS = ""
+SUCCESS_TERMINAL_COLORS = "2F"
 
-
-# =============================
+# =======================================
 # === derived/less-flexible variables ===
-# =============================
+# =======================================
 
 backend_python_exe = backend_python_dir + "\\python.exe"
 developer_settings_dir = os.path.dirname(developer_settings_path)

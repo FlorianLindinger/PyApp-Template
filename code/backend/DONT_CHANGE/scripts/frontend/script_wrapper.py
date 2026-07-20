@@ -483,12 +483,11 @@ try:
             return exit_code
         return repr(exit_code)
 
-    def save_traceback(error, excepted_script_path, output_path, origin=""):
+    def save_traceback(error, excepted_script_path, output_path):
 
         import json
 
         payload = {
-            "origin": origin,
             "script_path": excepted_script_path,
             "exception_type": type(error).__name__,
             "exception_message": str(error),
@@ -591,11 +590,11 @@ try:
                 sys.exit(0)
             else:
                 # catches: sys.exit(True), sys.exit("a string"),sys.exit(non-0-int)
-                save_traceback(e, python_script_path, crash_log_temp_path, "child")
+                save_traceback(e, python_script_path, crash_log_temp_path)
                 sys.exit(1)
 
         except BaseException as e:  # BaseException includes KeyboardInterrupt,GeneratorExit,normal Exception
-            save_traceback(e, python_script_path, crash_log_temp_path, "child")
+            save_traceback(e, python_script_path, crash_log_temp_path)
             sys.exit(1)  # exit code 1 indicates child script error need to process saved traceback to watchdog
 
     # ==============================
@@ -606,7 +605,7 @@ try:
         try:
             main()
         except Exception as e:
-            save_traceback(e, os.path.abspath(__file__), crash_log_temp_path, "wrapper")
+            save_traceback(e, os.path.abspath(__file__), crash_log_temp_path)
             sys.exit(2)  # exit code 2 indicates wrapper error and need to process saved traceback to watchdog
         finally:  # try close log file
             try:

@@ -2,6 +2,55 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+shoudl i reuse the function that save txt from payload for printing fallback
+
+do i need 
+"origin": origin,
+"script_path": excepted_script_path,
+in save_traceback? I guess script path is fine
+
+use get_print_divider but make more efficeint to not use shutil. i guess make it a length in common code or something
+
+do i want:
+    def get_terminal_name() -> str:
+        try:
+            buffer = ctypes.create_unicode_buffer(1024)
+            ctypes.windll.kernel32.GetConsoleTitleW(buffer, len(buffer))
+            return str(buffer.value)
+        except Exception:
+            return "Terminal"
+
+do traceback from any sysexit. even 0 if not close. also keyboard and anything. should i just always do that? ->yes try for all modes. make sure it json gets created done also in sucess cases 
+
+make better mesage where to check syntasx:
+    ====================
+    [Error] Backend code did not seem to launch properly
+    --------------------
+    Launch mode: conhost
+    Error code (potentially meaningless): "0"
+    ====================
+    [Error] Press enter to exit
+
+i dont want to create new terminal if dev settings say to close i guess? or is mini popup nice reminder of finish?->yes. i could start minimized and only foregorund when not closing? -> also only change title/icon/colors/appid if it stays open
+
+do i need:
+# 2 = failure in wrapper -> handle (expecting info via json)
+# 3 = failure in wrapper error handler (has "input(...)"" -> close here)
+# (4 = failure in this script (see Exception of main() below))
+
+chgekc # 3 = failure in wrapper error handler (has "input(...)"" -> close here)
+
+in outer most except in watchdog. still create a new terinal
+
+        # WIP: i could handle failure in wrapper most basic? i could handle enexpected failure anywher most basic?
+
+remove global PROGRAM_HAS_TERMINAL -> down below should never be reached -> always new temrinal
+
+ask AI if functions are not used commonly or are but are not in common
+
+do i still need candidate_hwnds.
+find out what they usualyl return and make it that
+
 normalize naming scemes in common_variables
 
 renamed file to process_exit.py
