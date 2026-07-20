@@ -35,6 +35,7 @@ from backend.DONT_CHANGE.scripts._common_variables import (
     determined_needed_packages_output_file_path_noVersion,
     determined_needed_packages_output_file_path_withVersion,
     dev_tools_referal_note_path,
+    developer_settings_dir,
     excluded_folders_for_package_search,
     frontend_launcher_for_pip_install_terminal,
     frontend_packages_are_installed_marker_path,
@@ -52,9 +53,9 @@ from backend.DONT_CHANGE.scripts._common_variables import (
 
 _TERMINAL_APPEARANCE_WAS_SET = False
 
-_ANSI_WARN = "\x1b[1;37;41m"  # white text, red bg, bold
-_ANSI_SUCCESS = "\x1b[1;37;42m"  # white text, green bg, bold
-_ANSI_RESET = "\033[0m"
+ANSI_WARN = "\x1b[1;37;41m"  # white text, red bg, bold
+ANSI_SUCCESS = "\x1b[1;37;42m"  # white text, green bg, bold
+ANSI_RESET = "\033[0m"
 
 
 TERMINAL_COLORS = ""
@@ -77,25 +78,32 @@ def make_empty_args_safe(args: list[str | None]) -> list[str]:
 # =========================
 # colored print and input and general print related
 
+# def get_print_divider(message: str, symbol="=") -> str:
+#     """Return an equals-sign rule matching message width without wrapping."""
+#     longest_message_line = max((len(line.expandtabs(4)) for line in message.splitlines()), default=0)
+#     terminal_columns = shutil.get_terminal_size(fallback=(80, 20)).columns
+#     max_rule_width = max(1, terminal_columns - 1)
+#     rule_width = min(max(1, longest_message_line), max_rule_width)
+#     return symbol * rule_width
 
 def print_success(msg, sep: str | None = " ", end: str | None = "\n"):
     """Print a success-styled console message."""
-    print(f"{_ANSI_SUCCESS}{msg}{_ANSI_RESET}", sep=sep, end=end)
+    print(f"{ANSI_SUCCESS}{msg}{ANSI_RESET}", sep=sep, end=end)
 
 
 def print_warn(msg, sep: str | None = " ", end: str | None = "\n"):
     """Print a warning-styled console message."""
-    print(f"{_ANSI_WARN}{msg}{_ANSI_RESET}", sep=sep, end=end)
+    print(f"{ANSI_WARN}{msg}{ANSI_RESET}", sep=sep, end=end)
 
 
 def input_warn(msg):
     """Prompt for input using warning console styling."""
-    return input(f"{_ANSI_WARN}{msg}{_ANSI_RESET}")
+    return input(f"{ANSI_WARN}{msg}{ANSI_RESET}")
 
 
 def input_success(msg):
     """Prompt for input using success console styling."""
-    return input(f"{_ANSI_SUCCESS}{msg}{_ANSI_RESET}")
+    return input(f"{ANSI_SUCCESS}{msg}{ANSI_RESET}")
 
 
 def print_traceback(message: str = "") -> None:
@@ -592,13 +600,13 @@ def setup_unminimize_and_foreground_on_first_print():
     sys.stderr = unminimize_plus_foreground_terminal_on_first_output(sys.stderr)  # type:ignore
 
 
-def set_terminal_colors():
-    """set terminal text and bg colors to TERMINAL_COLORS"""
-    if TERMINAL_COLORS:
+def set_terminal_colors(colors=TERMINAL_COLORS):
+    """colors is in format of windows terminal colors"""
+    if colors:
         try:
             import subprocess
 
-            subprocess.run(["cmd.exe", "/c", "color", TERMINAL_COLORS], check=False)  # noqa:S603
+            subprocess.run(["cmd.exe", "/c", "color", colors], check=False)  # noqa:S603
         except Exception:
             pass
 
@@ -1103,6 +1111,29 @@ def close_terminal(exit_code=None) -> bool:
 
 # =========================
 # path related/file name related
+
+
+def resolve_log_path(log_path: str | bool | None, is_relative_to_start_folder_if_relative: bool) -> str:
+    """Handles log paths: Converts None and False to "". Converts datetime format. Converts relative path either relative to developer_settings.py or start folder (where the start shortcut is)."""
+
+    assert log_path is not True, "True is not a valid value for the log path. Choose: (relative) path, None, or False."
+    if log_path:
+        if not os.path.isabs(log_path):
+            if is_relative_to_start_folder_if_relative:
+                log_path_resolved = os.path.normpath(os.path.join(os.getcwd(), log_path))
+            else:
+                log_path_resolved = os.path.normpath(os.path.join(developer_settings_dir, log_path))
+        else:
+            log_path_resolved = log_path
+
+        if "%" in log_path_resolved:
+            from datetime import datetime
+
+            log_path_resolved = datetime.now().astimezone().strftime(log_path_resolved)
+
+        return log_path_resolved
+    else:
+        return ""
 
 
 def make_abs_path_relative_to_file(path, file):

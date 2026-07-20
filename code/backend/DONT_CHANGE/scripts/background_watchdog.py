@@ -15,7 +15,6 @@ try:
     import sys
     import threading
     from ctypes import wintypes
-    from typing import Any
 
     # ==============================
     # import third-party packages
@@ -35,8 +34,6 @@ try:
         close_after_KeyboardInterrupt,
         close_after_success,
         close_already_running_instances_on_start,
-        crash_log_path,
-        crash_log_path_is_relative_to_start_folder_if_relative,
         enable_log_for_no_terminal_start,
         enable_log_for_Windows_terminal_start,
         input_prepend,
@@ -44,16 +41,7 @@ try:
         log_path,
         log_path_is_relative_to_start_folder_if_relative,
         log_print_prepend,
-        open_log_file_after_crash,
-        open_log_file_after_failure,
-        open_log_file_after_KeyboardInterrupt,
-        open_log_file_after_success,
-        overwrite_crash_log,
         overwrite_log,
-        play_sound_after_crash,
-        play_sound_after_failure,
-        play_sound_after_KeyboardInterrupt,
-        play_sound_after_success,
         prevent_start_if_already_running,
         print_prepend,
         program_name,
@@ -64,9 +52,8 @@ try:
     from backend.DONT_CHANGE.scripts._common_code import (
         close_terminal,
         get_running_processes_from_pid_file,
-        input_warn,
         make_empty_args_safe,
-        print_traceback,
+        resolve_log_path,
         set_terminal_colors,
         set_terminal_title,
         stop_processes_from_pid_file,
@@ -74,23 +61,15 @@ try:
     from backend.DONT_CHANGE.scripts._common_variables import (
         CORRECT_START_SIGNAL_FILE_PATH,
         EMPTY_ARG_INDICATOR,
-        crash_icon_path,
-        developer_settings_dir,
         env_var_to_signal_startup_time_measurement,
-        failure_icon_path,
+        exit_processer_path,
         frontend_python_exe,
         frontend_script_wrapper_path,
         icon_path,
-        play_sound_after_crash_default,
-        play_sound_after_failure_default,
-        play_sound_after_KeyboardInterrupt_default,
-        play_sound_after_success_default,
         process_id_file_path,
         python_script_path,
-        rich_traceback_printer_path,
         start_time_dummy_main_script_path,
         tmp_traceback_json_path,
-        windows_dir,
     )
 
     # ==============================
@@ -134,20 +113,6 @@ def input_success(msg):
     # ==============================
     # define local functions/classes
     # ==============================
-
-    def exit_code_looks_like_interpreter_crash(exit_code: int) -> bool:
-        """
-        Return whether a process return code matches a common Windows crash code.
-        """
-        windows_crash_codes = {
-            -1073741819,  # unsigned: 0xC0000005 — access violation
-            -1073741571,  # unsigned: 0xC00000FD — stack overflow
-            -1073741795,  # unsigned: 0xC000001D — illegal instruction
-            -1073741674,  # unsigned: 0xC0000096 — privileged instruction
-            -1073740791,  # unsigned: 0xC0000409 — stack buffer overrun
-        }
-
-        return exit_code in windows_crash_codes
 
     class _ProcessIdRegistry:
         """Maintain the PID file entries created by this launcher process."""
@@ -209,39 +174,6 @@ def input_success(msg):
             """Remove registered process IDs during interpreter shutdown."""
             for process_id in list(self._process_ids):
                 self.remove(process_id)
-
-    def get_package_install_name(import_name: str, mappings_file_path: str) -> str:
-        """Uses pipreqs mapping to convert from import name to install name: e.g., "cv2" -> "opencv-python"."""
-
-        with open(mappings_file_path, encoding="utf-8") as f:
-            for line in f:
-                line = line.strip()
-                if not line or ":" not in line:
-                    continue
-                import_package_name, install_package_name = line.split(":", 1)
-                if import_package_name.strip() == import_name:
-                    return install_package_name.strip()
-
-        return import_name  # if not found in mappings
-
-    def process_finish(wav_path: str = "", log_path: str = "", open_log: bool = False) -> None:
-        """Run completion side effects such as sounds and opening logs."""
-        if wav_path:
-            try:
-                import winsound
-
-                winsound.PlaySound(
-                    wav_path,
-                    winsound.SND_FILENAME | winsound.SND_NODEFAULT,
-                )
-            except Exception as e:
-                print(f"[Error] Failed to play .wav file: {e}")
-
-        if log_path and open_log:
-            try:
-                os.startfile(log_path)  # type: ignore[attr-defined]  # noqa:S606
-            except Exception as e:
-                print(f"[Error] Failed to open log: {e}")
 
     def get_candidate_hwnds() -> list[int]:
         candidate_hwnds: list[int] = []
@@ -697,107 +629,46 @@ def input_success(msg):
             SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED,
         )
 
-    def get_terminal_name() -> str:
-        try:
-            buffer = ctypes.create_unicode_buffer(1024)
-            ctypes.windll.kernel32.GetConsoleTitleW(buffer, len(buffer))
-            return str(buffer.value)
-        except Exception:
-            return "Terminal"
-
-    def print_error_here_or_new_terminal(
-        message: str,
-        traceback_json_path: str = "",
-        wrapper_exit_code: int = 1,
-        title: str | None = None,
-        app_id: str = "",
-        icon_file_path: str = "",
-        create_terminal: bool = True,
-        wait_for_input: bool = True,
-    ) -> None:
-        """Print a watchdog warning here, or open a warning-styled terminal and print it there.
-
-        Parameters:
-            message: Main warning/error message printed above any traceback details.
-            traceback_json_path: Path to the original serialized traceback written by the frontend wrapper.
-                The printer reads this file without modifying it.
-            wrapper_exit_code: Exit code returned by the frontend wrapper. Used to distinguish child
-                failures from wrapper failures and abrupt exits in the warning text.
-            title: Console title for the warning output. Defaults to "<program_name> - Warning".
-            app_id: AppUserModelID to apply when a separate warning terminal is created.
-            icon_file_path: Preferred icon for a separate warning terminal.
-            create_terminal: If true, launch a new conhost.exe window for the warning. If false,
-                render through the same printer script in the current process.
-            wait_for_input: If true, keep the warning output open with a final input prompt.
-        """
-
-        title = title or f"{program_name} - Warning"
-        printer_args = [
-            rich_traceback_printer_path,
-            traceback_json_path,
-            title,
-            message,
-            str(wrapper_exit_code),
-            "true" if wait_for_input else "false",
+    def process_exit_here_or_in_new_terminal(
+        exit_code: int | str,
+        app_id: str,
+        program_has_terminal: bool,
+        log_path_resolved: str,
+        selected_python_script_path: str,
+    ):
+        new_terminal_was_created = not program_has_terminal
+        args = [
+            str(exit_code),
+            app_id,
+            "true" if new_terminal_was_created else "false",
+            log_path_resolved,
+            selected_python_script_path,
         ]
 
-        if create_terminal:
+        if not program_has_terminal:
+            # don't wait:
             subprocess.Popen(  # noqa:S603
                 [
                     "conhost.exe",
                     sys.executable,
                     "-X",
                     "faulthandler",
-                    *printer_args,
+                    exit_processer_path,
+                    *args,
                 ],
                 creationflags=subprocess.CREATE_NEW_CONSOLE,
             )
-            return
 
         else:
             import runpy
 
             old_argv = sys.argv[:]
             try:
-                sys.argv = printer_args
-                runpy.run_path(rich_traceback_printer_path, run_name="__main__")
+                sys.argv = ["_filename"] + args
+                # waiting:
+                runpy.run_path(exit_processer_path, run_name="__main__")
             finally:
                 sys.argv = old_argv
-
-    def run_here_or_new_terminal(
-        script: str,
-        title: None | str = None,
-        text_color="",
-        bg_color="",
-        app_id="",
-        create_terminal: bool | None = None,
-    ):
-        if create_terminal is None:
-            if "PROGRAM_HAS_TERMINAL" in globals():
-                create_terminal = not globals()["PROGRAM_HAS_TERMINAL"]
-            else:
-                create_terminal = True  # safe fallback
-
-        if title:
-            script = f"title {title}\n" + script
-        color = bg_color + text_color
-        if color != "":
-            script = f"color {color}\n" + script
-
-        try:
-            if PROGRAM_HAS_TERMINAL:
-                exec(script)  # noqa:S102
-            else:
-                process = subprocess.Popen(  # noqa:S603
-                    ["conhost.exe", sys.executable, "-c", script],
-                    creationflags=subprocess.CREATE_NEW_CONSOLE,
-                )
-                process.wait()
-
-        except Exception:
-            import traceback
-
-            print(traceback.format_exc)
 
     def get_frontend_args(selected_python_script_path: str, app_id: str, log_path: str) -> list[str]:
         """Get the arguments to pass to the frontend script."""
@@ -817,110 +688,12 @@ def input_success(msg):
             ]
         )
 
-    def get_wav_file(play_sound: bool | None | str, default: str):
-        if play_sound is True:
-            wav = default
-        elif play_sound in (False, None, ""):
-            wav = ""
-        elif not os.path.isabs(play_sound):
-            wav = os.path.normpath(windows_dir + "\\Media\\" + play_sound)
-        else:
-            wav = play_sound
-        if wav != "":
-            if wav[-4:] != ".wav":
-                wav += ".wav"
-        return wav
-
-    def crash_json_payload_to_string(traceback_payload: dict[str, Any], title: str, message: str) -> str:
-        import json
-
-        errors = traceback_payload.get("errors") or []
-
-        lines = [
-            "=" * 80,
-            title,
-            "=" * 80,
-            "",
-            message,
-        ]
-
-        for error in errors:
-            frames = error.get("frames") or []
-
-            if frames:
-                lines.extend(["", "Traceback (most recent call last):"])
-
-                for frame in frames:
-                    lines.append(
-                        f'  File "{frame.get("filename", "<unknown>")}", '
-                        f"line {frame.get('lineno', '?')}, "
-                        f"in {frame.get('function', '<unknown>')}"
-                    )
-
-                    if source := frame.get("source"):
-                        lines.append(f"    {str(source).strip()}")
-
-            if syntax := error.get("syntax"):
-                lines.extend(
-                    [
-                        "",
-                        json.dumps(syntax, indent=2, ensure_ascii=False),
-                    ]
-                )
-
-            exception_type = error.get("type", "Exception")
-            exception_message = error.get("message")
-
-            lines.extend(
-                [
-                    "",
-                    (f"{exception_type}: {exception_message}" if exception_message else str(exception_type)),
-                ]
-            )
-
-        lines.extend(["", "=" * 80])
-        return "\n".join(lines)
-
-    def resolve_log_path(log_path: str | bool | None, is_relative_to_start_folder_if_relative: bool) -> str:
-        """Handles log paths: Converts None and False to "". Converts datetime format. Converts relative path either relative to developer_settings.py or start folder (where the start shortcut is)."""
-
-        assert log_path is not True, (
-            "True is not a valid value for the log path. Choose: (relative) path, None, or False."
-        )
-        if log_path:
-            if not os.path.isabs(log_path):
-                if is_relative_to_start_folder_if_relative:
-                    log_path_resolved = os.path.normpath(os.path.join(os.getcwd(), log_path))
-                else:
-                    log_path_resolved = os.path.normpath(os.path.join(developer_settings_dir, log_path))
-            else:
-                log_path_resolved = log_path
-
-            if "%" in log_path_resolved:
-                from datetime import datetime
-
-                log_path_resolved = datetime.now().astimezone().strftime(log_path_resolved)
-
-            return log_path_resolved
-        else:
-            return ""
-
     # ==============================
     # define main function
     # ==============================
 
     def main() -> None:
         global PROGRAM_HAS_TERMINAL
-
-        # ==============================
-        # normalize sound settings to concrete .wav paths
-
-        wav_after_crash = get_wav_file(play_sound_after_crash, play_sound_after_crash_default)
-        wav_after_success = get_wav_file(play_sound_after_success, play_sound_after_success_default)
-        wav_after_failure = get_wav_file(play_sound_after_failure, play_sound_after_failure_default)
-        wav_after_KeyboardInterrupt = get_wav_file(
-            play_sound_after_KeyboardInterrupt, play_sound_after_KeyboardInterrupt_default
-        )
 
         # ==============================
         # tell the backend terminal via a signal file to close because successful start
@@ -932,7 +705,7 @@ def input_success(msg):
             open(CORRECT_START_SIGNAL_FILE_PATH, "w", encoding="utf-8").close()
 
         # ==============================
-        # delete old temporary crash traceback report if existing
+        # delete old temporary crash traceback report if existing (to know if new one was created later)
 
         if os.path.exists(tmp_traceback_json_path):
             os.remove(tmp_traceback_json_path)
@@ -1061,6 +834,7 @@ def input_success(msg):
         wrapper_env_vars["WDIR_IS_SCRIPT_DIR"] = "1" if wdir_is_script_dir else "0"
         wrapper_env_vars["CLOSE_AFTER_FAILURE"] = "1" if close_after_failure else "0"
         wrapper_env_vars["CLOSE_AFTER_SUCCESS"] = "1" if close_after_success else "0"
+        wrapper_env_vars["CLOSE_AFTER_KEYBOARDINTERRUPT"] = "1" if close_after_KeyboardInterrupt else "0"
 
         # ==============================
         # start wrapper script and don't wait for finish
@@ -1107,126 +881,18 @@ def input_success(msg):
         # ==============================
         # handle exit of wrapper
 
-        exit_code = process.returncode
+        exit_mode = process.returncode # Can be 0,1,2
+        
+        # exit_mode meaning:
+        # 0 = correctly handled exit of main.py
+        # 1 = handled failure in wrapper of main.py
+        # 2 = unsuccessfully handled failure in wrapper of main.py
+        # (3 = handled failure in this script. See Exception of main below)
 
-        # exit_code:
-        # 0 = success -> handle
-        # 1 = failure in wrappped child (main.py) -> handle (expecting info via json)
-        # 2 = failure in wrapper -> handle (expecting info via json)
-        # 3 = failure in wrapper error handler (has "input(...)"" -> close here)
-
-        # i could handle failure in wrapper most basic? i could handle enexpected failure anywher most basic?
-
-        if exit_code == 0:  # success
-            process_finish(wav_after_success, log_path_resolved, open_log_file_after_success)
-            if close_after_success == False:
-                run_here_or_new_terminal(
-                    base_script + 'print_success("[Success] Program finished successfully")'
-                    'input_success("Press enter to exit")'
-                )
-            sys.exit(0)
-
-        elif exit_code == 1:  # exception in child script
-            process_finish(wav_after_failure, log_path_resolved, open_log_file_after_failure)
-
-            if os.path.exists(tmp_traceback_json_path):
-                # Read the traceback snapshot written by the frontend wrapper for exit handling.
-                import json
-
-                with open(tmp_traceback_json_path, encoding="utf-8") as f:
-                    crash_log_payload = json.load(f)
-
-                exception_type = str(crash_log_payload.get("exception_type") or "Exception")
-                crash_report_title = f"{exception_type} - {program_name}"
-                crash_report_message = (
-                    f"[Error] Program failed due to {exception_type} in {os.path.basename(selected_python_script_path)}"
-                )
-
-                # write a human readable crash log:
-                crash_log_path_resolved = resolve_log_path(
-                    crash_log_path, crash_log_path_is_relative_to_start_folder_if_relative
-                )
-                if crash_log_path_resolved:
-                    os.makedirs(os.path.dirname(crash_log_path_resolved), exist_ok=True)
-                    with open(crash_log_path_resolved, "w" if overwrite_crash_log else "a") as f:
-                        f.write(
-                            crash_json_payload_to_string(
-                                crash_log_payload,
-                                crash_report_title,
-                                crash_report_message,
-                            )
-                        )
-
-                if exception_type == "SystemExit":
-                    # success-like SystemExit-codes were already onvertecd to exit_code=0 in wrapper:
-                    child_exit_code = crash_log_payload.get("system_exit_code")
-
-                    if exit_code_looks_like_interpreter_crash(child_exit_code):
-                        process_finish(wav_after_crash, log_path_resolved, open_log_file_after_crash)
-                    else:
-                        process_finish(wav_after_failure, log_path_resolved, open_log_file_after_failure)
-
-                elif exception_type in ["ImportError", "ModuleNotFoundError"]:
-                    process_finish(wav_after_failure, log_path_resolved, open_log_file_after_failure)
-
-                    # options:
-                    # 1) install missing package->use pipreqs mappings if needed i guess
-                    # 2) auto search packages needed
-                    # 3) open terminal for manual installation
-                    # 4) quit
-
-                elif exception_type == "SyntaxError":
-                    process_finish(wav_after_failure, log_path_resolved, open_log_file_after_failure)
-
-                    print_error_here_or_new_terminal(
-                        f"[Error] Program failed due to a syntax error in {selected_python_script_path.split(os.sep)[-1]}",
-                        traceback_json_path=tmp_traceback_json_path,
-                        wrapper_exit_code=exit_code,
-                        title=f"SyntaxError - {program_name}",
-                        app_id=app_id,
-                        icon_file_path=failure_icon_path,
-                        wait_for_input=not close_after_failure,
-                    )
-
-                elif exception_type == "KeyboardInterrupt":
-                    process_finish(
-                        wav_after_KeyboardInterrupt, log_path_resolved, open_log_file_after_KeyboardInterrupt
-                    )
-
-                    print_error_here_or_new_terminal(
-                        "[Warning] Program was interrupted by user with Ctrl+C (KeyboardInterrupt)",
-                        traceback_json_path=tmp_traceback_json_path,
-                        wrapper_exit_code=exit_code,
-                        title=f"KeyboardInterrupt - {program_name}",
-                        app_id=app_id,
-                        icon_file_path=failure_icon_path,
-                        create_terminal=not PROGRAM_HAS_TERMINAL,
-                        wait_for_input=not close_after_KeyboardInterrupt,
-                    )
-
-            else:
-                ...
-
-            # WIP: i need to close this after opening new window and that is being closed or waited for
-
-            # waiting and printing is handled by print_error_here_or_new_terminal, for which this script waits
-            sys.exit(exit_code)
-
-            # if close_after_failure:
-            #     sys.exit(exit_code)
-            # else:
-            #     if PROGRAM_HAS_TERMINAL:
-            #         input_warn("[Error] Press enter to exit")
-            #     sys.exit(exit_code)
-
-        elif exit_code == 2:  # exception in wrapper
-            import json
-
-            json
-        elif exit_code == 3:  # failed to fully handle exception in wrapper
-            raise ValueError
-        else:
-            raise ValueError(f'[Error] Specific exit code of wrapper is not implemented: "{exit_code}"')
+        # process exit in current terminal if it exists or in new terminal if not. Wait in the second case:
+        process_exit_here_or_in_new_terminal(
+            exit_mode, app_id, PROGRAM_HAS_TERMINAL, log_path_resolved, selected_python_script_path
+        )
 
     # ==============================
     # execute main function
@@ -1236,17 +902,14 @@ def input_success(msg):
         try:
             main()
         except Exception as e:
-            if PROGRAM_HAS_TERMINAL:
-                print_traceback(f"[Error] Within background watchdog: {e}")
-                input_warn("[Error] Press enter to exit")
-            else:
-                print_error_here_or_new_terminal(
-                    f"[Error] Within background watchdog: {e}",
-                    title=f"{program_name} - Watchdog warning",
-                    icon_file_path=crash_icon_path,
-                    wait_for_input=False,
-                    create_terminal=False,
-                )
+            # WIP_ save_exception_as_json()
+            process_exit_here_or_in_new_terminal(
+                exit_code=4,
+                app_id="",
+                program_has_terminal=PROGRAM_HAS_TERMINAL,
+                log_path_resolved="",
+                selected_python_script_path="",
+            )
 
         close_terminal()
 
@@ -1255,6 +918,8 @@ def input_success(msg):
 except Exception as e:
     import os
     import traceback
+
+    # WIP: assume no terminal and make new windwo and print traceback
 
     PROGRAM_HAS_TERMINAL
 
