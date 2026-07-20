@@ -29,6 +29,7 @@ try:
     import os
     import runpy
     import sys
+    import traceback
     from datetime import datetime
 
     # ==============================
@@ -42,36 +43,14 @@ try:
     # define local functions/classes
     # ==============================
 
+    # ==============================
+    # logging related
+
     def _normalize_strftime_format(fmt):
         """Accept strftime formats whose directives were percent-escaped upstream."""
-        replacements = (
-            "a",
-            "A",
-            "w",
-            "d",
-            "b",
-            "B",
-            "m",
-            "y",
-            "Y",
-            "H",
-            "I",
-            "p",
-            "M",
-            "S",
-            "f",
-            "z",
-            "Z",
-            "j",
-            "U",
-            "W",
-            "c",
-            "x",
-            "X",
-            "G",
-            "u",
-            "V",
-        )
+        # fmt: off
+        replacements = ("a", "A", "w", "d", "b", "B", "m", "y", "Y", "H", "I", "p", "M", "S", "f", "z", "Z", "j", "U", "W", "c", "x", "X", "G", "u", "V")
+        # fmt: on
         for directive in replacements:
             fmt = fmt.replace("%%" + directive, "%" + directive)
         return fmt
@@ -128,7 +107,6 @@ try:
             print_red=False,
             auto_flush=True,
         ):
-
             self.print_stream = print_stream
             self.log_stream = log_stream
             self.print_timestamp_format = print_timestamp_format
@@ -141,7 +119,7 @@ try:
             self._at_line_start = True
             self._lock = threading.RLock()  # needed if multiple threads want to print at same time #type:ignore
 
-            self.ANSI_escape_re = re.compile( #type:ignore
+            self.ANSI_escape_re = re.compile(  # type:ignore
                 r"\x1b(?:"
                 r"\[[0-?]*[ -/]*[@-~]"
                 r"|\][^\x07]*(?:\x07|\x1b\\)"
@@ -294,6 +272,94 @@ try:
         if log_file is not None and faulthandler.is_enabled():
             faulthandler.enable(file=log_file, all_threads=True)
 
+    # ==============================
+    # traceback related
+
+    def _traceback_snapshot_error(error, relation_text=""):
+        """Serialize exception data so backend Python can render it without rerunning the child."""
+        frames = [
+            {
+                "filename": frame.filename,
+                "lineno": frame.lineno,
+                "function": frame.name,
+                "source": frame.line or "",
+            }
+            for frame in traceback.extract_tb(error.__traceback__)
+        ]
+
+        syntax = None
+        if isinstance(error, SyntaxError) and any(
+            getattr(error, attribute, None) is not None
+            for attribute in ("filename", "lineno", "offset", "text")
+        ):
+            syntax = {
+                "filename": getattr(error, "filename", None),
+                "lineno": getattr(error, "lineno", None),
+                "offset": getattr(error, "offset", None),
+                "text": getattr(error, "text", None),
+            }
+
+        return {
+            "relation": relation_text,
+            "type": type(error).__name__,
+            "message": str(error),
+            "frames": frames,
+            "syntax": syntax,
+        }
+
+    def _traceback_snapshot_chain(error):
+        """Serialize an exception chain in normal display order."""
+        snapshots = []
+        seen = set()
+
+        def _add(current_error):
+            if id(current_error) in seen:
+                return
+            seen.add(id(current_error))
+
+            cause = getattr(current_error, "__cause__", None)
+            context = getattr(current_error, "__context__", None)
+            suppress_context = getattr(current_error, "__suppress_context__", False)
+
+            if cause is not None:
+                _add(cause)
+                relation_text = "The above exception was the direct cause of the following exception:"
+            elif context is not None and not suppress_context:
+                _add(context)
+                relation_text = "During handling of the above exception, another exception occurred:"
+            else:
+                relation_text = ""
+
+            snapshots.append(_traceback_snapshot_error(current_error, relation_text))
+
+        _add(error)
+        return snapshots
+
+    def save_traceback(error, excepted_script_path, output_path):
+        import json
+
+        def _get_system_exit_code_for_json(error):
+            """Return SystemExit.code in a form json.dump can always serialize."""
+            if not isinstance(error, SystemExit):
+                return None
+
+            exit_code = error.code
+            if exit_code is None or isinstance(exit_code, (bool, int, float, str)):
+                return exit_code
+            return repr(exit_code)
+
+        payload = {
+            "script_path": excepted_script_path,
+            "system_exit_code": _get_system_exit_code_for_json(error),
+            "traceback": _traceback_snapshot_chain(error),
+        }
+
+        with open(output_path, "w", encoding="utf-8") as f:
+            json.dump(payload, f)
+
+    # ==============================
+    # miscellaneous
+
     def string_to_bool(string):
         """Convert a string to a boolean value, interpreting "true" (case-insensitive) as True, "false" (case-insensitive) as False, and raising ValueError for other inputs."""
 
@@ -319,184 +385,6 @@ try:
                 out.append(elem)
 
         return out
-
-    def _norm_traceback_path(path):
-        """Normalize a path for traceback frame comparison."""
-        return os.path.normcase(os.path.abspath(path))
-
-    def _get_target_script_traceback(error, script_path):
-        """Return the traceback starting at the target script, dropping wrapper/runpy frames."""
-        target_script_path = _norm_traceback_path(script_path)
-        tb = error.__traceback__
-
-        while tb is not None:
-            frame_path = _norm_traceback_path(tb.tb_frame.f_code.co_filename)
-            if frame_path == target_script_path:
-                return tb
-            tb = tb.tb_next
-
-        return error.__traceback__
-
-    def _traceback_has_script_frame(error, script_path):
-        """Return whether an exception traceback contains the child script."""
-        target_script_path = _norm_traceback_path(script_path)
-        tb = error.__traceback__
-
-        while tb is not None:
-            frame_path = _norm_traceback_path(tb.tb_frame.f_code.co_filename)
-            if frame_path == target_script_path:
-                return True
-            tb = tb.tb_next
-
-        return False
-
-    def _traceback_exception_title(error):
-        """Return a compact exception title."""
-        exception_name = type(error).__name__
-        message = str(error)
-        if message:
-            return "{}: {}".format(exception_name, message)
-        return exception_name
-
-    def _traceback_iter_frames(tb):
-        """Return traceback frames as a list for Python 3.5 compatibility."""
-        frames = []
-        while tb is not None:
-            frames.append(tb)
-            tb = tb.tb_next
-        return frames
-
-    def _traceback_get_line(filename, lineno):
-        """Read one source line for traceback display."""
-        import linecache
-
-        line = linecache.getline(filename, lineno)
-        return line.rstrip("\r\n")
-
-    def _traceback_snapshot_error(error, child_script_path, relation_text=""):
-        """Serialize exception data so backend Python can render it without rerunning the child."""
-        is_compile_syntax_error = (
-            isinstance(error, SyntaxError)
-            and _norm_traceback_path(getattr(error, "filename", "") or "") == _norm_traceback_path(child_script_path)
-            and not _traceback_has_script_frame(error, child_script_path)
-        )
-
-        frames = []
-        if not is_compile_syntax_error:
-            tb = _get_target_script_traceback(error, child_script_path)
-            for tb_item in _traceback_iter_frames(tb):
-                frame = tb_item.tb_frame
-                filename = frame.f_code.co_filename
-                lineno = tb_item.tb_lineno
-                frames.append(
-                    {
-                        "filename": filename,
-                        "lineno": lineno,
-                        "function": frame.f_code.co_name,
-                        "source": _traceback_get_line(filename, lineno),
-                    }
-                )
-
-        syntax = None
-        if is_compile_syntax_error:
-            syntax_filename = getattr(error, "filename", None) or "<unknown>"
-            syntax_lineno = getattr(error, "lineno", None)
-            syntax_text = getattr(error, "text", None)
-            syntax_offset = getattr(error, "offset", None)
-            if syntax_text is None:
-                syntax_text = _traceback_get_line(syntax_filename, syntax_lineno)
-            syntax = {
-                "filename": syntax_filename,
-                "lineno": syntax_lineno,
-                "offset": syntax_offset,
-                "text": syntax_text,
-            }
-
-        return {
-            "relation": relation_text,
-            "type": type(error).__name__,
-            "message": str(error),
-            "title": _traceback_exception_title(error),
-            "frames": frames,
-            "syntax": syntax,
-        }
-
-    def _traceback_snapshot_chain(error, child_script_path):
-        """Serialize an exception chain in normal display order."""
-        snapshots = []
-        seen = set()
-
-        def add(current_error, relation_text=""):
-            if id(current_error) in seen:
-                return
-            seen.add(id(current_error))
-
-            cause = getattr(current_error, "__cause__", None)
-            context = getattr(current_error, "__context__", None)
-            suppress_context = getattr(current_error, "__suppress_context__", False)
-
-            if cause is not None:
-                add(cause)
-                snapshots.append(_traceback_snapshot_error(current_error, child_script_path, relation_text))
-            elif context is not None and not suppress_context:
-                add(context)
-                snapshots.append(_traceback_snapshot_error(current_error, child_script_path, relation_text))
-            else:
-                snapshots.append(_traceback_snapshot_error(current_error, child_script_path, relation_text))
-
-        def add_with_relation(current_error):
-            cause = getattr(current_error, "__cause__", None)
-            context = getattr(current_error, "__context__", None)
-            suppress_context = getattr(current_error, "__suppress_context__", False)
-
-            if cause is not None:
-                add_with_relation(cause)
-                snapshots.append(
-                    _traceback_snapshot_error(
-                        current_error,
-                        child_script_path,
-                        "The above exception was the direct cause of the following exception:",
-                    )
-                )
-            elif context is not None and not suppress_context:
-                add_with_relation(context)
-                snapshots.append(
-                    _traceback_snapshot_error(
-                        current_error,
-                        child_script_path,
-                        "During handling of the above exception, another exception occurred:",
-                    )
-                )
-            else:
-                add(current_error)
-
-        add_with_relation(error)
-        return snapshots
-
-    def _get_system_exit_code_for_json(error):
-        """Return SystemExit.code in a form json.dump can always serialize."""
-        if not isinstance(error, SystemExit):
-            return None
-
-        exit_code = error.code
-        if exit_code is None or isinstance(exit_code, (bool, int, float, str)):
-            return exit_code
-        return repr(exit_code)
-
-    def save_traceback(error, excepted_script_path, output_path):
-
-        import json
-
-        payload = {
-            "script_path": excepted_script_path,
-            "exception_type": type(error).__name__,
-            "exception_message": str(error),
-            "system_exit_code": _get_system_exit_code_for_json(error),
-            "errors": _traceback_snapshot_chain(error, excepted_script_path),
-        }
-
-        with open(output_path, "w", encoding="utf-8") as f:
-            json.dump(payload, f)
 
     # ==============================
     # define main function
@@ -552,7 +440,7 @@ try:
 
         # ==============================
         # replace pythons builtin "input" function to add a prepend:
-        #(pipe can't do that since input() is not going via that)
+        # (pipe can't do that since input() is not going via that)
 
         if input_prepend != "" or log_input_prepend != "" or hasattr(sys.stdout, "complete_input_line"):
             import builtins
@@ -584,18 +472,9 @@ try:
             runpy.run_path(python_script_path, run_name="__main__")
             sys.exit(0)
 
-        except SystemExit as e:
-            
-            if (e.code is None) or (isinstance(e.code, bool) and e.code == False) or (isinstance(e.code, int) and e.code==0):
-                sys.exit(0)
-            else:
-                # catches: sys.exit(True), sys.exit("a string"),sys.exit(non-0-int)
-                save_traceback(e, python_script_path, crash_log_temp_path)
-                sys.exit(1)
-
-        except BaseException as e:  # BaseException includes KeyboardInterrupt,GeneratorExit,normal Exception
+        except BaseException as e:  # BaseException includes KeyboardInterrupt,GeneratorExit,normal Exception, SystemExit (including success exit)
             save_traceback(e, python_script_path, crash_log_temp_path)
-            sys.exit(1)  # exit code 1 indicates child script error need to process saved traceback to watchdog
+            sys.exit(1)  # exit code 1 indicates child script error need to process saved traceback to watchdog and correct handling
 
     # ==============================
     # execute main function
