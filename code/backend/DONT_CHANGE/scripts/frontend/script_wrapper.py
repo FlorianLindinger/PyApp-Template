@@ -289,8 +289,7 @@ try:
 
         syntax = None
         if isinstance(error, SyntaxError) and any(
-            getattr(error, attribute, None) is not None
-            for attribute in ("filename", "lineno", "offset", "text")
+            getattr(error, attribute, None) is not None for attribute in ("filename", "lineno", "offset", "text")
         ):
             syntax = {
                 "filename": getattr(error, "filename", None),
@@ -475,7 +474,9 @@ try:
 
         except BaseException as e:  # BaseException includes KeyboardInterrupt,GeneratorExit,normal Exception, SystemExit (including success exit)
             save_traceback(e, python_script_path, crash_log_temp_path)
-            sys.exit(1)  # exit code 1 indicates child script error need to process saved traceback to watchdog and correct handling
+            sys.exit(
+                1
+            )  # exit code 1 indicates child script error need to process saved traceback to watchdog and correct handling
 
     # ==============================
     # execute main function
