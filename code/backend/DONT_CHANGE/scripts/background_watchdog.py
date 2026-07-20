@@ -92,24 +92,6 @@ try:
     KERNEL32_DLL = ctypes.WinDLL("kernel32", use_last_error=True)
     USER32_DLL = ctypes.WinDLL("user32", use_last_error=True)
 
-    base_script = """
-ANSI_WARN = "\x1b[1;37;41m"  # white text, red bg, bold
-ANSI_SUCCESS = "\x1b[1;37;42m"  # white text, green bg, bold
-ANSI_RESET = "\033[0m"
-    
-def print_success(msg, sep = " ", end = "\n"):
-    print(f"{ANSI_SUCCESS}{msg}{ANSI_RESET}", sep=sep, end=end)
-
-def print_warn(msg, sep = " ", end = "\n"):
-    print(f"{ANSI_WARN}{msg}{ANSI_RESET}", sep=sep, end=end)
-
-def input_warn(msg):
-    return input(f"{ANSI_WARN}{msg}{ANSI_RESET}")
-
-def input_success(msg):
-    return input(f"{ANSI_SUCCESS}{msg}{ANSI_RESET}")
-"""
-
     # ==============================
     # define local functions/classes
     # ==============================
@@ -881,13 +863,14 @@ def input_success(msg):
         # ==============================
         # handle exit of wrapper
 
-        exit_mode = process.returncode # Can be 0,1,2
+        exit_mode = process.returncode # Can be 0,1,2,3
         
         # exit_mode meaning:
-        # 0 = correctly handled exit of main.py
-        # 1 = handled failure in wrapper of main.py
-        # 2 = unsuccessfully handled failure in wrapper of main.py
-        # (3 = handled failure in this script. See Exception of main below)
+        # 0 = correctly handled end of script in main.py (no json)
+        # 1 = correctly handled other exit of main.py (json)
+        # 2 = handled failure in wrapper of main.py (json)
+        # 3 = unsuccessfully handled failure in wrapper of main.py (no json)
+        # (4 = handled failure in this script. See Exception of main below)
 
         # process exit in current terminal if it exists or in new terminal if not. Wait in the second case:
         process_exit_here_or_in_new_terminal(
