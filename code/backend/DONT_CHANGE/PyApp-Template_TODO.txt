@@ -2,11 +2,9 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
-it shows traceback to wrapper on finsih
+common variables is also kind of backend settings for some variables. for others its more like a copy of a fact then a setting one can choose freely
 
-when i press x on conhost it does not trigger finishes?
-
-dont do succes terminal for on close. it is weird green flash. i guesss only if anything happens? what for soud=
+dont do succes terminal for on close.  i guesss only if anything happens? what for soud=
 
 make icon not transparent in middle
 
