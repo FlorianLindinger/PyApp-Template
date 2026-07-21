@@ -57,7 +57,6 @@ ANSI_WARN = "\x1b[1;37;41m"  # white text, red bg, bold
 ANSI_SUCCESS = "\x1b[1;37;42m"  # white text, green bg, bold
 ANSI_RESET = "\033[0m"
 
-
 TERMINAL_COLORS = ""
 if terminal_bg_color:
     TERMINAL_COLORS += terminal_bg_color
@@ -86,14 +85,17 @@ def make_empty_args_safe(args: list[str | None]) -> list[str]:
 #     rule_width = min(max(1, longest_message_line), max_rule_width)
 #     return symbol * rule_width
 
-def print_success(msg, sep: str | None = " ", end: str | None = "\n"):
+
+def print_success(msg:str|None, sep: str | None = " ", end: str | None = "\n"):
     """Print a success-styled console message."""
-    print(f"{ANSI_SUCCESS}{msg}{ANSI_RESET}", sep=sep, end=end)
+    if msg is not None:
+        print(f"{ANSI_SUCCESS}{msg}{ANSI_RESET}", sep=sep, end=end)
 
 
-def print_warn(msg, sep: str | None = " ", end: str | None = "\n"):
+def print_warn(msg:str|None, sep: str | None = " ", end: str | None = "\n"):
     """Print a warning-styled console message."""
-    print(f"{ANSI_WARN}{msg}{ANSI_RESET}", sep=sep, end=end)
+    if msg is not None:
+        print(f"{ANSI_WARN}{msg}{ANSI_RESET}", sep=sep, end=end)
 
 
 def input_warn(msg):
@@ -611,51 +613,6 @@ def set_terminal_colors(colors=TERMINAL_COLORS):
             pass
 
 
-def get_candidate_hwnds() -> list[int]:
-    """Return the candidate hwnds (handle to a Window in the Windows API).
-    Needed to modify the current terminal."""
-    import ctypes
-
-    kernel32_DLL = ctypes.WinDLL("kernel32", use_last_error=True)  # type:ignore
-    user32_DLL = ctypes.WinDLL("user32", use_last_error=True)
-
-    candidate_hwnds: list[int] = []
-    console_hwnd = int(kernel32_DLL.GetConsoleWindow() or 0)
-
-    # get console title
-    buffer = ctypes.create_unicode_buffer(1024)
-    title_length = kernel32_DLL.GetConsoleTitleW(buffer, len(buffer))
-    if title_length == 0:
-        console_title = ""
-    else:
-        console_title = buffer.value
-
-    def _add(hwnd: int) -> None:
-        if hwnd == 0 or not user32_DLL.IsWindow(hwnd) or hwnd in candidate_hwnds:
-            return
-        candidate_hwnds.append(hwnd)
-
-    def _get_root_owner(hwnd: int) -> int:
-        GA_ROOTOWNER = 3
-        if hwnd == 0:
-            return 0
-        return int(user32_DLL.GetAncestor(hwnd, GA_ROOTOWNER) or 0)
-
-    _add(console_hwnd)
-    _add(_get_root_owner(console_hwnd))
-
-    if console_title:
-        hwnd_by_console_class = int(user32_DLL.FindWindowW("ConsoleWindowClass", console_title) or 0)
-        _add(hwnd_by_console_class)
-        _add(_get_root_owner(hwnd_by_console_class))
-
-        hwnd_by_title = int(user32_DLL.FindWindowW(None, console_title) or 0)
-        _add(hwnd_by_title)
-        _add(_get_root_owner(hwnd_by_title))
-
-    return candidate_hwnds
-
-
 class unminimize_plus_foreground_terminal_on_first_output:
     """Unminimize a minimized terminal and set to foreground when output is written for the first time."""
 
@@ -698,46 +655,41 @@ class unminimize_plus_foreground_terminal_on_first_output:
         return getattr(self.stream, name)
 
 
-def unminimize_and_foreground_terminal(candidate_hwnds: list[int] | None = None):
-    if candidate_hwnds is None:
-        candidate_hwnds = get_candidate_hwnds()
-
-    unminimize_window(candidate_hwnds)
-    foreground_window(candidate_hwnds)
+def unminimize_and_foreground_terminal():
+    unminimize_window()
+    foreground_window()
 
 
-def foreground_window(candidate_hwnds: list[int] | None = None):
-    if candidate_hwnds is None:
-        candidate_hwnds = get_candidate_hwnds()
-
-    if candidate_hwnds:
+def foreground_window():
+    try:
         import ctypes
 
-        for hwnd in candidate_hwnds:
-            try:
-                ctypes.windll.user32.SetForegroundWindow(hwnd)
-            except Exception:
-                pass
+        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        hwnd = int(kernel32.GetConsoleWindow() or 0)
+        if not hwnd:
+            return
+        ctypes.windll.user32.SetForegroundWindow(hwnd)
+    except Exception:
+        pass
 
 
-def unminimize_window(candidate_hwnds: list[int] | None = None):
-    if candidate_hwnds is None:
-        candidate_hwnds = get_candidate_hwnds()
-
-    if candidate_hwnds:
+def unminimize_window():
+    try:
         import ctypes
 
-        for hwnd in candidate_hwnds:
-            try:
-                ctypes.windll.user32.ShowWindow(hwnd, 9)  # 9 means unminimized
-            except Exception:
-                pass
+        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        hwnd = int(kernel32.GetConsoleWindow() or 0)
+        if not hwnd:
+            return
+        ctypes.windll.user32.ShowWindow(hwnd, 9)  # 9 means unminimized
+    except Exception:
+        pass
 
 
-def set_terminal_app_id(app_id: str, candidate_hwnds: list[int]) -> None:
+def set_terminal_app_id(app_id: str) -> None:
     """Try to set System.AppUserModel.ID on the terminal window itself."""
 
-    if app_id == "":
+    if not app_id:
         return
 
     import ctypes
@@ -871,78 +823,86 @@ def set_terminal_app_id(app_id: str, candidate_hwnds: list[int]) -> None:
         if hr < 0:
             raise OSError(f"{action} failed with HRESULT {_format_hresult(hr)}")
 
-    shell32 = ctypes.WinDLL("shell32", use_last_error=True)
-    ole32 = ctypes.WinDLL("ole32", use_last_error=True)
-
-    shell32.SHGetPropertyStoreForWindow.argtypes = [
-        wintypes.HWND,
-        ctypes.POINTER(_GUID),
-        ctypes.POINTER(IPropertyStorePtr),
-    ]
-    shell32.SHGetPropertyStoreForWindow.restype = HRESULT
-
-    ole32.CoInitialize.argtypes = [ctypes.c_void_p]
-    ole32.CoInitialize.restype = HRESULT
-    ole32.CoUninitialize.argtypes = []
-    ole32.CoUninitialize.restype = None
-
-    iid_property_store = _make_guid("886D8EEB-8CF2-4446-8D02-CDBA1DBDCF99")
-    pkey_app_user_model_id = _PROPERTYKEY(
-        _make_guid("9F4C2855-9F79-4B39-A8D0-E1D42DE1D5F3"),
-        5,
-    )
-    prop_var = _PROPVARIANT()
-    prop_var.vt = VT_LPWSTR
-    prop_var.pwszVal = app_id
-
-    coinitialize_result = ole32.CoInitialize(None)
-    should_uninitialize = coinitialize_result in {S_OK, S_FALSE}
-    if coinitialize_result < 0 and (coinitialize_result & 0xFFFFFFFF) != RPC_E_CHANGED_MODE:
-        raise OSError(f"CoInitialize failed with HRESULT {_format_hresult(coinitialize_result)}")
-
     try:
-        for hwnd in candidate_hwnds:
+        hwnd = int(ctypes.windll.kernel32.GetConsoleWindow() or 0)
+        if not hwnd:
+            return
+
+        shell32 = ctypes.WinDLL("shell32", use_last_error=True)
+        ole32 = ctypes.WinDLL("ole32", use_last_error=True)
+
+        shell32.SHGetPropertyStoreForWindow.argtypes = [
+            wintypes.HWND,
+            ctypes.POINTER(_GUID),
+            ctypes.POINTER(IPropertyStorePtr),
+        ]
+        shell32.SHGetPropertyStoreForWindow.restype = HRESULT
+
+        ole32.CoInitialize.argtypes = [ctypes.c_void_p]
+        ole32.CoInitialize.restype = HRESULT
+        ole32.CoUninitialize.argtypes = []
+        ole32.CoUninitialize.restype = None
+
+        iid_property_store = _make_guid("886D8EEB-8CF2-4446-8D02-CDBA1DBDCF99")
+        pkey_app_user_model_id = _PROPERTYKEY(
+            _make_guid("9F4C2855-9F79-4B39-A8D0-E1D42DE1D5F3"),
+            5,
+        )
+        prop_var = _PROPVARIANT()
+        prop_var.vt = VT_LPWSTR
+        prop_var.pwszVal = app_id
+
+        coinitialize_result = ole32.CoInitialize(None)
+        should_uninitialize = coinitialize_result in {S_OK, S_FALSE}
+        if coinitialize_result < 0 and (coinitialize_result & 0xFFFFFFFF) != RPC_E_CHANGED_MODE:
+            raise OSError(f"CoInitialize failed with HRESULT {_format_hresult(coinitialize_result)}")
+
+        try:
+            property_store = IPropertyStorePtr()
+            hr = shell32.SHGetPropertyStoreForWindow(
+                wintypes.HWND(hwnd),
+                ctypes.byref(iid_property_store),
+                ctypes.byref(property_store),
+            )
+            _check_hresult(hr, f"SHGetPropertyStoreForWindow for hwnd 0x{hwnd:016X}")
+
             try:
-                property_store = IPropertyStorePtr()
-                hr = shell32.SHGetPropertyStoreForWindow(
-                    wintypes.HWND(hwnd),
-                    ctypes.byref(iid_property_store),
-                    ctypes.byref(property_store),
+                hr = property_store.contents.lpVtbl.contents.SetValue(
+                    property_store,
+                    ctypes.byref(pkey_app_user_model_id),
+                    ctypes.byref(prop_var),
                 )
-                _check_hresult(hr, f"SHGetPropertyStoreForWindow for hwnd 0x{hwnd:016X}")
+                _check_hresult(hr, f"SetValue System.AppUserModel.ID for hwnd 0x{hwnd:016X}")
 
-                try:
-                    hr = property_store.contents.lpVtbl.contents.SetValue(
-                        property_store,
-                        ctypes.byref(pkey_app_user_model_id),
-                        ctypes.byref(prop_var),
-                    )
-                    _check_hresult(hr, f"SetValue System.AppUserModel.ID for hwnd 0x{hwnd:016X}")
+                hr = property_store.contents.lpVtbl.contents.Commit(property_store)
+                _check_hresult(hr, f"Commit System.AppUserModel.ID for hwnd 0x{hwnd:016X}")
 
-                    hr = property_store.contents.lpVtbl.contents.Commit(property_store)
-                    _check_hresult(hr, f"Commit System.AppUserModel.ID for hwnd 0x{hwnd:016X}")
-
-                    _helper_refresh_nonclient_area(hwnd)
-                finally:
-                    if property_store:
-                        property_store.contents.lpVtbl.contents.Release(property_store)
-            except Exception as error:
-                print(f"[Info] AppID update skipped for hwnd 0x{hwnd:016X}: {error}")
-    finally:
-        if should_uninitialize:
-            ole32.CoUninitialize()
+                _helper_refresh_nonclient_area(hwnd)
+            finally:
+                if property_store:
+                    property_store.contents.lpVtbl.contents.Release(property_store)
+        finally:
+            if should_uninitialize:
+                ole32.CoUninitialize()
+    except Exception:
+        pass
 
 
-def set_terminal_icon(icon_path: str, candidate_hwnds=list[int]) -> None:
+def set_terminal_icon(icon_path: str | None) -> None:
     """Best-effort icon update of the current Windows terminal icon"""
-    if icon_path == "":
+    if icon_path in ("", None):
         return
     else:
         icon_path = os.path.normpath(icon_path)
 
+    import ctypes
+    from ctypes import wintypes
+
     try:
-        import ctypes
-        from ctypes import wintypes
+        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)  # type:ignore
+        hwnd = int(kernel32.GetConsoleWindow() or 0)
+        if not hwnd:
+            return
 
         user32 = ctypes.WinDLL("user32", use_last_error=True)
 
@@ -1003,26 +963,28 @@ def set_terminal_icon(icon_path: str, candidate_hwnds=list[int]) -> None:
         if small_icon == 0 and large_icon == 0:
             return
 
-        for hwnd in candidate_hwnds:
-            if small_icon:
-                user32.SendMessageW(hwnd, WM_SETICON, ICON_SMALL, small_icon)
-            if large_icon:
-                user32.SendMessageW(hwnd, WM_SETICON, ICON_BIG, large_icon)
-            user32.SetWindowPos(
-                hwnd,
-                None,
-                0,
-                0,
-                0,
-                0,
-                SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED,
-            )
+        if small_icon:
+            user32.SendMessageW(hwnd, WM_SETICON, ICON_SMALL, small_icon)
+        if large_icon:
+            user32.SendMessageW(hwnd, WM_SETICON, ICON_BIG, large_icon)
+        user32.SetWindowPos(
+            hwnd,
+            None,
+            0,
+            0,
+            0,
+            0,
+            SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED,
+        )
 
     except Exception:
         pass
 
 
-def set_terminal_title(title: str) -> None:
+def set_terminal_title(title: str | None) -> None:
+    if title is None:
+        return
+
     try:
         import ctypes
 
@@ -1050,13 +1012,11 @@ def set_terminal_appearance_once(app_id: str):
     global _TERMINAL_APPEARANCE_WAS_SET
 
     if not _TERMINAL_APPEARANCE_WAS_SET:
-        candidate_hwnds = get_candidate_hwnds()
-
         set_terminal_title(program_name)
-        set_terminal_icon(icon_path, candidate_hwnds)
+        set_terminal_icon(icon_path)
 
         if app_id:
-            set_terminal_app_id(app_id, candidate_hwnds)
+            set_terminal_app_id(app_id)
 
         _TERMINAL_APPEARANCE_WAS_SET = True
 
