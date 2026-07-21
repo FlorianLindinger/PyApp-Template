@@ -45,6 +45,10 @@ try:
         play_sound_after_failure,
         play_sound_after_KeyboardInterrupt,
         play_sound_after_success,
+        title_after_crash,
+        title_after_failure,
+        title_after_KeyboardInterrupt,
+        title_after_success,
     )
     from backend.DONT_CHANGE.scripts._common_code import (
         input_success,
@@ -278,7 +282,7 @@ try:
         def fileno(self) -> int:
             return self.stream.fileno()
 
-    def print_traceback_from_json_payload(traceback_payload: dict[str, Any]) -> None:
+    def print_traceback_from_json_payload(traceback_payload: dict[str, Any] | None) -> None:
         """Render the current traceback JSON format, preferring Rich's native layout."""
         if not traceback_payload:
             return
@@ -351,37 +355,37 @@ try:
             else:
                 console.print("No traceback frames were captured.", style="red")
         except Exception as error:
-            print_warn(f"[Warning] Rich traceback rendering failed: {error}")
+            print_warn(f"[Error] Rich traceback rendering failed: {error}")
             print()
             print_warn(script_name)
             for metadata_line in metadata_lines:
                 print(metadata_line)
             print("\n".join(_plain_traceback_lines(traceback_payload)))
 
-    def payload_to_text(traceback_payload: dict[str, Any], title: str, message: str) -> str:
-        """Build a plain-text crash report from the current traceback JSON format."""
-        lines = ["=" * 80, title, "-" * 80, "", message, "", "-" * 80]
-        lines.extend(_traceback_metadata_lines(traceback_payload))
-        lines.append("")
-        lines.extend(_plain_traceback_lines(traceback_payload))
-        lines.extend(["", "=" * 80])
-        return "\n".join(lines)
-
-    def write_txt_crash_log(crash_log_payload, title, message):
+    def write_txt_crash_log(crash_log_payload: dict[str, Any] | None, message: str | None):
         # write a human readable crash log:
         crash_log_path_resolved = resolve_log_path(
             crash_log_path, crash_log_path_is_relative_to_start_folder_if_relative
         )
+
+        if crash_log_payload is None and message is None:
+            return
+
         if crash_log_path_resolved:
+            lines: list[str] = ["=" * 80]
+            if message:
+                lines.append(message)
+            if crash_log_payload:
+                if message:
+                    lines.append("-" * 80)
+                lines.extend(_traceback_metadata_lines(crash_log_payload))
+                lines.append("-" * 80)
+                lines.extend(_plain_traceback_lines(crash_log_payload))
+            lines.append("=" * 80)
+
             os.makedirs(os.path.dirname(crash_log_path_resolved), exist_ok=True)
             with open(crash_log_path_resolved, "w" if overwrite_crash_log else "a") as f:
-                f.write(
-                    payload_to_text(
-                        traceback_payload=crash_log_payload,
-                        title=title,
-                        message=message,
-                    )
-                )
+                f.write("\n".join(lines))
 
     # ==============================
     # miscellaneous
@@ -414,39 +418,57 @@ try:
 
         return exit_code in windows_crash_codes
 
-    def process_sound_and_log_opening_and_terminal_appearance(
-        mode: Literal["failure", "success", "KeyboardInterrupt", "crash"], log_path: str = ""
+    def execute_exit_settings(
+        mode: Literal["failure", "success", "KeyboardInterrupt", "crash"],
+        log_path: str = "",
+        traceback_payload: dict | None = None,
+        exit_msg: str | None = None,
     ) -> None:
         """Run completion side effects such as sounds and opening logs."""
 
-        if mode == "failure":
-            play_sound = play_sound_after_failure
-            play_sound_default = play_sound_after_failure_default
-            open_log = open_log_file_after_failure
-            terminal_colors = FAILURE_TERMINAL_COLORS
-            terminal_icon = failure_icon_path
-        elif mode == "success":
+        # get settings
+        if mode == "success":
             play_sound = play_sound_after_success
             play_sound_default = play_sound_after_success_default
             open_log = open_log_file_after_success
             terminal_colors = SUCCESS_TERMINAL_COLORS
             terminal_icon = success_icon_path
-        elif mode == "KeyboardInterrupt":
-            play_sound = play_sound_after_KeyboardInterrupt
-            play_sound_default = play_sound_after_KeyboardInterrupt_default
-            open_log = open_log_file_after_KeyboardInterrupt
-            terminal_colors = KEYBOARDINTERRUPT_TERMINAL_COLORS
-            terminal_icon = KeyboardInterrupt_icon_path
+            terminal_title = title_after_success
+            close = close_after_success
+            print_function = print_success
+            input_function = input_success
+        elif mode == "failure":
+            play_sound = play_sound_after_failure
+            play_sound_default = play_sound_after_failure_default
+            open_log = open_log_file_after_failure
+            terminal_colors = FAILURE_TERMINAL_COLORS
+            terminal_icon = failure_icon_path
+            terminal_title = title_after_failure
+            close = close_after_failure
+            print_function = print_warn
+            input_function = input_warn
         elif mode == "crash":
             play_sound = play_sound_after_crash
             play_sound_default = play_sound_after_crash_default
             open_log = open_log_file_after_crash
             terminal_colors = CRASH_TERMINAL_COLORS
             terminal_icon = crash_icon_path
+            terminal_title = title_after_crash
+            close = close_after_crash
+            print_function = print_warn
+            input_function = input_warn
+        elif mode == "KeyboardInterrupt":
+            play_sound = play_sound_after_KeyboardInterrupt
+            play_sound_default = play_sound_after_KeyboardInterrupt_default
+            open_log = open_log_file_after_KeyboardInterrupt
+            terminal_colors = KEYBOARDINTERRUPT_TERMINAL_COLORS
+            terminal_icon = KeyboardInterrupt_icon_path
+            terminal_title = title_after_KeyboardInterrupt
+            close = close_after_KeyboardInterrupt
+            print_function = print_warn
+            input_function = input_warn
 
-        set_terminal_colors(terminal_colors)
-        set_terminal_icon(terminal_icon)
-
+        # play sound
         if play_sound is True:
             wav_path = play_sound_default
         elif play_sound in (False, None, ""):
@@ -469,11 +491,26 @@ try:
             except Exception as e:
                 print(f"[Error] Failed to play .wav file: {e}")
 
+        # open log
         if log_path and open_log:
             try:
                 os.startfile(log_path)  # type: ignore[attr-defined]  # noqa:S606
             except Exception as e:
                 print(f"[Error] Failed to open log: {e}")
+
+        # rest
+        print_function(exit_msg)
+        write_txt_crash_log(traceback_payload, exit_msg)
+
+        if close == False:
+            set_terminal_title(terminal_title)
+            set_terminal_colors(terminal_colors)
+            set_terminal_icon(terminal_icon)
+            print_traceback_from_json_payload(traceback_payload)  # must be after set_terminal_colors
+            input_function("Press enter to exit")
+        else:
+            print_traceback_from_json_payload(traceback_payload)
+            return
 
     # ==============================
     # define main function
@@ -489,6 +526,9 @@ try:
         exit_mode = int(exit_mode)
         new_terminal_was_created = new_terminal_was_created.lower() == "true"
 
+        if new_terminal_was_created == True:
+            set_terminal_app_id(app_id)
+
         # ==============================
         # process exit
 
@@ -500,10 +540,7 @@ try:
         # 4 = handled failure watchdog script (json)
 
         if exit_mode == 0:  # 0 = correctly handled end of script in main.py (no json)
-            process_sound_and_log_opening_and_terminal_appearance("success", log_path_resolved)
-            if close_after_success == False:
-                print_success("[Success] Program finished successfully")
-                input_success("Press enter to exit")
+            execute_exit_settings("success", log_path_resolved, None, "[Success] Program finished successfully")
             sys.exit()
 
         elif exit_mode == 1:  # 1 = correctly handled other exit of main.py (json)
@@ -515,9 +552,7 @@ try:
 
                 traceback_entries = _traceback_entries(traceback_payload)
                 exception_type = (
-                    str(traceback_entries[-1].get("type") or "Exception")
-                    if traceback_entries
-                    else "Exception"
+                    str(traceback_entries[-1].get("type") or "Exception") if traceback_entries else "Exception"
                 )
 
                 if exception_type == "SystemExit":  # includes success exits
@@ -527,73 +562,63 @@ try:
                     # failure = main_exit_code: non-0-int, True, float, strings (Anything not mentioned here get converted to string in wrapper)
 
                     if main_exit_code in (0, None, False):  # success
-                        process_sound_and_log_opening_and_terminal_appearance("success", log_path_resolved)
-                        print_traceback_from_json_payload(traceback_payload)
-                        if close_after_success == False:
-                            print_success("[Success] Program finished successfully")
-                            input_success("Press enter to exit")
+                        execute_exit_settings(
+                            "success", log_path_resolved, traceback_payload, "[Success] Program finished successfully"
+                        )
 
                     elif exit_code_looks_like_interpreter_crash(main_exit_code):
-                        write_txt_crash_log(traceback_payload, "WIP", "WIP")
-                        process_sound_and_log_opening_and_terminal_appearance("crash", log_path_resolved)
-                        print_traceback_from_json_payload(traceback_payload)
-                        if close_after_crash == False:
-                            print_warn(
-                                f'[Crash] It appears like the Python interpreter crashed with exit code "{main_exit_code}" while running "{selected_python_script_path}".'
-                            )
-                            input_warn("Press enter to exit")
+                        execute_exit_settings(
+                            "crash",
+                            log_path_resolved,
+                            traceback_payload,
+                            f'[Crash] It appears like the Python interpreter crashed with exit code "{main_exit_code}" while running "{selected_python_script_path}".',
+                        )
 
                     else:
-                        write_txt_crash_log(traceback_payload, "WIP", "WIP")
-                        process_sound_and_log_opening_and_terminal_appearance("failure", log_path_resolved)
-                        print_traceback_from_json_payload(traceback_payload)
-                        if close_after_failure == False:
-                            print_warn(
-                                f'[Failure] "{selected_python_script_path}" exited with error code "{main_exit_code}".'
-                            )
-                            input_warn("Press enter to exit")
+                        execute_exit_settings(
+                            "failure",
+                            log_path_resolved,
+                            traceback_payload,
+                            f'[Failure] "{selected_python_script_path}" exited with error code "{main_exit_code}".',
+                        )
 
                 elif exception_type in ["ImportError", "ModuleNotFoundError"]:
-                    process_sound_and_log_opening_and_terminal_appearance("failure", log_path_resolved)
-                    print_traceback_from_json_payload(traceback_payload)
+                    execute_exit_settings("failure", log_path_resolved, traceback_payload, "WIP")
 
                     # options:
                     # 1) install missing package->use pipreqs mappings if needed i guess
                     # 2) auto search packages needed
                     # 3) open terminal for manual installation
                     # 4) quit
-                    
+
                     input("WIP")
 
                 elif exception_type == "SyntaxError":
-                    write_txt_crash_log(traceback_payload, "WIP", "WIP")
-                    process_sound_and_log_opening_and_terminal_appearance("failure", log_path_resolved)
-                    print_traceback_from_json_payload(traceback_payload)
-                    if close_after_failure == False:
-                        print_warn(f'[Failure] "{selected_python_script_path}" had a syntax error (see above).')
-                        input_warn("Press enter to exit")
+                    execute_exit_settings(
+                        "failure",
+                        log_path_resolved,
+                        traceback_payload,
+                        f'[Failure] "{selected_python_script_path}" had a syntax error (see above).',
+                    )
 
                 elif exception_type == "KeyboardInterrupt":
-                    write_txt_crash_log(traceback_payload, "WIP", "WIP")
-                    process_sound_and_log_opening_and_terminal_appearance("KeyboardInterrupt", log_path_resolved)
-                    print_traceback_from_json_payload(traceback_payload)
-
-                    if close_after_KeyboardInterrupt == False:
-                        print_warn(f'[Failure] "{selected_python_script_path}" was interrupted by user with Ctrl+C')
-                        input_warn("Press enter to exit")
+                    execute_exit_settings(
+                        "KeyboardInterrupt",
+                        log_path_resolved,
+                        traceback_payload,
+                        f'[Failure] "{selected_python_script_path}" was interrupted by user with Ctrl+C',
+                    )
 
                 else:  # remaining exceptions cases
-                    write_txt_crash_log(traceback_payload, "WIP", "WIP")
-                    process_sound_and_log_opening_and_terminal_appearance("failure", log_path_resolved)
-                    print_traceback_from_json_payload(traceback_payload)
-                    if close_after_failure == False:
-                        print_warn(
-                            f'[Failure] "{selected_python_script_path}" had exception of type "{exception_type}" (see above).'
-                        )
-                        input_warn("Press enter to exit")
+                    execute_exit_settings(
+                        "failure",
+                        log_path_resolved,
+                        traceback_payload,
+                        f'[Failure] "{selected_python_script_path}" had exception of type "{exception_type}" (see above).',
+                    )
 
             else:
-                ...  # fialed to generate json ....
+                ...  # failed to generate json ....
 
         elif exit_mode == 2:  # 2 = handled failure in wrapper of main.py (json)
             ...
