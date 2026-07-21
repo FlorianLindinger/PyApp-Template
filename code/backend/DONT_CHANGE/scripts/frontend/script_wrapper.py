@@ -470,7 +470,6 @@ try:
 
         try:
             runpy.run_path(python_script_path, run_name="__main__")
-            sys.exit(0)
 
         except BaseException as e:  # BaseException includes KeyboardInterrupt,GeneratorExit,normal Exception, SystemExit (including success exit)
             save_traceback(e, python_script_path, crash_log_temp_path)
