@@ -106,6 +106,8 @@ if os.environ["PROGRAM_HAS_TERMINAL"] == "0":
             break
         time.sleep(0.01)
     root.destroy()
+    
+    
 else:
     print("Ready")
     while True:
@@ -176,7 +178,7 @@ else:
         else:
             print(msg)
 
-    sys.exit()
+    # sys.exit()
 
 # ==============================
 

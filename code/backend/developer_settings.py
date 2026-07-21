@@ -26,32 +26,16 @@ open_log_shortcut_name: str | None = f"{program_name} - Log"
 # String added before prints/inputs. Accepts datetime.datetime.strftime usage: e.g. "%H:%M:%S | ". None to turn off:
 print_prepend: str | None = "%H:%M:%S | "
 input_prepend: str | None = "%H:%M:%S > "
-log_print_prepend: str | None = "%H:%M:%S | "
-log_input_prepend: str | None = "%H:%M:%S > "
-# -------------------------------------------------
-# Program exit behavior:
-# success = sys.exit(0)/sys.exit()/file-end
-# failure = sys.exit(not-a-zero) e.g. raised Exception.Exception
-# crash   = python interpreter crash (aka where even try/except fails)
-# KeyboardInterrupt = user presses CTRL+C
-close_after_success = True
-close_after_failure = False
-close_after_crash = False
-close_after_KeyboardInterrupt = False
-open_log_file_after_success = False
-open_log_file_after_failure = False
-open_log_file_after_crash = False
-open_log_file_after_KeyboardInterrupt = False
-# False for off. True for default. String for rel. path to .wav in C:\Windows\Media:
-play_sound_after_success: str | bool = False
-play_sound_after_failure: str | bool = True
-play_sound_after_crash: str | bool = True
-play_sound_after_KeyboardInterrupt: str | bool = False
 # -------------------------------------------------
 # Start script in scipt folder or folder of the starting shortcut. (affects log_path_rel_to_start_folder setting below):
 start_in_shortcut_folder = False
 # -------------------------------------------------
-# Logging behavior:
+
+# ==========================
+# ==== Logging Settings ====
+# ==========================
+
+# -------------------------------------------------
 enable_log_for_Windows_terminal_start = True
 enable_log_for_no_terminal_start = True
 # if overwrite is False it will append instead if a file with that name exists:
@@ -61,6 +45,9 @@ log_path_is_relative_to_start_folder_if_relative = False
 # Accepts datetime.datetime.strftime usage (e.g. "log_%Y-%m-%d_%H-%M-%S.txt"). None to disable:
 log_path: str | None = "..\\..\\logs\\log_%Y-%m-%d_%H-%M-%S.txt"
 # -------------------------------------------------
+log_print_prepend: str | None = "%H:%M:%S | "
+log_input_prepend: str | None = "%H:%M:%S > "
+# -------------------------------------------------
 # Crash logging behavior:
 # if overwrite is False it will append instead if a file with that name exists:
 overwrite_crash_log = True
@@ -68,6 +55,40 @@ overwrite_crash_log = True
 crash_log_path_is_relative_to_start_folder_if_relative = False
 # Accepts datetime.datetime.strftime usage (e.g. "log_%Y-%m-%d_%H-%M-%S.txt"). None to disable:
 crash_log_path: str | None = "..\\..\\crash logs\\crash_log_%Y-%m-%d_%H-%M-%S.txt"
+# -------------------------------------------------
+
+# =======================================
+# ==== Program Finish/Crash Settings ====
+# =======================================
+
+# -------------------------------------------------
+# Program exit behavior:
+# success = sys.exit(0)/sys.exit()/file-end
+# failure = sys.exit(not-a-zero) e.g. raised Exception.Exception
+# crash   = python interpreter crash (aka where even try/except fails)
+# KeyboardInterrupt = user presses CTRL+C
+# -------------------------------------------------
+close_after_success = False
+close_after_failure = False
+close_after_crash = False
+close_after_KeyboardInterrupt = False
+# -------------------------------------------------
+open_log_file_after_success = False
+open_log_file_after_failure = False
+open_log_file_after_crash = False
+open_log_file_after_KeyboardInterrupt = False
+# -------------------------------------------------
+# False for off. True for default. String for rel. path to .wav in C:\Windows\Media:
+play_sound_after_success: str | bool = False
+play_sound_after_failure: str | bool = True
+play_sound_after_crash: str | bool = True
+play_sound_after_KeyboardInterrupt: str | bool = False
+# -------------------------------------------------
+# None to disable change
+title_after_success: str | None = f"[Finished] {program_name}"
+title_after_failure: str | None = f"[Failure] {program_name}"
+title_after_crash: str | None = f"[Crash] {program_name}"
+title_after_KeyboardInterrupt: str | None = f"[KeyboardInterrupt] {program_name}"
 # -------------------------------------------------
 
 # =================================

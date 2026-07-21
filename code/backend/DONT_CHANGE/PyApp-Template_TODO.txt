@@ -2,6 +2,16 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+it shows traceback to wrapper on finsih
+
+when i press x on conhost it does not trigger finishes?
+
+dont do succes terminal for on close. it is weird green flash. i guesss only if anything happens? what for soud=
+
+make icon not transparent in middle
+
+longterm add ways that main scriot can talj to backend and do stuff like the fancy terminal
+
 do i want to print the messsage and input belwow rich in rich fomratting? -> yes
 . do i even need my custom message? since script is ontop
 
