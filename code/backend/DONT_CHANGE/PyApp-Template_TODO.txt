@@ -2,6 +2,15 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+
+# def get_print_divider(message: str, symbol="=") -> str:
+#     """Return an equals-sign rule matching message width without wrapping."""
+#     longest_message_line = max((len(line.expandtabs(4)) for line in message.splitlines()), default=0)
+#     terminal_columns = shutil.get_terminal_size(fallback=(80, 20)).columns
+#     max_rule_width = max(1, terminal_columns - 1)
+#     rule_width = min(max(1, longest_message_line), max_rule_width)
+#     return symbol * rule_width
+
 common variables is also kind of backend settings for some variables. for others its more like a copy of a fact then a setting one can choose freely
 
 dont do succes terminal for on close.  i guesss only if anything happens? what for soud=

@@ -75,15 +75,7 @@ def make_empty_args_safe(args: list[str | None]) -> list[str]:
 
 
 # =========================
-# colored print and input and general print related
-
-# def get_print_divider(message: str, symbol="=") -> str:
-#     """Return an equals-sign rule matching message width without wrapping."""
-#     longest_message_line = max((len(line.expandtabs(4)) for line in message.splitlines()), default=0)
-#     terminal_columns = shutil.get_terminal_size(fallback=(80, 20)).columns
-#     max_rule_width = max(1, terminal_columns - 1)
-#     rule_width = min(max(1, longest_message_line), max_rule_width)
-#     return symbol * rule_width
+# colored print and input and prompt and general print related
 
 
 def print_success(msg: str | None, sep: str | None = " ", end: str | None = "\n"):
@@ -108,7 +100,7 @@ def input_success(msg):
     return input(f"{ANSI_SUCCESS}{msg}{ANSI_RESET}")
 
 
-def prompt_with_buttons(
+def button_prompt_window(
     title: str,
     body: str,
     button_texts: list[str] | tuple[str, ...],
