@@ -307,7 +307,7 @@ try:
             traceback_entries = _traceback_entries(traceback_payload)
             rich_traceback = _rich_traceback(traceback_payload) if traceback_entries else None
             console = Console(
-                file=cast(TextIO, _RichSafeStream(sys.stdout)),
+                file=cast("TextIO", _RichSafeStream(sys.stdout)),
                 legacy_windows=True,
                 theme=Theme(
                     {
@@ -480,7 +480,9 @@ try:
         if wav_path != "":
             if wav_path[-4:] != ".wav":
                 wav_path += ".wav"
-        if wav_path:
+        def _play_exit_sound(wav_path: str) -> None:
+            if not wav_path:
+                return
             try:
                 import winsound
 
@@ -507,9 +509,11 @@ try:
             set_terminal_colors(terminal_colors)
             set_terminal_icon(terminal_icon)
             print_traceback_from_json_payload(traceback_payload)  # must be after set_terminal_colors
+            _play_exit_sound(wav_path)
             input_function("Press enter to exit")
         else:
             print_traceback_from_json_payload(traceback_payload)
+            _play_exit_sound(wav_path)
             return
 
     # ==============================
