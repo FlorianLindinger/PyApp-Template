@@ -2,7 +2,19 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
-should i not do warn and success if i either way change bg color?->yes. remove enable_virtual_terminal_processing
+add a prompt function? how do i deal with continu in module missing-> full restand somehow
+
+do i raelly want popupü windwo for missing_module
+
+where can i indocate that backend runs on embedable python and not full version. Maybe docstirng on all files.
+
+do i have nice terminals for package installation
+
+auto print in terminal the package to install?
+
+do i want travecak message baove or below? problaby below and combo with shrot form-> change (see above/below). also incldue in rich for coloring?
+
+do i wnat:  main.py:6 in <module>
 
 # def get_print_divider(message: str, symbol="=") -> str:
 #     """Return an equals-sign rule matching message width without wrapping."""
@@ -12,16 +24,13 @@ should i not do warn and success if i either way change bg color?->yes. remove e
 #     rule_width = min(max(1, longest_message_line), max_rule_width)
 #     return symbol * rule_width
 
-common variables is also kind of backend settings for some variables. for others its more like a copy of a fact then a setting one can choose freely
+do i want to move more local settings to common_varaibles?
 
-dont do succes terminal for on close.  i guesss only if anything happens? what for soud=
+dont do succes terminal for on close?  i guesss only if anything happens? what for soud=
 
 make icon not transparent in middle
 
 longterm add ways that main scriot can talj to backend and do stuff like the fancy terminal
-
-do i want to print the messsage and input belwow rich in rich fomratting? -> yes
-. do i even need my custom message? since script is ontop
 
 how does it handle if main has error in imported file?
 

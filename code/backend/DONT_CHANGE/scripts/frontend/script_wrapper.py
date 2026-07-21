@@ -302,6 +302,7 @@ try:
             "relation": relation_text,
             "type": type(error).__name__,
             "message": str(error),
+            "missing_module": getattr(error, "name", None) if isinstance(error, ImportError) else None,
             "frames": frames,
             "syntax": syntax,
         }
