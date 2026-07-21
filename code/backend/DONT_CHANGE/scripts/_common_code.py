@@ -86,13 +86,13 @@ def make_empty_args_safe(args: list[str | None]) -> list[str]:
 #     return symbol * rule_width
 
 
-def print_success(msg:str|None, sep: str | None = " ", end: str | None = "\n"):
+def print_success(msg: str | None, sep: str | None = " ", end: str | None = "\n"):
     """Print a success-styled console message."""
     if msg is not None:
         print(f"{ANSI_SUCCESS}{msg}{ANSI_RESET}", sep=sep, end=end)
 
 
-def print_warn(msg:str|None, sep: str | None = " ", end: str | None = "\n"):
+def print_warn(msg: str | None, sep: str | None = " ", end: str | None = "\n"):
     """Print a warning-styled console message."""
     if msg is not None:
         print(f"{ANSI_WARN}{msg}{ANSI_RESET}", sep=sep, end=end)
@@ -106,6 +106,139 @@ def input_warn(msg):
 def input_success(msg):
     """Prompt for input using success console styling."""
     return input(f"{ANSI_SUCCESS}{msg}{ANSI_RESET}")
+
+
+def prompt_with_buttons(
+    title: str,
+    body: str,
+    button_texts: list[str] | tuple[str, ...],
+    *,
+    parent=None,
+    default_button_index: int | None = 0,
+    cancel_button_index: int | None = None,
+    icon_file_path: str | None = icon_path,
+    background: str | None = None,
+    foreground: str | None = None,
+    button_background: str | None = None,
+    button_foreground: str | None = None,
+    button_active_background: str | None = None,
+    button_active_foreground: str | None = None,
+    body_font=None,
+    button_font=None,
+    padding: int = 16,
+    body_wraplength: int = 420,
+    min_width: int = 300,
+    resizable: bool = False,
+    buttons_vertical: bool = False,
+) -> int | None:
+    """Show a modal Tkinter prompt and return the selected button index.
+
+    Closing the window returns ``cancel_button_index``; with its default value,
+    this is ``None``. Set ``parent`` to make the prompt modal to an existing
+    Tkinter window. Set ``buttons_vertical`` to stack buttons top-to-bottom.
+    Colors use any Tk color value, such as ``"#1e1e1e"``.
+    """
+    if not button_texts:
+        raise ValueError("button_texts must contain at least one button label.")
+    if default_button_index is not None and not 0 <= default_button_index < len(button_texts):
+        raise ValueError("default_button_index must refer to a button.")
+    if cancel_button_index is not None and not 0 <= cancel_button_index < len(button_texts):
+        raise ValueError("cancel_button_index must refer to a button.")
+    if padding < 0 or body_wraplength < 1 or min_width < 1:
+        raise ValueError("padding must be non-negative and sizes must be positive.")
+
+    try:
+        import tkinter as tk
+    except ImportError as error:
+        raise RuntimeError("Tkinter is required to show a prompt window.") from error
+
+    window = tk.Toplevel(parent) if parent is not None else tk.Tk()
+    window.title(title)
+    window.minsize(min_width, 1)
+    window.resizable(resizable, resizable)
+    if icon_file_path:
+        window.iconbitmap(icon_file_path)
+    if background is not None:
+        window.configure(background=background)
+
+    result: list[int | None] = [None]
+
+    body_label = tk.Label(window, text=body, justify="left", anchor="w", wraplength=body_wraplength)
+    if background is not None:
+        body_label.configure(background=background)
+    if foreground is not None:
+        body_label.configure(foreground=foreground)
+    if body_font is not None:
+        body_label.configure(font=body_font)
+    body_label.pack(fill="both", expand=True, padx=padding, pady=(padding, 8))
+
+    button_frame = tk.Frame(window)
+    if background is not None:
+        button_frame.configure(background=background)
+    button_frame.pack(fill="x", padx=padding, pady=(0, padding))
+
+    def choose(index: int) -> None:
+        result[0] = index
+        window.destroy()
+
+    def close() -> None:
+        result[0] = cancel_button_index
+        window.destroy()
+
+    buttons = []
+    for index, button_text in enumerate(button_texts):
+        button = tk.Button(button_frame, text=button_text, command=lambda index=index: choose(index))
+        if button_background is not None:
+            button.configure(background=button_background)
+        if button_foreground is not None:
+            button.configure(foreground=button_foreground)
+        if button_active_background is not None:
+            button.configure(activebackground=button_active_background)
+        if button_active_foreground is not None:
+            button.configure(activeforeground=button_active_foreground)
+        if button_font is not None:
+            button.configure(font=button_font)
+        if buttons_vertical:
+            button.pack(fill="x", pady=(0, 6))
+        else:
+            button.pack(side="right", padx=(6, 0))
+        buttons.append(button)
+        if index == default_button_index:
+            button.focus_set()
+
+    def move_button_focus(step: int) -> str:
+        focused_widget = window.focus_get()
+        focused_index = next(
+            (index for index, button in enumerate(buttons) if button is focused_widget),
+            default_button_index if default_button_index is not None else 0,
+        )
+        buttons[(focused_index + step) % len(buttons)].focus_set()
+        return "break"
+
+    def activate_focused_button(_event=None) -> str:
+        focused_widget = window.focus_get()
+        focused_index = next((index for index, button in enumerate(buttons) if button is focused_widget), None)
+        if focused_index is not None:
+            choose(focused_index)
+        elif default_button_index is not None:
+            choose(default_button_index)
+        return "break"
+
+    if default_button_index is not None:
+        window.bind("<Return>", activate_focused_button)
+    if buttons_vertical:
+        window.bind("<Up>", lambda _event: move_button_focus(-1))
+        window.bind("<Down>", lambda _event: move_button_focus(1))
+    else:
+        window.bind("<Left>", lambda _event: move_button_focus(-1))
+        window.bind("<Right>", lambda _event: move_button_focus(1))
+    if cancel_button_index is not None:
+        window.bind("<Escape>", lambda _event: choose(cancel_button_index))
+    window.protocol("WM_DELETE_WINDOW", close)
+    window.transient(parent)
+    window.grab_set()
+    window.wait_window()
+    return result[0]
 
 
 def print_traceback(message: str = "") -> None:
@@ -2603,15 +2736,8 @@ def save_requirements_of_root_folder_withVersion(
 # ========================
 
 # if __name__ == "__main__":
-#     install_full_python(
-#         python_version="3.3",
-#         python_dir_abs_path=r"C:\Users\Flo\Documents\Repositories\PyApp Template\code\test",
-#         install_tkinter=False,
-#         install_tests=False,
-#         install_tools=False,
-#         install_docs=False,
-#         rel_path_to_packages="test",
-#     )
+#     out = prompt_with_buttons("title", "body", ["test", "test2,", "test4"], buttons_vertical=True)
+#     print(out)
 
 
 # ========================
