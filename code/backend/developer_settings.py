@@ -68,7 +68,7 @@ crash_log_path: str | None = "..\\..\\crash logs\\crash_log_%Y-%m-%d_%H-%M-%S.tx
 # crash   = python interpreter crash (aka where even try/except fails)
 # KeyboardInterrupt = user presses CTRL+C
 # -------------------------------------------------
-close_after_success = False
+close_after_success = True
 close_after_failure = False
 close_after_crash = False
 close_after_KeyboardInterrupt = False
