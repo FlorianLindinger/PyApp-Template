@@ -2,6 +2,7 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+should i not do warn and success if i either way change bg color?->yes. remove enable_virtual_terminal_processing
 
 # def get_print_divider(message: str, symbol="=") -> str:
 #     """Return an equals-sign rule matching message width without wrapping."""
