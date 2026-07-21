@@ -64,6 +64,7 @@ exit_processer_path = make_abs("process_exit.py")
 # files
 # ------------------------
 
+pipreqs_mapping_path = backend_packages_dir + "\\pipreqs\\mapping"
 tmp_traceback_json_path = temporary_folder + "\\last_crash_log.json"
 developer_settings_path = make_abs("..\\..\\developer_settings.py")
 icon_path = make_abs("..\\..\\icons\\icon.ico")

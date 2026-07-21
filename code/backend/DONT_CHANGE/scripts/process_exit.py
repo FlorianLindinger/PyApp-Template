@@ -45,13 +45,14 @@ try:
         play_sound_after_failure,
         play_sound_after_KeyboardInterrupt,
         play_sound_after_success,
+        program_name,
         title_after_crash,
         title_after_failure,
         title_after_KeyboardInterrupt,
         title_after_success,
     )
     from backend.DONT_CHANGE.scripts._common_code import (
-        button_prompt_window,
+        input_warn,
         print_traceback,
         resolve_log_path,
         set_terminal_app_id,
@@ -69,6 +70,7 @@ try:
         KeyboardInterrupt_icon_path,
         crash_icon_path,
         failure_icon_path,
+        pipreqs_mapping_path,
         play_sound_after_crash_default,
         play_sound_after_failure_default,
         play_sound_after_KeyboardInterrupt_default,
@@ -387,10 +389,10 @@ try:
     # ==============================
     # miscellaneous
 
-    def get_package_install_name(import_name: str, mappings_file_path: str) -> str:
+    def get_package_install_name(import_name: str) -> str:
         """Uses pipreqs mapping to convert from import name to install name: e.g., "cv2" -> "opencv-python"."""
 
-        with open(mappings_file_path, encoding="utf-8") as f:
+        with open(pipreqs_mapping_path, encoding="utf-8") as f:
             for line in f:
                 line = line.strip()
                 if not line or ":" not in line:
@@ -420,6 +422,7 @@ try:
         log_path: str = "",
         traceback_payload: dict | None = None,
         exit_msg: str | None = None,
+        override_to_not_closing_and_disable_wait: bool = False,
     ) -> None:
         """Run completion side effects such as sounds and opening logs."""
 
@@ -470,15 +473,18 @@ try:
             if wav_path[-4:] != ".wav":
                 wav_path += ".wav"
 
-        def _play_exit_sound(wav_path: str) -> None:
+        def _play_exit_sound(wav_path: str, wait: bool = True) -> None:
             if not wav_path:
                 return
             try:
                 import winsound
 
+                flags = winsound.SND_FILENAME | winsound.SND_NODEFAULT
+                if not wait:
+                    flags = flags | winsound.SND_ASYNC
                 winsound.PlaySound(
                     wav_path,
-                    winsound.SND_FILENAME | winsound.SND_NODEFAULT,
+                    flags,
                 )
             except Exception as e:
                 print(f"[Error] Failed to play .wav file: {e}")
@@ -494,13 +500,14 @@ try:
         print(exit_msg)
         write_txt_crash_log(traceback_payload, exit_msg)
 
-        if close == False:
+        if close == False or override_to_not_closing_and_disable_wait:
             set_terminal_title(terminal_title)
             set_terminal_colors(terminal_colors)
             set_terminal_icon(terminal_icon)
             print_traceback_from_json_payload(traceback_payload)  # must be after set_terminal_colors
-            _play_exit_sound(wav_path)
-            input("Press enter to exit")
+            _play_exit_sound(wav_path, wait=not override_to_not_closing_and_disable_wait)
+            if not override_to_not_closing_and_disable_wait:
+                input("Press enter to exit")
         else:
             print_traceback_from_json_payload(traceback_payload)
             _play_exit_sound(wav_path)
@@ -577,7 +584,44 @@ try:
                         )
 
                 elif exception_type in ["ImportError", "ModuleNotFoundError"]:
-                    button_prompt_window
+                    missing_module = str(traceback_entries[-1].get("missing_module") or "").strip()
+
+                    if missing_module:
+                        install_name = get_package_install_name(missing_module)
+
+                        if install_name != missing_module:
+                            exit_message = f'[Missing Package Error] "{selected_python_script_path}" could not import package "{missing_module}" (likely installed as "{install_name}") (see below).'
+                        else:
+                            exit_message = (
+                                f'[Missing Package Error] "{selected_python_script_path}" could not import package '
+                                f'"{missing_module}" (see below).'
+                            )
+                    else:  # can be for cases like "raise ImportError()"
+                        exit_message = f'[Missing Package Error] "{selected_python_script_path}" could not import a package (see below).'
+
+                    execute_exit_settings(
+                        "failure",
+                        log_path_resolved,
+                        traceback_payload,
+                        exit_message,
+                        override_to_not_closing_and_disable_wait=True,
+                    )
+
+                    answer = button_prompt_window_noTkinter(
+                        title=f"[Missing Package Error] {program_name}",
+                        body_text="Choose how to proceed",
+                        button_texts=[
+                            "Install missing package and restart",
+                            "Auto search needed packages, install them, and restart",
+                            "Open terminal for manual installation and restart after terminal closure",
+                            "Quit and open main.py",
+                            "Quit and open packages folder",
+                            "Restart",
+                            "Quit",
+                        ],
+                        vertical_buttons=True,
+                    )
+
 
                     # options:
                     # 1) install missing package->use pipreqs mappings if needed i guess
@@ -585,19 +629,12 @@ try:
                     # 3) open terminal for manual installation
                     # 4) quit
 
-                    execute_exit_settings(
-                        "failure",
-                        log_path_resolved,
-                        traceback_payload,
-                        f'[Failure] "{selected_python_script_path}" could not import a req!!!uired module (see above).',
-                    )
-
                 elif exception_type == "SyntaxError":
                     execute_exit_settings(
                         "failure",
                         log_path_resolved,
                         traceback_payload,
-                        f'[Failure] "{selected_python_script_path}" had a syntax error (see above).',
+                        f'[Failure] "{selected_python_script_path}" had a syntax error (see below).',
                     )
 
                 elif exception_type == "KeyboardInterrupt":
@@ -613,7 +650,7 @@ try:
                         "failure",
                         log_path_resolved,
                         traceback_payload,
-                        f'[Failure] "{selected_python_script_path}" had exception of type "{exception_type}" (see above).',
+                        f'[Failure] "{selected_python_script_path}" had exception of type "{exception_type}" (see below).',
                     )
 
             else:
