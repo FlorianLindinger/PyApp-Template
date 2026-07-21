@@ -51,11 +51,8 @@ try:
         title_after_success,
     )
     from backend.DONT_CHANGE.scripts._common_code import (
-        input_success,
-        input_warn,
-        print_success,
+        button_prompt_window,
         print_traceback,
-        print_warn,
         resolve_log_path,
         set_terminal_app_id,
         set_terminal_colors,
@@ -355,9 +352,9 @@ try:
             else:
                 console.print("No traceback frames were captured.", style="red")
         except Exception as error:
-            print_warn(f"[Error] Rich traceback rendering failed: {error}")
+            print(f"[Error] Rich traceback rendering failed: {error}")
             print()
-            print_warn(script_name)
+            print(script_name)
             for metadata_line in metadata_lines:
                 print(metadata_line)
             print("\n".join(_plain_traceback_lines(traceback_payload)))
@@ -435,8 +432,6 @@ try:
             terminal_icon = success_icon_path
             terminal_title = title_after_success
             close = close_after_success
-            print_function = print_success
-            input_function = input_success
         elif mode == "failure":
             play_sound = play_sound_after_failure
             play_sound_default = play_sound_after_failure_default
@@ -445,8 +440,6 @@ try:
             terminal_icon = failure_icon_path
             terminal_title = title_after_failure
             close = close_after_failure
-            print_function = print_warn
-            input_function = input_warn
         elif mode == "crash":
             play_sound = play_sound_after_crash
             play_sound_default = play_sound_after_crash_default
@@ -455,8 +448,6 @@ try:
             terminal_icon = crash_icon_path
             terminal_title = title_after_crash
             close = close_after_crash
-            print_function = print_warn
-            input_function = input_warn
         elif mode == "KeyboardInterrupt":
             play_sound = play_sound_after_KeyboardInterrupt
             play_sound_default = play_sound_after_KeyboardInterrupt_default
@@ -465,8 +456,6 @@ try:
             terminal_icon = KeyboardInterrupt_icon_path
             terminal_title = title_after_KeyboardInterrupt
             close = close_after_KeyboardInterrupt
-            print_function = print_warn
-            input_function = input_warn
 
         # play sound
         if play_sound is True:
@@ -480,6 +469,7 @@ try:
         if wav_path != "":
             if wav_path[-4:] != ".wav":
                 wav_path += ".wav"
+
         def _play_exit_sound(wav_path: str) -> None:
             if not wav_path:
                 return
@@ -501,7 +491,7 @@ try:
                 print(f"[Error] Failed to open log: {e}")
 
         # rest
-        print_function(exit_msg)
+        print(exit_msg)
         write_txt_crash_log(traceback_payload, exit_msg)
 
         if close == False:
@@ -510,7 +500,7 @@ try:
             set_terminal_icon(terminal_icon)
             print_traceback_from_json_payload(traceback_payload)  # must be after set_terminal_colors
             _play_exit_sound(wav_path)
-            input_function("Press enter to exit")
+            input("Press enter to exit")
         else:
             print_traceback_from_json_payload(traceback_payload)
             _play_exit_sound(wav_path)
@@ -587,7 +577,7 @@ try:
                         )
 
                 elif exception_type in ["ImportError", "ModuleNotFoundError"]:
-                    execute_exit_settings("failure", log_path_resolved, traceback_payload, "WIP")
+                    button_prompt_window
 
                     # options:
                     # 1) install missing package->use pipreqs mappings if needed i guess
@@ -595,7 +585,12 @@ try:
                     # 3) open terminal for manual installation
                     # 4) quit
 
-                    input("WIP")
+                    execute_exit_settings(
+                        "failure",
+                        log_path_resolved,
+                        traceback_payload,
+                        f'[Failure] "{selected_python_script_path}" could not import a req!!!uired module (see above).',
+                    )
 
                 elif exception_type == "SyntaxError":
                     execute_exit_settings(
