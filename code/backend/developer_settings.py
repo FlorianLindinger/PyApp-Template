@@ -6,36 +6,36 @@ Relative paths in this file are interpreted as relative to this file."""
 # ==== Important Settings ====
 # ============================
 
-# -------------------------------------------------
+# ---------------------------------------
 # Name of this program:
 program_name = "PyApp-Template"
-# -------------------------------------------------
+# ---------------------------------------
 # Python version (""/"x"/"x.y"/"x.y.z"). Finds latest matching(msi-install-available) Python version ("" == latest):
 python_version: str = "3.14"
-# -------------------------------------------------
+# ---------------------------------------
 # Path to end-user settings file (None to disable). File type can be anything openable by vscode/editor:
 user_settings_path: str | None = "..\\settings.py"
-# -------------------------------------------------
+# ---------------------------------------
 # Names of created shortcuts (None to disable). Accepts for example f"{program_name}":
 windows_terminal_shortcut_name: str | None = f"{program_name}"
 no_terminal_shortcut_name: str | None = f"{program_name} (no Terminal)"
 open_settings_shortcut_name: str | None = f"{program_name} - Settings"
 stop_running_shortcut_name: str | None = f"Stop {program_name}"
 open_log_shortcut_name: str | None = f"{program_name} - Log"
-# -------------------------------------------------
+# ---------------------------------------
 # String added before prints/inputs. Accepts datetime.datetime.strftime usage: e.g. "%H:%M:%S | ". None to turn off:
 print_prepend: str | None = "%H:%M:%S | "
 input_prepend: str | None = "%H:%M:%S > "
-# -------------------------------------------------
+# ---------------------------------------
 # Start script in scipt folder or folder of the starting shortcut. (affects log_path_rel_to_start_folder setting below):
 start_in_shortcut_folder = False
-# -------------------------------------------------
+# ---------------------------------------
 
 # ==========================
 # ==== Logging Settings ====
 # ==========================
 
-# -------------------------------------------------
+# ---------------------------------------
 enable_log_for_Windows_terminal_start = True
 enable_log_for_no_terminal_start = True
 # if overwrite is False it will append instead if a file with that name exists:
@@ -44,10 +44,10 @@ overwrite_log = True
 log_path_is_relative_to_start_folder_if_relative = False
 # Accepts datetime.datetime.strftime usage (e.g. "log_%Y-%m-%d_%H-%M-%S.txt"). None to disable:
 log_path: str | None = "..\\..\\logs\\log_%Y-%m-%d_%H-%M-%S.txt"
-# -------------------------------------------------
+# ---------------------------------------
 log_print_prepend: str | None = "%H:%M:%S | "
 log_input_prepend: str | None = "%H:%M:%S > "
-# -------------------------------------------------
+# ---------------------------------------
 # Crash logging behavior:
 # if overwrite is False it will append instead if a file with that name exists:
 overwrite_crash_log = True
@@ -55,65 +55,65 @@ overwrite_crash_log = True
 crash_log_path_is_relative_to_start_folder_if_relative = False
 # Accepts datetime.datetime.strftime usage (e.g. "log_%Y-%m-%d_%H-%M-%S.txt"). None to disable:
 crash_log_path: str | None = "..\\..\\crash logs\\crash_log_%Y-%m-%d_%H-%M-%S.txt"
-# -------------------------------------------------
+# ---------------------------------------
 
 # =======================================
 # ==== Program Finish/Crash Settings ====
 # =======================================
 
-# -------------------------------------------------
+# ---------------------------------------
 # Program exit behavior:
 # success = sys.exit(0)/sys.exit()/file-end
 # failure = sys.exit(not-a-zero) e.g. raised Exception.Exception
 # crash   = python interpreter crash (aka where even try/except fails)
 # KeyboardInterrupt = user presses CTRL+C
-# -------------------------------------------------
+# ---------------------------------------
 close_after_success = True
 close_after_failure = False
 close_after_crash = False
 close_after_KeyboardInterrupt = False
-# -------------------------------------------------
+# ---------------------------------------
 open_log_file_after_success = False
 open_log_file_after_failure = False
 open_log_file_after_crash = False
 open_log_file_after_KeyboardInterrupt = False
-# -------------------------------------------------
+# ---------------------------------------
 # False for off. True for default. String for rel. path to .wav in C:\Windows\Media:
 play_sound_after_success: str | bool = False
 play_sound_after_failure: str | bool = True
 play_sound_after_crash: str | bool = True
 play_sound_after_KeyboardInterrupt: str | bool = False
-# -------------------------------------------------
+# ---------------------------------------
 # None to disable change
 title_after_success: str | None = f"[Finished] {program_name}"
 title_after_failure: str | None = f"[Failure] {program_name}"
 title_after_crash: str | None = f"[Crash] {program_name}"
 title_after_KeyboardInterrupt: str | None = f"[KeyboardInterrupt] {program_name}"
-# -------------------------------------------------
+# ---------------------------------------
 
 # =================================
 # ==== Less Important Settings ====
 # =================================
 
-# -------------------------------------------------
+# ---------------------------------------
 # How to treat alredy running program instances:
 prevent_start_if_already_running = False
 close_already_running_instances_on_start = False
 prompt_to_close_existing_instances = False
-# -------------------------------------------------
+# ---------------------------------------
 # Decide if global default (any version) Python should be used instead of automatic localized download and installation of Python/packages:
 use_global_python = False
-# -------------------------------------------------
+# ---------------------------------------
 # Install Python environment while generating shortcuts instead of for first start (Ignored when use_global_python = True):
 install_python_when_generating_shortcuts = True
-# -------------------------------------------------
+# ---------------------------------------
 # Unminimize and forground program on first print:
 highlight_window_on_first_print = False
 # supress keyboard interrupt (CTRL+C):
 supress_keyboard_interrupt = False
 # args passed to main script:
 args_for_main_py = []
-# -------------------------------------------------
+# ---------------------------------------
 # Decide what parts of vanilla full Python to install:
 # --
 #   Tkinter (Required for Tk-based GUIs or IDLE and used as default backend for matplotlib.pyplot. ~11 MB):
@@ -122,10 +122,10 @@ install_tkinter = True
 install_tests = False
 #   Tools folder: Needed for: Language translation workflows/Python's code demos/old editors/old exe converters. (~1 MB, some installation time):
 install_tools = False
-# -------------------------------------------------
+# ---------------------------------------
 # Use uv (faster replacement of pip) to install packages (it uses global uv if available and installs locally otherwise):
 use_uv_to_install_packages = True
-# -------------------------------------------------
+# ---------------------------------------
 
 # =========================================
 # ==== Launcher Mode Specific Settings ====
@@ -151,7 +151,7 @@ disable_resize = False
 always_on_top = False
 
 
-# --------------------------------
+# ---------------------------------------
 
 # dont resize
 # ontop
@@ -161,12 +161,11 @@ disable_minimize_button = False
 disable_maximize_button = False
 disable_x_button = False
 
-
-# --------------------------------
+# ---------------------------------------
 
 # Terminal tab bar color. None uses the Windows Terminal profile default (e.g. "#3B78FF"):
 tab_bar_color: str | None = "#3B78FF"
 
-# --------------------------------
+# ---------------------------------------
 
 # =========================================
