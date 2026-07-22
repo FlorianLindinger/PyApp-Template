@@ -425,7 +425,7 @@ try:
     def execute_exit_settings(
         mode: Literal["failure", "success", "KeyboardInterrupt", "crash"],
         log_path: str = "",
-        traceback_payload: dict | None = None,
+        traceback_payload: dict[str,Any] | None = None,
         exit_msg: str | None = None,
         override_to_not_closing_and_disable_wait: bool = False,
     ) -> None:
@@ -634,6 +634,9 @@ try:
                     #     vertical_buttons=True,
                     # )
 
+
+                        
+                    
                     input()
 
                     # options:

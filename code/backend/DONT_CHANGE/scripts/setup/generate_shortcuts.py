@@ -52,7 +52,7 @@ from backend.DONT_CHANGE.scripts._common_variables import (
 
 
 def generate_shortcut(
-    shortcut_name: str | bool | None,
+    shortcut_name: str,
     icon_path: str | os.PathLike[str] | None,
     launcher_path: str | os.PathLike[str],
     args: str | os.PathLike[str] | None = "",
@@ -61,7 +61,6 @@ def generate_shortcut(
     start_minimized: bool = False,
     classic_terminal: bool = True,
     wdir: str | os.PathLike[str] = "",
-    enabled: bool = True,
 ) -> None:
     """Create one configured Windows ``.lnk`` shortcut.
 
@@ -76,10 +75,7 @@ def generate_shortcut(
     expose the required Windows COM interfaces directly. This keeps shortcut
     generation dependency-free instead of requiring pywin32 or comtypes.
     """
-    if not enabled or shortcut_name in (None, False, ""):
-        return
-    if os.name != "nt":
-        raise OSError("Windows shortcut creation is only available on Windows.")
+
     if start_minimized and not classic_terminal:
         raise ValueError("A minimized shortcut requires classic_terminal=True")
 
@@ -380,38 +376,41 @@ def main() -> None:
     print("=" * 30)
     print()
 
-    generate_shortcut(
-        windows_terminal_shortcut_name,
-        icon_path,
-        launcher_terminal,
-        args=app_id,
-        app_id=app_id,
-        description=f"Start {program_name} in Windows Terminal",
-        start_minimized=True,
-    )
-    generate_shortcut(
-        no_terminal_shortcut_name,
-        icon_path,
-        launcher_no_terminal,
-        args=app_id,
-        app_id=app_id + "W",
-        description=f"Start {program_name} without opening a terminal window",
-        start_minimized=True,
-    )
-    generate_shortcut(
-        stop_running_shortcut_name,
-        stop_icon_path,
-        launcher_stop,
-        description=f"Stop running {program_name} processes",
-    )
-    generate_shortcut(
-        open_log_folder_shortcut_name,
-        log_icon_path,
-        launcher_log,
-        description=f"Open the current {program_name} log file",
-        start_minimized=True,
-        enabled=log_path not in (None, False, ""),
-    )
+    if windows_terminal_shortcut_name:
+        generate_shortcut(
+            windows_terminal_shortcut_name,
+            icon_path,
+            launcher_terminal,
+            args=app_id,
+            app_id=app_id,
+            description=f"Start {program_name} in Windows Terminal",
+            start_minimized=True,
+        )
+    if no_terminal_shortcut_name:
+        generate_shortcut(
+            no_terminal_shortcut_name,
+            icon_path,
+            launcher_no_terminal,
+            args=app_id,
+            app_id=app_id + "W",
+            description=f"Start {program_name} without opening a terminal window",
+            start_minimized=True,
+        )
+    if stop_running_shortcut_name:
+        generate_shortcut(
+            stop_running_shortcut_name,
+            stop_icon_path,
+            launcher_stop,
+            description=f"Stop running {program_name} processes",
+        )
+    if open_log_folder_shortcut_name and (log_path not in (None, False, "")):
+        generate_shortcut(
+            open_log_folder_shortcut_name,
+            log_icon_path,
+            launcher_log,
+            description=f"Open the current {program_name} log file",
+            start_minimized=True,
+        )
 
     if user_settings_path not in (None, False, "") and open_settings_shortcut_name not in (None, False, ""):
         settings_file_path_abs = make_abs_path_relative_to_file(user_settings_path, developer_settings_path)
@@ -421,14 +420,14 @@ def main() -> None:
                 "The settings shortcut will still be created, but it will show an error until the file exists. "
                 f'Disable the settings shortcut by setting user_settings_path = None in "{developer_settings_path}".'
             )
-    generate_shortcut(
-        open_settings_shortcut_name,
-        settings_icon_path,
-        launcher_settings,
-        description=f"Open the {program_name} settings file",
-        start_minimized=True,
-        enabled=user_settings_path not in (None, False, ""),
-    )
+    if open_settings_shortcut_name and (user_settings_path not in (None, False, "")):
+        generate_shortcut(
+            open_settings_shortcut_name,
+            settings_icon_path,
+            launcher_settings,
+            description=f"Open the {program_name} settings file",
+            start_minimized=True,
+        )
 
     print()
     print(f"Shortcut(s) created in: {shortcut_output_dir}")

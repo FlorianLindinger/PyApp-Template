@@ -127,7 +127,7 @@ highlight_window_on_first_print = False
 # supress keyboard interrupt (CTRL+C):
 supress_keyboard_interrupt = False
 # args passed to main script:
-args_for_main_py = []
+args_for_main_py: list[str] = []
 # ---------------------------------------
 # Decide what parts of vanilla full Python to install:
 # --
