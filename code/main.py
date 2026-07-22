@@ -3,11 +3,11 @@ import os
 import sys
 import time
 
+import tmp_test  # noqa type:ignore
+
 if os.environ["PROGRAM_HAS_TERMINAL"] == "0":
     import tkinter as tk
     from tkinter import ttk
-
-
 
     root = tk.Tk()
     root.title(os.environ["PROGRAM_NAME"])
@@ -106,8 +106,8 @@ if os.environ["PROGRAM_HAS_TERMINAL"] == "0":
             break
         time.sleep(0.01)
     root.destroy()
-    
-    
+
+
 else:
     print("Ready")
     while True:

@@ -8,6 +8,7 @@ Imports are mostly lazy because it is not clear what will be needed
 
 import os
 import sys
+from typing import Any, override
 
 # =========================
 # add root dir for debug cases where this script is called on its own:
@@ -67,7 +68,7 @@ if terminal_text_color:
 # general helper functions
 
 
-def open_in_editor(path):
+def open_in_editor(path: str):
     import shutil
     import subprocess
 
@@ -106,12 +107,12 @@ def print_warn(msg: str | None, sep: str | None = " ", end: str | None = "\n"):
         print(f"{ANSI_WARN}{msg}{ANSI_RESET}", sep=sep, end=end)
 
 
-def input_warn(msg):
+def input_warn(msg: str):
     """Prompt for input using warning console styling."""
     return input(f"{ANSI_WARN}{msg}{ANSI_RESET}")
 
 
-def input_success(msg):
+def input_success(msg: str):
     """Prompt for input using success console styling."""
     return input(f"{ANSI_SUCCESS}{msg}{ANSI_RESET}")
 
@@ -146,20 +147,20 @@ def print_traceback(message: str = "") -> None:
 def delete_folder_safe(
     folder_abs_path: str | os.PathLike[str],
     *,
-    prompt_message="Delete this folder? (confirm that it is not an important one) [y/n]: ",
+    prompt_message: str = "Delete this folder? (confirm that it is not an important one) [y/n]: ",
     allowed_base_abs_path: str | os.PathLike[str] | None = None,
     expected_folder_name: str | None = None,
     required_included_files: list[str] | tuple[str, ...] | None = (),
     required_included_dirs: list[str] | tuple[str, ...] | None = (),
-    allow_empty_without_markers=True,
-    require_direct_child_of_allowed_base=False,
-    allow_filesystem_root_base=False,
+    allow_empty_without_markers: bool = True,
+    require_direct_child_of_allowed_base: bool = False,
+    allow_filesystem_root_base: bool = False,
     min_path_depth: int | None = 4,
     max_size_GB_before_prompt: float | None = 1.0,
     max_size_check_seconds: float | None = 5.0,
-    prompt_instead_of_requirement_failure=True,
-    always_prompt_for_confirmation=False,
-    print_on_deletion=False,
+    prompt_instead_of_requirement_failure: bool = True,
+    always_prompt_for_confirmation: bool = False,
+    print_on_deletion: bool = False,
 ) -> bool:
     """Delete a directory only after path, identity, and size checks pass.
 
@@ -204,17 +205,17 @@ def delete_folder_safe(
     def _raise_walk_error(error: OSError) -> None:
         raise error
 
-    def _format_bytes(num_bytes) -> str:
+    def _format_bytes(num_bytes: float) -> str:
         """Format bytes to for example kB and GB."""
         units = ["B", "KB", "MB", "GB", "TB"]
-        size = float(num_bytes)
+
         for unit in units:
-            if size < 1024 or unit == units[-1]:
+            if num_bytes < 1024 or unit == units[-1]:
                 if unit == "B":
-                    return f"{int(size)} {unit}"
+                    return f"{int(num_bytes)} {unit}"
                 else:
-                    return f"{size:.2f} {unit}"
-            size /= 1024
+                    return f"{num_bytes:.2f} {unit}"
+            num_bytes /= 1024
         return f"{num_bytes} B"
 
     def _is_filesystem_root_path(path: str | os.PathLike[str]) -> bool:
@@ -375,7 +376,7 @@ def delete_folder_safe(
     if always_prompt_for_confirmation and not sys.stdin.isatty():
         raise ValueError(f'Refusing to delete "{target_path}" without interactive confirmation.')
 
-    folder_size: int | None = None
+    folder_size: float | None = None
     folder_size_is_partial = False
     is_above_max_size = False
     if max_size_GB_before_prompt is not None:
@@ -610,7 +611,7 @@ def setup_unminimize_and_foreground_on_first_print():
     sys.stderr = unminimize_plus_foreground_terminal_on_first_output(sys.stderr)  # type:ignore
 
 
-def set_terminal_colors(colors=TERMINAL_COLORS):
+def set_terminal_colors(colors: str | None = TERMINAL_COLORS):
     """colors is in format of windows terminal colors"""
     if colors:
         try:
@@ -1029,7 +1030,7 @@ def set_terminal_appearance_once(app_id: str):
         _TERMINAL_APPEARANCE_WAS_SET = True
 
 
-def close_terminal(exit_code=None) -> bool:
+def close_terminal(exit_code: Any = None) -> bool:
     """Close the current terminal window when the launcher can safely exit."""
     parent_pid = os.getppid()
     try:
@@ -1104,7 +1105,7 @@ def resolve_log_path(log_path: str | bool | None, is_relative_to_start_folder_if
         return ""
 
 
-def make_abs_path_relative_to_file(path, file):
+def make_abs_path_relative_to_file(path: str, file: str):
     """makes a path absolute if relative with respect to the file (as if the file defined it)"""
     if not os.path.isabs(path):
         return os.path.normpath(os.path.dirname(file) + "\\" + path)
@@ -1112,7 +1113,7 @@ def make_abs_path_relative_to_file(path, file):
         return path
 
 
-def sanitize_filename(filename, replacement="_"):
+def sanitize_filename(filename: str, replacement: str = "_"):
     """Sanitize a string so it can be used as a Windows filename."""
     import re
 
@@ -1163,7 +1164,7 @@ def sanitize_filename(filename, replacement="_"):
 # file read/write
 
 
-def write_lines(path: str, lines: list[str], override=True):
+def write_lines(path: str, lines: list[str], override: bool = True):
     """lines are a list of strings without the endline symbol ("\n") added.
     If override==False it will append instead of recreating the file (default:  override=True)."""
 
@@ -1384,7 +1385,7 @@ def get_python_version():
     ).strip()
 
 
-def is_python_version_compatible(actual_version, required_version):
+def is_python_version_compatible(actual_version: str, required_version: str):
     actual_parts = actual_version.split(".")
     required_parts = required_version.strip().split(".")
 
@@ -1547,6 +1548,7 @@ def install_full_python(
                     super().__init__()
                     self.links: list[str] = []
 
+                @override
                 def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
                     """WIP"""
                     if tag.lower() == "a":
@@ -1982,7 +1984,7 @@ cmd /k
             f.write(batch_content)
 
 
-def prompt_for_distro_reinstall(msg="Reinstall distro / recreate virtual environment?"):
+def prompt_for_distro_reinstall(msg: str = "Reinstall distro / recreate virtual environment?"):
     """
     Return int in prints below for cases in print:
         print("0: Leave current Python version and packages")
@@ -2324,7 +2326,9 @@ def ensure_frontend_packages(used_appid_if_slow: str = ""):
         open(dev_tools_referal_note_path, "w", encoding="utf-8").close()
 
 
-def install_packages_from_file(path: str, no_cache: bool = False, app_id_for_slow: str = "", print_=True) -> None:
+def install_packages_from_file(
+    path: str, no_cache: bool = False, app_id_for_slow: str = "", print_: bool = True
+) -> None:
     """raises if failur"""
 
     os.makedirs(frontend_packages_dir, exist_ok=True)
@@ -2426,7 +2430,7 @@ def get_auto_find_pckgs_phrase_state() -> bool | None:
     return None
 
 
-def save_current_packages_as_default(auto_search_phrase_state=None, with_version=True):
+def save_current_packages_as_default(auto_search_phrase_state: bool | None = None, with_version: bool = True):
     if auto_search_phrase_state is None:
         auto_search_phrase_state = get_auto_find_pckgs_phrase_state()
 
@@ -2442,7 +2446,7 @@ def save_current_packages_as_default(auto_search_phrase_state=None, with_version
     )
 
 
-def get_installed_packages(exe_path, with_version=True):
+def get_installed_packages(exe_path: str, with_version: bool = True):
     import subprocess
 
     result = subprocess.run(  # noqa
@@ -2474,11 +2478,11 @@ def get_installed_packages(exe_path, with_version=True):
         return packages_without_version
 
 
-def get_current_packages(with_version=True):
+def get_current_packages(with_version: bool = True):
     return get_installed_packages(exe_path=frontend_python_exe, with_version=with_version)
 
 
-def save_installed_packages(exe_path, output_path=None, with_version=True):
+def save_installed_packages(exe_path: str, output_path: str | None = None, with_version: bool = True):
     if output_path is None:
         if with_version == True:
             output_path = determined_current_packages_file_path_withVersion
@@ -2494,12 +2498,12 @@ def save_installed_packages(exe_path, output_path=None, with_version=True):
     return output_path
 
 
-def save_current_packages(output_path=None, with_version=True):
+def save_current_packages(output_path: str | None = None, with_version: bool = True):
     return save_installed_packages(output_path=output_path, with_version=with_version, exe_path=frontend_python_exe)
 
 
 def save_requirements_of_root_folder_noVersion(
-    output_path=determined_needed_packages_output_file_path_noVersion,
+    output_path: str = determined_needed_packages_output_file_path_noVersion,
 ) -> tuple[bool, str]:
     """reuturns success,output_path"""
 
