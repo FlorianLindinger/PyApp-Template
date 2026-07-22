@@ -157,30 +157,6 @@ use_classic_terminal = True
 terminal_bg_color: str | None = "9"
 # Text color: A=LightGreen,B=LightAqua,C=LightRed,,D=LightPurple,E=LightYellow,F=BrightWhite:
 terminal_text_color: str | None = "F"
-
-
-start_minimized = False
-start_maximized = False
-
-disable_resize = False
-always_on_top = False
-
-
-# ---------------------------------------
-
-# dont resize
-# ontop
-
-hide_title_bar = False
-disable_minimize_button = False
-disable_maximize_button = False
-disable_x_button = False
-
-# ---------------------------------------
-
-# Terminal tab bar color. None uses the Windows Terminal profile default (e.g. "#3B78FF"):
-tab_bar_color: str | None = "#3B78FF"
-
 # ---------------------------------------
 
 # =========================================
