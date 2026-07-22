@@ -67,12 +67,12 @@ if terminal_text_color:
 # general helper functions
 
 
-def open_settings_in_editor(path):
+def open_in_editor(path):
     import shutil
     import subprocess
 
     if not os.path.exists(path):
-        print(f"[Error] Could not find settings file at path: {path}")
+        print(f"[Error] Could not find file at path: {path}")
         input("Press enter to exit.")
         sys.exit(0)
     vscode_exe_path = shutil.which("code")
