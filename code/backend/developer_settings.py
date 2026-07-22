@@ -21,7 +21,9 @@ windows_terminal_shortcut_name: str | None = f"{program_name}"
 no_terminal_shortcut_name: str | None = f"{program_name} (no Terminal)"
 open_settings_shortcut_name: str | None = f"{program_name} - Settings"
 stop_running_shortcut_name: str | None = f"Stop {program_name}"
-open_log_shortcut_name: str | None = f"{program_name} - Log"
+open_log_folder_shortcut_name: str | None = f"{program_name} - Logs"
+open_crash_log_folder_shortcut_name: str | None = f"{program_name} - Crash Logs"
+open_main_py_shortcut_name: str | None = f"{program_name} - Open main.py"
 # ---------------------------------------
 # String added before prints/inputs. Accepts datetime.datetime.strftime usage: e.g. "%H:%M:%S | ". None to turn off:
 print_prepend: str | None = "%H:%M:%S | "
@@ -78,6 +80,11 @@ open_log_file_after_failure = False
 open_log_file_after_crash = False
 open_log_file_after_KeyboardInterrupt = False
 # ---------------------------------------
+open_main_py_after_success = False
+open_main_py_after_failure = False
+open_main_py_after_crash = False
+open_main_py_after_KeyboardInterrupt = False
+# ---------------------------------------
 # False for off. True for default. String for rel. path to .wav in C:\Windows\Media:
 play_sound_after_success: str | bool = False
 play_sound_after_failure: str | bool = True
@@ -90,6 +97,14 @@ title_after_failure: str | None = f"[Failure] {program_name}"
 title_after_crash: str | None = f"[Crash] {program_name}"
 title_after_KeyboardInterrupt: str | None = f"[KeyboardInterrupt] {program_name}"
 # ---------------------------------------
+
+# ============================
+# ==== Traceback Settings ====
+# ============================
+
+# ---------------------------------------
+# ---------------------------------------
+
 
 # =================================
 # ==== Less Important Settings ====
