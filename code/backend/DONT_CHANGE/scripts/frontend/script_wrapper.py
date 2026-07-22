@@ -1,5 +1,6 @@
 # ruff: noqa: UP032
 
+
 """WIP
 
 This script must be compatible for Python 3.5+:
@@ -46,7 +47,7 @@ try:
     # ==============================
     # logging related
 
-    def _normalize_strftime_format(fmt):
+    def _normalize_strftime_format(fmt):  # pyrefly: ignore [implicit-any-parameter]
         """Accept strftime formats whose directives were percent-escaped upstream."""
         # fmt: off
         replacements = ("a", "A", "w", "d", "b", "B", "m", "y", "Y", "H", "I", "p", "M", "S", "f", "z", "Z", "j", "U", "W", "c", "x", "X", "G", "u", "V")
@@ -55,7 +56,7 @@ try:
             fmt = fmt.replace("%%" + directive, "%" + directive)
         return fmt
 
-    def _format_prepend(fmt):
+    def _format_prepend(fmt):  # pyrefly: ignore [implicit-any-parameter]
         if not fmt:
             return ""
 
@@ -98,14 +99,14 @@ try:
 
         def __init__(
             self,
-            print_stream,  # TextIO object
-            log_stream=None,  # TextIO object or None
-            print_timestamp_format="[%H:%M:%S] ",
-            log_timestamp_format="[%H:%M:%S]\t",
-            input_timestamp_format="",
-            log_input_timestamp_format="",
-            print_red=False,
-            auto_flush=True,
+            print_stream,  # TextIO object. # pyrefly: ignore [implicit-any-parameter]
+            log_stream=None,  # TextIO object or None. # pyrefly: ignore [implicit-any-parameter]
+            print_timestamp_format="[%H:%M:%S] ",  # pyrefly: ignore [implicit-any-parameter]
+            log_timestamp_format="[%H:%M:%S]\t",  # pyrefly: ignore [implicit-any-parameter]
+            input_timestamp_format="",  # pyrefly: ignore [implicit-any-parameter]
+            log_input_timestamp_format="",  # pyrefly: ignore [implicit-any-parameter]
+            print_red=False,  # pyrefly: ignore [implicit-any-parameter]
+            auto_flush=True,  # pyrefly: ignore [implicit-any-parameter]
         ):
             self.print_stream = print_stream
             self.log_stream = log_stream
@@ -127,17 +128,17 @@ try:
                 r")"
             )
 
-        def _strip_ansi_escape_sequences(self, text):
+        def _strip_ansi_escape_sequences(self, text):  # pyrefly: ignore [implicit-any-parameter]
             """Remove terminal ANSI escape sequences from text."""
             return self.ANSI_escape_re.sub("", text)
 
-        def _timestamp_prefix(self, fmt):
+        def _timestamp_prefix(self, fmt):  # pyrefly: ignore [implicit-any-parameter]
             return _format_prepend(fmt)
 
         def _print_supports_color(self):
             return bool(getattr(self.print_stream, "isatty", lambda: False)())
 
-        def write(self, data):
+        def write(self, data):  # pyrefly: ignore [implicit-any-parameter]
             if data is None:
                 data = ""
             if not isinstance(data, str):
@@ -179,7 +180,7 @@ try:
 
             return len(data)
 
-        def write_input_prompt(self, prompt):
+        def write_input_prompt(self, prompt):  # pyrefly: ignore [implicit-any-parameter]
             """Write the input prompt."""
             if prompt is None:
                 prompt = ""
@@ -198,7 +199,7 @@ try:
                 if self.auto_flush:
                     self.flush()
 
-        def complete_input_line(self, text):
+        def complete_input_line(self, text):  # pyrefly: ignore [implicit-any-parameter]
             """Finish logging a user input line."""
             with self._lock:
                 if self.log_stream is not None and not self._at_line_start:
@@ -230,12 +231,12 @@ try:
             return getattr(self.print_stream, "encoding", None)
 
     def setup_log_prints(
-        log_path,
-        overwrite_log=True,
-        print_prepend="",
-        log_print_prepend="",
-        input_prepend="",
-        log_input_prepend="",
+        log_path,  # pyrefly: ignore [implicit-any-parameter]
+        overwrite_log=True,  # pyrefly: ignore [implicit-any-parameter]
+        print_prepend="",  # pyrefly: ignore [implicit-any-parameter]
+        log_print_prepend="",  # pyrefly: ignore [implicit-any-parameter]
+        input_prepend="",  # pyrefly: ignore [implicit-any-parameter]
+        log_input_prepend="",  # pyrefly: ignore [implicit-any-parameter]
     ):
         """Install stdout, stderr, and input wrappers for logging."""
         import atexit
@@ -275,7 +276,7 @@ try:
     # ==============================
     # traceback related
 
-    def _traceback_snapshot_error(error, relation_text=""):
+    def _traceback_snapshot_error(error, relation_text=""):  # pyrefly: ignore [implicit-any-parameter]
         """Serialize exception data so backend Python can render it without rerunning the child."""
         frames = [
             {
@@ -307,12 +308,12 @@ try:
             "syntax": syntax,
         }
 
-    def _traceback_snapshot_chain(error):
+    def _traceback_snapshot_chain(error):  # pyrefly: ignore [implicit-any-parameter]
         """Serialize an exception chain in normal display order."""
         snapshots = []
         seen = set()
 
-        def _add(current_error):
+        def _add(current_error):  # pyrefly: ignore [implicit-any-parameter]
             if id(current_error) in seen:
                 return
             seen.add(id(current_error))
@@ -335,10 +336,10 @@ try:
         _add(error)
         return snapshots
 
-    def save_traceback(error, excepted_script_path, output_path):
+    def save_traceback(error, excepted_script_path, output_path):  # pyrefly: ignore [implicit-any-parameter]
         import json
 
-        def _get_system_exit_code_for_json(error):
+        def _get_system_exit_code_for_json(error):  # pyrefly: ignore [implicit-any-parameter]
             """Return SystemExit.code in a form json.dump can always serialize."""
             if not isinstance(error, SystemExit):
                 return None
@@ -361,7 +362,7 @@ try:
     # ==============================
     # miscellaneous
 
-    def string_to_bool(string):
+    def string_to_bool(string):  # pyrefly: ignore [implicit-any-parameter]
         """Convert a string to a boolean value, interpreting "true" (case-insensitive) as True, "false" (case-insensitive) as False, and raising ValueError for other inputs."""
 
         lowered = string.lower()
@@ -373,7 +374,7 @@ try:
             message = "Cannot convert string to bool: {!r}".format(string)
             raise ValueError(message)
 
-    def process_args(args):
+    def process_args(args):  # pyrefly: ignore [implicit-any-parameter]
         """Process the command-line arguments: The second element in the input is used as the empty argument indicator, and all occurrences of it in the arguments list are replaced with empty strings in the output list. The first element of the input is typically the script name and is included unchanged in the output."""
 
         EMPTY_ARG_INDICATOR = args[1]  # args[0] is script name
@@ -448,7 +449,7 @@ try:
 
             _original_input = builtins.input
 
-            def _input_with_prepend(prompt=""):
+            def _input_with_prepend(prompt=""):  # pyrefly: ignore [implicit-any-parameter]
                 """Prompt for input while applying console and log prefixes."""
                 if hasattr(sys.stdout, "write_input_prompt"):
                     sys.stdout.write_input_prompt(prompt)

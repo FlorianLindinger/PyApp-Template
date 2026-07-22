@@ -165,7 +165,3 @@ ignore = [
   "UP028",   # don't replace for+yield with "yield from"
   "W293",    # allow whitespace in empty line (for indented multiline str)
 ]
-
-# ================================================
-[tool.pyrefly] # language server and type checker
-# ================================================
