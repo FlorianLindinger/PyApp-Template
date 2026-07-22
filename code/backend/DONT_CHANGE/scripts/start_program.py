@@ -60,7 +60,7 @@ try:
     # define local functions/classes
     # ==============================
 
-    def get_startupinfo(minimized=False):
+    def get_startupinfo(minimized:bool=False):
         """Creates subprocess.Popen STARTUPINFO that opens a child process minimized if minimized, else None (default of Popen)"""
         if minimized:
             startupinfo = subprocess.STARTUPINFO()
@@ -75,7 +75,6 @@ try:
     # ==============================
 
     def main() -> None:
-
         set_terminal_colors()
 
         setup_unminimize_and_foreground_on_first_print()
@@ -86,7 +85,7 @@ try:
         if len(sys.argv) == 3:
             app_id = sys.argv[1]
             launch_mode = sys.argv[2]
-        elif len(sys.argv) == 1: # script is run on its own - mode
+        elif len(sys.argv) == 1:  # script is run on its own - mode
             app_id = ""
             launch_mode = "terminal"
         else:
