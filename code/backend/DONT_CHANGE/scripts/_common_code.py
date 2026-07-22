@@ -95,13 +95,13 @@ def make_empty_args_safe(args: list[str | None]) -> list[str]:
 # colored print and input and prompt and general print related
 
 
-def print_success(msg: str | None, sep: str | None = " ", end: str | None = "\n"):
+def print_success(msg: Any, sep: str | None = " ", end: str | None = "\n"):
     """Print a success-styled console message."""
     if msg is not None:
         print(f"{ANSI_SUCCESS}{msg}{ANSI_RESET}", sep=sep, end=end)
 
 
-def print_warn(msg: str | None, sep: str | None = " ", end: str | None = "\n"):
+def print_warn(msg: Any, sep: str | None = " ", end: str | None = "\n"):
     """Print a warning-styled console message."""
     if msg is not None:
         print(f"{ANSI_WARN}{msg}{ANSI_RESET}", sep=sep, end=end)
