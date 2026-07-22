@@ -67,7 +67,7 @@ button_settings: None | list[tuple[str, dict[str, bool]]] = [  # None = default 
 ]
 
 
-start_minimized = False
+
 start_maximized = False
 
 disable_resize = False
@@ -86,8 +86,7 @@ disable_x_button = False
 
 # ---------------------------------------
 
-# Terminal tab bar color. None uses the Windows Terminal profile default (e.g. "#3B78FF"):
-tab_bar_color: str | None = "#3B78FF"
+
 
 # -----------------
 # ---- Browser ----
