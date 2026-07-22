@@ -5,8 +5,6 @@ try:
     # package imports
 
     import os
-    import shutil
-    import subprocess
     import sys
     import traceback
 
@@ -18,35 +16,17 @@ try:
 
     # ==========================================================================
     # import from common variables and developer settings
-    import developer_settings
-
+    import backend.developer_settings
     from backend.DONT_CHANGE.scripts._common_code import (
         close_terminal,
-        setup_terminal_colors_and_unminimize_plus_foreground_on_first_print,
+        make_abs_path_relative_to_file,
+        # setup_terminal_colors_and_unminimize_plus_foreground_on_first_print,
+        open_settings_in_editor,
     )
     from backend.DONT_CHANGE.scripts._common_variables import developer_settings_path
 
     # ==========================================================================
     # needed functions
-
-    def open_settings_in_editor(path):
-        if not os.path.exists(path):
-            print(f"[Error] Could not find settings file at path: {path}")
-            input("Press enter to exit.")
-            sys.exit(0)
-        vscode_exe_path = shutil.which("code")
-        if vscode_exe_path is not None:
-            subprocess.Popen([vscode_exe_path, path])  # noqa:S603
-        else:
-            # Fallback
-            subprocess.Popen(["notepad.exe", path])  # noqa:S603
-
-    def make_abs_path_relative_to_file(path, file):
-        """makes a path absolute if relative with respect to the file (as if the file defined it)"""
-        if not os.path.isabs(path):
-            return os.path.normpath(os.path.dirname(file) + "\\" + path)
-        else:
-            return path
 
     # ==========================================================================
     # code execution
@@ -54,21 +34,21 @@ try:
     # =============================
     # script is inteded to be launched minimized and will un minimize on frist print/error
 
-    setup_terminal_colors_and_unminimize_plus_foreground_on_first_print()
+    #WIP setup_terminal_colors_and_unminimize_plus_foreground_on_first_print()
 
     # =============================
 
-    if not hasattr(developer_settings, "user_settings_path"):
+    if not hasattr(backend.developer_settings, "user_settings_path"):
         print("[Warning] Settings file is not implemented in program.")
         input("Press enter to exit.")
         sys.exit(0)
-    elif developer_settings.user_settings_path in [None, False, ""]:
+    elif backend.developer_settings.user_settings_path in [None, False, ""]:
         print("[Warning] Settings file disabled in program.")
         input("Press enter to exit.")
         sys.exit(0)
     else:
         user_settings_path = make_abs_path_relative_to_file(
-            developer_settings.user_settings_path, developer_settings_path
+            backend.developer_settings.user_settings_path, developer_settings_path
         )
 
         try:
