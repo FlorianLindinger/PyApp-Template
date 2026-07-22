@@ -67,6 +67,22 @@ if terminal_text_color:
 # general helper functions
 
 
+def open_settings_in_editor(path):
+    import shutil
+    import subprocess
+
+    if not os.path.exists(path):
+        print(f"[Error] Could not find settings file at path: {path}")
+        input("Press enter to exit.")
+        sys.exit(0)
+    vscode_exe_path = shutil.which("code")
+    if vscode_exe_path is not None:
+        subprocess.Popen([vscode_exe_path, path])  # noqa:S603
+    else:
+        # Fallback
+        subprocess.Popen(["notepad.exe", path])  # noqa:S603
+
+
 def make_empty_args_safe(args: list[str | None]) -> list[str]:
     """Needed because passing empty args as "" in Windows can be flimsy -> replace "" with EMPTY_ARG_INDICATOR and decode in child.
 

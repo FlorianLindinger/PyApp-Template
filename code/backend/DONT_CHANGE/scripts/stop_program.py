@@ -25,7 +25,7 @@ from backend.DONT_CHANGE.scripts._common_code import (
     make_abs_path_relative_to_file,
     print_success,
     print_traceback,
-    setup_terminal_colors_and_unminimize_plus_foreground_on_first_print,
+    # setup_terminal_colors_and_unminimize_plus_foreground_on_first_print,
     stop_processes_from_pid_file,
 )
 from backend.DONT_CHANGE.scripts._common_variables import developer_settings_path, process_id_file_path
@@ -39,7 +39,7 @@ try:
     # =============================
     # script is inteded to be launched minimized and will un minimize on frist print/error
 
-    setup_terminal_colors_and_unminimize_plus_foreground_on_first_print()
+    # WIPsetup_terminal_colors_and_unminimize_plus_foreground_on_first_print()
 
     # =============================
 
@@ -66,4 +66,5 @@ try:
     sys.exit(0)
 
 except Exception as e:
-    print_traceback(f"[Error] Failed to stop process: {e}", add_press_enter_to_exit=True)
+    print_traceback(f"[Error] Failed to stop process: {e}")
+    input("[Error (see abov)] Press enter to exit")

@@ -2,15 +2,13 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
-add a prompt function? how do i deal with continu in module missing-> full restand somehow
+add function to open py files
 
-do i raelly want popupü windwo for missing_module
+srot code in genrate_shortcuts
 
 where can i indocate that backend runs on embedable python and not full version. Maybe docstirng on all files.
 
-do i have nice terminals for package installation
-
-auto print in terminal the package to install?
+do i have nice terminals for package installation -> add printed line for start
 
 do i want travecak message baove or below? problaby below and combo with shrot form-> change (see above/below). also incldue in rich for coloring?
 
@@ -32,32 +30,13 @@ make icon not transparent in middle
 
 longterm add ways that main scriot can talj to backend and do stuff like the fancy terminal
 
-how does it handle if main has error in imported file?
-
-can i combine exception_type types?
-->not if i want clickable links.
-
-
-add setting: open main if errror there (excluding keyboerad?)
--> or just again settings for all cases
-
-fix: 
-    ImportError: error
-
-    [Failure] "C:\Users\Flo\Documents\Repositories\PyApp Template\code\main.py" had exception of type "None" (see above).
-    Press enter to exit
-
-why rich traceback now slow?
-
 fix up icons. are they not set?
 
-it should be able to catch syntax errrors in wrapper and give good suggestion for syntax errro in watchdog
+it should be able to catch syntax errrors in wrapper and give good suggestion for syntax errro in watchdog -> featues form oythnog 3.11+
 
 is crash txt reprot everyhwerhe?
 
 add a succes theme for rich traceback
-
-make end messages as variable in common variables?
 
 it does not handle syntax errorr in wrapepr? handle that somehopw better
 
@@ -68,7 +47,7 @@ Store 2–3 lines before and after every failing line in the JSON. Rich currentl
 
 setting how many linees beofre and after to print.
 
-mention rich customizaility
+mention rich customizaility. add more
 
 Exception notes and groups
 Support Python 3.11+ features when available:
