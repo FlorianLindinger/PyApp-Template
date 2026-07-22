@@ -2,6 +2,12 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+open_crash_log_folder_shortcut_name
+open_main_py_shortcut_name
+open_log_folder_shortcut_name
+
+simplify shortcut gneratio fcuntion into one function
+
 add function to open py files
 
 srot code in genrate_shortcuts

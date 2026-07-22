@@ -21,7 +21,7 @@ try:
         close_terminal,
         make_abs_path_relative_to_file,
         # setup_terminal_colors_and_unminimize_plus_foreground_on_first_print,
-        open_settings_in_editor,
+        open_in_editor,
     )
     from backend.DONT_CHANGE.scripts._common_variables import developer_settings_path
 
@@ -34,7 +34,7 @@ try:
     # =============================
     # script is inteded to be launched minimized and will un minimize on frist print/error
 
-    #WIP setup_terminal_colors_and_unminimize_plus_foreground_on_first_print()
+    # WIP setup_terminal_colors_and_unminimize_plus_foreground_on_first_print()
 
     # =============================
 
@@ -52,7 +52,7 @@ try:
         )
 
         try:
-            open_settings_in_editor(user_settings_path)
+            open_in_editor(user_settings_path)
             close_terminal()
         except Exception as e:
             print(f'[Error] Failed to open settings file at "{user_settings_path}": {e}')
