@@ -2,6 +2,12 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+pyrefly button changes strictness on wrokbook level. do i want that? probalby. git ignroe this? mabye not
+
+move genratie shrotuts to common tmeplate
+
+make a folder sub icon for folder ones
+
 open_crash_log_folder_shortcut_name
 open_main_py_shortcut_name
 open_log_folder_shortcut_name
