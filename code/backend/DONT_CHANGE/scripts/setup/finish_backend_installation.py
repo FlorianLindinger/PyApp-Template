@@ -64,7 +64,7 @@ import site""")
             print(f"[Info] Deleted {filename} to save space")
 
     # clear packages folder
-    def clear_folder_contents(folder):
+    def clear_folder_contents(folder:str):
         import shutil  # lazy import because slow
 
         forced_name = "python_packages"
