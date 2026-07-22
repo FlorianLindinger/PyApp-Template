@@ -32,6 +32,8 @@ input_prepend: str | None = "%H:%M:%S > "
 # Start script in scipt folder or folder of the starting shortcut. (affects log_path_rel_to_start_folder setting below):
 start_in_shortcut_folder = False
 # ---------------------------------------
+start_minimized = False
+# ---------------------------------------
 
 # ==========================
 # ==== Logging Settings ====
@@ -150,13 +152,24 @@ use_uv_to_install_packages = True
 # ---- Windows Terminal Start ----
 # --------------------------------
 
+# ---------------------------------------
 # use_classic_terminal=True uses classic old-style terminal (conhost.exe) with no tabs (looks more like an app and less like a terminal but text rendering and zooming are worse).
 # use_classic_terminal=False uses modern Windows Terminal (wt.exe): tabs and modern text rendering and zoom:
 use_classic_terminal = True
+# ---------------------------------------
+
+# settings for use_classic_terminal = True/False:
+# ---------------------------------------
 # Background color: 0=Black,1=Blue,2=Green,3=Aqua,4=Red,5=Purple,6=Yellow,8=Gray,7=White,9=LightBlue:
 terminal_bg_color: str | None = "9"
 # Text color: A=LightGreen,B=LightAqua,C=LightRed,,D=LightPurple,E=LightYellow,F=BrightWhite:
 terminal_text_color: str | None = "F"
+# ---------------------------------------
+
+# settings for use_classic_terminal = False:
+# ---------------------------------------
+# Terminal tab bar color in modern terminal. None uses the Windows Terminal profile default (e.g. "#3B78FF"):
+tab_bar_color: str | None = "#3B78FF"
 # ---------------------------------------
 
 # =========================================
