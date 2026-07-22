@@ -40,12 +40,15 @@ try:
         open_log_file_after_failure,
         open_log_file_after_KeyboardInterrupt,
         open_log_file_after_success,
+        open_main_py_after_crash,
+        open_main_py_after_failure,
+        open_main_py_after_KeyboardInterrupt,
+        open_main_py_after_success,
         overwrite_crash_log,
         play_sound_after_crash,
         play_sound_after_failure,
         play_sound_after_KeyboardInterrupt,
         play_sound_after_success,
-        program_name,
         title_after_crash,
         title_after_failure,
         title_after_KeyboardInterrupt,
@@ -53,6 +56,7 @@ try:
     )
     from backend.DONT_CHANGE.scripts._common_code import (
         input_warn,
+        open_in_editor,
         print_traceback,
         resolve_log_path,
         set_terminal_app_id,
@@ -75,6 +79,7 @@ try:
         play_sound_after_failure_default,
         play_sound_after_KeyboardInterrupt_default,
         play_sound_after_success_default,
+        python_script_path,
         success_icon_path,
         tmp_traceback_json_path,
         windows_dir,
@@ -435,6 +440,7 @@ try:
             terminal_icon = success_icon_path
             terminal_title = title_after_success
             close = close_after_success
+            open_main = open_main_py_after_success
         elif mode == "failure":
             play_sound = play_sound_after_failure
             play_sound_default = play_sound_after_failure_default
@@ -443,6 +449,7 @@ try:
             terminal_icon = failure_icon_path
             terminal_title = title_after_failure
             close = close_after_failure
+            open_main = open_main_py_after_failure
         elif mode == "crash":
             play_sound = play_sound_after_crash
             play_sound_default = play_sound_after_crash_default
@@ -451,6 +458,7 @@ try:
             terminal_icon = crash_icon_path
             terminal_title = title_after_crash
             close = close_after_crash
+            open_main = open_main_py_after_crash
         elif mode == "KeyboardInterrupt":
             play_sound = play_sound_after_KeyboardInterrupt
             play_sound_default = play_sound_after_KeyboardInterrupt_default
@@ -459,6 +467,7 @@ try:
             terminal_icon = KeyboardInterrupt_icon_path
             terminal_title = title_after_KeyboardInterrupt
             close = close_after_KeyboardInterrupt
+            open_main = open_main_py_after_KeyboardInterrupt
 
         # play sound
         if play_sound is True:
@@ -495,6 +504,9 @@ try:
                 os.startfile(log_path)  # type: ignore[attr-defined]  # noqa:S606
             except Exception as e:
                 print(f"[Error] Failed to open log: {e}")
+
+        if open_main:
+            open_in_editor(python_script_path)
 
         # rest
         print(exit_msg)
@@ -607,21 +619,22 @@ try:
                         override_to_not_closing_and_disable_wait=True,
                     )
 
-                    answer = button_prompt_window_noTkinter(
-                        title=f"[Missing Package Error] {program_name}",
-                        body_text="Choose how to proceed",
-                        button_texts=[
-                            "Install missing package and restart",
-                            "Auto search needed packages, install them, and restart",
-                            "Open terminal for manual installation and restart after terminal closure",
-                            "Quit and open main.py",
-                            "Quit and open packages folder",
-                            "Restart",
-                            "Quit",
-                        ],
-                        vertical_buttons=True,
-                    )
+                    # answer = button_prompt_window_noTkinter(
+                    #     title=f"[Missing Package Error] {program_name}",
+                    #     body_text="Choose how to proceed",
+                    #     button_texts=[
+                    #         "Install missing package and restart",
+                    #         "Auto search needed packages, install them, and restart",
+                    #         "Open terminal for manual installation and restart after terminal closure",
+                    #         "Quit and open main.py",
+                    #         "Quit and open packages folder",
+                    #         "Restart",
+                    #         "Quit",
+                    #     ],
+                    #     vertical_buttons=True,
+                    # )
 
+                    input()
 
                     # options:
                     # 1) install missing package->use pipreqs mappings if needed i guess
