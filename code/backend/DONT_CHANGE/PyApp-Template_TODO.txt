@@ -2,7 +2,9 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
-pyrefly button changes strictness on wrokbook level. do i want that? probalby. git ignroe this? mabye not
+chack all files with pyrefly scirtpt
+
+add images of rich traceback to readme. also taskbar grouiping wiht arrow and circle
 
 move genratie shrotuts to common tmeplate
 
