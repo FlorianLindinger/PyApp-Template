@@ -1,28 +1,30 @@
-"""Open the configured user settings file"""
+"""WIP"""
 
 try:
-    # ==========================================================================
-    # package imports
+    # =============================
+    # import Python packages
 
     import os
     import sys
 
-    # ==========================================================================
+    # =============================
     # add root dir for debug cases where this script is called on its own
 
     root_dir = os.path.dirname(__file__) + "\\..\\..\\..\\.."
     if root_dir not in sys.path:
         sys.path.insert(0, root_dir)
 
-    # ==========================================================================
-    # import from common variables and developer settings
+    # =============================
+    # import from files
 
-    from backend.developer_settings import user_settings_path
+    from backend.developer_settings import (
+        log_path,
+        log_path_is_relative_to_start_folder_if_relative,
+    )
     from backend.DONT_CHANGE.scripts._common_code import (
         close_terminal,
+        get_log_folder_path,
         input_warn,
-        make_abs_path_relative_to_file,
-        open_in_editor,
         print_traceback,
         print_warn,
         set_terminal_colors,
@@ -40,28 +42,23 @@ try:
 
     # =============================
 
-    if not user_settings_path:
-        print_warn(
-            f'[Info] Can\'t open settings file because user_settings_path is disabled in "{developer_settings_path}".'
-        )
+    folder_path = get_log_folder_path(log_path, log_path_is_relative_to_start_folder_if_relative)
+
+    if folder_path is None:
+        print_warn(f'[Info] Can\'t open log folder because log_path is disabled in "{developer_settings_path}".')
         input_warn("Press enter to exit.")
-        close_terminal()
     else:
-        
-        path=make_abs_path_relative_to_file(user_settings_path,developer_settings_path)
-        
-        if not os.path.exists(path):
-            print_warn(f'[Error] User settings file ("{path}") does not exist.')
+        if not os.path.exists(folder_path):
+            print_warn(f'[Error] Log folder ("{folder_path}") does not exist.')
             input_warn("Press enter to exit.")
-            close_terminal()
         else:
             try:
-                open_in_editor(path)
-                close_terminal()
+                os.startfile(folder_path)  # noqa:S606
             except Exception:
-                print_traceback(f'[Error] Failed to user-settings file "{path}".')
+                print_traceback(f'[Error] Failed to open log folder "{folder_path}".')
                 input_warn("Press enter to exit.")
-                close_terminal()
+
+    close_terminal()
 
     # =============================
 
@@ -72,7 +69,7 @@ except Exception as e:
     print()
     print()
     print("=" * 20)
-    print(f"[Error] Failed to open settings file: {e}")
+    print(f"[Error] Failed to open log folder: {e}")
     print("-" * 20)
     print(traceback.format_exc())
     print("=" * 20)

@@ -14,7 +14,7 @@ import time
 
 # ==========================================================================
 # add root dir for debug cases where this script is called on its own:
-root_dir = os.path.dirname(__file__) + "\\..\\..\\.."
+root_dir = os.path.dirname(__file__) + "\\..\\..\\..\\.."
 if root_dir not in sys.path:
     sys.path.insert(0, root_dir)
 

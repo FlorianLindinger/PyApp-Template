@@ -1,4 +1,4 @@
-"""Open the configured user settings file"""
+"""WIP"""
 
 try:
     # ==========================================================================
@@ -17,20 +17,16 @@ try:
     # ==========================================================================
     # import from common variables and developer settings
 
-    from backend.developer_settings import user_settings_path
     from backend.DONT_CHANGE.scripts._common_code import (
         close_terminal,
         input_warn,
-        make_abs_path_relative_to_file,
         open_in_editor,
         print_traceback,
         print_warn,
         set_terminal_colors,
         set_unminimize_and_foreground_on_first_print,
     )
-    from backend.DONT_CHANGE.scripts._common_variables import (
-        developer_settings_path,
-    )
+    from backend.DONT_CHANGE.scripts._common_variables import python_script_path
 
     # =============================
     # script is inteded to be launched minimized and will un minimize on frist print/error
@@ -40,28 +36,17 @@ try:
 
     # =============================
 
-    if not user_settings_path:
-        print_warn(
-            f'[Info] Can\'t open settings file because user_settings_path is disabled in "{developer_settings_path}".'
-        )
+    if not os.path.exists(python_script_path):
+        print_warn(f'[Error] main.py file ("{python_script_path}") does not exist.')
         input_warn("Press enter to exit.")
-        close_terminal()
     else:
-        
-        path=make_abs_path_relative_to_file(user_settings_path,developer_settings_path)
-        
-        if not os.path.exists(path):
-            print_warn(f'[Error] User settings file ("{path}") does not exist.')
+        try:
+            open_in_editor(python_script_path)
+        except Exception:
+            print_traceback(f'[Error] Failed to open main.py file "{python_script_path}".')
             input_warn("Press enter to exit.")
-            close_terminal()
-        else:
-            try:
-                open_in_editor(path)
-                close_terminal()
-            except Exception:
-                print_traceback(f'[Error] Failed to user-settings file "{path}".')
-                input_warn("Press enter to exit.")
-                close_terminal()
+
+    close_terminal()
 
     # =============================
 
@@ -72,7 +57,7 @@ except Exception as e:
     print()
     print()
     print("=" * 20)
-    print(f"[Error] Failed to open settings file: {e}")
+    print(f"[Error] Failed to open main.py file: {e}")
     print("-" * 20)
     print(traceback.format_exc())
     print("=" * 20)
