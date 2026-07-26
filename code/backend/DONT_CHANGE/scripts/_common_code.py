@@ -605,7 +605,7 @@ def delete_folder_safe(
 # terminal related
 
 
-def setup_unminimize_and_foreground_on_first_print():
+def set_unminimize_and_foreground_on_first_print():
     # this will unminimize and foreground on first print/error
     sys.stdout = unminimize_plus_foreground_terminal_on_first_output(sys.stdout)  # type:ignore
     sys.stderr = unminimize_plus_foreground_terminal_on_first_output(sys.stderr)  # type:ignore
@@ -1082,7 +1082,32 @@ def close_terminal(exit_code: Any = None) -> bool:
 # path related/file name related
 
 
-def resolve_log_path(log_path: str | bool | None, is_relative_to_start_folder_if_relative: bool) -> str:
+def get_log_folder_path(log_path: str | bool | None, is_relative_to_start_folder_if_relative: bool) -> str | None:
+    """Converts log_path = None, False, "" to None. Converts datetime format. Converts relative path either relative to developer_settings.py or start folder (where the start shortcut is)."""
+
+    assert log_path is not True, "True is not a valid value for the log path. Choose: (relative) path, None, or False."
+    if log_path:
+        if not os.path.isabs(log_path):
+            if is_relative_to_start_folder_if_relative:
+                log_path_resolved = os.path.normpath(os.path.join(os.getcwd(), log_path))
+            else:
+                log_path_resolved = os.path.normpath(os.path.join(developer_settings_dir, log_path))
+        else:
+            log_path_resolved = log_path
+
+        log_folder_path_resolved = os.path.dirname(log_path_resolved)
+
+        if "%" in log_folder_path_resolved:
+            from datetime import datetime
+
+            log_path_resolved = datetime.now().astimezone().strftime(log_folder_path_resolved)
+
+        return log_folder_path_resolved
+    else:
+        return None
+
+
+def get_log_path(log_path: str | bool | None, is_relative_to_start_folder_if_relative: bool) -> str:
     """Handles log paths: Converts None and False to "". Converts datetime format. Converts relative path either relative to developer_settings.py or start folder (where the start shortcut is)."""
 
     assert log_path is not True, "True is not a valid value for the log path. Choose: (relative) path, None, or False."

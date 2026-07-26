@@ -25,7 +25,7 @@ try:
     # ==============================
 
     # add root dir to resolve file imports for debug cases where this script is called on its own:
-    root_dir = os.path.dirname(__file__) + "\\..\\..\\.."
+    root_dir = os.path.dirname(__file__) + "\\..\\..\\..\\.."
     if root_dir not in sys.path:
         sys.path.insert(0, root_dir)
 
@@ -44,7 +44,7 @@ try:
         print_traceback,
         print_warn,
         set_terminal_colors,
-        setup_unminimize_and_foreground_on_first_print,
+        set_unminimize_and_foreground_on_first_print,
     )
     from backend.DONT_CHANGE.scripts._common_variables import (
         CORRECT_START_SIGNAL_FILE_PATH,
@@ -60,7 +60,7 @@ try:
     # define local functions/classes
     # ==============================
 
-    def get_startupinfo(minimized:bool=False):
+    def get_startupinfo(minimized: bool = False):
         """Creates subprocess.Popen STARTUPINFO that opens a child process minimized if minimized, else None (default of Popen)"""
         if minimized:
             startupinfo = subprocess.STARTUPINFO()
@@ -77,7 +77,7 @@ try:
     def main() -> None:
         set_terminal_colors()
 
-        setup_unminimize_and_foreground_on_first_print()
+        set_unminimize_and_foreground_on_first_print()
 
         # ==============================
         # get and process args
