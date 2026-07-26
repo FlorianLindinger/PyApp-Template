@@ -16,7 +16,9 @@ if root_dir not in sys.path:
 
 from backend.DONT_CHANGE.scripts._common_code import close_terminal
 
+# ====================================
 # settings
+
 user_png_folder_path = "../../icons/"
 fallback_png_folder_path = "./"
 output_path = "../../icons/"
@@ -27,8 +29,11 @@ fallback_log_png_id = "512x512:3d23c1a5"
 fallback_success_png_id = "512x512:87ba9782"
 fallback_failure_png_id = "512x512:1a35061c"
 fallback_crash_png_id = "512x512:1e0682c4"
-ICON_DELETE_TIMEOUT_SECONDS = 5.0
-ICON_RETRY_DELAY_SECONDS = 0.1
+fallback_crash_log_png_id = "512x512:f6bdeb4b"
+fallback_open_main_py_png_id = "512x512:79acf3f8"
+
+SUBICON_AREA_SCALE_FACTOR = 0.35
+
 GENERATED_OVERLAY_ICONS = {
     "settings": ("settings.png", "default_settings.png", fallback_settings_png_id),
     "stop": ("stop.png", "default_stop.png", fallback_stop_png_id),
@@ -36,8 +41,15 @@ GENERATED_OVERLAY_ICONS = {
     "success": ("success.png", "default_success.png", fallback_success_png_id),
     "failure": ("failure.png", "default_failure.png", fallback_failure_png_id),
     "crash": ("crash.png", "default_crash.png", fallback_crash_png_id),
+    "crash_log": ("crash_log.png", "default_crash_log.png", fallback_crash_log_png_id),
+    "open_main_py": ("open_main_py.png", "default_open_main_py.png", fallback_open_main_py_png_id),
 }
 GENERATED_ICON_FILENAMES = ("icon.ico", *(f"{name}.ico" for name in GENERATED_OVERLAY_ICONS))
+
+ICON_DELETE_TIMEOUT_SECONDS = 5.0
+ICON_RETRY_DELAY_SECONDS = 0.1
+
+# ====================================
 
 file_path = os.path.dirname(os.path.abspath(__file__))
 os.chdir(file_path)
@@ -125,9 +137,11 @@ function Compose-Overlay(
     [System.Windows.Media.Imaging.BitmapSource]$overlayBitmap,
     [double]$overlayScaleFactor
 ) {
-    $baseMax = [double][Math]::Max($baseBitmap.PixelWidth, $baseBitmap.PixelHeight)
-    $overlayMax = [double][Math]::Max($overlayBitmap.PixelWidth, $overlayBitmap.PixelHeight)
-    $scale = ($baseMax / $overlayMax) * $overlayScaleFactor
+    # Make the sub-icon occupy the requested fraction of the base icon's area.
+    # Scaling each dimension requires the square root of that area ratio.
+    $baseArea = [double]$baseBitmap.PixelWidth * $baseBitmap.PixelHeight
+    $overlayArea = [double]$overlayBitmap.PixelWidth * $overlayBitmap.PixelHeight
+    $scale = [Math]::Sqrt(($baseArea / $overlayArea) * $overlayScaleFactor)
     $overlayWidth = [Math]::Max(1, [int][Math]::Round($overlayBitmap.PixelWidth * $scale))
     $overlayHeight = [Math]::Max(1, [int][Math]::Round($overlayBitmap.PixelHeight * $scale))
     $posX = $baseBitmap.PixelWidth - $overlayWidth
@@ -178,7 +192,21 @@ switch ($operation) {
         } | ConvertTo-Json -Compress
         break
     }
-    'render-icon' {
+    'image-ids' {
+        $requests = $env:ICON_IMAGE_ID_REQUESTS | ConvertFrom-Json
+        $entries = foreach ($request in $requests) {
+            $bitmap = Get-BgraBitmap $request.uri
+            [pscustomobject]@{
+                path = $request.path
+                width = $bitmap.PixelWidth
+                height = $bitmap.PixelHeight
+                bgra_base64 = [Convert]::ToBase64String((Copy-BgraBytes $bitmap))
+            }
+        }
+
+        @($entries) | ConvertTo-Json -Compress
+        break
+    }    'render-icon' {
         $bitmap = Get-BgraBitmap $env:ICON_BASE_URI
         if ($env:ICON_OVERLAY_URI) {
             $overlayBitmap = Get-BgraBitmap $env:ICON_OVERLAY_URI
@@ -197,7 +225,33 @@ switch ($operation) {
         @($entries) | ConvertTo-Json -Compress
         break
     }
-    default {
+    'render-icons' {
+        $jobs = $env:ICON_RENDER_JOBS | ConvertFrom-Json
+        $sizes = $env:ICON_SIZES -split ',' | ForEach-Object { [int]$_ }
+        $results = foreach ($job in $jobs) {
+            $bitmap = Get-BgraBitmap $job.base_uri
+            if ($job.overlay_uri) {
+                $overlayBitmap = Get-BgraBitmap $job.overlay_uri
+                $bitmap = Compose-Overlay $bitmap $overlayBitmap ([double]$job.overlay_scale_factor)
+            }
+
+            $entries = foreach ($size in $sizes) {
+                $iconBitmap = Render-SquareIcon $bitmap $size
+                [pscustomobject]@{
+                    size = $size
+                    png_base64 = Encode-PngBase64 $iconBitmap
+                }
+            }
+
+            [pscustomobject]@{
+                name = $job.name
+                entries = @($entries)
+            }
+        }
+
+        @($results) | ConvertTo-Json -Compress -Depth 4
+        break
+    }    default {
         throw "Unsupported ICON_OPERATION: $operation"
     }
 }
@@ -265,11 +319,44 @@ def _load_image_data(path: str) -> tuple[int, int, bytes]:
     )
 
 
+def _load_image_data_batch(paths: list[str]) -> dict[str, tuple[int, int, bytes]]:
+    """Load decoded pixels for multiple images in one PowerShell/WPF process."""
+    if not paths:
+        return {}
+
+    requests = [{"path": path, "uri": _path_to_uri(path)} for path in paths]
+    payload = json.loads(
+        _run_powershell(
+            ICON_OPERATION="image-ids",
+            ICON_IMAGE_ID_REQUESTS=json.dumps(requests),
+        )
+    )
+    if isinstance(payload, dict):
+        payload = [payload]
+
+    return {
+        entry["path"]: (
+            int(entry["width"]),
+            int(entry["height"]),
+            base64.b64decode(entry["bgra_base64"]),
+        )
+        for entry in payload
+    }
+
+
+def _image_ids(paths: list[str]) -> dict[str, str]:
+    """Return stable image identifiers for multiple paths in one process."""
+    image_data = _load_image_data_batch(paths)
+    return {
+        path: f"{width}x{height}:{zlib.crc32(_bgra_to_rgba(bgra_bytes)) & 0xFFFFFFFF:08x}"
+        for path, (width, height, bgra_bytes) in image_data.items()
+    }
+
 def _render_png_layers(
     base_path: str,
     icon_sizes: tuple[int, ...],
     overlay_path: str | None = None,
-    overlay_scale_factor: float = 0.6,
+    overlay_scale_factor: float = 0.35,
 ) -> list[tuple[int, bytes]]:
     raw_payload = _run_powershell(
         ICON_OPERATION="render-icon",
@@ -285,6 +372,41 @@ def _render_png_layers(
 
     return [(int(entry["size"]), base64.b64decode(entry["png_base64"])) for entry in payload]
 
+
+def _render_png_layers_batch(
+    jobs: list[tuple[str, str, str | None, float]],
+    icon_sizes: tuple[int, ...],
+) -> dict[str, list[tuple[int, bytes]]]:
+    """Render multiple icons in one PowerShell/WPF process."""
+    if not jobs:
+        return {}
+
+    requests = [
+        {
+            "name": name,
+            "base_uri": _path_to_uri(base_path),
+            "overlay_uri": _path_to_uri(overlay_path) if overlay_path else "",
+            "overlay_scale_factor": overlay_scale_factor,
+        }
+        for name, base_path, overlay_path, overlay_scale_factor in jobs
+    ]
+    payload = json.loads(
+        _run_powershell(
+            ICON_OPERATION="render-icons",
+            ICON_RENDER_JOBS=json.dumps(requests),
+            ICON_SIZES=",".join(str(size) for size in icon_sizes),
+        )
+    )
+    if isinstance(payload, dict):
+        payload = [payload]
+
+    return {
+        result["name"]: [
+            (int(entry["size"]), base64.b64decode(entry["png_base64"]))
+            for entry in result["entries"]
+        ]
+        for result in payload
+    }
 
 def _build_ico(layers: list[tuple[int, bytes]]) -> bytes:
     icon_dir = struct.pack("<HHH", 0, 1, len(layers))
@@ -336,7 +458,7 @@ def create_composite_icon(
     base_path,
     overlay_path,
     output_path,
-    overlay_scale_factor=0.6,
+    overlay_scale_factor=0.35,
     icon_sizes=(256, 128, 64, 48, 32, 16),
     background_color=(0, 0, 0, 0),  # transparent padding
 ):
@@ -369,17 +491,22 @@ def image_id(path: str) -> str:
     return f"{width}x{height}:{crc:08x}"
 
 
-def _pick_icon_path(user_path: str, fallback_path: str, fallback_image_id: str, label: str) -> str:
+def _pick_icon_path(
+    user_path: str,
+    fallback_path: str,
+    fallback_image_id: str,
+    label: str,
+    user_image_id: str | None = None,
+) -> str:
     """Choose the user icon path when available, otherwise the fallback path."""
     if os.path.exists(user_path):
-        if image_id(user_path) == fallback_image_id:
+        if (user_image_id if user_image_id is not None else image_id(user_path)) == fallback_image_id:
             print(f"Using fallback {label} icon.")
             return fallback_path
         return user_path
 
     print(f"Using fallback {label} icon because {os.path.basename(user_path)} is missing.")
     return fallback_path
-
 
 def _pause_before_exit() -> None:
     """Pause before exit so console users can read the result."""
@@ -428,11 +555,6 @@ def delete_existing_generated_icons() -> None:
 
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1:
-        overlay_scale_factor = float(sys.argv[1])
-    else:
-        overlay_scale_factor = 0.6
-
     try:
         delete_existing_generated_icons()
     except Exception as e:
@@ -440,11 +562,19 @@ if __name__ == "__main__":
         _pause_before_exit()
         sys.exit(1)
 
+    user_icon_paths = [user_png_folder_path + "icon.png"] + [
+        user_png_folder_path + user_filename
+        for user_filename, _, _ in GENERATED_OVERLAY_ICONS.values()
+    ]
+    user_image_ids = _image_ids([path for path in user_icon_paths if os.path.exists(path)])
+
+    base_user_path = user_png_folder_path + "icon.png"
     base_icon_path = _pick_icon_path(
-        user_png_folder_path + "icon.png",
+        base_user_path,
         fallback_png_folder_path + "default_icon.png",
         fallback_base_png_id,
         "base",
+        user_image_ids.get(base_user_path),
     )
     overlay_icon_paths = {
         name: _pick_icon_path(
@@ -452,22 +582,34 @@ if __name__ == "__main__":
             fallback_png_folder_path + fallback_filename,
             fallback_image_id,
             name,
+            user_image_ids.get(user_png_folder_path + user_filename),
         )
         for name, (user_filename, fallback_filename, fallback_image_id) in GENERATED_OVERLAY_ICONS.items()
     }
 
+    icon_sizes = (256, 128, 64, 48, 32, 16)
+    render_jobs = []
+    if os.path.exists(base_icon_path):
+        render_jobs.append(("icon", base_icon_path, None, SUBICON_AREA_SCALE_FACTOR))
+        for name, overlay_icon_path in overlay_icon_paths.items():
+            if os.path.exists(overlay_icon_path):
+                render_jobs.append((name, base_icon_path, overlay_icon_path, SUBICON_AREA_SCALE_FACTOR))
+            else:
+                print(f'Error creating {name}.ico: overlay image does not exist: "{overlay_icon_path}"')
+    else:
+        print(f'Error creating icons: base image does not exist: "{base_icon_path}"')
+
     try:
-        create_icon(base_icon_path, output_path + "icon.ico")
-        print("Generated: icon.ico")
+        rendered_layers = _render_png_layers_batch(render_jobs, icon_sizes)
     except Exception as e:
-        print(f"Error creating icon.ico: {e}")
-
-    for name, overlay_icon_path in overlay_icon_paths.items():
-        filename = f"{name}.ico"
-        try:
-            create_composite_icon(base_icon_path, overlay_icon_path, output_path + filename, overlay_scale_factor)
-            print(f"Generated: {filename}")
-        except Exception as e:
-            print(f"Error creating {filename}: {e}")
-
+        print(f"Error rendering icons: {e}")
+    else:
+        for name, _, _, _ in render_jobs:
+            filename = f"{name}.ico"
+            try:
+                with open(output_path + filename, "wb") as output_file:
+                    output_file.write(_build_ico(rendered_layers[name]))
+                print(f"Generated: {filename}")
+            except Exception as e:
+                print(f"Error creating {filename}: {e}")
     _pause_before_exit()
