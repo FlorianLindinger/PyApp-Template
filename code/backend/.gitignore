@@ -6,16 +6,3 @@ __pycache__
 /python_and_packages/
 # whitelist file in Python distro and packages folder:
 !/python_and_packages/USE developer_tools FOLDER (IN PARENT FOLDER) TO CHANGE PACKAGES
-# output files of developer tools:
-/developer_tools/*.txt
-# whitelist specific files in developer tools folder:
-!/developer_tools/README.txt
-!developer_tools/DEFAULT_PYTHON_PACKAGES.txt
-!developer_tools/CURRENT_PYTHON_VERSION.txt
-# ===================================================
-
-# =============================
-# ==== specific gitignores ====
-# =============================
-
-# ADD YOUR GITIGNORES HERE
