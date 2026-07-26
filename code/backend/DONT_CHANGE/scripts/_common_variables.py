@@ -13,6 +13,7 @@ def make_abs(x: str) -> str:
 
 # backend related
 # ------------------------
+
 # Change backend Python version in install_backend_python.bat.
 backend_python_dir = make_abs("..\\backend_python")  # Update contents of backend_python_pth_file and pyproject.toml
 backend_python_pth_file = (
@@ -26,6 +27,7 @@ backend_files_to_delete_on_install = ["sqlite3.dll", "python.cat"]
 
 # frontend related
 # ------------------------
+
 frontend_script_wrapper_path = make_abs("shortcut_targets_via_batch\\child_scripts\\frontend_python\\script_wrapper.py")
 frontend_packages_dir = make_abs("..\\..\\python_and_packages\\packages")  # UPDATE GITIGNORE
 frontend_python_dir = make_abs("..\\..\\python_and_packages\\python")  # UPDATE GITIGNORE
@@ -39,27 +41,49 @@ dev_tools_referal_note_path = (
 
 # folders
 # ------------------------
+
 windows_dir = os.environ.get("WINDIR", default="C:\\Windows")
 python_scripts_dir = make_abs("..\\..\\..")
 developer_tools_dir = make_abs("..\\..\\developer_tools")  # UPDATE GITIGNORE
 shortcut_output_dir = make_abs("..\\..\\..\\..")  # UPDATE GITIGNORE
-starter_batches_folder = make_abs("..\\B")
 temporary_folder = make_abs("..\\temporary")
 
 # scripts
 # ------------------------
+
 start_program_script = make_abs("shortcut_targets_via_batch\\start_program.py")
 python_script_path = make_abs("..\\..\\..\\main.py")
 background_watchdog_path = make_abs("shortcut_targets_via_batch\\child_scripts\\backend_python\\background_watchdog.py")
 start_time_dummy_main_script_path = make_abs("..\\backend_test_tools\\helper_scripts\\start_time_dummy_main_script.py")
+exit_processer_path = make_abs("shortcut_targets_via_batch\\child_scripts\\backend_python\\process_exit.py")
+
+# shorcut launchers related
+# ------------------------
+
+starter_batches_folder = make_abs("..\\B")
 launcher_terminal = starter_batches_folder + "\\W.bat"
 launcher_emulator = starter_batches_folder + "\\E.bat"
-launcher_settings = starter_batches_folder + "\\S.bat"
+launcher_open_settings = starter_batches_folder + "\\S.bat"
 launcher_browser = starter_batches_folder + "\\B.bat"
 launcher_no_terminal = starter_batches_folder + "\\N.bat"
 launcher_stop = starter_batches_folder + "\\Q.bat"
-launcher_log = starter_batches_folder + "\\L.bat"
-exit_processer_path = make_abs("shortcut_targets_via_batch\\child_scripts\\backend_python\\process_exit.py")
+launcher_open_log_folder = starter_batches_folder + "\\L.bat"
+launcher_open_crash_log_folder = starter_batches_folder + "\\C.bat"
+launcher_open_main_py = starter_batches_folder + "\\M.bat"
+
+# icon related ("" means no change)
+# ------------------------
+
+icon_path = make_abs("..\\..\\icons\\icon.ico")
+settings_icon_path = make_abs("..\\..\\icons\\settings.ico")
+stop_icon_path = make_abs("..\\..\\icons\\stop.ico")
+log_icon_path = make_abs("..\\..\\icons\\log.ico")
+success_icon_path = make_abs("..\\..\\icons\\success.ico")
+failure_icon_path = make_abs("..\\..\\icons\\failure.ico")
+crash_icon_path = make_abs("..\\..\\icons\\crash.ico")
+crash_log_icon_path = make_abs("..\\..\\icons\\crash_log.ico")
+KeyboardInterrupt_icon_path = ""
+open_main_py_icon_path = make_abs("..\\..\\icons\\open_main_py.ico")
 
 # files
 # ------------------------
@@ -67,14 +91,6 @@ exit_processer_path = make_abs("shortcut_targets_via_batch\\child_scripts\\backe
 pipreqs_mapping_path = backend_packages_dir + "\\pipreqs\\mapping"
 tmp_traceback_json_path = temporary_folder + "\\last_crash_log.json"
 developer_settings_path = make_abs("..\\..\\developer_settings.py")
-icon_path = make_abs("..\\..\\icons\\icon.ico")
-settings_icon_path = make_abs("..\\..\\icons\\settings.ico")
-stop_icon_path = make_abs("..\\..\\icons\\stop.ico")
-log_icon_path = make_abs("..\\..\\icons\\log.ico")
-KeyboardInterrupt_icon_path = ""  # "" means no change
-success_icon_path = make_abs("..\\..\\icons\\success.ico")
-failure_icon_path = make_abs("..\\..\\icons\\failure.ico")
-crash_icon_path = make_abs("..\\..\\icons\\crash.ico")
 process_id_file_path = make_abs("..\\..\\..\\_CURRENTLY_RUNNING_.pid")
 default_packages_file_path = make_abs("..\\..\\developer_tools\\DEFAULT_PYTHON_PACKAGES.txt")  # UPDATE GITIGNORE
 python_version_indicator_file_path = developer_tools_dir + "\\CURRENT_PYTHON_VERSION.txt"
@@ -96,6 +112,7 @@ play_sound_after_KeyboardInterrupt_default = ""
 
 # variables
 # ------------------------
+
 excluded_folders_for_package_search = [
     "backend",
     "__pycache__",
