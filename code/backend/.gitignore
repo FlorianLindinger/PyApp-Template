@@ -9,8 +9,9 @@ __pycache__
 # output files of developer tools:
 /developer_tools/*.txt
 # whitelist specific files in developer tools folder:
-!/developer_tools/_README_.txt
-!developer_tools/_DEFAULT_PYHON_PACKAGES_.txt
+!/developer_tools/README.txt
+!developer_tools/DEFAULT_PYTHON_PACKAGES.txt
+!developer_tools/CURRENT_PYTHON_VERSION.txt
 # ===================================================
 
 # =============================
