@@ -20,10 +20,10 @@ set "target_script=..\scripts\install_packages_from_local_requirements.txt.py"
 call "%ensure_backend_python_script%"
 :: exit on failure (print and confirm close handled in child):
 if not "%ERRORLEVEL%"=="0" (
-    exit /b 1
+    exit 1
 )
 
-:: run python script:
+:: run python script and forward all args:
 "%python_exe%" "%target_script%" %*
 set "exit_code=%ERRORLEVEL%"
 
