@@ -5,7 +5,7 @@ setlocal
 
 set "launcher_dir=%~dp0"
 set "python_exe=%launcher_dir%..\backend_python\python.exe"
-set "backend_script=%launcher_dir%..\scripts\start_program.py"
+set "backend_script=%launcher_dir%..\scripts\shortcut_targets_via_batch\start_program.py"
 set "app_id=%~1"
 set "launch_mode=no_terminal"
 

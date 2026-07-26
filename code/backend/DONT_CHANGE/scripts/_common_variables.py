@@ -26,7 +26,7 @@ backend_files_to_delete_on_install = ["sqlite3.dll", "python.cat"]
 
 # frontend related
 # ------------------------
-frontend_script_wrapper_path = make_abs("frontend\\script_wrapper.py")
+frontend_script_wrapper_path = make_abs("shortcut_targets_via_batch\\child_scripts\\frontend_python\\script_wrapper.py")
 frontend_packages_dir = make_abs("..\\..\\python_and_packages\\packages")  # UPDATE GITIGNORE
 frontend_python_dir = make_abs("..\\..\\python_and_packages\\python")  # UPDATE GITIGNORE
 frontend_packages_are_installed_marker_filename = "_DELETE_THIS_TO_REINSTALL_ONLY_DEFAULT_PACKAGES_"
@@ -48,9 +48,9 @@ temporary_folder = make_abs("..\\temporary")
 
 # scripts
 # ------------------------
-start_program_script = make_abs("start_program.py")
+start_program_script = make_abs("shortcut_targets_via_batch\\start_program.py")
 python_script_path = make_abs("..\\..\\..\\main.py")
-background_watchdog_path = make_abs("background_watchdog.py")
+background_watchdog_path = make_abs("shortcut_targets_via_batch\\child_scripts\\backend_python\\background_watchdog.py")
 start_time_dummy_main_script_path = make_abs("..\\backend_test_tools\\helper_scripts\\start_time_dummy_main_script.py")
 launcher_terminal = starter_batches_folder + "\\W.bat"
 launcher_emulator = starter_batches_folder + "\\E.bat"
@@ -59,7 +59,7 @@ launcher_browser = starter_batches_folder + "\\B.bat"
 launcher_no_terminal = starter_batches_folder + "\\N.bat"
 launcher_stop = starter_batches_folder + "\\Q.bat"
 launcher_log = starter_batches_folder + "\\L.bat"
-exit_processer_path = make_abs("process_exit.py")
+exit_processer_path = make_abs("shortcut_targets_via_batch\\child_scripts\\backend_python\\process_exit.py")
 
 # files
 # ------------------------
@@ -71,7 +71,7 @@ icon_path = make_abs("..\\..\\icons\\icon.ico")
 settings_icon_path = make_abs("..\\..\\icons\\settings.ico")
 stop_icon_path = make_abs("..\\..\\icons\\stop.ico")
 log_icon_path = make_abs("..\\..\\icons\\log.ico")
-KeyboardInterrupt_icon_path = "" # "" means no change
+KeyboardInterrupt_icon_path = ""  # "" means no change
 success_icon_path = make_abs("..\\..\\icons\\success.ico")
 failure_icon_path = make_abs("..\\..\\icons\\failure.ico")
 crash_icon_path = make_abs("..\\..\\icons\\crash.ico")
