@@ -25,7 +25,8 @@ from backend.DONT_CHANGE.scripts._common_code import (
     make_abs_path_relative_to_file,
     print_success,
     print_traceback,
-    # setup_terminal_colors_and_unminimize_plus_foreground_on_first_print,
+    set_terminal_colors,
+    set_unminimize_and_foreground_on_first_print,
     stop_processes_from_pid_file,
 )
 from backend.DONT_CHANGE.scripts._common_variables import developer_settings_path, process_id_file_path
@@ -33,13 +34,16 @@ from backend.DONT_CHANGE.scripts._common_variables import developer_settings_pat
 # ==========================================================================
 # code execution
 
+
+
 pid_path = make_abs_path_relative_to_file(process_id_file_path, developer_settings_path)
 
 try:
     # =============================
     # script is inteded to be launched minimized and will un minimize on frist print/error
 
-    # WIPsetup_terminal_colors_and_unminimize_plus_foreground_on_first_print()
+    set_terminal_colors()
+    set_unminimize_and_foreground_on_first_print()
 
     # =============================
 
