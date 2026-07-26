@@ -20,10 +20,10 @@ set "target_script=..\scripts\set_current_python_packages_as_default -NoPackageV
 call "%ensure_backend_python_script%"
 :: exit on failure (print and confirm close handled in child):
 if not "%ERRORLEVEL%"=="0" (
-    exit /b 1
+    exit 1
 )
 
-:: run python script:
+:: run python script and forward all args:
 "%python_exe%" "%target_script%" %*
 set "exit_code=%ERRORLEVEL%"
 
