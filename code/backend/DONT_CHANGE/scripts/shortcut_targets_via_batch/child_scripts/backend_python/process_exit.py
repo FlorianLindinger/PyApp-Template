@@ -371,21 +371,23 @@ try:
         crash_log_path_resolved = get_log_path(
             crash_log_path, crash_log_path_is_relative_to_start_folder_if_relative
         )
+        
+        divider_length:int = 30
 
         if crash_log_payload is None and message is None:
             return
 
         if crash_log_path_resolved:
-            lines: list[str] = ["=" * 80]
+            lines: list[str] = ["=" * divider_length]
             if message:
                 lines.append(message)
             if crash_log_payload:
                 if message:
-                    lines.append("-" * 80)
+                    lines.append("-" * divider_length)
                 lines.extend(_traceback_metadata_lines(crash_log_payload))
-                lines.append("-" * 80)
+                lines.append("-" * divider_length)
                 lines.extend(_plain_traceback_lines(crash_log_payload))
-            lines.append("=" * 80)
+            lines.append("=" * divider_length)
 
             os.makedirs(os.path.dirname(crash_log_path_resolved), exist_ok=True)
             with open(crash_log_path_resolved, "w" if overwrite_crash_log else "a") as f:
