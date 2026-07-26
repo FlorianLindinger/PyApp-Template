@@ -19,7 +19,7 @@ temporary/*
 **/*dist-info/
 # uv generated file:
 .lock
-# backend_python folder:
-backend_python/
+# backend_python folder (in this directory. Scripts are also under that name):
+/backend_python/
 # backend_packages folder:
 backend_packages/
