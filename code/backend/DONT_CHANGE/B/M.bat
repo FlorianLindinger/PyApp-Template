@@ -10,8 +10,8 @@ cd /d "%~dp0"
 :: ===========================
 :: local variables
 
-set "ensure_backend_python_script=..\..\setup\ensure_backend_python.bat"
-set "target_script=..\scripts\?.py"
+set "ensure_backend_python_script=..\scripts\setup\ensure_backend_python.bat"
+set "target_script=..\scripts\shortcut_targets_via_batch\open_main_py.py"
 
 :: ===========================
 :: code execution
@@ -20,10 +20,10 @@ set "target_script=..\scripts\?.py"
 call "%ensure_backend_python_script%"
 :: exit on failure (print and confirm close handled in child):
 if not "%ERRORLEVEL%"=="0" (
-    exit /b 1
+    exit 1
 )
 
-:: run python script:
+:: run python script and forward all args:
 "%python_exe%" "%target_script%" %*
 set "exit_code=%ERRORLEVEL%"
 
