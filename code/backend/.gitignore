@@ -5,6 +5,7 @@ __pycache__
 # generated Python distro and packages folder:
 /python_and_packages/
 # whitelist file in Python distro and packages folder:
+<<<<<<< HEAD
 !/python_and_packages/USE developer_tools FOLDER (IN PARENT FOLDER) TO CHANGE PACKAGES
 # output files of developer tools:
 /developer_tools/*.txt
@@ -18,3 +19,6 @@ __pycache__
 # =============================
 
 # ADD YOUR GITIGNORES HERE
+=======
+!/python_and_packages/USE developer_tools FOLDER (IN PARENT FOLDER) TO CHANGE PACKAGES
+>>>>>>> f82a4acb989934bff49b56bdc7577c626a3fa40c

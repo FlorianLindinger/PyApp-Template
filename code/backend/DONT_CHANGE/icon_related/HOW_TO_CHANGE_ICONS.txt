@@ -1,5 +1,9 @@
 =======================================
+<<<<<<< HEAD
 ==== HOW TO CORRECTLY MAKE AN ICON ====
+=======
+==== HOW TO GENERATE ICONS =========
+>>>>>>> f82a4acb989934bff49b56bdc7577c626a3fa40c
 =======================================
 
 TLDR:
@@ -15,6 +19,11 @@ You can also replace these overlay PNGs in code/icons/ if you want custom sub-ic
     success.png
     failure.png
     crash.png
+<<<<<<< HEAD
+=======
+    crash_log.png
+    open_main_py.png
+>>>>>>> f82a4acb989934bff49b56bdc7577c626a3fa40c
 
 The icon generator creates these .ico files in code/icons/:
 
@@ -39,6 +48,15 @@ The icon generator creates these .ico files in code/icons/:
     crash.ico
         Icon version of icon.png with crash.png overlaid in the bottom-right corner.
 
+<<<<<<< HEAD
+=======
+    crash_log.ico
+        Icon version of icon.png with crash_log.png overlaid in the bottom-right corner.
+
+    open_main_py.ico
+        Icon version of icon.png with open_main_py.png overlaid in the bottom-right corner.
+
+>>>>>>> f82a4acb989934bff49b56bdc7577c626a3fa40c
 The shortcut generator uses those .ico files for the generated program shortcuts.
 
 =======================================
@@ -54,6 +72,11 @@ User-editable input images:
     code/icons/success.png
     code/icons/failure.png
     code/icons/crash.png
+<<<<<<< HEAD
+=======
+    code/icons/crash_log.png
+    code/icons/open_main_py.png
+>>>>>>> f82a4acb989934bff49b56bdc7577c626a3fa40c
 
 Keep the file names unchanged.
 
@@ -66,6 +89,12 @@ If an input PNG is missing, the generator uses the matching fallback image from:
     code/DONT_CHANGE/icon_related/default_success.png
     code/DONT_CHANGE/icon_related/default_failure.png
     code/DONT_CHANGE/icon_related/default_crash.png
+<<<<<<< HEAD
+=======
+    code/DONT_CHANGE/icon_related/default_crash_log.png
+
+The open_main_py overlay is configured too. Add default_open_main_py.png in this folder before generating open_main_py.ico.
+>>>>>>> f82a4acb989934bff49b56bdc7577c626a3fa40c
 
 If a user image is still exactly the template fallback image, the generator also treats it as fallback.
 
@@ -77,6 +106,7 @@ Run this shortcut:
 
     code/icons/regenerate icons.lnk
 
+<<<<<<< HEAD
 That shortcut currently launches:
 
     code/DONT_CHANGE/backend_python/python.exe code/DONT_CHANGE/icon_related/generate_icons.py
@@ -102,10 +132,40 @@ Manual example:
 Icons should be generated this way instead of with a quick online converter, because Windows
 icons need multiple embedded sizes to scale well in shortcuts, taskbar entries, and Explorer.
 
+=======
+It launches:
+
+    code/DONT_CHANGE/backend_python/python.exe code/DONT_CHANGE/icon_related/generate_icons.py
+
+The generator uses Windows PowerShell/WPF to create multi-resolution .ico files with
+these sizes:
+
+    256, 128, 64, 48, 32, 16
+
+It checks all existing user PNGs in one PowerShell process and renders all available
+icons in a second process, avoiding the repeated PowerShell startup cost of rendering
+each icon separately.
+
+Sub-icon size is configured in generate_icons.py with:
+
+    SUBICON_AREA_SCALE_FACTOR = 0.35
+
+This is an area ratio: 0.35 means a sub-icon occupies 35% of the base image's area.
+The generator uses the square root of the ratio when scaling width and height, while
+preserving the sub-icon's aspect ratio. Sub-icons are placed in the bottom-right corner.
+
+If a configured overlay or its fallback PNG is missing, that one .ico file is reported
+as an error and skipped; the remaining icons are still generated.
+
+Icons should be generated this way instead of with a quick online converter, because
+Windows icons need multiple embedded sizes to scale well in shortcuts, taskbar entries,
+and Explorer.
+>>>>>>> f82a4acb989934bff49b56bdc7577c626a3fa40c
 =======================================
 ==== PILLOW / PIL ALTERNATIVE =========
 =======================================
 
+<<<<<<< HEAD
 The current generator above does not need Pillow. If you prefer a shorter script that is easier
 to edit manually, this Pillow version has virtually identical behavior:
 
@@ -266,3 +326,7 @@ if __name__ == "__main__":
         print("Generated: stop.ico")
     except Exception as error:
         print(f"Error creating stop.ico: {error}")
+=======
+The supported generator is generate_icons.py. It intentionally uses Windows WPF so the
+project does not need Pillow and icon rendering stays consistent with Windows.
+>>>>>>> f82a4acb989934bff49b56bdc7577c626a3fa40c
