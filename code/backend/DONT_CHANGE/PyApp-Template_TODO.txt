@@ -2,6 +2,26 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+do i need hardcoded setup_unminimize_and_foreground_on_first_print? i can just have it do that on print. makes sense for complicate like start_program. probably leave setup_unminimize_and_foreground_on_first_print because any error afterwayds should be viisble
+
+measure speeds of shhortcuts if it matters that i do color and appid
+
+i set set_terminal_icon for conhost in set_terminal_appearance_once? do i just force conhost everywhere where not main window? or do i want wt for everything? what is faster. what is pro contra.
+how do i change appearance and icon for failed backend stuff. do i just hardcode icon and color? make every terminal interaction a try except with error print and attempt i gues for fail. make a function set_terminal_error_appearance(). do i throw that in template? do i want extra template for short shortcuts scipts?
+
+do i do app id on all shortcuts
+
+make them all tempplate the shortcuts
+
+do i want color setting in all shortcuts? probably
+
+when i press X it does not delete the pid -> should backend handle that?
+
+ANSI colors not working atm
+
+when i cant delete an entry from pid. should i still delte enty in file and file? should i generally delete that file or just leave? and rename. schon nice zu sehen dass wenn file da ist dass was läuft
+
+
 add setting in body plot setting to "force show target area"
 in body: move the target to right of linear fit and change to "kg/mon". also change to more compact "Target: 66+-2 kg ..."
 rename" delte exercise" to make clear it delete the whole thing
