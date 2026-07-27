@@ -3,7 +3,11 @@ import zlib
 
 from PIL import Image, ImageDraw, ImageFont
 
+<<<<<<< HEAD
 OUT_DIR = os.path.dirname(os.path.abspath(__file__))
+=======
+OUT_DIR = os.path.dirname(os.path.abspath(__file__)) + "\\created_PNGS_to_be_replaced"
+>>>>>>> f82a4acb989934bff49b56bdc7577c626a3fa40c
 
 SIZE = 512
 FONT_SIZE = 100
@@ -56,6 +60,21 @@ items = {
         '"regenerate icons"',
         "afterwards",
     ],
+<<<<<<< HEAD
+=======
+    "crash_log.png": [
+        "Replace to change",
+        "crash-log sub-icon. Run",
+        '"regenerate icons"',
+        "afterwards",
+    ],
+    "open_main_py.png": [
+        "Replace to change",
+        "open-main.py sub-icon. Run",
+        '"regenerate icons"',
+        "afterwards",
+    ],
+>>>>>>> f82a4acb989934bff49b56bdc7577c626a3fa40c
 }
 
 
@@ -105,7 +124,11 @@ for filename, lines in items.items():
     make_icon(filename, lines)
     created_paths.append(os.path.join(OUT_DIR, filename))
 
+<<<<<<< HEAD
 print("Created icon.png, settings.png, stop.png, log.png, success.png, failure.png, crash.png")
+=======
+print("Created icon.png, settings.png, stop.png, log.png, success.png, failure.png, crash.png, crash_log.png")
+>>>>>>> f82a4acb989934bff49b56bdc7577c626a3fa40c
 print("Image IDs:")
 for path in created_paths:
     print(f"  {os.path.basename(path)}: {image_id(path)}")

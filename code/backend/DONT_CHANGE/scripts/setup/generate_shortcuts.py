@@ -19,9 +19,16 @@ if root_dir not in sys.path:
 
 from backend.developer_settings import (
     install_python_when_generating_shortcuts,
+<<<<<<< HEAD
     log_path_rel_to_start_folder,
     no_terminal_shortcut_name,
     open_log_shortcut_name,
+=======
+    no_terminal_shortcut_name,
+    open_crash_log_folder_shortcut_name,
+    open_log_folder_shortcut_name,
+    open_main_py_shortcut_name,
+>>>>>>> f82a4acb989934bff49b56bdc7577c626a3fa40c
     open_settings_shortcut_name,
     program_name,
     stop_running_shortcut_name,
@@ -37,6 +44,7 @@ from backend.DONT_CHANGE.scripts._common_code import (
     sanitize_filename,
 )
 from backend.DONT_CHANGE.scripts._common_variables import (
+<<<<<<< HEAD
     developer_settings_path,
     icon_path,
     launcher_log,
@@ -45,6 +53,20 @@ from backend.DONT_CHANGE.scripts._common_variables import (
     launcher_stop,
     launcher_terminal,
     log_icon_path,
+=======
+    crash_log_icon_path,
+    developer_settings_path,
+    icon_path,
+    launcher_no_terminal,
+    launcher_open_crash_log_folder,
+    launcher_open_log_folder,
+    launcher_open_main_py,
+    launcher_open_settings,
+    launcher_stop,
+    launcher_terminal,
+    log_icon_path,
+    open_main_py_icon_path,
+>>>>>>> f82a4acb989934bff49b56bdc7577c626a3fa40c
     settings_icon_path,
     shortcut_output_dir,
     stop_icon_path,
@@ -403,12 +425,37 @@ def main() -> None:
             launcher_stop,
             description=f"Stop running {program_name} processes",
         )
+<<<<<<< HEAD
     if open_log_folder_shortcut_name and (log_path not in (None, False, "")):
         generate_shortcut(
             open_log_folder_shortcut_name,
             log_icon_path,
             launcher_log,
             description=f"Open the current {program_name} log file",
+=======
+    if open_log_folder_shortcut_name:
+        generate_shortcut(
+            open_log_folder_shortcut_name,
+            log_icon_path,
+            launcher_open_log_folder,
+            description=f"Open the current {program_name} log file folder",
+            start_minimized=True,
+        )
+    if open_crash_log_folder_shortcut_name:
+        generate_shortcut(
+            open_crash_log_folder_shortcut_name,
+            crash_log_icon_path,
+            launcher_open_crash_log_folder,
+            description=f"Open the current {program_name} crash log file folder",
+            start_minimized=True,
+        )
+    if open_main_py_shortcut_name:
+        generate_shortcut(
+            open_main_py_shortcut_name,
+            open_main_py_icon_path,
+            launcher_open_main_py,
+            description=f"Open {program_name} main.py file",
+>>>>>>> f82a4acb989934bff49b56bdc7577c626a3fa40c
             start_minimized=True,
         )
 
@@ -424,7 +471,11 @@ def main() -> None:
         generate_shortcut(
             open_settings_shortcut_name,
             settings_icon_path,
+<<<<<<< HEAD
             launcher_settings,
+=======
+            launcher_open_settings,
+>>>>>>> f82a4acb989934bff49b56bdc7577c626a3fa40c
             description=f"Open the {program_name} settings file",
             start_minimized=True,
         )

@@ -2,24 +2,40 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
-do i need hardcoded setup_unminimize_and_foreground_on_first_print? i can just have it do that on print. makes sense for complicate like start_program. probably leave setup_unminimize_and_foreground_on_first_print because any error afterwayds should be viisble
+add setting in body plot setting to "force show target area"
+in body: move the target to right of linear fit and change to "kg/mon". also change to more compact "Target: 66+-2 kg ..."
+rename" delte exercise" to make clear it delete the whole thing
+it should move to top when i add a set
+how do i use the giutbhub action to veryfy and what to release
+ask AI again if i can make public. fix readme first. add how to install relaelse apk. add secipon: how to build. how to install
+make it try usb first to install then wifi
+ask if i should have file system verision and subveriosn suich to know compaatavblitlys
+add topics on gitbhub and descirpiton
+renmae? i guess it says gymlog since weight alone not worht it
+check order tab
+fix body parts windw and make simpler. remove automatic mixed amnual tabs? and just per exercide? 
+Does it suggest to upgrade if all sets are above 12? it should not remove code that does that if case 
+check top field more compact -> change to "5/12 completed last thisrdy" and "5/12 exercises  . live" save more space veritcally with this grouping together
+fix recent entries psacing
+move "order" to "menu" as "Exercise Order" underneath "Training plans". change "+Add" to "Add"
+think about more warning options (ask AI aswell) and implenet. look how the warning appear and make easy to disable from warning or to disapble once.... 
+it does not go to backup settings? juist opens setting app
+add more stuff to help and eplxantions and check
+check README
+chang button form "Delet current training" to "Delete last trianing" and make it do that. Test that button
+check stats
+add an add weight button in body next to "Body" and option to add there the % values aswell. test if that syncs with google fit
+add button to download a training plan under traoining plan selecor and to load a file
+remove migration code and backwards comaptaglitay by assuming all files are uptodtate. ask AI if file is updote if opended in prevous version
+eventually ask for remove file backwards comaptilöbity  code and clean file of outdates stuff or update files 
+Pectoral foto
+Ask it to simplify in end even if it means to change the file skeme
+Maybe a way to only add one set at a time. Maybe add one and where the current wheel that would be added is highlighted. Or single wheel option 
+Ask AI how often should Increase weight 
+Warning if reps decrease percentage stronger than should -> tips from AI. Decrease from first and from previous. -> more time or less sets
+Overall avergae Upgrades per gym day and per month and per device a plot
+add a stats button next to menu and add: There should be for exmaple state like gym/week over some specific period and also graphs for that. Also gym duration counting from the first to last set added in a day and stats and plots
 
-measure speeds of shhortcuts if it matters that i do color and appid
-
-i set set_terminal_icon for conhost in set_terminal_appearance_once? do i just force conhost everywhere where not main window? or do i want wt for everything? what is faster. what is pro contra.
-how do i change appearance and icon for failed backend stuff. do i just hardcode icon and color? make every terminal interaction a try except with error print and attempt i gues for fail. make a function set_terminal_error_appearance(). do i throw that in template? do i want extra template for short shortcuts scipts?
-
-do i do app id on all shortcuts
-
-make them all tempplate the shortcuts
-
-do i want color setting in all shortcuts? probably
-
-when i press X it does not delete the pid -> should backend handle that?
-
-ANSI colors not working atm
-
-when i cant delete an entry from pid. should i still delte enty in file and file? should i generally delete that file or just leave? and rename. schon nice zu sehen dass wenn file da ist dass was läuft
 
 chack all files with pyrefly scirtpt
 

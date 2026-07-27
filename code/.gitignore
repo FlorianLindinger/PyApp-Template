@@ -4,3 +4,13 @@ __pycache__
 *.pyo
 # temporary process id indicator files:
 *.pid
+# Ruff cache:
+.ruff_cache
+
+# ===================================================
+
+# =============================
+# ==== specific gitignores ====
+# =============================
+
+# ADD YOUR GITIGNORES HERE

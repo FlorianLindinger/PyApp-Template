@@ -8,7 +8,11 @@ if "%PY_VERSION%"=="" set "PY_VERSION=3"
 if "%TEST_MODE%"=="" set "TEST_MODE=all"
 
 set "TEST_DIR=%~dp0"
+<<<<<<< HEAD
 set "WRAPPER_PATH=%TEST_DIR%..\scripts\frontend\script_wrapper.py"
+=======
+set "WRAPPER_PATH=%TEST_DIR%..\scripts\shortcut_targets_via_batch\child_scripts\frontend_python\script_wrapper.py"
+>>>>>>> f82a4acb989934bff49b56bdc7577c626a3fa40c
 set "TEST_SCRIPT_PATH=%TEST_DIR%test_main_script.py"
 set "BACKEND_PACKAGES_DIR=%TEST_DIR%..\backend_packages"
 set "BACKEND_PYTHON_EXE=%TEST_DIR%..\backend_python\python.exe"
