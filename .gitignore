@@ -11,10 +11,10 @@
 /*.lnk
 # whitelist shortcut to generate shortcuts in this folder:
 !/▶*.lnk
-# "logs" folder in this folder:
-/logs/
-# "crash logs" folder in this folder:
-/crash logs/
+# contents of "logs" folder in this folder:
+/logs/*
+# contents of "crash logs" folder in this folder:
+/crash logs/*
 # whitelist ".gitkeep" files anywhere:
 !.gitkeep
 # ".vscode" folder anywhere:
