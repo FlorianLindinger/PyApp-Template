@@ -12,7 +12,7 @@ cd /d "%~dp0"
 
 set "ensure_backend_python_script=..\..\setup\ensure_backend_python.bat"
 set "target_script=%~dp0..\scripts\install_local_reqs.py"
-set "requirements_folder=%~dp0..\..\..\..\developer_tools\change python packages"
+set "requirements_folder=%~dp0..\..\..\..\dev_tools\change python packages"
 
 :: ===========================
 :: code execution

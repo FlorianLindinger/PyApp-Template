@@ -11,7 +11,7 @@ the files outside this folder, especially:
 - code/settings.py
 - code/developer_settings.py
 - code/icons
-- code/developer_tools
+- code/dev_tools
 
 The backend code here is responsible for shortcut startup, local Python
 handling, package installation helpers, logging, terminal behavior, and error

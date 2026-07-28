@@ -7,4 +7,4 @@ __pycache__
 # generated packages folder in this folder:
 /packages/
 # whitelist file in packages folder in this folder:
-!/packages/USE developer_tools FOLDER (IN PARENT FOLDER) TO CHANGE PACKAGES
+!/packages/USE dev_tools FOLDER (IN PARENT FOLDER) TO CHANGE PACKAGES

@@ -14,7 +14,7 @@
 - **Fast package installation with uv support**: package installs use `uv` by default when globally available or installs it into the repository locally if not disabled in settings. It can benefit from uv's global cache across projects.
 - Ready to use: **Just insert your python code file** and optionally quickly change settings like python version or app name.
 - **Runs fully accessible source code**. This template makes python files behave effectively as if they were compiled with an included python environment while remaining 100% accessible, avoiding compilation time, and simplifying end-user modifications.
-- **Quality of life features for python environment management** (under `code/developer_tools`: environment reset, pip-install launcher, saving current packages, auto-installing packages needed in Python files, ...)
+- **Quality of life features for python environment management** (under `code/dev_tools`: environment reset, pip-install launcher, saving current packages, auto-installing packages needed in Python files, ...)
 - Automatic generation of **icons from a png**.
 - Options to **change icon, title, and colors** of the python-launched **terminal**.
 - Automatic generation of **shortcuts with icons** that **can be added to the taskbar**. Usually it is not possible to have multiple shortcuts on the taskbar with **custom icons** that launch python/batch files.
