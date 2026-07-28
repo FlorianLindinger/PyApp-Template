@@ -1,5 +1,6 @@
 # Entries in this file will not be synchronized in git. 
-# "!" before whitelists synchronization
+# "!" before whitelists synchronization.
+# Lines with "#" will be ignored.
 
 # ============================
 # ==== general gitignores ====
@@ -10,15 +11,13 @@
 # whitelist shortcut to generate shortcuts in this folder:
 !/▶*.lnk
 # log files:
-/logs/*
+/logs/
 # crash log files:
-/crash logs/*
+/crash logs/
 # whitelist ".gitkeep" files to sync folders:
 !.gitkeep
 # vscode folder:
 /.vscode
-
-# ===================================================
 
 # =============================
 # ==== specific gitignores ====
