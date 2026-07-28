@@ -3,8 +3,13 @@
 # Force git to use CRLF for batch files to not break them:
 *.bat text eol=crlf
 # In oder that GitHub treats these as vendored and Git does not try to diff binaries:
-python_and_packages/** linguist-vendored
-python_and_packages/**/*.dll binary
-python_and_packages/**/*.pyd binary
-python_and_packages/**/*.exe binary
-python_and_packages/**/*.chm binary
+packages/** linguist-vendored
+packages/**/*.dll binary
+packages/**/*.pyd binary
+packages/**/*.exe binary
+packages/**/*.chm binary
+python/** linguist-vendored
+python/**/*.dll binary
+python/**/*.pyd binary
+python/**/*.exe binary
+python/**/*.chm binary

@@ -29,8 +29,8 @@ backend_files_to_delete_on_install = ["sqlite3.dll", "python.cat"]
 # ------------------------
 
 frontend_script_wrapper_path = make_abs("shortcut_targets_via_batch\\child_scripts\\frontend_python\\script_wrapper.py")
-frontend_packages_dir = make_abs("..\\..\\python_and_packages\\packages")  # UPDATE GITIGNORE
-frontend_python_dir = make_abs("..\\..\\python_and_packages\\python")  # UPDATE GITIGNORE
+frontend_packages_dir = make_abs("..\\..\\packages")  # UPDATE GITIGNORE + PYPROJECT
+frontend_python_dir = make_abs("..\\..\\python")  # UPDATE GITIGNORE + PYPROJECT
 frontend_packages_are_installed_marker_filename = "_DELETE_THIS_TO_REINSTALL_ONLY_DEFAULT_PACKAGES_"
 frontend_launcher_for_pip_install_terminal = (
     frontend_python_dir + "\\tools\\open_terminal_with_set_python_and_pip_target.bat"
