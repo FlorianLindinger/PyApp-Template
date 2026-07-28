@@ -2,8 +2,10 @@
 __pycache__
 *.pyc
 *.pyo
-# temporary files:
-temporary/*
+# contents of "temporary" folder:
+/temporary/*
+# whitelist .gitkeep files:
+!.gitkeep
 # GIT_IGNORED folders:
 GIT_IGNORED
 # backend_python folder (in this directory. Scripts are also under that name):
