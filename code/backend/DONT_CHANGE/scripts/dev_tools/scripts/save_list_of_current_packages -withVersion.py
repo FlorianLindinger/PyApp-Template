@@ -14,12 +14,11 @@ from backend.DONT_CHANGE.scripts._common_code import (
     print_traceback,
     save_current_packages,
 )
-from backend.DONT_CHANGE.scripts._common_variables import developer_tools_dir
+from backend.DONT_CHANGE.scripts._common_variables import current_python_packages_file_path_withVersion
 
 try:
     ensure_python_distro()
-    path = developer_tools_dir + "\\current_python_packages -withVersion.txt"
-    save_current_packages(path, with_version=True)
+    save_current_packages(current_python_packages_file_path_withVersion, with_version=True)
     print()
     input_success("[Success] Press enter to exit")
 except Exception as e:

@@ -44,7 +44,9 @@ dev_tools_referal_note_path = (
 
 windows_dir = os.environ.get("WINDIR", default="C:\\Windows")
 python_scripts_dir = make_abs("..\\..\\..")
-developer_tools_dir = make_abs("..\\..\\developer_tools")  # UPDATE GITIGNORE
+developer_tools_for_python_packages_dir = make_abs(
+    "..\\..\\developer_tools\\change python packages"
+)  # UPDATE GITIGNORE
 shortcut_output_dir = make_abs("..\\..\\..\\..")  # UPDATE GITIGNORE
 temporary_folder = make_abs("..\\temporary")
 
@@ -85,29 +87,47 @@ crash_log_icon_path = make_abs("..\\..\\icons\\crash_log.ico")
 KeyboardInterrupt_icon_path = ""
 open_main_py_icon_path = make_abs("..\\..\\icons\\open_main_py.ico")
 
-# files
+# untracked tmp files files
 # ------------------------
 
-pipreqs_mapping_path = backend_packages_dir + "\\pipreqs\\mapping"
-tmp_traceback_json_path = temporary_folder + "\\last_crash_log.json"
-developer_settings_path = make_abs("..\\..\\developer_settings.py")
-process_id_file_path = make_abs("..\\..\\..\\_CURRENTLY_RUNNING_.pid")
-default_packages_file_path = make_abs("..\\..\\developer_tools\\DEFAULT_PYTHON_PACKAGES.txt")  # UPDATE GITIGNORE
-python_version_indicator_file_path = developer_tools_dir + "\\CURRENT_PYTHON_VERSION.txt"
 CORRECT_START_SIGNAL_FILE_PATH = temporary_folder + "\\signal_that_program_started_correctly.signal"
+process_id_file_path = make_abs("..\\..\\..\\_CURRENTLY_RUNNING_.pid")
+tmp_traceback_json_path = temporary_folder + "\\last_crash_log.json"
+
+# untracked developer-tools folder files
+# ------------------------
+
+python_version_indicator_file_path = developer_tools_for_python_packages_dir + "\\CURRENT_PYTHON_VERSION.txt"
+current_python_packages_file_path_withVersion = (
+    developer_tools_for_python_packages_dir + "\\current_python_packages -withVersion.txt"
+)
+current_python_packages_file_path_withoutVersion = (
+    developer_tools_for_python_packages_dir + "\\current_python_packages -withoutVersion.txt"
+)
+determined_current_packages_file_path_withVersion = (
+    developer_tools_for_python_packages_dir + "\\determined_current_packages_withVersion.txt"
+)
+determined_current_packages_file_path_noVersion = (
+    developer_tools_for_python_packages_dir + "\\determined_current_packages_noVersion.txt"
+)
+determined_needed_packages_output_file_path_noVersion = (
+    developer_tools_for_python_packages_dir + "\\auto_found_required_packages_noVersion.txt"
+)
+determined_needed_packages_output_file_path_withVersion = (
+    developer_tools_for_python_packages_dir + "\\auto_found_required_packages_withVersion.txt"
+)
+
+# remaining files
+# ------------------------
+
+developer_settings_path = make_abs("..\\..\\developer_settings.py")
+default_packages_file_path = (
+    developer_tools_for_python_packages_dir + "\\DEFAULT_PYTHON_PACKAGES.txt"
+)  # UPDATE GITIGNORE
+pipreqs_mapping_path = backend_packages_dir + "\\pipreqs\\mapping"
 play_sound_after_crash_default = windows_dir + "\\Media\\Windows Critical Stop.wav"
 play_sound_after_failure_default = windows_dir + "\\Media\\Windows Critical Stop.wav"
 play_sound_after_success_default = windows_dir + "\\Media\\notify.wav"
-determined_current_packages_file_path_withVersion = (
-    developer_tools_dir + "\\determined_current_packages_withVersion.txt"
-)
-determined_current_packages_file_path_noVersion = developer_tools_dir + "\\determined_current_packages_noVersion.txt"
-determined_needed_packages_output_file_path_noVersion = (
-    developer_tools_dir + "\\auto_found_required_packages_noVersion.txt"
-)
-determined_needed_packages_output_file_path_withVersion = (
-    developer_tools_dir + "\\auto_found_required_packages_withVersion.txt"
-)
 play_sound_after_KeyboardInterrupt_default = ""
 
 # variables
