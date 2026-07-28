@@ -60,7 +60,7 @@ MAIN.PY VERIFICATION STARTERS
 -----------------------------
 
 The verify_main_py_*.lnk files are portable shortcuts to the launchers under
-DONT_CHANGE/scripts/dev_tools/entry_points. Their relative link information
+DONT_CHANGE/scripts/dev_tools/run. Their relative link information
 keeps them working when the project folder moves.
 
 Implementation documentation is located at:
@@ -82,7 +82,7 @@ IMPLEMENTATION LAYOUT
 scripts/
     Contains the Python implementations.
 
-entry_points/
+run/
     Contains one matching .bat entry point for every Python implementation,
     plus the basic/default/strict main.py verification variants. The batches are
-    based on entry_points/_batch_template.bat.
+    based on run/_template.bat.

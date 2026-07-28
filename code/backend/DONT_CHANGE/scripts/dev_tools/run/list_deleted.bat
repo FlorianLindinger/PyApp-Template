@@ -11,7 +11,7 @@ cd /d "%~dp0"
 :: local variables
 
 set "ensure_backend_python_script=..\..\setup\ensure_backend_python.bat"
-set "target_script=..\scripts\explain_why_file_is_ignored.py"
+set "target_script=..\scripts\list_deleted.py"
 
 :: ===========================
 :: code execution

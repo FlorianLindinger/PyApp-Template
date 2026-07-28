@@ -11,7 +11,7 @@ cd /d "%~dp0"
 :: local variables
 
 set "ensure_backend_python_script=..\..\setup\ensure_backend_python.bat"
-set "target_script=..\scripts\reset_python_packages -InstallPackagesNeededInFiles.py"
+set "target_script=..\scripts\check_paths.py"
 
 :: ===========================
 :: code execution
@@ -27,7 +27,7 @@ if not "%ERRORLEVEL%"=="0" (
 "%python_exe%" "%target_script%" %*
 set "exit_code=%ERRORLEVEL%"
 
-:: exit if success:
+:: the script keeps its own interactive prompt open on success:
 if "%exit_code%"=="0" (
     exit 0
 )
