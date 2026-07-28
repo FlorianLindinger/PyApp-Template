@@ -23,6 +23,39 @@ the reset/install tools.
 CURRENT_PYTHON_VERSION.txt records the generated frontend interpreter version.
 
 
+MISCELLANEOUS SHORTCUTS
+----------------------
+
+miscellaneous/check_longest_path.lnk scans the repository (excluding .git
+metadata), reports its longest file or folder path, and shows the remaining
+space before the conservative 260-character legacy Windows path limit.
+
+The 260-character limit is still relevant because long-path support is not
+used consistently by every Windows application, library, archive tool, or
+shell integration. Even when Windows long paths and Git long paths are
+enabled, keeping project paths comfortably below this limit is the most
+portable option.
+
+PATH-LENGTH FAILURE EXAMPLES
+----------------------------
+
+Long paths can fail before Python code runs. Common cases include:
+
+- copying or moving the project in File Explorer, especially to a deeper
+  destination such as a Desktop, OneDrive, or backup subfolder;
+- extracting a ZIP archive whose archive name, extraction destination, and
+  nested contents combine into a path that is too long;
+- cloning, checking out, or switching Git branches when the destination folder
+  is deeply nested or a branch introduces longer file names;
+- creating virtual environments, installing packages, or unpacking generated
+  dependencies with deeply nested package files; and
+- tools that create temporary files below an already-long project path.
+
+If the check reports little remaining space, move the repository closer to a
+drive root (for example C:\src\PyApp-Template), shorten deeply nested names,
+and avoid placing generated Python environments inside a long project path.
+
+
 MAIN.PY VERIFICATION STARTERS
 -----------------------------
 
