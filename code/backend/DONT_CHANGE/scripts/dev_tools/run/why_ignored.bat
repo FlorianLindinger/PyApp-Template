@@ -11,7 +11,7 @@ cd /d "%~dp0"
 :: local variables
 
 set "ensure_backend_python_script=..\..\setup\ensure_backend_python.bat"
-set "target_script=..\scripts\reset_python_packages -InstallDefaultPackages.py"
+set "target_script=..\scripts\why_ignored.py"
 
 :: ===========================
 :: code execution
@@ -27,8 +27,11 @@ if not "%ERRORLEVEL%"=="0" (
 "%python_exe%" "%target_script%" %*
 set "exit_code=%ERRORLEVEL%"
 
-:: exit if success:
+:: keep read-only command output visible on success:
 if "%exit_code%"=="0" (
+    echo.
+    echo [Success] Press any key to exit.
+    pause > nul
     exit 0
 )
 

@@ -11,7 +11,7 @@ cd /d "%~dp0"
 :: local variables
 
 set "ensure_backend_python_script=..\..\setup\ensure_backend_python.bat"
-set "target_script=..\scripts\check_longest_path.py"
+set "target_script=..\scripts\upgrade_packages.py"
 
 :: ===========================
 :: code execution
@@ -27,11 +27,8 @@ if not "%ERRORLEVEL%"=="0" (
 "%python_exe%" "%target_script%" %*
 set "exit_code=%ERRORLEVEL%"
 
-:: keep diagnostic output visible on success:
+:: exit if success:
 if "%exit_code%"=="0" (
-    echo.
-    echo [Success] Press any key to exit.
-    pause > nul
     exit 0
 )
 

@@ -11,7 +11,7 @@ cd /d "%~dp0"
 :: local variables
 
 set "ensure_backend_python_script=..\..\setup\ensure_backend_python.bat"
-set "target_script=..\scripts\save_list_of_packages_needed_in_files -withoutVersion.py"
+set "target_script=..\scripts\reset_packages -imports.py"
 
 :: ===========================
 :: code execution

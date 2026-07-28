@@ -10,6 +10,7 @@ from pathlib import Path
 # Many Windows tools still require traditional Win32 paths to stay within this
 # conservative limit, even when long-path support is enabled elsewhere.
 LEGACY_WINDOWS_PATH_LIMIT = 260
+TOP_PATH_COUNT = 50
 REPOSITORY_DIR = Path(__file__).resolve().parents[6]
 ANSI_PATH = "\x1b[96m"
 ANSI_RESET = "\x1b[0m"
@@ -24,9 +25,9 @@ def is_reparse_point(path: Path) -> bool:
     return path.is_symlink() or bool(attributes & getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400))
 
 
-def find_longest_path() -> tuple[Path, int, int]:
-    """Return the longest file or directory below the repository and scan counts."""
-    longest_path = REPOSITORY_DIR
+def find_longest_paths() -> tuple[list[Path], int, int]:
+    """Return the longest file or directory paths below the repository and scan counts."""
+    paths = [REPOSITORY_DIR]
     scanned_files = 0
     scanned_directories = 0
 
@@ -39,8 +40,7 @@ def find_longest_path() -> tuple[Path, int, int]:
                 continue
             kept_directories.append(directory_name)
             scanned_directories += 1
-            if len(str(directory_path)) > len(str(longest_path)):
-                longest_path = directory_path
+            paths.append(directory_path)
         directory_names[:] = kept_directories
 
         for file_name in file_names:
@@ -48,10 +48,10 @@ def find_longest_path() -> tuple[Path, int, int]:
             if is_reparse_point(file_path):
                 continue
             scanned_files += 1
-            if len(str(file_path)) > len(str(longest_path)):
-                longest_path = file_path
+            paths.append(file_path)
 
-    return longest_path, scanned_files, scanned_directories
+    paths.sort(key=lambda path: len(str(path)), reverse=True)
+    return paths[:TOP_PATH_COUNT], scanned_files, scanned_directories
 
 
 def print_guidance(path_length: int) -> None:
@@ -71,20 +71,35 @@ def print_guidance(path_length: int) -> None:
     print("- Enable Windows long paths and Git core.longpaths where appropriate, but do not rely on them for every tool.")
 
 
-def main() -> int:
-    """Print the project path with the greatest length and its risk assessment."""
+def check_paths() -> int:
+    """Print the project's longest paths and their Windows path-risk assessment."""
     print(f"[Info] Scanning repository: {REPOSITORY_DIR}")
     try:
-        longest_path, scanned_files, scanned_directories = find_longest_path()
+        longest_paths, scanned_files, scanned_directories = find_longest_paths()
     except OSError as error:
         print(f"[Error] Could not finish scanning paths: {error}")
         return 1
 
-    path_length = len(str(longest_path))
     print(f"[Info] Scanned {scanned_files} files and {scanned_directories} directories; .git metadata was skipped.")
-    print(f"[Info] Longest path ({path_length} characters):\n{ANSI_PATH}{longest_path}{ANSI_RESET}")
+    print(f"[Info] Top {len(longest_paths)} longest paths:")
+    for index, path in enumerate(longest_paths, start=1):
+        print(f"{index:>2}. {len(str(path)):>3} characters  {ANSI_PATH}{path}{ANSI_RESET}")
+    path_length = len(str(longest_paths[0]))
     print_guidance(path_length)
     return 0
+
+
+def main() -> int:
+    """Repeatedly check paths until the user chooses to exit."""
+    while True:
+        exit_code = check_paths()
+        if exit_code:
+            return exit_code
+        try:
+            input("\n[Input] Press Enter to recheck: ")
+        except EOFError:
+            return 0
+        print()
 
 
 if __name__ == "__main__":
