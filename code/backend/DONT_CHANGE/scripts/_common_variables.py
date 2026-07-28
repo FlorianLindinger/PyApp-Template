@@ -28,7 +28,7 @@ backend_files_to_delete_on_install = ["sqlite3.dll", "python.cat"]
 # frontend related
 # ------------------------
 
-frontend_script_wrapper_path = make_abs("shortcut_targets_via_batch\\child_scripts\\frontend_python\\script_wrapper.py")
+frontend_script_wrapper_path = make_abs("shortcut_targets\\child_scripts\\frontend_python\\script_wrapper.py")
 frontend_packages_dir = make_abs("..\\..\\packages")  # UPDATE GITIGNORE + PYPROJECT
 frontend_python_dir = make_abs("..\\..\\python")  # UPDATE GITIGNORE + PYPROJECT
 frontend_packages_are_installed_marker_filename = "_DELETE_THIS_TO_REINSTALL_ONLY_DEFAULT_PACKAGES_"
@@ -36,7 +36,7 @@ frontend_launcher_for_pip_install_terminal = (
     frontend_python_dir + "\\tools\\open_terminal_with_set_python_and_pip_target.bat"
 )
 dev_tools_referal_note_path = (
-    os.path.dirname(frontend_packages_dir) + "\\USE developer_tools FOLDER (IN PARENT FOLDER) TO CHANGE PACKAGES"
+    os.path.dirname(frontend_packages_dir) + "\\USE dev_tools FOLDER (IN PARENT FOLDER) TO CHANGE PACKAGES"
 )  # UPDATE GITIGNORE
 
 # folders
@@ -44,20 +44,18 @@ dev_tools_referal_note_path = (
 
 windows_dir = os.environ.get("WINDIR", default="C:\\Windows")
 python_scripts_dir = make_abs("..\\..\\..")
-developer_tools_for_python_packages_dir = make_abs(
-    "..\\..\\developer_tools\\change python packages"
-)  # UPDATE GITIGNORE
+dev_tools_for_python_packages_dir = make_abs("..\\..\\dev_tools\\change python packages")  # UPDATE GITIGNORE
 shortcut_output_dir = make_abs("..\\..\\..\\..")  # UPDATE GITIGNORE
 temporary_folder = make_abs("..\\temporary")
 
 # scripts
 # ------------------------
 
-start_program_script = make_abs("shortcut_targets_via_batch\\start_program.py")
+start_program_script = make_abs("shortcut_targets\\start_program.py")
 python_script_path = make_abs("..\\..\\..\\main.py")
-background_watchdog_path = make_abs("shortcut_targets_via_batch\\child_scripts\\backend_python\\background_watchdog.py")
+background_watchdog_path = make_abs("shortcut_targets\\child_scripts\\backend_python\\background_watchdog.py")
 start_time_dummy_main_script_path = make_abs("..\\backend_test_tools\\helper_scripts\\start_time_dummy_main_script.py")
-exit_processer_path = make_abs("shortcut_targets_via_batch\\child_scripts\\backend_python\\process_exit.py")
+exit_processer_path = make_abs("shortcut_targets\\child_scripts\\backend_python\\process_exit.py")
 
 # shorcut launchers related
 # ------------------------
@@ -97,33 +95,31 @@ tmp_traceback_json_path = temporary_folder + "\\last_crash_log.json"
 # untracked developer-tools folder files
 # ------------------------
 
-python_version_indicator_file_path = developer_tools_for_python_packages_dir + "\\CURRENT_PYTHON_VERSION.txt"
+python_version_indicator_file_path = dev_tools_for_python_packages_dir + "\\CURRENT_PYTHON_VERSION.txt"
 current_python_packages_file_path_withVersion = (
-    developer_tools_for_python_packages_dir + "\\current_python_packages -withVersion.txt"
+    dev_tools_for_python_packages_dir + "\\current_python_packages -withVersion.txt"
 )
 current_python_packages_file_path_withoutVersion = (
-    developer_tools_for_python_packages_dir + "\\current_python_packages -withoutVersion.txt"
+    dev_tools_for_python_packages_dir + "\\current_python_packages -withoutVersion.txt"
 )
 determined_current_packages_file_path_withVersion = (
-    developer_tools_for_python_packages_dir + "\\determined_current_packages_withVersion.txt"
+    dev_tools_for_python_packages_dir + "\\determined_current_packages_withVersion.txt"
 )
 determined_current_packages_file_path_noVersion = (
-    developer_tools_for_python_packages_dir + "\\determined_current_packages_noVersion.txt"
+    dev_tools_for_python_packages_dir + "\\determined_current_packages_noVersion.txt"
 )
 determined_needed_packages_output_file_path_noVersion = (
-    developer_tools_for_python_packages_dir + "\\auto_found_required_packages_noVersion.txt"
+    dev_tools_for_python_packages_dir + "\\auto_found_required_packages_noVersion.txt"
 )
 determined_needed_packages_output_file_path_withVersion = (
-    developer_tools_for_python_packages_dir + "\\auto_found_required_packages_withVersion.txt"
+    dev_tools_for_python_packages_dir + "\\auto_found_required_packages_withVersion.txt"
 )
 
 # remaining files
 # ------------------------
 
 developer_settings_path = make_abs("..\\..\\developer_settings.py")
-default_packages_file_path = (
-    developer_tools_for_python_packages_dir + "\\DEFAULT_PYTHON_PACKAGES.txt"
-)  # UPDATE GITIGNORE
+default_packages_file_path = dev_tools_for_python_packages_dir + "\\DEFAULT_PYTHON_PACKAGES.txt"  # UPDATE GITIGNORE
 pipreqs_mapping_path = backend_packages_dir + "\\pipreqs\\mapping"
 play_sound_after_crash_default = windows_dir + "\\Media\\Windows Critical Stop.wav"
 play_sound_after_failure_default = windows_dir + "\\Media\\Windows Critical Stop.wav"

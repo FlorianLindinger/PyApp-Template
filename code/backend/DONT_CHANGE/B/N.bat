@@ -13,7 +13,7 @@ cd /d "%~dp0"
 set "app_id=%~1"
 set "launch_mode=no_terminal"
 set "ensure_backend_python_script=..\scripts\setup\ensure_backend_python.bat"
-set "target_script=..\scripts\shortcut_targets_via_batch\start_program.py"
+set "target_script=..\scripts\shortcut_targets\start_program.py"
 
 :: ===========================
 :: code execution
