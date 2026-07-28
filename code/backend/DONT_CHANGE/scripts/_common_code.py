@@ -1489,7 +1489,7 @@ def is_python_version_compatible(actual_version: str, required_version: str):
 
 def read_python_version_from_file():
     if not os.path.exists(python_version_indicator_file_path):
-        print_warn(f'[Warning] missing file "{python_version_indicator_file_path}". Using Fallback determination.')
+        print_warn(f'[Warning] missing file "{python_version_indicator_file_path}". Using fallback python version determination.')
         return get_python_version()
 
     try:
@@ -2022,9 +2022,6 @@ def recreate_python_distro() -> None:
     if not os.path.exists(frontend_python_exe):
         raise RuntimeError(f'Python installation did not produce expected file at "{frontend_python_exe}"')
     else:
-        # save python verion to file
-        with open(python_version_indicator_file_path, "w", encoding="utf-8") as f:
-            f.write(get_python_version())
         # Create a batch file that launches a terminal that has python and pip install target set:
         batch_content = r"""
 :: turn off command print and make variables local
@@ -2067,6 +2064,10 @@ cmd /k
         os.makedirs(os.path.dirname(frontend_launcher_for_pip_install_terminal), exist_ok=True)
         with open(frontend_launcher_for_pip_install_terminal, "w", encoding="utf-8") as f:
             f.write(batch_content)
+
+        # save python version to file to have version fast readable and to indicate successfull python setup:
+        with open(python_version_indicator_file_path, "w", encoding="utf-8") as f:
+            f.write(get_python_version())
 
 
 def prompt_for_distro_reinstall(msg: str = "Reinstall distro / recreate virtual environment?"):
@@ -2393,6 +2394,7 @@ def are_frontend_packages_installed() -> bool:
 
 
 def ensure_frontend_packages(used_appid_if_slow: str = ""):
+    
     ensure_python_distro(used_appid_if_slow=used_appid_if_slow)
 
     if not os.path.exists(frontend_packages_dir):  # packages folder not existing - case
