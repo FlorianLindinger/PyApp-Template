@@ -2,6 +2,70 @@
 ==== Future ====
 ================
 
+do i want the .gitattributes
+
+waht varaible should i make capitalized? in common_variables. all i guess? generally all vars that i imoprt i guess but not in dev settings tho
+
+add setting to start main in specfic abs or rel folder.
+
+make a folder sub icon for folder ones
+
+srot code in genrate_shortcuts
+simplify shortcut gneratio fcuntion into one function
+
+prompt for first time minizmie to system tray? setting
+
+make option for x button to prompt for close or minimize to system tray or cancle? but could be annoying if one assumese that is that case falsely
+
+do i want to hide files in shortctu folder on install? with the windows add attrivute
+
+Important: your Python 3.5 claim needs a real compatibility test 
+
+Windows installation smoke test — most valuable for this project 
+
+Rich supports terminal hyperlinks:  but only in wt.exe
+
+add "enter y to open xyz" 
+
+sort common_vatriables even more
+make more common_variables depend on stuff like "root folder"
+
+make subicons more visible
+
+simplify generate icons
+
+check HOW_TO_CHANGE_ICONS.txt
+
+make easier to change subicon and stuff somehowu outside .py in dev settings and not backend DONT CHANGE
+
+chekc git tools and add more. ask for more genarla tools
+
+Repository-health inspector
+
+        Automatically detect:
+
+        Tracked files that match .gitignore
+        Ignored files
+        Untracked files
+        Empty folders requiring .gitkeep
+        Oversized files
+        Generated packages accidentally tracked
+        Nested Git repositories
+        Broken .gitignore exceptions
+        Mixed line endings
+        Case-only filename conflicts
+        Paths likely to fail on Windows
+        Secrets or credentials about to be committed
+
+add batch to install Ruff,Pyrefly and ... on computer? even git? if not present . git checks? github
+add batch to show installed packages and diff to default.... is it possible to see what is dpenedcy?Show dependency tree
+mention how to inionstall a package or have btach for it i gues
+add batch to run test under code/tests folder and ruff and pyrefly i guess
+batch to compile. how to install nuitka? auto icon. python file for args. and fiel for agrs that are in htese modes (AV,small,...) and easy ioptnfs to opf for size,AV,starutp.... -> in backend folder? i guess creating new folder is not to bad if it can remerbmer it and i have batch to clean the folder. compilation folder under dev_tools
+
+batch to get git folder size aka with all ignored in
+
+
 prompt more fancy wiht prompt windows
 
 license of ascii art in license file
