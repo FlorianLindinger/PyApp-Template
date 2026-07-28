@@ -1,5 +1,6 @@
 # Entries in this file will not be synchronized in git. 
 # "!" before whitelists synchronization.
+# "*" represents any number of wildcard symbols.
 # Lines with "#" will be ignored.
 
 # ============================
@@ -10,17 +11,17 @@
 /*.lnk
 # whitelist shortcut to generate shortcuts in this folder:
 !/▶*.lnk
-# log files:
+# "logs" folder in this folder:
 /logs/
-# crash log files:
+# "crash logs" folder in this folder:
 /crash logs/
-# whitelist ".gitkeep" files to sync folders:
+# whitelist ".gitkeep" files anywhere:
 !.gitkeep
-# vscode folder:
-/.vscode
+# ".vscode" folder anywhere:
+.vscode
 
 # =============================
 # ==== specific gitignores ====
 # =============================
 
-# ADD YOUR GITIGNORES HERE
+# ADD YOUR GIT IGNORE SYNCING RULES HERE
