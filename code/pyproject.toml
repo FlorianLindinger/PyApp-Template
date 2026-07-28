@@ -16,18 +16,15 @@ cache-dir = ".ruff_cache"
 
 # files to check/correct:
 include = ["*.py", "*.pyi", "*.pyw", "*.ipynb"]
-exclude = [
-  ".git",
-  ".mypy_cache",
-  ".ruff_cache",
+extend-exclude = [
   "__pycache__",
   "*.build",
   "*.dist",
   "GIT_IGNORED",
-  "python_and_packages",
-  "backend_python",
-  "backend_packages",
-  "compiled",
+  "backend/python",
+  "backend/packages",
+  "backend/DONT_CHANGE/backend_python",
+  "backend/DONT_CHANGE/backend_packages",
 ]
 
 # max line length before wrapping:
