@@ -65,7 +65,7 @@ def print_guidance(path_length: int) -> None:
         print(f"[Info] {remaining} characters remain before the legacy Windows path limit.")
 
     print("\n[Info] If this becomes a problem:")
-    print("- Move the repository closer to the drive root, for example C:\\src\\PyApp-Template.")
+    print("- Move the repository closer to the drive root, for example C:\\src\\App-Name.")
     print("- Shorten deeply nested folder or file names.")
     print("- Keep generated environments and package folders out of deeply nested project paths.")
     print("- Enable Windows long paths and Git core.longpaths where appropriate, but do not rely on them for every tool.")
