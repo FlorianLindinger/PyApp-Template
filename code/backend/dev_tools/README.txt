@@ -20,9 +20,6 @@ The shortcuts can:
 DEFAULT_PYTHON_PACKAGES.txt contains the default frontend package list used by
 the reset/install tools.
 
-CURRENT_PYTHON_VERSION.txt records the generated frontend interpreter version.
-
-
 MISCELLANEOUS SHORTCUTS
 ----------------------
 

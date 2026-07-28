@@ -38,13 +38,13 @@ frontend_launcher_for_pip_install_terminal = (
 dev_tools_referal_note_path = (
     os.path.dirname(frontend_packages_dir) + "\\USE dev_tools FOLDER (IN PARENT FOLDER) TO CHANGE PACKAGES"
 )  # UPDATE GITIGNORE
+python_version_indicator_file_path = frontend_python_dir + "\\PYTHON_VERSION.txt"
 
 # folders
 # ------------------------
 
 windows_dir = os.environ.get("WINDIR", default="C:\\Windows")
 python_scripts_dir = make_abs("..\\..\\..")
-dev_tools_for_python_packages_dir = make_abs("..\\..\\dev_tools\\change python packages")  # UPDATE GITIGNORE
 shortcut_output_dir = make_abs("..\\..\\..\\..")  # UPDATE GITIGNORE
 temporary_folder = make_abs("..\\temporary")
 
@@ -92,10 +92,10 @@ CORRECT_START_SIGNAL_FILE_PATH = temporary_folder + "\\signal_that_program_start
 process_id_file_path = make_abs("..\\..\\..\\_CURRENTLY_RUNNING_.pid")
 tmp_traceback_json_path = temporary_folder + "\\last_crash_log.json"
 
-# untracked developer-tools folder files
+# untracked developer-tools folder related
 # ------------------------
 
-python_version_indicator_file_path = dev_tools_for_python_packages_dir + "\\CURRENT_PYTHON_VERSION.txt"
+dev_tools_for_python_packages_dir = make_abs("..\\..\\dev_tools\\change python packages")  # UPDATE GITIGNORE
 current_python_packages_file_path_withVersion = (
     dev_tools_for_python_packages_dir + "\\current_python_packages -withVersion.txt"
 )

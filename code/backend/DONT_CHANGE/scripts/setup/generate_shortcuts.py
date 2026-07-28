@@ -368,6 +368,7 @@ def _sanitize_app_id(value: str) -> str:
 
 
 def main() -> None:
+    
     app_id = _sanitize_app_id(program_name)
     if len(app_id) > 15:
         app_id = app_id.replace("-", "").replace(".", "")
