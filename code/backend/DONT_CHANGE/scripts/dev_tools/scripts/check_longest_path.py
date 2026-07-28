@@ -71,7 +71,7 @@ def print_guidance(path_length: int) -> None:
     print("- Enable Windows long paths and Git core.longpaths where appropriate, but do not rely on them for every tool.")
 
 
-def check_paths() -> int:
+def main() -> int:
     """Print the project's longest paths and their Windows path-risk assessment."""
     print(f"[Info] Scanning repository: {REPOSITORY_DIR}")
     try:
@@ -87,19 +87,6 @@ def check_paths() -> int:
     path_length = len(str(longest_paths[0]))
     print_guidance(path_length)
     return 0
-
-
-def main() -> int:
-    """Repeatedly check paths until the user chooses to exit."""
-    while True:
-        exit_code = check_paths()
-        if exit_code:
-            return exit_code
-        try:
-            input("\n[Input] Press Enter to recheck: ")
-        except EOFError:
-            return 0
-        print()
 
 
 if __name__ == "__main__":
