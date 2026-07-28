@@ -548,12 +548,12 @@ trim again python folder
 
 dont dopuble error mesasge for no internet pyhton vresion checm. also fugure out why FULL_VER in batch is " " on no internet
 
-what if developer_tools scripts just interact with list in its folder?
+what if dev_tools scripts just interact with list in its folder?
 ->spawn and load a requirements.txt and reflect that in name
 move default packages to "code" folder??
 do i somehow want default python_palckages in developers? or even whole env folder??? but then i also move icon to that . maybe yes? at this point i can also move everything there??? including script
 make develper tools fodler to actual folder with structute and shortcuts to call everyrginh
-developer_tools:I guess make all to shortcut of python.exe and script? hm i made it like it is at the moment to be able to ad d or remove at any moment
+dev_tools:I guess make all to shortcut of python.exe and script? hm i made it like it is at the moment to be able to ad d or remove at any moment
 
 easy way to ad d buttons i guess
 

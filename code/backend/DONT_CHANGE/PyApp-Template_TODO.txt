@@ -217,7 +217,7 @@ am i checking for global uv and global uv cache. should i write somewher what it
 
 should i make crash reports and logs fixed? how to say in gitignore and in settings at same time?
 
-ask for more ideas for developer_tools so no replacement needed later
+ask for more ideas for dev_tools so no replacement needed later
 
 i guess i should levae backend pyhton and poackages in DONT_change. otherwiese change in requivemnts dont automatically update pyhtron 
 
