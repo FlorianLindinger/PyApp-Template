@@ -14,12 +14,9 @@ from backend.DONT_CHANGE.scripts._common_code import (
     install_packages_from_file,
     print_traceback,
 )
-from backend.DONT_CHANGE.scripts._common_variables import developer_tools_dir
-
 try:
-    path = developer_tools_dir + "\\requirements.txt"
     ensure_python_distro()
-    install_packages_from_file(path)
+    install_packages_from_file(os.path.join(os.getcwd(), "requirements.txt"))
     print()
     input_success("[Success] Press enter to exit")
 except Exception as e:

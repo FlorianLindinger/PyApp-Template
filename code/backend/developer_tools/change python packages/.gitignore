@@ -1,4 +1,4 @@
-# output files of developer tools:
+# output files of change-python-packages developer tools:
 /*.txt
-# whitelist DEFAULT_PYTHON_PACKAGES file in developer_tools folder:
+# whitelist the default package list stored in this folder:
 !/DEFAULT_PYTHON_PACKAGES.txt
