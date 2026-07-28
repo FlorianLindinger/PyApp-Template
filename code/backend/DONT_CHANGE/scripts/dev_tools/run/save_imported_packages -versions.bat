@@ -11,7 +11,7 @@ cd /d "%~dp0"
 :: local variables
 
 set "ensure_backend_python_script=..\..\setup\ensure_backend_python.bat"
-set "target_script=..\scripts\open_terminal_for_manual_package_installation.py"
+set "target_script=..\scripts\save_imported_packages -versions.py"
 
 :: ===========================
 :: code execution

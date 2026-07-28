@@ -11,8 +11,7 @@ cd /d "%~dp0"
 :: local variables
 
 set "ensure_backend_python_script=..\..\setup\ensure_backend_python.bat"
-set "target_script=%~dp0..\scripts\install_packages_from_local_requirements.txt.py"
-set "requirements_folder=%~dp0..\..\..\..\developer_tools\change python packages"
+set "target_script=..\scripts\open_package_terminal.py"
 
 :: ===========================
 :: code execution
@@ -24,8 +23,7 @@ if not "%ERRORLEVEL%"=="0" (
     exit 1
 )
 
-:: run the script from the folder that contains the local requirements.txt:
-cd /d "%requirements_folder%"
+:: run python script and forward all args:
 "%python_exe%" "%target_script%" %*
 set "exit_code=%ERRORLEVEL%"
 
