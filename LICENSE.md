@@ -22,8 +22,8 @@ The license choice, complete license texts, and applicable exceptions are docume
 
 The following directories, including all files and subdirectories within them, are not covered by the licenses described in Sections 1 or 2:
 
-* **`code/backend/python_and_packages/python`**
-* **`code/backend/python_and_packages/packages`**
+* **`code/backend/python`**
+* **`code/backend/packages`**
 * **`code/backend/DONT_CHANGE/backend_python`**
 * **`code/backend/DONT_CHANGE/backend_packages`**
 
