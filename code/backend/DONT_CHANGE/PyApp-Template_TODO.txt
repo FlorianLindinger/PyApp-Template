@@ -1,8 +1,18 @@
 ======================================
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
+´
+The only plausible candidates to move to settings are tool-specific:
+        backend_tools\helper_scripts\verify_backend.py
+        TARGETS, EXCLUDED_FILES, and EXCLUDED_FOLDERS are real verification settings. You could move them into settings\backend_verification_settings.py if you want all editable policy in one place.
 
-renamve common variable to backend_settings.py
+        icon_related\generate_icons.py
+        Its PNG folders, fallback IDs, icon scale, and retry timings are generator settings. I’d keep these next to the icon generator: they are tightly tied to its assets and relative paths.
+
+        scripts\shortcut_targets\stop_program.py
+        sleep_before_close_on_success_s = 2 is a configurable behavior. I would put it in code\developer_settings.py, not DONT_CHANGE\settings, because it is a local developer/user preference.
+
+i guess move the backent test scripts also to scripts. probalby even icons
 
 move out general helper functioms from common_code
 
@@ -10,17 +20,9 @@ do i want to force pyrefly setting in pyprkct
 
 add types to common code
 
-dose stop.lnk delete the PID
-
-have settings folder in DONT_CHANGE? including the setup txt? -> and then not a setup foldef. move common varaibles there i guess. move all settings there. maybe even image ones? either way implement a system to have the as setting in develeoper settings under icon related
-
-renamew backend_test_tools to backend_tools
-
-move txt and ini and so on to setup folder and the scripts fot that?
+move common varaibles to settings folder there i guess. move all settings there. maybe even image ones? either way implement a system to have the as setting in develeoper settings under icon related
 
 make missing PYHTON_VERISON a indicatiopn of broken or unsecsssful python installation and ->recread or porpmpt or somejtihn
-
-batch to get current python veriosn?
 
 fix exit.py
 
@@ -599,7 +601,7 @@ instlling rich traceback is slwo? do i want it maybe only in wrapper? no error s
 sort wrapper
 shouild i use set_terminal_icon from wrapper or starter?
 what if i either way need for app id stuff. can i make that simpler?
-do i want a wrapper_common_code? wither way start and wrapper should be fast and no unncecresasy imports
+do i want a wrappercommon_code? wither way start and wrapper should be fast and no unncecresasy imports
 fix erorr print in wrapper mode haveing blac kcolor for tiomestapmo
 dont i always handle a interpreter crash by wrapper and emulator? no need for setting?
 in wrapper. do i want appearance change attempt for error?

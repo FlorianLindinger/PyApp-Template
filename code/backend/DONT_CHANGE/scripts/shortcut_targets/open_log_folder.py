@@ -21,7 +21,7 @@ try:
         log_path,
         log_path_is_relative_to_start_folder_if_relative,
     )
-    from backend.DONT_CHANGE.scripts._common_code import (
+    from backend.DONT_CHANGE.scripts.common_code import (
         close_terminal,
         get_log_folder_path,
         input_warn,
@@ -30,7 +30,7 @@ try:
         set_terminal_colors,
         set_unminimize_and_foreground_on_first_print,
     )
-    from backend.DONT_CHANGE.scripts._common_variables import (
+    from backend.DONT_CHANGE.settings.backend_settings import (
         DEV_SETTINGS_PATH,
     )
 

@@ -54,7 +54,7 @@ try:
         title_after_KeyboardInterrupt,
         title_after_success,
     )
-    from backend.DONT_CHANGE.scripts._common_code import (
+    from backend.DONT_CHANGE.scripts.common_code import (
         get_log_path,
         input_warn,
         open_in_editor,
@@ -64,7 +64,7 @@ try:
         set_terminal_icon,
         set_terminal_title,
     )
-    from backend.DONT_CHANGE.scripts._common_variables import (
+    from backend.DONT_CHANGE.settings.backend_settings import (
         CRASH_ICON_PATH,
         CRASH_TERMINAL_COLORS,
         DEFAULT_SOUND_AFTER_CRASH,

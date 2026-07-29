@@ -17,7 +17,7 @@ try:
     # ==========================================================================
     # import from common variables and developer settings
 
-    from backend.DONT_CHANGE.scripts._common_code import (
+    from backend.DONT_CHANGE.scripts.common_code import (
         close_terminal,
         input_warn,
         open_in_editor,
@@ -26,7 +26,7 @@ try:
         set_terminal_colors,
         set_unminimize_and_foreground_on_first_print,
     )
-    from backend.DONT_CHANGE.scripts._common_variables import MAIN_PY_SCRIPT_PATH
+    from backend.DONT_CHANGE.settings.backend_settings import MAIN_PY_SCRIPT_PATH
 
     # =============================
     # script is inteded to be launched minimized and will un minimize on frist print/error
