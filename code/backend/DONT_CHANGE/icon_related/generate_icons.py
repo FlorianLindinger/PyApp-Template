@@ -14,7 +14,7 @@ root_dir = os.path.normpath(os.path.dirname(os.path.abspath(__file__)) + "\\..\\
 if root_dir not in sys.path:
     sys.path.insert(0, root_dir)
 
-from backend.DONT_CHANGE.scripts._common_code import close_terminal
+from backend.DONT_CHANGE.scripts.common_code import close_terminal
 
 # ====================================
 # settings

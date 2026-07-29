@@ -8,14 +8,14 @@ root_dir = os.path.dirname(__file__) + "\\..\\..\\..\\.."
 if root_dir not in sys.path:
     sys.path.insert(0, root_dir)
 
-from backend.DONT_CHANGE.scripts._common_code import (
+from backend.DONT_CHANGE.scripts.common_code import (
     ensure_python_distro,
     input_success,
     install_packages_from_file,
     print_traceback,
     save_requirements_of_root_folder_noVersion,
 )
-from backend.DONT_CHANGE.scripts._common_variables import (
+from backend.DONT_CHANGE.settings.backend_settings import (
     NEEDED_PACKAGES_NO_VERSION_PATH,
 )
 

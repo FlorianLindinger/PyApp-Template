@@ -16,8 +16,8 @@ if root_dir not in sys.path:
 # import variables
 
 from backend.developer_settings import use_uv_to_install_packages
-from backend.DONT_CHANGE.scripts._common_code import delete_folder_safe, install_packages
-from backend.DONT_CHANGE.scripts._common_variables import (
+from backend.DONT_CHANGE.scripts.common_code import delete_folder_safe, install_packages
+from backend.DONT_CHANGE.settings.backend_settings import (
     BACKEND_BUILD_TOOLS_REQUIREMENTS_FILE,
     BACKEND_FILES_TO_DELETE_AFTER_INSTALL,
     BACKEND_PACKAGE_REQUIREMENTS_FILE,

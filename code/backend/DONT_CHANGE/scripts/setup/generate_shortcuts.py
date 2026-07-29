@@ -30,14 +30,14 @@ from backend.developer_settings import (
     user_settings_path,
     windows_terminal_shortcut_name,
 )
-from backend.DONT_CHANGE.scripts._common_code import (
+from backend.DONT_CHANGE.scripts.common_code import (
     close_terminal,
     ensure_frontend_packages,
     make_abs_path_relative_to_file,
     print_traceback,
     sanitize_filename,
 )
-from backend.DONT_CHANGE.scripts._common_variables import (
+from backend.DONT_CHANGE.settings.backend_settings import (
     CRASH_LOG_ICON_PATH,
     DEV_SETTINGS_PATH,
     ICON_PATH,

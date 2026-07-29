@@ -10,7 +10,7 @@ cd /d "%~dp0"
 :: ===========================
 :: local variables
 
-set "SETTINGS_FILE=..\..\backend_settings.ini"
+set "SETTINGS_FILE=..\..\settings\backend_settings.ini"
 
 :: ===========================
 :: code execution

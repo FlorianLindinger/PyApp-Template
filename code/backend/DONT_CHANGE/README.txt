@@ -40,14 +40,14 @@ Folder contents
 
 - backend_packages
   Third-party Python packages used only by the backend launcher/tooling code.
-  The expected package list is documented in backend_packages_list.txt.
+  The expected package list is documented in settings\backend_packages_list.txt.
 
 - backend_python
   Embedded Python distribution used by backend scripts. It is modified during
   backend setup; see scripts/setup/finish_backend_installation.py and
   backend_python/LICENSE.txt.
 
-- backend_test_tools
+- backend_tools
   Local helper scripts for measuring startup/import times and testing backend
   launch behavior.
 
@@ -73,10 +73,10 @@ Important files
   Composite license for this folder, the embedded backend Python runtime, and
   bundled backend packages.
 
-- backend_packages_list.txt
+- settings\backend_packages_list.txt
   Source list for backend-only Python packages.
 
-- backend_build_tools_list.txt
+- settings\backend_build_tools_list.txt
   Source list for temporary backend Python build/install tools. These are used
   during backend package installation and removed before finalizing backend
   Python.
@@ -97,7 +97,7 @@ Distribution notes
 
 If you distribute this folder, keep LICENSE.md and the license/metadata files
 inside backend_python and backend_packages. If you change bundled packages,
-update both backend_packages_list.txt and LICENSE.md.
+update both settings\backend_packages_list.txt and LICENSE.md.
 
 If you only build an app from the template, prefer changing the files outside
 DONT_CHANGE instead of editing these internals. That keeps future template

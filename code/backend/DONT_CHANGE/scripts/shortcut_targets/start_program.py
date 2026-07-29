@@ -36,7 +36,7 @@ try:
         use_classic_terminal,
         use_global_python,
     )
-    from backend.DONT_CHANGE.scripts._common_code import (
+    from backend.DONT_CHANGE.scripts.common_code import (
         close_terminal,
         ensure_frontend_packages,
         input_warn,
@@ -46,7 +46,7 @@ try:
         set_terminal_colors,
         set_unminimize_and_foreground_on_first_print,
     )
-    from backend.DONT_CHANGE.scripts._common_variables import (
+    from backend.DONT_CHANGE.settings.backend_settings import (
         BACKEND_PYTHON_EXE,
         BACKGROUND_WATCHDOG_PATH,
         CORRECT_START_SIGNAL_FILE_PATH,
