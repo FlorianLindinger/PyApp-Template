@@ -1726,7 +1726,7 @@ def install_full_python(
                 except (OSError, urllib.error.URLError):
                     continue
 
-                # return found download links and pyhton version
+                # return found download links and python version
                 if msi_urls:
                     return version, url, msi_urls
         else:

@@ -50,10 +50,10 @@ def read_backend_settings(settings_path: str) -> tuple[str, str]:
 
 _backend_settings_ini_path = make_abs("..\\backend_settings.ini")
 _backend_python_version, BACKEND_PYTHON_DIR = read_backend_settings(_backend_settings_ini_path)
-_backend_pyhon_major_minor_version = "".join(_backend_python_version.split(".")[:2])
+_backend_python_major_minor_version = "".join(_backend_python_version.split(".")[:2])
 
-BACKEND_PYTHON_pth_FILE = BACKEND_PYTHON_DIR + f"\\python{_backend_pyhon_major_minor_version}._pth"
-BACKEND_PYTHON_ZIP_REL_PATH = f"python{_backend_pyhon_major_minor_version}.zip"
+BACKEND_PYTHON_pth_FILE = BACKEND_PYTHON_DIR + f"\\python{_backend_python_major_minor_version}._pth"
+BACKEND_PYTHON_ZIP_REL_PATH = f"python{_backend_python_major_minor_version}.zip"
 BACKEND_PACKAGES_DIR = make_abs("..\\backend_packages")  # UPDATE contents of BACKEND_PYTHON_pth_FILE and pyproject.toml
 BACKEND_PACKAGE_REQUIREMENTS_FILE = make_abs("..\\backend_packages_list.txt")
 BACKEND_BUILD_TOOLS_REQUIREMENTS_FILE = make_abs("..\\backend_build_tools_list.txt")
