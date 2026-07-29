@@ -16,7 +16,7 @@ def make_abs(x: str) -> str:
 
 
 def read_backend_settings(settings_path: str) -> tuple[str, str]:
-    """Get the backend Python version and INI-relative installation directory."""
+    """Get the backend Python version and installation directory."""
     settings_path = make_abs(settings_path)
     values: dict[str, str] = {}
     with open(settings_path, encoding="utf-8") as file:
@@ -48,21 +48,23 @@ def read_backend_settings(settings_path: str) -> tuple[str, str]:
 # backend related
 # ------------------------
 
-_backend_settings_ini_path = make_abs("..\\backend_settings.ini")
+_backend_settings_ini_path = "backend_settings.ini"
 _backend_python_version, BACKEND_PYTHON_DIR = read_backend_settings(_backend_settings_ini_path)
 _backend_python_major_minor_version = "".join(_backend_python_version.split(".")[:2])
 
 BACKEND_PYTHON_pth_FILE = BACKEND_PYTHON_DIR + f"\\python{_backend_python_major_minor_version}._pth"
 BACKEND_PYTHON_ZIP_REL_PATH = f"python{_backend_python_major_minor_version}.zip"
 BACKEND_PACKAGES_DIR = make_abs("..\\backend_packages")  # UPDATE contents of BACKEND_PYTHON_pth_FILE and pyproject.toml
-BACKEND_PACKAGE_REQUIREMENTS_FILE = make_abs("..\\backend_packages_list.txt")
-BACKEND_BUILD_TOOLS_REQUIREMENTS_FILE = make_abs("..\\backend_build_tools_list.txt")
+BACKEND_PACKAGE_REQUIREMENTS_FILE = make_abs("backend_packages_list.txt")
+BACKEND_BUILD_TOOLS_REQUIREMENTS_FILE = make_abs("backend_build_tools_list.txt")
 BACKEND_FILES_TO_DELETE_AFTER_INSTALL = ["sqlite3.dll", "python.cat"]
 
 # frontend related
 # ------------------------
 
-FRONTEND_SCRIPT_WRAPPER_PATH = make_abs("shortcut_targets\\child_scripts\\frontend_python\\script_wrapper.py")
+FRONTEND_SCRIPT_WRAPPER_PATH = make_abs(
+    "..\\scripts\\shortcut_targets\\child_scripts\\frontend_python\\script_wrapper.py"
+)
 FRONTEND_PACKAGES_DIR = make_abs("..\\..\\packages")  # UPDATE contents of .gitignore + pyproject.toml
 FRONTEND_PYTHON_DIR = make_abs("..\\..\\python")  # UPDATE  contents of.gitignore + pyproject.toml
 FRONTEND_PACKAGES_ARE_INSTALLED_MARKER_PATH = (
@@ -87,11 +89,13 @@ TEMPORARY_DIR = make_abs("..\\temporary")
 # scripts
 # ------------------------
 
-START_PROGRAM_PATH = make_abs("shortcut_targets\\start_program.py")
+START_PROGRAM_PATH = make_abs("..\\scripts\\shortcut_targets\\start_program.py")
 MAIN_PY_SCRIPT_PATH = make_abs("..\\..\\..\\main.py")
-BACKGROUND_WATCHDOG_PATH = make_abs("shortcut_targets\\child_scripts\\backend_python\\background_watchdog.py")
-START_TIME_DUMMY_MAIN_PY_PATH = make_abs("..\\backend_test_tools\\helper_scripts\\start_time_dummy_main_script.py")
-PROCESS_EXIT_PATH = make_abs("shortcut_targets\\child_scripts\\backend_python\\process_exit.py")
+BACKGROUND_WATCHDOG_PATH = make_abs(
+    "..\\scripts\\shortcut_targets\\child_scripts\\backend_python\\background_watchdog.py"
+)
+START_TIME_DUMMY_MAIN_PY_PATH = make_abs("..\\backend_tools\\helper_scripts\\start_time_dummy_main_script.py")
+PROCESS_EXIT_PATH = make_abs("..\\scripts\\shortcut_targets\\child_scripts\\backend_python\\process_exit.py")
 
 # shorcut launchers related
 # ------------------------
