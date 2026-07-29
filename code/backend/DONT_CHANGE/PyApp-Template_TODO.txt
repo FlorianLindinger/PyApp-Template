@@ -2,6 +2,8 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+renamve common variable to backend_settings.py
+
 move out general helper functioms from common_code
 
 do i want to force pyrefly setting in pyprkct
