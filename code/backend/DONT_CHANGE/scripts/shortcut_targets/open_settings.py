@@ -29,7 +29,7 @@ try:
         set_unminimize_and_foreground_on_first_print,
     )
     from backend.DONT_CHANGE.scripts._common_variables import (
-        developer_settings_path,
+        DEV_SETTINGS_PATH,
     )
 
     # =============================
@@ -41,15 +41,12 @@ try:
     # =============================
 
     if not user_settings_path:
-        print_warn(
-            f'[Info] Can\'t open settings file because user_settings_path is disabled in "{developer_settings_path}".'
-        )
+        print_warn(f'[Info] Can\'t open settings file because user_settings_path is disabled in "{DEV_SETTINGS_PATH}".')
         input_warn("Press enter to exit.")
         close_terminal()
     else:
-        
-        path=make_abs_path_relative_to_file(user_settings_path,developer_settings_path)
-        
+        path = make_abs_path_relative_to_file(user_settings_path, DEV_SETTINGS_PATH)
+
         if not os.path.exists(path):
             print_warn(f'[Error] User settings file ("{path}") does not exist.')
             input_warn("Press enter to exit.")

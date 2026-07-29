@@ -15,7 +15,7 @@ from backend.DONT_CHANGE.scripts._common_code import (
     print_traceback,
     save_current_packages,
 )
-from backend.DONT_CHANGE.scripts._common_variables import frontend_packages_dir, frontend_python_exe
+from backend.DONT_CHANGE.scripts._common_variables import FRONTEND_PACKAGES_DIR, FRONTEND_PYTHON_EXE
 
 ensure_python_distro()
 
@@ -24,7 +24,7 @@ try:
 
     subprocess.run(  # noqa
         [
-            frontend_python_exe,
+            FRONTEND_PYTHON_EXE,
             "-m",
             "pip",
             "install",
@@ -37,14 +37,14 @@ try:
     )
     subprocess.run(  # noqa
         [
-            frontend_python_exe,
+            FRONTEND_PYTHON_EXE,
             "-m",
             "pip",
             "install",
             "-r",
             path,
             "--target",
-            frontend_packages_dir,
+            FRONTEND_PACKAGES_DIR,
             "--upgrade",
             "--disable-pip-version-check",
         ],

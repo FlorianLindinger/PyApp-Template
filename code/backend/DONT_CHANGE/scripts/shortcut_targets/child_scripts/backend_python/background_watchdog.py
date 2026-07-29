@@ -49,9 +49,9 @@ try:
     )
     from backend.DONT_CHANGE.scripts._common_code import (
         close_terminal,
+        get_log_path,
         get_running_processes_from_pid_file,
         make_empty_args_safe,
-        get_log_path,
         set_terminal_app_id,
         set_terminal_colors,
         set_terminal_icon,
@@ -61,15 +61,15 @@ try:
     from backend.DONT_CHANGE.scripts._common_variables import (
         CORRECT_START_SIGNAL_FILE_PATH,
         EMPTY_ARG_INDICATOR,
-        env_var_to_signal_startup_time_measurement,
-        exit_processer_path,
-        frontend_python_exe,
-        frontend_script_wrapper_path,
-        icon_path,
-        process_id_file_path,
-        python_script_path,
-        start_time_dummy_main_script_path,
-        tmp_traceback_json_path,
+        ENV_VAR_TO_SIGNAL_STARTUP_TIME_MEASUREMENT,
+        FRONTEND_PYTHON_EXE,
+        FRONTEND_SCRIPT_WRAPPER_PATH,
+        ICON_PATH,
+        MAIN_PY_SCRIPT_PATH,
+        PROCESS_EXIT_PATH,
+        PROCESS_ID_FILE_PATH,
+        START_TIME_DUMMY_MAIN_PY_PATH,
+        TMP_TRACEBACK_JSON_PATH,
     )
 
     # ==============================
@@ -178,7 +178,7 @@ try:
                     sys.executable,
                     "-X",
                     "faulthandler",
-                    exit_processer_path,
+                    PROCESS_EXIT_PATH,
                     *args,
                 ],
                 creationflags=subprocess.CREATE_NEW_CONSOLE,
@@ -191,7 +191,7 @@ try:
             try:
                 sys.argv = ["_filename"] + args
                 # waiting:
-                runpy.run_path(exit_processer_path, run_name="__main__")
+                runpy.run_path(PROCESS_EXIT_PATH, run_name="__main__")
             finally:
                 sys.argv = old_argv
 
@@ -209,7 +209,7 @@ try:
                 log_path,
                 "true" if overwrite_log else "false",
                 log_print_prepend,
-                tmp_traceback_json_path,
+                TMP_TRACEBACK_JSON_PATH,
             ]
         )
 
@@ -232,8 +232,8 @@ try:
         # ==============================
         # delete old temporary crash traceback report if existing (to know if new one was created later)
 
-        if os.path.exists(tmp_traceback_json_path):
-            os.remove(tmp_traceback_json_path)
+        if os.path.exists(TMP_TRACEBACK_JSON_PATH):
+            os.remove(TMP_TRACEBACK_JSON_PATH)
 
         # ==============================
         # get args
@@ -253,7 +253,7 @@ try:
             set_terminal_app_id(app_id)
 
             if launch_mode == "wt":
-                set_terminal_icon(icon_path)
+                set_terminal_icon(ICON_PATH)
 
             elif launch_mode == "conhost":
                 # set terminal title in case shortcut was renamed:
@@ -264,7 +264,7 @@ try:
         # ==============================
         # add pid to "currently running" file:
 
-        process_id_registry = _ProcessIdRegistry(process_id_file_path)
+        process_id_registry = _ProcessIdRegistry(PROCESS_ID_FILE_PATH)
         process_id_registry.add(os.getpid())
         atexit.register(process_id_registry.cleanup)
 
@@ -274,7 +274,7 @@ try:
         if use_global_python:
             python_exe_for_script = "py"
         else:
-            python_exe_for_script = frontend_python_exe
+            python_exe_for_script = FRONTEND_PYTHON_EXE
 
         # ==============================
         # get log_path if logging is enabled
@@ -290,11 +290,11 @@ try:
         # close existing instances or block start if already running, if enabled
 
         if close_already_running_instances_on_start or prevent_start_if_already_running:
-            running_process_ids, _stale_count = get_running_processes_from_pid_file(process_id_file_path)
+            running_process_ids, _stale_count = get_running_processes_from_pid_file(PROCESS_ID_FILE_PATH)
 
             if close_already_running_instances_on_start:
                 if running_process_ids:
-                    stopped_count, _stale_count, failed_messages = stop_processes_from_pid_file(process_id_file_path)
+                    stopped_count, _stale_count, failed_messages = stop_processes_from_pid_file(PROCESS_ID_FILE_PATH)
                 else:
                     stopped_count = 0
                     failed_messages = []
@@ -318,7 +318,7 @@ try:
                         print("[Info] New launch cancelled.")
                         sys.exit(0)
 
-                    stopped_count, _stale_count, failed_messages = stop_processes_from_pid_file(process_id_file_path)
+                    stopped_count, _stale_count, failed_messages = stop_processes_from_pid_file(PROCESS_ID_FILE_PATH)
                     if failed_messages:
                         raise RuntimeError(
                             "Failed to close existing program instance(s):\n" + "\n".join(failed_messages)
@@ -328,11 +328,11 @@ try:
         # ==============================
         # setup variables used in launch
 
-        if os.environ.get(env_var_to_signal_startup_time_measurement):
-            selected_python_script_path = start_time_dummy_main_script_path
-            os.environ.pop(env_var_to_signal_startup_time_measurement, None)
+        if os.environ.get(ENV_VAR_TO_SIGNAL_STARTUP_TIME_MEASUREMENT):
+            selected_python_script_path = START_TIME_DUMMY_MAIN_PY_PATH
+            os.environ.pop(ENV_VAR_TO_SIGNAL_STARTUP_TIME_MEASUREMENT, None)
         else:
-            selected_python_script_path = python_script_path
+            selected_python_script_path = MAIN_PY_SCRIPT_PATH
 
         if not os.path.exists(selected_python_script_path):
             raise FileNotFoundError(f'[Error] Python script not found at "{selected_python_script_path}"')
@@ -351,7 +351,7 @@ try:
 
         wrapper_env_vars = os.environ.copy()
         wrapper_env_vars["PROGRAM_NAME"] = program_name
-        wrapper_env_vars["ICON_PATH"] = icon_path
+        wrapper_env_vars["ICON_PATH"] = ICON_PATH
         wrapper_env_vars["PROGRAM_HAS_TERMINAL"] = "1" if PROGRAM_HAS_TERMINAL else "0"
         wrapper_env_vars["LOG_PATH"] = log_path_resolved
         wrapper_env_vars["APP_ID"] = app_id
@@ -364,7 +364,7 @@ try:
         # start wrapper script and don't wait for finish
 
         process = subprocess.Popen(  # noqa:S603
-            [python_exe_for_script, frontend_script_wrapper_path, *passed_args],
+            [python_exe_for_script, FRONTEND_SCRIPT_WRAPPER_PATH, *passed_args],
             encoding="utf-8",
             env=wrapper_env_vars,
             cwd=cwd_for_main_script,
@@ -377,7 +377,7 @@ try:
             # set terminal icon + app-ID (for taskabr grouping of terminal) in new thread because slow:
             def _set_terminal_icon_and_app_id() -> None:
                 try:
-                    set_terminal_icon(icon_path)  # type: ignore
+                    set_terminal_icon(ICON_PATH)  # type: ignore
                     set_terminal_app_id(app_id)
                 except Exception as error:
                     print(f"[Warning] Error during terminal appearance update: {error}")

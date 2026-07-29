@@ -47,9 +47,9 @@ try:
         set_unminimize_and_foreground_on_first_print,
     )
     from backend.DONT_CHANGE.scripts._common_variables import (
+        BACKEND_PYTHON_EXE,
+        BACKGROUND_WATCHDOG_PATH,
         CORRECT_START_SIGNAL_FILE_PATH,
-        backend_python_exe,
-        background_watchdog_path,
     )
 
     # ==============================
@@ -118,7 +118,7 @@ try:
 
         passed_args = [app_id, launch_mode]
         terminal_args = make_empty_args_safe(
-            [backend_python_exe, "-X", "faulthandler", background_watchdog_path, *passed_args]
+            [BACKEND_PYTHON_EXE, "-X", "faulthandler", BACKGROUND_WATCHDOG_PATH, *passed_args]
         )
 
         # ==============================
