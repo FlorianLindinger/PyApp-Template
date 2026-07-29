@@ -2,6 +2,9 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 ´
+
+do i still need gitatributes eeryhwere if nothing is syncd?
+
 The only plausible candidates to move to settings are tool-specific:
         backend_tools\helper_scripts\verify_backend.py
         TARGETS, EXCLUDED_FILES, and EXCLUDED_FOLDERS are real verification settings. You could move them into settings\backend_verification_settings.py if you want all editable policy in one place.
