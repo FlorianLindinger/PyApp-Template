@@ -31,7 +31,7 @@ try:
         set_unminimize_and_foreground_on_first_print,
     )
     from backend.DONT_CHANGE.scripts._common_variables import (
-        developer_settings_path,
+        DEV_SETTINGS_PATH,
     )
 
     # =============================
@@ -45,7 +45,7 @@ try:
     folder_path = get_log_folder_path(log_path, log_path_is_relative_to_start_folder_if_relative)
 
     if folder_path is None:
-        print_warn(f'[Info] Can\'t open log folder because log_path is disabled in "{developer_settings_path}".')
+        print_warn(f'[Info] Can\'t open log folder because log_path is disabled in "{DEV_SETTINGS_PATH}".')
         input_warn("Press enter to exit.")
     else:
         if not os.path.exists(folder_path):

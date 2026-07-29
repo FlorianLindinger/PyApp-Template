@@ -16,14 +16,12 @@ from backend.DONT_CHANGE.scripts._common_code import (
     save_requirements_of_root_folder_noVersion,
 )
 from backend.DONT_CHANGE.scripts._common_variables import (
-    determined_needed_packages_output_file_path_noVersion,
+    NEEDED_PACKAGES_NO_VERSION_PATH,
 )
 
 try:
     ensure_python_distro()
-    success, output_path = save_requirements_of_root_folder_noVersion(
-        determined_needed_packages_output_file_path_noVersion
-    )
+    success, output_path = save_requirements_of_root_folder_noVersion(NEEDED_PACKAGES_NO_VERSION_PATH)
     if not success:
         raise RuntimeError("Failed to determine needed packages.")
 

@@ -26,7 +26,7 @@ try:
         set_terminal_colors,
         set_unminimize_and_foreground_on_first_print,
     )
-    from backend.DONT_CHANGE.scripts._common_variables import python_script_path
+    from backend.DONT_CHANGE.scripts._common_variables import MAIN_PY_SCRIPT_PATH
 
     # =============================
     # script is inteded to be launched minimized and will un minimize on frist print/error
@@ -36,14 +36,14 @@ try:
 
     # =============================
 
-    if not os.path.exists(python_script_path):
-        print_warn(f'[Error] main.py file ("{python_script_path}") does not exist.')
+    if not os.path.exists(MAIN_PY_SCRIPT_PATH):
+        print_warn(f'[Error] main.py file ("{MAIN_PY_SCRIPT_PATH}") does not exist.')
         input_warn("Press enter to exit.")
     else:
         try:
-            open_in_editor(python_script_path)
+            open_in_editor(MAIN_PY_SCRIPT_PATH)
         except Exception:
-            print_traceback(f'[Error] Failed to open main.py file "{python_script_path}".')
+            print_traceback(f'[Error] Failed to open main.py file "{MAIN_PY_SCRIPT_PATH}".')
             input_warn("Press enter to exit.")
 
     close_terminal()

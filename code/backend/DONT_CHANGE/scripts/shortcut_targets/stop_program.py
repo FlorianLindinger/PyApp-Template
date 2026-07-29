@@ -29,14 +29,13 @@ from backend.DONT_CHANGE.scripts._common_code import (
     set_unminimize_and_foreground_on_first_print,
     stop_processes_from_pid_file,
 )
-from backend.DONT_CHANGE.scripts._common_variables import developer_settings_path, process_id_file_path
+from backend.DONT_CHANGE.scripts._common_variables import DEV_SETTINGS_PATH, PROCESS_ID_FILE_PATH
 
 # ==========================================================================
 # code execution
 
 
-
-pid_path = make_abs_path_relative_to_file(process_id_file_path, developer_settings_path)
+pid_path = make_abs_path_relative_to_file(PROCESS_ID_FILE_PATH, DEV_SETTINGS_PATH)
 
 try:
     # =============================

@@ -55,34 +55,34 @@ try:
         title_after_success,
     )
     from backend.DONT_CHANGE.scripts._common_code import (
+        get_log_path,
         input_warn,
         open_in_editor,
         print_traceback,
-        get_log_path,
         set_terminal_app_id,
         set_terminal_colors,
         set_terminal_icon,
         set_terminal_title,
     )
     from backend.DONT_CHANGE.scripts._common_variables import (
+        CRASH_ICON_PATH,
         CRASH_TERMINAL_COLORS,
+        DEFAULT_SOUND_AFTER_CRASH,
+        DEFAULT_SOUND_AFTER_FAILURE,
+        DEFAULT_SOUND_AFTER_SUCCESS,
         ERROR_DATE_FORMAT,
+        FAILURE_ICON_PATH,
         FAILURE_TERMINAL_COLORS,
         KEYBOARDINTERRUPT_TERMINAL_COLORS,
+        MAIN_PY_SCRIPT_PATH,
+        PIPREQS_MAPPING_PATH,
         RICH_TRACEBACK_COLOR_THEME,
         SUCCESS_TERMINAL_COLORS,
-        KeyboardInterrupt_icon_path,
-        crash_icon_path,
-        failure_icon_path,
-        pipreqs_mapping_path,
-        play_sound_after_crash_default,
-        play_sound_after_failure_default,
-        play_sound_after_KeyboardInterrupt_default,
-        play_sound_after_success_default,
-        python_script_path,
+        TMP_TRACEBACK_JSON_PATH,
+        WINDOWS_DIR,
+        DEFAULT_SOUND_AFTER_KeyboardInterrupt,
+        KeyboardInterrupt_ICON_PATH,
         success_icon_path,
-        tmp_traceback_json_path,
-        windows_dir,
     )
 
     # ==============================
@@ -368,11 +368,9 @@ try:
 
     def write_txt_crash_log(crash_log_payload: dict[str, Any] | None, message: str | None):
         # write a human readable crash log:
-        crash_log_path_resolved = get_log_path(
-            crash_log_path, crash_log_path_is_relative_to_start_folder_if_relative
-        )
-        
-        divider_length:int = 30
+        crash_log_path_resolved = get_log_path(crash_log_path, crash_log_path_is_relative_to_start_folder_if_relative)
+
+        divider_length: int = 30
 
         if crash_log_payload is None and message is None:
             return
@@ -399,7 +397,7 @@ try:
     def get_package_install_name(import_name: str) -> str:
         """Uses pipreqs mapping to convert from import name to install name: e.g., "cv2" -> "opencv-python"."""
 
-        with open(pipreqs_mapping_path, encoding="utf-8") as f:
+        with open(PIPREQS_MAPPING_PATH, encoding="utf-8") as f:
             for line in f:
                 line = line.strip()
                 if not line or ":" not in line:
@@ -427,7 +425,7 @@ try:
     def execute_exit_settings(
         mode: Literal["failure", "success", "KeyboardInterrupt", "crash"],
         log_path: str = "",
-        traceback_payload: dict[str,Any] | None = None,
+        traceback_payload: dict[str, Any] | None = None,
         exit_msg: str | None = None,
         override_to_not_closing_and_disable_wait: bool = False,
     ) -> None:
@@ -436,7 +434,7 @@ try:
         # get settings
         if mode == "success":
             play_sound = play_sound_after_success
-            play_sound_default = play_sound_after_success_default
+            play_sound_default = DEFAULT_SOUND_AFTER_SUCCESS
             open_log = open_log_file_after_success
             terminal_colors = SUCCESS_TERMINAL_COLORS
             terminal_icon = success_icon_path
@@ -445,28 +443,28 @@ try:
             open_main = open_main_py_after_success
         elif mode == "failure":
             play_sound = play_sound_after_failure
-            play_sound_default = play_sound_after_failure_default
+            play_sound_default = DEFAULT_SOUND_AFTER_FAILURE
             open_log = open_log_file_after_failure
             terminal_colors = FAILURE_TERMINAL_COLORS
-            terminal_icon = failure_icon_path
+            terminal_icon = FAILURE_ICON_PATH
             terminal_title = title_after_failure
             close = close_after_failure
             open_main = open_main_py_after_failure
         elif mode == "crash":
             play_sound = play_sound_after_crash
-            play_sound_default = play_sound_after_crash_default
+            play_sound_default = DEFAULT_SOUND_AFTER_CRASH
             open_log = open_log_file_after_crash
             terminal_colors = CRASH_TERMINAL_COLORS
-            terminal_icon = crash_icon_path
+            terminal_icon = CRASH_ICON_PATH
             terminal_title = title_after_crash
             close = close_after_crash
             open_main = open_main_py_after_crash
         elif mode == "KeyboardInterrupt":
             play_sound = play_sound_after_KeyboardInterrupt
-            play_sound_default = play_sound_after_KeyboardInterrupt_default
+            play_sound_default = DEFAULT_SOUND_AFTER_KeyboardInterrupt
             open_log = open_log_file_after_KeyboardInterrupt
             terminal_colors = KEYBOARDINTERRUPT_TERMINAL_COLORS
-            terminal_icon = KeyboardInterrupt_icon_path
+            terminal_icon = KeyboardInterrupt_ICON_PATH
             terminal_title = title_after_KeyboardInterrupt
             close = close_after_KeyboardInterrupt
             open_main = open_main_py_after_KeyboardInterrupt
@@ -477,7 +475,7 @@ try:
         elif play_sound in (False, None, ""):
             wav_path = ""
         elif not os.path.isabs(play_sound):
-            wav_path = os.path.normpath(windows_dir + "\\Media\\" + play_sound)
+            wav_path = os.path.normpath(WINDOWS_DIR + "\\Media\\" + play_sound)
         else:
             wav_path = play_sound
         if wav_path != "":
@@ -508,7 +506,7 @@ try:
                 print(f"[Error] Failed to open log: {e}")
 
         if open_main:
-            open_in_editor(python_script_path)
+            open_in_editor(MAIN_PY_SCRIPT_PATH)
 
         # rest
         print(exit_msg)
@@ -559,10 +557,10 @@ try:
             sys.exit()
 
         elif exit_mode == 1:  # 1 = correctly handled other exit of main.py (json)
-            if os.path.exists(tmp_traceback_json_path):
+            if os.path.exists(TMP_TRACEBACK_JSON_PATH):
                 import json
 
-                with open(tmp_traceback_json_path, encoding="utf-8") as f:
+                with open(TMP_TRACEBACK_JSON_PATH, encoding="utf-8") as f:
                     traceback_payload = json.load(f)
 
                 traceback_entries = _traceback_entries(traceback_payload)
@@ -636,9 +634,6 @@ try:
                     #     vertical_buttons=True,
                     # )
 
-
-                        
-                    
                     input()
 
                     # options:

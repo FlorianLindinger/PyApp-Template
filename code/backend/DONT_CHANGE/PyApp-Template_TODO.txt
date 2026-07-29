@@ -2,6 +2,20 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+move out general helper functioms from common_code
+
+do i want to force pyrefly setting in pyprkct
+
+add types to common code
+
+dose stop.lnk delete the PID
+
+have settings folder in DONT_CHANGE? including the setup txt? -> and then not a setup foldef. move common varaibles there i guess. move all settings there. maybe even image ones? either way implement a system to have the as setting in develeoper settings under icon related
+
+renamew backend_test_tools to backend_tools
+
+move txt and ini and so on to setup folder and the scripts fot that?
+
 make missing PYHTON_VERISON a indicatiopn of broken or unsecsssful python installation and ->recread or porpmpt or somejtihn
 
 batch to get current python veriosn?

@@ -29,25 +29,25 @@ from backend.developer_settings import (
     use_uv_to_install_packages,
 )
 from backend.DONT_CHANGE.scripts._common_variables import (
+    BACKEND_PYTHON_EXE,
+    CURRENT_PACKAGES_NO_VERSION_PATH,
+    CURRENT_PACKAGES_WITH_VERSION_PATH,
+    DEFAULT_PACKAGES_PATH,
+    DEV_SETTINGS_DIR,
+    DEV_TOOLS_REFERAL_NOTE_PATH,
     EMPTY_ARG_INDICATOR,
-    backend_python_exe,
-    default_packages_file_path,
-    determined_current_packages_file_path_noVersion,
-    determined_current_packages_file_path_withVersion,
-    determined_needed_packages_output_file_path_noVersion,
-    determined_needed_packages_output_file_path_withVersion,
-    dev_tools_referal_note_path,
-    developer_settings_dir,
-    excluded_folders_for_package_search,
-    frontend_launcher_for_pip_install_terminal,
-    frontend_packages_are_installed_marker_path,
-    frontend_packages_dir,
-    frontend_python_dir,
-    frontend_python_exe,
-    icon_path,
-    python_scripts_dir,
-    python_version_indicator_file_path,
-    variable_in_default_packages_path_that_triggers_search_if_true,
+    EXCLUDED_FOLDERS_FOR_PACKAGE_SEARCH,
+    FRONTEND_LAUNCHER_FOR_PIP_INSTALL_TERMINAL,
+    FRONTEND_PACKAGES_ARE_INSTALLED_MARKER_PATH,
+    FRONTEND_PACKAGES_DIR,
+    FRONTEND_PYTHON_DIR,
+    FRONTEND_PYTHON_EXE,
+    ICON_PATH,
+    NEEDED_PACKAGES_NO_VERSION_PATH,
+    NEEDED_PACKAGES_WITH_VERSION_PATH,
+    PYTHON_SCRIPTS_DIR,
+    PYTHON_VERSION_INDICATOR_FILE_PATH,
+    VARIABLE_IN_DEFAULT_PACKAGES_THAT_TRIGGERS_SEARCH_IF_TRUE,
 )
 
 # =========================
@@ -108,7 +108,7 @@ def show_git_results(arguments: list[str], *, heading: str, no_results_message: 
         return 2
 
     print(f"[Info] {heading}")
-    result = subprocess.run( #noqa:S603
+    result = subprocess.run(  # noqa:S603
         ["git", *arguments],
         cwd=root,
         capture_output=True,
@@ -1082,7 +1082,7 @@ def set_terminal_appearance_once(app_id: str):
 
     if not _TERMINAL_APPEARANCE_WAS_SET:
         set_terminal_title(program_name)
-        set_terminal_icon(icon_path)
+        set_terminal_icon(ICON_PATH)
 
         if app_id:
             set_terminal_app_id(app_id)
@@ -1151,7 +1151,7 @@ def get_log_folder_path(log_path: str | bool | None, is_relative_to_start_folder
             if is_relative_to_start_folder_if_relative:
                 log_path_resolved = os.path.normpath(os.path.join(os.getcwd(), log_path))
             else:
-                log_path_resolved = os.path.normpath(os.path.join(developer_settings_dir, log_path))
+                log_path_resolved = os.path.normpath(os.path.join(DEV_SETTINGS_DIR, log_path))
         else:
             log_path_resolved = log_path
 
@@ -1176,7 +1176,7 @@ def get_log_path(log_path: str | bool | None, is_relative_to_start_folder_if_rel
             if is_relative_to_start_folder_if_relative:
                 log_path_resolved = os.path.normpath(os.path.join(os.getcwd(), log_path))
             else:
-                log_path_resolved = os.path.normpath(os.path.join(developer_settings_dir, log_path))
+                log_path_resolved = os.path.normpath(os.path.join(DEV_SETTINGS_DIR, log_path))
         else:
             log_path_resolved = log_path
 
@@ -1461,7 +1461,7 @@ def get_python_version():
 
     return subprocess.check_output(  # noqa:S603
         [
-            frontend_python_exe,
+            FRONTEND_PYTHON_EXE,
             "-c",
             "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}')",
         ],
@@ -1488,12 +1488,14 @@ def is_python_version_compatible(actual_version: str, required_version: str):
 
 
 def read_python_version_from_file():
-    if not os.path.exists(python_version_indicator_file_path):
-        print_warn(f'[Warning] missing file "{python_version_indicator_file_path}". Using fallback python version determination.')
+    if not os.path.exists(PYTHON_VERSION_INDICATOR_FILE_PATH):
+        print_warn(
+            f'[Warning] missing file "{PYTHON_VERSION_INDICATOR_FILE_PATH}". Using fallback python version determination.'
+        )
         return get_python_version()
 
     try:
-        return read_lines(python_version_indicator_file_path)[0].strip()
+        return read_lines(PYTHON_VERSION_INDICATOR_FILE_PATH)[0].strip()
     except Exception:
         print_warn("[Error] Failed to determine python version from file. Using Fallback determination.")
         return get_python_version()
@@ -1991,9 +1993,9 @@ def install_full_python(
 
 def delete_python_distro():
     delete_folder_safe(
-        frontend_python_dir,
+        FRONTEND_PYTHON_DIR,
         always_prompt_for_confirmation=False,
-        allowed_base_abs_path=python_scripts_dir,
+        allowed_base_abs_path=PYTHON_SCRIPTS_DIR,
         expected_folder_name=None,
         required_included_files=None,
         required_included_dirs=None,
@@ -2001,17 +2003,17 @@ def delete_python_distro():
         max_size_GB_before_prompt=1.2,
         min_path_depth=6,
     )
-    os.makedirs(frontend_python_dir, exist_ok=True)
+    os.makedirs(FRONTEND_PYTHON_DIR, exist_ok=True)
 
 
 def recreate_python_distro() -> None:
     delete_python_distro()
 
-    rel_path_dist_to_packages = os.path.relpath(path=frontend_packages_dir, start=frontend_python_dir)
+    rel_path_dist_to_packages = os.path.relpath(path=FRONTEND_PACKAGES_DIR, start=FRONTEND_PYTHON_DIR)
 
     install_full_python(
         python_version=python_version,
-        python_dir_abs_path=frontend_python_dir,
+        python_dir_abs_path=FRONTEND_PYTHON_DIR,
         install_tkinter=install_tkinter,
         install_tests=install_tests,
         install_tools=install_tools,
@@ -2019,8 +2021,8 @@ def recreate_python_distro() -> None:
         rel_path_to_packages=rel_path_dist_to_packages,
     )
 
-    if not os.path.exists(frontend_python_exe):
-        raise RuntimeError(f'Python installation did not produce expected file at "{frontend_python_exe}"')
+    if not os.path.exists(FRONTEND_PYTHON_EXE):
+        raise RuntimeError(f'Python installation did not produce expected file at "{FRONTEND_PYTHON_EXE}"')
     else:
         # Create a batch file that launches a terminal that has python and pip install target set:
         batch_content = r"""
@@ -2061,12 +2063,12 @@ echo.
 :: don't close terminal
 cmd /k
 """
-        os.makedirs(os.path.dirname(frontend_launcher_for_pip_install_terminal), exist_ok=True)
-        with open(frontend_launcher_for_pip_install_terminal, "w", encoding="utf-8") as f:
+        os.makedirs(os.path.dirname(FRONTEND_LAUNCHER_FOR_PIP_INSTALL_TERMINAL), exist_ok=True)
+        with open(FRONTEND_LAUNCHER_FOR_PIP_INSTALL_TERMINAL, "w", encoding="utf-8") as f:
             f.write(batch_content)
 
         # save python version to file to have version fast readable and to indicate successfull python setup:
-        with open(python_version_indicator_file_path, "w", encoding="utf-8") as f:
+        with open(PYTHON_VERSION_INDICATOR_FILE_PATH, "w", encoding="utf-8") as f:
             f.write(get_python_version())
 
 
@@ -2105,7 +2107,7 @@ def ensure_python_distro(
 ):
     """returns if python version is correct"""
 
-    if not os.path.exists(frontend_python_exe):  # no python distro existing case:
+    if not os.path.exists(FRONTEND_PYTHON_EXE):  # no python distro existing case:
         set_terminal_appearance_once(used_appid_if_slow)
         print("\n" * 5)
         print("[Info] Python distribution not found. Installing Python:")
@@ -2361,9 +2363,9 @@ def install_packages(
 def delete_frontend_packages():
     """Delete the packages."""
     delete_folder_safe(
-        frontend_packages_dir,
+        FRONTEND_PACKAGES_DIR,
         always_prompt_for_confirmation=False,
-        allowed_base_abs_path=python_scripts_dir,
+        allowed_base_abs_path=PYTHON_SCRIPTS_DIR,
         expected_folder_name=None,
         require_direct_child_of_allowed_base=False,
         max_size_GB_before_prompt=5.0,
@@ -2371,21 +2373,21 @@ def delete_frontend_packages():
         required_included_dirs=None,
         min_path_depth=6,
     )
-    os.makedirs(frontend_packages_dir, exist_ok=True)
+    os.makedirs(FRONTEND_PACKAGES_DIR, exist_ok=True)
 
 
 def are_frontend_packages_installed() -> bool:
     """returns True if frontend packages are installed"""
 
-    if not os.path.exists(frontend_packages_dir):
+    if not os.path.exists(FRONTEND_PACKAGES_DIR):
         return False
     else:
-        num_elems = len(os.listdir(frontend_packages_dir))
+        num_elems = len(os.listdir(FRONTEND_PACKAGES_DIR))
 
         if num_elems == 0:
             return False
         elif num_elems == 1:
-            if os.path.exists(frontend_packages_are_installed_marker_path):
+            if os.path.exists(FRONTEND_PACKAGES_ARE_INSTALLED_MARKER_PATH):
                 return True
             else:
                 return False
@@ -2394,14 +2396,13 @@ def are_frontend_packages_installed() -> bool:
 
 
 def ensure_frontend_packages(used_appid_if_slow: str = ""):
-    
     ensure_python_distro(used_appid_if_slow=used_appid_if_slow)
 
-    if not os.path.exists(frontend_packages_dir):  # packages folder not existing - case
+    if not os.path.exists(FRONTEND_PACKAGES_DIR):  # packages folder not existing - case
         install_default_packages(check_auto_determine_flag=True, app_id_for_slow=used_appid_if_slow)
 
     else:  # packages folder existing - case
-        if os.path.exists(frontend_packages_are_installed_marker_path):
+        if os.path.exists(FRONTEND_PACKAGES_ARE_INSTALLED_MARKER_PATH):
             return
         else:
             print("[Info] Resetting Python packages:")
@@ -2409,8 +2410,8 @@ def ensure_frontend_packages(used_appid_if_slow: str = ""):
             install_default_packages(check_auto_determine_flag=True, app_id_for_slow=used_appid_if_slow)
 
     # create file to note where to change packages if missing
-    if not os.path.exists(dev_tools_referal_note_path):
-        open(dev_tools_referal_note_path, "w", encoding="utf-8").close()
+    if not os.path.exists(DEV_TOOLS_REFERAL_NOTE_PATH):
+        open(DEV_TOOLS_REFERAL_NOTE_PATH, "w", encoding="utf-8").close()
 
 
 def install_packages_from_file(
@@ -2418,7 +2419,7 @@ def install_packages_from_file(
 ) -> None:
     """raises if failur"""
 
-    os.makedirs(frontend_packages_dir, exist_ok=True)
+    os.makedirs(FRONTEND_PACKAGES_DIR, exist_ok=True)
 
     if not os.path.exists(path):
         raise FileNotFoundError(f'Package list not found: "{path}"')
@@ -2440,7 +2441,7 @@ def install_packages_from_file(
             print()
 
     # create file to indicate frontend packages as installed. (Needed to differentiate 0 packages from not yet installed)
-    open(frontend_packages_are_installed_marker_path, "w", encoding="utf-8").close()
+    open(FRONTEND_PACKAGES_ARE_INSTALLED_MARKER_PATH, "w", encoding="utf-8").close()
 
     if len(actual_packgages) == 0:
         return
@@ -2450,13 +2451,13 @@ def install_packages_from_file(
 
     try:
         install_packages(
-            python_exe=frontend_python_exe,
+            python_exe=FRONTEND_PYTHON_EXE,
             requirements_file=path,
-            target=frontend_packages_dir,
+            target=FRONTEND_PACKAGES_DIR,
             upgrade=True,
             no_cache=no_cache,
             use_uv=use_uv_to_install_packages,
-            local_uv_python_exe=backend_python_exe,
+            local_uv_python_exe=BACKEND_PYTHON_EXE,
         )
     except Exception as e:
         if not can_reach_pip_url():
@@ -2472,7 +2473,7 @@ def install_default_packages(check_auto_determine_flag: bool, app_id_for_slow: s
         if get_auto_find_pckgs_phrase_state() == True:
             set_terminal_appearance_once(app_id_for_slow)
             print(
-                f'[Info] Found flag "{variable_in_default_packages_path_that_triggers_search_if_true} = True" in default packages file "{default_packages_file_path}"'
+                f'[Info] Found flag "{VARIABLE_IN_DEFAULT_PACKAGES_THAT_TRIGGERS_SEARCH_IF_TRUE} = True" in default packages file "{DEFAULT_PACKAGES_PATH}"'
             )
             print(
                 "--> Auto determine needed packages & reset installed packages to them & set them as new defaults if success."
@@ -2487,23 +2488,23 @@ def install_default_packages(check_auto_determine_flag: bool, app_id_for_slow: s
             else:
                 raise RuntimeError("[Error] Failed to auto determine required Python packages.")
         else:
-            install_packages_from_file(default_packages_file_path, app_id_for_slow=app_id_for_slow)
+            install_packages_from_file(DEFAULT_PACKAGES_PATH, app_id_for_slow=app_id_for_slow)
     else:
-        install_packages_from_file(default_packages_file_path, app_id_for_slow=app_id_for_slow)
+        install_packages_from_file(DEFAULT_PACKAGES_PATH, app_id_for_slow=app_id_for_slow)
 
 
 def get_auto_find_pckgs_phrase_state() -> bool | None:
     """WIP"""
-    if not os.path.exists(default_packages_file_path):
+    if not os.path.exists(DEFAULT_PACKAGES_PATH):
         return None
 
-    lines = read_lines(default_packages_file_path)
+    lines = read_lines(DEFAULT_PACKAGES_PATH)
 
     for line in lines:
-        if variable_in_default_packages_path_that_triggers_search_if_true not in line:
+        if VARIABLE_IN_DEFAULT_PACKAGES_THAT_TRIGGERS_SEARCH_IF_TRUE not in line:
             continue
         value = (
-            line.replace(variable_in_default_packages_path_that_triggers_search_if_true, "")
+            line.replace(VARIABLE_IN_DEFAULT_PACKAGES_THAT_TRIGGERS_SEARCH_IF_TRUE, "")
             .replace("=", "")
             .replace("#", "")
             .strip()
@@ -2515,22 +2516,6 @@ def get_auto_find_pckgs_phrase_state() -> bool | None:
             return False
         return None
     return None
-
-
-def save_current_packages_as_default(auto_search_phrase_state: bool | None = None, with_version: bool = True):
-    if auto_search_phrase_state is None:
-        auto_search_phrase_state = get_auto_find_pckgs_phrase_state()
-
-    packages = get_current_packages(with_version=with_version)
-
-    write_lines(
-        default_packages_file_path,
-        [
-            f"{variable_in_default_packages_path_that_triggers_search_if_true} = {auto_search_phrase_state}",
-            "",
-            *packages,
-        ],
-    )
 
 
 def get_installed_packages(exe_path: str, with_version: bool = True):
@@ -2566,15 +2551,31 @@ def get_installed_packages(exe_path: str, with_version: bool = True):
 
 
 def get_current_packages(with_version: bool = True):
-    return get_installed_packages(exe_path=frontend_python_exe, with_version=with_version)
+    return get_installed_packages(exe_path=FRONTEND_PYTHON_EXE, with_version=with_version)
+
+
+def save_current_packages_as_default(auto_search_phrase_state: bool | None = None, with_version: bool = True):
+    if auto_search_phrase_state is None:
+        auto_search_phrase_state = get_auto_find_pckgs_phrase_state()
+
+    packages = get_current_packages(with_version=with_version)
+
+    write_lines(
+        DEFAULT_PACKAGES_PATH,
+        [
+            f"{VARIABLE_IN_DEFAULT_PACKAGES_THAT_TRIGGERS_SEARCH_IF_TRUE} = {auto_search_phrase_state}",
+            "",
+            *packages,
+        ],
+    )
 
 
 def save_installed_packages(exe_path: str, output_path: str | None = None, with_version: bool = True):
     if output_path is None:
         if with_version == True:
-            output_path = determined_current_packages_file_path_withVersion
+            output_path = CURRENT_PACKAGES_WITH_VERSION_PATH
         else:
-            output_path = determined_current_packages_file_path_noVersion
+            output_path = CURRENT_PACKAGES_NO_VERSION_PATH
     else:
         output_path = os.path.abspath(output_path)
 
@@ -2586,13 +2587,13 @@ def save_installed_packages(exe_path: str, output_path: str | None = None, with_
 
 
 def save_current_packages(output_path: str | None = None, with_version: bool = True):
-    return save_installed_packages(output_path=output_path, with_version=with_version, exe_path=frontend_python_exe)
+    return save_installed_packages(output_path=output_path, with_version=with_version, exe_path=FRONTEND_PYTHON_EXE)
 
 
 def save_requirements_of_root_folder_noVersion(
-    output_path: str = determined_needed_packages_output_file_path_noVersion,
+    output_path: str = NEEDED_PACKAGES_NO_VERSION_PATH,
 ) -> tuple[bool, str]:
-    """reuturns success,output_path"""
+    """Returns success,output_path"""
 
     import subprocess
 
@@ -2606,12 +2607,12 @@ def save_requirements_of_root_folder_noVersion(
             sys.executable,
             "-m",
             "pipreqs.pipreqs",
-            python_scripts_dir,  # searched_folder,
+            PYTHON_SCRIPTS_DIR,  # searched_folder,
             "--force",
             "--savepath",
             output_path,
             "--ignore",
-            ",".join(excluded_folders_for_package_search),  # excluded_folders
+            ",".join(EXCLUDED_FOLDERS_FOR_PACKAGE_SEARCH),  # excluded_folders
             "--encoding",
             "utf-8",
             "--mode",
@@ -2648,7 +2649,7 @@ def save_requirements_of_root_folder_noVersion(
 
 
 def save_requirements_of_root_folder_withVersion(
-    output_path: str = determined_needed_packages_output_file_path_withVersion,
+    output_path: str = NEEDED_PACKAGES_WITH_VERSION_PATH,
 ) -> bool:
     """returns success bool. Installation into a fresh temp venv needed to determine package versions. Pipreqs only can determine what packages are needed."""
 
@@ -2669,7 +2670,7 @@ def save_requirements_of_root_folder_withVersion(
         with tempfile.TemporaryDirectory(prefix="tmp_venv_to_get_package_version") as tmp:
             temp_python = tmp + "\\Scripts\\python.exe"
 
-            subprocess.run([frontend_python_exe, "-m", "venv", tmp], check=True)  # noqa
+            subprocess.run([FRONTEND_PYTHON_EXE, "-m", "venv", tmp], check=True)  # noqa
             if not os.path.exists(temp_python):
                 raise RuntimeError(f'Temporary environment did not create "{temp_python}"')
 

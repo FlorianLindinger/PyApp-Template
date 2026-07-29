@@ -18,29 +18,29 @@ if root_dir not in sys.path:
 from backend.developer_settings import use_uv_to_install_packages
 from backend.DONT_CHANGE.scripts._common_code import delete_folder_safe, install_packages
 from backend.DONT_CHANGE.scripts._common_variables import (
-    backend_build_tools_requirements_file,
-    backend_files_to_delete_on_install,
-    backend_package_requirements_file,
-    backend_packages_dir,
-    backend_python_dir,
-    backend_python_exe,
-    backend_python_pth_file,
-    backend_python_zip_rel_path,
-    python_scripts_dir,
-    rel_path_from_backend_python_to_backend_packages,
+    BACKEND_BUILD_TOOLS_REQUIREMENTS_FILE,
+    BACKEND_FILES_TO_DELETE_AFTER_INSTALL,
+    BACKEND_PACKAGE_REQUIREMENTS_FILE,
+    BACKEND_PACKAGES_DIR,
+    BACKEND_PYTHON_DIR,
+    BACKEND_PYTHON_EXE,
+    BACKEND_PYTHON_ZIP_REL_PATH,
+    PYTHON_SCRIPTS_DIR,
+    REL_PATH_FROM_BACKEND_PYTHON_TO_ITS_PACKAGES,
+    BACKEND_PYTHON_pth_FILE,
 )
 
 # ====================================
 # local variables
 
 get_pip_url = "https://bootstrap.pypa.io/get-pip.py"
-pipreqs_mapping_path = backend_packages_dir + "\\pipreqs\\mapping"
-get_pip_path = backend_python_dir + "\\get-pip.py"
+pipreqs_mapping_path = BACKEND_PACKAGES_DIR + "\\pipreqs\\mapping"
+get_pip_path = BACKEND_PYTHON_DIR + "\\get-pip.py"
 
 try:
     # update pth_file_path temporily to include packages folder for pip installation
-    with open(backend_python_pth_file, "w", encoding="utf-8") as f:
-        f.write(rf"""{backend_python_zip_rel_path}
+    with open(BACKEND_PYTHON_pth_FILE, "w", encoding="utf-8") as f:
+        f.write(rf"""{BACKEND_PYTHON_ZIP_REL_PATH}
 .
 import site""")
 
@@ -48,7 +48,7 @@ import site""")
     try:
         urllib.request.urlretrieve(get_pip_url, get_pip_path)  # noqa:S310
         subprocess.run(  # noqa:S603
-            [backend_python_exe, get_pip_path, "--no-warn-script-location"],
+            [BACKEND_PYTHON_EXE, get_pip_path, "--no-warn-script-location"],
             check=True,
         )
         if os.path.exists(get_pip_path):
@@ -58,13 +58,13 @@ import site""")
         raise
 
     # remove unneeded files to save space
-    for filename in backend_files_to_delete_on_install:
-        if os.path.exists(backend_python_dir + "\\" + filename):
-            os.remove(backend_python_dir + "\\" + filename)
+    for filename in BACKEND_FILES_TO_DELETE_AFTER_INSTALL:
+        if os.path.exists(BACKEND_PYTHON_DIR + "\\" + filename):
+            os.remove(BACKEND_PYTHON_DIR + "\\" + filename)
             print(f"[Info] Deleted {filename} to save space")
 
     # clear packages folder
-    def clear_folder_contents(folder:str):
+    def clear_folder_contents(folder: str):
         import shutil  # lazy import because slow
 
         forced_name = "python_packages"
@@ -88,15 +88,15 @@ import site""")
             elif os.path.isdir(item):
                 shutil.rmtree(item)
 
-    if os.path.exists(backend_packages_dir):
+    if os.path.exists(BACKEND_PACKAGES_DIR):
         success = delete_folder_safe(
-            backend_packages_dir, max_size_GB_before_prompt=0.5, allowed_base_abs_path=python_scripts_dir
+            BACKEND_PACKAGES_DIR, max_size_GB_before_prompt=0.5, allowed_base_abs_path=PYTHON_SCRIPTS_DIR
         )
         if not success:
-            raise RuntimeError(f'Failed to delete "{backend_packages_dir}". Aborting.')
+            raise RuntimeError(f'Failed to delete "{BACKEND_PACKAGES_DIR}". Aborting.')
             input("Press enter to exit")
     else:
-        os.makedirs(backend_packages_dir)
+        os.makedirs(BACKEND_PACKAGES_DIR)
 
     # print
     print()
@@ -107,25 +107,25 @@ import site""")
 
     # install temporary build tools for packages that need legacy build support
     install_packages(
-        python_exe=backend_python_exe,
-        requirements_file=backend_build_tools_requirements_file,
+        python_exe=BACKEND_PYTHON_EXE,
+        requirements_file=BACKEND_BUILD_TOOLS_REQUIREMENTS_FILE,
         upgrade=True,
         no_deps=True,
-        use_uv=use_uv_to_install_packages
+        use_uv=use_uv_to_install_packages,
     )
 
     # install backend packages
     install_packages(
-        python_exe=backend_python_exe,
-        requirements_file=backend_package_requirements_file,
-        target=backend_packages_dir,
+        python_exe=BACKEND_PYTHON_EXE,
+        requirements_file=BACKEND_PACKAGE_REQUIREMENTS_FILE,
+        target=BACKEND_PACKAGES_DIR,
         upgrade=True,
         no_deps=True,
-        use_uv=use_uv_to_install_packages
+        use_uv=use_uv_to_install_packages,
     )
 
     # Remove console entry points are generated into python_packages\bin by pip --target. The embedded runtime imports packages directly and does not use those scripts.
-    generated_bin_folder = os.path.join(backend_packages_dir, "bin")
+    generated_bin_folder = os.path.join(BACKEND_PACKAGES_DIR, "bin")
     if os.path.isdir(generated_bin_folder):
         import shutil  # lazy import because slow
 
@@ -133,18 +133,18 @@ import site""")
 
     # uninstall pip and temporary build tools from the embedded python to save space
     install_packages(
-        python_exe=backend_python_exe,
+        python_exe=BACKEND_PYTHON_EXE,
         packages="pip",
-        requirements_file=backend_build_tools_requirements_file,
+        requirements_file=BACKEND_BUILD_TOOLS_REQUIREMENTS_FILE,
         uninstall=True,
     )
 
     # update python3xx._pth
-    with open(backend_python_pth_file, "w", encoding="utf-8") as f:
-        f.write(rf"""{backend_python_zip_rel_path}
+    with open(BACKEND_PYTHON_pth_FILE, "w", encoding="utf-8") as f:
+        f.write(rf"""{BACKEND_PYTHON_ZIP_REL_PATH}
 .
 Lib\site-packages
-{rel_path_from_backend_python_to_backend_packages}
+{REL_PATH_FROM_BACKEND_PYTHON_TO_ITS_PACKAGES}
 
 # Uncomment to run site.main() automatically
 # import site""")
