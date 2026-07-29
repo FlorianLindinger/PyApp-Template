@@ -28,7 +28,7 @@ from backend.developer_settings import (
     terminal_text_color,
     use_uv_to_install_packages,
 )
-from backend.DONT_CHANGE.scripts._common_variables import (
+from backend.DONT_CHANGE.settings.backend_settings import (
     BACKEND_PYTHON_EXE,
     CURRENT_PACKAGES_NO_VERSION_PATH,
     CURRENT_PACKAGES_WITH_VERSION_PATH,

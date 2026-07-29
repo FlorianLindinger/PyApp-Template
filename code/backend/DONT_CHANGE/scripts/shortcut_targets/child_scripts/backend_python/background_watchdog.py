@@ -47,7 +47,7 @@ try:
         start_in_shortcut_folder,
         use_global_python,
     )
-    from backend.DONT_CHANGE.scripts._common_code import (
+    from backend.DONT_CHANGE.scripts.common_code import (
         close_terminal,
         get_log_path,
         get_running_processes_from_pid_file,
@@ -58,7 +58,7 @@ try:
         set_terminal_title,
         stop_processes_from_pid_file,
     )
-    from backend.DONT_CHANGE.scripts._common_variables import (
+    from backend.DONT_CHANGE.settings.backend_settings import (
         CORRECT_START_SIGNAL_FILE_PATH,
         EMPTY_ARG_INDICATOR,
         ENV_VAR_TO_SIGNAL_STARTUP_TIME_MEASUREMENT,

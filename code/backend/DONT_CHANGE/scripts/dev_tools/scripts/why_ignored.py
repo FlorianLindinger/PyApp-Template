@@ -10,7 +10,7 @@ CODE_DIR = Path(__file__).resolve().parents[5]
 if str(CODE_DIR) not in sys.path:
     sys.path.insert(0, str(CODE_DIR))
 
-from backend.DONT_CHANGE.scripts._common_code import run_git
+from backend.DONT_CHANGE.scripts.common_code import run_git
 
 
 def main() -> int:

@@ -20,7 +20,7 @@ if root_dir not in sys.path:
 
 # ==========================================================================
 # import from common variables and developer settings
-from backend.DONT_CHANGE.scripts._common_code import (
+from backend.DONT_CHANGE.scripts.common_code import (
     close_terminal,
     make_abs_path_relative_to_file,
     print_success,
@@ -29,7 +29,7 @@ from backend.DONT_CHANGE.scripts._common_code import (
     set_unminimize_and_foreground_on_first_print,
     stop_processes_from_pid_file,
 )
-from backend.DONT_CHANGE.scripts._common_variables import DEV_SETTINGS_PATH, PROCESS_ID_FILE_PATH
+from backend.DONT_CHANGE.settings.backend_settings import DEV_SETTINGS_PATH, PROCESS_ID_FILE_PATH
 
 # ==========================================================================
 # code execution

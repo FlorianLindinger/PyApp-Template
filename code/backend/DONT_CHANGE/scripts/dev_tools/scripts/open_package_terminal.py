@@ -9,11 +9,11 @@ root_dir = os.path.dirname(__file__) + "\\..\\..\\..\\.."
 if root_dir not in sys.path:
     sys.path.insert(0, root_dir)
 
-from backend.DONT_CHANGE.scripts._common_code import (
+from backend.DONT_CHANGE.scripts.common_code import (
     ensure_python_distro,
     print_traceback,
 )
-from backend.DONT_CHANGE.scripts._common_variables import (
+from backend.DONT_CHANGE.settings.backend_settings import (
     FRONTEND_LAUNCHER_FOR_PIP_INSTALL_TERMINAL,
     FRONTEND_PYTHON_EXE,
 )

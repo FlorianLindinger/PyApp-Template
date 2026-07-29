@@ -20,7 +20,7 @@ if root_dir not in sys.path:
     sys.path.insert(0, root_dir)
 
 import backend.developer_settings
-from backend.DONT_CHANGE.scripts._common_variables import (
+from backend.DONT_CHANGE.settings.backend_settings import (
     BACKEND_PYTHON_EXE,
     ENV_VAR_TO_SIGNAL_STARTUP_TIME_MEASUREMENT,
     FRONTEND_PYTHON_EXE,

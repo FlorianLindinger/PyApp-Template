@@ -18,7 +18,7 @@ try:
     # import from common variables and developer settings
 
     from backend.developer_settings import user_settings_path
-    from backend.DONT_CHANGE.scripts._common_code import (
+    from backend.DONT_CHANGE.scripts.common_code import (
         close_terminal,
         input_warn,
         make_abs_path_relative_to_file,
@@ -28,7 +28,7 @@ try:
         set_terminal_colors,
         set_unminimize_and_foreground_on_first_print,
     )
-    from backend.DONT_CHANGE.scripts._common_variables import (
+    from backend.DONT_CHANGE.settings.backend_settings import (
         DEV_SETTINGS_PATH,
     )
 
