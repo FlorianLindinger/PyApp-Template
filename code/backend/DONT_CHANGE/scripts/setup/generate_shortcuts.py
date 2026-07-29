@@ -38,21 +38,21 @@ from backend.DONT_CHANGE.scripts._common_code import (
     sanitize_filename,
 )
 from backend.DONT_CHANGE.scripts._common_variables import (
-    crash_log_icon_path,
-    developer_settings_path,
-    icon_path,
-    launcher_no_terminal,
-    launcher_open_crash_log_folder,
-    launcher_open_log_folder,
-    launcher_open_main_py,
-    launcher_open_settings,
-    launcher_stop,
-    launcher_terminal,
-    log_icon_path,
-    open_main_py_icon_path,
-    settings_icon_path,
-    shortcut_output_dir,
-    stop_icon_path,
+    CRASH_LOG_ICON_PATH,
+    DEV_SETTINGS_PATH,
+    ICON_PATH,
+    LAUNCHER_NO_TERMINAL,
+    LAUNCHER_OPEN_CRASH_LOG_DIR,
+    LAUNCHER_OPEN_LOG_DIR,
+    LAUNCHER_OPEN_MAIN_PY,
+    LAUNCHER_OPEN_SETTINGS,
+    LAUNCHER_STOP,
+    LAUNCHER_TERMINAL,
+    LOG_ICON_PATH,
+    OPEN_MAIN_PY_ICON_PATH,
+    SETTINGS_ICON_PATH,
+    SHORTCUT_OUTPUT_DIR,
+    STOP_ICON_PATH,
 )
 
 
@@ -248,7 +248,7 @@ def generate_shortcut(
     _property_store_interface_id = _guid("886D8EEB-8CF2-4446-8D02-CDBA1DBDCF99")
     _app_id_key = _PropertyKey(_guid("9F4C2855-9F79-4B39-A8D0-E1D42DE1D5F3"), 5)
 
-    output_path = os.path.abspath(os.path.join(shortcut_output_dir, sanitize_filename(shortcut_name) + ".lnk"))
+    output_path = os.path.abspath(os.path.join(SHORTCUT_OUTPUT_DIR, sanitize_filename(shortcut_name) + ".lnk"))
     launcher_args = [_quote(launcher_path)] if classic_terminal else ["/d", "/k", "call", _quote(launcher_path)]
     if args not in ("", None):
         launcher_args.append(_quote(args))
@@ -368,7 +368,6 @@ def _sanitize_app_id(value: str) -> str:
 
 
 def main() -> None:
-    
     app_id = _sanitize_app_id(program_name)
     if len(app_id) > 15:
         app_id = app_id.replace("-", "").replace(".", "")
@@ -385,8 +384,8 @@ def main() -> None:
     if windows_terminal_shortcut_name:
         generate_shortcut(
             windows_terminal_shortcut_name,
-            icon_path,
-            launcher_terminal,
+            ICON_PATH,
+            LAUNCHER_TERMINAL,
             args=app_id,
             app_id=app_id,
             description=f"Start {program_name} in Windows Terminal",
@@ -395,8 +394,8 @@ def main() -> None:
     if no_terminal_shortcut_name:
         generate_shortcut(
             no_terminal_shortcut_name,
-            icon_path,
-            launcher_no_terminal,
+            ICON_PATH,
+            LAUNCHER_NO_TERMINAL,
             args=app_id,
             app_id=app_id + "W",
             description=f"Start {program_name} without opening a terminal window",
@@ -405,54 +404,54 @@ def main() -> None:
     if stop_running_shortcut_name:
         generate_shortcut(
             stop_running_shortcut_name,
-            stop_icon_path,
-            launcher_stop,
+            STOP_ICON_PATH,
+            LAUNCHER_STOP,
             description=f"Stop running {program_name} processes",
         )
     if open_log_folder_shortcut_name:
         generate_shortcut(
             open_log_folder_shortcut_name,
-            log_icon_path,
-            launcher_open_log_folder,
+            LOG_ICON_PATH,
+            LAUNCHER_OPEN_LOG_DIR,
             description=f"Open the current {program_name} log file folder",
             start_minimized=True,
         )
     if open_crash_log_folder_shortcut_name:
         generate_shortcut(
             open_crash_log_folder_shortcut_name,
-            crash_log_icon_path,
-            launcher_open_crash_log_folder,
+            CRASH_LOG_ICON_PATH,
+            LAUNCHER_OPEN_CRASH_LOG_DIR,
             description=f"Open the current {program_name} crash log file folder",
             start_minimized=True,
         )
     if open_main_py_shortcut_name:
         generate_shortcut(
             open_main_py_shortcut_name,
-            open_main_py_icon_path,
-            launcher_open_main_py,
+            OPEN_MAIN_PY_ICON_PATH,
+            LAUNCHER_OPEN_MAIN_PY,
             description=f"Open {program_name} main.py file",
             start_minimized=True,
         )
 
     if user_settings_path not in (None, False, "") and open_settings_shortcut_name not in (None, False, ""):
-        settings_file_path_abs = make_abs_path_relative_to_file(user_settings_path, developer_settings_path)
+        settings_file_path_abs = make_abs_path_relative_to_file(user_settings_path, DEV_SETTINGS_PATH)
         if not os.path.exists(settings_file_path_abs):
             print(
                 f'[Warning] User settings file does not exist at "{settings_file_path_abs}". '
                 "The settings shortcut will still be created, but it will show an error until the file exists. "
-                f'Disable the settings shortcut by setting user_settings_path = None in "{developer_settings_path}".'
+                f'Disable the settings shortcut by setting user_settings_path = None in "{DEV_SETTINGS_PATH}".'
             )
     if open_settings_shortcut_name and (user_settings_path not in (None, False, "")):
         generate_shortcut(
             open_settings_shortcut_name,
-            settings_icon_path,
-            launcher_open_settings,
+            SETTINGS_ICON_PATH,
+            LAUNCHER_OPEN_SETTINGS,
             description=f"Open the {program_name} settings file",
             start_minimized=True,
         )
 
     print()
-    print(f"Shortcut(s) created in: {shortcut_output_dir}")
+    print(f"Shortcut(s) created in: {SHORTCUT_OUTPUT_DIR}")
     print()
     print("=" * 30)
     input("[Success] Press enter to exit")

@@ -10,30 +10,37 @@ cd /d "%~dp0"
 :: ===========================
 :: local variables
 
-:: version must have embeddible zip available:
-set "VERSION=3.12.10"
-set "SETUP_DIR=%~dp0"
-set "INSTALL_DIR=%SETUP_DIR%..\..\backend_python"
-set "PYTHON_EXE=%INSTALL_DIR%\python.exe"
-set "ZIP=%INSTALL_DIR%\tmp.zip"
-set "URL=https://www.python.org/ftp/python/%VERSION%/python-%VERSION%-embed-amd64.zip"
+set "SETTINGS_FILE=..\..\backend_settings.ini"
 
 :: ===========================
 :: code execution
+
+:: Read the two supported values. The directory name is validated before use.
+for /f "tokens=1,* delims==" %%A in ('findstr /r /i "^backend_python_version[ ]*=" "%SETTINGS_FILE%"') do set "VERSION=%%B"
+for /f "tokens=1,* delims==" %%A in ('findstr /r /i "^backend_python_install_dir_name[ ]*=" "%SETTINGS_FILE%"') do set "INSTALL_DIR_NAME=%%B"
+for /f "tokens=1,* delims==" %%A in ('findstr /r /i "^backend_python_finish_installation_relative_path[ ]*=" "%SETTINGS_FILE%"') do set "FINISH_INSTALLATION_RELATIVE_PATH=%%B"
+if not defined VERSION goto :refuse_invalid_settings
+if /i not "%INSTALL_DIR_NAME%"=="backend_python" goto :refuse_invalid_settings
+if /i not "%FINISH_INSTALLATION_RELATIVE_PATH%"=="scripts\setup\finish_backend_installation.py" goto :refuse_invalid_settings
+for %%I in ("%SETTINGS_FILE%") do set "SETTINGS_DIR=%%~dpI"
+set "FINISH_INSTALLATION_PATH=%SETTINGS_DIR%%FINISH_INSTALLATION_RELATIVE_PATH%"
+if not exist "%FINISH_INSTALLATION_PATH%" goto :refuse_invalid_settings
+
+:: derived variables
+set "INSTALL_DIR=..\..\%INSTALL_DIR_NAME%"
+set "URL=https://www.python.org/ftp/python/%VERSION%/python-%VERSION%-embed-amd64.zip"
+set "ZIP=%INSTALL_DIR%\tmp.zip"
+set "PYTHON_EXE=%INSTALL_DIR%\python.exe"
 
 :: print
 echo Installing backend Python...
 echo ============================
 echo.
 
-:: Create the installation directory if it doesn't exist.
-if not exist "%INSTALL_DIR%" mkdir "%INSTALL_DIR%"
-
 :: Safely clear install dir
 for %%I in ("%INSTALL_DIR%") do set "INSTALL_DIR_FULL=%%~fI"
-for %%I in ("%SETUP_DIR%.") do set "SETUP_DIR_FULL=%%~fI\"
-if /i "%INSTALL_DIR_FULL%"=="%SETUP_DIR_FULL%" goto :refuse_current_dir
-if /i not "%INSTALL_DIR_FULL:~-15%"=="\backend_python" goto :refuse_unexpected_dir
+for %%I in ("..\..\backend_python") do set "EXPECTED_INSTALL_DIR_FULL=%%~fI"
+if /i not "%INSTALL_DIR_FULL%"=="%EXPECTED_INSTALL_DIR_FULL%" goto :refuse_unexpected_dir
 if exist "%INSTALL_DIR_FULL%" rmdir /s /q "%INSTALL_DIR_FULL%"
 mkdir "%INSTALL_DIR_FULL%"
 
@@ -63,7 +70,7 @@ if errorlevel 1 (
 if exist "%ZIP%" del "%ZIP%"
 
 :: finish backend installation in python because easier
-"%INSTALL_DIR%\python.exe" "%SETUP_DIR%finish_backend_installation.py"
+"%INSTALL_DIR%\python.exe" "%FINISH_INSTALLATION_PATH%"
 if errorlevel 1 (
     :: delete the python exe to indicate that installation needs to be retried
     echo Backend Python installation failed during finalization step.
@@ -78,6 +85,10 @@ exit /b 0
 
 :refuse_current_dir
 echo Refusing to delete current directory.
+goto :error_exit
+
+:refuse_invalid_settings
+echo Refusing missing or invalid backend_settings.ini values.
 goto :error_exit
 
 :refuse_unexpected_dir

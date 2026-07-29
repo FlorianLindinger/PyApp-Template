@@ -15,12 +15,12 @@ from backend.DONT_CHANGE.scripts._common_code import (
     install_packages_from_file,
     print_traceback,
 )
-from backend.DONT_CHANGE.scripts._common_variables import default_packages_file_path
+from backend.DONT_CHANGE.scripts._common_variables import DEFAULT_PACKAGES_PATH
 
 try:
     ensure_python_distro()
     delete_frontend_packages()
-    install_packages_from_file(default_packages_file_path)
+    install_packages_from_file(DEFAULT_PACKAGES_PATH)
     print()
     input_success("[Success] Press enter to exit")
 except Exception as e:

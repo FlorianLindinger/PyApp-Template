@@ -21,12 +21,12 @@ if root_dir not in sys.path:
 
 import backend.developer_settings
 from backend.DONT_CHANGE.scripts._common_variables import (
-    backend_python_exe,
-    env_var_to_signal_startup_time_measurement,
-    frontend_python_exe,
-    start_program_script,
-    start_time_dummy_main_script_path,
-    temporary_folder,
+    BACKEND_PYTHON_EXE,
+    ENV_VAR_TO_SIGNAL_STARTUP_TIME_MEASUREMENT,
+    FRONTEND_PYTHON_EXE,
+    START_PROGRAM_PATH,
+    START_TIME_DUMMY_MAIN_PY_PATH,
+    TEMPORARY_DIR,
 )
 
 # ========================
@@ -34,7 +34,7 @@ from backend.DONT_CHANGE.scripts._common_variables import (
 FILE_DIR = os.path.dirname(os.path.abspath(__file__))
 CODE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(FILE_DIR)))
 REPO_DIR = os.path.dirname(CODE_DIR)
-WORK_DIR = temporary_folder + "\\startup_time_markers"
+WORK_DIR = TEMPORARY_DIR + "\\startup_time_markers"
 
 VERSION_SCRIPT = (
     "import platform, sys; print(f'{platform.python_implementation()} {sys.version.split()[0]} ({sys.executable})')"
@@ -334,7 +334,7 @@ def run_one(command: list[str], marker_path: str, timeout: float) -> float:
     start_ns = time.perf_counter_ns()
     env["PYAPP_STARTUP_BENCHMARK_MARKER"] = marker_path
     env["PYAPP_STARTUP_BENCHMARK_START_NS"] = str(start_ns)
-    env[env_var_to_signal_startup_time_measurement] = "1"
+    env[ENV_VAR_TO_SIGNAL_STARTUP_TIME_MEASUREMENT] = "1"
     env["PYTHONPATH"] = CODE_DIR + os.pathsep + env.get("PYTHONPATH", "")
 
     creationflags = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
@@ -377,7 +377,7 @@ def run_one_shortcut(
     start_ns = time.perf_counter_ns()
     env["PYAPP_STARTUP_BENCHMARK_MARKER"] = marker_path
     env["PYAPP_STARTUP_BENCHMARK_START_NS"] = str(start_ns)
-    env[env_var_to_signal_startup_time_measurement] = "1"
+    env[ENV_VAR_TO_SIGNAL_STARTUP_TIME_MEASUREMENT] = "1"
     env["PYTHONPATH"] = CODE_DIR + os.pathsep + env.get("PYTHONPATH", "")
 
     creationflags = 0 if show_output else subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
@@ -502,7 +502,7 @@ def main() -> int:
     if args.runs < 1:
         raise ValueError("--runs must be at least 1")
 
-    target_script = os.path.normpath(start_time_dummy_main_script_path)
+    target_script = os.path.normpath(START_TIME_DUMMY_MAIN_PY_PATH)
     shortcut_paths: list[str] = []
     if not args.skip_launcher:
         if args.shortcut:
@@ -512,12 +512,12 @@ def main() -> int:
 
     if not os.path.exists(target_script):
         raise FileNotFoundError(f'Target script not found: "{target_script}"')
-    if not args.skip_start_program and not os.path.exists(backend_python_exe):
-        raise FileNotFoundError(f'Backend Python exe not found: "{backend_python_exe}"')
-    if not args.skip_start_program and not os.path.exists(start_program_script):
-        raise FileNotFoundError(f'start_program.py not found: "{start_program_script}"')
-    if not args.skip_py_dist and not os.path.exists(frontend_python_exe):
-        raise FileNotFoundError(f'Python distro exe not found: "{frontend_python_exe}"')
+    if not args.skip_start_program and not os.path.exists(BACKEND_PYTHON_EXE):
+        raise FileNotFoundError(f'Backend Python exe not found: "{BACKEND_PYTHON_EXE}"')
+    if not args.skip_start_program and not os.path.exists(START_PROGRAM_PATH):
+        raise FileNotFoundError(f'start_program.py not found: "{START_PROGRAM_PATH}"')
+    if not args.skip_py_dist and not os.path.exists(FRONTEND_PYTHON_EXE):
+        raise FileNotFoundError(f'Python distro exe not found: "{FRONTEND_PYTHON_EXE}"')
 
     os.makedirs(WORK_DIR, exist_ok=True)
     cleanup_stale_markers()
@@ -536,9 +536,9 @@ def main() -> int:
     app_id = sanitize_app_id(getattr(backend.developer_settings, "program_name", ""))
     if not args.skip_start_program:
         for label, launch_mode in start_program_modes_from_developer_settings(args):
-            measurements.append((label, [backend_python_exe, start_program_script, app_id, launch_mode]))
+            measurements.append((label, [BACKEND_PYTHON_EXE, START_PROGRAM_PATH, app_id, launch_mode]))
     if not args.skip_py_dist:
-        measurements.append(("Direct py_dist python", python_command(frontend_python_exe, [target_script])))
+        measurements.append(("Direct py_dist python", python_command(FRONTEND_PYTHON_EXE, [target_script])))
     if not args.skip_global and shutil.which("py") is not None:
         measurements.append(("Direct global py", ["py", target_script]))
 
@@ -564,12 +564,12 @@ def main() -> int:
     if args.skip_start_program:
         print("direct start_program: skipped")
     else:
-        print(f"direct start_program Python: {describe_python(backend_python_exe)}")
+        print(f"direct start_program Python: {describe_python(BACKEND_PYTHON_EXE)}")
 
     if args.skip_py_dist:
         print("py_dist Python: skipped")
     else:
-        print(f"py_dist Python: {describe_python(frontend_python_exe)}")
+        print(f"py_dist Python: {describe_python(FRONTEND_PYTHON_EXE)}")
 
     if shutil.which("py") is None:
         print("global py: unavailable (not on PATH)")
