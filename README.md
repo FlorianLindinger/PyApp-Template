@@ -35,12 +35,50 @@
 
 1. Clone/download/copy this repository
 2. Add the python code you want to execute to `code/main.py`
-3. (Optional: Change program settings like Python version or program name under `code/developer_settings.py`)
+3. (Optional: Change program settings like Python version or program name under `code/backend/developer_settings.py`)
 4. (Optional: Add user settings under `code/settings.py`. Import them in `main.py` via `import settings`)
 5. Execute `▶️ RUN BEFORE FIRST START AND AFTER FOLDER MOVE TO GENERATE SHORTCUTS.cmd` to generate shortcuts
 6. Run program via the generated shortcuts (it will auto install needed packages)
 
 The leading `▶️` is a portable play-button marker in the filename. The launcher itself remains a fully reviewable batch file and resolves the repository folder from its own location, so moving the repository does not break it.
+
+---
+
+## Project Structure
+
+```text
+.
+├── code/                              Application source and local runtime files
+│   ├── main.py                        Main application entry point — edit this
+│   ├── settings.py                    Application settings — edit as needed
+│   ├── backend/
+│   │   ├── developer_settings.py      Backend/development preferences
+│   │   └── DONT_CHANGE/               Template launcher internals
+│   │       ├── settings/              Backend Python version, paths, and package lists
+│   │       ├── scripts/               Setup, launch, shortcut, and helper scripts
+│   │       ├── backend_tools/         Verification and performance tools
+│   │       ├── backend_python/        Generated embedded launcher runtime
+│   │       └── backend_packages/      Generated launcher dependencies
+│   ├── dev_tools/                     Development and package-management tools
+│   ├── icons/                         Application icon source/output files
+│   ├── python/                        Generated full frontend Python runtime
+│   ├── packages/                      Generated frontend Python packages
+│   └── pyproject.toml                 Development-tool configuration
+├── logs/                              Generated program logs
+├── crash logs/                        Generated crash reports
+├── *.lnk                              Generated Windows launch shortcuts
+└── README.md                          This overview
+```
+
+Edit `code/main.py`, `code/settings.py`, and `code/backend/developer_settings.py`
+for normal project work. The `python`, `packages`, `backend_python`,
+`backend_packages`, `logs`, and `crash logs` folders are generated locally and
+are intentionally excluded from normal Git tracking.
+
+`code/backend/DONT_CHANGE` contains the portable launcher implementation. Its
+[own README](code/backend/DONT_CHANGE/README.txt) explains the installation
+flow, backend settings, safety checks, package lists, diagnostics, and licensing
+in detail.
 
 ---
 
