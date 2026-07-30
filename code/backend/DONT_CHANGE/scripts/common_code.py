@@ -13,7 +13,7 @@ from typing import Any, override
 
 # =========================
 # add root dir for debug cases where this script is called on its own:
-root_dir = os.path.dirname(__file__) + "\\..\\..\\.."
+root_dir: str = os.path.dirname(__file__) + "\\..\\..\\.."
 if root_dir not in sys.path:
     sys.path.insert(0, root_dir)
 # =========================
@@ -53,13 +53,13 @@ from backend.DONT_CHANGE.settings.backend_settings import (
 # =========================
 # global variables
 
-_TERMINAL_APPEARANCE_WAS_SET = False
+_TERMINAL_APPEARANCE_WAS_SET: bool = False
 
-ANSI_WARN = "\x1b[1;37;41m"  # white text, red bg, bold
-ANSI_SUCCESS = "\x1b[1;37;42m"  # white text, green bg, bold
-ANSI_RESET = "\033[0m"
+ANSI_WARN: str = "\x1b[1;37;41m"  # white text, red bg, bold
+ANSI_SUCCESS: str = "\x1b[1;37;42m"  # white text, green bg, bold
+ANSI_RESET: str = "\033[0m"
 
-TERMINAL_COLORS = ""
+TERMINAL_COLORS: str = ""
 if terminal_bg_color:
     TERMINAL_COLORS += terminal_bg_color
 if terminal_text_color:
@@ -128,7 +128,7 @@ def show_git_results(arguments: list[str], *, heading: str, no_results_message: 
 # general helper functions
 
 
-def open_in_editor(path: str):
+def open_in_editor(path: str) -> None:
     import shutil
     import subprocess
 
@@ -155,24 +155,24 @@ def make_empty_args_safe(args: list[str | None]) -> list[str]:
 # colored print and input and prompt and general print related
 
 
-def print_success(msg: Any, sep: str | None = " ", end: str | None = "\n"):
+def print_success(msg: Any, sep: str | None = " ", end: str | None = "\n") -> None:
     """Print a success-styled console message."""
     if msg is not None:
         print(f"{ANSI_SUCCESS}{msg}{ANSI_RESET}", sep=sep, end=end)
 
 
-def print_warn(msg: Any, sep: str | None = " ", end: str | None = "\n"):
+def print_warn(msg: Any, sep: str | None = " ", end: str | None = "\n") -> None:
     """Print a warning-styled console message."""
     if msg is not None:
         print(f"{ANSI_WARN}{msg}{ANSI_RESET}", sep=sep, end=end)
 
 
-def input_warn(msg: str):
+def input_warn(msg: str) -> str:
     """Prompt for input using warning console styling."""
     return input(f"{ANSI_WARN}{msg}{ANSI_RESET}")
 
 
-def input_success(msg: str):
+def input_success(msg: str) -> str:
     """Prompt for input using success console styling."""
     return input(f"{ANSI_SUCCESS}{msg}{ANSI_RESET}")
 
@@ -665,13 +665,13 @@ def delete_folder_safe(
 # terminal related
 
 
-def set_unminimize_and_foreground_on_first_print():
+def set_unminimize_and_foreground_on_first_print() -> None:
     # this will unminimize and foreground on first print/error
     sys.stdout = unminimize_plus_foreground_terminal_on_first_output(sys.stdout)  # type:ignore
     sys.stderr = unminimize_plus_foreground_terminal_on_first_output(sys.stderr)  # type:ignore
 
 
-def set_terminal_colors(colors: str | None = TERMINAL_COLORS):
+def set_terminal_colors(colors: str | None = TERMINAL_COLORS) -> None:
     """colors is in format of windows terminal colors"""
     if colors:
         try:
@@ -724,12 +724,12 @@ class unminimize_plus_foreground_terminal_on_first_output:
         return getattr(self.stream, name)
 
 
-def unminimize_and_foreground_terminal():
+def unminimize_and_foreground_terminal() -> None:
     unminimize_window()
     foreground_window()
 
 
-def foreground_window():
+def foreground_window() -> None:
     try:
         import ctypes
 
@@ -742,7 +742,7 @@ def foreground_window():
         pass
 
 
-def unminimize_window():
+def unminimize_window() -> None:
     try:
         import ctypes
 
@@ -1076,7 +1076,7 @@ def get_terminal_title() -> str:
         return ""
 
 
-def set_terminal_appearance_once(app_id: str):
+def set_terminal_appearance_once(app_id: str) -> None:
     """Apply terminal title, AppID, and icon once per process."""
     global _TERMINAL_APPEARANCE_WAS_SET
 
@@ -1190,7 +1190,7 @@ def get_log_path(log_path: str | bool | None, is_relative_to_start_folder_if_rel
         return ""
 
 
-def make_abs_path_relative_to_file(path: str, file: str):
+def make_abs_path_relative_to_file(path: str, file: str) -> str:
     """makes a path absolute if relative with respect to the file (as if the file defined it)"""
     if not os.path.isabs(path):
         return os.path.normpath(os.path.dirname(file) + "\\" + path)
@@ -1198,7 +1198,7 @@ def make_abs_path_relative_to_file(path: str, file: str):
         return path
 
 
-def sanitize_filename(filename: str, replacement: str = "_"):
+def sanitize_filename(filename: str, replacement: str = "_") -> str:
     """Sanitize a string so it can be used as a Windows filename."""
     import re
 
@@ -1249,7 +1249,7 @@ def sanitize_filename(filename: str, replacement: str = "_"):
 # file read/write
 
 
-def write_lines(path: str, lines: list[str], override: bool = True):
+def write_lines(path: str, lines: list[str], override: bool = True) -> None:
     """lines are a list of strings without the endline symbol ("\n") added.
     If override==False it will append instead of recreating the file (default:  override=True)."""
 
@@ -1261,7 +1261,7 @@ def write_lines(path: str, lines: list[str], override: bool = True):
         f.write(lines_str)
 
 
-def read_lines(path: str):
+def read_lines(path: str) -> list[str]:
     """returns a list of strings from path without the endline symbol ("\n" or "\r\n")"""
 
     with open(path, encoding="utf-8") as f:
@@ -1456,7 +1456,7 @@ def _read_process_id_entries(path: str) -> list[tuple[int, str]]:
 # python version related
 
 
-def get_python_version():
+def get_python_version() -> str:
     import subprocess
 
     return subprocess.check_output(  # noqa:S603
@@ -1470,7 +1470,7 @@ def get_python_version():
     ).strip()
 
 
-def is_python_version_compatible(actual_version: str, required_version: str):
+def is_python_version_compatible(actual_version: str, required_version: str) -> bool:
     actual_parts = actual_version.split(".")
     required_parts = required_version.strip().split(".")
 
@@ -1487,7 +1487,7 @@ def is_python_version_compatible(actual_version: str, required_version: str):
     return actual_parts[: len(required_parts)] == required_parts
 
 
-def read_python_version_from_file():
+def read_python_version_from_file() -> str:
     if not os.path.exists(PYTHON_VERSION_INDICATOR_FILE_PATH):
         print_warn(
             f'[Warning] missing file "{PYTHON_VERSION_INDICATOR_FILE_PATH}". Using fallback python version determination.'
