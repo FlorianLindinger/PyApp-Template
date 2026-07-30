@@ -52,17 +52,28 @@ The leading `▶️` is a portable play-button marker in the filename. The launc
 │   ├── main.py                        Main application entry point — edit this
 │   ├── settings.py                    Application settings — edit as needed
 │   ├── backend/
-│   │   ├── developer_settings.py      Backend/development preferences
+│   │   ├── developer_settings.py      Backend/development preferences — edit as needed
+│   │   ├── dev_tools/                 Backend-specific development tools
+│   │   ├── icons/                     Backend shortcut and status icons
+│   │   ├── python/                    Generated full frontend Python runtime
+│   │   ├── packages/                  Generated frontend Python packages
+│   │   ├── README_resources/          Images and resources used by backend documentation
 │   │   └── DONT_CHANGE/               Template launcher internals
-│   │       ├── settings/              Backend Python version, paths, and package lists
-│   │       ├── scripts/               Setup, launch, shortcut, and helper scripts
+│   │       ├── B/                     Short batch targets used by generated shortcuts
+│   │       ├── settings/              Backend Python version, safe paths, and package lists
+│   │       ├── scripts/
+│   │       │   ├── setup/             Backend Python installation and shortcut generation
+│   │       │   ├── shortcut_targets/  Python targets launched by the shortcuts
+│   │       │   ├── dev_tools/         Script implementations for backend developer tools
+│   │       │   ├── git_hooks/         Optional Git-hook support files
+│   │       │   └── common_code.py     Shared backend helper functions
 │   │       ├── backend_tools/         Verification and performance tools
 │   │       ├── backend_python/        Generated embedded launcher runtime
-│   │       └── backend_packages/      Generated launcher dependencies
-│   ├── dev_tools/                     Development and package-management tools
-│   ├── icons/                         Application icon source/output files
-│   ├── python/                        Generated full frontend Python runtime
-│   ├── packages/                      Generated frontend Python packages
+│   │       ├── backend_packages/      Generated launcher dependencies
+│   │       ├── icon_related/          Default icon assets and icon-generation scripts
+│   │       ├── LICENSES/              License texts for template-owned components
+│   │       ├── future/                Unfinished experiments and deferred work
+│   │       └── temporary/             Generated backend working files and signals
 │   └── pyproject.toml                 Development-tool configuration
 ├── logs/                              Generated program logs
 ├── crash logs/                        Generated crash reports
