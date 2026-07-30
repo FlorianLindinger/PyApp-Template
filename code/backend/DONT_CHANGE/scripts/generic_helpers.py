@@ -4,6 +4,7 @@
 # imports
 
 import os
+import stat
 import sys
 from collections.abc import Sequence
 from pathlib import Path
@@ -1068,6 +1069,57 @@ def set_terminal_colors(colors: str | None) -> None:
 
 # =========================
 # path related/file name related
+
+
+def find_longest_paths(
+    root_dir: str | os.PathLike[str],
+    *,
+    top_path_count: int = 50,
+    excluded_dir_names: Sequence[str] = (),
+) -> tuple[list[Path], int, int]:
+    """Return the longest paths below *root_dir* and the number of files and directories scanned."""
+
+    def _is_reparse_point(path: Path) -> bool:
+        """Return whether *path* is a symbolic link or Windows reparse point."""
+        try:
+            attributes = getattr(path.stat(follow_symlinks=False), "st_file_attributes", 0)
+        except OSError:
+            return True
+        return path.is_symlink() or bool(attributes & getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400))
+
+    if top_path_count < 1:
+        raise ValueError("top_path_count must be at least 1.")
+
+    root_path = Path(root_dir).resolve()
+    if not root_path.is_dir():
+        raise NotADirectoryError(f"Path is not a directory: {root_path}")
+
+    excluded_names = frozenset(excluded_dir_names)
+    paths = [root_path]
+    scanned_files = 0
+    scanned_directories = 0
+
+    for current_directory, directory_names, file_names in os.walk(root_path, topdown=True, followlinks=False):
+        current_path = Path(current_directory)
+        kept_directories: list[str] = []
+        for directory_name in directory_names:
+            directory_path = current_path / directory_name
+            if directory_name in excluded_names or _is_reparse_point(directory_path):
+                continue
+            kept_directories.append(directory_name)
+            scanned_directories += 1
+            paths.append(directory_path)
+        directory_names[:] = kept_directories
+
+        for file_name in file_names:
+            file_path = current_path / file_name
+            if _is_reparse_point(file_path):
+                continue
+            scanned_files += 1
+            paths.append(file_path)
+
+    paths.sort(key=lambda path: len(str(path)), reverse=True)
+    return paths[:top_path_count], scanned_files, scanned_directories
 
 
 def make_abs_path_relative_to_file(path: str, file: str) -> str:
