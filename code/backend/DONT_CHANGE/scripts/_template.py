@@ -1,14 +1,22 @@
 """WIP"""
 
-# {e} will be formatted to exception:
-fail_message = "[Error] Failed WIP: {e}"
+# ==============================
+# settings
+
+fail_message: str = "[Error] Failed WIP: {e}"  # {e} will be formatted to exception
+close_terminal_on_finish: bool = True
+# path to pyproject.json folder:
+import os
+
+root_dir: str = os.path.dirname(__file__) + "\\..\\..\\.."
+
+# ==============================
 
 try:
     # ==============================
     # import Python packages
     # ==============================
 
-    import os
     import sys
 
     # ==============================
@@ -20,7 +28,6 @@ try:
     # ==============================
 
     # add root dir to resolve file imports for debug cases where this script is called on its own:
-    root_dir = os.path.dirname(__file__) + "\\..\\..\\.."
     if root_dir not in sys.path:
         sys.path.insert(0, root_dir)
 
@@ -56,9 +63,10 @@ try:
         try:
             main()
         except Exception as e:
-            print_traceback(fail_message.format(e=e))  # WIP function to be in new terminal?
+            print_traceback(fail_message.format(e=e))
             input_warn("[Error] Press enter to exit")
-        close_terminal()
+        if close_terminal_on_finish:
+            close_terminal()
 
     # ==============================
 
@@ -74,4 +82,5 @@ except Exception as e:
     print(traceback.format_exc())
     print("=" * 30)
     input("[Error] Press enter to exit")
-    os._exit(1)  # instead of sys.exit(1) to prevent exception by script calling this script
+    if close_terminal_on_finish:
+        os._exit(1)  # instead of sys.exit(1) to prevent exception by script calling this script -> closing terminal

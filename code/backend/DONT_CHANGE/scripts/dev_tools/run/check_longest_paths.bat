@@ -11,7 +11,7 @@ cd /d "%~dp0"
 :: local variables
 
 set "ensure_backend_python_script=..\..\setup\ensure_backend_python.bat"
-set "target_script=..\scripts\check_paths.py"
+set "target_script=..\scripts\check_longest_paths.py"
 
 :: ===========================
 :: code execution

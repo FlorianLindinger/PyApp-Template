@@ -28,6 +28,7 @@ from backend.developer_settings import (
 )
 from backend.DONT_CHANGE.scripts.generic_helpers import (
     can_reach_url,
+    close_terminal,  # noqa:F401
     delete_folder_safe,
     get_installed_packages,
     get_terminal_title,  # noqa:F401
