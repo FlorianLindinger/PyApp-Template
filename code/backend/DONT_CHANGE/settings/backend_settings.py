@@ -102,7 +102,7 @@ LAUNCHER_OPEN_MAIN_PY = ENTRY_BATCHES_DIR + "\\M.bat"
 # icon related ("" means no change)
 # ------------------------
 
-ICON_DIR = make_abs("..\\..\\icons")
+ICON_DIR = make_abs("..\\icons")
 ICON_PATH = ICON_DIR + "\\icon.ico"
 SETTINGS_ICON_PATH = ICON_DIR + "\\settings.ico"
 STOP_ICON_PATH = ICON_DIR + "\\stop.ico"
