@@ -23,9 +23,10 @@ the reset/install tools.
 MISCELLANEOUS SHORTCUTS
 ----------------------
 
-miscellaneous/check_longest_path.lnk scans the repository (excluding .git
-metadata), reports its longest file or folder path, and shows the remaining
-space before the conservative 260-character legacy Windows path limit.
+miscellaneous/check_longest_paths.lnk repeatedly scans the repository (excluding .git
+metadata), reports its longest file or folder paths, and shows the remaining
+space before the conservative 260-character legacy Windows path limit. Press
+Enter to run the check again, or close the terminal to exit.
 
 The 260-character limit is still relevant because long-path support is not
 used consistently by every Windows application, library, archive tool, or
