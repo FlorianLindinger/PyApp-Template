@@ -5,18 +5,15 @@
 # ======================================
 
 import os
-import re
 
 
 def make_abs(x: str) -> str:
     """Make path absolute to this file if relative."""
-    if os.path.isabs(x):
-        return os.path.normpath(x)
-    return os.path.normpath(os.path.dirname(os.path.normpath(__file__)) + "\\" + x)
+    return os.path.normpath(x if os.path.isabs(x) else os.path.join(os.path.dirname(__file__), x))
 
 
-def read_backend_settings(settings_path: str) -> tuple[str, str]:
-    """Get the backend Python version and installation directory."""
+def get_backend_settings(settings_path: str) -> tuple[str, str]:
+    """Get the backend Python major/minor version and installation path."""
     settings_path = make_abs(settings_path)
     values: dict[str, str] = {}
     with open(settings_path, encoding="utf-8") as file:
@@ -24,21 +21,15 @@ def read_backend_settings(settings_path: str) -> tuple[str, str]:
             line = line.strip()
             if not line or line.startswith(("#", ";")):
                 continue
-            key, separator, value = line.partition("=")
-            if not separator or not key.strip() or key.strip() in values:
-                raise ValueError(f"Invalid settings line: {line!r}")
+            key, value = line.split("=", 1)
             values[key.strip()] = value.strip()
-    try:
-        version = values["backend_python_version"]
-        install_dir_name = values["backend_python_install_dir_name"]
-    except KeyError as error:
-        raise ValueError(f"Missing setting: {error.args[0]}") from error
-    if not re.fullmatch(r"\d+\.\d+\.\d+", version):
-        raise ValueError(f"Invalid backend Python version: {version!r}")
-    if install_dir_name != "backend_python":
-        raise ValueError("backend_python_install_dir_name must be exactly 'backend_python'")
-    install_dir = os.path.normpath(os.path.join(os.path.dirname(settings_path), install_dir_name))
-    return version, install_dir
+
+    backend_python_version = values["backend_python_version"]
+    backend_python_major_minor_version = "".join(backend_python_version.split(".")[:2])
+    backend_python_dir = os.path.normpath(
+        os.path.join(os.path.dirname(settings_path), values["backend_python_install_dir_relative_path"])
+    )
+    return backend_python_major_minor_version, backend_python_dir
 
 
 # ========================
@@ -49,8 +40,7 @@ def read_backend_settings(settings_path: str) -> tuple[str, str]:
 # ------------------------
 
 _backend_settings_ini_path = "backend_settings.ini"
-_backend_python_version, BACKEND_PYTHON_DIR = read_backend_settings(_backend_settings_ini_path)
-_backend_python_major_minor_version = "".join(_backend_python_version.split(".")[:2])
+_backend_python_major_minor_version, BACKEND_PYTHON_DIR = get_backend_settings(_backend_settings_ini_path)
 
 BACKEND_PYTHON_pth_FILE = BACKEND_PYTHON_DIR + f"\\python{_backend_python_major_minor_version}._pth"
 BACKEND_PYTHON_ZIP_REL_PATH = f"python{_backend_python_major_minor_version}.zip"
