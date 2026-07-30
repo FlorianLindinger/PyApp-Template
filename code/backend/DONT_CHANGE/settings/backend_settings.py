@@ -36,6 +36,21 @@ def get_backend_settings(settings_path: str) -> tuple[str, str]:
 # === define variables ===
 # ========================
 
+# folders
+# ------------------------
+
+DONT_CHANGE_DIR = make_abs("..")
+BACKEND_DIR = make_abs("..\\..")
+PYTHON_SCRIPTS_DIR = make_abs("..\\..\\..")
+SHORTCUT_OUTPUT_DIR = make_abs("..\\..\\..\\..")  # UPDATE GITIGNORE
+WINDOWS_DIR = os.environ.get("WINDIR", default="C:\\Windows")
+TEMPORARY_DIR = DONT_CHANGE_DIR + "\\temporary"
+SHORTCUT_TARGET_DIR = DONT_CHANGE_DIR + "\\scripts\\shortcut_targets"
+ENTRY_BATCHES_DIR = DONT_CHANGE_DIR + "\\B"
+ICON_DIR = DONT_CHANGE_DIR + "\\icons"
+BACKEND_TOOLS_DIR = DONT_CHANGE_DIR + "\\backend_tools"
+
+
 # backend related
 # ------------------------
 
@@ -44,7 +59,9 @@ _backend_python_major_minor_version, BACKEND_PYTHON_DIR = get_backend_settings(_
 
 BACKEND_PYTHON_pth_FILE = BACKEND_PYTHON_DIR + f"\\python{_backend_python_major_minor_version}._pth"
 BACKEND_PYTHON_ZIP_REL_PATH = f"python{_backend_python_major_minor_version}.zip"
-BACKEND_PACKAGES_DIR = make_abs("..\\backend_packages")  # UPDATE contents of BACKEND_PYTHON_pth_FILE and pyproject.toml
+BACKEND_PACKAGES_DIR = (
+    DONT_CHANGE_DIR + "\\backend_packages"
+)  # UPDATE contents of BACKEND_PYTHON_pth_FILE + .gitignore + pyproject.toml
 BACKEND_PACKAGE_REQUIREMENTS_FILE = make_abs("backend_packages_list.txt")
 BACKEND_BUILD_TOOLS_REQUIREMENTS_FILE = make_abs("backend_build_tools_list.txt")
 BACKEND_FILES_TO_DELETE_AFTER_INSTALL = ["sqlite3.dll", "python.cat"]
@@ -52,11 +69,9 @@ BACKEND_FILES_TO_DELETE_AFTER_INSTALL = ["sqlite3.dll", "python.cat"]
 # frontend related
 # ------------------------
 
-FRONTEND_SCRIPT_WRAPPER_PATH = make_abs(
-    "..\\scripts\\shortcut_targets\\child_scripts\\frontend_python\\script_wrapper.py"
-)
-FRONTEND_PACKAGES_DIR = make_abs("..\\..\\packages")  # UPDATE contents of .gitignore + pyproject.toml
-FRONTEND_PYTHON_DIR = make_abs("..\\..\\python")  # UPDATE  contents of.gitignore + pyproject.toml
+FRONTEND_SCRIPT_WRAPPER_PATH = SHORTCUT_TARGET_DIR + "\\child_scripts\\frontend_python\\script_wrapper.py"
+FRONTEND_PACKAGES_DIR = BACKEND_DIR + "\\packages"  # UPDATE contents of .gitignore + pyproject.toml
+FRONTEND_PYTHON_DIR = BACKEND_DIR + "\\python"  # UPDATE  contents of.gitignore + pyproject.toml
 FRONTEND_PACKAGES_ARE_INSTALLED_MARKER_PATH = (
     FRONTEND_PACKAGES_DIR + "\\_DELETE_THIS_TO_REINSTALL_ONLY_DEFAULT_PACKAGES_"
 )
@@ -68,29 +83,18 @@ DEV_TOOLS_REFERAL_NOTE_PATH = (
 )  # UPDATE GITIGNORE
 PYTHON_VERSION_INDICATOR_FILE_PATH = FRONTEND_PYTHON_DIR + "\\PYTHON_VERSION.txt"
 
-# folders
-# ------------------------
-
-WINDOWS_DIR = os.environ.get("WINDIR", default="C:\\Windows")
-PYTHON_SCRIPTS_DIR = make_abs("..\\..\\..")
-SHORTCUT_OUTPUT_DIR = make_abs("..\\..\\..\\..")  # UPDATE GITIGNORE
-TEMPORARY_DIR = make_abs("..\\temporary")
-
 # scripts
 # ------------------------
 
-START_PROGRAM_PATH = make_abs("..\\scripts\\shortcut_targets\\start_program.py")
-MAIN_PY_SCRIPT_PATH = make_abs("..\\..\\..\\main.py")
-BACKGROUND_WATCHDOG_PATH = make_abs(
-    "..\\scripts\\shortcut_targets\\child_scripts\\backend_python\\background_watchdog.py"
-)
-START_TIME_DUMMY_MAIN_PY_PATH = make_abs("..\\backend_tools\\helper_scripts\\start_time_dummy_main_script.py")
-PROCESS_EXIT_PATH = make_abs("..\\scripts\\shortcut_targets\\child_scripts\\backend_python\\process_exit.py")
+START_PROGRAM_PATH = SHORTCUT_TARGET_DIR + "\\start_program.py"
+MAIN_PY_SCRIPT_PATH = PYTHON_SCRIPTS_DIR + "\\main.py"
+BACKGROUND_WATCHDOG_PATH = SHORTCUT_TARGET_DIR + "\\child_scripts\\backend_python\\background_watchdog.py"
+START_TIME_DUMMY_MAIN_PY_PATH = BACKEND_TOOLS_DIR + "\\helper_scripts\\start_time_dummy_main_script.py"
+PROCESS_EXIT_PATH = SHORTCUT_TARGET_DIR + "\\child_scripts\\backend_python\\process_exit.py"
 
 # shorcut launchers related
 # ------------------------
 
-ENTRY_BATCHES_DIR = make_abs("..\\B")
 LAUNCHER_TERMINAL = ENTRY_BATCHES_DIR + "\\W.bat"
 LAUNCHER_OPEN_SETTINGS = ENTRY_BATCHES_DIR + "\\S.bat"
 LAUNCHER_NO_TERMINAL = ENTRY_BATCHES_DIR + "\\N.bat"
@@ -102,7 +106,6 @@ LAUNCHER_OPEN_MAIN_PY = ENTRY_BATCHES_DIR + "\\M.bat"
 # icon related ("" means no change)
 # ------------------------
 
-ICON_DIR = make_abs("..\\icons")
 ICON_PATH = ICON_DIR + "\\icon.ico"
 SETTINGS_ICON_PATH = ICON_DIR + "\\settings.ico"
 STOP_ICON_PATH = ICON_DIR + "\\stop.ico"
@@ -118,13 +121,13 @@ KeyboardInterrupt_ICON_PATH = ""
 # ------------------------
 
 CORRECT_START_SIGNAL_FILE_PATH = TEMPORARY_DIR + "\\signal_that_program_started_correctly.signal"
-PROCESS_ID_FILE_PATH = make_abs("..\\..\\..\\_CURRENTLY_RUNNING_.pid")
+PROCESS_ID_FILE_PATH = PYTHON_SCRIPTS_DIR + "\\_CURRENTLY_RUNNING_.pid"
 TMP_TRACEBACK_JSON_PATH = TEMPORARY_DIR + "\\last_crash_log.json"
 
 # untracked developer-tools folder related
 # ------------------------
 
-DEV_TOOLS_FOR_PACKAGES_DIR = make_abs("..\\..\\dev_tools\\change python packages")  # UPDATE GITIGNORE
+DEV_TOOLS_FOR_PACKAGES_DIR = BACKEND_DIR + "\\dev_tools\\change python packages"  # UPDATE GITIGNORE
 CURRENT_PACKAGES_WITH_VERSION_PATH = DEV_TOOLS_FOR_PACKAGES_DIR + "\\determined_current_packages_withVersion.txt"
 CURRENT_PACKAGES_NO_VERSION_PATH = DEV_TOOLS_FOR_PACKAGES_DIR + "\\determined_current_packages_noVersion.txt"
 NEEDED_PACKAGES_NO_VERSION_PATH = DEV_TOOLS_FOR_PACKAGES_DIR + "\\auto_found_required_packages_noVersion.txt"
@@ -133,7 +136,7 @@ NEEDED_PACKAGES_WITH_VERSION_PATH = DEV_TOOLS_FOR_PACKAGES_DIR + "\\auto_found_r
 # remaining files
 # ------------------------
 
-DEV_SETTINGS_PATH = make_abs("..\\..\\developer_settings.py")
+DEV_SETTINGS_PATH = BACKEND_DIR + "\\developer_settings.py"
 DEFAULT_PACKAGES_PATH = DEV_TOOLS_FOR_PACKAGES_DIR + "\\DEFAULT_PYTHON_PACKAGES.txt"  # UPDATE GITIGNORE
 PIPREQS_MAPPING_PATH = BACKEND_PACKAGES_DIR + "\\pipreqs\\mapping"
 DEFAULT_SOUND_AFTER_CRASH = WINDOWS_DIR + "\\Media\\Windows Critical Stop.wav"
