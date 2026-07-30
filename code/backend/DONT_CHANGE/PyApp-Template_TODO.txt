@@ -2,6 +2,9 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 ´
+move more gneric code to helper if anyhwer
+
+in common code see if functions still need params
 
 do i still need gitatributes eeryhwere if nothing is syncd?
 

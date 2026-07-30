@@ -1,20 +1,62 @@
 """WIP"""
 
 # =========================
+# imports
 
 import os
 import sys
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any, override
 
 # =========================
+# constants
 
 ANSI_WARN: str = "\x1b[1;37;41m"  # white text, red bg, bold
 ANSI_SUCCESS: str = "\x1b[1;37;42m"  # white text, green bg, bold
 ANSI_RESET: str = "\033[0m"
 
 # =========================
-# Git helper functions
+# miscellaneous
+
+
+def can_reach_url(url: str, timeout_s: float = 5.0) -> bool:
+    """Return True if the given URL can be reached."""
+    import urllib.request
+
+    try:
+        request = urllib.request.Request(  # noqa
+            url,
+            headers={"User-Agent": "url-reachable-check/1.0"},
+        )
+
+        with urllib.request.urlopen(request, timeout=timeout_s):  # noqa
+            return True
+
+    except OSError:
+        return False
+
+
+def open_in_editor(path: str) -> None:
+    """Open a file preferably in vscode with fallback in Windows notepad. Lazily imports shutil and subprocess."""
+
+    import shutil
+    import subprocess
+
+    if not os.path.exists(path):
+        print(f"[Error] Could not find file at path: {path}")
+        input("Press enter to exit.")
+        sys.exit(0)
+    vscode_exe_path = shutil.which("code")
+    if vscode_exe_path is not None:
+        subprocess.Popen([vscode_exe_path, path])  # noqa:S603
+    else:
+        # Fallback
+        subprocess.Popen(["notepad.exe", path])  # noqa:S603
+
+
+# =========================
+# git related
 
 
 def git_repository_root() -> Path:
@@ -70,27 +112,6 @@ def show_git_results(arguments: list[str], *, heading: str, no_results_message: 
     if result.stderr:
         print(result.stderr, end="" if result.stderr.endswith("\n") else "\n")
     return result.returncode
-
-
-# =========================
-
-
-def open_in_editor(path: str) -> None:
-    """Open a file preferably in vscode with fallback in Windows notepad. Lazily imports shutil and subprocess."""
-
-    import shutil
-    import subprocess
-
-    if not os.path.exists(path):
-        print(f"[Error] Could not find file at path: {path}")
-        input("Press enter to exit.")
-        sys.exit(0)
-    vscode_exe_path = shutil.which("code")
-    if vscode_exe_path is not None:
-        subprocess.Popen([vscode_exe_path, path])  # noqa:S603
-    else:
-        # Fallback
-        subprocess.Popen(["notepad.exe", path])  # noqa:S603
 
 
 # =========================
@@ -590,6 +611,55 @@ def delete_folder_safe(
 # =========================
 # terminal related
 
+
+def close_terminal(exit_code: Any = None) -> bool:
+    """Close the current terminal window when the launcher can safely exit."""
+    parent_pid = os.getppid()
+    try:
+        import ctypes
+        from ctypes import wintypes
+
+        PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
+
+        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        kernel32.OpenProcess.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]
+        kernel32.OpenProcess.restype = wintypes.HANDLE
+        kernel32.QueryFullProcessImageNameW.argtypes = [
+            wintypes.HANDLE,
+            wintypes.DWORD,
+            wintypes.LPWSTR,
+            ctypes.POINTER(wintypes.DWORD),
+        ]
+        kernel32.QueryFullProcessImageNameW.restype = wintypes.BOOL
+        kernel32.CloseHandle.argtypes = [wintypes.HANDLE]
+        kernel32.CloseHandle.restype = wintypes.BOOL
+
+        process_handle = kernel32.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, False, parent_pid)
+        if not process_handle:
+            parent_image_path = ""
+        try:
+            buffer_length = wintypes.DWORD(32768)
+            buffer = ctypes.create_unicode_buffer(buffer_length.value)
+            if not kernel32.QueryFullProcessImageNameW(process_handle, 0, buffer, ctypes.byref(buffer_length)):
+                parent_image_path = ""
+            parent_image_path = buffer.value
+        finally:
+            kernel32.CloseHandle(process_handle)
+    except Exception:
+        parent_image_path = ""
+    parent_name = os.path.basename(parent_image_path).lower()
+    if parent_name not in ("cmd.exe", "powershell.exe", "pwsh.exe"):
+        return False
+
+    import signal
+
+    os.kill(parent_pid, signal.SIGTERM)
+
+    import sys
+
+    sys.exit(exit_code)
+
+
 def get_terminal_title() -> str:
     """Returns "" if it fails to get the title."""
 
@@ -602,6 +672,7 @@ def get_terminal_title() -> str:
     except Exception:
         return ""
 
+
 def set_terminal_title(title: str | None) -> None:
     if title is None:
         return
@@ -613,6 +684,7 @@ def set_terminal_title(title: str | None) -> None:
         ctypes.windll.kernel32.SetConsoleTitleW(clean_name)
     except Exception:
         pass
+
 
 def set_terminal_icon(icon_path: str | None) -> None:
     """Best-effort icon update of the current Windows terminal icon"""
@@ -921,6 +993,7 @@ def unminimize_terminal() -> None:
     except Exception:
         pass
 
+
 def foreground_terminal() -> None:
     try:
         import ctypes
@@ -933,8 +1006,8 @@ def foreground_terminal() -> None:
     except Exception:
         pass
 
+
 def enable_unminimize_and_foreground_terminal_on_first_print() -> None:
-    
     class unminimize_plus_foreground_terminal_on_first_output:
         """Unminimize a minimized terminal and set to foreground when output is written for the first time."""
 
@@ -982,7 +1055,7 @@ def enable_unminimize_and_foreground_terminal_on_first_print() -> None:
     sys.stderr = unminimize_plus_foreground_terminal_on_first_output(sys.stderr)  # type:ignore
 
 
-def set_terminal_colors(colors: str | None = TERMINAL_COLORS) -> None:
+def set_terminal_colors(colors: str | None) -> None:
     """colors is in format of windows terminal colors"""
     if colors:
         try:
@@ -991,3 +1064,947 @@ def set_terminal_colors(colors: str | None = TERMINAL_COLORS) -> None:
             subprocess.run(["cmd.exe", "/c", "color", colors], check=False)  # noqa:S603
         except Exception:
             pass
+
+
+# =========================
+# path related/file name related
+
+
+def make_abs_path_relative_to_file(path: str, file: str) -> str:
+    """makes a path absolute if relative with respect to the file (as if the file defined it)"""
+    if not os.path.isabs(path):
+        return os.path.normpath(os.path.dirname(file) + "\\" + path)
+    else:
+        return path
+
+
+def sanitize_filename(filename: str, replacement: str = "_") -> str:
+    """Sanitize a string so it can be used as a Windows filename."""
+    import re
+
+    # 1. Characters illegal in Windows: < > : " / \ | ? *
+    # Also handles control characters (0-31)
+    illegal_chars = r'[<>:"/\\|?*\x00-\x1f]'
+    filename = re.sub(illegal_chars, replacement, filename)
+    # 2. Windows reserved filenames (CON, PRN, AUX, NUL, COM1-9, LPT1-9)
+    # These cannot be filenames even with an extension (e.g., CON.txt is bad)
+    reserved_names = {"CON", "PRN", "AUX", "NUL", "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9", "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9"}  # fmt: skip
+    # Check the "stem" (name before the dot)
+    base_name = os.path.splitext(filename)[0].upper()
+    if base_name in reserved_names:
+        filename = f"{replacement}{filename}"
+    # 3. Strip trailing dots and spaces (Windows ignores/removes these)
+    filename = filename.rstrip(". ")
+    # 4. Enforce length limit (255 characters for the filename itself)
+    if len(filename) > 255:
+        filename = filename[:255]
+    # 5. Handle empty strings (if sanitization removed everything)
+    return filename if filename else "unnamed_file"
+
+
+# =========================
+# file read/write
+
+
+def write_lines(path: str, lines: list[str], override: bool = True) -> None:
+    """lines are a list of strings without the endline symbol ("\n") added.
+    If override==False it will append instead of recreating the file (default:  override=True)."""
+
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+
+    lines_str = "\n".join(lines) + "\n"
+
+    with open(path, "w" if override else "a", encoding="utf-8") as f:
+        f.write(lines_str)
+
+
+def read_lines(path: str) -> list[str]:
+    """returns a list of strings from path without the endline symbol ("\n" or "\r\n")"""
+
+    with open(path, encoding="utf-8") as f:
+        lines = f.readlines()  # readlines converts \r\n into \n
+
+    return [l.rstrip("\n") for l in lines]
+
+
+# =========================
+# process id related
+
+
+def is_process_running(pid: int) -> bool:
+    if pid <= 0:
+        return False
+
+    try:
+        import ctypes
+        from ctypes import wintypes
+
+        PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
+        STILL_ACTIVE = 259
+
+        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        kernel32.OpenProcess.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]
+        kernel32.OpenProcess.restype = wintypes.HANDLE
+        kernel32.GetExitCodeProcess.argtypes = [wintypes.HANDLE, ctypes.POINTER(wintypes.DWORD)]
+        kernel32.GetExitCodeProcess.restype = wintypes.BOOL
+        kernel32.CloseHandle.argtypes = [wintypes.HANDLE]
+        kernel32.CloseHandle.restype = wintypes.BOOL
+
+        process_handle = kernel32.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, False, pid)
+        if not process_handle:
+            return ctypes.get_last_error() == 5  # ERROR_ACCESS_DENIED means the process still exists.
+        try:
+            exit_code = wintypes.DWORD()
+            if not kernel32.GetExitCodeProcess(process_handle, ctypes.byref(exit_code)):
+                return False
+            return exit_code.value == STILL_ACTIVE
+        finally:
+            kernel32.CloseHandle(process_handle)
+    except Exception:
+        return False
+
+
+# =========================
+# python related
+
+
+def get_python_version(python_exe: str) -> str:
+    import subprocess
+
+    return subprocess.check_output(  # noqa:S603
+        [
+            python_exe,
+            "-c",
+            "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}')",
+        ],
+        stderr=subprocess.STDOUT,
+        text=True,
+    ).strip()
+
+
+def is_python_version_compatible(actual_version: str, required_version: str) -> bool:
+    actual_parts = actual_version.split(".")
+    required_parts = required_version.strip().split(".")
+
+    if (len(actual_parts) != 3) or (any(not part.isdigit() for part in actual_parts)):
+        raise ValueError(
+            f"Could not determine Python version from output: {actual_version}. Expected format like '3.13.2'."
+        )
+
+    if not required_parts or any(not part.isdigit() for part in required_parts):
+        raise ValueError(
+            f"Invalid target_version format: {required_version}. Must be a string like '3', '3.13', or '3.13.2'."
+        )
+
+    return actual_parts[: len(required_parts)] == required_parts
+
+
+# =========================
+# Python installer
+
+
+def install_full_python(
+    python_dir_abs_path: str,
+    python_version: str = "",
+    rel_path_to_packages: str = "",
+    install_tkinter: bool = True,
+    install_tests: bool = True,
+    install_tools: bool = True,
+    install_docs: bool = False,
+    print_: bool = True,
+) -> None:
+    r"""
+    Create a local full Windows Python installation from python.org MSI files.
+
+    The function finds the newest matching Python version in the form of:
+
+        https://www.python.org/ftp/python/{version}/amd64/<some-file>.msi or
+        https://www.python.org/ftp/python/<version>/<some-file>.amd64.msi
+
+    It downloads the selected amd64 MSI packages, extracts them into
+    ``python_dir_abs_path``, bootstraps pip through ensurepip or get-pip.py,
+    and optionally writes a ``.pth`` file that adds another relative package
+    directory to Python's import path if parameter rel_path_to_packages is given.
+
+    Args:
+        python_dir_abs_path: Target directory. Existing contents are deleted after a
+            valid MSI set is found. Must be absolute path and raises Error otherwise.
+        python_version (optional, default ""): Python version filter. Examples: ``""``, ``"3"``,
+            ``"3.12"``, ``"3.12.4"``.
+        rel_path_to_packages: Optional path relative to being inside ``python_dir_abs_path`` that is
+            written into ``Lib/site-packages/path_to_packages.pth``. Default "" -> No path written.
+        install_tkinter (optional, default True): Include Tcl/Tk support.
+        install_tests (optional, default True): Include the standard library test package.
+        install_tools (optional, default True): Include Python tools.
+        install_docs (optional, default False): Include documentation.
+        print_ (default True): Whether to print info messages
+
+    For lower python versions (3.4-), there is no option to for example not install tkinter. It will ignore the parameter
+
+    Raises:
+        RuntimeError: If version discovery, download, extraction, or pip setup
+        fails.
+    """
+
+    # ---------------------------
+    # lazy imports
+
+    import fnmatch
+    import html.parser
+    import re
+    import shutil
+    import subprocess
+    import tempfile
+    import urllib.error
+    import urllib.parse
+    import urllib.request
+
+    # ---------------------------
+    # local variables
+
+    python_file_download_url_patterns = [  # lower index preferred
+        "https://www.python.org/ftp/python/{version}/amd64/*.msi",  # python 3.5+ 64bit
+        "https://www.python.org/ftp/python/{version}/*.amd64.msi",  # python 3.4- 64bit
+    ]
+    blacklisted_file_patterns = [
+        "appendpath.msi",  # PATH modification helper, skipped because this install uses a local target directory.
+        "launcher.msi",  # Global Python launcher component, skipped for this local extracted install.
+        "path.msi",  # PATH modification helper, skipped because this install uses a local target directory.
+        "pip.msi",  # Pip is installed later through ensurepip or get-pip.py.
+        "*_d.msi",  # Debug build MSI, not the normal runtime package.
+        "*_pdb.msi",  # Debug symbols MSI, not needed for normal runtime use.
+        "*arm64*",  # ARM64 package, skipped because this installer uses the amd64 package directory.
+        "*[0-9]rc[0-9]*",  # Release candidate, not a final release.
+        "*win32*",  # 32-bit package, skipped because this installer uses the amd64 package directory.
+    ]
+    if not install_tkinter:
+        blacklisted_file_patterns.append("tcltk.msi")  # Tkinter component disabled.
+    if not install_tests:
+        blacklisted_file_patterns.append("test.msi")  # Test suite component disabled.
+    if not install_tools:
+        blacklisted_file_patterns.append("tools.msi")  # Tools component disabled.
+    if not install_docs:
+        blacklisted_file_patterns.append("doc.msi")  # Documentation component disabled.
+    python_exe = python_dir_abs_path + "\\python.exe"
+    site_packages_dir = python_dir_abs_path + "\\Lib\\site-packages"
+    path_to_packages_file = site_packages_dir + "\\_PATH_TO_PACKAGES_.pth"
+    ruff_config = python_dir_abs_path + "\\Lib\\test\\.ruff.toml"
+    python_download_timeout_s = 120
+    user_agent = "install-full-python/1.0"
+
+    # ---------------------------
+    # define helper functions
+
+    def _find_python_version_and_download_links() -> tuple[str, str, list[str]]:
+        def _get_download_links_from_url(url: str) -> list[str]:
+            request = urllib.request.Request(url, headers={"User-Agent": user_agent})  # noqa
+
+            with urllib.request.urlopen(request, timeout=python_download_timeout_s) as response:  # noqa
+                html_text = response.read().decode("utf-8", errors="replace")
+
+            class _LinkParser(html.parser.HTMLParser):
+                """Extract href values from a simple HTML directory listing."""
+
+                def __init__(self) -> None:
+                    super().__init__()
+                    self.links: list[str] = []
+
+                @override
+                def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+                    """WIP"""
+                    if tag.lower() == "a":
+                        self.links.extend(value for name, value in attrs if name.lower() == "href" and value)
+
+            parser = _LinkParser()
+            parser.feed(html_text)
+            return parser.links
+
+        # define key to sort download links: prefer newest version that matches pattern
+        def _version_key(version: str) -> tuple[int, int, int]:
+            major, minor, patch = version.split(".")
+            return int(major), int(minor), int(patch)
+
+        def _find_matching_versions() -> list[str]:
+            """Find all matching version folders from the configured download URL patterns."""
+            versions = set()
+            errors = []
+            for url_pattern in python_file_download_url_patterns:
+                version_list_url = url_pattern.split("{version}", 1)[0]
+                try:
+                    versions.update(
+                        link.strip("/")
+                        for link in _get_download_links_from_url(version_list_url)
+                        if target_version_pattern.match(link)
+                    )
+                except (OSError, urllib.error.URLError) as error:
+                    errors.append(error)
+
+            if versions:
+                return sorted(versions, key=_version_key, reverse=True)
+            if errors:
+                raise RuntimeError(
+                    f'[Error] Could not find a matching Python MSI set for parameter python_version: "{python_version}".'
+                ) from errors[0]
+            raise RuntimeError(
+                f'[Error] No Python download URL patterns configured for parameter python_version: "{python_version}".'
+            )
+
+        def _is_wanted_file(link: str) -> bool:
+            """Return whether wanted msi."""
+            if link.endswith("/"):  # reject folders
+                return False
+
+            filename = os.path.basename(urllib.parse.urlparse(link).path).lower()
+
+            # return False if filename matches any blacklisted pattern
+            if any(fnmatch.fnmatchcase(filename.lower(), pattern) for pattern in blacklisted_file_patterns):
+                return False
+
+            _base, extension = os.path.splitext(filename)
+            if extension == ".msi":
+                return True
+            else:
+                return False
+
+        def _find_msi_urls_from_pattern(url_pattern: str, version: str) -> tuple[str, list[str]]:
+            """Find matching MSI URLs from a URL pattern such as .../{version}/amd64/*.msi."""
+            resolved_pattern = url_pattern.format(version=version)
+            folder_url, filename_pattern = resolved_pattern.rsplit("/", 1)
+            folder_url += "/"
+            links = _get_download_links_from_url(folder_url)
+            msi_urls = []
+            for link in links:
+                filename = os.path.basename(urllib.parse.urlparse(link).path).lower()
+                if fnmatch.fnmatchcase(filename, filename_pattern.lower()) and _is_wanted_file(link):
+                    msi_urls.append(urllib.parse.urljoin(folder_url, link))
+            return folder_url, sorted(msi_urls)
+
+        if python_version == "":
+            target_version_pattern = re.compile(r"^\d+\.\d+\.\d+/$")
+        elif re.fullmatch(r"\d+", python_version):
+            target_version_pattern = re.compile(rf"^{re.escape(python_version)}\.\d+\.\d+/$")
+        elif re.fullmatch(r"\d+\.\d+", python_version):
+            target_version_pattern = re.compile(rf"^{re.escape(python_version)}\.\d+/$")
+        elif re.fullmatch(r"\d+\.\d+\.\d+", python_version):
+            target_version_pattern = re.compile(rf"^{re.escape(python_version)}/$")
+        else:
+            raise RuntimeError(
+                f'[Error] Could not find a matching Python version pattern for parameter python_version: "{python_version}".'
+            )
+
+        # sort download links and take first working
+        for version in _find_matching_versions():
+            for url_pattern in python_file_download_url_patterns:
+                try:
+                    url, msi_urls = _find_msi_urls_from_pattern(url_pattern, version)
+                except (OSError, urllib.error.URLError):
+                    continue
+
+                # return found download links and python version
+                if msi_urls:
+                    return version, url, msi_urls
+        else:
+            raise RuntimeError(
+                f'[Error] Could not find msi-downloadable Python for python_version: "{python_version}".'
+            )
+
+    def _download_file_from_url(url: str, folder: str) -> str:
+        filename = os.path.basename(urllib.parse.urlparse(url).path)
+        output_path = os.path.join(folder, filename)
+
+        if print_:
+            print(f"Downloading {filename}")
+
+        request = urllib.request.Request(url, headers={"User-Agent": user_agent})  # noqa
+
+        with urllib.request.urlopen(request, timeout=python_download_timeout_s) as response:  # noqa
+            with open(output_path, "wb") as file:
+                shutil.copyfileobj(response, file)
+
+        if not os.path.isfile(output_path) or os.path.getsize(output_path) == 0:
+            raise RuntimeError(f'Download produced an empty file: "{output_path}"')
+
+        return output_path
+
+    def _install_msi_file(msi_path: str) -> None:
+        msi_name = os.path.basename(msi_path)
+        log_path = os.path.splitext(msi_path)[0] + ".msi.log"
+
+        if print_:
+            print(f"Installing {msi_name}")
+
+        # install msi files in python_dir_abs_path
+        command = f'msiexec /a "{msi_path}" TARGETDIR="{python_dir_abs_path}" /qn /L*V "{log_path}"'
+        result = subprocess.run(  # noqa
+            command,
+            check=False,
+        )
+        if result.returncode != 0:
+            raise RuntimeError(f"msiexec failed for {msi_name} with exit code {result.returncode}. Log: {log_path}")
+
+        if msi_name.lower() == "test.msi":
+            # needed to prevent Ruff from complaining/failing for ".ruff.toml" files in Pythons "test" package/folder because this local python installation does not follow the global python source-tree layout.-> it comments out lines starting with "extend" in "Lib\test\.ruff.toml", e.g., "extend = "../.ruff.toml"."""
+            if os.path.exists(ruff_config):
+                lines = read_lines(ruff_config)
+                lines = ["# " + line if re.match(r"^\s*extend\s*=", line) else line for line in lines]
+                write_lines(ruff_config, lines)
+
+        # Remove any MSI copy that install left in TARGETDIR.
+        copied_msi = os.path.join(python_dir_abs_path, msi_name)
+        if os.path.exists(copied_msi):
+            os.remove(copied_msi)
+
+    def _install_pip(target_version: str) -> None:
+        """Bootstrap pip using the best method for the installed Python version."""
+        version_match = re.fullmatch(r"(\d+)\.(\d+)(?:\.(\d+))?", target_version)
+        if not version_match:
+            raise RuntimeError(f'Could not parse Python version "{target_version}".')
+
+        major = int(version_match.group(1))
+        minor = int(version_match.group(2))
+        patch = int(version_match.group(3) or 0)
+
+        # Python includes ensurepip starting with 3.4 and 2.7.9.
+        supports_ensurepip = (
+            major > 3 or (major == 3 and minor >= 4) or (major == 2 and (minor > 7 or (minor == 7 and patch >= 9)))
+        )
+        if supports_ensurepip:
+            env = os.environ.copy()
+            env["PIP_NO_WARN_SCRIPT_LOCATION"] = "1"  # supress warning that pip is not global
+            env["PATH"] = os.pathsep.join(
+                [
+                    python_dir_abs_path,
+                    os.path.join(python_dir_abs_path, "Scripts"),
+                    env.get("PATH", ""),
+                ]
+            )
+
+            result = subprocess.run(  # noqa:S603
+                [python_exe, "-m", "ensurepip", "--upgrade"],
+                check=False,
+                env=env,
+            )
+            if result.returncode != 0:
+                raise RuntimeError("Python installation failed: ensurepip failed.")
+
+            upgrade_args = [
+                "-m",
+                "pip",
+                "install",
+                "--upgrade",
+                "pip",
+                "--ignore-installed",
+                "--no-warn-script-location",
+            ]
+
+            # One upgrade is normally enough. Repeat a few times only if each upgrade
+            # actually changes the installed pip version.
+            for _pip_upgrade_attempt in range(5):
+                result = subprocess.run(  # noqa
+                    [python_exe, "-m", "pip", "--version"],
+                    check=False,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    text=True,
+                )
+                if result.returncode != 0:
+                    raise RuntimeError("Python installation failed: pip is not available after ensurepip.")
+                pip_version_output = result.stdout.split()
+                if len(pip_version_output) < 2 or pip_version_output[0].lower() != "pip":
+                    raise RuntimeError(f"Python installation failed: could not parse pip version: {result.stdout}")
+                pip_version_before = pip_version_output[1]
+
+                # Try quiet/log-friendly pip upgrade first, then retry without the progress-bar flag.
+                result = subprocess.run(  # noqa
+                    [python_exe, *upgrade_args, "--progress-bar", "off"],
+                    check=False,
+                    stderr=subprocess.DEVNULL,
+                    env=env,
+                )
+                # retry pip installation if failed without progress bar (for example if that flag is not there yet in the old pip version)
+                if result.returncode != 0:
+                    result = subprocess.run([python_exe, *upgrade_args], check=False, env=env)  # noqa
+                # raise if failed pip installation
+                if result.returncode != 0:
+                    raise RuntimeError("Python installation failed: pip upgrade failed.")
+
+                result = subprocess.run(  # noqa
+                    [python_exe, "-m", "pip", "--version"],
+                    check=False,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    text=True,
+                )
+                if result.returncode != 0:
+                    raise RuntimeError("Python installation failed: pip is not available after upgrade.")
+                pip_version_output = result.stdout.split()
+                if len(pip_version_output) < 2 or pip_version_output[0].lower() != "pip":
+                    raise RuntimeError(f"Python installation failed: could not parse pip version: {result.stdout}")
+                pip_version_after = pip_version_output[1]
+
+                if pip_version_after == pip_version_before:
+                    break
+            else:
+                raise RuntimeError("Python installation failed: pip upgrade did not stabilize.")
+
+            return
+
+        # Python 3.3 and older do not have ensurepip. Use PyPA's versioned
+        # legacy get-pip.py bootstrapper so pip itself still supports the interpreter.
+        if print_:
+            print(f"Bootstrapping pip with get-pip.py for Python {target_version}")
+
+        get_pip_urls = [
+            f"https://bootstrap.pypa.io/pip/{major}.{minor}/get-pip.py",
+            f"https://bootstrap.pypa.io/{major}.{minor}/get-pip.py",
+        ]
+        errors = []
+        env = os.environ.copy()
+        env["PIP_NO_WARN_SCRIPT_LOCATION"] = "1"
+        env["PATH"] = os.pathsep.join(
+            [
+                python_dir_abs_path,
+                os.path.join(python_dir_abs_path, "Scripts"),
+                env.get("PATH", ""),
+            ]
+        )
+        with tempfile.TemporaryDirectory(prefix="tmp_get_pip_") as tmp:
+            for get_pip_url in get_pip_urls:
+                try:
+                    get_pip_path = _download_file_from_url(get_pip_url, tmp)
+                    break
+                except (OSError, RuntimeError, urllib.error.URLError) as error:
+                    errors.append(f"{get_pip_url}: {error}")
+            else:
+                raise RuntimeError(
+                    f"Python installation failed: could not download get-pip.py for Python {target_version}. "
+                    f"Tried: {'; '.join(errors)}"
+                )
+
+            result = subprocess.run([python_exe, get_pip_path, "--no-warn-script-location"], check=False, env=env)  # noqa
+
+        if result.returncode != 0:
+            raise RuntimeError("Python installation failed: get-pip.py failed.")
+
+        # Verify that pip can be imported and run by the installed Python:
+        result = subprocess.run([python_exe, "-m", "pip", "--version"], check=False)  # noqa
+        if result.returncode != 0:
+            raise RuntimeError("Python installation failed: pip is not available after bootstrap.")
+
+    # ----------------------------
+    # execute code of function
+
+    if not os.path.isabs(python_dir_abs_path):
+        raise RuntimeError(f'Paramter "python_dir_abs_path" must be an absolute path. Got "{python_dir_abs_path}"')
+
+    # find compatible python version and download links
+    compatible_full_py_vers, download_url, msi_urls = _find_python_version_and_download_links()
+
+    if print_:
+        print(f"Found Python {compatible_full_py_vers} (Target: {python_version}).")
+        print(f"Download URL: {download_url}")
+        print(f"Found {len(msi_urls)} MSI package(s).")
+
+    # Only delete the target after a valid MSI set has been found.
+    try:
+        delete_folder_safe(python_dir_abs_path, max_size_GB_before_prompt=1.2)
+    except Exception as error:
+        raise RuntimeError(f'[Error] Refusing to delete "{python_dir_abs_path}". {error}') from error
+
+    # create folder
+    os.makedirs(python_dir_abs_path, exist_ok=True)
+
+    # add gitignore file
+    write_lines(
+        python_dir_abs_path + "\\.gitignore",
+        [
+            "# Prevent committing the local Python distribution.",
+            "*",
+        ],
+    )
+
+    # download and install msi files
+    try:
+        with tempfile.TemporaryDirectory(prefix="tmp_python_installation_files_") as tmp:
+            # downlaod into temp folder
+            msi_paths = [_download_file_from_url(url, tmp) for url in msi_urls]
+            # install
+            for msi_path in sorted(msi_paths, key=lambda path: os.path.basename(path).lower()):
+                _install_msi_file(msi_path)
+    except Exception as error:
+        raise RuntimeError(f"Local Python installation failed: {error}") from error
+
+    # check if installation looks successful
+    if not os.path.exists(python_exe):
+        raise RuntimeError("Python installation failed: python.exe was not created.")
+
+    # create a pip config file to stop it from complaining about not being a globally installed python
+    write_lines(
+        python_dir_abs_path + "\\pip.ini",
+        [
+            "[global]",
+            "no-warn-script-location = true",
+        ],
+    )
+
+    # install pip
+    _install_pip(compatible_full_py_vers)
+
+    # tell python where to look for third party packages
+    if rel_path_to_packages:
+        # .pth files work best with forward slashes:
+        write_lines(path_to_packages_file, ["../../" + rel_path_to_packages.replace("\\", "/")])
+
+    if print_:
+        print()
+        print(f'Successfully created local Python {compatible_full_py_vers} at "{python_dir_abs_path}".')
+        print()
+
+
+# =========================
+# package related
+
+
+def install_packages(
+    python_exe: str,
+    packages: str | list[str] | tuple[str, ...] | None = None,
+    requirements_file: str | None = None,
+    target: str | None = None,
+    upgrade: bool = False,
+    no_deps: bool = False,
+    no_cache: bool = False,
+    use_uv: bool = False,
+    install_uv_locally_if_global_not_available: bool = True,
+    local_uv_python_exe: str | None = None,
+    extra_args: str | list[str] | tuple[str, ...] | None = None,
+    disable_pip_version_check: bool = True,
+    no_warn_script_location: bool = True,
+    uninstall: bool = False,
+):
+    """Install or uninstall packages with pip, optionally trying uv first.
+
+    ``python_exe`` is the interpreter whose package environment should be
+    changed. For normal backend runtime packages this is still the backend
+    Python executable, while ``target`` points pip/uv at the separate
+    ``backend_packages`` runtime folder. Build/install tools should usually be
+    installed without ``target`` so they land in the interpreter environment and
+    can be removed again after the targeted runtime install is finished.
+
+    ``packages`` may be one package string or a sequence of package strings.
+    ``requirements_file`` may be one requirements file path. At least one of
+    those inputs is required. The requirements file is passed to pip/uv with
+    ``-r``, so pip/uv handle normal requirement parsing instead of this helper
+    trying to parse the file.
+
+    Set ``uninstall=True`` to run uninstall instead of install. Uninstalls are
+    confirmed automatically with ``-y`` because these scripts run unattended.
+    Install-only options are ignored for uninstall: ``target``, ``upgrade``,
+    ``no_deps``, ``no_cache``, ``disable_pip_version_check``, and
+    ``no_warn_script_location``.
+
+    pip is the default and final fallback. If ``use_uv`` is true, a globally
+    available ``uv`` executable is tried first. If no global uv is found and
+    ``install_uv_locally_if_global_not_available`` is true (default), uv is
+    installed into ``local_uv_python_exe`` and run as
+    ``local_uv_python_exe -m uv``. If ``local_uv_python_exe`` is not given,
+    ``python_exe`` is used for local uv as well. The local uv install is kept
+    after the package operation; this helper does not uninstall it.
+
+    ``local_uv_python_exe`` is useful when the Python that runs uv should be
+    different from the Python being modified. For example, backend Python can
+    run ``uv`` while uv installs frontend packages with ``--python`` pointing at
+    frontend Python.
+
+    If local uv cannot be installed or the uv command fails, this helper prints
+    a warning and retries the same package operation with pip.
+
+    ``extra_args`` are appended last to the selected pip/uv command. Use them
+    for uncommon flags only; prefer the named options above for behavior that
+    this repo relies on.
+    """
+    import shutil
+    import subprocess
+
+    def _as_list(value: str | list[str] | tuple[str, ...] | None) -> list[str]:
+        if value is None:
+            return []
+        if isinstance(value, str):
+            return [value]
+        return list(value)
+
+    package_args = _as_list(packages)
+    extra_args_list = _as_list(extra_args)
+    if not package_args and requirements_file is None:
+        raise ValueError("No packages or requirements file was given.")
+
+    local_uv_python_exe = local_uv_python_exe or python_exe
+
+    pip_args = [python_exe, "-m", "pip", "uninstall" if uninstall else "install"]
+    if requirements_file is not None:
+        pip_args.extend(["-r", requirements_file])
+    pip_args.extend(package_args)
+
+    if not uninstall:
+        if target is not None:
+            pip_args.extend(["--target", target])
+        if upgrade:
+            pip_args.append("--upgrade")
+        if no_deps:
+            pip_args.append("--no-deps")
+        if no_cache:
+            pip_args.append("--no-cache-dir")
+        if disable_pip_version_check:
+            pip_args.append("--disable-pip-version-check")
+        if no_warn_script_location:
+            pip_args.append("--no-warn-script-location")
+    else:
+        pip_args.append("-y")
+    pip_args.extend(extra_args_list)
+
+    uv_command: list[str] | None = None
+    if use_uv:
+        global_uv = shutil.which("uv")
+        if global_uv:
+            uv_command = [global_uv, "pip", "uninstall" if uninstall else "install", "--python", python_exe]
+
+    if uv_command is None and use_uv and install_uv_locally_if_global_not_available:
+        local_uv_command = [
+            local_uv_python_exe,
+            "-m",
+            "uv",
+            "pip",
+            "uninstall" if uninstall else "install",
+            "--python",
+            python_exe,
+        ]
+        try:
+            local_uv_probe = subprocess.run(  # noqa:S603
+                [local_uv_python_exe, "-m", "uv", "--version"],
+                check=False,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+            if local_uv_probe.returncode == 0:
+                uv_command = local_uv_command
+            else:
+                uv_install_args = [
+                    local_uv_python_exe,
+                    "-m",
+                    "pip",
+                    "install",
+                    "uv",
+                    "--upgrade",
+                    "--disable-pip-version-check",
+                    "--no-warn-script-location",
+                ]
+                if no_cache:
+                    uv_install_args.append("--no-cache-dir")
+                subprocess.run(uv_install_args, check=True)  # noqa:S603
+                uv_command = local_uv_command
+        except Exception as error:
+            print(f"[Warning] local uv installation failed. Falling back to pip. Error: {error}")
+
+    if uv_command is not None:
+        uv_args = [*uv_command]
+        if requirements_file is not None:
+            uv_args.extend(["-r", requirements_file])
+        uv_args.extend(package_args)
+
+        if not uninstall:
+            if target is not None:
+                uv_args.extend(["--target", target])
+            if upgrade:
+                uv_args.append("--upgrade")
+            if no_deps:
+                uv_args.append("--no-deps")
+            if no_cache:
+                uv_args.append("--no-cache")
+            uv_args.extend(["--link-mode", "copy"])
+        else:
+            uv_args.append("-y")
+        uv_args.extend(extra_args_list)
+
+        uv_result = subprocess.run(uv_args, check=False)  # noqa:S603
+        if uv_result.returncode == 0:
+            return uv_result
+
+        print(f"[Warning] uv package {'uninstall' if uninstall else 'install'} failed. Falling back to pip.")
+
+    return subprocess.run(pip_args, check=True)  # noqa:S603
+
+
+def get_installed_packages(exe_path: str, with_version: bool = True):
+    import subprocess
+
+    result = subprocess.run(  # noqa
+        [exe_path, "-m", "pip", "--disable-pip-version-check", "freeze"],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    packages_with_version = result.stdout.strip().splitlines()
+
+    if with_version == True:
+        return packages_with_version
+    else:
+        packages_without_version = []
+
+        for line in packages_with_version:
+            line = line.strip()
+
+            if line == "" or line.startswith("#"):
+                continue
+
+            for operator in ("===", "==", "~=", ">=", "<=", "!=", ">", "<"):
+                if operator in line:
+                    packages_without_version.append(line.split(operator, 1)[0].strip())
+                    break
+            else:
+                packages_without_version.append(line)
+
+        return packages_without_version
+
+
+def save_installed_packages(exe_path: str, output_path: str = "requirements.txt", with_version: bool = True):
+    output_path = os.path.abspath(output_path)
+
+    packages = get_installed_packages(with_version=with_version, exe_path=exe_path)
+
+    write_lines(output_path, packages)
+
+    return output_path
+
+
+def save_requirements_of_folder_noVersion(
+    target_folder: str,
+    output_path: str,
+    excluded_folders: Sequence[str] = (
+        "__pycache__",
+        ".git",
+        ".hg",
+        ".svn",
+    ),
+    print_: bool = True,
+) -> bool:
+    """Save the pipreqs determined python package requirement without a package version. See save_requirements_of_folder_withVersion for with version.
+
+    Returns success bool"""
+
+    import subprocess
+
+    output_path = os.path.abspath(output_path)
+
+    if os.path.exists(output_path):
+        os.remove(output_path)
+
+    try:
+        cmd = [
+            sys.executable,
+            "-m",
+            "pipreqs.pipreqs",
+            target_folder,  # searched_folder,
+            "--force",
+            "--savepath",
+            output_path,
+            "--ignore",
+            ",".join(excluded_folders),  # excluded_folders
+            "--encoding",
+            "utf-8",
+            "--mode",
+            "no-pin",
+            "--no-follow-links",
+        ]
+
+        if print_:
+            print()
+            print("=" * 20)
+            print("Start of finding required python packages")
+            print("-" * 20)
+        subprocess.run(cmd, check=True)  # noqa
+
+        if os.path.exists(output_path):
+            if print_:
+                print("-" * 20)
+                print(f'End of finding required python packages. Result: "{output_path}":\n')
+                packages = read_lines(output_path)
+                print(*packages, sep="\n")
+                print("=" * 20)
+                print()
+
+            success = True
+
+        else:
+            success = False
+            if print_:
+                print()
+                print_warn("[Error] Failed to auto determine needed packages (see above)")
+    except Exception as e:
+        if print_:
+            print()
+            print_warn(f"[Error] Failed to auto determine packages (do you have internet?): {e}")
+        success = False
+
+    return success
+
+
+def save_requirements_of_folder_withVersion(
+    target_folder: str,
+    output_path: str,
+    python_exe: str,
+    print_: bool = True,
+) -> bool:
+    """Save the pipreqs determined python package requirement with a package version. See save_requirements_of_folder_noVersion for wihtout version.
+
+    Returns success bool
+
+    Installation into a fresh temp venv needed to determine package versions. Pipreqs only can determine what packages are needed.
+
+    lazy imports subprocess and tempfile."""
+
+    # lazy imports
+    import subprocess
+    import tempfile
+
+    output_path = os.path.normpath(os.path.abspath(output_path))
+
+    try:
+        with tempfile.TemporaryDirectory(prefix="tmp_venv_to_get_package_version") as tmp:
+            temp_requirements = tmp + "\\tmp_package_requirements"
+            success = save_requirements_of_folder_noVersion(
+                print_=print_, target_folder=target_folder, output_path=temp_requirements
+            )
+            if success == False:
+                return False
+
+            temp_python = tmp + "\\Scripts\\python.exe"
+
+            subprocess.run([python_exe, "-m", "venv", tmp], check=True)  # noqa
+            if not os.path.exists(temp_python):
+                raise RuntimeError(f'Temporary environment did not create "{temp_python}"')
+
+            subprocess.run(  # noqa
+                [
+                    temp_python,
+                    "-m",
+                    "pip",
+                    "install",
+                    "-r",
+                    temp_requirements,
+                    "--disable-pip-version-check",
+                    "--no-warn-script-location",
+                ],
+                check=True,
+            )
+
+            save_installed_packages(exe_path=temp_python, output_path=output_path, with_version=True)
+
+            return True
+
+    except Exception as e:
+        if print_:
+            print()
+            print_warn(f"[Error] Failed to auto determine packages: {e}")
+        return False
+
+
+# ========================
