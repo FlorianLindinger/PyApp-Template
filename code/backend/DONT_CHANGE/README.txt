@@ -57,17 +57,19 @@ The installer and Python scripts share these values from
 settings\backend_settings.ini:
 
 - backend_python_version: the exact embeddable CPython version to download.
-- backend_python_install_dir_name: the fixed runtime directory name. It must
-  remain backend_python; arbitrary paths are intentionally not accepted.
+- backend_python_install_dir_relative_path: the runtime directory relative to
+  the settings file. It must resolve to ..\backend_python; arbitrary paths are
+  intentionally not accepted.
 - backend_python_finish_installation_relative_path: the finalization script,
   relative to the settings file. It must remain
   scripts\setup\finish_backend_installation.py.
 
-The installer validates the directory name and compares the fully resolved
-target with its fixed expected location before it removes anything. It never
-accepts an arbitrary deletion path from the INI file. If you need to upgrade
-Python, update the version and then review the generated python3xx._pth and ZIP
-names derived by settings\backend_settings.py.
+The installer resolves both configured paths relative to backend_settings.ini
+and compares the resulting absolute paths with fixed expected locations before
+it removes or executes anything. It never accepts an arbitrary deletion or
+script path from the INI file. If you need to upgrade Python, update the version
+and then review the generated python3xx._pth and ZIP names derived by
+settings\backend_settings.py.
 
 settings\backend_settings.py is the shared source of Python path constants.
 Every relative path in that module is resolved relative to the settings folder.
