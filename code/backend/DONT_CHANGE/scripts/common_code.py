@@ -8,8 +8,7 @@ Imports are mostly lazy because it is not clear what will be needed
 
 import os
 import sys
-from pathlib import Path
-from typing import Any, override
+from typing import Any, TextIO, override
 
 # =========================
 # add root dir for debug cases where this script is called on its own:
@@ -49,15 +48,12 @@ from backend.DONT_CHANGE.settings.backend_settings import (
     PYTHON_VERSION_INDICATOR_FILE_PATH,
     VARIABLE_IN_DEFAULT_PACKAGES_THAT_TRIGGERS_SEARCH_IF_TRUE,
 )
+from backend.DONT_CHANGE.scripts.generic_helpers import ANSI_RESET, ANSI_SUCCESS, ANSI_WARN
 
 # =========================
 # global variables
 
 _TERMINAL_APPEARANCE_WAS_SET: bool = False
-
-ANSI_WARN: str = "\x1b[1;37;41m"  # white text, red bg, bold
-ANSI_SUCCESS: str = "\x1b[1;37;42m"  # white text, green bg, bold
-ANSI_RESET: str = "\033[0m"
 
 TERMINAL_COLORS: str = ""
 if terminal_bg_color:
@@ -66,82 +62,7 @@ if terminal_text_color:
     TERMINAL_COLORS += terminal_text_color
 
 # =========================
-# Git helper functions
-
-
-def git_repository_root() -> Path:
-    """Return the Git work tree containing this project."""
-    import subprocess
-
-    result = subprocess.run(
-        ["git", "rev-parse", "--show-toplevel"],
-        cwd=Path(__file__).parent,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    if result.returncode:
-        raise RuntimeError(result.stderr.strip() or "Could not find a Git work tree.")
-    return Path(result.stdout.strip())
-
-
-def run_git(arguments: list[str]) -> int:
-    """Run Git in the project repository and return its exit code."""
-    import subprocess
-
-    try:
-        root = git_repository_root()
-    except (FileNotFoundError, RuntimeError) as error:
-        print(f"[Error] {error}")
-        return 2
-    return subprocess.run(["git", *arguments], cwd=root, check=False).returncode  # noqa: S603
-
-
-def show_git_results(arguments: list[str], *, heading: str, no_results_message: str) -> int:
-    """Run a Git listing command and make an empty result explicit."""
-    import subprocess
-
-    try:
-        root = git_repository_root()
-    except (FileNotFoundError, RuntimeError) as error:
-        print(f"[Error] {error}")
-        return 2
-
-    print(f"[Info] {heading}")
-    result = subprocess.run(  # noqa:S603
-        ["git", *arguments],
-        cwd=root,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    if result.stdout:
-        print(result.stdout, end="" if result.stdout.endswith("\n") else "\n")
-    elif result.returncode == 0:
-        print(f"[Info] {no_results_message}")
-    if result.stderr:
-        print(result.stderr, end="" if result.stderr.endswith("\n") else "\n")
-    return result.returncode
-
-
-# =========================
 # general helper functions
-
-
-def open_in_editor(path: str) -> None:
-    import shutil
-    import subprocess
-
-    if not os.path.exists(path):
-        print(f"[Error] Could not find file at path: {path}")
-        input("Press enter to exit.")
-        sys.exit(0)
-    vscode_exe_path = shutil.which("code")
-    if vscode_exe_path is not None:
-        subprocess.Popen([vscode_exe_path, path])  # noqa:S603
-    else:
-        # Fallback
-        subprocess.Popen(["notepad.exe", path])  # noqa:S603
 
 
 def make_empty_args_safe(args: list[str | None]) -> list[str]:
@@ -177,11 +98,12 @@ def input_success(msg: str) -> str:
     return input(f"{ANSI_SUCCESS}{msg}{ANSI_RESET}")
 
 
-def print_traceback(message: str = "") -> None:
-    """colored traceback via "rich" package. Does not print newlines after traceback but 2 before."""
+def print_traceback(message: str = "", *, add_press_enter_to_exit: bool = False) -> None:
+    """Print a colored traceback and optionally wait for the user before the terminal closes."""
 
-    from rich.console import Console
-    from rich.traceback import Traceback
+    # `rich` is installed into the managed backend Python, not this analyzer's environment.
+    from rich.console import Console  # pyrefly: ignore [missing-import]
+    from rich.traceback import Traceback  # pyrefly: ignore [missing-import]
 
     console = Console()
 
@@ -198,6 +120,8 @@ def print_traceback(message: str = "") -> None:
     console.print(Traceback.from_exception(exc_type, exc_value, traceback_, show_locals=False))  # type:ignore
 
     print_warn("=" * 30)
+    if add_press_enter_to_exit:
+        input_warn("[Error] Press enter to exit")
 
 
 # =========================
@@ -439,6 +363,7 @@ def delete_folder_safe(
     folder_size: float | None = None
     folder_size_is_partial = False
     is_above_max_size = False
+    max_size_bytes: int | None = None
     if max_size_GB_before_prompt is not None:
         try:
             folder_size, folder_size_is_partial = _get_folder_size(target_path, timeout_seconds=max_size_check_seconds)
@@ -455,6 +380,8 @@ def delete_folder_safe(
                 print("Cancelled folder deletion.")
                 return False
         if folder_size_is_partial:
+            if folder_size is None:
+                raise RuntimeError(f'Could not determine a partial folder size for "{target_path}".')
             if not prompt_instead_of_requirement_failure or not sys.stdin.isatty():
                 raise ValueError(
                     f'Could not finish size check for "{target_path}" within {max_size_check_seconds:g} seconds. '
@@ -584,9 +511,11 @@ def delete_folder_safe(
             return False
 
     if is_above_max_size:
+        if folder_size is None or max_size_bytes is None:
+            raise RuntimeError(f'Could not determine the size limit for "{target_path}".')
         if not sys.stdin.isatty():
             raise ValueError(
-                f"Refusing to delete folder larger than {_format_bytes(max_size_bytes)} without interactive confirmation. "  # type:ignore
+                f"Refusing to delete folder larger than {_format_bytes(max_size_bytes)} without interactive confirmation. "
                 f"Folder: {target_path}. Folder size: {_format_bytes(folder_size)}"
             )
 
@@ -595,7 +524,7 @@ def delete_folder_safe(
         print(f"Folder: {target_path}")
         size_label = "Measured at least" if folder_size_is_partial else "Folder size"
         print(f"{size_label}: {_format_bytes(folder_size)}")
-        print(f"Configured limit: {_format_bytes(max_size_bytes)}")  # type:ignore
+        print(f"Configured limit: {_format_bytes(max_size_bytes)}")
         print()
         answer = input("Folder is larger than expected. Delete anyway? [y/n]: ").strip().lower()
         if answer not in {"y", "yes"}:
@@ -621,6 +550,8 @@ def delete_folder_safe(
                     print("Cancelled folder deletion.")
                     return False
             if folder_size_is_partial:
+                if folder_size is None:
+                    raise RuntimeError(f'Could not determine a partial folder size for "{target_path}".')
                 if not prompt_instead_of_requirement_failure or not sys.stdin.isatty():
                     raise ValueError(
                         f'Could not finish size check for "{target_path}" within {max_size_check_seconds:g} seconds. '
@@ -685,17 +616,17 @@ def set_terminal_colors(colors: str | None = TERMINAL_COLORS) -> None:
 class unminimize_plus_foreground_terminal_on_first_output:
     """Unminimize a minimized terminal and set to foreground when output is written for the first time."""
 
-    def __init__(self, stream):
+    def __init__(self, stream: TextIO) -> None:
         self.stream = stream
         self._restored = False
 
-    def _restore_if_needed(self, data: object) -> None:
-        if self._restored or data in ("", b""):
+    def _restore_if_needed(self, data: str) -> None:
+        if self._restored or data == "":
             return
         self._restored = True
         unminimize_and_foreground_terminal()
 
-    def write(self, data):
+    def write(self, data: str) -> int:
         """Write text to the wrapped stream or terminal target."""
         self._restore_if_needed(data)
         return self.stream.write(data)
@@ -719,7 +650,7 @@ class unminimize_plus_foreground_terminal_on_first_output:
             return self.stream.fileno()
         raise OSError("Underlying stream does not support fileno()")
 
-    def __getattr__(self, name: str):
+    def __getattr__(self, name: str) -> Any:
         """Forward unknown attribute lookups to the wrapped stream."""
         return getattr(self.stream, name)
 
