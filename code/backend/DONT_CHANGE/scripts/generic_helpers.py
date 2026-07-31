@@ -2060,10 +2060,118 @@ def save_requirements_of_folder_withVersion(
         return False
 
 
-# ========================
+ # =========================
+# image related
 
-# =========================
-# icon generation
+
+def _run_wpf_powershell(script: str, **extra_env: str) -> str:
+    """Run a WPF image operation without requiring a Python image package."""
+    import os
+    import subprocess
+
+    environment = os.environ.copy()
+    environment.update(extra_env)
+    completed = subprocess.run(  # noqa:S603
+        ["powershell.exe", "-NoProfile", "-NonInteractive", "-STA", "-Command", script],
+        capture_output=True,
+        text=True,
+        check=False,
+        env=environment,
+    )
+    if completed.returncode:
+        raise RuntimeError(completed.stderr.strip() or completed.stdout.strip() or "WPF image operation failed.")
+    return completed.stdout.strip()
+
+
+def get_png_image_id(path: str) -> str:
+    """Return a stable ``widthxheight:crc32`` ID for decoded PNG pixels."""
+    import base64
+    import json
+    import zlib
+    from pathlib import Path
+
+    if not os.path.isfile(path):
+        raise FileNotFoundError(f'PNG does not exist: "{os.path.abspath(path)}"')
+    script = r"""
+Add-Type -AssemblyName PresentationCore
+$bitmap = [System.Windows.Media.Imaging.BitmapImage]::new()
+$bitmap.BeginInit(); $bitmap.UriSource = [Uri]$env:IMAGE_URI
+$bitmap.CacheOption = 'OnLoad'; $bitmap.EndInit()
+$image = [System.Windows.Media.Imaging.FormatConvertedBitmap]::new($bitmap, [System.Windows.Media.PixelFormats]::Bgra32, $null, 0)
+$bytes = [byte[]]::new($image.PixelWidth * $image.PixelHeight * 4)
+$image.CopyPixels($bytes, $image.PixelWidth * 4, 0)
+[pscustomobject]@{ width=$image.PixelWidth; height=$image.PixelHeight; pixels=[Convert]::ToBase64String($bytes) } | ConvertTo-Json -Compress
+"""
+    payload = json.loads(_run_wpf_powershell(script, IMAGE_URI=Path(path).resolve().as_uri()))
+    bgra = base64.b64decode(payload["pixels"])
+    rgba = bytearray(bgra)
+    rgba[0::4], rgba[2::4] = bgra[2::4], bgra[0::4]
+    return f"{payload['width']}x{payload['height']}:{zlib.crc32(rgba) & 0xFFFFFFFF:08x}"
+
+
+def generate_png_with_text(
+    output_path: str,
+    lines: Sequence[str],
+    *,
+    size: int = 512,
+    font_family: str = "Arial",
+    font_size: int = 100,
+    min_font_size: int = 8,
+    bold: bool = True,
+    text_color: tuple[int, int, int, int] = (210, 0, 0, 255),
+    background_color: tuple[int, int, int, int] = (255, 255, 255, 255),
+    padding: int = 20,
+) -> str:
+    """Create a square PNG with centered text using built-in Windows WPF."""
+    import json
+
+    if size <= 0 or min_font_size <= 0 or font_size < min_font_size or padding < 0:
+        raise ValueError("Invalid PNG text dimensions or font sizes.")
+    if not lines or any(not isinstance(line, str) for line in lines):
+        raise ValueError("lines must contain one or more strings.")
+    for color in (text_color, background_color):
+        if len(color) != 4 or any(not 0 <= channel <= 255 for channel in color):
+            raise ValueError("Colors must be RGBA tuples with channels from 0 to 255.")
+
+    output_path = os.path.abspath(output_path)
+    output_folder = os.path.dirname(output_path)
+    if output_folder:
+        os.makedirs(output_folder, exist_ok=True)
+    script = r"""
+Add-Type -AssemblyName PresentationCore
+$settings = $env:PNG_TEXT_SETTINGS | ConvertFrom-Json
+function Brush($rgba) { [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb($rgba[3], $rgba[0], $rgba[1], $rgba[2])) }
+$weight = if ($settings.bold) { [System.Windows.FontWeights]::Bold } else { [System.Windows.FontWeights]::Normal }
+$typeface = [System.Windows.Media.Typeface]::new(
+    $settings.font_family,
+    [System.Windows.FontStyles]::Normal,
+    $weight,
+    [System.Windows.FontStretches]::Normal
+)
+$dpi = 96.0
+for ($fontSize = $settings.font_size; $fontSize -ge $settings.min_font_size; $fontSize -= 2) {
+    $text = @($settings.lines | ForEach-Object { [System.Windows.Media.FormattedText]::new($_, [Globalization.CultureInfo]::InvariantCulture, 'LeftToRight', $typeface, $fontSize, (Brush $settings.text_color), $dpi) })
+    $spacing = [Math]::Max(2, [int]($fontSize / 4))
+    $width = ($text | Measure-Object -Property Width -Maximum).Maximum
+    $height = ($text | Measure-Object -Property Height -Sum).Sum + $spacing * ($text.Count - 1)
+    if ($width -le $settings.size - 2 * $settings.padding -and $height -le $settings.size - 2 * $settings.padding) { break }
+}
+if ($fontSize -lt $settings.min_font_size) { throw 'Text does not fit at the minimum font size.' }
+$visual = [System.Windows.Media.DrawingVisual]::new(); $context = $visual.RenderOpen()
+$context.DrawRectangle((Brush $settings.background_color), $null, [Windows.Rect]::new(0, 0, $settings.size, $settings.size))
+$y = ($settings.size - $height) / 2
+foreach ($line in $text) { $context.DrawText($line, [Windows.Point]::new(($settings.size - $line.Width) / 2, $y)); $y += $line.Height + $spacing }
+$context.Close()
+$bitmap = [System.Windows.Media.Imaging.RenderTargetBitmap]::new($settings.size, $settings.size, $dpi, $dpi, [System.Windows.Media.PixelFormats]::Pbgra32); $bitmap.Render($visual)
+$encoder = [System.Windows.Media.Imaging.PngBitmapEncoder]::new(); $encoder.Frames.Add([System.Windows.Media.Imaging.BitmapFrame]::Create($bitmap))
+$stream = [IO.File]::Open($env:PNG_OUTPUT_PATH, 'Create'); try { $encoder.Save($stream) } finally { $stream.Dispose() }
+"""
+    _run_wpf_powershell(
+        script,
+        PNG_OUTPUT_PATH=output_path,
+        PNG_TEXT_SETTINGS=json.dumps({"lines": list(lines), "size": size, "font_family": font_family, "font_size": font_size, "min_font_size": min_font_size, "bold": bold, "text_color": text_color, "background_color": background_color, "padding": padding}),
+    )
+    return output_path
 
 
 def generate_ico_from_png(
@@ -2075,540 +2183,73 @@ def generate_ico_from_png(
     override: bool = True,
     icon_sizes: Iterable[int] = (256, 128, 64, 48, 32, 16),
 ) -> str:
-    """Create one multi-resolution ``.ico`` file from a base PNG and optional sub-icon.
-
-    ``sub_icon_alignment`` accepts the nine compass-style positions: ``top
-    left``, ``top center``, ``top right``, ``center left``, ``center``,
-    ``center right``, ``bottom left``, ``bottom center``, and ``bottom right``.
-    Word order is flexible (for example, ``left top``), and ``up``/``down``
-    (including the common typo ``donw``) are accepted for ``top``/``bottom``.
-    When ``override`` is false, an existing output file is kept unchanged.
-
-    Returns the absolute output path.
-    """
+    """Create a multi-resolution ICO from a PNG and optional overlay, using Windows WFF."""
     import base64
     import json
-    import os
     import struct
-    import subprocess
-    import zlib
-    from urllib.parse import quote
+    from pathlib import Path
 
-    output_path = os.path.abspath(output_path)
-    base_png_path = os.path.abspath(base_png_path)
+    output_path, base_png_path = os.path.abspath(output_path), os.path.abspath(base_png_path)
     sub_png_path = os.path.abspath(sub_png_path) if sub_png_path else None
+    sizes = tuple(icon_sizes)
     if not os.path.isfile(base_png_path):
         raise FileNotFoundError(f'Base PNG does not exist: "{base_png_path}"')
-    if sub_png_path is not None and not os.path.isfile(sub_png_path):
+    if sub_png_path and not os.path.isfile(sub_png_path):
         raise FileNotFoundError(f'Sub PNG does not exist: "{sub_png_path}"')
     if not 0 < sub_icon_area_scale_factor <= 1:
         raise ValueError("sub_icon_area_scale_factor must be greater than 0 and at most 1.")
-    if not icon_sizes or any(size <= 0 for size in icon_sizes):
-        raise ValueError("icon_sizes must contain one or more positive sizes.")
-
-    def _normalize_sub_icon_alignment(value: str) -> str:
-        normalized = value.lower().replace("_", " ").replace("-", " ")
-        tokens = normalized.split()
-        aliases = {
-            "up": "top",
-            "upper": "top",
-            "north": "top",
-            "down": "bottom",
-            "donw": "bottom",
-            "lower": "bottom",
-            "south": "bottom",
-            "middle": "center",
-            "centre": "center",
-            "west": "left",
-            "east": "right",
-        }
-        tokens = [aliases.get(token, token) for token in tokens]
-        allowed = {"top", "bottom", "left", "right", "center"}
-        if not tokens or any(token not in allowed for token in tokens):
-            raise ValueError(f"Unsupported sub_icon_alignment: {value!r}")
-        horizontal = next((token for token in tokens if token in {"left", "right"}), "center")
-        vertical = next((token for token in tokens if token in {"top", "bottom"}), "center")
-        if tokens.count("center") > 2 or len(set(tokens)) != len(tokens):
-            raise ValueError(f"Unsupported sub_icon_alignment: {value!r}")
-        return f"{vertical} {horizontal}"
-
-    sub_icon_alignment = _normalize_sub_icon_alignment(sub_icon_alignment)
+    if not sizes or any(not 0 < size <= 256 for size in sizes):
+        raise ValueError("icon_sizes must contain sizes from 1 through 256.")
+    aliases = {"up": "top", "down": "bottom", "middle": "center", "centre": "center"}
+    tokens = [aliases.get(token, token) for token in sub_icon_alignment.lower().replace("_", " ").replace("-", " ").split()]
+    if not tokens or any(token not in {"top", "bottom", "left", "right", "center"} for token in tokens):
+        raise ValueError(f"Unsupported sub_icon_alignment: {sub_icon_alignment!r}")
+    vertical = next((token for token in tokens if token in {"top", "bottom"}), "center")
+    horizontal = next((token for token in tokens if token in {"left", "right"}), "center")
+    if os.path.exists(output_path) and not override:
+        return output_path
     output_folder = os.path.dirname(output_path)
     if output_folder:
         os.makedirs(output_folder, exist_ok=True)
-    if os.path.exists(output_path) and not override:
-        return output_path
 
-    _POWERSHELL_SCRIPT = r"""
-    $ErrorActionPreference = 'Stop'
-    Add-Type -AssemblyName PresentationCore
-    Add-Type -AssemblyName WindowsBase
+    script = r"""
+Add-Type -AssemblyName PresentationCore
+function Load($path) {
+  $image = [System.Windows.Media.Imaging.BitmapImage]::new()
+  $image.BeginInit(); $image.UriSource = [Uri]$path; $image.CacheOption = 'OnLoad'; $image.EndInit()
+  return $image
+}
+function Square($image, $iconSize) {
+  $scale = $iconSize / [double][Math]::Max($image.PixelWidth, $image.PixelHeight)
+  $width = [int][Math]::Round($image.PixelWidth * $scale); $height = [int][Math]::Round($image.PixelHeight * $scale)
+  $visual = [System.Windows.Media.DrawingVisual]::new(); $context = $visual.RenderOpen()
+  $context.DrawImage($image, [Windows.Rect]::new(($iconSize-$width)/2, ($iconSize-$height)/2, $width, $height)); $context.Close()
+  $result = [System.Windows.Media.Imaging.RenderTargetBitmap]::new($iconSize, $iconSize, 96, 96, [System.Windows.Media.PixelFormats]::Pbgra32); $result.Render($visual)
+  $encoder = [System.Windows.Media.Imaging.PngBitmapEncoder]::new(); $encoder.Frames.Add([System.Windows.Media.Imaging.BitmapFrame]::Create($result))
+  $stream = [IO.MemoryStream]::new(); try { $encoder.Save($stream); return [Convert]::ToBase64String($stream.ToArray()) } finally { $stream.Dispose() }
+}
+$base = Load $env:ICO_BASE_URI
+if ($env:ICO_OVERLAY_URI) {
+  $overlay = Load $env:ICO_OVERLAY_URI
 
-    function Get-BgraBitmap([string]$uriText) {
-        $bitmap = [System.Windows.Media.Imaging.BitmapImage]::new()
-        $bitmap.BeginInit()
-        $bitmap.UriSource = [System.Uri]::new($uriText)
-        $bitmap.CacheOption = [System.Windows.Media.Imaging.BitmapCacheOption]::OnLoad
-        $bitmap.CreateOptions = [System.Windows.Media.Imaging.BitmapCreateOptions]::PreservePixelFormat
-        $bitmap.EndInit()
+  $scale = [Math]::Sqrt((($base.PixelWidth * $base.PixelHeight) / ($overlay.PixelWidth * $overlay.PixelHeight)) * [double]$env:ICO_OVERLAY_SCALE)
+  $width = [int][Math]::Round($overlay.PixelWidth * $scale); $height = [int][Math]::Round($overlay.PixelHeight * $scale)
+  $x = if ($env:ICO_HORIZONTAL -eq 'left') { 0 } elseif ($env:ICO_HORIZONTAL -eq 'right') { $base.PixelWidth - $width } else { ($base.PixelWidth - $width)/2 }
+  $y = if ($env:ICO_VERTICAL -eq 'top') { 0 } elseif ($env:ICO_VERTICAL -eq 'bottom') { $base.PixelHeight - $height } else { ($base.PixelHeight - $height)/2 }
+  $visual = [System.Windows.Media.DrawingVisual]::new(); $context = $visual.RenderOpen()
+  $context.DrawImage($base, [Windows.Rect]::new(0, 0, $base.PixelWidth, $base.PixelHeight)); $context.DrawImage($overlay, [Windows.Rect]::new($x, $y, $width, $height)); $context.Close()
+  $base = [System.Windows.Media.Imaging.RenderTargetBitmap]::new($base.PixelWidth, $base.PixelHeight, 96, 96, [System.Windows.Media.PixelFormats]::Pbgra32); $base.Render($visual)
+}
+@($env:ICO_SIZES -split ',' | ForEach-Object { [pscustomobject]@{ size=[int]$_; png=(Square $base ([int]$_)) } }) | ConvertTo-Json -Compress
+"""
 
-        return [System.Windows.Media.Imaging.FormatConvertedBitmap]::new(
-            $bitmap,
-            [System.Windows.Media.PixelFormats]::Bgra32,
-            $null,
-            0
-        )
-    }
-
-    function Copy-BgraBytes([System.Windows.Media.Imaging.BitmapSource]$bitmap) {
-        $stride = $bitmap.PixelWidth * 4
-        $bytes = New-Object byte[] ($stride * $bitmap.PixelHeight)
-        $bitmap.CopyPixels($bytes, $stride, 0)
-        return $bytes
-    }
-
-    function Encode-PngBase64([System.Windows.Media.Imaging.BitmapSource]$bitmap) {
-        $encoder = [System.Windows.Media.Imaging.PngBitmapEncoder]::new()
-        $encoder.Frames.Add([System.Windows.Media.Imaging.BitmapFrame]::Create($bitmap))
-        $stream = [System.IO.MemoryStream]::new()
-        try {
-            $encoder.Save($stream)
-            return [Convert]::ToBase64String($stream.ToArray())
-        }
-        finally {
-            $stream.Dispose()
-        }
-    }
-
-    function Render-SquareIcon([System.Windows.Media.Imaging.BitmapSource]$bitmap, [int]$size) {
-        $scale = $size / [double][Math]::Max($bitmap.PixelWidth, $bitmap.PixelHeight)
-        $newWidth = [Math]::Max(1, [int][Math]::Round($bitmap.PixelWidth * $scale))
-        $newHeight = [Math]::Max(1, [int][Math]::Round($bitmap.PixelHeight * $scale))
-        $offsetX = [int](($size - $newWidth) / 2)
-        $offsetY = [int](($size - $newHeight) / 2)
-
-        $visual = [System.Windows.Media.DrawingVisual]::new()
-        [System.Windows.Media.RenderOptions]::SetBitmapScalingMode(
-            $visual,
-            [System.Windows.Media.BitmapScalingMode]::HighQuality
-        )
-
-        $context = $visual.RenderOpen()
-        $context.DrawImage(
-            $bitmap,
-            [System.Windows.Rect]::new($offsetX, $offsetY, $newWidth, $newHeight)
-        )
-        $context.Close()
-
-        $rendered = [System.Windows.Media.Imaging.RenderTargetBitmap]::new(
-            $size,
-            $size,
-            96,
-            96,
-            [System.Windows.Media.PixelFormats]::Pbgra32
-        )
-        $rendered.Render($visual)
-
-        return [System.Windows.Media.Imaging.FormatConvertedBitmap]::new(
-            $rendered,
-            [System.Windows.Media.PixelFormats]::Bgra32,
-            $null,
-            0
-        )
-    }
-
-    function Compose-Overlay(
-        [System.Windows.Media.Imaging.BitmapSource]$baseBitmap,
-        [System.Windows.Media.Imaging.BitmapSource]$overlayBitmap,
-        [double]$overlayScaleFactor,
-        [string]$alignment
-    ) {
-        # Make the sub-icon occupy the requested fraction of the base icon's area.
-        # Scaling each dimension requires the square root of that area ratio.
-        $baseArea = [double]$baseBitmap.PixelWidth * $baseBitmap.PixelHeight
-        $overlayArea = [double]$overlayBitmap.PixelWidth * $overlayBitmap.PixelHeight
-        $scale = [Math]::Sqrt(($baseArea / $overlayArea) * $overlayScaleFactor)
-        $overlayWidth = [Math]::Max(1, [int][Math]::Round($overlayBitmap.PixelWidth * $scale))
-        $overlayHeight = [Math]::Max(1, [int][Math]::Round($overlayBitmap.PixelHeight * $scale))
-        $position = $alignment -split ' '
-        $vertical = $position[0]
-        $horizontal = $position[1]
-        $posX = switch ($horizontal) {
-            'left' { 0 }
-            'right' { $baseBitmap.PixelWidth - $overlayWidth }
-            default { [int](($baseBitmap.PixelWidth - $overlayWidth) / 2) }
-        }
-        $posY = switch ($vertical) {
-            'top' { 0 }
-            'bottom' { $baseBitmap.PixelHeight - $overlayHeight }
-            default { [int](($baseBitmap.PixelHeight - $overlayHeight) / 2) }
-        }
-
-        $visual = [System.Windows.Media.DrawingVisual]::new()
-        [System.Windows.Media.RenderOptions]::SetBitmapScalingMode(
-            $visual,
-            [System.Windows.Media.BitmapScalingMode]::HighQuality
-        )
-
-        $context = $visual.RenderOpen()
-        $context.DrawImage(
-            $baseBitmap,
-            [System.Windows.Rect]::new(0, 0, $baseBitmap.PixelWidth, $baseBitmap.PixelHeight)
-        )
-        $context.DrawImage(
-            $overlayBitmap,
-            [System.Windows.Rect]::new($posX, $posY, $overlayWidth, $overlayHeight)
-        )
-        $context.Close()
-
-        $rendered = [System.Windows.Media.Imaging.RenderTargetBitmap]::new(
-            $baseBitmap.PixelWidth,
-            $baseBitmap.PixelHeight,
-            96,
-            96,
-            [System.Windows.Media.PixelFormats]::Pbgra32
-        )
-        $rendered.Render($visual)
-
-        return [System.Windows.Media.Imaging.FormatConvertedBitmap]::new(
-            $rendered,
-            [System.Windows.Media.PixelFormats]::Bgra32,
-            $null,
-            0
-        )
-    }
-
-    $operation = $env:ICON_OPERATION
-    switch ($operation) {
-        'image-id' {
-            $bitmap = Get-BgraBitmap $env:ICON_BASE_URI
-            [pscustomobject]@{
-                width = $bitmap.PixelWidth
-                height = $bitmap.PixelHeight
-                bgra_base64 = [Convert]::ToBase64String((Copy-BgraBytes $bitmap))
-            } | ConvertTo-Json -Compress
-            break
-        }
-        'image-ids' {
-            $requests = $env:ICON_IMAGE_ID_REQUESTS | ConvertFrom-Json
-            $entries = foreach ($request in $requests) {
-                $bitmap = Get-BgraBitmap $request.uri
-                [pscustomobject]@{
-                    path = $request.path
-                    width = $bitmap.PixelWidth
-                    height = $bitmap.PixelHeight
-                    bgra_base64 = [Convert]::ToBase64String((Copy-BgraBytes $bitmap))
-                }
-            }
-
-            @($entries) | ConvertTo-Json -Compress
-            break
-        }    'render-icon' {
-            $bitmap = Get-BgraBitmap $env:ICON_BASE_URI
-            if ($env:ICON_OVERLAY_URI) {
-                $overlayBitmap = Get-BgraBitmap $env:ICON_OVERLAY_URI
-                $bitmap = Compose-Overlay $bitmap $overlayBitmap ([double]$env:ICON_SUB_ICON_AREA_SCALE_FACTOR) $env:ICON_SUB_ICON_ALIGNMENT
-            }
-
-            $sizes = $env:ICON_SIZES -split ',' | ForEach-Object { [int]$_ }
-            $entries = foreach ($size in $sizes) {
-                $iconBitmap = Render-SquareIcon $bitmap $size
-                [pscustomobject]@{
-                    size = $size
-                    png_base64 = Encode-PngBase64 $iconBitmap
-                }
-            }
-
-            @($entries) | ConvertTo-Json -Compress
-            break
-        }
-        'render-icons' {
-            $jobs = $env:ICON_RENDER_JOBS | ConvertFrom-Json
-            $sizes = $env:ICON_SIZES -split ',' | ForEach-Object { [int]$_ }
-            $results = foreach ($job in $jobs) {
-                $bitmap = Get-BgraBitmap $job.base_uri
-                if ($job.overlay_uri) {
-                    $overlayBitmap = Get-BgraBitmap $job.overlay_uri
-                    $bitmap = Compose-Overlay $bitmap $overlayBitmap ([double]$job.sub_icon_area_scale_factor) $job.sub_icon_alignment
-                }
-
-                $entries = foreach ($size in $sizes) {
-                    $iconBitmap = Render-SquareIcon $bitmap $size
-                    [pscustomobject]@{
-                        size = $size
-                        png_base64 = Encode-PngBase64 $iconBitmap
-                    }
-                }
-
-                [pscustomobject]@{
-                    name = $job.name
-                    entries = @($entries)
-                }
-            }
-
-            @($results) | ConvertTo-Json -Compress -Depth 4
-            break
-        }    default {
-            throw "Unsupported ICON_OPERATION: $operation"
-        }
-    }
-    """
-
-    def _run_powershell(**extra_env: str) -> str:
-        env = os.environ.copy()
-        env.update(extra_env)
-
-        try:
-            completed = subprocess.run(  # noqa:S603
-                [
-                    "powershell.exe",
-                    "-NoProfile",
-                    "-NonInteractive",
-                    "-STA",
-                    "-Command",
-                    _POWERSHELL_SCRIPT,
-                ],
-                capture_output=True,
-                text=True,
-                check=False,
-                env=env,
-            )
-        except FileNotFoundError as exc:
-            raise RuntimeError("powershell.exe was not found. This script requires Windows PowerShell.") from exc
-
-        if completed.returncode != 0:
-            stderr = completed.stderr.strip() or completed.stdout.strip() or "Unknown PowerShell error."
-            raise RuntimeError(stderr)
-
-        return completed.stdout.strip()
-
-    def _path_to_uri(path: str) -> str:
-        absolute_path = os.path.abspath(path)
-        uri_path = quote(absolute_path.replace("\\", "/"), safe="/:")
-        if absolute_path.startswith("\\\\"):
-            return f"file:{uri_path}"
-        return f"file:///{uri_path}"
-
-    def _bgra_to_rgba(bgra_bytes: bytes) -> bytes:
-        rgba = bytearray(len(bgra_bytes))
-        rgba[0::4] = bgra_bytes[2::4]
-        rgba[1::4] = bgra_bytes[1::4]
-        rgba[2::4] = bgra_bytes[0::4]
-        rgba[3::4] = bgra_bytes[3::4]
-        return bytes(rgba)
-
-    def _load_image_data(path: str) -> tuple[int, int, bytes]:
-        payload = json.loads(
-            _run_powershell(
-                ICON_OPERATION="image-id",
-                ICON_BASE_URI=_path_to_uri(path),
-            )
-        )
-
-        return (
-            int(payload["width"]),
-            int(payload["height"]),
-            base64.b64decode(payload["bgra_base64"]),
-        )
-
-    def _load_image_data_batch(paths: list[str]) -> dict[str, tuple[int, int, bytes]]:
-        """Load decoded pixels for multiple images in one PowerShell/WPF process."""
-        if not paths:
-            return {}
-
-        requests = [{"path": path, "uri": _path_to_uri(path)} for path in paths]
-        payload = json.loads(
-            _run_powershell(
-                ICON_OPERATION="image-ids",
-                ICON_IMAGE_ID_REQUESTS=json.dumps(requests),
-            )
-        )
-        if isinstance(payload, dict):
-            payload = [payload]
-
-        return {
-            entry["path"]: (
-                int(entry["width"]),
-                int(entry["height"]),
-                base64.b64decode(entry["bgra_base64"]),
-            )
-            for entry in payload
-        }
-
-    def _image_ids(paths: list[str]) -> dict[str, str]:
-        """Return stable image identifiers for multiple paths in one process."""
-        image_data = _load_image_data_batch(paths)
-        return {
-            path: f"{width}x{height}:{zlib.crc32(_bgra_to_rgba(bgra_bytes)) & 0xFFFFFFFF:08x}"
-            for path, (width, height, bgra_bytes) in image_data.items()
-        }
-
-    def _render_png_layers(
-        base_path: str,
-        icon_sizes: Iterable[int],
-        overlay_path: str | None = None,
-        sub_icon_area_scale_factor: float = 0.35,
-        sub_icon_alignment: str = "bottom right",
-    ) -> list[tuple[int, bytes]]:
-        raw_payload = _run_powershell(
-            ICON_OPERATION="render-icon",
-            ICON_BASE_URI=_path_to_uri(base_path),
-            ICON_OVERLAY_URI=_path_to_uri(overlay_path) if overlay_path else "",
-            ICON_SUB_ICON_AREA_SCALE_FACTOR=str(sub_icon_area_scale_factor),
-            ICON_SUB_ICON_ALIGNMENT=sub_icon_alignment,
-            ICON_SIZES=",".join(str(size) for size in icon_sizes),
-        )
-
-        payload = json.loads(raw_payload)
-        if isinstance(payload, dict):
-            payload = [payload]
-
-        return [(int(entry["size"]), base64.b64decode(entry["png_base64"])) for entry in payload]
-
-    def _render_png_layers_batch(
-        jobs: list[tuple[str, str, str | None, float]],
-        icon_sizes: tuple[int, ...],
-    ) -> dict[str, list[tuple[int, bytes]]]:
-        """Render multiple icons in one PowerShell/WPF process."""
-        if not jobs:
-            return {}
-
-        requests = [
-            {
-                "name": name,
-                "base_uri": _path_to_uri(base_path),
-                "overlay_uri": _path_to_uri(overlay_path) if overlay_path else "",
-                "overlay_scale_factor": overlay_scale_factor,
-            }
-            for name, base_path, overlay_path, overlay_scale_factor in jobs
-        ]
-        payload = json.loads(
-            _run_powershell(
-                ICON_OPERATION="render-icons",
-                ICON_RENDER_JOBS=json.dumps(requests),
-                ICON_SIZES=",".join(str(size) for size in icon_sizes),
-            )
-        )
-        if isinstance(payload, dict):
-            payload = [payload]
-
-        return {
-            result["name"]: [(int(entry["size"]), base64.b64decode(entry["png_base64"])) for entry in result["entries"]]
-            for result in payload
-        }
-
-    def _build_ico(layers: list[tuple[int, bytes]]) -> bytes:
-        icon_dir = struct.pack("<HHH", 0, 1, len(layers))
-        directory_entries = []
-        image_data = bytearray()
-        offset = 6 + (16 * len(layers))
-
-        for size, png_bytes in layers:
-            directory_entries.append(
-                struct.pack(
-                    "<BBBBHHII",
-                    0 if size >= 256 else size,
-                    0 if size >= 256 else size,
-                    0,
-                    0,
-                    1,
-                    32,
-                    len(png_bytes),
-                    offset,
-                )
-            )
-            image_data.extend(png_bytes)
-            offset += len(png_bytes)
-
-        return icon_dir + b"".join(directory_entries) + bytes(image_data)
-
-    def create_icon(
-        image_path,
-        output_path,
-        icon_sizes=(256, 128, 64, 48, 32, 16),
-        background_color=(0, 0, 0, 0),  # transparent
-    ):
-        """
-        Convert an image into a multi-resolution .ico file with padding
-        to preserve aspect ratio (no distortion).
-
-        background_color=(0, 0, 0, 0) means transparent background.
-        The parameter is kept for API compatibility with generate_icons.py.
-        """
-
-        _ = background_color
-        layers = _render_png_layers(image_path, tuple(icon_sizes))
-        with open(output_path, "wb") as output_file:
-            output_file.write(_build_ico(layers))
-
-    def create_composite_icon(
-        base_path,
-        overlay_path,
-        output_path,
-        overlay_scale_factor=0.35,
-        icon_sizes=(256, 128, 64, 48, 32, 16),
-        background_color=(0, 0, 0, 0),  # transparent padding
-    ):
-        """
-        Create a composite icon:
-        - Place overlay on the bottom-right of base.
-        - Preserve aspect ratio.
-        - Pad to square for each icon size (no distortion).
-
-        background_color=(0, 0, 0, 0) means transparent background.
-        The parameter is kept for API compatibility with generate_icons.py.
-        """
-
-        _ = background_color
-        layers = _render_png_layers(
-            base_path,
-            tuple(icon_sizes),
-            overlay_path=overlay_path,
-            sub_icon_area_scale_factor=overlay_scale_factor,
-        )
-        with open(output_path, "wb") as output_file:
-            output_file.write(_build_ico(layers))
-
-    def image_id(path: str) -> str:
-        """Return a stable image identifier from dimensions and pixels."""
-        width, height, bgra_bytes = _load_image_data(path)
-        rgba_bytes = _bgra_to_rgba(bgra_bytes)
-        crc = zlib.crc32(rgba_bytes) & 0xFFFFFFFF
-        return f"{width}x{height}:{crc:08x}"
-
-    def _pick_icon_path(
-        user_path: str,
-        fallback_path: str,
-        fallback_image_id: str,
-        label: str,
-        user_image_id: str | None = None,
-    ) -> str:
-        """Choose the user icon path when available, otherwise the fallback path."""
-        if os.path.exists(user_path):
-            if (user_image_id if user_image_id is not None else image_id(user_path)) == fallback_image_id:
-                print(f"Using fallback {label} icon.")
-                return fallback_path
-            return user_path
-
-        print(f"Using fallback {label} icon because {os.path.basename(user_path)} is missing.")
-        return fallback_path
-
-    def _pause_before_exit() -> None:
-        """Pause before exit so console users can read the result."""
-        if not sys.stdin.isatty() or not sys.stdout.isatty():
-            return
-
-        print()
-        input("Press enter to exit.")
-        close_terminal()
-
-    layers = _render_png_layers(
-        base_png_path,
-        icon_sizes,
-        overlay_path=sub_png_path,
-        sub_icon_area_scale_factor=sub_icon_area_scale_factor,
-        sub_icon_alignment=sub_icon_alignment,
-    )
-    with open(output_path, "wb") as output_file:
-        output_file.write(_build_ico(layers))
+    payload = json.loads(_run_wpf_powershell(script, ICO_BASE_URI=Path(base_png_path).resolve().as_uri(), ICO_OVERLAY_URI=Path(sub_png_path).resolve().as_uri() if sub_png_path else "", ICO_OVERLAY_SCALE=str(sub_icon_area_scale_factor), ICO_VERTICAL=vertical, ICO_HORIZONTAL=horizontal, ICO_SIZES=",".join(map(str, sizes))))
+    if isinstance(payload, dict): payload = [payload]
+    layers = [(int(entry["size"]), base64.b64decode(entry["png"])) for entry in payload]
+    offset = 6 + 16 * len(layers)
+    entries, data = [], bytearray()
+    for size, png in layers:
+        entries.append(struct.pack("<BBBBHHII", 0 if size == 256 else size, 0 if size == 256 else size, 0, 0, 1, 32, len(png), offset))
+        data.extend(png); offset += len(png)
+    with open(output_path, "wb") as file: file.write(struct.pack("<HHH", 0, 1, len(layers)) + b"".join(entries) + data)
     return output_path
