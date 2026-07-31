@@ -38,13 +38,13 @@ try:
     )
     from backend.DONT_CHANGE.scripts.common_code import (
         close_terminal,
+        enable_unminimize_and_foreground_terminal_on_first_print,
         ensure_frontend_packages,
         input_warn,
         make_empty_args_safe,
         print_traceback,
         print_warn,
         set_terminal_colors,
-        set_unminimize_and_foreground_on_first_print,
     )
     from backend.DONT_CHANGE.settings.backend_settings import (
         BACKEND_PYTHON_EXE,
@@ -77,7 +77,7 @@ try:
     def main() -> None:
         set_terminal_colors()
 
-        set_unminimize_and_foreground_on_first_print()
+        enable_unminimize_and_foreground_terminal_on_first_print()
 
         # ==============================
         # get and process args

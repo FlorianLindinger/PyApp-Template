@@ -89,24 +89,24 @@ def generate_shortcut(
     _unused_method = ctypes.c_void_p
 
     class _Guid(ctypes.Structure):
-        _fields_ = [
+        _fields_ = (
             ("Data1", wintypes.DWORD),
             ("Data2", wintypes.WORD),
             ("Data3", wintypes.WORD),
             ("Data4", wintypes.BYTE * 8),
-        ]
+        )
 
     class _PropertyKey(ctypes.Structure):
-        _fields_ = [("fmtid", _Guid), ("pid", wintypes.DWORD)]
+        _fields_ = (("fmtid", _Guid), ("pid", wintypes.DWORD))
 
     class _PropVariant(ctypes.Structure):
-        _fields_ = [
+        _fields_ = (
             ("vt", ctypes.c_ushort),
             ("reserved1", ctypes.c_ushort),
             ("reserved2", ctypes.c_ushort),
             ("reserved3", ctypes.c_ushort),
             ("string_value", ctypes.c_wchar_p),
-        ]
+        )
 
     class _ShellLink(ctypes.Structure):
         pass
@@ -114,7 +114,7 @@ def generate_shortcut(
     _shell_link_pointer = ctypes.POINTER(_ShellLink)
 
     class _ShellLinkVTable(ctypes.Structure):
-        _fields_ = [
+        _fields_ = (
             (
                 "QueryInterface",
                 _method(_hresult, _shell_link_pointer, ctypes.POINTER(_Guid), ctypes.POINTER(ctypes.c_void_p)),
@@ -139,7 +139,7 @@ def generate_shortcut(
             ("SetRelativePath", _unused_method),
             ("Resolve", _unused_method),
             ("SetPath", _method(_hresult, _shell_link_pointer, ctypes.c_wchar_p)),
-        ]
+        )
 
     _ShellLink._fields_ = [("vtable", ctypes.POINTER(_ShellLinkVTable))]
 
@@ -149,7 +149,7 @@ def generate_shortcut(
     _persist_file_pointer = ctypes.POINTER(_PersistFile)
 
     class _PersistFileVTable(ctypes.Structure):
-        _fields_ = [
+        _fields_ = (
             (
                 "QueryInterface",
                 _method(_hresult, _persist_file_pointer, ctypes.POINTER(_Guid), ctypes.POINTER(ctypes.c_void_p)),
@@ -162,7 +162,7 @@ def generate_shortcut(
             ("Save", _method(_hresult, _persist_file_pointer, ctypes.c_wchar_p, wintypes.BOOL)),
             ("SaveCompleted", _unused_method),
             ("GetCurFile", _unused_method),
-        ]
+        )
 
     _PersistFile._fields_ = [("vtable", ctypes.POINTER(_PersistFileVTable))]
 
@@ -172,7 +172,7 @@ def generate_shortcut(
     _property_store_pointer = ctypes.POINTER(_PropertyStore)
 
     class _PropertyStoreVTable(ctypes.Structure):
-        _fields_ = [
+        _fields_ = (
             (
                 "QueryInterface",
                 _method(_hresult, _property_store_pointer, ctypes.POINTER(_Guid), ctypes.POINTER(ctypes.c_void_p)),
@@ -192,7 +192,7 @@ def generate_shortcut(
                 ),
             ),
             ("Commit", _method(_hresult, _property_store_pointer)),
-        ]
+        )
 
     _PropertyStore._fields_ = [("vtable", ctypes.POINTER(_PropertyStoreVTable))]
 
