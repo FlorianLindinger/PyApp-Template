@@ -1,86 +1,84 @@
-"""WIP"""
+"""{Template for python scripts that are run by the backend python exe.}"""
 
-# ==============================
+# =========================
 # settings
 
-fail_message: str = "[Error] Failed WIP: {e}"  # {e} will be formatted to exception
+fail_message: str = "[Error] Failed to run {script_name}: {error}"  # "{error}" will be replaced with the error, "{script_name}" with script name
 close_terminal_on_finish: bool = True
-# path to pyproject.json folder:
-import os
+rel_path_to_root_dir: str = "\\..\\..\\.."  # path to pyproject.json containing folder
 
-root_dir: str = os.path.dirname(__file__) + "\\..\\..\\.."
-
-# ==============================
+# =========================
 
 try:
-    # ==============================
+    # =========================
     # import Python packages
-    # ==============================
 
+    import os
     import sys
 
-    # ==============================
+    # =========================
     # import third-party packages
-    # ==============================
 
-    # ==============================
-    # imports from files
-    # ==============================
+    # =========================
+    # import from files
 
     # add root dir to resolve file imports for debug cases where this script is called on its own:
-    if root_dir not in sys.path:
-        sys.path.insert(0, root_dir)
+    ROOT_DIR = os.path.normpath(os.path.dirname(__file__) + rel_path_to_root_dir)
+    if ROOT_DIR not in sys.path:
+        sys.path.insert(0, ROOT_DIR)
 
     from backend.DONT_CHANGE.scripts.common_code import (
-        close_terminal,
-        input_warn,
         print_traceback,
     )
+    from backend.DONT_CHANGE.scripts.generic_helpers import close_terminal, get_script_name, input_warn
 
-    # ==============================
-    # define local variables
-    # ==============================
+    # =========================
+    # local variables
+    # =========================
 
-    # ==============================
-    # define local functions/classes
-    # ==============================
+    # =========================
+    # local functions/classes
+    # =========================
 
-    # ==============================
-    # define main function
-    # ==============================
+    # =========================
+    # main function
+    # =========================
 
     def main() -> None:
-        # ==============================
-        # code block description
+        # =========================
+        # {code block description}
 
         ...
 
-    # ==============================
+    # =========================
     # execute main function
-    # ==============================
+    # =========================
 
     if __name__ == "__main__":
         try:
             main()
-        except Exception as e:
-            print_traceback(fail_message.format(e=e))
-            input_warn("[Error] Press enter to exit")
+        except Exception as error:
+            print_traceback(fail_message.format(error=error, script_name=get_script_name()))
+            if sys.stdin.isatty() and sys.stdout.isatty():  # check if interactive terminal
+                input_warn("[Error] Press enter to exit")
         if close_terminal_on_finish:
             close_terminal()
 
-    # ==============================
+    # =========================
 
-except Exception as e:
+except Exception as error:
     import os
+    import sys
     import traceback
 
     print()
     print()
     print("=" * 30)
-    print(fail_message.format(e=e))
+    print(fail_message.format(error=error, script_name=__file__.replace("\\", "/").rsplit("/", 1)[-1]))
     print("-" * 30)
     print(traceback.format_exc())
     print("=" * 30)
-    input("[Error] Press enter to exit")
+    if sys.stdin.isatty() and sys.stdout.isatty():  # check if interactive terminal
+        input("[Error] Press enter to exit")
     if close_terminal_on_finish:
         os._exit(1)  # instead of sys.exit(1) to prevent exception by script calling this script -> closing terminal
