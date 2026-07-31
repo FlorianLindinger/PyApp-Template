@@ -31,10 +31,12 @@ from backend.developer_settings import (
     windows_terminal_shortcut_name,
 )
 from backend.DONT_CHANGE.scripts.common_code import (
-    close_terminal,
     ensure_frontend_packages,
-    make_abs_path_relative_to_file,
     print_traceback,
+)
+from backend.DONT_CHANGE.scripts.generic_helpers import (
+    close_terminal,
+    make_abs_path_relative_to_file,
     sanitize_filename,
 )
 from backend.DONT_CHANGE.settings.backend_settings import (
