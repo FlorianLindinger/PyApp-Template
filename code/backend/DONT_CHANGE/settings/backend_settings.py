@@ -115,26 +115,53 @@ FAILURE_ICON_PATH = ICON_DIR + "\\failure.ico"
 CRASH_ICON_PATH = ICON_DIR + "\\crash.ico"
 CRASH_LOG_ICON_PATH = ICON_DIR + "\\crash_log.ico"
 OPEN_MAIN_PY_ICON_PATH = ICON_DIR + "\\open_main_py.ico"
-keyboardInterrupt_ICON_PATH = ICON_DIR + "\\keyboardInterrupt.ico"
+KEYBOARD_INTERRUPT_ICON_PATH = ICON_DIR + "\\keyboardInterrupt.ico"
 
 ICON_PNG_DIR = ICON_DIR
 ICON_FALLBACK_PNG_DIR = DONT_CHANGE_DIR + "\\icon_related"
 ICON_DELETE_TIMEOUT_SECONDS = 2.0
 ICON_DELETE_RETRY_DELAY_SECONDS = 0.05
-_base = ["icon.png", "512x512:697b74ef", "fallback_icon.png"]
-_style = [0.35, "bottom right"]
-ICON_GENERATION_SETTINGS = [  # output.ico, base.png,base_png_id,base_fallback.png,sub_icon_png,sub_icon_png_id,sub_icon_fallback.png,scale,alignment
-    [ ICON_PATH,*_base,None,None,None,None,None],
-    [ SETTINGS_ICON_PATH,*_base,"settings.png","512x512:68617905","default_settings.png",*_style],
-    [ STOP_ICON_PATH,*_base,"stop.png","512x512:18389952","default_stop.png",*_style],
-    [ LOG_ICON_PATH,*_base,"log.png","512x512:3d23c1a5","default_log.png",*_style],
-    [ SUCCESS_ICON_PATH,*_base,"success.png","512x512:87ba9782","default_success.png",*_style],
-    [ FAILURE_ICON_PATH,*_base,"failure.png","512x512:1a35061c","default_failure.png",*_style],
-    [ CRASH_ICON_PATH,*_base,"crash.png","512x512:1e0682c4","default_crash.png",*_style],
-    [ CRASH_LOG_ICON_PATH,*_base,"crash_log.png","512x512:f6bdeb4b","default_crash_log.png",*_style],
-    [ OPEN_MAIN_PY_ICON_PATH,*_base,"open_main_py.png","512x512:79acf3f8","default_open_main_py.png",*_style],
-    [ keyboardInterrupt_ICON_PATH,*_base,"keyboardInterrupt.png","WIP","default_keyboardInterrupt.png",*_style],
-]  # fmt: skip
+_base = ("icon.png", "512x512:34babea5", "default_icon.png")
+# fmt:off
+ICON_GENERATION_SETTINGS = [
+    # output ICO, base PNG, base PNG ID, fallback base PNG, overlay PNG, overlay PNG ID, fallback overlay PNG
+    (ICON_PATH, *_base, None, None, None),
+    (SETTINGS_ICON_PATH, *_base, "settings.png", "512x512:19c7e6d8", "default_settings.png"),
+    (STOP_ICON_PATH, *_base, "stop.png", "512x512:0f35bd9e", "default_stop.png"),
+    (LOG_ICON_PATH, *_base, "log.png", "512x512:66c0a178", "default_log.png"),
+    (SUCCESS_ICON_PATH, *_base, "success.png", "512x512:c33e7909", "default_success.png"),
+    (FAILURE_ICON_PATH, *_base, "failure.png", "512x512:93eddb87", "default_failure.png"),
+    (CRASH_ICON_PATH, *_base, "crash.png", " 512x512:d2dd80f5", "default_crash.png"),
+    (CRASH_LOG_ICON_PATH, *_base, "crash_log.png", "512x512:99dee2ae", "default_crash_log.png"),
+    (OPEN_MAIN_PY_ICON_PATH, *_base, "open_main_py.png", "512x512:3bd1b4b4", "default_open_main_py.png"),
+    (KEYBOARD_INTERRUPT_ICON_PATH,*_base,"keyboardInterrupt.png","512x512:0c4eac7f","default_keyboardInterrupt.png"),
+]
+# fmt:on
+
+# PNG placeholders created by icon_related/generate_PNGs_to_be_replaced.py
+PNG_GENERATION_OUTPUT_DIR = ICON_FALLBACK_PNG_DIR + "\\created_PNGS_to_be_replaced"
+PNG_GENERATION_SIZE = 512
+PNG_GENERATION_FONT_FAMILY = "Arial"
+PNG_GENERATION_FONT_SIZE = 180
+PNG_GENERATION_MIN_FONT_SIZE = 20
+PNG_GENERATION_BOLD = True
+PNG_GENERATION_PADDING = 12
+PNG_GENERATION_TEXT_COLOR = (210, 0, 0, 255)
+PNG_GENERATION_BACKGROUND_COLOR = (255, 255, 255, 255)
+# fmt:off
+PNG_GENERATION_ITEMS = {
+    "icon.png": ["Replace to change", "base icon.", "Run", '"regenerate icons"', "afterwards"],
+    "settings.png": ["Replace to change", "settings sub-icon.", "Run", '"regenerate icons"', "afterwards"],
+    "stop.png": ["Replace to change", "stop sub-icon.", "Run", '"regenerate icons"', "afterwards"],
+    "log.png": ["Replace to change", "log sub-icon.", "Run", '"regenerate icons"', "afterwards"],
+    "success.png": ["Replace to change", "success sub-icon.", "Run", '"regenerate icons"', "afterwards"],
+    "failure.png": ["Replace to change", "failure sub-icon.", "Run", '"regenerate icons"', "afterwards"],
+    "crash.png": ["Replace to change", "crash sub-icon.", "Run", '"regenerate icons"', "afterwards"],
+    "crash_log.png": ["Replace to change", "crash-log sub-icon.", "Run", '"regenerate icons"', "afterwards"],
+    "open_main_py.png": ["Replace to change", "open-main.py", "sub-icon. Run", '"regenerate icons"', "afterwards"],
+    "keyboardInterrupt.png": ["Replace to change","keyboard-interrupt","sub-icon. Run",'"regenerate icons"',"afterwards"],
+}
+# fmt:on
 
 # untracked tmp files files
 # ------------------------
