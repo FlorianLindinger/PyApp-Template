@@ -1,13 +1,27 @@
 =======================================
-==== HOW TO GENERATE ICONS =========
+==== HOW TO CHANGE ICONS ===============
 =======================================
 
-TLDR:
-Replace icon.png in code/icons/ with the image you want and run:
+TL;DR
+-----
 
-    code/icons/regenerate icons.lnk
+1. Replace code/backend/icons/icon.png with the base image you want.
+2. Optionally replace any overlay PNG in the same folder.
+3. Run code/backend/icons/regenerate icons.lnk.
 
-You can also replace these overlay PNGs in code/icons/ if you want custom sub-icons:
+The generator creates multi-resolution .ico files in code/backend/icons/.
+Do not rename the input PNG files.
+
+
+=======================================
+==== INPUT PNG FILES ===================
+=======================================
+
+Base image:
+
+    icon.png
+
+Optional overlay images:
 
     settings.png
     stop.png
@@ -17,109 +31,82 @@ You can also replace these overlay PNGs in code/icons/ if you want custom sub-ic
     crash.png
     crash_log.png
     open_main_py.png
+    keyboardInterrupt.png
 
-The icon generator creates these .ico files in code/icons/:
+Each overlay is placed on top of icon.png to create a matching .ico file.
+For example, settings.png produces settings.ico.
+
+If an input image is absent, or has not been changed from the template image,
+the generator uses the matching bundled fallback from:
+
+    code/backend/DONT_CHANGE/icon_related/
+
+The bundled fallback files are named default_icon.png,
+default_settings.png, default_stop.png, and so on (including
+default_open_main_py.png and default_keyboardInterrupt.png).
+
+
+=======================================
+==== OVERLAY SETTINGS ==================
+=======================================
+
+Configure each overlay independently in:
+
+    code/backend/developer_settings.py
+
+Every overlay has two settings, for example:
+
+    settings_sub_icon_scale: float | None = 0.35
+    settings_sub_icon_alignment: str | None = "bottom right"
+
+Scale is the fraction of the base icon area covered by the overlay. It must be
+greater than 0 and at most 1. Alignment accepts compass-style positions such
+as "bottom right", "top", "center", or "center left".
+
+Set either setting in a pair to None to generate that .ico without its overlay.
+
+
+=======================================
+==== GENERATION ========================
+=======================================
+
+Run:
+
+    code/backend/icons/regenerate icons.lnk
+
+This launches generate_icons.py with the bundled backend Python. It creates:
 
     icon.ico
-        Icon version of icon.png.
-
     settings.ico
-        Icon version of icon.png with settings.png overlaid in the bottom-right corner.
-
     stop.ico
-        Icon version of icon.png with stop.png overlaid in the bottom-right corner.
-
     log.ico
-        Icon version of icon.png with log.png overlaid in the bottom-right corner.
-
     success.ico
-        Icon version of icon.png with success.png overlaid in the bottom-right corner.
-
     failure.ico
-        Icon version of icon.png with failure.png overlaid in the bottom-right corner.
-
     crash.ico
-        Icon version of icon.png with crash.png overlaid in the bottom-right corner.
-
     crash_log.ico
-        Icon version of icon.png with crash_log.png overlaid in the bottom-right corner.
-
     open_main_py.ico
-        Icon version of icon.png with open_main_py.png overlaid in the bottom-right corner.
+    keyboardInterrupt.ico
 
-The shortcut generator uses those .ico files for the generated program shortcuts.
+Each ICO contains 256, 128, 64, 48, 32, and 16 pixel versions for good
+appearance in Windows shortcuts, Explorer, and the taskbar.
 
-=======================================
-==== INPUT FILES ======================
-=======================================
+The generator uses built-in Windows PowerShell/WPF and does not require Pillow.
+It caches repeated image checks and generates several independent icons at once
+to reduce regeneration time.
 
-User-editable input images:
-
-    code/icons/icon.png
-    code/icons/settings.png
-    code/icons/stop.png
-    code/icons/log.png
-    code/icons/success.png
-    code/icons/failure.png
-    code/icons/crash.png
-    code/icons/crash_log.png
-    code/icons/open_main_py.png
-
-Keep the file names unchanged.
-
-If an input PNG is missing, the generator uses the matching fallback image from:
-
-    code/DONT_CHANGE/icon_related/default_icon.png
-    code/DONT_CHANGE/icon_related/default_settings.png
-    code/DONT_CHANGE/icon_related/default_stop.png
-    code/DONT_CHANGE/icon_related/default_log.png
-    code/DONT_CHANGE/icon_related/default_success.png
-    code/DONT_CHANGE/icon_related/default_failure.png
-    code/DONT_CHANGE/icon_related/default_crash.png
-    code/DONT_CHANGE/icon_related/default_crash_log.png
-
-The open_main_py overlay is configured too. Add default_open_main_py.png in this folder before generating open_main_py.ico.
-
-If a user image is still exactly the template fallback image, the generator also treats it as fallback.
 
 =======================================
-==== GENERATION =======================
+==== PLACEHOLDER PNGS ==================
 =======================================
 
-Run this shortcut:
+To create readable placeholder PNGs with instructions, run:
 
-    code/icons/regenerate icons.lnk
+    code/backend/DONT_CHANGE/icon_related/generate_PNGs_to_be_replaced.py
 
-It launches:
+The files are written to:
 
-    code/DONT_CHANGE/backend_python/python.exe code/DONT_CHANGE/icon_related/generate_icons.py
+    code/backend/DONT_CHANGE/icon_related/created_PNGS_to_be_replaced/
 
-The generator uses Windows PowerShell/WPF to create multi-resolution .ico files with
-these sizes:
-
-    256, 128, 64, 48, 32, 16
-
-It checks all existing user PNGs in one PowerShell process and renders all available
-icons in a second process, avoiding the repeated PowerShell startup cost of rendering
-each icon separately.
-
-Sub-icon size is configured in generate_icons.py with:
-
-    SUBICON_AREA_SCALE_FACTOR = 0.35
-
-This is an area ratio: 0.35 means a sub-icon occupies 35% of the base image's area.
-The generator uses the square root of the ratio when scaling width and height, while
-preserving the sub-icon's aspect ratio. Sub-icons are placed in the bottom-right corner.
-
-If a configured overlay or its fallback PNG is missing, that one .ico file is reported
-as an error and skipped; the remaining icons are still generated.
-
-Icons should be generated this way instead of with a quick online converter, because
-Windows icons need multiple embedded sizes to scale well in shortcuts, taskbar entries,
-and Explorer.
-=======================================
-==== PILLOW / PIL ALTERNATIVE =========
-=======================================
-
-The supported generator is generate_icons.py. It intentionally uses Windows WPF so the
-project does not need Pillow and icon rendering stays consistent with Windows.
+Copy a generated placeholder to code/backend/icons/ only when you want it to
+become an editable input image. PNG size, colors, font, and placeholder text
+are configured in backend/DONT_CHANGE/settings/backend_settings.py.
