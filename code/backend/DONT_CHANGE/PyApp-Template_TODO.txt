@@ -1,12 +1,10 @@
 ======================================
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
-´
-have KeyboardInterrupt_ICON_PATH as degenratid icon
 
-re,move pillow from gernatro and have launcher for it`? to backend
+move icon and backend test tools under scriptbs and have batch starters for them. does it ensure backend for icon stuff?
 
-remove pillow from replacemaent png spawner. maybe eplains omehwer ebetter what they do
+define/do tample to common code and helpers
 
 checlk if all close correctly and all pllied tempalte corects
 
@@ -25,35 +23,19 @@ hm but i need ensure and genrate in differnt ones. so the genrate btach hsould b
 
 move shrotcut target of shrotcut genrator to B out of princeiple? also it is same logci flow, isnt it?  and tempate wouiöld apply
 
-move more gneric code to helper if anyhwer. like image
-
 in common code see if functions still need params
 
 The only plausible candidates to move to settings are tool-specific:
         backend_tools\helper_scripts\verify_backend.py
         TARGETS, EXCLUDED_FILES, and EXCLUDED_FOLDERS are real verification settings. You could move them into settings\backend_verification_settings.py if you want all editable policy in one place.
 
-        icon_related\generate_icons.py
-        Its PNG folders, fallback IDs, icon scale, and retry timings are generator settings. I’d keep these next to the icon generator: they are tightly tied to its assets and relative paths.
-
-        scripts\shortcut_targets\stop_program.py
-        sleep_before_close_on_success_s = 2 is a configurable behavior. I would put it in code\developer_settings.py, not DONT_CHANGE\settings, because it is a local developer/user preference.
-
-i guess move the backent test scripts also to scripts. probalby even icons?????
-
 i want compulation sciopt accessaible to dev -> instide the dev oflder
 
 do i want to force pyrefly setting in pyprkct
 
-move common varaibles to settings folder there i guess. move all settings there. maybe even image ones? either way implement a system to have the as setting in develeoper settings under icon related
-
 make missing PYHTON_VERISON a indicatiopn of broken or unsecsssful python installation and ->recread or porpmpt or somejtihn
 
 fix exit.py
-
-make icon baclk bg
-
-ask AI to apply template
 
 chack all dev tools fully
 thiknc about lnk names in dev tools
