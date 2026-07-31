@@ -107,6 +107,14 @@ title_after_KeyboardInterrupt: str | None = f"[KeyboardInterrupt] {program_name}
 # ---------------------------------------
 # ---------------------------------------
 
+# ============================
+# ==== Icon Settings ====
+# ============================
+
+# WIP
+# None to disable
+# sub_icon_area_scale
+# sub_icon_alignment
 
 # =================================
 # ==== Less Important Settings ====

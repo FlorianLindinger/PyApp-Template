@@ -44,10 +44,10 @@ BACKEND_DIR = make_abs("..\\..")
 PYTHON_SCRIPTS_DIR = make_abs("..\\..\\..")
 SHORTCUT_OUTPUT_DIR = make_abs("..\\..\\..\\..")  # UPDATE GITIGNORE
 WINDOWS_DIR = os.environ.get("WINDIR", default="C:\\Windows")
+ICON_DIR = BACKEND_DIR + "\\icons"
 TEMPORARY_DIR = DONT_CHANGE_DIR + "\\temporary"
 SHORTCUT_TARGET_DIR = DONT_CHANGE_DIR + "\\scripts\\shortcut_targets"
 ENTRY_BATCHES_DIR = DONT_CHANGE_DIR + "\\B"
-ICON_DIR = DONT_CHANGE_DIR + "\\icons"
 BACKEND_TOOLS_DIR = DONT_CHANGE_DIR + "\\backend_tools"
 
 
@@ -115,7 +115,26 @@ FAILURE_ICON_PATH = ICON_DIR + "\\failure.ico"
 CRASH_ICON_PATH = ICON_DIR + "\\crash.ico"
 CRASH_LOG_ICON_PATH = ICON_DIR + "\\crash_log.ico"
 OPEN_MAIN_PY_ICON_PATH = ICON_DIR + "\\open_main_py.ico"
-KeyboardInterrupt_ICON_PATH = ""
+keyboardInterrupt_ICON_PATH = ICON_DIR + "\\keyboardInterrupt.ico"
+
+ICON_PNG_DIR = ICON_DIR
+ICON_FALLBACK_PNG_DIR = DONT_CHANGE_DIR + "\\icon_related"
+ICON_DELETE_TIMEOUT_SECONDS = 2.0
+ICON_DELETE_RETRY_DELAY_SECONDS = 0.05
+_base = ["icon.png", "512x512:697b74ef", "fallback_icon.png"]
+_style = [0.35, "bottom right"]
+ICON_GENERATION_SETTINGS = [  # output.ico, base.png,base_png_id,base_fallback.png,sub_icon_png,sub_icon_png_id,sub_icon_fallback.png,scale,alignment
+    [ ICON_PATH,*_base,None,None,None,None,None],
+    [ SETTINGS_ICON_PATH,*_base,"settings.png","512x512:68617905","default_settings.png",*_style],
+    [ STOP_ICON_PATH,*_base,"stop.png","512x512:18389952","default_stop.png",*_style],
+    [ LOG_ICON_PATH,*_base,"log.png","512x512:3d23c1a5","default_log.png",*_style],
+    [ SUCCESS_ICON_PATH,*_base,"success.png","512x512:87ba9782","default_success.png",*_style],
+    [ FAILURE_ICON_PATH,*_base,"failure.png","512x512:1a35061c","default_failure.png",*_style],
+    [ CRASH_ICON_PATH,*_base,"crash.png","512x512:1e0682c4","default_crash.png",*_style],
+    [ CRASH_LOG_ICON_PATH,*_base,"crash_log.png","512x512:f6bdeb4b","default_crash_log.png",*_style],
+    [ OPEN_MAIN_PY_ICON_PATH,*_base,"open_main_py.png","512x512:79acf3f8","default_open_main_py.png",*_style],
+    [ keyboardInterrupt_ICON_PATH,*_base,"keyboardInterrupt.png","WIP","default_keyboardInterrupt.png",*_style],
+]  # fmt: skip
 
 # untracked tmp files files
 # ------------------------

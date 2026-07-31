@@ -2,9 +2,21 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 ´
+have KeyboardInterrupt_ICON_PATH as degenratid icon
+
+re,move pillow from gernatro and have launcher for it`? to backend
+
+remove pillow from replacemaent png spawner. maybe eplains omehwer ebetter what they do
+
+checlk if all close correctly and all pllied tempalte corects
+
+is standin_main implemented? move all the tests there and clean main.py and have somehow setting to swithc. mayne in backend_settings.py? if used selewerh make new one for that. and i guess a file as target for tests.
+
+fix make_file_to_indicate_frontend_pckgs_installed
+
 rename shortcut targets to batch targets?
 
-have only 1 tempalte for batches and python?
+have only 1 tempalte for batches and python?+ 1 frontend scipt
 
 ->move gnerate batch to B and genrate.py to shroictu targets and finsih to child sciprts. have ensure in scripts?move run to B?
 combine ensure python and install python batches and move them to B?? or all 3? and function on bottom to install?
