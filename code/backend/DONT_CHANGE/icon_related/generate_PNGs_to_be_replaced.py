@@ -1,123 +1,105 @@
+# ==============================
+# settings
+
+fail_message: str = "[Error] Failed to run generate_PNGs_to_be_replaced: {e}"
+close_terminal_on_finish: bool = False
+
 import os
-import zlib
 
-from PIL import Image, ImageDraw, ImageFont
+root_dir: str = os.path.dirname(__file__) + "\\..\\..\\.."
 
-OUT_DIR = os.path.dirname(os.path.abspath(__file__)) + "\\created_PNGS_to_be_replaced"
+# ==============================
 
-SIZE = 512
-FONT_SIZE = 100
-MIN_FONT_SIZE = 8
+try:
+    # ==============================
+    # import Python packages
 
-TEXT_COLOR = (210, 0, 0, 255)
-BG_COLOR = (255, 255, 255, 255)
-FONT = "C:/Windows/Fonts/arialbd.ttf"
+    import os
+    import sys
+    from concurrent.futures import ThreadPoolExecutor
 
-items = {
-    "icon.png": [
-        "Replace to change",
-        "base icon. Run",
-        '"regenerate icons"',
-        "afterwards",
-    ],
-    "settings.png": [
-        "Replace to change",
-        "settings sub-icon. Run",
-        '"regenerate icons"',
-        "afterwards",
-    ],
-    "stop.png": [
-        "Replace to change",
-        "stop sub-icon. Run",
-        '"regenerate icons"',
-        "afterwards",
-    ],
-    "log.png": [
-        "Replace to change",
-        "log sub-icon. Run",
-        '"regenerate icons"',
-        "afterwards",
-    ],
-    "success.png": [
-        "Replace to change",
-        "success sub-icon. Run",
-        '"regenerate icons"',
-        "afterwards",
-    ],
-    "failure.png": [
-        "Replace to change",
-        "failure sub-icon. Run",
-        '"regenerate icons"',
-        "afterwards",
-    ],
-    "crash.png": [
-        "Replace to change",
-        "crash sub-icon. Run",
-        '"regenerate icons"',
-        "afterwards",
-    ],
-    "crash_log.png": [
-        "Replace to change",
-        "crash-log sub-icon. Run",
-        '"regenerate icons"',
-        "afterwards",
-    ],
-    "open_main_py.png": [
-        "Replace to change",
-        "open-main.py sub-icon. Run",
-        '"regenerate icons"',
-        "afterwards",
-    ],
-}
+    # ==============================
+    # imports from files
 
+    if root_dir not in sys.path:
+        sys.path.insert(0, root_dir)
 
-def make_icon(filename, lines):
-    img = Image.new("RGBA", (SIZE, SIZE), BG_COLOR)
-    draw = ImageDraw.Draw(img)
+    from backend.DONT_CHANGE.scripts.common_code import input_warn, print_traceback
+    from backend.DONT_CHANGE.scripts.generic_helpers import close_terminal, generate_png_with_text, get_png_image_id
+    from backend.DONT_CHANGE.settings.backend_settings import (
+        PNG_GENERATION_BACKGROUND_COLOR,
+        PNG_GENERATION_BOLD,
+        PNG_GENERATION_FONT_FAMILY,
+        PNG_GENERATION_FONT_SIZE,
+        PNG_GENERATION_ITEMS,
+        PNG_GENERATION_MIN_FONT_SIZE,
+        PNG_GENERATION_OUTPUT_DIR,
+        PNG_GENERATION_PADDING,
+        PNG_GENERATION_SIZE,
+        PNG_GENERATION_TEXT_COLOR,
+    )
 
-    font_size = FONT_SIZE
+    # ==============================
+    # define main function
 
-    while font_size > MIN_FONT_SIZE:
-        font = ImageFont.truetype(FONT, font_size)
-        boxes = [draw.textbbox((0, 0), line, font=font) for line in lines]
+    def main() -> None:
+        os.makedirs(PNG_GENERATION_OUTPUT_DIR, exist_ok=True)
+        items = tuple(PNG_GENERATION_ITEMS.items())
+        print(f"Generating {len(items)} PNG placeholders...", flush=True)
 
-        widths = [b[2] - b[0] for b in boxes]
-        heights = [b[3] - b[1] for b in boxes]
+        def create_png(item: tuple[str, list[str]]) -> str:
+            filename, lines = item
+            return generate_png_with_text(
+                os.path.join(PNG_GENERATION_OUTPUT_DIR, filename),
+                lines,
+                size=PNG_GENERATION_SIZE,
+                font_family=PNG_GENERATION_FONT_FAMILY,
+                font_size=PNG_GENERATION_FONT_SIZE,
+                min_font_size=PNG_GENERATION_MIN_FONT_SIZE,
+                bold=PNG_GENERATION_BOLD,
+                padding=PNG_GENERATION_PADDING,
+                text_color=PNG_GENERATION_TEXT_COLOR,
+                background_color=PNG_GENERATION_BACKGROUND_COLOR,
+            )
 
-        spacing = max(2, font_size // 4)
-        total_h = sum(heights) + spacing * (len(lines) - 1)
+        with ThreadPoolExecutor(max_workers=min(4, len(items))) as executor:
+            created_paths = list(executor.map(create_png, items))
 
-        if max(widths) <= SIZE - 20 and total_h <= SIZE - 20:
-            break
+        print(f"Created: {', '.join(PNG_GENERATION_ITEMS)}")
 
-        font_size -= 2
+        print("Image IDs:")
 
-    y = (SIZE - total_h) / 2
+        with ThreadPoolExecutor(max_workers=min(4, len(created_paths))) as executor:
+            image_ids = executor.map(get_png_image_id, created_paths)
+            for path, image_id in zip(created_paths, image_ids):
+                print(f"  {os.path.basename(path)}: {image_id}")
 
-    for line, box in zip(lines, boxes):
-        w = box[2] - box[0]
-        h = box[3] - box[1]
+        if sys.stdin.isatty() and sys.stdout.isatty():
+            print()
+            input("Press enter to exit.")
 
-        x = (SIZE - w) / 2
-        draw.text((x, y - box[1]), line, font=font, fill=TEXT_COLOR)
+    # ==============================
+    # execute main function
 
-        y += h + spacing
+    if __name__ == "__main__":
+        try:
+            main()
+        except Exception as e:
+            print_traceback(fail_message.format(e=e))
+            input_warn("[Error] Press enter to exit")
+        if close_terminal_on_finish:
+            close_terminal()
 
-    img.save(os.path.join(OUT_DIR, filename))
+except Exception as e:
+    import traceback
 
-
-def image_id(path):
-    image = Image.open(path).convert("RGBA")
-    crc = zlib.crc32(image.tobytes()) & 0xFFFFFFFF
-    return f"{image.width}x{image.height}:{crc:08x}"
-
-
-created_paths = []
-for filename, lines in items.items():
-    make_icon(filename, lines)
-    created_paths.append(os.path.join(OUT_DIR, filename))
-
-print("Created icon.png, settings.png, stop.png, log.png, success.png, failure.png, crash.png, crash_log.png")
-print("Image IDs:")
-for path in created_paths:
-    print(f"  {os.path.basename(path)}: {image_id(path)}")
+    print()
+    print()
+    print("=" * 30)
+    print(fail_message.format(e=e))
+    print("-" * 30)
+    print(traceback.format_exc())
+    print("=" * 30)
+    input("[Error] Press enter to exit")
+    if close_terminal_on_finish:
+        os._exit(1)

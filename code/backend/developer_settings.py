@@ -111,10 +111,28 @@ title_after_KeyboardInterrupt: str | None = f"[KeyboardInterrupt] {program_name}
 # ==== Icon Settings ====
 # ============================
 
-# WIP
-# None to disable
-# sub_icon_area_scale
-# sub_icon_alignment
+# Configure every generated sub-icon separately. ``scale`` is the fraction of
+# the base icon area it covers (0 < value <= 1); ``alignment`` accepts compass
+# positions such as "bottom right", "top", or "center left". Set *either*
+# variable in a pair to ``None`` to generate that icon without its sub-icon.
+settings_sub_icon_scale: float | None = 0.35
+settings_sub_icon_alignment: str | None = "bottom right"
+stop_sub_icon_scale: float | None = 0.35
+stop_sub_icon_alignment: str | None = "bottom right"
+log_sub_icon_scale: float | None = 0.35
+log_sub_icon_alignment: str | None = "bottom right"
+success_sub_icon_scale: float | None = 0.35
+success_sub_icon_alignment: str | None = "bottom right"
+failure_sub_icon_scale: float | None = 0.35
+failure_sub_icon_alignment: str | None = "bottom right"
+crash_sub_icon_scale: float | None = 0.35
+crash_sub_icon_alignment: str | None = "bottom right"
+crash_log_sub_icon_scale: float | None = 0.35
+crash_log_sub_icon_alignment: str | None = "bottom right"
+open_main_py_sub_icon_scale: float | None = 0.35
+open_main_py_sub_icon_alignment: str | None = "bottom right"
+keyboardInterrupt_sub_icon_scale: float | None = 0.35
+keyboardInterrupt_sub_icon_alignment: str | None = "bottom right"
 
 # =================================
 # ==== Less Important Settings ====
