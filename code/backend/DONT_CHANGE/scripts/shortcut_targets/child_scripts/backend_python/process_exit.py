@@ -57,12 +57,14 @@ try:
     from backend.DONT_CHANGE.scripts.common_code import (
         get_log_path,
         input_warn,
-        open_in_editor,
         print_traceback,
         set_terminal_app_id,
         set_terminal_colors,
         set_terminal_icon,
         set_terminal_title,
+    )
+    from backend.DONT_CHANGE.scripts.generic_helpers import (
+        open_in_editor,
     )
     from backend.DONT_CHANGE.settings.backend_settings import (
         CRASH_ICON_PATH,
@@ -73,6 +75,7 @@ try:
         ERROR_DATE_FORMAT,
         FAILURE_ICON_PATH,
         FAILURE_TERMINAL_COLORS,
+        KEYBOARD_INTERRUPT_ICON_PATH,
         KEYBOARDINTERRUPT_TERMINAL_COLORS,
         MAIN_PY_SCRIPT_PATH,
         PIPREQS_MAPPING_PATH,
@@ -82,7 +85,6 @@ try:
         TMP_TRACEBACK_JSON_PATH,
         WINDOWS_DIR,
         DEFAULT_SOUND_AFTER_KeyboardInterrupt,
-        KeyboardInterrupt_ICON_PATH,
     )
 
     # ==============================
@@ -464,7 +466,7 @@ try:
             play_sound_default = DEFAULT_SOUND_AFTER_KeyboardInterrupt
             open_log = open_log_file_after_KeyboardInterrupt
             terminal_colors = KEYBOARDINTERRUPT_TERMINAL_COLORS
-            terminal_icon = KeyboardInterrupt_ICON_PATH
+            terminal_icon = KEYBOARD_INTERRUPT_ICON_PATH
             terminal_title = title_after_KeyboardInterrupt
             close = close_after_KeyboardInterrupt
             open_main = open_main_py_after_KeyboardInterrupt

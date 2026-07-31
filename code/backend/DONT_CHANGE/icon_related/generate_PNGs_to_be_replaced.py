@@ -31,12 +31,13 @@ try:
         PNG_GENERATION_BOLD,
         PNG_GENERATION_FONT_FAMILY,
         PNG_GENERATION_FONT_SIZE,
+        PNG_GENERATION_HEIGHT,
         PNG_GENERATION_ITEMS,
         PNG_GENERATION_MIN_FONT_SIZE,
         PNG_GENERATION_OUTPUT_DIR,
         PNG_GENERATION_PADDING,
-        PNG_GENERATION_SIZE,
         PNG_GENERATION_TEXT_COLOR,
+        PNG_GENERATION_WIDTH,
     )
 
     # ==============================
@@ -52,7 +53,8 @@ try:
             return generate_png_with_text(
                 os.path.join(PNG_GENERATION_OUTPUT_DIR, filename),
                 lines,
-                size=PNG_GENERATION_SIZE,
+                width=PNG_GENERATION_WIDTH,
+                height=PNG_GENERATION_HEIGHT,
                 font_family=PNG_GENERATION_FONT_FAMILY,
                 font_size=PNG_GENERATION_FONT_SIZE,
                 min_font_size=PNG_GENERATION_MIN_FONT_SIZE,

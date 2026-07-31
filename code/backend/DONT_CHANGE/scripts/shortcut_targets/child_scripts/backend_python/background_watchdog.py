@@ -48,7 +48,6 @@ try:
         use_global_python,
     )
     from backend.DONT_CHANGE.scripts.common_code import (
-        close_terminal,
         get_log_path,
         get_running_processes_from_pid_file,
         make_empty_args_safe,
@@ -57,6 +56,9 @@ try:
         set_terminal_icon,
         set_terminal_title,
         stop_processes_from_pid_file,
+    )
+    from backend.DONT_CHANGE.scripts.generic_helpers import (
+        close_terminal,
     )
     from backend.DONT_CHANGE.settings.backend_settings import (
         CORRECT_START_SIGNAL_FILE_PATH,
