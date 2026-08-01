@@ -1,6 +1,8 @@
 ======================================
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
++
+check very  backend logic
 
 add soemhow mode to have stadnin test main and way to switch. global variable?
 
