@@ -10,11 +10,15 @@ cd /d "%~dp0"
 :: ===========================
 :: local variables
 
-set "ensure_backend_python_script=..\..\setup\ensure_backend_python.bat"
-set "target_script=..\scripts\list_untracked.py"
+set "ensure_backend_python_script=..\helper_scripts\ensure_backend_python.bat"
+set "shortcut_generator_script=..\..\scripts\setup\generate_shortcuts.py"
+set "terminal_title=Generating Shortcuts"
 
 :: ===========================
 :: code execution
+
+:: change title:
+title %terminal_title%
 
 :: install backend Python if needed and receive its path in python_exe:
 call "%ensure_backend_python_script%"
@@ -23,19 +27,16 @@ if not "%ERRORLEVEL%"=="0" (
     exit 1
 )
 
-:: run python script and forward all args:
-"%python_exe%" "%target_script%" %*
+:: generate shortcuts:
+"%python_exe%" "%shortcut_generator_script%"
 set "exit_code=%ERRORLEVEL%"
 
-:: keep read-only command output visible on success:
+:: exit if success:
 if "%exit_code%"=="0" (
-    echo.
-    echo [Success] Press any key to exit.
-    pause > nul
-    exit 0
+    exit /b 0
 )
 
 :: print and confirm to close on failure:
-echo [Error] Python script failed with exit code %exit_code%. Press any key to exit.
+echo [Error] Shortcut generation failed. Aborting. Press any key to exit.
 pause > nul
-exit %exit_code%
+exit /b %exit_code%

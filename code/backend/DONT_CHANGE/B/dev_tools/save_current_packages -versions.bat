@@ -10,8 +10,8 @@ cd /d "%~dp0"
 :: ===========================
 :: local variables
 
-set "ensure_backend_python_script=..\..\setup\ensure_backend_python.bat"
-set "target_script=..\scripts\check_longest_paths.py"
+set "ensure_backend_python_script=..\helper_scripts\ensure_backend_python.bat"
+set "target_script=..\..\scripts\dev_tools\scripts\save_current_packages -versions.py"
 
 :: ===========================
 :: code execution
@@ -27,7 +27,7 @@ if not "%ERRORLEVEL%"=="0" (
 "%python_exe%" "%target_script%" %*
 set "exit_code=%ERRORLEVEL%"
 
-:: the script keeps its own interactive prompt open on success:
+:: exit if success:
 if "%exit_code%"=="0" (
     exit 0
 )

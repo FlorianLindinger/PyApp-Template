@@ -10,8 +10,8 @@ cd /d "%~dp0"
 :: ===========================
 :: local variables
 
-set "ensure_backend_python_script=..\..\setup\ensure_backend_python.bat"
-set "target_script=..\scripts\open_package_terminal.py"
+set "ensure_backend_python_script=..\helper_scripts\ensure_backend_python.bat"
+set "target_script=..\..\scripts\dev_tools\scripts\verify_main_py.py"
 
 :: ===========================
 :: code execution
@@ -24,7 +24,7 @@ if not "%ERRORLEVEL%"=="0" (
 )
 
 :: run python script and forward all args:
-"%python_exe%" "%target_script%" %*
+"%python_exe%" "%target_script%" default %*
 set "exit_code=%ERRORLEVEL%"
 
 :: exit if success:
