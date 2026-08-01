@@ -1,4 +1,9 @@
-"""WIP"""
+"""Shared generic standard-library helpers used throughout the PyApp Template backend.
+
+Most helpers avoid optional dependencies and import expensive modules lazily.
+The image helpers at the end of this module use built-in Windows WPF through
+PowerShell, so PNG and ICO generation does not require Pillow.
+"""
 
 # =========================
 # imports
@@ -1069,6 +1074,13 @@ def set_terminal_colors(colors: str | None) -> None:
 # =========================
 # path related/file name related
 
+def get_script_name(with_file_ending: bool = True):
+    out = __file__.replace("\\", "/").rsplit("/", 1)[-1]
+
+    if with_file_ending:
+        return out
+    else:
+        return out.removesuffix(".py")
 
 def find_longest_paths(
     root_dir: str | os.PathLike[str],
@@ -2060,12 +2072,17 @@ def save_requirements_of_folder_withVersion(
         return False
 
 
- # =========================
+# =========================
 # image related
 
 
 def _run_wpf_powershell(script: str, **extra_env: str) -> str:
-    """Run a WPF image operation without requiring a Python image package."""
+    """Run one WPF/PowerShell image operation and return its standard output.
+
+    ``extra_env`` supplies the operation inputs without interpolating them into
+    the PowerShell source. Raises ``RuntimeError`` when PowerShell reports an
+    error. This helper is Windows-only by design.
+    """
     import os
     import subprocess
 
@@ -2084,7 +2101,12 @@ def _run_wpf_powershell(script: str, **extra_env: str) -> str:
 
 
 def get_png_image_id(path: str) -> str:
-    """Return a stable ``widthxheight:crc32`` ID for decoded PNG pixels."""
+    """Return a stable ``widthxheight:crc32`` ID for decoded PNG pixels.
+
+    The ID is based on the decoded RGBA pixel data rather than PNG file bytes,
+    so metadata or encoding differences do not change it. Raises
+    ``FileNotFoundError`` when ``path`` is absent.
+    """
     import base64
     import json
     import zlib
@@ -2113,19 +2135,29 @@ def generate_png_with_text(
     output_path: str,
     lines: Sequence[str],
     *,
-    size: int = 512,
+    width: int = 512,
+    height: int = 512,
     font_family: str = "Arial",
     font_size: int = 100,
     min_font_size: int = 8,
     bold: bool = True,
-    text_color: tuple[int, int, int, int] = (210, 0, 0, 255),
+    text_color: tuple[int, int, int, int] = (0, 0, 0, 255),
     background_color: tuple[int, int, int, int] = (255, 255, 255, 255),
     padding: int = 20,
 ) -> str:
-    """Create a square PNG with centered text using built-in Windows WPF."""
+    """Create a PNG with centered, automatically fitted text using Windows WPF.
+
+    The output is ``width`` by ``height`` pixels. Lines are centered as a
+    group and the font size is reduced in two-pixel steps until every line
+    fits within ``padding``. ``text_color`` and ``background_color`` are RGBA
+    tuples. Set ``bold`` to use a bold font face. No third-party Python image
+    package is required.
+
+    Returns the absolute output path.
+    """
     import json
 
-    if size <= 0 or min_font_size <= 0 or font_size < min_font_size or padding < 0:
+    if width <= 0 or height <= 0 or min_font_size <= 0 or font_size < min_font_size or padding < 0:
         raise ValueError("Invalid PNG text dimensions or font sizes.")
     if not lines or any(not isinstance(line, str) for line in lines):
         raise ValueError("lines must contain one or more strings.")
@@ -2152,24 +2184,24 @@ $dpi = 96.0
 for ($fontSize = $settings.font_size; $fontSize -ge $settings.min_font_size; $fontSize -= 2) {
     $text = @($settings.lines | ForEach-Object { [System.Windows.Media.FormattedText]::new($_, [Globalization.CultureInfo]::InvariantCulture, 'LeftToRight', $typeface, $fontSize, (Brush $settings.text_color), $dpi) })
     $spacing = [Math]::Max(2, [int]($fontSize / 4))
-    $width = ($text | Measure-Object -Property Width -Maximum).Maximum
-    $height = ($text | Measure-Object -Property Height -Sum).Sum + $spacing * ($text.Count - 1)
-    if ($width -le $settings.size - 2 * $settings.padding -and $height -le $settings.size - 2 * $settings.padding) { break }
+    $textWidth = ($text | Measure-Object -Property Width -Maximum).Maximum
+    $textHeight = ($text | Measure-Object -Property Height -Sum).Sum + $spacing * ($text.Count - 1)
+    if ($textWidth -le $settings.width - 2 * $settings.padding -and $textHeight -le $settings.height - 2 * $settings.padding) { break }
 }
 if ($fontSize -lt $settings.min_font_size) { throw 'Text does not fit at the minimum font size.' }
 $visual = [System.Windows.Media.DrawingVisual]::new(); $context = $visual.RenderOpen()
-$context.DrawRectangle((Brush $settings.background_color), $null, [Windows.Rect]::new(0, 0, $settings.size, $settings.size))
-$y = ($settings.size - $height) / 2
-foreach ($line in $text) { $context.DrawText($line, [Windows.Point]::new(($settings.size - $line.Width) / 2, $y)); $y += $line.Height + $spacing }
+$context.DrawRectangle((Brush $settings.background_color), $null, [Windows.Rect]::new(0, 0, $settings.width, $settings.height))
+$y = ($settings.height - $textHeight) / 2
+foreach ($line in $text) { $context.DrawText($line, [Windows.Point]::new(($settings.width - $line.Width) / 2, $y)); $y += $line.Height + $spacing }
 $context.Close()
-$bitmap = [System.Windows.Media.Imaging.RenderTargetBitmap]::new($settings.size, $settings.size, $dpi, $dpi, [System.Windows.Media.PixelFormats]::Pbgra32); $bitmap.Render($visual)
+$bitmap = [System.Windows.Media.Imaging.RenderTargetBitmap]::new($settings.width, $settings.height, $dpi, $dpi, [System.Windows.Media.PixelFormats]::Pbgra32); $bitmap.Render($visual)
 $encoder = [System.Windows.Media.Imaging.PngBitmapEncoder]::new(); $encoder.Frames.Add([System.Windows.Media.Imaging.BitmapFrame]::Create($bitmap))
 $stream = [IO.File]::Open($env:PNG_OUTPUT_PATH, 'Create'); try { $encoder.Save($stream) } finally { $stream.Dispose() }
 """
     _run_wpf_powershell(
         script,
         PNG_OUTPUT_PATH=output_path,
-        PNG_TEXT_SETTINGS=json.dumps({"lines": list(lines), "size": size, "font_family": font_family, "font_size": font_size, "min_font_size": min_font_size, "bold": bold, "text_color": text_color, "background_color": background_color, "padding": padding}),
+        PNG_TEXT_SETTINGS=json.dumps({"lines": list(lines), "width": width, "height": height, "font_family": font_family, "font_size": font_size, "min_font_size": min_font_size, "bold": bold, "text_color": text_color, "background_color": background_color, "padding": padding}),
     )
     return output_path
 
@@ -2183,7 +2215,14 @@ def generate_ico_from_png(
     override: bool = True,
     icon_sizes: Iterable[int] = (256, 128, 64, 48, 32, 16),
 ) -> str:
-    """Create a multi-resolution ICO from a PNG and optional overlay, using Windows WFF."""
+    """Create a multi-resolution ICO from a base PNG and optional overlay.
+
+    Each requested icon size is rendered with built-in Windows WPF and stored
+    as a PNG layer in the ICO. The overlay's area is controlled by
+    ``sub_icon_area_scale_factor`` and its compass-style position by
+    ``sub_icon_alignment``. Set ``override`` to ``False`` to preserve an
+    existing output. Returns the absolute ICO path.
+    """
     import base64
     import json
     import struct
