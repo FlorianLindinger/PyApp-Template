@@ -1,77 +1,94 @@
-"""WIP"""
+"""Open the folder containing the configured crash log."""
+
+# ==============================
+# settings
+
+fail_message: str = "[Error] Failed to open crash-log folder: {e}"
+close_terminal_on_finish: bool = True
+
+import os
+
+root_dir: str = os.path.dirname(__file__) + "\\..\\..\\..\\.."
+
+# ==============================
 
 try:
-    # =============================
+    # ==============================
     # import Python packages
 
-    import os
     import sys
 
-    # =============================
-    # add root dir for debug cases where this script is called on its own
+    # ==============================
+    # import third-party packages
 
-    root_dir = os.path.dirname(__file__) + "\\..\\..\\..\\.."
+    # ==============================
+    # import from files
+
     if root_dir not in sys.path:
         sys.path.insert(0, root_dir)
 
-    # =============================
-    # import from files
-
-    from backend.developer_settings import (
-        crash_log_path,
-        crash_log_path_is_relative_to_start_folder_if_relative,
-    )
+    from backend.developer_settings import crash_log_path, crash_log_path_is_relative_to_start_folder_if_relative
     from backend.DONT_CHANGE.scripts.common_code import (
-        close_terminal,
         get_log_folder_path,
         input_warn,
         print_traceback,
         print_warn,
         set_terminal_colors,
-        set_unminimize_and_foreground_on_first_print,
     )
-    from backend.DONT_CHANGE.settings.backend_settings import (
-        DEV_SETTINGS_PATH,
+    from backend.DONT_CHANGE.scripts.generic_helpers import (
+        close_terminal,
+        enable_unminimize_and_foreground_terminal_on_first_print,
     )
+    from backend.DONT_CHANGE.settings.backend_settings import DEV_SETTINGS_PATH
 
-    # =============================
-    # script is inteded to be launched minimized and will un minimize on frist print/error
+    # ==============================
+    # local variables
 
-    set_terminal_colors()
-    set_unminimize_and_foreground_on_first_print()
+    # ==============================
+    # local functions/classes
 
-    # =============================
+    # ==============================
+    # main function
 
-    folder_path = get_log_folder_path(crash_log_path, crash_log_path_is_relative_to_start_folder_if_relative)
+    def main() -> None:
+        """Open the configured crash-log folder, if one is enabled."""
+        set_terminal_colors()
+        enable_unminimize_and_foreground_terminal_on_first_print()
 
-    if folder_path is None:
-        print_warn(f'[Info] Can\'t open crash-log folder because crash_log_path is disabled in "{DEV_SETTINGS_PATH}".')
-        input_warn("Press enter to exit.")
-    else:
-        if not os.path.exists(folder_path):
+        folder_path = get_log_folder_path(crash_log_path, crash_log_path_is_relative_to_start_folder_if_relative)
+        if folder_path is None:
+            print_warn(
+                f'[Info] Can\'t open crash-log folder because crash_log_path is disabled in "{DEV_SETTINGS_PATH}".'
+            )
+            input_warn("Press enter to exit.")
+        elif not os.path.exists(folder_path):
             print_warn(f'[Error] Crash-log folder ("{folder_path}") does not exist.')
             input_warn("Press enter to exit.")
         else:
-            try:
-                os.startfile(folder_path)  # noqa:S606
-            except Exception:
-                print_traceback(f'[Error] Failed to open crash-log folder "{folder_path}".')
-                input_warn("Press enter to exit.")
+            os.startfile(folder_path)  # noqa:S606
 
-    close_terminal()
+    # ==============================
+    # execute main function
 
-    # =============================
+    if __name__ == "__main__":
+        try:
+            main()
+        except Exception as e:
+            print_traceback(fail_message.format(e=e))
+            input_warn("[Error] Press enter to exit")
+        if close_terminal_on_finish:
+            close_terminal()
 
 except Exception as e:
-    import os
     import traceback
 
     print()
     print()
-    print("=" * 20)
-    print(f"[Error] Failed to open crash-log folder: {e}")
-    print("-" * 20)
+    print("=" * 30)
+    print(fail_message.format(e=e))
+    print("-" * 30)
     print(traceback.format_exc())
-    print("=" * 20)
-    input("[Error (see above)] Press enter to exit")
-    os._exit(1)  # instead of sys.exit(1) to prevent exception by script calling this script
+    print("=" * 30)
+    input("[Error] Press enter to exit")
+    if close_terminal_on_finish:
+        os._exit(1)

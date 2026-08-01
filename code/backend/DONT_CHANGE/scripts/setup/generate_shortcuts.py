@@ -1,5 +1,11 @@
 """Generate Windows shortcuts for the configured PyApp Template launch modes."""
 
+# ==============================
+# settings
+
+# ==============================
+# import Python packages
+
 import ctypes
 import os
 import re
@@ -9,7 +15,10 @@ import unicodedata
 import uuid
 from ctypes import wintypes
 
-# =============================
+# ==============================
+# import third-party packages
+
+# ==============================
 # import from files
 
 # add root dir for debug cases where this script is called on its own:
@@ -56,6 +65,12 @@ from backend.DONT_CHANGE.settings.backend_settings import (
     SHORTCUT_OUTPUT_DIR,
     STOP_ICON_PATH,
 )
+
+# ==============================
+# local variables
+
+# ==============================
+# local functions/classes
 
 
 def generate_shortcut(
@@ -369,6 +384,10 @@ def _sanitize_app_id(value: str) -> str:
     return name.strip("-.")
 
 
+# ==============================
+# main function
+
+
 def main() -> None:
     app_id = _sanitize_app_id(program_name)
     if len(app_id) > 15:
@@ -457,6 +476,10 @@ def main() -> None:
     print()
     print("=" * 30)
     input("[Success] Press enter to exit")
+
+
+# ==============================
+# execute main function
 
 
 if __name__ == "__main__":

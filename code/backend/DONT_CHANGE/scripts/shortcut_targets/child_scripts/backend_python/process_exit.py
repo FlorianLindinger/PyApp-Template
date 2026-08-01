@@ -3,6 +3,9 @@
 This script assumes that is always has a terminal to print stuff in since it is called that way.
 """
 
+# ==============================
+# settings
+
 # {e} will be formatted to exception:
 fail_message = "[Error] Failed WIP: {e}"
 
@@ -21,7 +24,7 @@ try:
     # ==============================
 
     # ==============================
-    # imports from files
+    # import from files
     # ==============================
 
     # add root dir to resolve file imports for debug cases where this script is called on its own:
@@ -90,11 +93,11 @@ try:
     )
 
     # ==============================
-    # define local variables
+    # local variables
     # ==============================
 
     # ==============================
-    # define local functions/classes
+    # local functions/classes
     # ==============================
 
     # ==============================
@@ -530,7 +533,7 @@ try:
             return
 
     # ==============================
-    # define main function
+    # main function
     # ==============================
 
     def main() -> None:

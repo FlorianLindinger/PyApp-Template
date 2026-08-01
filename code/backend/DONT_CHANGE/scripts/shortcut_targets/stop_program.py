@@ -1,73 +1,103 @@
 """Stop running PyApp Template program instances recorded in the PID file."""
 
-# ==========================================================================
-# local settings
+# ==============================
+# settings
 
-sleep_before_close_on_success_s = 2
-
-# ==========================================================================
-# package imports
+fail_message: str = "[Error] Failed to stop process: {e}"
+close_terminal_on_finish: bool = True
+sleep_before_close_on_success_s: float = 2
 
 import os
-import sys
-import time
 
-# ==========================================================================
-# add root dir for debug cases where this script is called on its own:
-root_dir = os.path.dirname(__file__) + "\\..\\..\\..\\.."
-if root_dir not in sys.path:
-    sys.path.insert(0, root_dir)
+root_dir: str = os.path.dirname(__file__) + "\\..\\..\\..\\.."
 
-# ==========================================================================
-# import from common variables and developer settings
-from backend.DONT_CHANGE.scripts.common_code import (
-    close_terminal,
-    make_abs_path_relative_to_file,
-    print_success,
-    print_traceback,
-    set_terminal_colors,
-    set_unminimize_and_foreground_on_first_print,
-    stop_processes_from_pid_file,
-)
-from backend.DONT_CHANGE.settings.backend_settings import DEV_SETTINGS_PATH, PROCESS_ID_FILE_PATH
-
-# ==========================================================================
-# code execution
-
-
-pid_path = make_abs_path_relative_to_file(PROCESS_ID_FILE_PATH, DEV_SETTINGS_PATH)
+# ==============================
 
 try:
-    # =============================
-    # script is inteded to be launched minimized and will un minimize on frist print/error
+    # ==============================
+    # import Python packages
 
-    set_terminal_colors()
-    set_unminimize_and_foreground_on_first_print()
+    import sys
+    import time
 
-    # =============================
+    # ==============================
+    # import third-party packages
 
-    stopped_count, stale_count, failed_messages = stop_processes_from_pid_file(pid_path)
+    # ==============================
+    # import from files
 
-    if failed_messages:
-        raise RuntimeError("Failed to stop these PID(s):\n" + "\n".join(failed_messages))
+    if root_dir not in sys.path:
+        sys.path.insert(0, root_dir)
 
-    if stopped_count == 0:
-        if stale_count == 0:
-            print(f'[Info] No PID file found at "{pid_path}".')
-            print("This could mean it was already stopped via this script.")
-        else:
-            print(f"[Info] Nothing to stop. Removed {stale_count} stale PID entries from {pid_path}.")
-        input("Press enter to exit")
-        close_terminal()
-        sys.exit(0)
+    from backend.DONT_CHANGE.scripts.common_code import (
+        input_warn,
+        print_traceback,
+        set_terminal_colors,
+        stop_processes_from_pid_file,
+    )
+    from backend.DONT_CHANGE.scripts.generic_helpers import (
+        close_terminal,
+        enable_unminimize_and_foreground_terminal_on_first_print,
+        make_abs_path_relative_to_file,
+        print_success,
+    )
+    from backend.DONT_CHANGE.settings.backend_settings import DEV_SETTINGS_PATH, PROCESS_ID_FILE_PATH
 
-    print_success(f"[Success] Stopped {stopped_count} process(es).")
-    if stale_count:
-        print_success(f"[Info] Removed {stale_count} stale PID entries.")
-    time.sleep(sleep_before_close_on_success_s)
-    close_terminal()
-    sys.exit(0)
+    # ==============================
+    # local variables
+
+    # ==============================
+    # local functions/classes
+
+    # ==============================
+    # main function
+
+    def main() -> None:
+        """Stop live processes and remove stale entries from the PID file."""
+        set_terminal_colors()
+        enable_unminimize_and_foreground_terminal_on_first_print()
+
+        pid_path = make_abs_path_relative_to_file(PROCESS_ID_FILE_PATH, DEV_SETTINGS_PATH)
+        stopped_count, stale_count, failed_messages = stop_processes_from_pid_file(pid_path)
+        if failed_messages:
+            raise RuntimeError("Failed to stop these PID(s):\n" + "\n".join(failed_messages))
+
+        if stopped_count == 0:
+            if stale_count == 0:
+                print(f'[Info] No PID file found at "{pid_path}".')
+                print("This could mean it was already stopped via this script.")
+            else:
+                print(f"[Info] Nothing to stop. Removed {stale_count} stale PID entries from {pid_path}.")
+            input("Press enter to exit")
+            return
+
+        print_success(f"[Success] Stopped {stopped_count} process(es).")
+        if stale_count:
+            print_success(f"[Info] Removed {stale_count} stale PID entries.")
+        time.sleep(sleep_before_close_on_success_s)
+
+    # ==============================
+    # execute main function
+
+    if __name__ == "__main__":
+        try:
+            main()
+        except Exception as e:
+            print_traceback(fail_message.format(e=e))
+            input_warn("[Error] Press enter to exit")
+        if close_terminal_on_finish:
+            close_terminal()
 
 except Exception as e:
-    print_traceback(f"[Error] Failed to stop process: {e}")
-    input("[Error (see abov)] Press enter to exit")
+    import traceback
+
+    print()
+    print()
+    print("=" * 30)
+    print(fail_message.format(e=e))
+    print("-" * 30)
+    print(traceback.format_exc())
+    print("=" * 30)
+    input("[Error] Press enter to exit")
+    if close_terminal_on_finish:
+        os._exit(1)
