@@ -2,6 +2,9 @@
 ==== Future ====
 ================
 
+
+in compialtion have a sciptr tnot meant to be changed to see defaults? or have defautls that are cpied over to active comilation scipts
+
 do i want the .gitattributes
 
 waht varaible should i make capitalized? in common_variables. all i guess? generally all vars that i imoprt i guess but not in dev settings tho
