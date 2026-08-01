@@ -11,7 +11,7 @@ cd /d "%~dp0"
 :: local variables
 
 set "ensure_backend_python_script=..\helper_scripts\ensure_backend_python.bat"
-set "target_script=%~dp0..\..\scripts\dev_tools\scripts\install_local_reqs.py"
+set "target_script=%~dp0..\..\scripts\dev_tools\install_local_reqs.py"
 set "requirements_folder=%~dp0..\..\..\dev_tools\change python packages"
 
 :: ===========================

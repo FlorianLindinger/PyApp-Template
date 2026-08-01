@@ -453,7 +453,6 @@ def main() -> None:
             description=f"Open {program_name} main.py file",
             start_minimized=True,
         )
-
     if user_settings_path not in (None, False, "") and open_settings_shortcut_name not in (None, False, ""):
         settings_file_path_abs = make_abs_path_relative_to_file(user_settings_path, DEV_SETTINGS_PATH)
         if not os.path.exists(settings_file_path_abs):

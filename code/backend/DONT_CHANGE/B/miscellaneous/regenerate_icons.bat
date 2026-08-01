@@ -4,7 +4,7 @@ setlocal
 cd /d "%~dp0"
 
 set "ensure_backend_python_script=..\helper_scripts\ensure_backend_python.bat"
-set "target_script=..\..\icon_related\generate_icons.py"
+set "target_script=..\..\scripts\icon\generate_icons.py"
 
 call "%ensure_backend_python_script%"
 if not "%ERRORLEVEL%"=="0" exit /b 1

@@ -43,12 +43,10 @@ DONT_CHANGE_DIR = make_abs("..")
 BACKEND_DIR = make_abs("..\\..")
 PYTHON_SCRIPTS_DIR = make_abs("..\\..\\..")
 SHORTCUT_OUTPUT_DIR = make_abs("..\\..\\..\\..")  # UPDATE GITIGNORE
-WINDOWS_DIR = os.environ.get("WINDIR", default="C:\\Windows")
-ICON_DIR = BACKEND_DIR + "\\icons"
 TEMPORARY_DIR = DONT_CHANGE_DIR + "\\temporary"
 SHORTCUT_TARGET_DIR = DONT_CHANGE_DIR + "\\scripts\\shortcut_targets"
 ENTRY_BATCHES_DIR = DONT_CHANGE_DIR + "\\B"
-BACKEND_TOOLS_DIR = DONT_CHANGE_DIR + "\\backend_tools"
+WINDOWS_DIR = os.environ.get("WINDIR", default="C:\\Windows")
 
 # ------------------------
 # scripts
@@ -56,7 +54,7 @@ BACKEND_TOOLS_DIR = DONT_CHANGE_DIR + "\\backend_tools"
 START_PROGRAM_PATH = SHORTCUT_TARGET_DIR + "\\start_program.py"
 MAIN_PY_SCRIPT_PATH = PYTHON_SCRIPTS_DIR + "\\main.py"
 BACKGROUND_WATCHDOG_PATH = SHORTCUT_TARGET_DIR + "\\child_scripts\\backend_python\\background_watchdog.py"
-START_TIME_DUMMY_MAIN_PY_PATH = BACKEND_TOOLS_DIR + "\\helper_scripts\\start_time_dummy_main_script.py"
+START_TIME_DUMMY_MAIN_PY_PATH = DONT_CHANGE_DIR + "\\scripts\\backend_tools\\start_time_dummy_main_script.py"
 PROCESS_EXIT_PATH = SHORTCUT_TARGET_DIR + "\\child_scripts\\backend_python\\process_exit.py"
 
 # ------------------------
@@ -73,6 +71,7 @@ LAUNCHER_OPEN_MAIN_PY = ENTRY_BATCHES_DIR + "\\M.bat"
 # ------------------------
 # icon related ("" means no change)
 
+ICON_DIR = BACKEND_DIR + "\\icons"
 ICON_PATH = ICON_DIR + "\\icon.ico"
 SETTINGS_ICON_PATH = ICON_DIR + "\\settings.ico"
 STOP_ICON_PATH = ICON_DIR + "\\stop.ico"
@@ -105,7 +104,7 @@ ICON_GENERATION_SETTINGS = [
 ]
 # fmt:on
 
-# PNG placeholders created by icon_related/generate_PNGs_to_be_replaced.py
+# PNG placeholders created by scripts/icon/generate_PNGs_to_be_replaced.py
 PNG_GENERATION_OUTPUT_DIR = ICON_FALLBACK_PNG_DIR + "\\created_PNGS_to_be_replaced"
 PNG_GENERATION_WIDTH = 512
 PNG_GENERATION_HEIGHT = 512
@@ -134,7 +133,7 @@ PNG_GENERATION_ITEMS = {
 # ------------------------
 # verification related
 
-# Backend verification settings used by backend_tools/helper_scripts/verify_backend.py.
+# Backend verification settings used by scripts/backend_tools/verify_backend.py.
 # Paths are relative to the code folder and use forward slashes.
 BACKEND_VERIFICATION_TARGETS = ("backend",)
 BACKEND_VERIFICATION_EXCLUDED_FILES: tuple[str, ...] = ()
