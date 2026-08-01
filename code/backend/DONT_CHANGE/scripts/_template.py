@@ -8,6 +8,7 @@ This is NOT meant to apply to:
 - /../backend_tools/standin_main_script.py
 - /../settings/backend_settings.py
 - /../future/**/*.py
+- /../backend_tools/helper_scripts/start_time_dummy_main_script.py"
 - /../../developer_settings.py
 - /../../../main.py
 - /../../../settings.py
