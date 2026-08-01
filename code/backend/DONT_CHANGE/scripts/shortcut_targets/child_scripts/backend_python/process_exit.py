@@ -30,6 +30,8 @@ try:
         sys.path.insert(0, root_dir)
 
     from backend.developer_settings import (
+        PRINTED_ERROR_DATE_FORMAT,
+        RICH_TRACEBACK_COLOR_THEME,
         close_after_crash,
         close_after_failure,
         close_after_KeyboardInterrupt,
@@ -49,10 +51,16 @@ try:
         play_sound_after_failure,
         play_sound_after_KeyboardInterrupt,
         play_sound_after_success,
+        show_traceback_locals,
+        terminal_colors_after_crash,
+        terminal_colors_after_failure,
+        terminal_colors_after_KeyboardInterrupt,
+        terminal_colors_after_success,
         title_after_crash,
         title_after_failure,
         title_after_KeyboardInterrupt,
         title_after_success,
+        traceback_extra_lines,
     )
     from backend.DONT_CHANGE.scripts.common_code import (
         get_log_path,
@@ -68,20 +76,14 @@ try:
     )
     from backend.DONT_CHANGE.settings.backend_settings import (
         CRASH_ICON_PATH,
-        CRASH_TERMINAL_COLORS,
         DEFAULT_SOUND_AFTER_CRASH,
         DEFAULT_SOUND_AFTER_FAILURE,
         DEFAULT_SOUND_AFTER_SUCCESS,
-        ERROR_DATE_FORMAT,
         FAILURE_ICON_PATH,
-        FAILURE_TERMINAL_COLORS,
         KEYBOARD_INTERRUPT_ICON_PATH,
-        KEYBOARDINTERRUPT_TERMINAL_COLORS,
         MAIN_PY_SCRIPT_PATH,
         PIPREQS_MAPPING_PATH,
-        RICH_TRACEBACK_COLOR_THEME,
         SUCCESS_ICON_PATH,
-        SUCCESS_TERMINAL_COLORS,
         TMP_TRACEBACK_JSON_PATH,
         WINDOWS_DIR,
         DEFAULT_SOUND_AFTER_KeyboardInterrupt,
@@ -137,7 +139,7 @@ try:
         if script_path := traceback_payload.get("script_path"):
             lines.append(f"Script: {os.path.abspath(str(script_path))}")
 
-        error_datetime = datetime.now().astimezone().strftime(ERROR_DATE_FORMAT)
+        error_datetime = datetime.now().astimezone().strftime(PRINTED_ERROR_DATE_FORMAT)
         lines.append(f"Error date: {error_datetime}")
         if python_version := traceback_payload.get("python_version"):
             lines.append(f"Python: {python_version}")
@@ -254,10 +256,10 @@ try:
         return Traceback(
             Trace(stacks=list(reversed(stacks))),
             width=None,
-            extra_lines=3,
+            extra_lines=traceback_extra_lines,
             theme=RICH_TRACEBACK_COLOR_THEME["code"],
             word_wrap=True,
-            show_locals=False,
+            show_locals=show_traceback_locals,
         )
 
     class _RichSafeStream:
@@ -438,7 +440,7 @@ try:
             play_sound = play_sound_after_success
             play_sound_default = DEFAULT_SOUND_AFTER_SUCCESS
             open_log = open_log_file_after_success
-            terminal_colors = SUCCESS_TERMINAL_COLORS
+            terminal_colors = terminal_colors_after_success
             terminal_icon = SUCCESS_ICON_PATH
             terminal_title = title_after_success
             close = close_after_success
@@ -447,7 +449,7 @@ try:
             play_sound = play_sound_after_failure
             play_sound_default = DEFAULT_SOUND_AFTER_FAILURE
             open_log = open_log_file_after_failure
-            terminal_colors = FAILURE_TERMINAL_COLORS
+            terminal_colors = terminal_colors_after_failure
             terminal_icon = FAILURE_ICON_PATH
             terminal_title = title_after_failure
             close = close_after_failure
@@ -456,7 +458,7 @@ try:
             play_sound = play_sound_after_crash
             play_sound_default = DEFAULT_SOUND_AFTER_CRASH
             open_log = open_log_file_after_crash
-            terminal_colors = CRASH_TERMINAL_COLORS
+            terminal_colors = terminal_colors_after_crash
             terminal_icon = CRASH_ICON_PATH
             terminal_title = title_after_crash
             close = close_after_crash
@@ -465,7 +467,7 @@ try:
             play_sound = play_sound_after_KeyboardInterrupt
             play_sound_default = DEFAULT_SOUND_AFTER_KeyboardInterrupt
             open_log = open_log_file_after_KeyboardInterrupt
-            terminal_colors = KEYBOARDINTERRUPT_TERMINAL_COLORS
+            terminal_colors = terminal_colors_after_KeyboardInterrupt
             terminal_icon = KEYBOARD_INTERRUPT_ICON_PATH
             terminal_title = title_after_KeyboardInterrupt
             close = close_after_KeyboardInterrupt
