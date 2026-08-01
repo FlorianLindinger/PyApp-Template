@@ -2,6 +2,8 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+add soemhow mode to have stadnin test main and way to switch. global variable?
+
 udpate dont change reademe
 
 udapte pbact tempalte and apply
