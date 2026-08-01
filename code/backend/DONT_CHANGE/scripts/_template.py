@@ -9,7 +9,7 @@ It applies only to Python files below this folder, except:
 - _template.py
 - common_code.py
 - generic_helpers.py
-- shortcut_targets/child_scripts/frontend_python/*.py
+- shortcut_targets/childs/frontend_python/*.py
 - tests/standin_main_py_for_tests.py
 - backend_tools/helper_scripts/standin_main_py_for_start_time_measurement.py
 }

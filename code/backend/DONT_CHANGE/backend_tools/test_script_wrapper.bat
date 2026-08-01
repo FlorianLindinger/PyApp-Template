@@ -14,7 +14,7 @@ cd /d "%~dp0"
 :: ===========================
 :: local variables
 
-set "target_script=..\scripts\shortcut_targets\child_scripts\frontend_python\script_wrapper.py"
+set "target_script=..\scripts\shortcut_targets\childs\frontend_python\script_wrapper.py"
 
 :: ===========================
 :: code execution
