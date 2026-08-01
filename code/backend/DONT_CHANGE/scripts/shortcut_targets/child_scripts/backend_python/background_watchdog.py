@@ -73,8 +73,10 @@ try:
         MAIN_PY_SCRIPT_PATH,
         PROCESS_EXIT_PATH,
         PROCESS_ID_FILE_PATH,
-        START_TIME_DUMMY_MAIN_PY_PATH,
+        STANDIN_MAIN_PY_FOR_START_TIME_MEASUREMENT_PATH,
+        TEST_STANDIN_MAIN_SCRIPT_PATH,
         TMP_TRACEBACK_JSON_PATH,
+        use_standin_main_script,
     )
 
     # ==============================
@@ -334,8 +336,10 @@ try:
         # setup variables used in launch
 
         if os.environ.get(ENV_VAR_TO_SIGNAL_STARTUP_TIME_MEASUREMENT):
-            selected_python_script_path = START_TIME_DUMMY_MAIN_PY_PATH
+            selected_python_script_path = STANDIN_MAIN_PY_FOR_START_TIME_MEASUREMENT_PATH
             os.environ.pop(ENV_VAR_TO_SIGNAL_STARTUP_TIME_MEASUREMENT, None)
+        elif use_standin_main_script:
+            selected_python_script_path = TEST_STANDIN_MAIN_SCRIPT_PATH
         else:
             selected_python_script_path = MAIN_PY_SCRIPT_PATH
 

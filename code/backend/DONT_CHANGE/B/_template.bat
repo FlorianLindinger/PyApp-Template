@@ -1,3 +1,10 @@
+:: {ADD DOCSTRING DESCRIPTION HERE
+::
+:: This template is meant to be applied to all files in this folder
+:: with the exception of files in "helper scripts/generic_helpers/"
+:: }
+
+
 :: disable printing of commands:
 @echo off
 

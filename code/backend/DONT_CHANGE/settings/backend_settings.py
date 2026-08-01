@@ -37,6 +37,11 @@ def get_ini_file_settings(settings_path: str) -> tuple[str, str]:
 # ========================
 
 # ------------------------
+# live settings
+
+use_standin_main_script: bool = False  # If True, normal shortcuts launch TEST_STANDIN_MAIN_SCRIPT_PATH instead of main.py. Use only for backend-tool testing.
+
+# ------------------------
 # folders
 
 DONT_CHANGE_DIR = make_abs("..")
@@ -54,8 +59,11 @@ WINDOWS_DIR = os.environ.get("WINDIR", default="C:\\Windows")
 START_PROGRAM_PATH = SHORTCUT_TARGET_DIR + "\\start_program.py"
 MAIN_PY_SCRIPT_PATH = PYTHON_SCRIPTS_DIR + "\\main.py"
 BACKGROUND_WATCHDOG_PATH = SHORTCUT_TARGET_DIR + "\\child_scripts\\backend_python\\background_watchdog.py"
-START_TIME_DUMMY_MAIN_PY_PATH = DONT_CHANGE_DIR + "\\scripts\\backend_tools\\start_time_dummy_main_script.py"
+STANDIN_MAIN_PY_FOR_START_TIME_MEASUREMENT_PATH = (
+    DONT_CHANGE_DIR + "\\scripts\\backend_tools\\helper_scripts\\standin_main_py_for_start_time_measurement.py"
+)
 PROCESS_EXIT_PATH = SHORTCUT_TARGET_DIR + "\\child_scripts\\backend_python\\process_exit.py"
+TEST_STANDIN_MAIN_SCRIPT_PATH = DONT_CHANGE_DIR + "\\backend_tools\\standin_main_py_for_backend_tools.py"
 
 # ------------------------
 # shortcut launchers related

@@ -2,7 +2,23 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
-move start_time_dummy_main_script to ackend_Tools or not? START_TIME_DUMMY_MAIN_PY_PATH. have dummy main also somehewer
+is standin_main_py_for_start_time_measurement most young pyron?
+
+have tool to apply ruff auto or whatever vsode doe on stcipts and B?
+
+chekc all shrotucts
+
+do i also want a test.py standin? to run tests
+
+for test main.py have it make a tkinter GUI
+... think of more tests i guess
+
+
+move standin_main_py_for_start_time_measurement to backend tools or not? have dummy main also somewhere
+
+print in red that standin scirpt is used but dont have that in standin scipt 
+
+can i have tempalte apply to only stuff in folder? yes i guess
 
 udpat how to chagne icons.txt
 
