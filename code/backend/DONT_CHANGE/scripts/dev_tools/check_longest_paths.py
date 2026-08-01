@@ -72,7 +72,8 @@ try:
 
     def check_longest_paths() -> None:
         """Print the project's longest paths and their Windows path-risk assessment."""
-        print(f"[Info] Scanning repository: {ROOT_DIR}")
+        print("[Info] Scanning repository:")
+        print(f"{ANSI_PATH}{ROOT_DIR}{ANSI_RESET}")
         longest_paths, scanned_files, scanned_directories = find_longest_paths(
             ROOT_DIR,
             top_path_count=TOP_PATH_COUNT,
@@ -81,7 +82,8 @@ try:
         print(f"[Info] Scanned {scanned_files} files and {scanned_directories} directories; .git metadata was skipped.")
         print(f"[Info] Top {len(longest_paths)} longest paths:")
         for index, path in enumerate(longest_paths, start=1):
-            print(f"{index:>2}. {len(str(path)):>3} characters  {ANSI_PATH}{path}{ANSI_RESET}")
+            relative_path = path.relative_to(ROOT_DIR)
+            print(f"{index:>2}. {len(str(path)):>3} characters  {ANSI_PATH}{relative_path}{ANSI_RESET}")
         print_guidance(len(str(longest_paths[0])))
 
     # =========================
