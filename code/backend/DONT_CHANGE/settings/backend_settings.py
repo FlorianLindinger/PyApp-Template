@@ -60,7 +60,7 @@ START_PROGRAM_PATH = SHORTCUT_TARGET_DIR + "\\start_program.py"
 MAIN_PY_SCRIPT_PATH = PYTHON_SCRIPTS_DIR + "\\main.py"
 BACKGROUND_WATCHDOG_PATH = SHORTCUT_TARGET_DIR + "\\childs\\background_watchdog.py"
 STANDIN_MAIN_PY_FOR_START_TIME_MEASUREMENT_PATH = (
-    DONT_CHANGE_DIR + "\\scripts\\backend_tools\\helper_scripts\\standin_main_py_for_start_time_measurement.py"
+    DONT_CHANGE_DIR + "\\scripts\\backend_tools\\helpers\\startup_probe.py"
 )
 PROCESS_EXIT_PATH = SHORTCUT_TARGET_DIR + "\\childs\\process_exit.py"
 TEST_STANDIN_MAIN_SCRIPT_PATH = DONT_CHANGE_DIR + "\\backend_tools\\standin_main_py_for_backend_tools.py"
@@ -183,7 +183,7 @@ BACKEND_FILES_TO_DELETE_AFTER_INSTALL = ["sqlite3.dll", "python.cat"]
 # ------------------------
 # frontend related
 
-FRONTEND_SCRIPT_WRAPPER_PATH = SHORTCUT_TARGET_DIR + "\\childs\\frontend_python\\script_wrapper.py"
+FRONTEND_SCRIPT_WRAPPER_PATH = SHORTCUT_TARGET_DIR + "\\childs\\frontend\\script_wrapper.py"
 FRONTEND_PACKAGES_DIR = BACKEND_DIR + "\\packages"  # UPDATE contents of .gitignore + pyproject.toml
 FRONTEND_PYTHON_DIR = BACKEND_DIR + "\\python"  # UPDATE  contents of.gitignore + pyproject.toml
 FRONTEND_PACKAGES_ARE_INSTALLED_MARKER_PATH = (
