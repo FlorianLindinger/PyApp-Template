@@ -1,4 +1,18 @@
-"""{Template for python scripts that are run by the backend python exe.}"""
+"""{Template for python scripts that are run by the backend python exe. The empty segments are meant to be included even if empty.
+
+This is NOT meant to apply to:
+- {python and packages}
+- /common_code.py
+- /generic_helpers.py
+- /shortcut_targets/child_scripts/frontend_scripts/*.py
+- /../backend_tools/standin_main_script.py
+- /../settings/backend_settings.py
+- /../future/**/*.py
+- /../../developer_settings.py
+- /../../../main.py
+- /../../../settings.py
+
+}"""
 
 # =========================
 # settings
