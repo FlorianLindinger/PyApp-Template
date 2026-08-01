@@ -1,10 +1,27 @@
-:: Create editable placeholder PNGs for the shortcut icons.
+:: Description: Generates editable placeholder PNGs for shortcut icons.
+::
+:: ===========================
+
+:: disable printing of commands:
 @echo off
+
+:: make variables local:
 setlocal
+
+:: ===========================
+:: settings
+
+:: move to folder of this file:
 cd /d "%~dp0"
+
+:: ===========================
+:: local variables
 
 set "ensure_backend_python_script=..\helper_scripts\ensure_backend_python.bat"
 set "target_script=..\..\scripts\icon\generate_PNGs_to_be_replaced.py"
+
+:: ===========================
+:: code execution
 
 call "%ensure_backend_python_script%"
 if not "%ERRORLEVEL%"=="0" exit /b 1
@@ -16,3 +33,5 @@ if "%exit_code%"=="0" exit /b 0
 echo [Error] PNG placeholder generation failed. Press any key to exit.
 pause > nul
 exit /b %exit_code%
+::
+:: ===========================
