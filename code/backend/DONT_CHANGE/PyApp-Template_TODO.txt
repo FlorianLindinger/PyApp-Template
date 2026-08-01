@@ -2,55 +2,32 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+
+mkae isntall abckend python into generic batch maybe under generic subfolder in helper/sctips?
 still test the install embed ypython batch
+
+
+
+what can i do to get warning of all files with exclusions?
 
 it did not unminimze on backend installaion run of nromal shortcut
 
 in readme image circle what all is different. i guess the terminal title and icon and colors. the taskbar goruping and icon. and have comparison what it would look like wibtittu
 
-is standin_main_py_for_start_time_measurement most young pyron?
+is startup_probe most young pyron?
 
-have tool to apply ruff auto or whatever vsode doe on stcipts and B?
-
-chekc all shrotucts
+have tool to apply ruff auto or whatever vsode doe on stcipts and B? or just to main.py?i want a dev_tool to apply auto ruff foramtting 
 
 do i also want a test.py standin? to run tests
-
 for test main.py have it make a tkinter GUI
 ... think of more tests i guess
 
-
-move standin_main_py_for_start_time_measurement to backend tools or not? have dummy main also somewhere
-
 print in red that standin scirpt is used but dont have that in standin scipt 
-
-can i have tempalte apply to only stuff in folder? yes i guess
 
 udpat how to chagne icons.txt
 
-fix "├── B/"
-
-meantion in readme of dont chagne that it is not meant to be changed for an app
-
-add project stricture to DONT_CHANGE readme
-
 do i want to remvoe stuff from pyproject. ask AI what is houd do with it
 
-
-+
-check very  backend logic
-
-add soemhow mode to have stadnin test main and way to switch. global variable?
-
-udpate dont change reademe
-
-udapte pbact tempalte and apply
-
-do i want start tim dimmy maoin scripts to be tempalte? add to _template exlpaicon list
-
-mkae isntall abckend python into generic batch maybe under generic subfolder in helper/sctips?
-
-run path chekc again
 
 move dev_Tools scirpts one up
 
@@ -880,3 +857,5 @@ update all licenses
 ask for emtpy readmeas and WIPs
 
 go dev branch after release
+
+run path chekc again
