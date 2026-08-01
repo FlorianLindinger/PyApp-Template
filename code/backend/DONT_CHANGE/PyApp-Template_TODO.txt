@@ -24,6 +24,7 @@ Python executable: C:\...\python.exe
 
 ======================================
 
+in dev tools dont have _ in lnks?
 
 have tool to apply ruff auto or whatever vsode doe on stcipts and B? or just to main.py?i want a dev_tool to apply auto ruff foramtting 
 
