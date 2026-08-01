@@ -5,7 +5,8 @@
 
 fail_message: str = "[Error] Failed to stop process: {e}"
 close_terminal_on_finish: bool = True
-sleep_before_close_on_success_s: float = 2
+close_countdown_on_success_s: int = 3
+close_countdown_when_no_pid_file_s: int = 5
 
 import os
 
@@ -49,6 +50,13 @@ try:
     # ==============================
     # local functions/classes
 
+    def print_close_countdown(seconds: int) -> None:
+        """Print a countdown before the terminal closes automatically."""
+        print("[Info] Closing in:")
+        for seconds_remaining in range(seconds, 0, -1):
+            print(seconds_remaining)
+            time.sleep(1)
+
     # ==============================
     # main function
 
@@ -66,15 +74,16 @@ try:
             if stale_count == 0:
                 print(f'[Info] No PID file found at "{pid_path}".')
                 print("This could mean it was already stopped via this script.")
+                print_close_countdown(close_countdown_when_no_pid_file_s)
             else:
                 print(f"[Info] Nothing to stop. Removed {stale_count} stale PID entries from {pid_path}.")
-            input("Press enter to exit")
+                input("Press enter to exit")
             return
 
         print_success(f"[Success] Stopped {stopped_count} process(es).")
         if stale_count:
             print_success(f"[Info] Removed {stale_count} stale PID entries.")
-        time.sleep(sleep_before_close_on_success_s)
+        print_close_countdown(close_countdown_on_success_s)
 
     # ==============================
     # execute main function
