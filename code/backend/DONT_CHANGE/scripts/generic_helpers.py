@@ -1074,13 +1074,17 @@ def set_terminal_colors(colors: str | None) -> None:
 # =========================
 # path related/file name related
 
-def get_script_name(with_file_ending: bool = True):
-    out = __file__.replace("\\", "/").rsplit("/", 1)[-1]
+def get_script_name(with_file_ending: bool = True) -> str:
+    """Return the filename of the script that called this helper.
 
-    if with_file_ending:
-        return out
-    else:
-        return out.removesuffix(".py")
+    ``with_file_ending=False`` removes a trailing ``.py`` extension. This is
+    intended for standalone-script status and error messages.
+    """
+    import inspect
+
+    caller_file = inspect.currentframe().f_back.f_globals.get("__file__", "")  # type: ignore[union-attr]
+    name = os.path.basename(caller_file) or os.path.basename(sys.argv[0])
+    return name if with_file_ending else name.removesuffix(".py")
 
 def find_longest_paths(
     root_dir: str | os.PathLike[str],
