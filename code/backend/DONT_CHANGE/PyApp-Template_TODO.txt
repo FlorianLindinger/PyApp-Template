@@ -2,6 +2,8 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+rename sub icon to overlay icon everywher
+
 test terminal_colors_after_KeyboardInterrupt
 
 should i reanme to verify DONT_CAHGE? kind of doesnt matter to leave backend to also test compilation scipts
