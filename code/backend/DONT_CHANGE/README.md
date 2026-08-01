@@ -24,11 +24,13 @@ DONT_CHANGE/
 │   ├── backend_tools/          Backend diagnostics and verification launchers
 │   ├── dev_tools/              Development-tool launchers
 │   ├── helper_scripts/         Shared batch helpers
+│   │   └── generic_helpers/    Parameterized reusable batch helpers
 │   └── miscellaneous/          Utility launchers, including icon generation
-├── backend_tools/              Stand-in and test assets for diagnostics
+├── backend_tools/              Stand-in/test assets and relative-path .lnk shortcuts
 ├── icon_related/               Icon source assets and instructions
 ├── scripts/
 │   ├── backend_tools/          Python implementations of backend tools
+│   │   └── helper_scripts/     Internal helper scripts for backend tools
 │   ├── dev_tools/              Python implementations of development tools
 │   ├── icon/                   Icon-generation Python scripts
 │   ├── setup/                  Backend installation and shortcut generation
@@ -77,8 +79,12 @@ and does not require users to install Python globally.
 `settings/backend_settings.py` is the shared source of backend paths and
 constants. Its relative paths are resolved from the `settings/` folder.
 
-`scripts/setup/install_backend_python.bat` installs the embedded runtime. It
-uses `settings/backend_settings.ini` for:
+`B/helper_scripts/ensure_backend_python.bat` validates the backend
+configuration, calls the reusable
+`B/helper_scripts/generic_helpers/install_embedded_python.bat` installer,
+and runs backend finalization. The generic installer accepts only the Python
+version and installation directory. The backend wrapper uses
+`settings/backend_settings.ini` for:
 
 - `backend_python_version` — embeddable CPython version to download
 - `backend_python_install_dir_relative_path` — required runtime location
@@ -138,6 +144,16 @@ preset. Configure verification targets and exclusions in
 
 Use forward slashes in those configured paths. Exit code `0` means success,
 `1` means a check failed, and `2` means a required tool was unavailable.
+
+For launcher testing, set `use_standin_main_script = True` in
+`settings/backend_settings.py`. Normal shortcut starts will then run
+`backend_tools/standin_main_py_for_backend_tools.py` instead of
+`code/main.py`. It is `False` by default; startup-time measurements always
+use their dedicated dummy script instead.
+
+Relative-path Windows shortcuts with the same tool names are also available in
+`backend_tools/`. They target the canonical batches in `B/backend_tools/`,
+so the diagnostic runners remain convenient to open from that folder.
 
 ### Other tools
 
