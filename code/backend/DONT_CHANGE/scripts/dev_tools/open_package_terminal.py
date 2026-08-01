@@ -17,9 +17,7 @@ try:
     # import Python packages
 
     import os
-
     import subprocess
-
     import sys
 
     # ==============================
@@ -36,7 +34,6 @@ try:
         print_traceback,
     )
     from backend.DONT_CHANGE.scripts.generic_helpers import close_terminal, input_warn
-
     from backend.DONT_CHANGE.settings.backend_settings import (
         FRONTEND_LAUNCHER_FOR_PIP_INSTALL_TERMINAL,
         FRONTEND_PYTHON_EXE,

@@ -17,7 +17,6 @@ try:
     # import Python packages
 
     import os
-
     import sys
 
     # ==============================
@@ -36,7 +35,6 @@ try:
         print_traceback,
     )
     from backend.DONT_CHANGE.scripts.generic_helpers import close_terminal, input_success, input_warn
-
     from backend.DONT_CHANGE.settings.backend_settings import DEFAULT_PACKAGES_PATH
 
     # ==============================

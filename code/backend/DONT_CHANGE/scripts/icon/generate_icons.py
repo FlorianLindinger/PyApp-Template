@@ -4,7 +4,7 @@ import os
 import sys
 import time
 from concurrent.futures import ThreadPoolExecutor
-from functools import lru_cache
+from functools import cache
 
 root_dir = os.path.normpath(os.path.dirname(os.path.abspath(__file__)) + "\\..\\..\\..\\..")
 if root_dir not in sys.path:
@@ -66,7 +66,7 @@ def _delete_existing_icon(path: str) -> None:
             time.sleep(ICON_DELETE_RETRY_DELAY_SECONDS)
 
 
-@lru_cache(maxsize=None)
+@cache
 def _cached_png_image_id(path: str) -> str:
     return get_png_image_id(path)
 
