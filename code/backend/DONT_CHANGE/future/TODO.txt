@@ -2,8 +2,27 @@
 ==== Future ====
 ================
 
+longterm add ways that main scriot can talj to backend and do stuff like the fancy terminal
+
+
+for traceback:
+Exception notes and groups
+Support Python 3.11+ features when available:
+exception.__notes__
+ExceptionGroup
+Nested sub-exceptions
+
+what can i do to get warning of all files with exclusions?
+
+make clcikable path to line in not conhost 
+
+
+implement tests
 
 in compialtion have a sciptr tnot meant to be changed to see defaults? or have defautls that are cpied over to active comilation scipts
+should i reanme to verify DONT_CAHGE? kind of doesnt matter to leave backend to also test compilation scipts
+i want compulation sciopt accessaible to dev -> instide the dev oflder
+
 
 do i want the .gitattributes
 
