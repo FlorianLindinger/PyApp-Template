@@ -1,3 +1,5 @@
+# activate usage of this script insteaf of main.py by setting use_standin_main_script = True in ..\settings\backend_settings.py
+
 # ==============================
 import os
 import sys
