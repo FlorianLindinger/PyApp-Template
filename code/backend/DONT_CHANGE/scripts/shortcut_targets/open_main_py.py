@@ -1,65 +1,88 @@
-"""WIP"""
+"""Open the project's main.py file in the configured editor."""
+
+# ==============================
+# settings
+
+fail_message: str = "[Error] Failed to open main.py file: {e}"
+close_terminal_on_finish: bool = True
+
+import os
+
+root_dir: str = os.path.dirname(__file__) + "\\..\\..\\..\\.."
+
+# ==============================
 
 try:
-    # ==========================================================================
-    # package imports
+    # ==============================
+    # import Python packages
 
-    import os
     import sys
 
-    # ==========================================================================
-    # add root dir for debug cases where this script is called on its own
+    # ==============================
+    # import third-party packages
 
-    root_dir = os.path.dirname(__file__) + "\\..\\..\\..\\.."
+    # ==============================
+    # import from files
+
     if root_dir not in sys.path:
         sys.path.insert(0, root_dir)
 
-    # ==========================================================================
-    # import from common variables and developer settings
-
     from backend.DONT_CHANGE.scripts.common_code import (
-        close_terminal,
         input_warn,
-        open_in_editor,
         print_traceback,
         print_warn,
         set_terminal_colors,
-        set_unminimize_and_foreground_on_first_print,
+    )
+    from backend.DONT_CHANGE.scripts.generic_helpers import (
+        close_terminal,
+        enable_unminimize_and_foreground_terminal_on_first_print,
+        open_in_editor,
     )
     from backend.DONT_CHANGE.settings.backend_settings import MAIN_PY_SCRIPT_PATH
 
-    # =============================
-    # script is inteded to be launched minimized and will un minimize on frist print/error
+    # ==============================
+    # local variables
 
-    set_terminal_colors()
-    set_unminimize_and_foreground_on_first_print()
+    # ==============================
+    # local functions/classes
 
-    # =============================
+    # ==============================
+    # main function
 
-    if not os.path.exists(MAIN_PY_SCRIPT_PATH):
-        print_warn(f'[Error] main.py file ("{MAIN_PY_SCRIPT_PATH}") does not exist.')
-        input_warn("Press enter to exit.")
-    else:
-        try:
-            open_in_editor(MAIN_PY_SCRIPT_PATH)
-        except Exception:
-            print_traceback(f'[Error] Failed to open main.py file "{MAIN_PY_SCRIPT_PATH}".')
+    def main() -> None:
+        """Open main.py or explain why it cannot be opened."""
+        set_terminal_colors()
+        enable_unminimize_and_foreground_terminal_on_first_print()
+
+        if not os.path.exists(MAIN_PY_SCRIPT_PATH):
+            print_warn(f'[Error] main.py file ("{MAIN_PY_SCRIPT_PATH}") does not exist.')
             input_warn("Press enter to exit.")
+            return
 
-    close_terminal()
+        open_in_editor(MAIN_PY_SCRIPT_PATH)
 
-    # =============================
+    # ==============================
+    # execute main function
+
+    if __name__ == "__main__":
+        try:
+            main()
+        except Exception as e:
+            print_traceback(fail_message.format(e=e))
+            input_warn("[Error] Press enter to exit")
+        if close_terminal_on_finish:
+            close_terminal()
 
 except Exception as e:
-    import os
     import traceback
 
     print()
     print()
-    print("=" * 20)
-    print(f"[Error] Failed to open main.py file: {e}")
-    print("-" * 20)
+    print("=" * 30)
+    print(fail_message.format(e=e))
+    print("-" * 30)
     print(traceback.format_exc())
-    print("=" * 20)
-    input("[Error (see above)] Press enter to exit")
-    os._exit(1)  # instead of sys.exit(1) to prevent exception by script calling this script
+    print("=" * 30)
+    input("[Error] Press enter to exit")
+    if close_terminal_on_finish:
+        os._exit(1)

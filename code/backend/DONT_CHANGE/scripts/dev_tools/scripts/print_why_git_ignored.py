@@ -1,16 +1,38 @@
 """Show the Git ignore rule that matches a supplied file or folder path."""
 
+# ==============================
+# settings
+
+# ==============================
+# import Python packages
+
 from __future__ import annotations
 
 import argparse
 import sys
 from pathlib import Path
 
+# ==============================
+# import third-party packages
+
+# ==============================
+# import from files
+
 CODE_DIR = Path(__file__).resolve().parents[5]
 if str(CODE_DIR) not in sys.path:
     sys.path.insert(0, str(CODE_DIR))
 
 from backend.DONT_CHANGE.scripts.generic_helpers import run_git
+
+# ==============================
+# local variables
+
+# ==============================
+# local functions/classes
+
+
+# ==============================
+# main function
 
 
 def main() -> int:
@@ -33,6 +55,10 @@ def main() -> int:
         print("[Info] This path is not ignored by Git.")
         return 0
     return exit_code
+
+
+# ==============================
+# execute main function
 
 
 if __name__ == "__main__":

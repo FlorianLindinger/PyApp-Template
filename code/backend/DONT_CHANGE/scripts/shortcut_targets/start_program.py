@@ -3,6 +3,9 @@
 This script is inteded to be launched in a visible terminal that is minimized on start. It will go to foreground on first print.
 """
 
+# ==============================
+# settings
+
 # {e} will be formatted to exception:
 fail_message = "[Error] Failed during program start: {e}"
 
@@ -21,7 +24,7 @@ try:
     # ==============================
 
     # ==============================
-    # imports from files
+    # import from files
     # ==============================
 
     # add root dir to resolve file imports for debug cases where this script is called on its own:
@@ -55,11 +58,11 @@ try:
     )
 
     # ==============================
-    # define local variables
+    # local variables
     # ==============================
 
     # ==============================
-    # define local functions/classes
+    # local functions/classes
     # ==============================
 
     def get_startupinfo(minimized: bool = False):
@@ -73,7 +76,7 @@ try:
             return None
 
     # ==============================
-    # define main function
+    # main function
     # ==============================
 
     def main() -> None:
