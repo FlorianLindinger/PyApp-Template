@@ -524,7 +524,7 @@ a dd confirmation to all folder removal?
 fix warniong for following after git clone. maybe fix needed for derivative repos:
   'code/DONT_CHANGE/PyApp-Template_VERSION.txt'
   'code/DONT_CHANGE/PyApp-Template_version.txt'
-  'code/DONT_CHANGE/README.txt'
+  'code/backend/DONT_CHANGE/README.md'
   'code/DONT_CHANGE/readme.txt'
   'code/VERSION.txt'
   'code/version.txt'

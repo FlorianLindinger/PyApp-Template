@@ -39,7 +39,7 @@ For example, settings.png produces settings.ico.
 If an input image is absent, or has not been changed from the template image,
 the generator uses the matching bundled fallback from:
 
-    code/backend/DONT_CHANGE/icon_related/
+    code/backend/DONT_CHANGE/scripts/icon/
 
 The bundled fallback files are named default_icon.png,
 default_settings.png, default_stop.png, and so on (including
@@ -74,7 +74,7 @@ Run:
 
     code/backend/icons/regenerate icons.lnk
 
-This launches generate_icons.py with the bundled backend Python. It creates:
+This launches scripts/icon/generate_icons.py with the bundled backend Python. It creates:
 
     icon.ico
     settings.ico
@@ -101,7 +101,7 @@ to reduce regeneration time.
 
 To create readable placeholder PNGs with instructions, run:
 
-    code/backend/DONT_CHANGE/icon_related/generate_PNGs_to_be_replaced.py
+    code/backend/DONT_CHANGE/scripts/icon/generate_PNGs_to_be_replaced.py
 
 The files are written to:
 

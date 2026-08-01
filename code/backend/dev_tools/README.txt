@@ -63,7 +63,7 @@ keeps them working when the project folder moves.
 
 Implementation documentation is located at:
 
-    ../DONT_CHANGE/scripts/dev_tools/README.txt
+    ../DONT_CHANGE/scripts/dev_tools/
 
 
 CAUTION

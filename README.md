@@ -55,11 +55,9 @@ The leading `▶️` is a portable play-button marker in the filename. The launc
 │   └── backend/
 │       ├── developer_settings.py      <<< APP / PYTHON SETTINGS
 │       ├── dev_tools/                 <<< DEVELOPMENT TOOLS
-│       ├── icons/                     <<< ICON SOURCE AND GENERATION TOOLS
-│       ├── python/                    Generated Python runtime
-│       ├── packages/                  Generated Python packages
-│       ├── README_resources/          Resources used by this README
-│       └── DONT_CHANGE/               Template internals (see its README)
+│       ├── icons/                     <<< ICON SOURCE & GENERATION TOOLS
+│       ├── DONT_CHANGE/               Template internals (see its README)
+│       └── ...                        Self explanatory folders   
 ├── logs/                              Generated program logs
 ├── crash logs/                        Generated crash reports
 ```
@@ -70,7 +68,7 @@ for normal project work. The `python`, `packages`, `backend_python`,
 are intentionally excluded from normal Git tracking.
 
 `code/backend/DONT_CHANGE` contains the portable launcher implementation. Its
-[own README](code/backend/DONT_CHANGE/README.txt) explains the installation
+[own README](code/backend/DONT_CHANGE/README.md) explains the installation
 flow, backend settings, safety checks, package lists, diagnostics, and licensing
 in detail.
 
