@@ -138,6 +138,7 @@ def set_terminal_appearance_once(app_id: str) -> None:
 
 
 def set_terminal_colors(colors: str | None = TERMINAL_COLORS) -> None:
+    """Apply a Windows console color code, or leave colors unchanged for ``None``."""
     _set_terminal_colors(colors=colors)
 
 
@@ -328,6 +329,7 @@ def stop_processes_from_pid_file(pid_path: str) -> tuple[int, int, list[str]]:
 
 
 def _read_process_id_entries(path: str) -> list[tuple[int, str]]:
+    """Read valid process IDs and their original non-empty lines from ``path``."""
     lines = read_lines(path)
 
     out = []
@@ -347,10 +349,12 @@ def _read_process_id_entries(path: str) -> list[tuple[int, str]]:
 
 
 def get_python_version() -> str:
+    """Return the version reported by the managed frontend Python executable."""
     return _get_python_version(FRONTEND_PYTHON_EXE)
 
 
 def read_python_version_from_file() -> str:
+    """Read the recorded frontend Python version, falling back to the executable."""
     if not os.path.exists(PYTHON_VERSION_INDICATOR_FILE_PATH):
         print_warn(
             f'[Warning] missing file "{PYTHON_VERSION_INDICATOR_FILE_PATH}". Using fallback python version determination.'
@@ -392,7 +396,8 @@ def is_python_version_correct(target_version: str | float | int) -> tuple[bool, 
 # python distribution related
 
 
-def delete_python_distro():
+def delete_python_distro() -> None:
+    """Safely remove and recreate the managed frontend Python directory."""
     delete_folder_safe(
         FRONTEND_PYTHON_DIR,
         always_prompt_for_confirmation=False,
@@ -408,6 +413,7 @@ def delete_python_distro():
 
 
 def recreate_python_distro() -> None:
+    """Install a fresh managed frontend Python distribution and its helper launcher."""
     delete_python_distro()
 
     rel_path_dist_to_packages = os.path.relpath(path=FRONTEND_PACKAGES_DIR, start=FRONTEND_PYTHON_DIR)
@@ -612,6 +618,7 @@ def are_frontend_packages_installed() -> bool:
 
 
 def ensure_frontend_packages(used_appid_if_slow: str = ""):
+    """Ensure the managed frontend Python and its package directory are installed."""
     ensure_python_distro(used_appid_if_slow=used_appid_if_slow)
 
     if not os.path.exists(FRONTEND_PACKAGES_DIR):  # packages folder not existing - case
@@ -685,6 +692,7 @@ def install_packages_from_file(
 
 
 def install_default_packages(check_auto_determine_flag: bool, app_id_for_slow: str = ""):
+    """Install default packages, optionally rebuilding them from project imports."""
     if check_auto_determine_flag == True:
         if get_auto_find_pckgs_phrase_state() == True:
             set_terminal_appearance_once(app_id_for_slow)
@@ -735,12 +743,14 @@ def get_auto_find_pckgs_phrase_state() -> bool | None:
 
 
 def get_current_packages(with_version: bool = True):
+    """Return packages installed in the managed frontend Python environment."""
     return get_installed_packages(exe_path=FRONTEND_PYTHON_EXE, with_version=with_version)
 
 
 def save_requirements_of_root_folder_noVersion(
     output_path: str = NEEDED_PACKAGES_NO_VERSION_PATH,
 ) -> tuple[bool, str]:
+    """Discover imports below the project root and save unpinned requirements."""
     return (
         save_requirements_of_folder_noVersion(
             target_folder=PYTHON_SCRIPTS_DIR,
@@ -754,6 +764,7 @@ def save_requirements_of_root_folder_noVersion(
 def save_requirements_of_root_folder_withVersion(
     output_path: str = NEEDED_PACKAGES_WITH_VERSION_PATH,
 ) -> bool:
+    """Discover imports below the project root and save version-pinned requirements."""
     ensure_python_distro()
     return save_requirements_of_folder_withVersion(
         target_folder=PYTHON_SCRIPTS_DIR, output_path=output_path, python_exe=FRONTEND_PYTHON_EXE
@@ -761,6 +772,7 @@ def save_requirements_of_root_folder_withVersion(
 
 
 def save_current_packages(output_path: str | None = None, with_version: bool = True):
+    """Save packages installed in the frontend environment to a requirements file."""
     if output_path is None:
         if with_version:
             output_path = CURRENT_PACKAGES_WITH_VERSION_PATH
@@ -771,6 +783,7 @@ def save_current_packages(output_path: str | None = None, with_version: bool = T
 
 
 def save_current_packages_as_default(auto_search_phrase_state: bool | None = None, with_version: bool = True):
+    """Save current frontend packages as the project's default package list."""
     if auto_search_phrase_state is None:
         auto_search_phrase_state = get_auto_find_pckgs_phrase_state()
 
