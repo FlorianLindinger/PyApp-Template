@@ -7,13 +7,14 @@ import sys
 import time
 
 runs = int(sys.argv[1])
-file_dir=os.path.normpath(sys.argv[2])
-files= sys.argv[3:]
+file_dir = os.path.normpath(sys.argv[2])
+files = sys.argv[3:]
+
 
 def run_once(code: str) -> float:
     start = time.perf_counter_ns()
     result = subprocess.run(  # noqa
-        [sys.executable, "-c", f"import sys;sys.path.insert(0, r'{file_dir}');"+ code],
+        [sys.executable, "-c", f"import sys;sys.path.insert(0, r'{file_dir}');" + code],
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
@@ -38,7 +39,6 @@ def format_stats(values: list[float], baseline_ms: float) -> str:
 
 
 def main() -> int:
-
     baseline = measure("pass", runs)
     baseline_median = statistics.median(baseline)
 

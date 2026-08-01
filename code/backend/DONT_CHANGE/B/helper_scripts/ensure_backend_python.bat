@@ -11,15 +11,13 @@ setlocal EnableExtensions DisableDelayedExpansion
 :: ===========================
 :: settings
 
-:: move to folder of this file:
-cd /d "%~dp0"
-
 :: ===========================
-:: local variables
+:: local variables (use "%~dp0" to indicate in a path the folder of this file, e.g. "%~dp0helper_scripts\ensure_backend_python.bat")
 
-set "SETTINGS_FILE=..\..\settings\backend_settings.ini"
-set "backend_python_exe=..\..\backend_python\python.exe"
-set "install_embedded_python_script=generic_helpers\install_embedded_python.bat"
+set "SETTINGS_FILE=%~dp0..\..\settings\backend_settings.ini"
+set "backend_python_exe=%~dp0..\..\backend_python\python.exe"
+set "install_embedded_python_script=%~dp0generic_helpers\install_embedded_python.bat"
+set "finish_installation_script=%~dp0..\..\scripts\setup\finish_backend_installation.py"
 
 :: ===========================
 :: code execution

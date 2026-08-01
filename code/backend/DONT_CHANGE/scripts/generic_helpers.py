@@ -1074,6 +1074,7 @@ def set_terminal_colors(colors: str | None) -> None:
 # =========================
 # path related/file name related
 
+
 def get_script_name(with_file_ending: bool = True) -> str:
     """Return the filename of the script that called this helper.
 
@@ -1085,6 +1086,7 @@ def get_script_name(with_file_ending: bool = True) -> str:
     caller_file = inspect.currentframe().f_back.f_globals.get("__file__", "")  # type: ignore[union-attr]
     name = os.path.basename(caller_file) or os.path.basename(sys.argv[0])
     return name if with_file_ending else name.removesuffix(".py")
+
 
 def find_longest_paths(
     root_dir: str | os.PathLike[str],
@@ -2205,7 +2207,20 @@ $stream = [IO.File]::Open($env:PNG_OUTPUT_PATH, 'Create'); try { $encoder.Save($
     _run_wpf_powershell(
         script,
         PNG_OUTPUT_PATH=output_path,
-        PNG_TEXT_SETTINGS=json.dumps({"lines": list(lines), "width": width, "height": height, "font_family": font_family, "font_size": font_size, "min_font_size": min_font_size, "bold": bold, "text_color": text_color, "background_color": background_color, "padding": padding}),
+        PNG_TEXT_SETTINGS=json.dumps(
+            {
+                "lines": list(lines),
+                "width": width,
+                "height": height,
+                "font_family": font_family,
+                "font_size": font_size,
+                "min_font_size": min_font_size,
+                "bold": bold,
+                "text_color": text_color,
+                "background_color": background_color,
+                "padding": padding,
+            }
+        ),
     )
     return output_path
 
@@ -2244,7 +2259,9 @@ def generate_ico_from_png(
     if not sizes or any(not 0 < size <= 256 for size in sizes):
         raise ValueError("icon_sizes must contain sizes from 1 through 256.")
     aliases = {"up": "top", "down": "bottom", "middle": "center", "centre": "center"}
-    tokens = [aliases.get(token, token) for token in sub_icon_alignment.lower().replace("_", " ").replace("-", " ").split()]
+    tokens = [
+        aliases.get(token, token) for token in sub_icon_alignment.lower().replace("_", " ").replace("-", " ").split()
+    ]
     if not tokens or any(token not in {"top", "bottom", "left", "right", "center"} for token in tokens):
         raise ValueError(f"Unsupported sub_icon_alignment: {sub_icon_alignment!r}")
     vertical = next((token for token in tokens if token in {"top", "bottom"}), "center")
@@ -2286,13 +2303,30 @@ if ($env:ICO_OVERLAY_URI) {
 @($env:ICO_SIZES -split ',' | ForEach-Object { [pscustomobject]@{ size=[int]$_; png=(Square $base ([int]$_)) } }) | ConvertTo-Json -Compress
 """
 
-    payload = json.loads(_run_wpf_powershell(script, ICO_BASE_URI=Path(base_png_path).resolve().as_uri(), ICO_OVERLAY_URI=Path(sub_png_path).resolve().as_uri() if sub_png_path else "", ICO_OVERLAY_SCALE=str(sub_icon_area_scale_factor), ICO_VERTICAL=vertical, ICO_HORIZONTAL=horizontal, ICO_SIZES=",".join(map(str, sizes))))
-    if isinstance(payload, dict): payload = [payload]
+    payload = json.loads(
+        _run_wpf_powershell(
+            script,
+            ICO_BASE_URI=Path(base_png_path).resolve().as_uri(),
+            ICO_OVERLAY_URI=Path(sub_png_path).resolve().as_uri() if sub_png_path else "",
+            ICO_OVERLAY_SCALE=str(sub_icon_area_scale_factor),
+            ICO_VERTICAL=vertical,
+            ICO_HORIZONTAL=horizontal,
+            ICO_SIZES=",".join(map(str, sizes)),
+        )
+    )
+    if isinstance(payload, dict):
+        payload = [payload]
     layers = [(int(entry["size"]), base64.b64decode(entry["png"])) for entry in payload]
     offset = 6 + 16 * len(layers)
     entries, data = [], bytearray()
     for size, png in layers:
-        entries.append(struct.pack("<BBBBHHII", 0 if size == 256 else size, 0 if size == 256 else size, 0, 0, 1, 32, len(png), offset))
-        data.extend(png); offset += len(png)
-    with open(output_path, "wb") as file: file.write(struct.pack("<HHH", 0, 1, len(layers)) + b"".join(entries) + data)
+        entries.append(
+            struct.pack(
+                "<BBBBHHII", 0 if size == 256 else size, 0 if size == 256 else size, 0, 0, 1, 32, len(png), offset
+            )
+        )
+        data.extend(png)
+        offset += len(png)
+    with open(output_path, "wb") as file:
+        file.write(struct.pack("<HHH", 0, 1, len(layers)) + b"".join(entries) + data)
     return output_path
