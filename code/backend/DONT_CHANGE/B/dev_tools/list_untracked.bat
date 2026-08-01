@@ -1,8 +1,15 @@
+:: Description: Lists untracked non-ignored files.
+::
+:: ===========================
+
 :: disable printing of commands:
 @echo off
 
 :: make variables local:
 setlocal
+
+:: ===========================
+:: settings
 
 :: move to folder of this file:
 cd /d "%~dp0"
@@ -39,3 +46,5 @@ if "%exit_code%"=="0" (
 echo [Error] Python script failed with exit code %exit_code%. Press any key to exit.
 pause > nul
 exit %exit_code%
+::
+:: ===========================

@@ -1,40 +1,73 @@
+:: Description: Ensures the backend-specific embedded Python is installed.
+::
+:: ===========================
+
 :: disable printing of commands:
 @echo off
 
 :: make variables local:
-setlocal
+setlocal EnableExtensions DisableDelayedExpansion
+
+:: ===========================
+:: settings
 
 :: move to folder of this file:
 cd /d "%~dp0"
 
-
 :: ===========================
 :: local variables
 
+set "SETTINGS_FILE=..\..\settings\backend_settings.ini"
 set "backend_python_exe=..\..\backend_python\python.exe"
-set "install_backend_script=..\..\scripts\setup\install_backend_python.bat"
+set "install_embedded_python_script=generic_helpers\install_embedded_python.bat"
 
 :: ===========================
 :: code execution
 
-:: convert rel path to abs:
 for %%I in ("%backend_python_exe%") do set "backend_python_exe=%%~fI"
-
-:: install backend Python if not already installed. This also installs pip and the packages:
 if exist "%backend_python_exe%" goto :success
 
-:: error handling and exit is also inside the installer:
-call "%install_backend_script%"
+:: Read only the values required to install this backend runtime.
+for /f "usebackq tokens=1,* delims== " %%A in ("%SETTINGS_FILE%") do (
+    if /i "%%A"=="backend_python_version" set "VERSION=%%B"
+    if /i "%%A"=="backend_python_install_dir_relative_path" set "INSTALL_DIR_RELATIVE_PATH=%%B"
+    if /i "%%A"=="backend_python_finish_installation_relative_path" set "FINISH_INSTALLATION_RELATIVE_PATH=%%B"
+)
+if not defined VERSION goto :invalid_settings
+
+for %%I in ("%SETTINGS_FILE%") do set "SETTINGS_DIR=%%~dpI"
+for %%I in ("%SETTINGS_DIR%%INSTALL_DIR_RELATIVE_PATH%") do set "INSTALL_DIR=%%~fI"
+for %%I in ("%SETTINGS_DIR%%FINISH_INSTALLATION_RELATIVE_PATH%") do set "FINISH_INSTALLATION_PATH=%%~fI"
+
+:: The backend wrapper fixes its two allowed targets before it calls the
+:: reusable installer. The generic installer is deliberately parameterized.
+for %%I in ("%SETTINGS_DIR%..\backend_python") do set "EXPECTED_INSTALL_DIR=%%~fI"
+for %%I in ("%SETTINGS_DIR%..\scripts\setup\finish_backend_installation.py") do set "EXPECTED_FINISH_INSTALLATION_PATH=%%~fI"
+if /i not "%INSTALL_DIR%"=="%EXPECTED_INSTALL_DIR%" goto :invalid_settings
+if /i not "%FINISH_INSTALLATION_PATH%"=="%EXPECTED_FINISH_INSTALLATION_PATH%" goto :invalid_settings
+
+if not exist "%FINISH_INSTALLATION_PATH%" goto :invalid_settings
+
+call "%install_embedded_python_script%" "%VERSION%" "%INSTALL_DIR%"
 if errorlevel 1 goto :failure
+
+"%backend_python_exe%" "%FINISH_INSTALLATION_PATH%"
+if errorlevel 1 goto :failure
+
 if not exist "%backend_python_exe%" goto :failure
 
 :success
-:: setlocal would normally hide this value; explicitly return it to the parent batch:
 endlocal & set "python_exe=%backend_python_exe%"
 exit /b 0
 
+:invalid_settings
+echo [Error] Refusing missing or invalid backend_settings.ini values.
+goto :failure
+
 :failure
-echo [Error] Backend Python installation failed. Aborting. Press any key to exit.
-pause > nul
+if defined backend_python_exe del "%backend_python_exe%" > nul 2>&1
+echo [Error] Backend Python installation failed. Aborting.
 endlocal
 exit /b 1
+::
+:: ===========================
