@@ -6,10 +6,6 @@ still test the install embed ypython batch
 
 it did not unminimze on backend installaion run of nromal shortcut
 
-i move to folder of this file in template but would that kill wdir of main?
-
-i guesssa have batches again in backent_tools to have settigns there and then pass them on to baches in B and pass thjat to python. I guess have it in batch tempkates to pass args. but not have scirpt name itself. otuerhwise i cant rename safely in backend. and dont have intermediate batches but use ensur packend tpyon. hm make them still gollow the batc htempalte and update that in the tampleate. 
-
 in readme image circle what all is different. i guess the terminal title and icon and colors. the taskbar goruping and icon. and have comparison what it would look like wibtittu
 
 is standin_main_py_for_start_time_measurement most young pyron?
