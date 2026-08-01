@@ -5,22 +5,20 @@ from __future__ import annotations
 import argparse
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
-# =============================================================================
-# Verification settings
-# Paths are relative to the code folder. Use forward slashes.
-
-TARGETS = ("backend",)
-
-# Files and folders listed here are skipped by both Ruff and Pyrefly.
-EXCLUDED_FILES: tuple[str, ...] = ()
-EXCLUDED_FOLDERS = ("backend/DONT_CHANGE/future",)
-
-# =============================================================================
-
-VALID_PRESETS = ("basic", "default", "strict")
 CODE_DIR = Path(__file__).resolve().parents[4]
+if str(CODE_DIR) not in sys.path:
+    sys.path.insert(0, str(CODE_DIR))
+
+from backend.DONT_CHANGE.settings.backend_settings import (
+    BACKEND_VERIFICATION_DEFAULT_PRESET,
+    BACKEND_VERIFICATION_EXCLUDED_FILES,
+    BACKEND_VERIFICATION_EXCLUDED_FOLDERS,
+    BACKEND_VERIFICATION_TARGETS,
+    BACKEND_VERIFICATION_VALID_PRESETS,
+)
 
 
 def tool_command(tool: str) -> list[str]:
@@ -38,8 +36,8 @@ def tool_command(tool: str) -> list[str]:
 
 def exclusion_patterns() -> tuple[str, ...]:
     """Return file and recursive folder patterns understood by both tools."""
-    folder_patterns = tuple(f"{folder.rstrip('/')}/**" for folder in EXCLUDED_FOLDERS)
-    return EXCLUDED_FILES + folder_patterns
+    folder_patterns = tuple(f"{folder.rstrip('/')}/**" for folder in BACKEND_VERIFICATION_EXCLUDED_FOLDERS)
+    return BACKEND_VERIFICATION_EXCLUDED_FILES + folder_patterns
 
 
 def run_check(label: str, command: list[str]) -> bool:
@@ -58,15 +56,15 @@ def verify(preset: str) -> int:
         print(f"[Error] {error}")
         return 2
 
-    ruff_patterns = EXCLUDED_FILES + EXCLUDED_FOLDERS
+    ruff_patterns = BACKEND_VERIFICATION_EXCLUDED_FILES + BACKEND_VERIFICATION_EXCLUDED_FOLDERS
     ruff_exclusions = ["--exclude", ",".join(ruff_patterns)] if ruff_patterns else []
     pyrefly_exclusions = [argument for pattern in exclusion_patterns() for argument in ("--project-excludes", pattern)]
 
     checks = (
-        ("Ruff lint: backend", [*ruff, "check", *TARGETS, *ruff_exclusions]),
+        ("Ruff lint: backend", [*ruff, "check", *BACKEND_VERIFICATION_TARGETS, *ruff_exclusions]),
         (
             "Ruff format: backend",
-            [*ruff, "format", "--check", *TARGETS, *ruff_exclusions],
+            [*ruff, "format", "--check", *BACKEND_VERIFICATION_TARGETS, *ruff_exclusions],
         ),
         (
             f"Pyrefly {preset}: backend",
@@ -76,7 +74,7 @@ def verify(preset: str) -> int:
                 "--preset",
                 preset,
                 *pyrefly_exclusions,
-                *TARGETS,
+                *BACKEND_VERIFICATION_TARGETS,
             ],
         ),
     )
@@ -98,10 +96,10 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "preset",
-        choices=VALID_PRESETS,
+        choices=BACKEND_VERIFICATION_VALID_PRESETS,
         nargs="?",
-        default="default",
-        help="Pyrefly preset to use (default: default).",
+        default=BACKEND_VERIFICATION_DEFAULT_PRESET,
+        help=f"Pyrefly preset to use (default: {BACKEND_VERIFICATION_DEFAULT_PRESET}).",
     )
     return verify(parser.parse_args().preset)
 
