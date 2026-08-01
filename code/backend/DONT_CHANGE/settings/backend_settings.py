@@ -176,8 +176,8 @@ BACKEND_PYTHON_ZIP_REL_PATH = f"python{_backend_python_major_minor_version}.zip"
 BACKEND_PACKAGES_DIR = (
     DONT_CHANGE_DIR + "\\backend_packages"
 )  # UPDATE contents of BACKEND_PYTHON_pth_FILE + .gitignore + pyproject.toml
-BACKEND_PACKAGE_REQUIREMENTS_FILE = make_abs("backend_packages_list.txt")
-BACKEND_BUILD_TOOLS_REQUIREMENTS_FILE = make_abs("backend_build_tools_list.txt")
+BACKEND_PACKAGE_REQUIREMENTS_FILE = make_abs("backend_packages.txt")
+BACKEND_BUILD_TOOLS_REQUIREMENTS_FILE = make_abs("backend_build_tools.txt")
 BACKEND_FILES_TO_DELETE_AFTER_INSTALL = ["sqlite3.dll", "python.cat"]
 
 # ------------------------

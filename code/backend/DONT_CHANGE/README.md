@@ -1,61 +1,36 @@
 # PyApp-Template backend internals
 
-This folder is the portable Windows launcher layer of PyApp-Template. It
-creates and starts the local Python environments, generated shortcuts, logging,
-terminal behavior, process monitoring, and error handling around the
-application in `code/main.py`.
-
-Most application work belongs outside this folder:
-
-- `code/main.py` — application code
-- `code/settings.py` — application settings
-- `code/backend/developer_settings.py` — launcher and development settings
-- `code/backend/icons/` — icon source files
-- `code/backend/dev_tools/` — user-facing development-tool output
-
-Treat `DONT_CHANGE` as backend implementation code. Changes here are possible,
-but make future template updates harder to merge.
+This folder is the portable Windows launcher layer of [PyApp-Template](https://github.com/FlorianLindinger/PyApp-Template).
+It creates and starts the local Python environments, generated shortcuts, logging, terminal behavior, process monitoring, and error handling around the application in `code/main.py`.
+Files here are not meant to be changed for the implementation of a specific app.
 
 ## Project structure
 
 ```text
 DONT_CHANGE/
-├── B/                         Short batch launchers
-│   ├── backend_tools/          Backend diagnostics and verification launchers
-│   ├── dev_tools/              Development-tool launchers
-│   ├── helper_scripts/         Shared batch helpers
-│   │   └── generic_helpers/    Parameterized reusable batch helpers
-│   └── miscellaneous/          Utility launchers, including icon generation
-├── backend_tools/              Stand-in/test assets and direct batch runners
-├── icon_related/               Icon source assets and instructions
-├── scripts/
-│   ├── backend_tools/          Python implementations of backend tools
-│   │   └── helper_scripts/     Internal helper scripts for backend tools
-│   ├── dev_tools/              Python implementations of development tools
-│   ├── icon/                   Icon-generation Python scripts
-│   ├── setup/                  Backend installation and shortcut generation
-│   └── shortcut_targets/       Python targets launched by app shortcuts
-├── settings/                   Shared backend settings and dependency lists
-├── temporary/                  Generated runtime state
-├── backend_python/             Generated embedded Python runtime
-├── backend_packages/           Generated backend-only dependencies
-└── future/                     Unfinished experiments and deferred ideas
+├── settings/                      Backend configuration and dependencies
+│   ├── backend_settings.py         Shared backend settings
+│   ├── backend_settings.ini        Embedded-Python settings
+│   ├── backend_packages.txt        Runtime dependency list
+│   └── backend_build_tools.txt     Installation dependency list
+├── backend_tools/                 Diagnostics and tests
+├── icon_related/                  Icon assets and instructions
+├── B/                             Batch launchers (short path length)
+│   ├── [*].bat                    Generated-shortcut targets (short path length)
+│   └── .../                       Folders containing helper and other launcher batches
+├── scripts/                       Python implementations
+│   ├── backend_tools/             Backend diagnostics
+│   ├── dev_tools/                 Development tools
+│   ├── git_hooks/                 Git hooks
+│   ├── icon/                      Icon related
+│   ├── setup/                     Installation and shortcuts
+│   ├── shortcut_targets/          Shortcut targets
+│   ├── tests/                     Test entry points
+│   ├── common_code.py             Shared launcher code
+│   └── generic_helpers.py         Shared generic utilities
+├── future/                        Experiments and deferred ideas
+└── ...                            Self-explanatory files and folders
 ```
-
-### Why the folder is named `B`
-
-`B` means **batch**. It holds the small `.bat` files that start backend
-scripts. Generated Windows shortcuts target these batches rather than Python
-files directly.
-
-- `B/dev_tools/` starts `scripts/dev_tools/`.
-- `backend_tools/` contains direct diagnostic and verification runners. They
-  ensure the embedded backend Python when required, then start
-  `scripts/backend_tools/`.
-- `B/miscellaneous/` contains utility launchers such as
-  `generate_icon_pngs.bat`.
-
-The short name keeps shortcut target paths short and predictable on Windows.
 
 ## How startup works
 
@@ -97,8 +72,8 @@ before it deletes or executes anything.
 
 To change backend dependencies, edit:
 
-- `settings/backend_packages_list.txt` for runtime dependencies
-- `settings/backend_build_tools_list.txt` for temporary installation tools
+- `settings/backend_packages.txt` for runtime dependencies
+- `settings/backend_build_tools.txt` for temporary installation tools
 
 Reinstall the backend runtime after changing either list.
 
