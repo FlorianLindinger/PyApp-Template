@@ -1,19 +1,19 @@
-"""{Template for python scripts that are run by the backend python exe. The empty segments are meant to be included even if empty.
+"""{ADD DOCSTRING DESCRIPTION HERE
 
-This is NOT meant to apply to:
-- {python and packages}
-- /common_code.py
-- /generic_helpers.py
-- /shortcut_targets/child_scripts/frontend_scripts/*.py
-- /../backend_tools/standin_main_script.py
-- /../settings/backend_settings.py
-- /../future/**/*.py
-- /backend_tools/start_time_dummy_main_script.py"
-- /../../developer_settings.py
-- /../../../main.py
-- /../../../settings.py
+Template for backend-Python scripts inside the parent folder of this file.
 
-}"""
+The empty sections are intentionally kept, even when they have no contents.
+
+It applies only to Python files below this folder, except:
+
+- _template.py
+- common_code.py
+- generic_helpers.py
+- shortcut_targets/child_scripts/frontend_python/*.py
+- tests/standin_main_py_for_tests.py
+- backend_tools/helper_scripts/standin_main_py_for_start_time_measurement.py
+}
+"""
 
 # =========================
 # settings
