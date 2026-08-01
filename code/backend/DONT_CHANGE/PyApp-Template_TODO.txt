@@ -2,9 +2,7 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
-
-mkae isntall abckend python into generic batch maybe under generic subfolder in helper/sctips?
-still test the install embed ypython batch
+still test the install embed ypython batch generic
 
 
 
@@ -29,11 +27,6 @@ udpat how to chagne icons.txt
 do i want to remvoe stuff from pyproject. ask AI what is houd do with it
 
 
-move dev_Tools scirpts one up
-
-apply batcht tempalte and write wher it doesnt apply
-
-in compialtion have a sciptr tnot meant to be changed to see defaults? or have defautls that are cpied over to active comilation scipts
 
 rename sub icon to overlay icon everywher
 
