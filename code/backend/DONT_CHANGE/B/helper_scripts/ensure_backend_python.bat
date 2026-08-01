@@ -12,7 +12,7 @@ cd /d "%~dp0"
 :: local variables
 
 set "backend_python_exe=..\..\backend_python\python.exe"
-set "install_backend_script=install_backend_python.bat"
+set "install_backend_script=..\..\scripts\setup\install_backend_python.bat"
 
 :: ===========================
 :: code execution

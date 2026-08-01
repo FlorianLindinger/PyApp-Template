@@ -10,9 +10,8 @@ cd /d "%~dp0"
 :: ===========================
 :: local variables
 
-set "ensure_backend_python_script=..\..\setup\ensure_backend_python.bat"
-set "target_script=%~dp0..\scripts\install_local_reqs.py"
-set "requirements_folder=%~dp0..\..\..\..\dev_tools\change python packages"
+set "ensure_backend_python_script=..\helper_scripts\ensure_backend_python.bat"
+set "target_script=..\..\scripts\dev_tools\scripts\list_tracked_ignored.py"
 
 :: ===========================
 :: code execution
@@ -24,13 +23,15 @@ if not "%ERRORLEVEL%"=="0" (
     exit 1
 )
 
-:: run the script from the folder that contains the local requirements.txt:
-cd /d "%requirements_folder%"
+:: run python script and forward all args:
 "%python_exe%" "%target_script%" %*
 set "exit_code=%ERRORLEVEL%"
 
-:: exit if success:
+:: keep read-only command output visible on success:
 if "%exit_code%"=="0" (
+    echo.
+    echo [Success] Press any key to exit.
+    pause > nul
     exit 0
 )
 
