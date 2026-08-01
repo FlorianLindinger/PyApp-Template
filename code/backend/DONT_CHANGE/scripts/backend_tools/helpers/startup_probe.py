@@ -1,5 +1,7 @@
 """Python 3.5+-compatible main.py stand-in for startup-time measurements."""
 
+# ruff: noqa: UP032 UP030
+
 import os
 import sys
 import time

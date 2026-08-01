@@ -434,7 +434,7 @@ try:
     if __name__ == "__main__":
         try:
             main()
-        except Exception as e:
+        except Exception:
             # WIP_ save_exception_as_json()
             process_exit_here_or_in_new_terminal(
                 exit_code=4,

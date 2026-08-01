@@ -30,18 +30,14 @@ if not "%ERRORLEVEL%"=="0" (
     exit 1
 )
 
+:run
+cls
 :: run python script and forward all args:
 "%python_exe%" "%target_script%" %*
 set "exit_code=%ERRORLEVEL%"
 
-:: exit if success:
-if "%exit_code%"=="0" (
-    exit 0
-)
-
-:: print and confirm to close on failure:
-echo [Error] Python script failed with exit code %exit_code%. Press any key to exit.
-pause > nul
-exit %exit_code%
+if not "%exit_code%"=="0" echo [Error] Python script failed with exit code %exit_code%.
+set /p "_rescan=[Input] Press Enter to rescan: "
+goto :run
 ::
 :: ===========================

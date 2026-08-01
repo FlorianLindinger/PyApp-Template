@@ -1,14 +1,12 @@
 """Run backend lint, formatting, and type-check verification."""
 
-from __future__ import annotations
-
 import argparse
 import shutil
 import subprocess
 import sys
 from pathlib import Path
 
-CODE_DIR = Path(__file__).resolve().parents[3]
+CODE_DIR = Path(__file__).resolve().parents[4]
 if str(CODE_DIR) not in sys.path:
     sys.path.insert(0, str(CODE_DIR))
 
@@ -22,12 +20,18 @@ from backend.DONT_CHANGE.settings.backend_settings import (
 
 
 def tool_command(tool: str) -> list[str]:
-    """Use an installed tool directly, falling back to an ephemeral uv tool."""
+    """Use a PATH tool, this interpreter's tool, or an ephemeral uv tool."""
     installed_tool = shutil.which(tool)
     if installed_tool:
         return [installed_tool]
 
-    uvx = shutil.which("uvx")
+    scripts_dir = Path(sys.executable).parent / "Scripts"
+    embedded_tool = scripts_dir / f"{tool}.exe"
+    if embedded_tool.is_file():
+        return [str(embedded_tool)]
+
+    embedded_uvx = scripts_dir / "uvx.exe"
+    uvx = shutil.which("uvx") or (str(embedded_uvx) if embedded_uvx.is_file() else None)
     if uvx:
         return [uvx, tool]
 
@@ -47,8 +51,8 @@ def run_check(label: str, command: list[str]) -> bool:
     return result.returncode == 0
 
 
-def verify(preset: str) -> int:
-    """Run every backend verification gate for a Pyrefly preset."""
+def verify(preset: str, *, fix: bool) -> int:
+    """Run backend verification, optionally applying safe Ruff fixes first."""
     try:
         ruff = tool_command("ruff")
         pyrefly = tool_command("pyrefly")
@@ -61,10 +65,13 @@ def verify(preset: str) -> int:
     pyrefly_exclusions = [argument for pattern in exclusion_patterns() for argument in ("--project-excludes", pattern)]
 
     checks = (
-        ("Ruff lint: backend", [*ruff, "check", *BACKEND_VERIFICATION_TARGETS, *ruff_exclusions]),
         (
-            "Ruff format: backend",
-            [*ruff, "format", "--check", *BACKEND_VERIFICATION_TARGETS, *ruff_exclusions],
+            "Ruff lint/fix: backend" if fix else "Ruff lint: backend",
+            [*ruff, "check", *(("--fix",) if fix else ()), *BACKEND_VERIFICATION_TARGETS, *ruff_exclusions],
+        ),
+        (
+            "Ruff format/fix: backend" if fix else "Ruff format: backend",
+            [*ruff, "format", *(("--check",) if not fix else ()), *BACKEND_VERIFICATION_TARGETS, *ruff_exclusions],
         ),
         (
             f"Pyrefly {preset}: backend",
@@ -73,6 +80,8 @@ def verify(preset: str) -> int:
                 "check",
                 "--preset",
                 preset,
+                "--python-interpreter-path",
+                str(Path(sys.executable).resolve()),
                 *pyrefly_exclusions,
                 *BACKEND_VERIFICATION_TARGETS,
             ],
@@ -101,7 +110,11 @@ def main() -> int:
         default=BACKEND_VERIFICATION_DEFAULT_PRESET,
         help=f"Pyrefly preset to use (default: {BACKEND_VERIFICATION_DEFAULT_PRESET}).",
     )
-    return verify(parser.parse_args().preset)
+    parser.add_argument(
+        "--fix", action="store_true", help="Apply safe Ruff lint and formatting fixes before verification."
+    )
+    arguments = parser.parse_args()
+    return verify(arguments.preset, fix=arguments.fix)
 
 
 if __name__ == "__main__":

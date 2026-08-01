@@ -102,7 +102,7 @@ application startup.
 2. Ruff formatting verification
 3. Pyrefly type checking
 
-Run one of these launchers from the `code/` folder:
+Run a check-only launcher from the `code/` folder:
 
 ```bat
 backend\DONT_CHANGE\backend_tools\verify_backend_basic.bat
@@ -111,7 +111,9 @@ backend\DONT_CHANGE\backend_tools\verify_backend_strict.bat
 ```
 
 Each launcher ensures the embedded backend Python before running the selected
-preset. Configure verification targets and exclusions in
+preset. To apply Ruff's safe automatic fixes and formatting first, use the
+equivalent `fix_and_verify_backend_*.bat` launcher.
+Configure verification targets and exclusions in
 `settings/backend_settings.py`:
 
 - `BACKEND_VERIFICATION_TARGETS`
