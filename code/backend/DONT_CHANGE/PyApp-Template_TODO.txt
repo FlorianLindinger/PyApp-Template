@@ -1,6 +1,14 @@
 ======================================
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
+
+meantion in readme of dont chagne that it is not meant to be changed for an app
+
+add project stricture to DONT_CHANGE readme
+
+do i want to remvoe stuff from pyproject. ask AI what is houd do with it
+
+
 +
 check very  backend logic
 
