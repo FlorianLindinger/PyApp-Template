@@ -2,6 +2,10 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+test terminal_colors_after_KeyboardInterrupt
+
+should i reanme to verify DONT_CAHGE? kind of doesnt matter to leave backend to also test compilation scipts
+
 move icon and backend test tools under scriptbs and have batch starters for them. does it ensure backend for icon stuff?
 
 define/do tample to common code and helpers
