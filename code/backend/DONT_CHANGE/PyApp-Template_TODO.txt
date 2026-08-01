@@ -2,6 +2,12 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+move start_time_dummy_main_script to ackend_Tools or not? START_TIME_DUMMY_MAIN_PY_PATH. have dummy main also somehewer
+
+udpat how to chagne icons.txt
+
+fix "├── B/"
+
 meantion in readme of dont chagne that it is not meant to be changed for an app
 
 add project stricture to DONT_CHANGE readme
@@ -60,7 +66,7 @@ move shrotcut target of shrotcut genrator to B out of princeiple? also it is sam
 in common code see if functions still need params
 
 The only plausible candidates to move to settings are tool-specific:
-        backend_tools\helper_scripts\verify_backend.py
+        scripts\backend_tools\verify_backend.py
         TARGETS, EXCLUDED_FILES, and EXCLUDED_FOLDERS are real verification settings. You could move them into settings\backend_verification_settings.py if you want all editable policy in one place.
 
 i want compulation sciopt accessaible to dev -> instide the dev oflder

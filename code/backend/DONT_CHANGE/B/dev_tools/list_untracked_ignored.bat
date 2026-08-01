@@ -11,7 +11,7 @@ cd /d "%~dp0"
 :: local variables
 
 set "ensure_backend_python_script=..\helper_scripts\ensure_backend_python.bat"
-set "target_script=..\..\scripts\dev_tools\scripts\list_untracked_ignored.py"
+set "target_script=..\..\scripts\dev_tools\list_untracked_ignored.py"
 
 :: ===========================
 :: code execution
