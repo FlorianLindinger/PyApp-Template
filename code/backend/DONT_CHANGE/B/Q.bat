@@ -10,7 +10,7 @@ cd /d "%~dp0"
 :: ===========================
 :: local variables
 
-set "ensure_backend_python_script=..\scripts\setup\ensure_backend_python.bat"
+set "ensure_backend_python_script=helper_scripts\ensure_backend_python.bat"
 set "target_script=..\scripts\shortcut_targets\stop_program.py"
 
 :: ===========================

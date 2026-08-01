@@ -2,6 +2,22 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+udpate dont change reademe
+
+udapte pbact tempalte and apply
+
+do i want start tim dimmy maoin scripts to be tempalte? add to _template exlpaicon list
+
+mkae isntall abckend python into generic batch maybe under generic subfolder in helper/sctips?
+
+run path chekc again
+
+move dev_Tools scirpts one up
+
+apply batcht tempalte and write wher it doesnt apply
+
+in compialtion have a sciptr tnot meant to be changed to see defaults? or have defautls that are cpied over to active comilation scipts
+
 rename sub icon to overlay icon everywher
 
 test terminal_colors_after_KeyboardInterrupt

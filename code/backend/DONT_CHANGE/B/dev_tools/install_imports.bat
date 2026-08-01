@@ -10,8 +10,8 @@ cd /d "%~dp0"
 :: ===========================
 :: local variables
 
-set "ensure_backend_python_script=..\..\setup\ensure_backend_python.bat"
-set "target_script=..\scripts\save_imported_packages -versions.py"
+set "ensure_backend_python_script=..\helper_scripts\ensure_backend_python.bat"
+set "target_script=..\..\scripts\dev_tools\scripts\install_imports.py"
 
 :: ===========================
 :: code execution
