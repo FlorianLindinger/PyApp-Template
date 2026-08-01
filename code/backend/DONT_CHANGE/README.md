@@ -26,7 +26,7 @@ DONT_CHANGE/
 │   ├── helper_scripts/         Shared batch helpers
 │   │   └── generic_helpers/    Parameterized reusable batch helpers
 │   └── miscellaneous/          Utility launchers, including icon generation
-├── backend_tools/              Stand-in/test assets and relative-path .lnk shortcuts
+├── backend_tools/              Stand-in/test assets and direct batch runners
 ├── icon_related/               Icon source assets and instructions
 ├── scripts/
 │   ├── backend_tools/          Python implementations of backend tools
@@ -49,7 +49,8 @@ scripts. Generated Windows shortcuts target these batches rather than Python
 files directly.
 
 - `B/dev_tools/` starts `scripts/dev_tools/`.
-- `B/backend_tools/` ensures the embedded backend Python, then starts
+- `backend_tools/` contains direct diagnostic and verification runners. They
+  ensure the embedded backend Python when required, then start
   `scripts/backend_tools/`.
 - `B/miscellaneous/` contains utility launchers such as
   `generate_icon_pngs.bat`.
@@ -129,9 +130,9 @@ application startup.
 Run one of these launchers from the `code/` folder:
 
 ```bat
-backend\DONT_CHANGE\B\backend_tools\verify_backend_basic.bat
-backend\DONT_CHANGE\B\backend_tools\verify_backend_default.bat
-backend\DONT_CHANGE\B\backend_tools\verify_backend_strict.bat
+backend\DONT_CHANGE\backend_tools\verify_backend_basic.bat
+backend\DONT_CHANGE\backend_tools\verify_backend_default.bat
+backend\DONT_CHANGE\backend_tools\verify_backend_strict.bat
 ```
 
 Each launcher ensures the embedded backend Python before running the selected
@@ -151,18 +152,18 @@ For launcher testing, set `use_standin_main_script = True` in
 `code/main.py`. It is `False` by default; startup-time measurements always
 use their dedicated dummy script instead.
 
-Relative-path Windows shortcuts with the same tool names are also available in
-`backend_tools/`. They target the canonical batches in `B/backend_tools/`,
-so the diagnostic runners remain convenient to open from that folder.
+Direct batch runners with the same tool names are available in
+`backend_tools/`. They ensure the backend Python where needed, then invoke
+their Python implementation directly.
 
 ### Other tools
 
-- `B/backend_tools/measure_startup_times.bat` measures startup performance.
-- `B/backend_tools/measure_package_import_times.bat` measures package import
+- `backend_tools/measure_startup_times.bat` measures startup performance.
+- `backend_tools/measure_package_import_times.bat` measures package import
   performance.
-- `B/backend_tools/measure_file_import_times.bat` measures selected module
+- `backend_tools/measure_file_import_times.bat` measures selected module
   import times.
-- `B/backend_tools/test_script_wrapper.bat` exercises frontend-wrapper
+- `backend_tools/test_script_wrapper.bat` exercises frontend-wrapper
   traceback and exit handling.
 
 ## Icons
