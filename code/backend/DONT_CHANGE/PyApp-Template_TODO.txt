@@ -2,6 +2,14 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+mkae verification better prints in end
+
+have backend_python_finish_installation_relative_path in backend_vatribles.py? kind of not helpful. i need to read out the sttings soemhwo but at that point i can just have aonther cscipt. maybe just miinimal python script to get the setting and then laucn it in batch folder?i guesss i can just leawve how is.
+
+at the momvent it sill delete python.exe to indicate failre
+
+check # verification related
+
 does process_exit use appid
 
 open settings fails

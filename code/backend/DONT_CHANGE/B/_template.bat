@@ -1,9 +1,8 @@
 :: {ADD DOCSTRING DESCRIPTION HERE
 ::
-:: This template is meant to be applied to all batch files in the parent folder of this file, except for:
+:: This template is meant to be applied to all batch files in "../backend_tools" + the parent folder of this file, except for:
 :: - this file itself
-:: - helper_scripts/generic_helpers/*.bat
-:: and batch files in ../backend_tools.
+:: - helper_scripts/
 :: 
 :: }
 
