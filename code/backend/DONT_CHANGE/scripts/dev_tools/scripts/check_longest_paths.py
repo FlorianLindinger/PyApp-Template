@@ -1,13 +1,28 @@
 """Find the longest project path and assess its Windows path-length risk."""
 
+# ==============================
+# settings
+
+# ==============================
+# import Python packages
+
 import sys
 from pathlib import Path
+
+# ==============================
+# import third-party packages
+
+# ==============================
+# import from files
 
 CODE_DIR = Path(__file__).resolve().parents[5]
 if str(CODE_DIR) not in sys.path:
     sys.path.insert(0, str(CODE_DIR))
 
 from backend.DONT_CHANGE.scripts.generic_helpers import find_longest_paths
+
+# ==============================
+# local variables
 
 # Many Windows tools still require traditional Win32 paths to stay within this
 # conservative limit, even when long-path support is enabled elsewhere.
@@ -16,6 +31,9 @@ TOP_PATH_COUNT = 50
 REPOSITORY_DIR = Path(__file__).resolve().parents[6]
 ANSI_PATH = "\x1b[96m"
 ANSI_RESET = "\x1b[0m"
+
+# ==============================
+# local functions/classes
 
 
 def print_guidance(path_length: int) -> None:
@@ -61,6 +79,10 @@ def check_longest_paths() -> int:
     return 0
 
 
+# ==============================
+# main function
+
+
 def main() -> int:
     """Repeatedly check paths until the user chooses to exit."""
     while True:
@@ -72,6 +94,10 @@ def main() -> int:
         except EOFError:
             return 0
         print()
+
+
+# ==============================
+# execute main function
 
 
 if __name__ == "__main__":

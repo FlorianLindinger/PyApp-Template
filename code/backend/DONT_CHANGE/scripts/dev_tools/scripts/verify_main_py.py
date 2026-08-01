@@ -1,26 +1,39 @@
 """Run main.py lint, formatting, and type-check verification."""
 
+# ==============================
+# settings
+
 from __future__ import annotations
+
+# ==============================
+# import Python packages
 
 import argparse
 import shutil
 import subprocess
 from pathlib import Path
 
-# =============================================================================
-# Verification settings
-# Paths are relative to the code folder. Use forward slashes.
+# ==============================
+# import third-party packages
 
+# ==============================
+# import from files
+
+# ==============================
+# local variables
+
+# Paths are relative to the code folder. Use forward slashes.
 TARGETS = ("main.py",)
 
 # Files and folders listed here are skipped by both Ruff and Pyrefly.
 EXCLUDED_FILES: tuple[str, ...] = ()
 EXCLUDED_FOLDERS: tuple[str, ...] = ()
 
-# =============================================================================
-
 VALID_PRESETS = ("basic", "default", "strict")
 CODE_DIR = Path(__file__).resolve().parents[4]
+
+# ==============================
+# local functions/classes
 
 
 def tool_command(tool: str) -> list[str]:
@@ -93,6 +106,10 @@ def verify(preset: str) -> int:
     return 1
 
 
+# ==============================
+# main function
+
+
 def main() -> int:
     """Parse the requested preset and run verification."""
     parser = argparse.ArgumentParser(description=__doc__)
@@ -104,6 +121,10 @@ def main() -> int:
         help="Pyrefly preset to use (default: default).",
     )
     return verify(parser.parse_args().preset)
+
+
+# ==============================
+# execute main function
 
 
 if __name__ == "__main__":

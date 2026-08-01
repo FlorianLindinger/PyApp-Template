@@ -1,5 +1,8 @@
 """WIP"""
 
+# ==============================
+# settings
+
 # safe default (should be overwritten in following try block):
 PROGRAM_HAS_TERMINAL = False  # means a new terminal will be created for prints
 
@@ -19,7 +22,7 @@ try:
     # ==============================
 
     # ==============================
-    # imports from files
+    # import from files
     # ==============================
 
     # add root dir to resolve file imports for debug cases where this script is called on its own:
@@ -88,11 +91,11 @@ try:
         input_prepend = ""
 
     # ==============================
-    # define local variables
+    # local variables
     # ==============================
 
     # ==============================
-    # define local functions/classes
+    # local functions/classes
     # ==============================
 
     class _ProcessIdRegistry:
@@ -216,7 +219,7 @@ try:
         )
 
     # ==============================
-    # define main function
+    # main function
     # ==============================
 
     def main() -> None:
