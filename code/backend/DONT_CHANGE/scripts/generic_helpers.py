@@ -1093,6 +1093,50 @@ def set_terminal_colors(colors: str | None) -> None:
 # path related/file name related
 
 
+def set_hidden_in_explorer(paths: list[str], hidden: bool = True):
+    """
+    Hide or unhide multiple Windows files and folders.
+
+    Args:
+        paths: Iterable of file/folder paths.
+        hidden: True to hide, False to unhide.
+
+    Returns:
+        A dictionary mapping each path to None on success,
+        or an exception object on failure.
+    """
+
+    import ctypes
+
+    FILE_ATTRIBUTE_HIDDEN = 0x02
+    INVALID_FILE_ATTRIBUTES = 0xFFFFFFFF
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    kernel32.GetFileAttributesW.argtypes = [ctypes.c_wchar_p]
+    kernel32.GetFileAttributesW.restype = ctypes.c_uint32
+    kernel32.SetFileAttributesW.argtypes = [ctypes.c_wchar_p, ctypes.c_uint32]
+    kernel32.SetFileAttributesW.restype = ctypes.c_int
+
+    for path in paths:
+        path = os.path.abspath(path)
+
+        attributes = kernel32.GetFileAttributesW(path)
+
+        if attributes == INVALID_FILE_ATTRIBUTES:
+            continue
+
+        if hidden:
+            new_attributes = attributes | FILE_ATTRIBUTE_HIDDEN
+        else:
+            new_attributes = attributes & ~FILE_ATTRIBUTE_HIDDEN
+
+        # Avoid an unnecessary filesystem operation.
+        if new_attributes == attributes:
+            continue
+
+        if not kernel32.SetFileAttributesW(path, new_attributes):
+            continue
+
+
 def get_script_name(with_file_ending: bool = True) -> str:
     """Return the filename of the script that called this helper.
 
@@ -1720,6 +1764,7 @@ def install_full_python(
         with tempfile.TemporaryDirectory(prefix="tmp_python_installation_files_") as tmp:
             # downlaod into temp folder
             msi_paths = [_download_file_from_url(url, tmp) for url in msi_urls]
+
             # install
             def msi_filename(path: str) -> str:
                 return os.path.basename(path).lower()

@@ -11,9 +11,9 @@ import sys
 
 # =========================
 # add root dir for debug cases where this script is called on its own:
-root_dir: str = os.path.dirname(__file__) + "\\..\\..\\.."
-if root_dir not in sys.path:
-    sys.path.insert(0, root_dir)
+ROOT_DIR: str = os.path.normpath(os.path.dirname(__file__) + "\\..\\..\\..")
+if ROOT_DIR not in sys.path:
+    sys.path.insert(0, ROOT_DIR)
 # =========================
 
 from backend.developer_settings import (
@@ -46,6 +46,9 @@ from backend.DONT_CHANGE.scripts.generic_helpers import (
     write_lines,
 )
 from backend.DONT_CHANGE.scripts.generic_helpers import get_python_version as _get_python_version
+from backend.DONT_CHANGE.scripts.generic_helpers import (
+    set_hidden_in_explorer as _set_hidden_in_explorer,
+)
 from backend.DONT_CHANGE.scripts.generic_helpers import set_terminal_colors as _set_terminal_colors
 from backend.DONT_CHANGE.settings.backend_settings import (
     BACKEND_PYTHON_EXE,
@@ -56,6 +59,7 @@ from backend.DONT_CHANGE.settings.backend_settings import (
     DEV_TOOLS_REFERAL_NOTE_PATH,
     EMPTY_ARG_INDICATOR,
     EXCLUDED_FOLDERS_FOR_PACKAGE_SEARCH,
+    FOLDERS_TO_MAKE_HIDDEN_IN_SHORTCUT_AND_ROOT_FOLDERS,
     FRONTEND_LAUNCHER_FOR_PIP_INSTALL_TERMINAL,
     FRONTEND_PACKAGES_ARE_INSTALLED_MARKER_PATH,
     FRONTEND_PACKAGES_DIR,
@@ -66,6 +70,7 @@ from backend.DONT_CHANGE.settings.backend_settings import (
     NEEDED_PACKAGES_WITH_VERSION_PATH,
     PYTHON_SCRIPTS_DIR,
     PYTHON_VERSION_INDICATOR_FILE_PATH,
+    SHORTCUT_OUTPUT_DIR,
     VARIABLE_IN_DEFAULT_PACKAGES_THAT_TRIGGERS_SEARCH_IF_TRUE,
 )
 
@@ -81,7 +86,22 @@ if terminal_text_color:
     TERMINAL_COLORS += terminal_text_color
 
 # =========================
-# general helper functions
+# miscellaneous functions
+
+
+def set_hidden_in_explorer() -> None:
+    """Apply the configured hidden attribute in the project root and its parent."""
+    _set_hidden_in_explorer(
+        [
+            os.path.join(base_dir, path)
+            for base_dir in (ROOT_DIR, SHORTCUT_OUTPUT_DIR)
+            for path in FOLDERS_TO_MAKE_HIDDEN_IN_SHORTCUT_AND_ROOT_FOLDERS
+        ]
+    )
+
+
+def do_stuff_when_not_normal_start():
+    set_hidden_in_explorer()
 
 
 def make_empty_args_safe(args: list[str | None]) -> list[str]:
@@ -99,8 +119,8 @@ def print_traceback(message: str = "") -> None:
     """Print a colored traceback and optionally wait for the user before the terminal closes."""
 
     # `rich` is installed into the managed backend Python, not this analyzer's environment.
-    from rich.console import Console  # pyrefly: ignore [missing-import]
-    from rich.traceback import Traceback  # pyrefly: ignore [missing-import]
+    from rich.console import Console
+    from rich.traceback import Traceback
 
     console = Console()
 
@@ -478,6 +498,8 @@ cmd /k
         with open(PYTHON_VERSION_INDICATOR_FILE_PATH, "w", encoding="utf-8") as f:
             f.write(get_python_version())
 
+        set_hidden_in_explorer()
+
 
 def prompt_for_distro_reinstall(msg: str = "Reinstall distro / recreate virtual environment?"):
     """
@@ -715,6 +737,8 @@ def install_default_packages(check_auto_determine_flag: bool, app_id_for_slow: s
             install_packages_from_file(DEFAULT_PACKAGES_PATH, app_id_for_slow=app_id_for_slow)
     else:
         install_packages_from_file(DEFAULT_PACKAGES_PATH, app_id_for_slow=app_id_for_slow)
+
+    set_hidden_in_explorer()
 
 
 def get_auto_find_pckgs_phrase_state() -> bool | None:
