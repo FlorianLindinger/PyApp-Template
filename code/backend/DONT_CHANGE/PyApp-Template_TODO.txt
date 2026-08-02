@@ -34,6 +34,20 @@ Python executable: C:\...\python.exe
 
 ======================================
 
+apply the do_stuff_when_not_normal_start 
+
+can you apply the *template.py on backgorunwactchdog and fix pyrefly issues and improve?*
+
+is the interaction between start_program background_watchdog script_wrapper main.py and process_exit working well? what can i improve?
+
+apply template to common code and gernerics a littee
+
+do i want readme in code\?
+
+mabye have function to do stuff rarly like hide files. should to it for alls tools and installs.
+
+
+
 in dev tools dont have _ in lnks?
 
 have tool to apply ruff auto or whatever vsode doe on stcipts and B? or just to main.py?i want a dev_tool to apply auto ruff foramtting 
