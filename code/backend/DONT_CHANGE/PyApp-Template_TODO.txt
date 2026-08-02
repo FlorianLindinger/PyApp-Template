@@ -2,6 +2,29 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+what is the logic of error hhandling in all files for nromal startt 
+has terminal:
+    start_program
+    all tools
+doestn have:
+    backent_watchdog
+might have:
+    wrapper
+
+def program_has_terminal():
+    -> no. maybe just reuse some logic in exit process?
+    -> but also it already does that, right?
+
+how to do PROGRAM_HAS_TERMINAL in exception in watchdog
+
+add background warchdog to template exception?
+
+apply template to exit
+apply termpolate to watchdog
+should i add a "program has terminal " to termplate? would only hcange for backend watchdog
+
+fix backend watchdog
+
 check the verfyers
 
 check FRONTEND_PACKAGES_ARE_INSTALLED_MARKER_PATH
