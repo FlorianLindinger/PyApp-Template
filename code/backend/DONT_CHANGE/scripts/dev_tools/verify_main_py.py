@@ -17,18 +17,20 @@ from pathlib import Path
 # ==============================
 # import from files
 
+CODE_DIR = Path(__file__).resolve().parents[4]
+if str(CODE_DIR) not in sys.path:
+    sys.path.insert(0, str(CODE_DIR))
+
+from backend.DONT_CHANGE.settings.backend_settings import (
+    FRONTEND_VERIFICATION_DEFAULT_PRESET,
+    FRONTEND_VERIFICATION_EXCLUDED_FILES,
+    FRONTEND_VERIFICATION_EXCLUDED_FOLDERS,
+    FRONTEND_VERIFICATION_TARGETS,
+    FRONTEND_VERIFICATION_VALID_PRESETS,
+)
+
 # ==============================
 # local variables
-
-# Paths are relative to the code folder. Use forward slashes.
-TARGETS = ("main.py",)
-
-# Files and folders listed here are skipped by both Ruff and Pyrefly.
-EXCLUDED_FILES: tuple[str, ...] = ()
-EXCLUDED_FOLDERS: tuple[str, ...] = ()
-
-VALID_PRESETS = ("basic", "default", "strict")
-CODE_DIR = Path(__file__).resolve().parents[4]
 
 # ==============================
 # local functions/classes
@@ -55,8 +57,8 @@ def tool_command(tool: str) -> list[str]:
 
 def exclusion_patterns() -> tuple[str, ...]:
     """Return file and recursive folder patterns understood by both tools."""
-    folder_patterns = tuple(f"{folder.rstrip('/')}/**" for folder in EXCLUDED_FOLDERS)
-    return EXCLUDED_FILES + folder_patterns
+    folder_patterns = tuple(f"{folder.rstrip('/')}/**" for folder in FRONTEND_VERIFICATION_EXCLUDED_FOLDERS)
+    return FRONTEND_VERIFICATION_EXCLUDED_FILES + folder_patterns
 
 
 def run_check(label: str, command: list[str]) -> bool:
@@ -75,18 +77,18 @@ def verify(preset: str, *, fix: bool) -> int:
         print(f"[Error] {error}")
         return 2
 
-    ruff_patterns = EXCLUDED_FILES + EXCLUDED_FOLDERS
+    ruff_patterns = FRONTEND_VERIFICATION_EXCLUDED_FILES + FRONTEND_VERIFICATION_EXCLUDED_FOLDERS
     ruff_exclusions = ["--exclude", ",".join(ruff_patterns)] if ruff_patterns else []
     pyrefly_exclusions = [argument for pattern in exclusion_patterns() for argument in ("--project-excludes", pattern)]
 
     checks = (
         (
             "Ruff lint/fix: main.py" if fix else "Ruff lint: main.py",
-            [*ruff, "check", *(("--fix",) if fix else ()), *TARGETS, *ruff_exclusions],
+            [*ruff, "check", *(("--fix",) if fix else ()), *FRONTEND_VERIFICATION_TARGETS, *ruff_exclusions],
         ),
         (
             "Ruff format/fix: main.py" if fix else "Ruff format: main.py",
-            [*ruff, "format", *(("--check",) if not fix else ()), *TARGETS, *ruff_exclusions],
+            [*ruff, "format", *(("--check",) if not fix else ()), *FRONTEND_VERIFICATION_TARGETS, *ruff_exclusions],
         ),
         (
             f"Pyrefly {preset}: main.py",
@@ -96,7 +98,7 @@ def verify(preset: str, *, fix: bool) -> int:
                 "--preset",
                 preset,
                 *pyrefly_exclusions,
-                *TARGETS,
+                *FRONTEND_VERIFICATION_TARGETS,
             ],
         ),
     )
@@ -122,10 +124,10 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "preset",
-        choices=VALID_PRESETS,
+        choices=FRONTEND_VERIFICATION_VALID_PRESETS,
         nargs="?",
-        default="default",
-        help="Pyrefly preset to use (default: default).",
+        default=FRONTEND_VERIFICATION_DEFAULT_PRESET,
+        help=f"Pyrefly preset to use (default: {FRONTEND_VERIFICATION_DEFAULT_PRESET}).",
     )
     parser.add_argument(
         "--fix", action="store_true", help="Apply safe Ruff lint and formatting fixes before verification."

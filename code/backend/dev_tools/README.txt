@@ -30,33 +30,52 @@ to exit. If little space remains, move the project closer to a drive root or
 shorten nested names.
 
 
-MAIN.PY VERIFICATION STARTERS
------------------------------
+FRONTEND VERIFICATION
+---------------------
 
-The verify_main_py_*.lnk files are portable shortcuts to the launchers under
-DONT_CHANGE/scripts/dev_tools/run. Their relative link information
-keeps them working when the project folder moves.
+The shortcuts in verify code/ run Ruff linting, Ruff format checks, and
+Pyrefly type checking for the frontend targets.
 
-Implementation documentation is located at:
+- verify_main_py_basic/default/strict.lnk checks code without changing it.
+- fix_and_verify_main_py_basic/default/strict.lnk applies Ruff's safe fixes
+  and formatting before it verifies the code.
 
-    ../DONT_CHANGE/scripts/dev_tools/
+Each verification terminal clears its previous output before a run. Press
+Enter to rescan, or close the terminal window when finished.
+
+Configure frontend verification in:
+
+    ../DONT_CHANGE/settings/backend_settings.py
+
+The relevant settings are FRONTEND_VERIFICATION_TARGETS,
+FRONTEND_VERIFICATION_EXCLUDED_FILES,
+FRONTEND_VERIFICATION_EXCLUDED_FOLDERS,
+FRONTEND_VERIFICATION_VALID_PRESETS, and
+FRONTEND_VERIFICATION_DEFAULT_PRESET.
+
+Ruff reads its lint and formatting configuration from ../../pyproject.toml
+([tool.ruff]). Pyrefly also looks for a [tool.pyrefly] section in that file,
+but none is configured currently; its preset, targets, and exclusions therefore
+come from the verification launcher and backend_settings.py.
 
 
 CAUTION
 -------
 
 Package-management tools intentionally change the generated frontend Python
-environment. Read the shortcut name before running it. Verification tools are
-read-only and do not modify source files.
+environment. Read the shortcut name before running it. The verify_main_py
+shortcuts are read-only; the fix_and_verify_main_py shortcuts modify files
+only when Ruff can apply a safe fix or formatting change.
 
 
 IMPLEMENTATION LAYOUT
 ---------------------
 
-scripts/
+DONT_CHANGE/scripts/dev_tools/
     Contains the Python implementations.
 
-run/
-    Contains one matching .bat entry point for every Python implementation,
-    plus the basic/default/strict main.py verification variants. The batches are
-    based on run/_template.bat.
+DONT_CHANGE/B/dev_tools/
+    Contains the portable .bat launchers used by the verification shortcuts.
+
+verify code/
+    Contains the portable Windows .lnk shortcut entry points.
