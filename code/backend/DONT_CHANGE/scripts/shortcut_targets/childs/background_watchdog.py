@@ -4,7 +4,7 @@
 # settings
 
 # safe default (should be overwritten in following try block):
-PROGRAM_HAS_TERMINAL = False  # means a new terminal will be created for prints
+PROGRAM_HAS_TERMINAL = False  # False means a new terminal will be created for prints
 
 try:
     # ==============================
@@ -453,8 +453,7 @@ except Exception as e:
     import traceback
 
     # WIP: assume no terminal and make new windwo and print traceback
-
-    PROGRAM_HAS_TERMINAL
+    # PROGRAM_HAS_TERMINAL
 
     print()
     print()
