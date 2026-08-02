@@ -1,13 +1,13 @@
-"""WIP
+"""Apply configured completion behavior after the wrapper or watchdog exits.
 
-This script assumes that is always has a terminal to print stuff in since it is called that way.
+This script is always launched with a terminal available for status output.
 """
 
 # ==============================
 # settings
 
 # {e} will be formatted to exception:
-fail_message = "[Error] Failed WIP: {e}"
+fail_message = "[Error] Failed while processing program exit: {e}"
 
 try:
     # ==============================
@@ -74,9 +74,7 @@ try:
         set_terminal_icon,
         set_terminal_title,
     )
-    from backend.DONT_CHANGE.scripts.generic_helpers import (
-        open_in_editor,
-    )
+    from backend.DONT_CHANGE.scripts.generic_helpers import exit_code_looks_like_interpreter_crash, open_in_editor
     from backend.DONT_CHANGE.settings.backend_settings import (
         CRASH_ICON_PATH,
         DEFAULT_SOUND_AFTER_CRASH,
@@ -415,19 +413,21 @@ try:
 
         return import_name  # if not found in mappings
 
-    def exit_code_looks_like_interpreter_crash(exit_code: int) -> bool:
-        """
-        Return whether a process return code matches a common Windows crash code.
-        """
-        windows_crash_codes = {
-            -1073741819,  # unsigned: 0xC0000005 — access violation
-            -1073741571,  # unsigned: 0xC00000FD — stack overflow
-            -1073741795,  # unsigned: 0xC000001D — illegal instruction
-            -1073741674,  # unsigned: 0xC0000096 — privileged instruction
-            -1073740791,  # unsigned: 0xC0000409 — stack buffer overrun
-        }
+    def load_traceback_payload() -> tuple[dict[str, Any] | None, str | None]:
+        """Load the wrapper's traceback report and describe unusable reports."""
+        import json
 
-        return exit_code in windows_crash_codes
+        try:
+            with open(TMP_TRACEBACK_JSON_PATH, encoding="utf-8") as f:
+                payload = json.load(f)
+        except FileNotFoundError:
+            return None, f'Traceback report was not created at "{TMP_TRACEBACK_JSON_PATH}".'
+        except (OSError, UnicodeError, json.JSONDecodeError) as error:
+            return None, f'Could not read traceback report "{TMP_TRACEBACK_JSON_PATH}": {error}'
+
+        if not isinstance(payload, dict):
+            return None, f'Traceback report "{TMP_TRACEBACK_JSON_PATH}" does not contain a JSON object.'
+        return payload, None
 
     def execute_exit_settings(
         mode: Literal["failure", "success", "KeyboardInterrupt", "crash"],
@@ -564,12 +564,8 @@ try:
             sys.exit()
 
         elif exit_mode == 1:  # 1 = correctly handled other exit of main.py (json)
-            if os.path.exists(TMP_TRACEBACK_JSON_PATH):
-                import json
-
-                with open(TMP_TRACEBACK_JSON_PATH, encoding="utf-8") as f:
-                    traceback_payload = json.load(f)
-
+            traceback_payload, traceback_error = load_traceback_payload()
+            if traceback_payload is not None:
                 traceback_entries = _traceback_entries(traceback_payload)
                 exception_type = (
                     str(traceback_entries[-1].get("type") or "Exception") if traceback_entries else "Exception"

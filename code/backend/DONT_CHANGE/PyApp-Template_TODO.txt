@@ -2,6 +2,8 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+check FRONTEND_PACKAGES_ARE_INSTALLED_MARKER_PATH
+
 mkae verification better prints in end
 
 have backend_python_finish_installation_relative_path in backend_vatribles.py? kind of not helpful. i need to read out the sttings soemhwo but at that point i can just have aonther cscipt. maybe just miinimal python script to get the setting and then laucn it in batch folder?i guesss i can just leawve how is.
