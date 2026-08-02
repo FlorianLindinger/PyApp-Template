@@ -12,7 +12,7 @@ import os
 import sys
 from collections.abc import Iterable, Sequence
 from pathlib import Path
-from typing import Any, override
+from typing import Any, TextIO, override
 
 # =========================
 # constants
@@ -23,6 +23,24 @@ ANSI_RESET: str = "\033[0m"
 
 # =========================
 # miscellaneous
+
+
+def exit_code_looks_like_interpreter_crash(exit_code: Any) -> bool:
+    """
+    Return whether a process return code matches a common Windows crash code.
+    """
+    if isinstance(exit_code, bool) or not isinstance(exit_code, int):
+        return False
+
+    # NTSTATUS values can arrive as signed or unsigned integers.
+    windows_crash_codes = {
+        0xC0000005,  # access violation
+        0xC00000FD,  # stack overflow
+        0xC000001D,  # illegal instruction
+        0xC0000096,  # privileged instruction
+        0xC0000409,  # stack buffer overrun
+    }
+    return exit_code & 0xFFFFFFFF in windows_crash_codes
 
 
 def can_reach_url(url: str, timeout_s: float = 5.0) -> bool:
@@ -1016,7 +1034,7 @@ def enable_unminimize_and_foreground_terminal_on_first_print() -> None:
     class unminimize_plus_foreground_terminal_on_first_output:
         """Unminimize a minimized terminal and set to foreground when output is written for the first time."""
 
-        def __init__(self, stream):
+        def __init__(self, stream: TextIO) -> None:
             self.stream = stream
             self._restored = False
 
@@ -1027,7 +1045,7 @@ def enable_unminimize_and_foreground_terminal_on_first_print() -> None:
             unminimize_terminal()
             foreground_terminal()
 
-        def write(self, data):
+        def write(self, data: str) -> int:
             """Write text to the wrapped stream or terminal target."""
             self._restore_if_needed(data)
             return self.stream.write(data)
@@ -1051,7 +1069,7 @@ def enable_unminimize_and_foreground_terminal_on_first_print() -> None:
                 return self.stream.fileno()
             raise OSError("Underlying stream does not support fileno()")
 
-        def __getattr__(self, name: str):
+        def __getattr__(self, name: str) -> Any:
             """Forward unknown attribute lookups to the wrapped stream."""
             return getattr(self.stream, name)
 
@@ -1114,7 +1132,7 @@ def find_longest_paths(
         raise NotADirectoryError(f"Path is not a directory: {root_path}")
 
     excluded_names = frozenset(excluded_dir_names)
-    paths = [root_path]
+    paths: list[Path] = [root_path]
     scanned_files = 0
     scanned_directories = 0
 
@@ -1137,7 +1155,10 @@ def find_longest_paths(
             scanned_files += 1
             paths.append(file_path)
 
-    paths.sort(key=lambda path: len(str(path)), reverse=True)
+    def path_length(path: Path) -> int:
+        return len(str(path))
+
+    paths.sort(key=path_length, reverse=True)
     return paths[:top_path_count], scanned_files, scanned_directories
 
 
@@ -1700,7 +1721,10 @@ def install_full_python(
             # downlaod into temp folder
             msi_paths = [_download_file_from_url(url, tmp) for url in msi_urls]
             # install
-            for msi_path in sorted(msi_paths, key=lambda path: os.path.basename(path).lower()):
+            def msi_filename(path: str) -> str:
+                return os.path.basename(path).lower()
+
+            for msi_path in sorted(msi_paths, key=msi_filename):
                 _install_msi_file(msi_path)
     except Exception as error:
         raise RuntimeError(f"Local Python installation failed: {error}") from error
@@ -2318,7 +2342,8 @@ if ($env:ICO_OVERLAY_URI) {
         payload = [payload]
     layers = [(int(entry["size"]), base64.b64decode(entry["png"])) for entry in payload]
     offset = 6 + 16 * len(layers)
-    entries, data = [], bytearray()
+    entries: list[bytes] = []
+    data = bytearray()
     for size, png in layers:
         entries.append(
             struct.pack(
