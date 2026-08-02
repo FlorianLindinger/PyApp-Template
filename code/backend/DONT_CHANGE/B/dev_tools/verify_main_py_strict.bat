@@ -33,11 +33,14 @@ if not "%ERRORLEVEL%"=="0" (
 :run
 cls
 :: run python script and forward all args:
-"%python_exe%" "%target_script%" strict %*
+"%python_exe%" "%target_script%" strict %* %run_options%
 set "exit_code=%ERRORLEVEL%"
 
 if not "%exit_code%"=="0" echo [Error] Python script failed with exit code %exit_code%.
-set /p "_rescan=[Input] Press Enter to rescan: "
+set "run_options="
+set /p "_rescan=[Input] Press Enter to rescan; type fix for safe fixes or unsafe for unsafe fixes: "
+if /i "%_rescan%"=="fix" set "run_options=--fix"
+if /i "%_rescan%"=="unsafe" set "run_options=--unsafe-fixes"
 goto :run
 ::
 :: ===========================

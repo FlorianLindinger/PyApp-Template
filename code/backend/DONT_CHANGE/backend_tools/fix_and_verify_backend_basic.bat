@@ -24,8 +24,11 @@ call "%ensure_backend_python_script%"
 if errorlevel 1 exit /b 1
 :run
 cls
-"%python_exe%" "%target_script%" basic --fix %*
+"%python_exe%" "%target_script%" basic --fix %* %run_options%
 set "exit_code=%ERRORLEVEL%"
 if not "%exit_code%"=="0" echo [Error] Backend basic verification failed with exit code %exit_code%.
-set /p "_rescan=[Input] Press Enter to rescan: "
+set "run_options="
+set /p "_rescan=[Input] Press Enter to rescan; type fix for safe fixes or unsafe for unsafe fixes: "
+if /i "%_rescan%"=="fix" set "run_options=--fix"
+if /i "%_rescan%"=="unsafe" set "run_options=--unsafe-fixes"
 goto :run
