@@ -19,6 +19,14 @@
 !.gitkeep
 # ".vscode" folder anywhere:
 .vscode
+# cache from Ruff anywhere:
+.ruff_cache
+# cache from Python anywhere:
+__pycache__
+*.pyc
+*.pyo
+# temporary process id indicator files:
+code/*.pid
 
 # =============================
 # ==== specific gitignores ====
