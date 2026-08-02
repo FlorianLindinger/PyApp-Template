@@ -15,6 +15,7 @@ try:
     # ==============================
 
     import os
+    import subprocess
     import sys
     from datetime import datetime
     from typing import Any, Literal, TextIO, cast
@@ -64,26 +65,39 @@ try:
         title_after_KeyboardInterrupt,
         title_after_success,
         traceback_extra_lines,
+        use_uv_to_install_packages,
     )
     from backend.DONT_CHANGE.scripts.common_code import (
         get_log_path,
         input_warn,
+        install_packages_from_file,
         print_traceback,
+        print_warn,
+        save_requirements_of_root_folder_noVersion,
         set_terminal_app_id,
         set_terminal_colors,
         set_terminal_icon,
         set_terminal_title,
     )
-    from backend.DONT_CHANGE.scripts.generic_helpers import exit_code_looks_like_interpreter_crash, open_in_editor
+    from backend.DONT_CHANGE.scripts.generic_helpers import (
+        exit_code_looks_like_interpreter_crash,
+        install_packages,
+        open_in_editor,
+    )
     from backend.DONT_CHANGE.settings.backend_settings import (
+        BACKEND_PYTHON_EXE,
         CRASH_ICON_PATH,
         DEFAULT_SOUND_AFTER_CRASH,
         DEFAULT_SOUND_AFTER_FAILURE,
         DEFAULT_SOUND_AFTER_SUCCESS,
         FAILURE_ICON_PATH,
+        FRONTEND_LAUNCHER_FOR_PIP_INSTALL_TERMINAL,
+        FRONTEND_PACKAGES_DIR,
+        FRONTEND_PYTHON_EXE,
         KEYBOARD_INTERRUPT_ICON_PATH,
         MAIN_PY_SCRIPT_PATH,
         PIPREQS_MAPPING_PATH,
+        START_PROGRAM_PATH,
         SUCCESS_ICON_PATH,
         TMP_TRACEBACK_JSON_PATH,
         WINDOWS_DIR,
@@ -413,6 +427,83 @@ try:
 
         return import_name  # if not found in mappings
 
+    def restart_program(app_id: str, new_terminal_was_created: bool) -> None:
+        """Relaunch the program using the same visible/hidden terminal behavior."""
+        launch_mode = "no_terminal" if new_terminal_was_created else "terminal"
+        subprocess.Popen(  # noqa:S603
+            [BACKEND_PYTHON_EXE, START_PROGRAM_PATH, app_id, launch_mode],
+        )
+
+    def install_auto_detected_packages(app_id: str) -> None:
+        """Discover project imports and install all inferred distributions."""
+        success, requirements_path = save_requirements_of_root_folder_noVersion()
+        if not success:
+            raise RuntimeError("Could not auto-detect the project's required packages.")
+        install_packages_from_file(requirements_path, app_id_for_slow=app_id)
+
+    def open_manual_package_terminal() -> None:
+        """Wait for the user to finish package changes in a configured terminal."""
+        if not os.path.isfile(FRONTEND_LAUNCHER_FOR_PIP_INSTALL_TERMINAL):
+            raise FileNotFoundError(
+                f'Package-terminal launcher not found at "{FRONTEND_LAUNCHER_FOR_PIP_INSTALL_TERMINAL}"'
+            )
+
+        print()
+        print('Install packages with "pip install package_name", then type "exit" to restart the program.')
+        subprocess.run(  # noqa:S603
+            ["cmd.exe", "/d", "/c", "call", FRONTEND_LAUNCHER_FOR_PIP_INSTALL_TERMINAL],
+            check=True,
+        )
+
+    def handle_missing_package_options(
+        missing_module: str,
+        install_name: str,
+        app_id: str,
+        new_terminal_was_created: bool,
+    ) -> None:
+        """Prompt for package recovery and restart after a successful recovery action."""
+        while True:
+            print()
+            print_warn("Choose how to proceed:")
+            print("1: Install the missing package and restart")
+            print("2: Auto-detect required packages, install them, and restart")
+            print("3: Open a terminal for manual package installation, then restart")
+            print("4: Quit")
+            choice = input_warn("Choose an option [1-4]: ").strip()
+
+            if choice == "4":
+                return
+            if choice not in {"1", "2", "3"}:
+                print_warn("[Warning] Invalid choice. Please enter 1, 2, 3, or 4.")
+                continue
+
+            try:
+                if choice == "1":
+                    if not missing_module:
+                        print_warn("[Warning] The exception did not identify a missing module. Choose another option.")
+                        continue
+                    print(f'[Info] Installing "{install_name}" for missing import "{missing_module}"...')
+                    install_packages(
+                        python_exe=FRONTEND_PYTHON_EXE,
+                        packages=install_name,
+                        target=FRONTEND_PACKAGES_DIR,
+                        upgrade=True,
+                        use_uv=use_uv_to_install_packages,
+                        local_uv_python_exe=BACKEND_PYTHON_EXE,
+                    )
+                elif choice == "2":
+                    print("[Info] Auto-detecting and installing required packages...")
+                    install_auto_detected_packages(app_id)
+                else:
+                    open_manual_package_terminal()
+            except Exception as error:
+                print_traceback(f"[Error] Package recovery failed: {error}")
+                continue
+
+            print("[Success] Package recovery completed. Restarting the program...")
+            restart_program(app_id, new_terminal_was_created)
+            return
+
     def load_traceback_payload() -> tuple[dict[str, Any] | None, str | None]:
         """Load the wrapper's traceback report and describe unusable reports."""
         import json
@@ -600,6 +691,7 @@ try:
 
                 elif exception_type in ["ImportError", "ModuleNotFoundError"]:
                     missing_module = str(traceback_entries[-1].get("missing_module") or "").strip()
+                    install_name = ""
 
                     if missing_module:
                         install_name = get_package_install_name(missing_module)
@@ -621,29 +713,12 @@ try:
                         exit_message,
                         override_to_not_closing_and_disable_wait=True,
                     )
-
-                    # answer = button_prompt_window_noTkinter(
-                    #     title=f"[Missing Package Error] {program_name}",
-                    #     body_text="Choose how to proceed",
-                    #     button_texts=[
-                    #         "Install missing package and restart",
-                    #         "Auto search needed packages, install them, and restart",
-                    #         "Open terminal for manual installation and restart after terminal closure",
-                    #         "Quit and open main.py",
-                    #         "Quit and open packages folder",
-                    #         "Restart",
-                    #         "Quit",
-                    #     ],
-                    #     vertical_buttons=True,
-                    # )
-
-                    input()
-
-                    # options:
-                    # 1) install missing package->use pipreqs mappings if needed i guess
-                    # 2) auto search packages needed
-                    # 3) open terminal for manual installation
-                    # 4) quit
+                    handle_missing_package_options(
+                        missing_module,
+                        install_name,
+                        app_id,
+                        new_terminal_was_created,
+                    )
 
                 elif exception_type == "SyntaxError":
                     execute_exit_settings(
@@ -670,18 +745,61 @@ try:
                     )
 
             else:
-                ...  # failed to generate json ....
+                execute_exit_settings(
+                    "failure",
+                    log_path_resolved,
+                    None,
+                    f'[Failure] "{selected_python_script_path}" failed, but its traceback could not be loaded. '
+                    f"{traceback_error}",
+                )
 
         elif exit_mode == 2:  # 2 = handled failure in wrapper of main.py (json)
-            ...
+            traceback_payload, traceback_error = load_traceback_payload()
+            if traceback_payload is not None:
+                traceback_entries = _traceback_entries(traceback_payload)
+                exception_type = (
+                    str(traceback_entries[-1].get("type") or "Exception") if traceback_entries else "Exception"
+                )
+                execute_exit_settings(
+                    "failure",
+                    log_path_resolved,
+                    traceback_payload,
+                    f'[Failure] The script wrapper failed with exception of type "{exception_type}" (see below).',
+                )
+            else:
+                execute_exit_settings(
+                    "failure",
+                    log_path_resolved,
+                    None,
+                    f"[Failure] The script wrapper failed, but its traceback could not be loaded. {traceback_error}",
+                )
         elif exit_mode == 3:  # 3 = unsuccessfully handled failure in wrapper of main.py (no json)
-            ...
+            # The wrapper's last-resort handler already displayed the traceback
+            # and waited for acknowledgement. Avoid a second failure prompt.
+            return
         elif exit_mode == 4:  # 4 = handled failure watchdog script (json)
-            ...
+            traceback_payload, traceback_error = load_traceback_payload()
+            execute_exit_settings(
+                "failure",
+                log_path_resolved,
+                traceback_payload,
+                (
+                    "[Failure] The background watchdog failed (see below)."
+                    if traceback_payload is not None
+                    else f"[Failure] The background watchdog failed, but its traceback could not be loaded. "
+                    f"{traceback_error}"
+                ),
+            )
         else:
-            ...
-            # print
-            # raise ValueError(f'[Error] Specific exit code of wrapper is not implemented: "{exit_mode}"')
+            mode = "crash" if exit_code_looks_like_interpreter_crash(exit_mode) else "failure"
+            label = "Crash" if mode == "crash" else "Failure"
+            execute_exit_settings(
+                mode,
+                log_path_resolved,
+                None,
+                f'[{label}] The script wrapper exited unexpectedly with status "{exit_mode}" while running '
+                f'"{selected_python_script_path}".',
+            )
 
     # ==============================
     # execute main function
@@ -691,7 +809,7 @@ try:
         try:
             main()
         except Exception as e:
-            print_traceback(fail_message.format(e=e))  # WIP function to be in new terminal?
+            print_traceback(fail_message.format(e=e))
             input_warn("[Error] Press enter to exit")
         sys.exit()
 
