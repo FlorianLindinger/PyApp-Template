@@ -68,8 +68,8 @@ def run_check(label: str, command: list[str]) -> bool:
     return result.returncode == 0
 
 
-def verify(preset: str, *, fix: bool) -> int:
-    """Run main.py verification, optionally applying safe Ruff fixes first."""
+def verify(preset: str, *, fix: bool, unsafe_fixes: bool) -> int:
+    """Run main.py verification, optionally applying Ruff fixes first."""
     try:
         ruff = tool_command("ruff")
         pyrefly = tool_command("pyrefly")
@@ -77,18 +77,26 @@ def verify(preset: str, *, fix: bool) -> int:
         print(f"[Error] {error}")
         return 2
 
+    apply_fixes = fix or unsafe_fixes
     ruff_patterns = FRONTEND_VERIFICATION_EXCLUDED_FILES + FRONTEND_VERIFICATION_EXCLUDED_FOLDERS
     ruff_exclusions = ["--exclude", ",".join(ruff_patterns)] if ruff_patterns else []
     pyrefly_exclusions = [argument for pattern in exclusion_patterns() for argument in ("--project-excludes", pattern)]
 
     checks = (
         (
-            "Ruff lint/fix: main.py" if fix else "Ruff lint: main.py",
-            [*ruff, "check", *(("--fix",) if fix else ()), *FRONTEND_VERIFICATION_TARGETS, *ruff_exclusions],
+            "Ruff lint/unsafe-fix: main.py" if unsafe_fixes else "Ruff lint/fix: main.py" if apply_fixes else "Ruff lint: main.py",
+            [
+                *ruff,
+                "check",
+                *(("--fix",) if apply_fixes else ()),
+                *(("--unsafe-fixes",) if unsafe_fixes else ()),
+                *FRONTEND_VERIFICATION_TARGETS,
+                *ruff_exclusions,
+            ],
         ),
         (
-            "Ruff format/fix: main.py" if fix else "Ruff format: main.py",
-            [*ruff, "format", *(("--check",) if not fix else ()), *FRONTEND_VERIFICATION_TARGETS, *ruff_exclusions],
+            "Ruff format/fix: main.py" if apply_fixes else "Ruff format: main.py",
+            [*ruff, "format", *(("--check",) if not apply_fixes else ()), *FRONTEND_VERIFICATION_TARGETS, *ruff_exclusions],
         ),
         (
             f"Pyrefly {preset}: main.py",
@@ -132,8 +140,13 @@ def main() -> int:
     parser.add_argument(
         "--fix", action="store_true", help="Apply safe Ruff lint and formatting fixes before verification."
     )
+    parser.add_argument(
+        "--unsafe-fixes",
+        action="store_true",
+        help="Apply Ruff's unsafe fixes as well as safe fixes before verification.",
+    )
     arguments = parser.parse_args()
-    return verify(arguments.preset, fix=arguments.fix)
+    return verify(arguments.preset, fix=arguments.fix, unsafe_fixes=arguments.unsafe_fixes)
 
 
 # ==============================

@@ -1,6 +1,6 @@
 # PLACE YOUR CODE HERE
 
-# YOU CAN ACCESS SETTINGS FROM settings.py VIA
+# YOU CAN ACCESS SETTINGS FROM settings.py (in parent folder of this file) VIA:
 
 # import settings
 

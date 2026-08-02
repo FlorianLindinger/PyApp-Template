@@ -41,7 +41,8 @@ Pyrefly type checking for the frontend targets.
   and formatting before it verifies the code.
 
 Each verification terminal clears its previous output before a run. Press
-Enter to rescan, or close the terminal window when finished.
+Enter to rescan, type fix to apply Ruff's safe fixes, or type unsafe to apply
+Ruff's unsafe fixes as well. Close the terminal window when finished.
 
 Configure frontend verification in:
 
