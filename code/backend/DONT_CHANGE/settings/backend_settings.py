@@ -168,7 +168,7 @@ FRONTEND_VERIFICATION_DEFAULT_PRESET = "default"
 # soemhow option to add fodlers and files. maybe dev settings what folders and files to chekc in code
 # does it use FRONTEND_VERIFICATION_PYTHON_INTERPRETER
 # have way for FRONTEND_VERIFICATION_RUFF_FIX_UNSAFE
-#CHECK_ALL_IMPORTS option?
+# CHECK_ALL_IMPORTS option?
 
 # ------------------------
 # untracked tmp files files
@@ -232,8 +232,19 @@ DEFAULT_SOUND_AFTER_KeyboardInterrupt = ""
 # variables
 # ------------------------
 
+FOLDERS_TO_MAKE_HIDDEN_IN_SHORTCUT_AND_ROOT_FOLDERS = [
+    ".git",
+    ".agents",
+    ".lprof",
+    ".githooks",
+    ".vscode",
+    ".gitignore",
+    ".gitattributes",
+    ".ruff_cache",
+    "__pycache__",
+]
 EXCLUDED_FOLDERS_FOR_PACKAGE_SEARCH = [
-    "backend",
+    os.path.basename(BACKEND_DIR),
     "__pycache__",
     ".git",
     ".hg",
