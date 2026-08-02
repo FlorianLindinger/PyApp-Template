@@ -144,10 +144,31 @@ PNG_GENERATION_ITEMS = {
 # Backend verification settings used by scripts/backend_tools/verify_backend.py.
 # Paths are relative to the code folder and use forward slashes.
 BACKEND_VERIFICATION_TARGETS = ("backend",)
-BACKEND_VERIFICATION_EXCLUDED_FILES: tuple[str, ...] = ()
-BACKEND_VERIFICATION_EXCLUDED_FOLDERS = ("backend/DONT_CHANGE/future",)
+BACKEND_VERIFICATION_EXCLUDED_FILES = ("backend/DONT_CHANGE/backend_tools/standin_main_py_for_backend_tools.py",)
+BACKEND_VERIFICATION_EXCLUDED_FOLDERS = (
+    "backend/DONT_CHANGE/backend_packages",
+    "backend/DONT_CHANGE/backend_python",
+    "backend/DONT_CHANGE/future",
+    "backend/packages",
+    "backend/python",
+)
 BACKEND_VERIFICATION_VALID_PRESETS = ("basic", "default", "strict")
 BACKEND_VERIFICATION_DEFAULT_PRESET = "default"
+
+# Frontend verification settings used by scripts/dev_tools/verify_main_py.py.
+# Paths are relative to the code folder and use forward slashes.
+FRONTEND_VERIFICATION_TARGETS = ("main.py",)
+FRONTEND_VERIFICATION_EXCLUDED_FILES: tuple[str, ...] = ()
+FRONTEND_VERIFICATION_EXCLUDED_FOLDERS: tuple[str, ...] = ()
+FRONTEND_VERIFICATION_VALID_PRESETS = ("basic", "default", "strict")
+FRONTEND_VERIFICATION_DEFAULT_PRESET = "default"
+
+# settings.py as target or the variable of the path i guess
+# do i want files or folders?
+# soemhow option to add fodlers and files. maybe dev settings what folders and files to chekc in code
+# does it use FRONTEND_VERIFICATION_PYTHON_INTERPRETER
+# have way for FRONTEND_VERIFICATION_RUFF_FIX_UNSAFE
+#CHECK_ALL_IMPORTS option?
 
 # ------------------------
 # untracked tmp files files
