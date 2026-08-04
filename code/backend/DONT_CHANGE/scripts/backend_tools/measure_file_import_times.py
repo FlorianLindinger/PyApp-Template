@@ -13,7 +13,7 @@ files = sys.argv[3:]
 
 def run_once(code: str) -> float:
     start = time.perf_counter_ns()
-    result = subprocess.run(  # noqa
+    result = subprocess.run(
         [sys.executable, "-c", f"import sys;sys.path.insert(0, r'{file_dir}');" + code],
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
@@ -24,7 +24,9 @@ def run_once(code: str) -> float:
     if result.returncode != 0:
         output = (result.stdout or "").strip()
         detail = f"\n{output}" if output else ""
-        raise RuntimeError(f"Command failed with exit code {result.returncode}: {code}{detail}")
+        raise RuntimeError(
+            f"Command failed with exit code {result.returncode}: {code}{detail}"
+        )
     return elapsed_ms
 
 

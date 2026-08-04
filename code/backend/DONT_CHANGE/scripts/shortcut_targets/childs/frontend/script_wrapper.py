@@ -118,7 +118,9 @@ try:
             self.auto_flush = auto_flush
 
             self._at_line_start = True
-            self._lock = threading.RLock()  # needed if multiple threads want to print at same time #type:ignore
+            self._lock = (
+                threading.RLock()
+            )  # needed if multiple threads want to print at same time #type:ignore
 
             self.ANSI_escape_re = re.compile(  # type:ignore
                 r"\x1b(?:"
@@ -153,7 +155,9 @@ try:
 
                 for part in parts:
                     if self._at_line_start:
-                        print_prefix = self._timestamp_prefix(self.print_timestamp_format)
+                        print_prefix = self._timestamp_prefix(
+                            self.print_timestamp_format
+                        )
                         log_prefix = self._timestamp_prefix(self.log_timestamp_format)
 
                         if print_prefix:
@@ -193,7 +197,11 @@ try:
 
                 self.print_stream.write("{}{}".format(print_prefix, prompt))
                 if self.log_stream is not None:
-                    self.log_stream.write("{}{}".format(log_prefix, self._strip_ansi_escape_sequences(prompt)))
+                    self.log_stream.write(
+                        "{}{}".format(
+                            log_prefix, self._strip_ansi_escape_sequences(prompt)
+                        )
+                    )
 
                 self._at_line_start = prompt.endswith("\n")
                 if self.auto_flush:
@@ -251,7 +259,9 @@ try:
             log_folder = os.path.dirname(log_path)
             if log_folder:
                 os.makedirs(log_folder, exist_ok=True)
-            log_file = open(log_path, "w" if overwrite_log else "a", encoding="utf-8", buffering=1)  # noqa:SIM115
+            log_file = open(
+                log_path, "w" if overwrite_log else "a", encoding="utf-8", buffering=1
+            )
             atexit.register(log_file.close)
         sys.stdout = pipe_splitter(
             sys.__stdout__,
@@ -290,7 +300,8 @@ try:
 
         syntax = None
         if isinstance(error, SyntaxError) and any(
-            getattr(error, attribute, None) is not None for attribute in ("filename", "lineno", "offset", "text")
+            getattr(error, attribute, None) is not None
+            for attribute in ("filename", "lineno", "offset", "text")
         ):
             syntax = {
                 "filename": getattr(error, "filename", None),
@@ -303,7 +314,9 @@ try:
             "relation": relation_text,
             "type": type(error).__name__,
             "message": str(error),
-            "missing_module": getattr(error, "name", None) if isinstance(error, ImportError) else None,
+            "missing_module": getattr(error, "name", None)
+            if isinstance(error, ImportError)
+            else None,
             "frames": frames,
             "syntax": syntax,
         }
@@ -426,7 +439,12 @@ try:
         )
         if should_setup_prints:
             setup_log_prints(
-                log_path, overwrite_log, print_prepend, log_print_prepend, input_prepend, log_input_prepend
+                log_path,
+                overwrite_log,
+                print_prepend,
+                log_print_prepend,
+                input_prepend,
+                log_input_prepend,
             )
 
         # ==============================
@@ -438,13 +456,19 @@ try:
             try:
                 ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(app_id)  # type:ignore
             except Exception as e:
-                print("[Warning] Failed to set app id for taskbar grouping: {}".format(e))
+                print(
+                    "[Warning] Failed to set app id for taskbar grouping: {}".format(e)
+                )
 
         # ==============================
         # replace pythons builtin "input" function to add a prepend:
         # (pipe can't do that since input() is not going via that)
 
-        if input_prepend != "" or log_input_prepend != "" or hasattr(sys.stdout, "complete_input_line"):
+        if (
+            input_prepend != ""
+            or log_input_prepend != ""
+            or hasattr(sys.stdout, "complete_input_line")
+        ):
             import builtins
 
             _original_input = builtins.input
@@ -455,7 +479,9 @@ try:
                     sys.stdout.write_input_prompt(prompt)
                     text = _original_input("")
                 else:
-                    text = _original_input("{}{}".format(_format_prepend(input_prepend), prompt))
+                    text = _original_input(
+                        "{}{}".format(_format_prepend(input_prepend), prompt)
+                    )
                 if hasattr(sys.stdout, "complete_input_line"):
                     sys.stdout.complete_input_line(text)
                 return text
@@ -488,7 +514,9 @@ try:
             main()
         except Exception as e:
             save_traceback(e, os.path.abspath(__file__), crash_log_temp_path)
-            sys.exit(2)  # exit code 2 indicates wrapper error and need to process saved traceback to watchdog
+            sys.exit(
+                2
+            )  # exit code 2 indicates wrapper error and need to process saved traceback to watchdog
         finally:  # try close log file
             try:
                 sys.stdout.flush()
@@ -522,7 +550,7 @@ import sys
 print(sys.argv[1])
 input("\\nPress Enter to exit...")
 """
-    subprocess.Popen(  # noqa:S603
+    subprocess.Popen(
         [sys.executable, "-c", display_code, error_text],
         creationflags=subprocess.CREATE_NEW_CONSOLE,
     )

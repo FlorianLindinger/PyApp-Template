@@ -34,8 +34,15 @@ try:
         print_traceback,
         save_current_packages,
     )
-    from backend.DONT_CHANGE.scripts.generic_helpers import close_terminal, input_success, input_warn
-    from backend.DONT_CHANGE.settings.backend_settings import FRONTEND_PACKAGES_DIR, FRONTEND_PYTHON_EXE
+    from backend.DONT_CHANGE.scripts.generic_helpers import (
+        close_terminal,
+        input_success,
+        input_warn,
+    )
+    from backend.DONT_CHANGE.settings.backend_settings import (
+        FRONTEND_PACKAGES_DIR,
+        FRONTEND_PYTHON_EXE,
+    )
 
     # ==============================
     # local variables
@@ -51,7 +58,7 @@ try:
 
         path = save_current_packages(with_version=False)
 
-        subprocess.run(  # noqa
+        subprocess.run(
             [
                 FRONTEND_PYTHON_EXE,
                 "-m",
@@ -64,7 +71,7 @@ try:
             ],
             check=True,
         )
-        subprocess.run(  # noqa
+        subprocess.run(
             [
                 FRONTEND_PYTHON_EXE,
                 "-m",
