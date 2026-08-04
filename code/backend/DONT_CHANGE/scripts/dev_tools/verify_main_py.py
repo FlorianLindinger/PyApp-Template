@@ -57,14 +57,16 @@ def tool_command(tool: str) -> list[str]:
 
 def exclusion_patterns() -> tuple[str, ...]:
     """Return file and recursive folder patterns understood by both tools."""
-    folder_patterns = tuple(f"{folder.rstrip('/')}/**" for folder in FRONTEND_VERIFICATION_EXCLUDED_FOLDERS)
+    folder_patterns = tuple(
+        f"{folder.rstrip('/')}/**" for folder in FRONTEND_VERIFICATION_EXCLUDED_FOLDERS
+    )
     return FRONTEND_VERIFICATION_EXCLUDED_FILES + folder_patterns
 
 
 def run_check(label: str, command: list[str]) -> bool:
     """Run one check and return whether it succeeded."""
     print(f"\n[Info] {label}", flush=True)
-    result = subprocess.run(command, cwd=CODE_DIR, check=False)  # noqa: S603
+    result = subprocess.run(command, cwd=CODE_DIR, check=False)
     return result.returncode == 0
 
 
@@ -78,13 +80,23 @@ def verify(preset: str, *, fix: bool, unsafe_fixes: bool) -> int:
         return 2
 
     apply_fixes = fix or unsafe_fixes
-    ruff_patterns = FRONTEND_VERIFICATION_EXCLUDED_FILES + FRONTEND_VERIFICATION_EXCLUDED_FOLDERS
+    ruff_patterns = (
+        FRONTEND_VERIFICATION_EXCLUDED_FILES + FRONTEND_VERIFICATION_EXCLUDED_FOLDERS
+    )
     ruff_exclusions = ["--exclude", ",".join(ruff_patterns)] if ruff_patterns else []
-    pyrefly_exclusions = [argument for pattern in exclusion_patterns() for argument in ("--project-excludes", pattern)]
+    pyrefly_exclusions = [
+        argument
+        for pattern in exclusion_patterns()
+        for argument in ("--project-excludes", pattern)
+    ]
 
     checks = (
         (
-            "Ruff lint/unsafe-fix: main.py" if unsafe_fixes else "Ruff lint/fix: main.py" if apply_fixes else "Ruff lint: main.py",
+            "Ruff lint/unsafe-fix: main.py"
+            if unsafe_fixes
+            else "Ruff lint/fix: main.py"
+            if apply_fixes
+            else "Ruff lint: main.py",
             [
                 *ruff,
                 "check",
@@ -96,7 +108,13 @@ def verify(preset: str, *, fix: bool, unsafe_fixes: bool) -> int:
         ),
         (
             "Ruff format/fix: main.py" if apply_fixes else "Ruff format: main.py",
-            [*ruff, "format", *(("--check",) if not apply_fixes else ()), *FRONTEND_VERIFICATION_TARGETS, *ruff_exclusions],
+            [
+                *ruff,
+                "format",
+                *(("--check",) if not apply_fixes else ()),
+                *FRONTEND_VERIFICATION_TARGETS,
+                *ruff_exclusions,
+            ],
         ),
         (
             f"Pyrefly {preset}: main.py",
@@ -138,7 +156,9 @@ def main() -> int:
         help=f"Pyrefly preset to use (default: {FRONTEND_VERIFICATION_DEFAULT_PRESET}).",
     )
     parser.add_argument(
-        "--fix", action="store_true", help="Apply safe Ruff lint and formatting fixes before verification."
+        "--fix",
+        action="store_true",
+        help="Apply safe Ruff lint and formatting fixes before verification.",
     )
     parser.add_argument(
         "--unsafe-fixes",
@@ -146,7 +166,9 @@ def main() -> int:
         help="Apply Ruff's unsafe fixes as well as safe fixes before verification.",
     )
     arguments = parser.parse_args()
-    return verify(arguments.preset, fix=arguments.fix, unsafe_fixes=arguments.unsafe_fixes)
+    return verify(
+        arguments.preset, fix=arguments.fix, unsafe_fixes=arguments.unsafe_fixes
+    )
 
 
 # ==============================

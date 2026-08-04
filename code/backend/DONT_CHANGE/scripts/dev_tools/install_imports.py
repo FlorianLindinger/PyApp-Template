@@ -34,7 +34,11 @@ try:
         print_traceback,
         save_requirements_of_root_folder_noVersion,
     )
-    from backend.DONT_CHANGE.scripts.generic_helpers import close_terminal, input_success, input_warn
+    from backend.DONT_CHANGE.scripts.generic_helpers import (
+        close_terminal,
+        input_success,
+        input_warn,
+    )
     from backend.DONT_CHANGE.settings.backend_settings import (
         NEEDED_PACKAGES_NO_VERSION_PATH,
     )
@@ -50,7 +54,9 @@ try:
 
     def main() -> None:
         ensure_python_distro()
-        success, output_path = save_requirements_of_root_folder_noVersion(NEEDED_PACKAGES_NO_VERSION_PATH)
+        success, output_path = save_requirements_of_root_folder_noVersion(
+            NEEDED_PACKAGES_NO_VERSION_PATH
+        )
         if not success:
             raise RuntimeError("Failed to determine needed packages.")
         install_packages_from_file(output_path)

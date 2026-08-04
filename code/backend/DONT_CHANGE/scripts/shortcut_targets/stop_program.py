@@ -42,7 +42,10 @@ try:
         make_abs_path_relative_to_file,
         print_success,
     )
-    from backend.DONT_CHANGE.settings.backend_settings import DEV_SETTINGS_PATH, PROCESS_ID_FILE_PATH
+    from backend.DONT_CHANGE.settings.backend_settings import (
+        DEV_SETTINGS_PATH,
+        PROCESS_ID_FILE_PATH,
+    )
 
     # ==============================
     # local variables
@@ -65,10 +68,16 @@ try:
         set_terminal_colors()
         enable_unminimize_and_foreground_terminal_on_first_print()
 
-        pid_path = make_abs_path_relative_to_file(PROCESS_ID_FILE_PATH, DEV_SETTINGS_PATH)
-        stopped_count, stale_count, failed_messages = stop_processes_from_pid_file(pid_path)
+        pid_path = make_abs_path_relative_to_file(
+            PROCESS_ID_FILE_PATH, DEV_SETTINGS_PATH
+        )
+        stopped_count, stale_count, failed_messages = stop_processes_from_pid_file(
+            pid_path
+        )
         if failed_messages:
-            raise RuntimeError("Failed to stop these PID(s):\n" + "\n".join(failed_messages))
+            raise RuntimeError(
+                "Failed to stop these PID(s):\n" + "\n".join(failed_messages)
+            )
 
         if stopped_count == 0:
             if stale_count == 0:
@@ -76,7 +85,9 @@ try:
                 print("This could mean it was already stopped via this script.")
                 print_close_countdown(close_countdown_when_no_pid_file_s)
             else:
-                print(f"[Info] Nothing to stop. Removed {stale_count} stale PID entries from {pid_path}.")
+                print(
+                    f"[Info] Nothing to stop. Removed {stale_count} stale PID entries from {pid_path}."
+                )
                 input("Press enter to exit")
             return
 

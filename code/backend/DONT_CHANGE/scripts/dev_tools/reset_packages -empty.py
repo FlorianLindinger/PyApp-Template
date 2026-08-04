@@ -34,7 +34,11 @@ try:
         make_file_to_indicate_frontend_pckgs_installed,
         print_traceback,
     )
-    from backend.DONT_CHANGE.scripts.generic_helpers import close_terminal, input_success, input_warn
+    from backend.DONT_CHANGE.scripts.generic_helpers import (
+        close_terminal,
+        input_success,
+        input_warn,
+    )
 
     # ==============================
     # local variables

@@ -27,7 +27,10 @@ try:
     if root_dir not in sys.path:
         sys.path.insert(0, root_dir)
 
-    from backend.developer_settings import log_path, log_path_is_relative_to_start_folder_if_relative
+    from backend.developer_settings import (
+        log_path,
+        log_path_is_relative_to_start_folder_if_relative,
+    )
     from backend.DONT_CHANGE.scripts.common_code import (
         get_log_folder_path,
         input_warn,
@@ -55,15 +58,19 @@ try:
         set_terminal_colors()
         enable_unminimize_and_foreground_terminal_on_first_print()
 
-        folder_path = get_log_folder_path(log_path, log_path_is_relative_to_start_folder_if_relative)
+        folder_path = get_log_folder_path(
+            log_path, log_path_is_relative_to_start_folder_if_relative
+        )
         if folder_path is None:
-            print_warn(f'[Info] Can\'t open log folder because log_path is disabled in "{DEV_SETTINGS_PATH}".')
+            print_warn(
+                f'[Info] Can\'t open log folder because log_path is disabled in "{DEV_SETTINGS_PATH}".'
+            )
             input_warn("Press enter to exit.")
         elif not os.path.exists(folder_path):
             print_warn(f'[Error] Log folder ("{folder_path}") does not exist.')
             input_warn("Press enter to exit.")
         else:
-            os.startfile(folder_path)  # noqa:S606
+            os.startfile(folder_path)
 
     # ==============================
     # execute main function

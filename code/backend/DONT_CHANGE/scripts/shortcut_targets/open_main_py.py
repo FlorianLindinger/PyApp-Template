@@ -55,7 +55,9 @@ try:
         enable_unminimize_and_foreground_terminal_on_first_print()
 
         if not os.path.exists(MAIN_PY_SCRIPT_PATH):
-            print_warn(f'[Error] main.py file ("{MAIN_PY_SCRIPT_PATH}") does not exist.')
+            print_warn(
+                f'[Error] main.py file ("{MAIN_PY_SCRIPT_PATH}") does not exist.'
+            )
             input_warn("Press enter to exit.")
             return
 

@@ -134,7 +134,12 @@ def generate_shortcut(
         _fields_ = (
             (
                 "QueryInterface",
-                _method(_hresult, _shell_link_pointer, ctypes.POINTER(_Guid), ctypes.POINTER(ctypes.c_void_p)),
+                _method(
+                    _hresult,
+                    _shell_link_pointer,
+                    ctypes.POINTER(_Guid),
+                    ctypes.POINTER(ctypes.c_void_p),
+                ),
             ),
             ("AddRef", _unused_method),
             ("Release", _method(ctypes.c_ulong, _shell_link_pointer)),
@@ -142,9 +147,15 @@ def generate_shortcut(
             ("GetIDList", _unused_method),
             ("SetIDList", _unused_method),
             ("GetDescription", _unused_method),
-            ("SetDescription", _method(_hresult, _shell_link_pointer, ctypes.c_wchar_p)),
+            (
+                "SetDescription",
+                _method(_hresult, _shell_link_pointer, ctypes.c_wchar_p),
+            ),
             ("GetWorkingDirectory", _unused_method),
-            ("SetWorkingDirectory", _method(_hresult, _shell_link_pointer, ctypes.c_wchar_p)),
+            (
+                "SetWorkingDirectory",
+                _method(_hresult, _shell_link_pointer, ctypes.c_wchar_p),
+            ),
             ("GetArguments", _unused_method),
             ("SetArguments", _method(_hresult, _shell_link_pointer, ctypes.c_wchar_p)),
             ("GetHotkey", _unused_method),
@@ -152,7 +163,10 @@ def generate_shortcut(
             ("GetShowCmd", _unused_method),
             ("SetShowCmd", _method(_hresult, _shell_link_pointer, ctypes.c_int)),
             ("GetIconLocation", _unused_method),
-            ("SetIconLocation", _method(_hresult, _shell_link_pointer, ctypes.c_wchar_p, ctypes.c_int)),
+            (
+                "SetIconLocation",
+                _method(_hresult, _shell_link_pointer, ctypes.c_wchar_p, ctypes.c_int),
+            ),
             ("SetRelativePath", _unused_method),
             ("Resolve", _unused_method),
             ("SetPath", _method(_hresult, _shell_link_pointer, ctypes.c_wchar_p)),
@@ -169,14 +183,24 @@ def generate_shortcut(
         _fields_ = (
             (
                 "QueryInterface",
-                _method(_hresult, _persist_file_pointer, ctypes.POINTER(_Guid), ctypes.POINTER(ctypes.c_void_p)),
+                _method(
+                    _hresult,
+                    _persist_file_pointer,
+                    ctypes.POINTER(_Guid),
+                    ctypes.POINTER(ctypes.c_void_p),
+                ),
             ),
             ("AddRef", _unused_method),
             ("Release", _method(ctypes.c_ulong, _persist_file_pointer)),
             ("GetClassID", _unused_method),
             ("IsDirty", _unused_method),
             ("Load", _unused_method),
-            ("Save", _method(_hresult, _persist_file_pointer, ctypes.c_wchar_p, wintypes.BOOL)),
+            (
+                "Save",
+                _method(
+                    _hresult, _persist_file_pointer, ctypes.c_wchar_p, wintypes.BOOL
+                ),
+            ),
             ("SaveCompleted", _unused_method),
             ("GetCurFile", _unused_method),
         )
@@ -192,7 +216,12 @@ def generate_shortcut(
         _fields_ = (
             (
                 "QueryInterface",
-                _method(_hresult, _property_store_pointer, ctypes.POINTER(_Guid), ctypes.POINTER(ctypes.c_void_p)),
+                _method(
+                    _hresult,
+                    _property_store_pointer,
+                    ctypes.POINTER(_Guid),
+                    ctypes.POINTER(ctypes.c_void_p),
+                ),
             ),
             ("AddRef", _unused_method),
             ("Release", _method(ctypes.c_ulong, _property_store_pointer)),
@@ -265,8 +294,14 @@ def generate_shortcut(
     _property_store_interface_id = _guid("886D8EEB-8CF2-4446-8D02-CDBA1DBDCF99")
     _app_id_key = _PropertyKey(_guid("9F4C2855-9F79-4B39-A8D0-E1D42DE1D5F3"), 5)
 
-    output_path = os.path.abspath(os.path.join(SHORTCUT_OUTPUT_DIR, sanitize_filename(shortcut_name) + ".lnk"))
-    launcher_args = [_quote(launcher_path)] if classic_terminal else ["/d", "/k", "call", _quote(launcher_path)]
+    output_path = os.path.abspath(
+        os.path.join(SHORTCUT_OUTPUT_DIR, sanitize_filename(shortcut_name) + ".lnk")
+    )
+    launcher_args = (
+        [_quote(launcher_path)]
+        if classic_terminal
+        else ["/d", "/k", "call", _quote(launcher_path)]
+    )
     if args not in ("", None):
         launcher_args.append(_quote(args))
 
@@ -315,11 +350,23 @@ def generate_shortcut(
         try:
             interface = shell_link.contents.vtable.contents
             target = "conhost.exe" if classic_terminal else "cmd.exe"
-            _check_hresult(interface.SetPath(shell_link, target), f'SetPath("{target}")')
-            _check_hresult(interface.SetArguments(shell_link, " ".join(launcher_args)), "SetArguments")
-            _check_hresult(interface.SetWorkingDirectory(shell_link, wdir), "SetWorkingDirectory")
-            _check_hresult(interface.SetDescription(shell_link, description), "SetDescription")
-            _check_hresult(interface.SetShowCmd(shell_link, 7 if start_minimized else 1), "SetShowCmd")
+            _check_hresult(
+                interface.SetPath(shell_link, target), f'SetPath("{target}")'
+            )
+            _check_hresult(
+                interface.SetArguments(shell_link, " ".join(launcher_args)),
+                "SetArguments",
+            )
+            _check_hresult(
+                interface.SetWorkingDirectory(shell_link, wdir), "SetWorkingDirectory"
+            )
+            _check_hresult(
+                interface.SetDescription(shell_link, description), "SetDescription"
+            )
+            _check_hresult(
+                interface.SetShowCmd(shell_link, 7 if start_minimized else 1),
+                "SetShowCmd",
+            )
 
             if icon_path:
                 _check_hresult(
@@ -335,7 +382,9 @@ def generate_shortcut(
                     ctypes.byref(property_store_pointer),
                 )
                 _check_hresult(result, "QueryInterface(IPropertyStore)")
-                property_store = ctypes.cast(property_store_pointer, _property_store_pointer)
+                property_store = ctypes.cast(
+                    property_store_pointer, _property_store_pointer
+                )
                 try:
                     app_id_value = _PropVariant()
                     app_id_value.vt = 31
@@ -362,7 +411,9 @@ def generate_shortcut(
             _check_hresult(result, "QueryInterface(IPersistFile)")
             persist_file = ctypes.cast(persist_file_pointer, _persist_file_pointer)
             try:
-                result = persist_file.contents.vtable.contents.Save(persist_file, output_path, True)
+                result = persist_file.contents.vtable.contents.Save(
+                    persist_file, output_path, True
+                )
                 _check_hresult(result, f'Save shortcut "{output_path}"')
             finally:
                 persist_file.contents.vtable.contents.Release(persist_file)
@@ -376,7 +427,12 @@ def generate_shortcut(
 
 
 def _sanitize_app_id(value: str) -> str:
-    name = unicodedata.normalize("NFKD", value).encode("ascii", "ignore").decode("ascii").lower()
+    name = (
+        unicodedata.normalize("NFKD", value)
+        .encode("ascii", "ignore")
+        .decode("ascii")
+        .lower()
+    )
     name = re.sub(r"[\s_]+", "-", name)
     name = re.sub(r"[^a-z0-9.-]", "", name)
     name = re.sub(r"-+", "-", name)
@@ -453,8 +509,14 @@ def main() -> None:
             description=f"Open {program_name} main.py file",
             start_minimized=True,
         )
-    if user_settings_path not in (None, False, "") and open_settings_shortcut_name not in (None, False, ""):
-        settings_file_path_abs = make_abs_path_relative_to_file(user_settings_path, DEV_SETTINGS_PATH)
+    if user_settings_path not in (
+        None,
+        False,
+        "",
+    ) and open_settings_shortcut_name not in (None, False, ""):
+        settings_file_path_abs = make_abs_path_relative_to_file(
+            user_settings_path, DEV_SETTINGS_PATH
+        )
         if not os.path.exists(settings_file_path_abs):
             print(
                 f'[Warning] User settings file does not exist at "{settings_file_path_abs}". '

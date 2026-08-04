@@ -35,7 +35,11 @@ try:
         print_traceback,
         save_requirements_of_root_folder_noVersion,
     )
-    from backend.DONT_CHANGE.scripts.generic_helpers import close_terminal, input_success, input_warn
+    from backend.DONT_CHANGE.scripts.generic_helpers import (
+        close_terminal,
+        input_success,
+        input_warn,
+    )
 
     # ==============================
     # local variables

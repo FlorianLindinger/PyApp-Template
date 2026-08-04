@@ -33,8 +33,14 @@ try:
         print_traceback,
         save_current_packages,
     )
-    from backend.DONT_CHANGE.scripts.generic_helpers import close_terminal, input_success, input_warn
-    from backend.DONT_CHANGE.settings.backend_settings import CURRENT_PACKAGES_NO_VERSION_PATH
+    from backend.DONT_CHANGE.scripts.generic_helpers import (
+        close_terminal,
+        input_success,
+        input_warn,
+    )
+    from backend.DONT_CHANGE.settings.backend_settings import (
+        CURRENT_PACKAGES_NO_VERSION_PATH,
+    )
 
     # ==============================
     # local variables

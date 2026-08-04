@@ -124,9 +124,16 @@ try:
 
     def _same_file(first_path: str, second_path: str) -> bool:
         """Compare two real filenames without treating pseudo filenames as paths."""
-        if not first_path or not second_path or first_path.startswith("<") or second_path.startswith("<"):
+        if (
+            not first_path
+            or not second_path
+            or first_path.startswith("<")
+            or second_path.startswith("<")
+        ):
             return False
-        return os.path.normcase(os.path.abspath(first_path)) == os.path.normcase(os.path.abspath(second_path))
+        return os.path.normcase(os.path.abspath(first_path)) == os.path.normcase(
+            os.path.abspath(second_path)
+        )
 
     def _display_filename(filename: str, script_path: str) -> str:
         """Make filenames below the traceback origin relative to its directory."""
@@ -140,13 +147,19 @@ try:
         except ValueError:
             return filename
 
-        if relative_filename != ".." and not relative_filename.startswith(".." + os.sep):
+        if relative_filename != ".." and not relative_filename.startswith(
+            ".." + os.sep
+        ):
             return relative_filename
         return filename
 
     def _traceback_entries(traceback_payload: dict[str, Any]) -> list[dict[str, Any]]:
         """Return exception entries from the current traceback JSON format."""
-        return [entry for entry in traceback_payload.get("traceback") or [] if isinstance(entry, dict)]
+        return [
+            entry
+            for entry in traceback_payload.get("traceback") or []
+            if isinstance(entry, dict)
+        ]
 
     def _traceback_metadata_lines(traceback_payload: dict[str, Any]) -> list[str]:
         """Return details about when and where the failure is handled."""
@@ -160,7 +173,9 @@ try:
             lines.append(f"Python: {python_version}")
         return lines
 
-    def _frames_from_traceback_origin(error_data: dict[str, Any], script_path: str) -> list[dict[str, Any]]:
+    def _frames_from_traceback_origin(
+        error_data: dict[str, Any], script_path: str
+    ) -> list[dict[str, Any]]:
         """
         Return frames from the perspective of the script that produced the payload.
 
@@ -174,7 +189,9 @@ try:
         metadata; in that case every outer frame is removed. If neither location
         matches, all frames are retained so an unknown origin loses no evidence.
         """
-        frames = [frame for frame in error_data.get("frames") or [] if isinstance(frame, dict)]
+        frames = [
+            frame for frame in error_data.get("frames") or [] if isinstance(frame, dict)
+        ]
         if not script_path:
             return frames
 
@@ -183,7 +200,9 @@ try:
                 return frames[outer_frames_to_skip:]
 
         syntax = error_data.get("syntax")
-        if isinstance(syntax, dict) and _same_file(str(syntax.get("filename") or ""), script_path):
+        if isinstance(syntax, dict) and _same_file(
+            str(syntax.get("filename") or ""), script_path
+        ):
             return []
         return frames
 
@@ -223,7 +242,11 @@ try:
 
             exception_type = str(error_data.get("type") or "Exception")
             exception_message = str(error_data.get("message") or "")
-            lines.append(f"{exception_type}: {exception_message}" if exception_message else exception_type)
+            lines.append(
+                f"{exception_type}: {exception_message}"
+                if exception_message
+                else exception_type
+            )
 
         return lines or ["No traceback frames were captured."]
 
@@ -239,7 +262,9 @@ try:
         if isinstance(syntax, dict):
             stack.syntax_error = _SyntaxError(
                 offset=_as_int(syntax.get("offset")),
-                filename=_display_filename(str(syntax.get("filename") or "?"), script_path),
+                filename=_display_filename(
+                    str(syntax.get("filename") or "?"), script_path
+                ),
                 line=str(syntax.get("text") or ""),
                 lineno=_as_int(syntax.get("lineno")),
                 msg=exception_message or exception_type,
@@ -248,7 +273,9 @@ try:
         for frame in _frames_from_traceback_origin(error_data, script_path):
             stack.frames.append(
                 Frame(
-                    filename=_display_filename(str(frame.get("filename") or "?"), script_path),
+                    filename=_display_filename(
+                        str(frame.get("filename") or "?"), script_path
+                    ),
                     lineno=_as_int(frame.get("lineno")),
                     name=str(frame.get("function") or "<module>"),
                     line=str(frame.get("source") or ""),
@@ -292,7 +319,11 @@ try:
                 try:
                     text.encode(encoding)
                 except UnicodeEncodeError:
-                    text = text.replace("\u25b2", "^").encode(encoding, errors="replace").decode(encoding)
+                    text = (
+                        text.replace("\u25b2", "^")
+                        .encode(encoding, errors="replace")
+                        .decode(encoding)
+                    )
             written = self.stream.write(text)
             return len(text) if written is None else written
 
@@ -305,7 +336,9 @@ try:
         def fileno(self) -> int:
             return self.stream.fileno()
 
-    def print_traceback_from_json_payload(traceback_payload: dict[str, Any] | None) -> None:
+    def print_traceback_from_json_payload(
+        traceback_payload: dict[str, Any] | None,
+    ) -> None:
         """Render the current traceback JSON format, preferring Rich's native layout."""
         if not traceback_payload:
             return
@@ -325,10 +358,14 @@ try:
             background_style = f"on {background}"
             border_style = f"{RICH_TRACEBACK_COLOR_THEME['border']} {background_style}"
             label_style = f"{RICH_TRACEBACK_COLOR_THEME['label']} {background_style}"
-            metadata_style = f"{RICH_TRACEBACK_COLOR_THEME['metadata']} {background_style}"
+            metadata_style = (
+                f"{RICH_TRACEBACK_COLOR_THEME['metadata']} {background_style}"
+            )
             text_style = f"{RICH_TRACEBACK_COLOR_THEME['text']} {background_style}"
             traceback_entries = _traceback_entries(traceback_payload)
-            rich_traceback = _rich_traceback(traceback_payload) if traceback_entries else None
+            rich_traceback = (
+                _rich_traceback(traceback_payload) if traceback_entries else None
+            )
             console = Console(
                 file=cast("TextIO", _RichSafeStream(sys.stdout)),
                 legacy_windows=True,
@@ -342,7 +379,9 @@ try:
                         "traceback.title": label_style,
                         "traceback.exc_type": label_style,
                         "traceback.exc_value": text_style,
-                        "traceback.offset": (f"{RICH_TRACEBACK_COLOR_THEME['syntax_pointer']} {background_style}"),
+                        "traceback.offset": (
+                            f"{RICH_TRACEBACK_COLOR_THEME['syntax_pointer']} {background_style}"
+                        ),
                     },
                     inherit=True,
                 ),
@@ -362,7 +401,11 @@ try:
             if rich_traceback is not None:
                 old_cwd = os.getcwd()
                 try:
-                    script_folder = os.path.dirname(os.path.abspath(script_path)) if script_path else ""
+                    script_folder = (
+                        os.path.dirname(os.path.abspath(script_path))
+                        if script_path
+                        else ""
+                    )
                     if os.path.isdir(script_folder):
                         os.chdir(script_folder)
                     console.print(
@@ -385,9 +428,13 @@ try:
                 print(metadata_line)
             print("\n".join(_plain_traceback_lines(traceback_payload)))
 
-    def write_txt_crash_log(crash_log_payload: dict[str, Any] | None, message: str | None):
+    def write_txt_crash_log(
+        crash_log_payload: dict[str, Any] | None, message: str | None
+    ):
         # write a human readable crash log:
-        crash_log_path_resolved = get_log_path(crash_log_path, crash_log_path_is_relative_to_start_folder_if_relative)
+        crash_log_path_resolved = get_log_path(
+            crash_log_path, crash_log_path_is_relative_to_start_folder_if_relative
+        )
 
         divider_length: int = 30
 
@@ -407,7 +454,9 @@ try:
             lines.append("=" * divider_length)
 
             os.makedirs(os.path.dirname(crash_log_path_resolved), exist_ok=True)
-            with open(crash_log_path_resolved, "w" if overwrite_crash_log else "a") as f:
+            with open(
+                crash_log_path_resolved, "w" if overwrite_crash_log else "a"
+            ) as f:
                 f.write("\n".join(lines))
 
     # ==============================
@@ -430,7 +479,7 @@ try:
     def restart_program(app_id: str, new_terminal_was_created: bool) -> None:
         """Relaunch the program using the same visible/hidden terminal behavior."""
         launch_mode = "no_terminal" if new_terminal_was_created else "terminal"
-        subprocess.Popen(  # noqa:S603
+        subprocess.Popen(
             [BACKEND_PYTHON_EXE, START_PROGRAM_PATH, app_id, launch_mode],
         )
 
@@ -449,8 +498,10 @@ try:
             )
 
         print()
-        print('Install packages with "pip install package_name", then type "exit" to restart the program.')
-        subprocess.run(  # noqa:S603
+        print(
+            'Install packages with "pip install package_name", then type "exit" to restart the program.'
+        )
+        subprocess.run(
             ["cmd.exe", "/d", "/c", "call", FRONTEND_LAUNCHER_FOR_PIP_INSTALL_TERMINAL],
             check=True,
         )
@@ -480,9 +531,13 @@ try:
             try:
                 if choice == "1":
                     if not missing_module:
-                        print_warn("[Warning] The exception did not identify a missing module. Choose another option.")
+                        print_warn(
+                            "[Warning] The exception did not identify a missing module. Choose another option."
+                        )
                         continue
-                    print(f'[Info] Installing "{install_name}" for missing import "{missing_module}"...')
+                    print(
+                        f'[Info] Installing "{install_name}" for missing import "{missing_module}"...'
+                    )
                     install_packages(
                         python_exe=FRONTEND_PYTHON_EXE,
                         packages=install_name,
@@ -512,12 +567,21 @@ try:
             with open(TMP_TRACEBACK_JSON_PATH, encoding="utf-8") as f:
                 payload = json.load(f)
         except FileNotFoundError:
-            return None, f'Traceback report was not created at "{TMP_TRACEBACK_JSON_PATH}".'
+            return (
+                None,
+                f'Traceback report was not created at "{TMP_TRACEBACK_JSON_PATH}".',
+            )
         except (OSError, UnicodeError, json.JSONDecodeError) as error:
-            return None, f'Could not read traceback report "{TMP_TRACEBACK_JSON_PATH}": {error}'
+            return (
+                None,
+                f'Could not read traceback report "{TMP_TRACEBACK_JSON_PATH}": {error}',
+            )
 
         if not isinstance(payload, dict):
-            return None, f'Traceback report "{TMP_TRACEBACK_JSON_PATH}" does not contain a JSON object.'
+            return (
+                None,
+                f'Traceback report "{TMP_TRACEBACK_JSON_PATH}" does not contain a JSON object.',
+            )
         return payload, None
 
     def execute_exit_settings(
@@ -599,7 +663,7 @@ try:
         # open log
         if log_path and open_log:
             try:
-                os.startfile(log_path)  # type: ignore[attr-defined]  # noqa:S606
+                os.startfile(log_path)  # type: ignore[attr-defined]
             except Exception as e:
                 print(f"[Error] Failed to open log: {e}")
 
@@ -614,8 +678,12 @@ try:
             set_terminal_title(terminal_title)
             set_terminal_colors(terminal_colors)
             set_terminal_icon(terminal_icon)
-            print_traceback_from_json_payload(traceback_payload)  # must be after set_terminal_colors
-            _play_exit_sound(wav_path, wait=not override_to_not_closing_and_disable_wait)
+            print_traceback_from_json_payload(
+                traceback_payload
+            )  # must be after set_terminal_colors
+            _play_exit_sound(
+                wav_path, wait=not override_to_not_closing_and_disable_wait
+            )
             if not override_to_not_closing_and_disable_wait:
                 input("Press enter to exit")
         else:
@@ -631,9 +699,14 @@ try:
         # ==============================
         # handle args
 
-        _script_path, exit_mode, app_id, new_terminal_was_created, log_path_resolved, selected_python_script_path = (
-            sys.argv
-        )
+        (
+            _script_path,
+            exit_mode,
+            app_id,
+            new_terminal_was_created,
+            log_path_resolved,
+            selected_python_script_path,
+        ) = sys.argv
         exit_mode = int(exit_mode)
         new_terminal_was_created = new_terminal_was_created.lower() == "true"
 
@@ -651,7 +724,12 @@ try:
         # 4 = handled failure watchdog script (json)
 
         if exit_mode == 0:  # 0 = correctly handled end of script in main.py (no json)
-            execute_exit_settings("success", log_path_resolved, None, "[Success] Program finished successfully")
+            execute_exit_settings(
+                "success",
+                log_path_resolved,
+                None,
+                "[Success] Program finished successfully",
+            )
             sys.exit()
 
         elif exit_mode == 1:  # 1 = correctly handled other exit of main.py (json)
@@ -659,7 +737,9 @@ try:
             if traceback_payload is not None:
                 traceback_entries = _traceback_entries(traceback_payload)
                 exception_type = (
-                    str(traceback_entries[-1].get("type") or "Exception") if traceback_entries else "Exception"
+                    str(traceback_entries[-1].get("type") or "Exception")
+                    if traceback_entries
+                    else "Exception"
                 )
 
                 if exception_type == "SystemExit":  # includes success exits
@@ -670,7 +750,10 @@ try:
 
                     if main_exit_code in (0, None, False):  # success
                         execute_exit_settings(
-                            "success", log_path_resolved, traceback_payload, "[Success] Program finished successfully"
+                            "success",
+                            log_path_resolved,
+                            traceback_payload,
+                            "[Success] Program finished successfully",
                         )
 
                     elif exit_code_looks_like_interpreter_crash(main_exit_code):
@@ -690,7 +773,9 @@ try:
                         )
 
                 elif exception_type in ["ImportError", "ModuleNotFoundError"]:
-                    missing_module = str(traceback_entries[-1].get("missing_module") or "").strip()
+                    missing_module = str(
+                        traceback_entries[-1].get("missing_module") or ""
+                    ).strip()
                     install_name = ""
 
                     if missing_module:
@@ -758,7 +843,9 @@ try:
             if traceback_payload is not None:
                 traceback_entries = _traceback_entries(traceback_payload)
                 exception_type = (
-                    str(traceback_entries[-1].get("type") or "Exception") if traceback_entries else "Exception"
+                    str(traceback_entries[-1].get("type") or "Exception")
+                    if traceback_entries
+                    else "Exception"
                 )
                 execute_exit_settings(
                     "failure",
@@ -773,7 +860,9 @@ try:
                     None,
                     f"[Failure] The script wrapper failed, but its traceback could not be loaded. {traceback_error}",
                 )
-        elif exit_mode == 3:  # 3 = unsuccessfully handled failure in wrapper of main.py (no json)
+        elif (
+            exit_mode == 3
+        ):  # 3 = unsuccessfully handled failure in wrapper of main.py (no json)
             # The wrapper's last-resort handler already displayed the traceback
             # and waited for acknowledgement. Avoid a second failure prompt.
             return
@@ -791,7 +880,11 @@ try:
                 ),
             )
         else:
-            mode = "crash" if exit_code_looks_like_interpreter_crash(exit_mode) else "failure"
+            mode = (
+                "crash"
+                if exit_code_looks_like_interpreter_crash(exit_mode)
+                else "failure"
+            )
             label = "Crash" if mode == "crash" else "Failure"
             execute_exit_settings(
                 mode,
@@ -827,4 +920,6 @@ except Exception as e:
     print(traceback.format_exc())
     print("=" * 30)
     input("[Error] Press enter to exit")
-    os._exit(1)  # instead of sys.exit(1) to prevent exception by script calling this script
+    os._exit(
+        1
+    )  # instead of sys.exit(1) to prevent exception by script calling this script

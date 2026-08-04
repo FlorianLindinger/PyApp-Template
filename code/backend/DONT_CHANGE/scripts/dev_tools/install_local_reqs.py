@@ -33,7 +33,11 @@ try:
         install_packages_from_file,
         print_traceback,
     )
-    from backend.DONT_CHANGE.scripts.generic_helpers import close_terminal, input_success, input_warn
+    from backend.DONT_CHANGE.scripts.generic_helpers import (
+        close_terminal,
+        input_success,
+        input_warn,
+    )
 
     # ==============================
     # local variables

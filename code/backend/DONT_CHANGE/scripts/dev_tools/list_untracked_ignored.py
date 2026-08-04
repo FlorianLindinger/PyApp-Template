@@ -28,7 +28,11 @@ try:
         sys.path.insert(0, root_dir)
 
     from backend.DONT_CHANGE.scripts.common_code import print_traceback
-    from backend.DONT_CHANGE.scripts.generic_helpers import close_terminal, input_warn, show_git_results
+    from backend.DONT_CHANGE.scripts.generic_helpers import (
+        close_terminal,
+        input_warn,
+        show_git_results,
+    )
 
     # ==============================
     # local variables
