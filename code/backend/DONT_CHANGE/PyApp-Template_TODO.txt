@@ -2,6 +2,10 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
+what files do i want to not sync? how about code/backend/packages/_USE dev_tools FOLDER (IN PARENT FOLDER) TO CHANGE PACKAGES. i want the notive to be there but i want folder deleton not to trigger git? -> ignore all contents in folder?
+
+there was an error in installing python frontend when foölder not exisitng but it continuesd before i saw-
+
 what is the logic of error hhandling in all files for nromal startt 
 has terminal:
     start_program

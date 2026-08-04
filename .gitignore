@@ -19,8 +19,6 @@
 !.gitkeep
 # ".vscode" folder anywhere:
 .vscode
-# cache from Ruff anywhere:
-.ruff_cache
 # cache from Python anywhere:
 __pycache__
 *.pyc

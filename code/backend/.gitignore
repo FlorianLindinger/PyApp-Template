@@ -2,5 +2,3 @@
 /python/
 # generated packages folder in this folder:
 /packages/
-# whitelist file in packages folder in this folder:
-!/packages/USE dev_tools FOLDER (IN PARENT FOLDER) TO CHANGE PACKAGES
