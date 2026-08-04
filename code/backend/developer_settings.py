@@ -2,6 +2,18 @@
 
 Relative paths in this file are interpreted as relative to this file."""
 
+# =========================
+# ==== Settings Overview ====
+# =========================
+
+# 1. Important Settings: program name, Python version, shortcuts, startup, and console prefixes.
+# 2. Logging Settings: normal and crash-log locations and behavior.
+# 3. Program Finish/Crash Settings: what happens after success, failure, crashes, and KeyboardInterrupt.
+# 4. Traceback Settings: displayed crash-report date format and Rich color theme.
+# 5. Icon Settings: individual overlay size and alignment for generated shortcut icons.
+# 6. Less Important Settings: process, Python installation, package, and startup behavior.
+# 7. Launcher Mode Specific Settings: classic-console and Windows Terminal appearance.
+
 # ============================
 # ==== Important Settings ====
 # ============================
@@ -99,14 +111,63 @@ title_after_failure: str | None = f"[Failure] {program_name}"
 title_after_crash: str | None = f"[Crash] {program_name}"
 title_after_KeyboardInterrupt: str | None = f"[KeyboardInterrupt] {program_name}"
 # ---------------------------------------
+# Terminal colors after the program finishes (None or "" keeps the current colors):
+# Background color: 0=Black,1=Blue,2=Green,3=Aqua,4=Red,5=Purple,6=Yellow,8=Gray,7=White,9=LightBlue
+# Text color: A=LightGreen,B=LightAqua,C=LightRed,,D=LightPurple,E=LightYellow,F=BrightWhite:
+terminal_colors_after_success: str | None = "2F"
+terminal_colors_after_failure: str | None = "4F"
+terminal_colors_after_crash: str | None = "4F"
+terminal_colors_after_KeyboardInterrupt: str | None = "6C"
+# ---------------------------------------
 
 # ============================
 # ==== Traceback Settings ====
 # ============================
 
-# ---------------------------------------
-# ---------------------------------------
+# Datetime format shown in crash reports:
+PRINTED_ERROR_DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
+# Include local variables in Rich traceback output. This can expose sensitive values.
+show_traceback_locals: bool = False
+# Number of source-code lines shown before and after the failing line.
+traceback_extra_lines: int = 3
+# Colors/styles used by Rich traceback output:
+RICH_TRACEBACK_COLOR_THEME = {
+    "code": "monokai",
+    "background": "#272822",
+    "border": "bright_red",
+    "syntax_border": "bold bright_red",
+    "label": "bold bright_white",
+    "metadata": "bright_black",
+    "text": "bright_white",
+    "syntax_pointer": "bold bright_yellow",
+}
 
+# ============================
+# ==== Icon Settings ====
+# ============================
+
+# Configure every generated sub-icon separately. ``scale`` is the fraction of
+# the base icon area it covers (0 < value <= 1); ``alignment`` accepts compass
+# positions such as "bottom right", "top", or "center left". Set *either*
+# variable in a pair to ``None`` to generate that icon without its sub-icon.
+settings_sub_icon_scale: float | None = 0.35
+settings_sub_icon_alignment: str | None = "bottom right"
+stop_sub_icon_scale: float | None = 0.35
+stop_sub_icon_alignment: str | None = "bottom right"
+log_sub_icon_scale: float | None = 0.35
+log_sub_icon_alignment: str | None = "bottom right"
+success_sub_icon_scale: float | None = 0.35
+success_sub_icon_alignment: str | None = "bottom right"
+failure_sub_icon_scale: float | None = 0.35
+failure_sub_icon_alignment: str | None = "bottom right"
+crash_sub_icon_scale: float | None = 0.35
+crash_sub_icon_alignment: str | None = "bottom right"
+crash_log_sub_icon_scale: float | None = 0.35
+crash_log_sub_icon_alignment: str | None = "bottom right"
+open_main_py_sub_icon_scale: float | None = 0.35
+open_main_py_sub_icon_alignment: str | None = "bottom right"
+keyboardInterrupt_sub_icon_scale: float | None = 0.35
+keyboardInterrupt_sub_icon_alignment: str | None = "bottom right"
 
 # =================================
 # ==== Less Important Settings ====

@@ -1,9 +1,5 @@
-# generated caches:
-__pycache__
-*.pyc
-*.pyo
-# temporary files:
-temporary/*
+# contents of "temporary" folder:
+/temporary/*
 # GIT_IGNORED folders:
 GIT_IGNORED
 # backend_python folder (in this directory. Scripts are also under that name):
