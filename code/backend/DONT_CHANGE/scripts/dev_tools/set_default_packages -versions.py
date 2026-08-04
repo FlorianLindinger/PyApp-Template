@@ -33,7 +33,11 @@ try:
         print_traceback,
         save_current_packages_as_default,
     )
-    from backend.DONT_CHANGE.scripts.generic_helpers import close_terminal, input_success, input_warn
+    from backend.DONT_CHANGE.scripts.generic_helpers import (
+        close_terminal,
+        input_success,
+        input_warn,
+    )
 
     # ==============================
     # local variables

@@ -25,7 +25,11 @@ try:
         sys.path.insert(0, root_dir)
 
     from backend.DONT_CHANGE.scripts.common_code import input_warn, print_traceback
-    from backend.DONT_CHANGE.scripts.generic_helpers import close_terminal, generate_png_with_text, get_png_image_id
+    from backend.DONT_CHANGE.scripts.generic_helpers import (
+        close_terminal,
+        generate_png_with_text,
+        get_png_image_id,
+    )
     from backend.DONT_CHANGE.settings.backend_settings import (
         PNG_GENERATION_BACKGROUND_COLOR,
         PNG_GENERATION_BOLD,

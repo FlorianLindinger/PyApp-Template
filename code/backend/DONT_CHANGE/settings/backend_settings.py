@@ -9,7 +9,9 @@ import os
 
 def make_abs(x: str) -> str:
     """Make path absolute to this file if relative."""
-    return os.path.normpath(x if os.path.isabs(x) else os.path.join(os.path.dirname(__file__), x))
+    return os.path.normpath(
+        x if os.path.isabs(x) else os.path.join(os.path.dirname(__file__), x)
+    )
 
 
 def get_ini_file_settings(settings_path: str) -> tuple[str, str]:
@@ -27,7 +29,10 @@ def get_ini_file_settings(settings_path: str) -> tuple[str, str]:
     backend_python_version = values["backend_python_version"]
     backend_python_major_minor_version = "".join(backend_python_version.split(".")[:2])
     backend_python_dir = os.path.normpath(
-        os.path.join(os.path.dirname(settings_path), values["backend_python_install_dir_relative_path"])
+        os.path.join(
+            os.path.dirname(settings_path),
+            values["backend_python_install_dir_relative_path"],
+        )
     )
     return backend_python_major_minor_version, backend_python_dir
 

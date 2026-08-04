@@ -123,7 +123,13 @@ try:
 
         passed_args = [app_id, launch_mode]
         terminal_args = make_empty_args_safe(
-            [BACKEND_PYTHON_EXE, "-X", "faulthandler", BACKGROUND_WATCHDOG_PATH, *passed_args]
+            [
+                BACKEND_PYTHON_EXE,
+                "-X",
+                "faulthandler",
+                BACKGROUND_WATCHDOG_PATH,
+                *passed_args,
+            ]
         )
 
         # ==============================
@@ -132,21 +138,21 @@ try:
         if launch_mode == "wt":
             if tab_bar_color:
                 terminal_args = ["--tabColor", tab_bar_color] + terminal_args
-            process = subprocess.Popen(  # noqa:S603
+            process = subprocess.Popen(
                 ["wt.exe", "--title", program_name, *terminal_args],
                 startupinfo=get_startupinfo(start_minimized),
                 creationflags=subprocess.CREATE_NEW_CONSOLE,
             )
 
         elif launch_mode == "conhost":
-            process = subprocess.Popen(  # noqa:S603
+            process = subprocess.Popen(
                 ["conhost.exe", *terminal_args],
                 startupinfo=get_startupinfo(start_minimized),
                 creationflags=subprocess.CREATE_NEW_CONSOLE,
             )
 
         elif launch_mode == "no_terminal":
-            process = subprocess.Popen(  # noqa:S603
+            process = subprocess.Popen(
                 terminal_args,
                 creationflags=subprocess.CREATE_NO_WINDOW,
             )
@@ -210,4 +216,6 @@ except Exception as e:
     print(traceback.format_exc())
     print("=" * 30)
     input("[Error] Press enter to exit")
-    os._exit(1)  # instead of sys.exit(1) to prevent exception by script calling this script
+    os._exit(
+        1
+    )  # instead of sys.exit(1) to prevent exception by script calling this script

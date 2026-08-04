@@ -179,7 +179,7 @@ try:
 
         if not program_has_terminal:
             # don't wait:
-            subprocess.Popen(  # noqa:S603
+            subprocess.Popen(
                 [
                     "conhost.exe",
                     sys.executable,
@@ -202,7 +202,9 @@ try:
             finally:
                 sys.argv = old_argv
 
-    def get_frontend_args(selected_python_script_path: str, app_id: str, log_path: str) -> list[str]:
+    def get_frontend_args(
+        selected_python_script_path: str, app_id: str, log_path: str
+    ) -> list[str]:
         """Get the arguments to pass to the frontend script."""
 
         return make_empty_args_safe(
@@ -289,7 +291,9 @@ try:
         if (launch_mode == "terminal" and enable_log_for_Windows_terminal_start) or (
             launch_mode == "no_terminal" and enable_log_for_no_terminal_start
         ):
-            log_path_resolved = get_log_path(log_path, log_path_is_relative_to_start_folder_if_relative)
+            log_path_resolved = get_log_path(
+                log_path, log_path_is_relative_to_start_folder_if_relative
+            )
         else:
             log_path_resolved = ""
 
@@ -297,46 +301,70 @@ try:
         # close existing instances or block start if already running, if enabled
 
         if close_already_running_instances_on_start or prevent_start_if_already_running:
-            running_process_ids, _stale_count = get_running_processes_from_pid_file(PROCESS_ID_FILE_PATH)
+            running_process_ids, _stale_count = get_running_processes_from_pid_file(
+                PROCESS_ID_FILE_PATH
+            )
 
             if close_already_running_instances_on_start:
                 if running_process_ids:
-                    stopped_count, _stale_count, failed_messages = stop_processes_from_pid_file(PROCESS_ID_FILE_PATH)
+                    stopped_count, _stale_count, failed_messages = (
+                        stop_processes_from_pid_file(PROCESS_ID_FILE_PATH)
+                    )
                 else:
                     stopped_count = 0
                     failed_messages = []
                 if failed_messages:
-                    raise RuntimeError("Failed to close existing program instance(s):\n" + "\n".join(failed_messages))
+                    raise RuntimeError(
+                        "Failed to close existing program instance(s):\n"
+                        + "\n".join(failed_messages)
+                    )
                 if stopped_count:
-                    print(f"[Info] Closed {stopped_count} existing program instance(s).")
+                    print(
+                        f"[Info] Closed {stopped_count} existing program instance(s)."
+                    )
             elif prevent_start_if_already_running:
                 if running_process_ids:
                     print(
                         f"[Info] {len(running_process_ids)} existing program instance(s) are still running: "
-                        + ", ".join(str(process_id) for process_id in running_process_ids)
+                        + ", ".join(
+                            str(process_id) for process_id in running_process_ids
+                        )
                     )
 
                     if not prompt_to_close_existing_instances:
                         input("[Info] New launch cancelled. Press Enter to exit.")
                         sys.exit(0)
 
-                    answer = input("Close the existing instance(s) and launch a new one? [y/N] ").strip().lower()
+                    answer = (
+                        input(
+                            "Close the existing instance(s) and launch a new one? [y/N] "
+                        )
+                        .strip()
+                        .lower()
+                    )
                     if answer not in {"y", "yes"}:
                         print("[Info] New launch cancelled.")
                         sys.exit(0)
 
-                    stopped_count, _stale_count, failed_messages = stop_processes_from_pid_file(PROCESS_ID_FILE_PATH)
+                    stopped_count, _stale_count, failed_messages = (
+                        stop_processes_from_pid_file(PROCESS_ID_FILE_PATH)
+                    )
                     if failed_messages:
                         raise RuntimeError(
-                            "Failed to close existing program instance(s):\n" + "\n".join(failed_messages)
+                            "Failed to close existing program instance(s):\n"
+                            + "\n".join(failed_messages)
                         )
-                    print(f"[Info] Closed {stopped_count} existing program instance(s).")
+                    print(
+                        f"[Info] Closed {stopped_count} existing program instance(s)."
+                    )
 
         # ==============================
         # setup variables used in launch
 
         if os.environ.get(ENV_VAR_TO_SIGNAL_STARTUP_TIME_MEASUREMENT):
-            selected_python_script_path = STANDIN_MAIN_PY_FOR_START_TIME_MEASUREMENT_PATH
+            selected_python_script_path = (
+                STANDIN_MAIN_PY_FOR_START_TIME_MEASUREMENT_PATH
+            )
             os.environ.pop(ENV_VAR_TO_SIGNAL_STARTUP_TIME_MEASUREMENT, None)
         elif use_standin_main_script:
             selected_python_script_path = TEST_STANDIN_MAIN_SCRIPT_PATH
@@ -344,9 +372,13 @@ try:
             selected_python_script_path = MAIN_PY_SCRIPT_PATH
 
         if not os.path.exists(selected_python_script_path):
-            raise FileNotFoundError(f'[Error] Python script not found at "{selected_python_script_path}"')
+            raise FileNotFoundError(
+                f'[Error] Python script not found at "{selected_python_script_path}"'
+            )
 
-        passed_args = get_frontend_args(selected_python_script_path, app_id, log_path_resolved)
+        passed_args = get_frontend_args(
+            selected_python_script_path, app_id, log_path_resolved
+        )
 
         if start_in_shortcut_folder:
             wdir_is_script_dir = False
@@ -367,12 +399,14 @@ try:
         wrapper_env_vars["WDIR_IS_SCRIPT_DIR"] = "1" if wdir_is_script_dir else "0"
         wrapper_env_vars["CLOSE_AFTER_FAILURE"] = "1" if close_after_failure else "0"
         wrapper_env_vars["CLOSE_AFTER_SUCCESS"] = "1" if close_after_success else "0"
-        wrapper_env_vars["CLOSE_AFTER_KEYBOARDINTERRUPT"] = "1" if close_after_KeyboardInterrupt else "0"
+        wrapper_env_vars["CLOSE_AFTER_KEYBOARDINTERRUPT"] = (
+            "1" if close_after_KeyboardInterrupt else "0"
+        )
 
         # ==============================
         # start wrapper script and don't wait for finish
 
-        process = subprocess.Popen(  # noqa:S603
+        process = subprocess.Popen(
             [python_exe_for_script, FRONTEND_SCRIPT_WRAPPER_PATH, *passed_args],
             encoding="utf-8",
             env=wrapper_env_vars,
@@ -391,7 +425,9 @@ try:
                 except Exception as error:
                     print(f"[Warning] Error during terminal appearance update: {error}")
 
-            terminal_appearance_thread = threading.Thread(target=_set_terminal_icon_and_app_id)
+            terminal_appearance_thread = threading.Thread(
+                target=_set_terminal_icon_and_app_id
+            )
             terminal_appearance_thread.start()
         else:
             terminal_appearance_thread = None
@@ -424,7 +460,11 @@ try:
 
         # process exit in current terminal if it exists or in new terminal if not. Wait in the second case:
         process_exit_here_or_in_new_terminal(
-            exit_mode, app_id, PROGRAM_HAS_TERMINAL, log_path_resolved, selected_python_script_path
+            exit_mode,
+            app_id,
+            PROGRAM_HAS_TERMINAL,
+            log_path_resolved,
+            selected_python_script_path,
         )
 
     # ==============================
@@ -463,4 +503,6 @@ except Exception as e:
     print(traceback.format_exc())
     print("=" * 30)
     input("[Error] Press enter to exit")
-    os._exit(1)  # instead of sys.exit(1) to prevent exception by script calling this script
+    os._exit(
+        1
+    )  # instead of sys.exit(1) to prevent exception by script calling this script

@@ -18,7 +18,11 @@ else:
             os.makedirs(marker_dir, exist_ok=True)
         with open(marker_path, "w", encoding="utf-8") as marker_file:
             marker_file.write("ready_ns={0}\n".format(ready_ns))
-            marker_file.write("start_ns={0}\n".format(os.environ.get("PYAPP_STARTUP_BENCHMARK_START_NS", "")))
+            marker_file.write(
+                "start_ns={0}\n".format(
+                    os.environ.get("PYAPP_STARTUP_BENCHMARK_START_NS", "")
+                )
+            )
             marker_file.write("pid={0}\n".format(os.getpid()))
         sys.exit(0)
     except Exception:

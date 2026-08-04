@@ -51,7 +51,7 @@ try:
     def main() -> None:
         ensure_python_distro()
         try:
-            subprocess.run(  # noqa
+            subprocess.run(
                 (
                     FRONTEND_PYTHON_EXE,
                     "-m",
@@ -68,7 +68,9 @@ try:
             print("[Warning] pip upgrade failed. Opening the terminal anyway.")
         print('Install packages with "pip install package_name"')
         print()
-        subprocess.run(["cmd", "/k", "call", FRONTEND_LAUNCHER_FOR_PIP_INSTALL_TERMINAL])  # noqa
+        subprocess.run(
+            ["cmd", "/k", "call", FRONTEND_LAUNCHER_FOR_PIP_INSTALL_TERMINAL]
+        )
 
     # ==============================
     # execute main function

@@ -45,7 +45,11 @@ try:
     from backend.DONT_CHANGE.scripts.common_code import (
         print_traceback,
     )
-    from backend.DONT_CHANGE.scripts.generic_helpers import close_terminal, get_script_name, input_warn
+    from backend.DONT_CHANGE.scripts.generic_helpers import (
+        close_terminal,
+        get_script_name,
+        input_warn,
+    )
 
     # =========================
     # local variables
@@ -73,8 +77,11 @@ try:
         try:
             main()
         except Exception as error:
-            print_traceback(fail_message.format(error=error, script_name=get_script_name()))
-            if sys.stdin.isatty() and sys.stdout.isatty():  # check if interactive terminal
+            print_traceback(
+                fail_message.format(error=error, script_name=get_script_name())
+            )
+            # check if interactive terminal:
+            if sys.stdin.isatty() and sys.stdout.isatty():
                 input_warn("[Error] Press enter to exit")
         if close_terminal_on_finish:
             close_terminal()
@@ -89,11 +96,16 @@ except Exception as error:
     print()
     print()
     print("=" * 30)
-    print(fail_message.format(error=error, script_name=__file__.replace("\\", "/").rsplit("/", 1)[-1]))
+    print(
+        fail_message.format(
+            error=error, script_name=__file__.replace("\\", "/").rsplit("/", 1)[-1]
+        )
+    )
     print("-" * 30)
     print(traceback.format_exc())
     print("=" * 30)
     if sys.stdin.isatty() and sys.stdout.isatty():  # check if interactive terminal
         input("[Error] Press enter to exit")
     if close_terminal_on_finish:
-        os._exit(1)  # instead of sys.exit(1) to prevent exception by script calling this script -> closing terminal
+        # instead of sys.exit(1) to prevent exception by script calling this script -> closing terminal:
+        os._exit(1)

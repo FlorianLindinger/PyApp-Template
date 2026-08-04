@@ -48,12 +48,12 @@ def can_reach_url(url: str, timeout_s: float = 5.0) -> bool:
     import urllib.request
 
     try:
-        request = urllib.request.Request(  # noqa
+        request = urllib.request.Request(
             url,
             headers={"User-Agent": "url-reachable-check/1.0"},
         )
 
-        with urllib.request.urlopen(request, timeout=timeout_s):  # noqa
+        with urllib.request.urlopen(request, timeout=timeout_s):
             return True
 
     except OSError:
@@ -72,10 +72,10 @@ def open_in_editor(path: str) -> None:
         sys.exit(0)
     vscode_exe_path = shutil.which("code")
     if vscode_exe_path is not None:
-        subprocess.Popen([vscode_exe_path, path])  # noqa:S603
+        subprocess.Popen([vscode_exe_path, path])
     else:
         # Fallback
-        subprocess.Popen(["notepad.exe", path])  # noqa:S603
+        subprocess.Popen(["notepad.exe", path])
 
 
 # =========================
@@ -107,10 +107,12 @@ def run_git(arguments: list[str]) -> int:
     except (FileNotFoundError, RuntimeError) as error:
         print(f"[Error] {error}")
         return 2
-    return subprocess.run(["git", *arguments], cwd=root, check=False).returncode  # noqa: S603
+    return subprocess.run(["git", *arguments], cwd=root, check=False).returncode
 
 
-def show_git_results(arguments: list[str], *, heading: str, no_results_message: str) -> int:
+def show_git_results(
+    arguments: list[str], *, heading: str, no_results_message: str
+) -> int:
     """Run a Git listing command and make an empty result explicit."""
     import subprocess
 
@@ -121,7 +123,7 @@ def show_git_results(arguments: list[str], *, heading: str, no_results_message: 
         return 2
 
     print(f"[Info] {heading}")
-    result = subprocess.run(  # noqa:S603
+    result = subprocess.run(
         ["git", *arguments],
         cwd=root,
         capture_output=True,
@@ -245,7 +247,9 @@ def delete_folder_safe(
         path_text = os.path.abspath(os.fspath(path))
         return path_text == os.path.abspath(os.path.join(path_text, os.pardir))
 
-    def _validate_required_child_names(names: list[str] | tuple[str, ...], label: str) -> tuple[str, ...]:
+    def _validate_required_child_names(
+        names: list[str] | tuple[str, ...], label: str
+    ) -> tuple[str, ...]:
         """WIP"""
         validated_names = []
         for name in names:
@@ -258,7 +262,9 @@ def delete_folder_safe(
                 or "/" in name_text
                 or "\\" in name_text
             ):
-                raise ValueError(f'Required {label} marker must be a direct child name: "{name_text}"')
+                raise ValueError(
+                    f'Required {label} marker must be a direct child name: "{name_text}"'
+                )
             validated_names.append(name_text)
         return tuple(validated_names)
 
@@ -278,13 +284,17 @@ def delete_folder_safe(
             return False
         return bool(file_attributes & 0x400)  # FILE_ATTRIBUTE_REPARSE_POINT
 
-    def _get_folder_size(folder: str | os.PathLike[str], timeout_seconds: float | None = None) -> tuple[int, bool]:
+    def _get_folder_size(
+        folder: str | os.PathLike[str], timeout_seconds: float | None = None
+    ) -> tuple[int, bool]:
         total = 0
         deadline = None
         get_time = None
         if timeout_seconds is not None:
             if timeout_seconds <= 0:
-                raise ValueError(f"Folder scan timeout must be greater than zero: {timeout_seconds}")
+                raise ValueError(
+                    f"Folder scan timeout must be greater than zero: {timeout_seconds}"
+                )
             import time
 
             get_time = time.monotonic
@@ -314,26 +324,42 @@ def delete_folder_safe(
     if allowed_base_abs_path is not None:
         allowed_base_text = os.fspath(allowed_base_abs_path)
         if not os.path.isabs(allowed_base_text):
-            raise ValueError(f'Allowed base path must be absolute: "{allowed_base_text}"')
+            raise ValueError(
+                f'Allowed base path must be absolute: "{allowed_base_text}"'
+            )
     elif require_direct_child_of_allowed_base:
-        raise ValueError("Cannot require direct child of allowed base when no allowed base path is configured.")
+        raise ValueError(
+            "Cannot require direct child of allowed base when no allowed base path is configured."
+        )
 
     if required_included_files is None:
         required_included_files = ()
     if required_included_dirs is None:
         required_included_dirs = ()
-    required_included_files = _validate_required_child_names(required_included_files, "file")
-    required_included_dirs = _validate_required_child_names(required_included_dirs, "directory")
+    required_included_files = _validate_required_child_names(
+        required_included_files, "file"
+    )
+    required_included_dirs = _validate_required_child_names(
+        required_included_dirs, "directory"
+    )
 
     if max_size_GB_before_prompt is not None and max_size_GB_before_prompt < 0:
-        raise ValueError(f"Maximum folder size must be zero or greater: {max_size_GB_before_prompt}")
+        raise ValueError(
+            f"Maximum folder size must be zero or greater: {max_size_GB_before_prompt}"
+        )
     if max_size_check_seconds is not None and max_size_check_seconds <= 0:
-        raise ValueError(f"Folder scan timeout must be greater than zero: {max_size_check_seconds}")
+        raise ValueError(
+            f"Folder scan timeout must be greater than zero: {max_size_check_seconds}"
+        )
 
     if _is_symlink_or_junction(folder_path_text):
-        raise ValueError(f'Refusing to delete symlink or junction path: "{folder_path_text}"')
+        raise ValueError(
+            f'Refusing to delete symlink or junction path: "{folder_path_text}"'
+        )
     if allowed_base_text is not None and _is_symlink_or_junction(allowed_base_text):
-        raise ValueError(f'Allowed base path may not be a symlink or junction: "{allowed_base_text}"')
+        raise ValueError(
+            f'Allowed base path may not be a symlink or junction: "{allowed_base_text}"'
+        )
 
     target_path = os.path.realpath(folder_path_text)
 
@@ -353,7 +379,9 @@ def delete_folder_safe(
             raise ValueError(f"Allowed base may not be a filesystem root: {base_path}")
 
         if os.path.normcase(target_path) == os.path.normcase(base_path):
-            raise ValueError(f"Refusing to delete the allowed base directory itself: {target_path}")
+            raise ValueError(
+                f"Refusing to delete the allowed base directory itself: {target_path}"
+            )
 
         try:
             common_path = os.path.commonpath([base_path, target_path])
@@ -367,9 +395,9 @@ def delete_folder_safe(
                 f"Refusing to delete directory outside allowed base.\nTarget: {target_path}\nAllowed base: {base_path}"
             )
 
-        if require_direct_child_of_allowed_base and os.path.normcase(os.path.dirname(target_path)) != os.path.normcase(
-            base_path
-        ):
+        if require_direct_child_of_allowed_base and os.path.normcase(
+            os.path.dirname(target_path)
+        ) != os.path.normcase(base_path):
             raise ValueError(
                 "Refusing to delete directory because it is not directly inside the allowed base.\n"
                 f"Target: {target_path}\nAllowed base: {base_path}"
@@ -382,13 +410,20 @@ def delete_folder_safe(
     path_depth = 0
     if min_path_depth is not None:
         if min_path_depth < 0:
-            raise ValueError(f"Minimum path depth must be zero or greater: {min_path_depth}")
+            raise ValueError(
+                f"Minimum path depth must be zero or greater: {min_path_depth}"
+            )
         _drive, path_without_drive = os.path.splitdrive(os.path.normpath(target_path))
         path_without_root = path_without_drive.strip("\\/")
-        path_depth = len([part for part in path_without_root.replace("\\", "/").split("/") if part])
+        path_depth = len(
+            [part for part in path_without_root.replace("\\", "/").split("/") if part]
+        )
         is_below_min_path_depth = path_depth < min_path_depth
 
-    if expected_folder_name is not None and os.path.basename(target_path).lower() != expected_folder_name.lower():
+    if (
+        expected_folder_name is not None
+        and os.path.basename(target_path).lower() != expected_folder_name.lower()
+    ):
         raise RuntimeError(
             f'Refusing to delete "{target_path}" because its folder name is not "{expected_folder_name}".'
         )
@@ -397,7 +432,9 @@ def delete_folder_safe(
         raise NotADirectoryError(f"Target is not a directory: {target_path}")
 
     if always_prompt_for_confirmation and not sys.stdin.isatty():
-        raise ValueError(f'Refusing to delete "{target_path}" without interactive confirmation.')
+        raise ValueError(
+            f'Refusing to delete "{target_path}" without interactive confirmation.'
+        )
 
     folder_size: float | None = None
     folder_size_is_partial = False
@@ -405,7 +442,9 @@ def delete_folder_safe(
     max_size_bytes: int | None = None
     if max_size_GB_before_prompt is not None:
         try:
-            folder_size, folder_size_is_partial = _get_folder_size(target_path, timeout_seconds=max_size_check_seconds)
+            folder_size, folder_size_is_partial = _get_folder_size(
+                target_path, timeout_seconds=max_size_check_seconds
+            )
         except OSError as error:
             if not prompt_instead_of_requirement_failure or not sys.stdin.isatty():
                 raise
@@ -420,7 +459,9 @@ def delete_folder_safe(
                 return False
         if folder_size_is_partial:
             if folder_size is None:
-                raise RuntimeError(f'Could not determine a partial folder size for "{target_path}".')
+                raise RuntimeError(
+                    f'Could not determine a partial folder size for "{target_path}".'
+                )
             if not prompt_instead_of_requirement_failure or not sys.stdin.isatty():
                 raise ValueError(
                     f'Could not finish size check for "{target_path}" within {max_size_check_seconds:g} seconds. '
@@ -477,7 +518,9 @@ def delete_folder_safe(
             print()
             print("Folder deletion empty-check warning:")
             print(f"Folder: {target_path}")
-            print(f"Empty-folder check timed out after {max_size_check_seconds:g} seconds.")
+            print(
+                f"Empty-folder check timed out after {max_size_check_seconds:g} seconds."
+            )
             print()
             answer = input("Continue deletion checks anyway? [y/n]: ").strip().lower()
             if answer not in {"y", "yes"}:
@@ -490,7 +533,9 @@ def delete_folder_safe(
             print()
             print("Folder deletion empty-check warning:")
             print(f"Folder: {target_path}")
-            print(f"Could not determine whether the folder only contains empty files/folders: {error}")
+            print(
+                f"Could not determine whether the folder only contains empty files/folders: {error}"
+            )
             print()
             answer = input("Continue deletion checks anyway? [y/n]: ").strip().lower()
             if answer not in {"y", "yes"}:
@@ -503,8 +548,13 @@ def delete_folder_safe(
                 expected_path = os.path.join(target_path, expected_file)
                 if not os.path.isfile(expected_path):
                     message = f'Required file is missing: "{expected_file}"'
-                    if not prompt_instead_of_requirement_failure or not sys.stdin.isatty():
-                        raise ValueError(f'Refusing to delete "{target_path}" because {message}')
+                    if (
+                        not prompt_instead_of_requirement_failure
+                        or not sys.stdin.isatty()
+                    ):
+                        raise ValueError(
+                            f'Refusing to delete "{target_path}" because {message}'
+                        )
                     print()
                     print("Folder deletion requirement warning:")
                     print(f"Folder: {target_path}")
@@ -519,8 +569,13 @@ def delete_folder_safe(
                 expected_path = os.path.join(target_path, expected_dir)
                 if not os.path.isdir(expected_path):
                     message = f'Required directory is missing: "{expected_dir}"'
-                    if not prompt_instead_of_requirement_failure or not sys.stdin.isatty():
-                        raise ValueError(f'Refusing to delete "{target_path}" because {message}')
+                    if (
+                        not prompt_instead_of_requirement_failure
+                        or not sys.stdin.isatty()
+                    ):
+                        raise ValueError(
+                            f'Refusing to delete "{target_path}" because {message}'
+                        )
                     print()
                     print("Folder deletion requirement warning:")
                     print(f"Folder: {target_path}")
@@ -544,14 +599,20 @@ def delete_folder_safe(
         print(f"Path depth: {path_depth}")
         print(f"Configured minimum depth: {min_path_depth}")
         print()
-        answer = input("Folder path is shallower than expected. Delete anyway? [y/n]: ").strip().lower()
+        answer = (
+            input("Folder path is shallower than expected. Delete anyway? [y/n]: ")
+            .strip()
+            .lower()
+        )
         if answer not in {"y", "yes"}:
             print("Cancelled folder deletion.")
             return False
 
     if is_above_max_size:
         if folder_size is None or max_size_bytes is None:
-            raise RuntimeError(f'Could not determine the size limit for "{target_path}".')
+            raise RuntimeError(
+                f'Could not determine the size limit for "{target_path}".'
+            )
         if not sys.stdin.isatty():
             raise ValueError(
                 f"Refusing to delete folder larger than {_format_bytes(max_size_bytes)} without interactive confirmation. "
@@ -565,7 +626,11 @@ def delete_folder_safe(
         print(f"{size_label}: {_format_bytes(folder_size)}")
         print(f"Configured limit: {_format_bytes(max_size_bytes)}")
         print()
-        answer = input("Folder is larger than expected. Delete anyway? [y/n]: ").strip().lower()
+        answer = (
+            input("Folder is larger than expected. Delete anyway? [y/n]: ")
+            .strip()
+            .lower()
+        )
         if answer not in {"y", "yes"}:
             print("Cancelled folder deletion.")
             return False
@@ -584,13 +649,17 @@ def delete_folder_safe(
                 print(f"Folder: {target_path}")
                 print(f"Could not determine folder size: {error}")
                 print()
-                answer = input("Continue to deletion confirmation? [y/n]: ").strip().lower()
+                answer = (
+                    input("Continue to deletion confirmation? [y/n]: ").strip().lower()
+                )
                 if answer not in {"y", "yes"}:
                     print("Cancelled folder deletion.")
                     return False
             if folder_size_is_partial:
                 if folder_size is None:
-                    raise RuntimeError(f'Could not determine a partial folder size for "{target_path}".')
+                    raise RuntimeError(
+                        f'Could not determine a partial folder size for "{target_path}".'
+                    )
                 if not prompt_instead_of_requirement_failure or not sys.stdin.isatty():
                     raise ValueError(
                         f'Could not finish size check for "{target_path}" within {max_size_check_seconds:g} seconds. '
@@ -602,7 +671,9 @@ def delete_folder_safe(
                 print(f"Size check timed out after {max_size_check_seconds:g} seconds.")
                 print(f"Measured at least: {_format_bytes(folder_size)}")
                 print()
-                answer = input("Continue to deletion confirmation? [y/n]: ").strip().lower()
+                answer = (
+                    input("Continue to deletion confirmation? [y/n]: ").strip().lower()
+                )
                 if answer not in {"y", "yes"}:
                     print("Cancelled folder deletion.")
                     return False
@@ -657,13 +728,17 @@ def close_terminal(exit_code: Any = None) -> bool:
         kernel32.CloseHandle.argtypes = [wintypes.HANDLE]
         kernel32.CloseHandle.restype = wintypes.BOOL
 
-        process_handle = kernel32.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, False, parent_pid)
+        process_handle = kernel32.OpenProcess(
+            PROCESS_QUERY_LIMITED_INFORMATION, False, parent_pid
+        )
         if not process_handle:
             parent_image_path = ""
         try:
             buffer_length = wintypes.DWORD(32768)
             buffer = ctypes.create_unicode_buffer(buffer_length.value)
-            if not kernel32.QueryFullProcessImageNameW(process_handle, 0, buffer, ctypes.byref(buffer_length)):
+            if not kernel32.QueryFullProcessImageNameW(
+                process_handle, 0, buffer, ctypes.byref(buffer_length)
+            ):
                 parent_image_path = ""
             parent_image_path = buffer.value
         finally:
@@ -738,7 +813,12 @@ def set_terminal_icon(icon_path: str | None) -> None:
             ctypes.c_uint,
         ]
         user32.LoadImageW.restype = wintypes.HANDLE
-        user32.SendMessageW.argtypes = [wintypes.HWND, ctypes.c_uint, ctypes.c_size_t, ctypes.c_size_t]
+        user32.SendMessageW.argtypes = [
+            wintypes.HWND,
+            ctypes.c_uint,
+            ctypes.c_size_t,
+            ctypes.c_size_t,
+        ]
         user32.SendMessageW.restype = ctypes.c_size_t
         user32.SetWindowPos.argtypes = [
             wintypes.HWND,
@@ -768,9 +848,13 @@ def set_terminal_icon(icon_path: str | None) -> None:
         SWP_FRAMECHANGED = 0x0020
 
         def _load_icon(width: int, height: int) -> int:
-            icon = user32.LoadImageW(None, icon_path, IMAGE_ICON, width, height, LR_LOADFROMFILE)
+            icon = user32.LoadImageW(
+                None, icon_path, IMAGE_ICON, width, height, LR_LOADFROMFILE
+            )
             if not icon:
-                icon = user32.LoadImageW(None, icon_path, IMAGE_ICON, 0, 0, LR_LOADFROMFILE | LR_DEFAULTSIZE)
+                icon = user32.LoadImageW(
+                    None, icon_path, IMAGE_ICON, 0, 0, LR_LOADFROMFILE | LR_DEFAULTSIZE
+                )
             return int(icon or 0)
 
         small_icon = _load_icon(
@@ -884,7 +968,12 @@ def set_terminal_app_id(app_id: str) -> None:
             ),
             ("AddRef", ctypes.WINFUNCTYPE(ctypes.c_ulong, IPropertyStorePtr)),
             ("Release", ctypes.WINFUNCTYPE(ctypes.c_ulong, IPropertyStorePtr)),
-            ("GetCount", ctypes.WINFUNCTYPE(HRESULT, IPropertyStorePtr, ctypes.POINTER(wintypes.DWORD))),
+            (
+                "GetCount",
+                ctypes.WINFUNCTYPE(
+                    HRESULT, IPropertyStorePtr, ctypes.POINTER(wintypes.DWORD)
+                ),
+            ),
             (
                 "GetAt",
                 ctypes.WINFUNCTYPE(
@@ -970,8 +1059,13 @@ def set_terminal_app_id(app_id: str) -> None:
 
         coinitialize_result = ole32.CoInitialize(None)
         should_uninitialize = coinitialize_result in {S_OK, S_FALSE}
-        if coinitialize_result < 0 and (coinitialize_result & 0xFFFFFFFF) != RPC_E_CHANGED_MODE:
-            raise OSError(f"CoInitialize failed with HRESULT {_format_hresult(coinitialize_result)}")
+        if (
+            coinitialize_result < 0
+            and (coinitialize_result & 0xFFFFFFFF) != RPC_E_CHANGED_MODE
+        ):
+            raise OSError(
+                f"CoInitialize failed with HRESULT {_format_hresult(coinitialize_result)}"
+            )
 
         try:
             property_store = IPropertyStorePtr()
@@ -988,10 +1082,14 @@ def set_terminal_app_id(app_id: str) -> None:
                     ctypes.byref(pkey_app_user_model_id),
                     ctypes.byref(prop_var),
                 )
-                _check_hresult(hr, f"SetValue System.AppUserModel.ID for hwnd 0x{hwnd:016X}")
+                _check_hresult(
+                    hr, f"SetValue System.AppUserModel.ID for hwnd 0x{hwnd:016X}"
+                )
 
                 hr = property_store.contents.lpVtbl.contents.Commit(property_store)
-                _check_hresult(hr, f"Commit System.AppUserModel.ID for hwnd 0x{hwnd:016X}")
+                _check_hresult(
+                    hr, f"Commit System.AppUserModel.ID for hwnd 0x{hwnd:016X}"
+                )
 
                 _helper_refresh_nonclient_area(hwnd)
             finally:
@@ -1084,7 +1182,7 @@ def set_terminal_colors(colors: str | None) -> None:
         try:
             import subprocess
 
-            subprocess.run(["cmd.exe", "/c", "color", colors], check=False)  # noqa:S603
+            subprocess.run(["cmd.exe", "/c", "color", colors], check=False)
         except Exception:
             pass
 
@@ -1163,10 +1261,14 @@ def find_longest_paths(
     def _is_reparse_point(path: Path) -> bool:
         """Return whether *path* is a symbolic link or Windows reparse point."""
         try:
-            attributes = getattr(path.stat(follow_symlinks=False), "st_file_attributes", 0)
+            attributes = getattr(
+                path.stat(follow_symlinks=False), "st_file_attributes", 0
+            )
         except OSError:
             return True
-        return path.is_symlink() or bool(attributes & getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400))
+        return path.is_symlink() or bool(
+            attributes & getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400)
+        )
 
     if top_path_count < 1:
         raise ValueError("top_path_count must be at least 1.")
@@ -1180,7 +1282,9 @@ def find_longest_paths(
     scanned_files = 0
     scanned_directories = 0
 
-    for current_directory, directory_names, file_names in os.walk(root_path, topdown=True, followlinks=False):
+    for current_directory, directory_names, file_names in os.walk(
+        root_path, topdown=True, followlinks=False
+    ):
         current_path = Path(current_directory)
         kept_directories: list[str] = []
         for directory_name in directory_names:
@@ -1281,14 +1385,21 @@ def is_process_running(pid: int) -> bool:
         kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
         kernel32.OpenProcess.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]
         kernel32.OpenProcess.restype = wintypes.HANDLE
-        kernel32.GetExitCodeProcess.argtypes = [wintypes.HANDLE, ctypes.POINTER(wintypes.DWORD)]
+        kernel32.GetExitCodeProcess.argtypes = [
+            wintypes.HANDLE,
+            ctypes.POINTER(wintypes.DWORD),
+        ]
         kernel32.GetExitCodeProcess.restype = wintypes.BOOL
         kernel32.CloseHandle.argtypes = [wintypes.HANDLE]
         kernel32.CloseHandle.restype = wintypes.BOOL
 
-        process_handle = kernel32.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, False, pid)
+        process_handle = kernel32.OpenProcess(
+            PROCESS_QUERY_LIMITED_INFORMATION, False, pid
+        )
         if not process_handle:
-            return ctypes.get_last_error() == 5  # ERROR_ACCESS_DENIED means the process still exists.
+            return (
+                ctypes.get_last_error() == 5
+            )  # ERROR_ACCESS_DENIED means the process still exists.
         try:
             exit_code = wintypes.DWORD()
             if not kernel32.GetExitCodeProcess(process_handle, ctypes.byref(exit_code)):
@@ -1307,7 +1418,7 @@ def is_process_running(pid: int) -> bool:
 def get_python_version(python_exe: str) -> str:
     import subprocess
 
-    return subprocess.check_output(  # noqa:S603
+    return subprocess.check_output(
         [
             python_exe,
             "-c",
@@ -1433,9 +1544,11 @@ def install_full_python(
 
     def _find_python_version_and_download_links() -> tuple[str, str, list[str]]:
         def _get_download_links_from_url(url: str) -> list[str]:
-            request = urllib.request.Request(url, headers={"User-Agent": user_agent})  # noqa
+            request = urllib.request.Request(url, headers={"User-Agent": user_agent})
 
-            with urllib.request.urlopen(request, timeout=python_download_timeout_s) as response:  # noqa
+            with urllib.request.urlopen(
+                request, timeout=python_download_timeout_s
+            ) as response:
                 html_text = response.read().decode("utf-8", errors="replace")
 
             class _LinkParser(html.parser.HTMLParser):
@@ -1446,10 +1559,16 @@ def install_full_python(
                     self.links: list[str] = []
 
                 @override
-                def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+                def handle_starttag(
+                    self, tag: str, attrs: list[tuple[str, str | None]]
+                ) -> None:
                     """WIP"""
                     if tag.lower() == "a":
-                        self.links.extend(value for name, value in attrs if name.lower() == "href" and value)
+                        self.links.extend(
+                            value
+                            for name, value in attrs
+                            if name.lower() == "href" and value
+                        )
 
             parser = _LinkParser()
             parser.feed(html_text)
@@ -1493,7 +1612,10 @@ def install_full_python(
             filename = os.path.basename(urllib.parse.urlparse(link).path).lower()
 
             # return False if filename matches any blacklisted pattern
-            if any(fnmatch.fnmatchcase(filename.lower(), pattern) for pattern in blacklisted_file_patterns):
+            if any(
+                fnmatch.fnmatchcase(filename.lower(), pattern)
+                for pattern in blacklisted_file_patterns
+            ):
                 return False
 
             _base, extension = os.path.splitext(filename)
@@ -1502,7 +1624,9 @@ def install_full_python(
             else:
                 return False
 
-        def _find_msi_urls_from_pattern(url_pattern: str, version: str) -> tuple[str, list[str]]:
+        def _find_msi_urls_from_pattern(
+            url_pattern: str, version: str
+        ) -> tuple[str, list[str]]:
             """Find matching MSI URLs from a URL pattern such as .../{version}/amd64/*.msi."""
             resolved_pattern = url_pattern.format(version=version)
             folder_url, filename_pattern = resolved_pattern.rsplit("/", 1)
@@ -1511,14 +1635,18 @@ def install_full_python(
             msi_urls = []
             for link in links:
                 filename = os.path.basename(urllib.parse.urlparse(link).path).lower()
-                if fnmatch.fnmatchcase(filename, filename_pattern.lower()) and _is_wanted_file(link):
+                if fnmatch.fnmatchcase(
+                    filename, filename_pattern.lower()
+                ) and _is_wanted_file(link):
                     msi_urls.append(urllib.parse.urljoin(folder_url, link))
             return folder_url, sorted(msi_urls)
 
         if python_version == "":
             target_version_pattern = re.compile(r"^\d+\.\d+\.\d+/$")
         elif re.fullmatch(r"\d+", python_version):
-            target_version_pattern = re.compile(rf"^{re.escape(python_version)}\.\d+\.\d+/$")
+            target_version_pattern = re.compile(
+                rf"^{re.escape(python_version)}\.\d+\.\d+/$"
+            )
         elif re.fullmatch(r"\d+\.\d+", python_version):
             target_version_pattern = re.compile(rf"^{re.escape(python_version)}\.\d+/$")
         elif re.fullmatch(r"\d+\.\d+\.\d+", python_version):
@@ -1539,10 +1667,9 @@ def install_full_python(
                 # return found download links and python version
                 if msi_urls:
                     return version, url, msi_urls
-        else:
-            raise RuntimeError(
-                f'[Error] Could not find msi-downloadable Python for python_version: "{python_version}".'
-            )
+        raise RuntimeError(
+            f'[Error] Could not find msi-downloadable Python for python_version: "{python_version}".'
+        )
 
     def _download_file_from_url(url: str, folder: str) -> str:
         filename = os.path.basename(urllib.parse.urlparse(url).path)
@@ -1551,11 +1678,15 @@ def install_full_python(
         if print_:
             print(f"Downloading {filename}")
 
-        request = urllib.request.Request(url, headers={"User-Agent": user_agent})  # noqa
+        request = urllib.request.Request(url, headers={"User-Agent": user_agent})
 
-        with urllib.request.urlopen(request, timeout=python_download_timeout_s) as response:  # noqa
-            with open(output_path, "wb") as file:
-                shutil.copyfileobj(response, file)
+        with (
+            urllib.request.urlopen(
+                request, timeout=python_download_timeout_s
+            ) as response,
+            open(output_path, "wb") as file,
+        ):
+            shutil.copyfileobj(response, file)
 
         if not os.path.isfile(output_path) or os.path.getsize(output_path) == 0:
             raise RuntimeError(f'Download produced an empty file: "{output_path}"')
@@ -1571,18 +1702,23 @@ def install_full_python(
 
         # install msi files in python_dir_abs_path
         command = f'msiexec /a "{msi_path}" TARGETDIR="{python_dir_abs_path}" /qn /L*V "{log_path}"'
-        result = subprocess.run(  # noqa
+        result = subprocess.run(
             command,
             check=False,
         )
         if result.returncode != 0:
-            raise RuntimeError(f"msiexec failed for {msi_name} with exit code {result.returncode}. Log: {log_path}")
+            raise RuntimeError(
+                f"msiexec failed for {msi_name} with exit code {result.returncode}. Log: {log_path}"
+            )
 
         if msi_name.lower() == "test.msi":
             # needed to prevent Ruff from complaining/failing for ".ruff.toml" files in Pythons "test" package/folder because this local python installation does not follow the global python source-tree layout.-> it comments out lines starting with "extend" in "Lib\test\.ruff.toml", e.g., "extend = "../.ruff.toml"."""
             if os.path.exists(ruff_config):
                 lines = read_lines(ruff_config)
-                lines = ["# " + line if re.match(r"^\s*extend\s*=", line) else line for line in lines]
+                lines = [
+                    "# " + line if re.match(r"^\s*extend\s*=", line) else line
+                    for line in lines
+                ]
                 write_lines(ruff_config, lines)
 
         # Remove any MSI copy that install left in TARGETDIR.
@@ -1602,11 +1738,15 @@ def install_full_python(
 
         # Python includes ensurepip starting with 3.4 and 2.7.9.
         supports_ensurepip = (
-            major > 3 or (major == 3 and minor >= 4) or (major == 2 and (minor > 7 or (minor == 7 and patch >= 9)))
+            major > 3
+            or (major == 3 and minor >= 4)
+            or (major == 2 and (minor > 7 or (minor == 7 and patch >= 9)))
         )
         if supports_ensurepip:
             env = os.environ.copy()
-            env["PIP_NO_WARN_SCRIPT_LOCATION"] = "1"  # supress warning that pip is not global
+            env["PIP_NO_WARN_SCRIPT_LOCATION"] = (
+                "1"  # supress warning that pip is not global
+            )
             env["PATH"] = os.pathsep.join(
                 [
                     python_dir_abs_path,
@@ -1615,7 +1755,7 @@ def install_full_python(
                 ]
             )
 
-            result = subprocess.run(  # noqa:S603
+            result = subprocess.run(
                 [python_exe, "-m", "ensurepip", "--upgrade"],
                 check=False,
                 env=env,
@@ -1636,7 +1776,7 @@ def install_full_python(
             # One upgrade is normally enough. Repeat a few times only if each upgrade
             # actually changes the installed pip version.
             for _pip_upgrade_attempt in range(5):
-                result = subprocess.run(  # noqa
+                result = subprocess.run(
                     [python_exe, "-m", "pip", "--version"],
                     check=False,
                     stdout=subprocess.PIPE,
@@ -1644,14 +1784,21 @@ def install_full_python(
                     text=True,
                 )
                 if result.returncode != 0:
-                    raise RuntimeError("Python installation failed: pip is not available after ensurepip.")
+                    raise RuntimeError(
+                        "Python installation failed: pip is not available after ensurepip."
+                    )
                 pip_version_output = result.stdout.split()
-                if len(pip_version_output) < 2 or pip_version_output[0].lower() != "pip":
-                    raise RuntimeError(f"Python installation failed: could not parse pip version: {result.stdout}")
+                if (
+                    len(pip_version_output) < 2
+                    or pip_version_output[0].lower() != "pip"
+                ):
+                    raise RuntimeError(
+                        f"Python installation failed: could not parse pip version: {result.stdout}"
+                    )
                 pip_version_before = pip_version_output[1]
 
                 # Try quiet/log-friendly pip upgrade first, then retry without the progress-bar flag.
-                result = subprocess.run(  # noqa
+                result = subprocess.run(
                     [python_exe, *upgrade_args, "--progress-bar", "off"],
                     check=False,
                     stderr=subprocess.DEVNULL,
@@ -1659,12 +1806,16 @@ def install_full_python(
                 )
                 # retry pip installation if failed without progress bar (for example if that flag is not there yet in the old pip version)
                 if result.returncode != 0:
-                    result = subprocess.run([python_exe, *upgrade_args], check=False, env=env)  # noqa
+                    result = subprocess.run(
+                        [python_exe, *upgrade_args], check=False, env=env
+                    )
                 # raise if failed pip installation
                 if result.returncode != 0:
-                    raise RuntimeError("Python installation failed: pip upgrade failed.")
+                    raise RuntimeError(
+                        "Python installation failed: pip upgrade failed."
+                    )
 
-                result = subprocess.run(  # noqa
+                result = subprocess.run(
                     [python_exe, "-m", "pip", "--version"],
                     check=False,
                     stdout=subprocess.PIPE,
@@ -1672,16 +1823,25 @@ def install_full_python(
                     text=True,
                 )
                 if result.returncode != 0:
-                    raise RuntimeError("Python installation failed: pip is not available after upgrade.")
+                    raise RuntimeError(
+                        "Python installation failed: pip is not available after upgrade."
+                    )
                 pip_version_output = result.stdout.split()
-                if len(pip_version_output) < 2 or pip_version_output[0].lower() != "pip":
-                    raise RuntimeError(f"Python installation failed: could not parse pip version: {result.stdout}")
+                if (
+                    len(pip_version_output) < 2
+                    or pip_version_output[0].lower() != "pip"
+                ):
+                    raise RuntimeError(
+                        f"Python installation failed: could not parse pip version: {result.stdout}"
+                    )
                 pip_version_after = pip_version_output[1]
 
                 if pip_version_after == pip_version_before:
                     break
             else:
-                raise RuntimeError("Python installation failed: pip upgrade did not stabilize.")
+                raise RuntimeError(
+                    "Python installation failed: pip upgrade did not stabilize."
+                )
 
             return
 
@@ -1717,24 +1877,34 @@ def install_full_python(
                     f"Tried: {'; '.join(errors)}"
                 )
 
-            result = subprocess.run([python_exe, get_pip_path, "--no-warn-script-location"], check=False, env=env)  # noqa
+            result = subprocess.run(
+                [python_exe, get_pip_path, "--no-warn-script-location"],
+                check=False,
+                env=env,
+            )
 
         if result.returncode != 0:
             raise RuntimeError("Python installation failed: get-pip.py failed.")
 
         # Verify that pip can be imported and run by the installed Python:
-        result = subprocess.run([python_exe, "-m", "pip", "--version"], check=False)  # noqa
+        result = subprocess.run([python_exe, "-m", "pip", "--version"], check=False)
         if result.returncode != 0:
-            raise RuntimeError("Python installation failed: pip is not available after bootstrap.")
+            raise RuntimeError(
+                "Python installation failed: pip is not available after bootstrap."
+            )
 
     # ----------------------------
     # execute code of function
 
     if not os.path.isabs(python_dir_abs_path):
-        raise RuntimeError(f'Paramter "python_dir_abs_path" must be an absolute path. Got "{python_dir_abs_path}"')
+        raise RuntimeError(
+            f'Paramter "python_dir_abs_path" must be an absolute path. Got "{python_dir_abs_path}"'
+        )
 
     # find compatible python version and download links
-    compatible_full_py_vers, download_url, msi_urls = _find_python_version_and_download_links()
+    compatible_full_py_vers, download_url, msi_urls = (
+        _find_python_version_and_download_links()
+    )
 
     if print_:
         print(f"Found Python {compatible_full_py_vers} (Target: {python_version}).")
@@ -1745,7 +1915,9 @@ def install_full_python(
     try:
         delete_folder_safe(python_dir_abs_path, max_size_GB_before_prompt=1.2)
     except Exception as error:
-        raise RuntimeError(f'[Error] Refusing to delete "{python_dir_abs_path}". {error}') from error
+        raise RuntimeError(
+            f'[Error] Refusing to delete "{python_dir_abs_path}". {error}'
+        ) from error
 
     # create folder
     os.makedirs(python_dir_abs_path, exist_ok=True)
@@ -1761,7 +1933,9 @@ def install_full_python(
 
     # download and install msi files
     try:
-        with tempfile.TemporaryDirectory(prefix="tmp_python_installation_files_") as tmp:
+        with tempfile.TemporaryDirectory(
+            prefix="tmp_python_installation_files_"
+        ) as tmp:
             # downlaod into temp folder
             msi_paths = [_download_file_from_url(url, tmp) for url in msi_urls]
 
@@ -1793,11 +1967,15 @@ def install_full_python(
     # tell python where to look for third party packages
     if rel_path_to_packages:
         # .pth files work best with forward slashes:
-        write_lines(path_to_packages_file, ["../../" + rel_path_to_packages.replace("\\", "/")])
+        write_lines(
+            path_to_packages_file, ["../../" + rel_path_to_packages.replace("\\", "/")]
+        )
 
     if print_:
         print()
-        print(f'Successfully created local Python {compatible_full_py_vers} at "{python_dir_abs_path}".')
+        print(
+            f'Successfully created local Python {compatible_full_py_vers} at "{python_dir_abs_path}".'
+        )
         print()
 
 
@@ -1905,7 +2083,13 @@ def install_packages(
     if use_uv:
         global_uv = shutil.which("uv")
         if global_uv:
-            uv_command = [global_uv, "pip", "uninstall" if uninstall else "install", "--python", python_exe]
+            uv_command = [
+                global_uv,
+                "pip",
+                "uninstall" if uninstall else "install",
+                "--python",
+                python_exe,
+            ]
 
     if uv_command is None and use_uv and install_uv_locally_if_global_not_available:
         local_uv_command = [
@@ -1918,7 +2102,7 @@ def install_packages(
             python_exe,
         ]
         try:
-            local_uv_probe = subprocess.run(  # noqa:S603
+            local_uv_probe = subprocess.run(
                 [local_uv_python_exe, "-m", "uv", "--version"],
                 check=False,
                 stdout=subprocess.DEVNULL,
@@ -1939,10 +2123,12 @@ def install_packages(
                 ]
                 if no_cache:
                     uv_install_args.append("--no-cache-dir")
-                subprocess.run(uv_install_args, check=True)  # noqa:S603
+                subprocess.run(uv_install_args, check=True)
                 uv_command = local_uv_command
         except Exception as error:
-            print(f"[Warning] local uv installation failed. Falling back to pip. Error: {error}")
+            print(
+                f"[Warning] local uv installation failed. Falling back to pip. Error: {error}"
+            )
 
     if uv_command is not None:
         uv_args = [*uv_command]
@@ -1964,19 +2150,21 @@ def install_packages(
             uv_args.append("-y")
         uv_args.extend(extra_args_list)
 
-        uv_result = subprocess.run(uv_args, check=False)  # noqa:S603
+        uv_result = subprocess.run(uv_args, check=False)
         if uv_result.returncode == 0:
             return uv_result
 
-        print(f"[Warning] uv package {'uninstall' if uninstall else 'install'} failed. Falling back to pip.")
+        print(
+            f"[Warning] uv package {'uninstall' if uninstall else 'install'} failed. Falling back to pip."
+        )
 
-    return subprocess.run(pip_args, check=True)  # noqa:S603
+    return subprocess.run(pip_args, check=True)
 
 
 def get_installed_packages(exe_path: str, with_version: bool = True):
     import subprocess
 
-    result = subprocess.run(  # noqa
+    result = subprocess.run(
         [exe_path, "-m", "pip", "--disable-pip-version-check", "freeze"],
         capture_output=True,
         text=True,
@@ -2005,7 +2193,9 @@ def get_installed_packages(exe_path: str, with_version: bool = True):
         return packages_without_version
 
 
-def save_installed_packages(exe_path: str, output_path: str = "requirements.txt", with_version: bool = True):
+def save_installed_packages(
+    exe_path: str, output_path: str = "requirements.txt", with_version: bool = True
+):
     output_path = os.path.abspath(output_path)
 
     packages = get_installed_packages(with_version=with_version, exe_path=exe_path)
@@ -2060,12 +2250,14 @@ def save_requirements_of_folder_noVersion(
             print("=" * 20)
             print("Start of finding required python packages")
             print("-" * 20)
-        subprocess.run(cmd, check=True)  # noqa
+        subprocess.run(cmd, check=True)
 
         if os.path.exists(output_path):
             if print_:
                 print("-" * 20)
-                print(f'End of finding required python packages. Result: "{output_path}":\n')
+                print(
+                    f'End of finding required python packages. Result: "{output_path}":\n'
+                )
                 packages = read_lines(output_path)
                 print(*packages, sep="\n")
                 print("=" * 20)
@@ -2077,11 +2269,15 @@ def save_requirements_of_folder_noVersion(
             success = False
             if print_:
                 print()
-                print_warn("[Error] Failed to auto determine needed packages (see above)")
+                print_warn(
+                    "[Error] Failed to auto determine needed packages (see above)"
+                )
     except Exception as e:
         if print_:
             print()
-            print_warn(f"[Error] Failed to auto determine packages (do you have internet?): {e}")
+            print_warn(
+                f"[Error] Failed to auto determine packages (do you have internet?): {e}"
+            )
         success = False
 
     return success
@@ -2108,21 +2304,27 @@ def save_requirements_of_folder_withVersion(
     output_path = os.path.normpath(os.path.abspath(output_path))
 
     try:
-        with tempfile.TemporaryDirectory(prefix="tmp_venv_to_get_package_version") as tmp:
+        with tempfile.TemporaryDirectory(
+            prefix="tmp_venv_to_get_package_version"
+        ) as tmp:
             temp_requirements = tmp + "\\tmp_package_requirements"
             success = save_requirements_of_folder_noVersion(
-                print_=print_, target_folder=target_folder, output_path=temp_requirements
+                print_=print_,
+                target_folder=target_folder,
+                output_path=temp_requirements,
             )
             if success == False:
                 return False
 
             temp_python = tmp + "\\Scripts\\python.exe"
 
-            subprocess.run([python_exe, "-m", "venv", tmp], check=True)  # noqa
+            subprocess.run([python_exe, "-m", "venv", tmp], check=True)
             if not os.path.exists(temp_python):
-                raise RuntimeError(f'Temporary environment did not create "{temp_python}"')
+                raise RuntimeError(
+                    f'Temporary environment did not create "{temp_python}"'
+                )
 
-            subprocess.run(  # noqa
+            subprocess.run(
                 [
                     temp_python,
                     "-m",
@@ -2136,7 +2338,9 @@ def save_requirements_of_folder_withVersion(
                 check=True,
             )
 
-            save_installed_packages(exe_path=temp_python, output_path=output_path, with_version=True)
+            save_installed_packages(
+                exe_path=temp_python, output_path=output_path, with_version=True
+            )
 
             return True
 
@@ -2163,7 +2367,7 @@ def _run_wpf_powershell(script: str, **extra_env: str) -> str:
 
     environment = os.environ.copy()
     environment.update(extra_env)
-    completed = subprocess.run(  # noqa:S603
+    completed = subprocess.run(
         ["powershell.exe", "-NoProfile", "-NonInteractive", "-STA", "-Command", script],
         capture_output=True,
         text=True,
@@ -2171,7 +2375,11 @@ def _run_wpf_powershell(script: str, **extra_env: str) -> str:
         env=environment,
     )
     if completed.returncode:
-        raise RuntimeError(completed.stderr.strip() or completed.stdout.strip() or "WPF image operation failed.")
+        raise RuntimeError(
+            completed.stderr.strip()
+            or completed.stdout.strip()
+            or "WPF image operation failed."
+        )
     return completed.stdout.strip()
 
 
@@ -2199,7 +2407,9 @@ $bytes = [byte[]]::new($image.PixelWidth * $image.PixelHeight * 4)
 $image.CopyPixels($bytes, $image.PixelWidth * 4, 0)
 [pscustomobject]@{ width=$image.PixelWidth; height=$image.PixelHeight; pixels=[Convert]::ToBase64String($bytes) } | ConvertTo-Json -Compress
 """
-    payload = json.loads(_run_wpf_powershell(script, IMAGE_URI=Path(path).resolve().as_uri()))
+    payload = json.loads(
+        _run_wpf_powershell(script, IMAGE_URI=Path(path).resolve().as_uri())
+    )
     bgra = base64.b64decode(payload["pixels"])
     rgba = bytearray(bgra)
     rgba[0::4], rgba[2::4] = bgra[2::4], bgra[0::4]
@@ -2232,7 +2442,13 @@ def generate_png_with_text(
     """
     import json
 
-    if width <= 0 or height <= 0 or min_font_size <= 0 or font_size < min_font_size or padding < 0:
+    if (
+        width <= 0
+        or height <= 0
+        or min_font_size <= 0
+        or font_size < min_font_size
+        or padding < 0
+    ):
         raise ValueError("Invalid PNG text dimensions or font sizes.")
     if not lines or any(not isinstance(line, str) for line in lines):
         raise ValueError("lines must contain one or more strings.")
@@ -2316,7 +2532,10 @@ def generate_ico_from_png(
     import struct
     from pathlib import Path
 
-    output_path, base_png_path = os.path.abspath(output_path), os.path.abspath(base_png_path)
+    output_path, base_png_path = (
+        os.path.abspath(output_path),
+        os.path.abspath(base_png_path),
+    )
     sub_png_path = os.path.abspath(sub_png_path) if sub_png_path else None
     sizes = tuple(icon_sizes)
     if not os.path.isfile(base_png_path):
@@ -2324,17 +2543,27 @@ def generate_ico_from_png(
     if sub_png_path and not os.path.isfile(sub_png_path):
         raise FileNotFoundError(f'Sub PNG does not exist: "{sub_png_path}"')
     if not 0 < sub_icon_area_scale_factor <= 1:
-        raise ValueError("sub_icon_area_scale_factor must be greater than 0 and at most 1.")
+        raise ValueError(
+            "sub_icon_area_scale_factor must be greater than 0 and at most 1."
+        )
     if not sizes or any(not 0 < size <= 256 for size in sizes):
         raise ValueError("icon_sizes must contain sizes from 1 through 256.")
     aliases = {"up": "top", "down": "bottom", "middle": "center", "centre": "center"}
     tokens = [
-        aliases.get(token, token) for token in sub_icon_alignment.lower().replace("_", " ").replace("-", " ").split()
+        aliases.get(token, token)
+        for token in sub_icon_alignment.lower()
+        .replace("_", " ")
+        .replace("-", " ")
+        .split()
     ]
-    if not tokens or any(token not in {"top", "bottom", "left", "right", "center"} for token in tokens):
+    if not tokens or any(
+        token not in {"top", "bottom", "left", "right", "center"} for token in tokens
+    ):
         raise ValueError(f"Unsupported sub_icon_alignment: {sub_icon_alignment!r}")
     vertical = next((token for token in tokens if token in {"top", "bottom"}), "center")
-    horizontal = next((token for token in tokens if token in {"left", "right"}), "center")
+    horizontal = next(
+        (token for token in tokens if token in {"left", "right"}), "center"
+    )
     if os.path.exists(output_path) and not override:
         return output_path
     output_folder = os.path.dirname(output_path)
@@ -2376,7 +2605,9 @@ if ($env:ICO_OVERLAY_URI) {
         _run_wpf_powershell(
             script,
             ICO_BASE_URI=Path(base_png_path).resolve().as_uri(),
-            ICO_OVERLAY_URI=Path(sub_png_path).resolve().as_uri() if sub_png_path else "",
+            ICO_OVERLAY_URI=Path(sub_png_path).resolve().as_uri()
+            if sub_png_path
+            else "",
             ICO_OVERLAY_SCALE=str(sub_icon_area_scale_factor),
             ICO_VERTICAL=vertical,
             ICO_HORIZONTAL=horizontal,
@@ -2392,7 +2623,15 @@ if ($env:ICO_OVERLAY_URI) {
     for size, png in layers:
         entries.append(
             struct.pack(
-                "<BBBBHHII", 0 if size == 256 else size, 0 if size == 256 else size, 0, 0, 1, 32, len(png), offset
+                "<BBBBHHII",
+                0 if size == 256 else size,
+                0 if size == 256 else size,
+                0,
+                0,
+                1,
+                32,
+                len(png),
+                offset,
             )
         )
         data.extend(png)

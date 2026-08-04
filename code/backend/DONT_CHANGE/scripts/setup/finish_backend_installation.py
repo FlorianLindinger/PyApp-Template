@@ -77,8 +77,8 @@ try:
 
             # install pip
             try:
-                urllib.request.urlretrieve(get_pip_url, get_pip_path)  # noqa:S310
-                subprocess.run(  # noqa:S603
+                urllib.request.urlretrieve(get_pip_url, get_pip_path)
+                subprocess.run(
                     [BACKEND_PYTHON_EXE, get_pip_path, "--no-warn-script-location"],
                     check=True,
                 )
@@ -110,7 +110,9 @@ try:
 
                 folder_name = os.path.basename(folder)
                 if folder_name != forced_name:
-                    raise ValueError(f"Refusing to delete: expected folder named {forced_name!r}, got {folder_name!r}")
+                    raise ValueError(
+                        f"Refusing to delete: expected folder named {forced_name!r}, got {folder_name!r}"
+                    )
 
                 for item_name in os.listdir(folder):
                     item = os.path.join(folder, item_name)
@@ -121,10 +123,14 @@ try:
 
             if os.path.exists(BACKEND_PACKAGES_DIR):
                 success = delete_folder_safe(
-                    BACKEND_PACKAGES_DIR, max_size_GB_before_prompt=0.5, allowed_base_abs_path=PYTHON_SCRIPTS_DIR
+                    BACKEND_PACKAGES_DIR,
+                    max_size_GB_before_prompt=0.5,
+                    allowed_base_abs_path=PYTHON_SCRIPTS_DIR,
                 )
                 if not success:
-                    raise RuntimeError(f'Failed to delete "{BACKEND_PACKAGES_DIR}". Aborting.')
+                    raise RuntimeError(
+                        f'Failed to delete "{BACKEND_PACKAGES_DIR}". Aborting.'
+                    )
                     input("Press enter to exit")
             else:
                 os.makedirs(BACKEND_PACKAGES_DIR)
