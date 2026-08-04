@@ -35,6 +35,7 @@ def get_ini_file_settings(settings_path: str) -> tuple[str, str]:
 # ========================
 # === define variables ===
 # ========================
+# fmt:off
 
 # ------------------------
 # live settings
@@ -47,7 +48,7 @@ use_standin_main_script: bool = True  # If True, normal shortcuts launch TEST_ST
 DONT_CHANGE_DIR = make_abs("..")
 BACKEND_DIR = make_abs("..\\..")
 PYTHON_SCRIPTS_DIR = make_abs("..\\..\\..")
-SHORTCUT_OUTPUT_DIR = make_abs("..\\..\\..\\..")  # UPDATE GITIGNORE
+SHORTCUT_OUTPUT_DIR = make_abs("..\\..\\..\\..")  # UPDATE .gitignore
 TEMPORARY_DIR = DONT_CHANGE_DIR + "\\temporary"
 SHORTCUT_TARGET_DIR = DONT_CHANGE_DIR + "\\scripts\\shortcut_targets"
 ENTRY_BATCHES_DIR = DONT_CHANGE_DIR + "\\B"
@@ -96,7 +97,6 @@ ICON_FALLBACK_PNG_DIR = DONT_CHANGE_DIR + "\\icon_related"
 ICON_DELETE_TIMEOUT_SECONDS = 2.0
 ICON_DELETE_RETRY_DELAY_SECONDS = 0.05
 _base = ("icon.png", "512x512:34babea5", "default_icon.png")
-# fmt:off
 ICON_GENERATION_SETTINGS = [
     # output ICO, base PNG, base PNG ID, fallback base PNG, overlay PNG, overlay PNG ID, fallback overlay PNG
     (ICON_PATH, *_base, None, None, None),
@@ -110,7 +110,7 @@ ICON_GENERATION_SETTINGS = [
     (OPEN_MAIN_PY_ICON_PATH, *_base, "open_main_py.png", "512x512:3bd1b4b4", "default_open_main_py.png"),
     (KEYBOARD_INTERRUPT_ICON_PATH,*_base,"keyboardInterrupt.png","512x512:0c4eac7f","default_keyboardInterrupt.png"),
 ]
-# fmt:on
+
 
 # PNG placeholders created by scripts/icon/generate_PNGs_to_be_replaced.py
 PNG_GENERATION_OUTPUT_DIR = ICON_FALLBACK_PNG_DIR + "\\created_PNGS_to_be_replaced"
@@ -123,7 +123,6 @@ PNG_GENERATION_BOLD = True
 PNG_GENERATION_PADDING = 12
 PNG_GENERATION_TEXT_COLOR = (210, 0, 0, 255)
 PNG_GENERATION_BACKGROUND_COLOR = (255, 255, 255, 255)
-# fmt:off
 PNG_GENERATION_ITEMS = {
     "icon.png": ["Replace to change", "base icon.", "Run", '"regenerate icons"', "afterwards"],
     "settings.png": ["Replace to change", "settings sub-icon.", "Run", '"regenerate icons"', "afterwards"],
@@ -136,7 +135,6 @@ PNG_GENERATION_ITEMS = {
     "open_main_py.png": ["Replace to change", "open-main.py", "sub-icon. Run", '"regenerate icons"', "afterwards"],
     "keyboardInterrupt.png": ["Replace to change","keyboard-interrupt","sub-icon. Run",'"regenerate icons"',"afterwards"],
 }
-# fmt:on
 
 # ------------------------
 # verification related
@@ -180,7 +178,7 @@ TMP_TRACEBACK_JSON_PATH = TEMPORARY_DIR + "\\last_crash_log.json"
 # ------------------------
 # untracked developer-tools folder related
 
-DEV_TOOLS_FOR_PACKAGES_DIR = BACKEND_DIR + "\\dev_tools\\change python packages"  # UPDATE GITIGNORE
+DEV_TOOLS_FOR_PACKAGES_DIR = BACKEND_DIR + "\\dev_tools\\change python packages"  # UPDATE .gitignore
 CURRENT_PACKAGES_WITH_VERSION_PATH = DEV_TOOLS_FOR_PACKAGES_DIR + "\\determined_current_packages_withVersion.txt"
 CURRENT_PACKAGES_NO_VERSION_PATH = DEV_TOOLS_FOR_PACKAGES_DIR + "\\determined_current_packages_noVersion.txt"
 NEEDED_PACKAGES_NO_VERSION_PATH = DEV_TOOLS_FOR_PACKAGES_DIR + "\\auto_found_required_packages_noVersion.txt"
@@ -194,9 +192,7 @@ _backend_python_major_minor_version, BACKEND_PYTHON_DIR = get_ini_file_settings(
 
 BACKEND_PYTHON_pth_FILE = BACKEND_PYTHON_DIR + f"\\python{_backend_python_major_minor_version}._pth"
 BACKEND_PYTHON_ZIP_REL_PATH = f"python{_backend_python_major_minor_version}.zip"
-BACKEND_PACKAGES_DIR = (
-    DONT_CHANGE_DIR + "\\backend_packages"
-)  # UPDATE contents of BACKEND_PYTHON_pth_FILE + .gitignore + pyproject.toml
+BACKEND_PACKAGES_DIR = DONT_CHANGE_DIR + "\\backend_packages"  # UPDATE BACKEND_PYTHON_pth_FILE + .gitignore
 BACKEND_PACKAGE_REQUIREMENTS_FILE = make_abs("backend_packages.txt")
 BACKEND_BUILD_TOOLS_REQUIREMENTS_FILE = make_abs("backend_build_tools.txt")
 BACKEND_FILES_TO_DELETE_AFTER_INSTALL = ["sqlite3.dll", "python.cat"]
@@ -205,19 +201,13 @@ BACKEND_FILES_TO_DELETE_AFTER_INSTALL = ["sqlite3.dll", "python.cat"]
 # frontend related
 
 FRONTEND_SCRIPT_WRAPPER_PATH = SHORTCUT_TARGET_DIR + "\\childs\\frontend\\script_wrapper.py"
-FRONTEND_PACKAGES_DIR = BACKEND_DIR + "\\packages"  # UPDATE contents of .gitignore + pyproject.toml
-FRONTEND_PYTHON_DIR = BACKEND_DIR + "\\python"  # UPDATE  contents of.gitignore + pyproject.toml
-FRONTEND_PACKAGES_ARE_INSTALLED_MARKER_PATH = (
-    FRONTEND_PACKAGES_DIR + "\\_DELETE_THIS_TO_REINSTALL_ONLY_DEFAULT_PACKAGES_"
-)
-FRONTEND_LAUNCHER_FOR_PIP_INSTALL_TERMINAL = (
-    FRONTEND_PYTHON_DIR + "\\tools\\open_terminal_with_set_python_and_pip_target.bat"
-)
-DEV_TOOLS_REFERAL_NOTE_PATH = (
-    os.path.dirname(FRONTEND_PACKAGES_DIR) + "\\USE dev_tools FOLDER (IN PARENT FOLDER) TO CHANGE PACKAGES"
-)  # UPDATE GITIGNORE
+FRONTEND_PACKAGES_DIR = BACKEND_DIR + "\\packages"  # UPDATE .gitignore
+FRONTEND_PYTHON_DIR = BACKEND_DIR + "\\python"  # UPDATE .gitignore
+FRONTEND_PACKAGES_ARE_INSTALLED_MARKER_PATH = FRONTEND_PACKAGES_DIR + "\\_DELETE THIS TO REINSTALL ONLY DEFAULT PACKAGES"
+FRONTEND_LAUNCHER_FOR_PIP_INSTALL_TERMINAL = FRONTEND_PYTHON_DIR + "\\tools\\open_terminal_with_set_python_and_pip_target.bat"
+DEV_TOOLS_REFERAL_NOTE_PATH = FRONTEND_PACKAGES_DIR + "\\_USE dev_tools FOLDER (IN PARENT FOLDER) TO CHANGE PACKAGES"
 PYTHON_VERSION_INDICATOR_FILE_PATH = FRONTEND_PYTHON_DIR + "\\PYTHON_VERSION.txt"
-DEFAULT_PACKAGES_PATH = DEV_TOOLS_FOR_PACKAGES_DIR + "\\DEFAULT_PYTHON_PACKAGES.txt"  # UPDATE GITIGNORE
+DEFAULT_PACKAGES_PATH = DEV_TOOLS_FOR_PACKAGES_DIR + "\\DEFAULT_PYTHON_PACKAGES.txt"  # UPDATE .gitignore
 
 # ------------------------
 # remaining files
