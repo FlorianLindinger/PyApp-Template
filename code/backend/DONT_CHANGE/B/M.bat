@@ -1,8 +1,15 @@
+:: Description: Opens main.py in the configured editor.
+::
+:: ===========================
+
 :: disable printing of commands:
 @echo off
 
 :: make variables local:
 setlocal
+
+:: ===========================
+:: settings
 
 :: move to folder of this file:
 cd /d "%~dp0"
@@ -10,8 +17,8 @@ cd /d "%~dp0"
 :: ===========================
 :: local variables
 
-set "ensure_backend_python_script=..\scripts\setup\ensure_backend_python.bat"
-set "target_script=..\scripts\shortcut_targets_via_batch\open_main_py.py"
+set "ensure_backend_python_script=helper_scripts\ensure_backend_python.bat"
+set "target_script=..\scripts\shortcut_targets\open_main_py.py"
 
 :: ===========================
 :: code execution
@@ -36,3 +43,5 @@ if "%exit_code%"=="0" (
 echo [Error] Python script failed with exit code %exit_code%. Press any key to exit.
 pause > nul
 exit %exit_code%
+::
+:: ===========================

@@ -14,7 +14,7 @@
 - **Fast package installation with uv support**: package installs use `uv` by default when globally available or installs it into the repository locally if not disabled in settings. It can benefit from uv's global cache across projects.
 - Ready to use: **Just insert your python code file** and optionally quickly change settings like python version or app name.
 - **Runs fully accessible source code**. This template makes python files behave effectively as if they were compiled with an included python environment while remaining 100% accessible, avoiding compilation time, and simplifying end-user modifications.
-- **Quality of life features for python environment management** (under `code/developer_tools`: environment reset, pip-install launcher, saving current packages, auto-installing packages needed in Python files, ...)
+- **Quality of life features for python environment management** (under `code/dev_tools`: environment reset, pip-install launcher, saving current packages, auto-installing packages needed in Python files, ...)
 - Automatic generation of **icons from a png**.
 - Options to **change icon, title, and colors** of the python-launched **terminal**.
 - Automatic generation of **shortcuts with icons** that **can be added to the taskbar**. Usually it is not possible to have multiple shortcuts on the taskbar with **custom icons** that launch python/batch files.
@@ -35,12 +35,42 @@
 
 1. Clone/download/copy this repository
 2. Add the python code you want to execute to `code/main.py`
-3. (Optional: Change program settings like Python version or program name under `code/developer_settings.py`)
+3. (Optional: Change program settings like Python version or program name under `code/backend/developer_settings.py`)
 4. (Optional: Add user settings under `code/settings.py`. Import them in `main.py` via `import settings`)
 5. Execute `▶️ RUN BEFORE FIRST START AND AFTER FOLDER MOVE TO GENERATE SHORTCUTS.cmd` to generate shortcuts
 6. Run program via the generated shortcuts (it will auto install needed packages)
 
 The leading `▶️` is a portable play-button marker in the filename. The launcher itself remains a fully reviewable batch file and resolves the repository folder from its own location, so moving the repository does not break it.
+
+---
+
+## Project Structure
+
+```text
+.
+├── code/
+│   ├── main.py                        <<< MAIN APP CODE: EDIT THIS
+│   ├── settings.py                    <<< USER SETTINGS: EDIT AS NEEDED
+│   ├── pyproject.toml                 <<< DEVELOPMENT-TOOL CONFIGURATION
+│   └── backend/
+│       ├── developer_settings.py      <<< APP / PYTHON SETTINGS
+│       ├── dev_tools/                 <<< DEVELOPMENT TOOLS
+│       ├── icons/                     <<< ICON SOURCE & GENERATION TOOLS
+│       ├── DONT_CHANGE/               Template internals (see its README)
+│       └── ...                        Self explanatory folders   
+├── logs/                              Generated program logs
+├── crash logs/                        Generated crash reports
+```
+
+Edit `code/main.py`, `code/settings.py`, and `code/backend/developer_settings.py`
+for normal project work. The `python`, `packages`, `backend_python`,
+`backend_packages`, `logs`, and `crash logs` folders are generated locally and
+are intentionally excluded from normal Git tracking.
+
+`code/backend/DONT_CHANGE` contains the portable launcher implementation. Its
+[own README](code/backend/DONT_CHANGE/README.md) explains the installation
+flow, backend settings, safety checks, package lists, diagnostics, and licensing
+in detail.
 
 ---
 

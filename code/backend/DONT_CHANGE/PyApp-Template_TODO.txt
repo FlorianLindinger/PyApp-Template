@@ -2,31 +2,116 @@
 ==== TODO LIST FOR PyApp-Template ====
 ======================================
 
-chack all files with pyrefly scirtpt
+what is the logic of error hhandling in all files for nromal startt 
+has terminal:
+    start_program
+    all tools
+doestn have:
+    backent_watchdog
+might have:
+    wrapper
 
-add images of rich traceback to readme. also taskbar grouiping wiht arrow and circle
+def program_has_terminal():
+    -> no. maybe just reuse some logic in exit process?
+    -> but also it already does that, right?
 
-move genratie shrotuts to common tmeplate
+how to do PROGRAM_HAS_TERMINAL in exception in watchdog
 
-make a folder sub icon for folder ones
+add background warchdog to template exception?
 
-open_crash_log_folder_shortcut_name
-open_main_py_shortcut_name
-open_log_folder_shortcut_name
+apply template to exit
+apply termpolate to watchdog
+should i add a "program has terminal " to termplate? would only hcange for backend watchdog
 
-simplify shortcut gneratio fcuntion into one function
+fix backend watchdog
 
-add function to open py files
+check the verfyers
 
-srot code in genrate_shortcuts
+check FRONTEND_PACKAGES_ARE_INSTALLED_MARKER_PATH
 
-where can i indocate that backend runs on embedable python and not full version. Maybe docstirng on all files.
+mkae verification better prints in end
 
+have backend_python_finish_installation_relative_path in backend_vatribles.py? kind of not helpful. i need to read out the sttings soemhwo but at that point i can just have aonther cscipt. maybe just miinimal python script to get the setting and then laucn it in batch folder?i guesss i can just leawve how is.
+
+at the momvent it sill delete python.exe to indicate failre
+
+does process_exit use appid
+
+open settings fails
+
+fix exit.py
+
+make missing PYHTON_VERISON a indicatiopn of broken or unsecsssful python installation and ->recread or porpmpt or somejtihn
+
+still test the install embed ypython batch generic
+
+fix make_file_to_indicate_frontend_pckgs_installed
+
+it did not bring to front for start and fail in start_rpogram imports
+it did not unminimze on backend installaion run of nromal shortcut
+
+make import error fancy:
+Missing import: requests
+Suggested package: requests
+Python executable: C:\...\python.exe
+
+======================================
+
+apply the do_stuff_when_not_normal_start 
+
+can you apply the *template.py on backgorunwactchdog and fix pyrefly issues and improve?*
+
+is the interaction between start_program background_watchdog script_wrapper main.py and process_exit working well? what can i improve?
+
+apply template to common code and gernerics a littee
+
+do i want readme in code\?
+
+mabye have function to do stuff rarly like hide files. should to it for alls tools and installs.
+
+
+
+in dev tools dont have _ in lnks?
+
+have tool to apply ruff auto or whatever vsode doe on stcipts and B? or just to main.py?i want a dev_tool to apply auto ruff foramtting 
+
+do i also want a test.py standin? to run tests
+for test main.py have it make a tkinter GUI
+... think of more tests i guess
+
+print in red that standin scirpt is used but dont have that in standin scipt 
+
+
+do i want to remvoe stuff from pyproject. ask AI what is houd do with it
+
+rename sub icon to overlay icon everywher
+
+test terminal_colors_after_KeyboardInterrupt
+
+
+in common code see if functions still need params
+
+do i want to force pyrefly setting in pyprkct
+
+chack all dev tools fully
+thiknc about lnk names in dev tools
+have close_terminal in dev tools? i guess batches handle alredy?
+fix all the dev tools
 do i have nice terminals for package installation -> add printed line for start
 
-do i want travecak message baove or below? problaby below and combo with shrot form-> change (see above/below). also incldue in rich for coloring?
+have way to excldue folder/fioels for verify
 
+add images of rich traceback to readme. also taskbar grouiping wiht arrow and circle
+ask AI for readme impreoemtns: gif ,screenshosts, windows symbol, project structuter, updateing, licensing, menation to replace readme,status badges,Installation or Quick Start . Fix how to copy from github as template or not gituhub
+add screenshot logic and folder. maybe gif to show taskbar grouping
+add feature descirption: fully reviewable code. no black box
+remove .vscode and add to gitigmore
+where can i indocate that backend runs on embedable python and not full version. Maybe docstirng on all files.
+do i want travecak message baove or below? problaby below and combo with shrot form-> change (see above/below). also incldue in rich for coloring?
+test rich traceback for all options where fail and also all types in main sciorpt
 do i wnat:  main.py:6 in <module>
+
+carefull with setting overwriting global vscode ones
 
 # def get_print_divider(message: str, symbol="=") -> str:
 #     """Return an equals-sign rule matching message width without wrapping."""
@@ -36,68 +121,19 @@ do i wnat:  main.py:6 in <module>
 #     rule_width = min(max(1, longest_message_line), max_rule_width)
 #     return symbol * rule_width
 
-do i want to move more local settings to common_varaibles?
-
-dont do succes terminal for on close?  i guesss only if anything happens? what for soud=
-
-make icon not transparent in middle
-
-longterm add ways that main scriot can talj to backend and do stuff like the fancy terminal
-
-fix up icons. are they not set?
-
 it should be able to catch syntax errrors in wrapper and give good suggestion for syntax errro in watchdog -> featues form oythnog 3.11+
-
-is crash txt reprot everyhwerhe?
-
-add a succes theme for rich traceback
-
 it does not handle syntax errorr in wrapepr? handle that somehopw better
-
 does it handly syntax errors in all script where it can? mention the scrioüpt tjat it does not handle it.
-
-Snapshot source context
-Store 2–3 lines before and after every failing line in the JSON. Rich currently reloads source files, which could have changed or become unavailable.
-
-setting how many linees beofre and after to print.
-
+dont do succes terminal for on close?  i guesss only if anything happens? what for soud=
+is crash txt reprot everyhwerhe?
+add a succes theme for rich traceback
 mention rich customizaility. add more
-
-Exception notes and groups
-Support Python 3.11+ features when available:
-exception.__notes__
-ExceptionGroup
-Nested sub-exceptions
-
-make import error fancy:
-Missing import: requests
-Suggested package: requests
-Python executable: C:\...\python.exe
-
-add option to shjow locals in tracback to dev settings
-
-make clcikable path to line in not conhost 
-
 make option which temrinal to prefer for tracebvack and add cklciakble featues. meantion soemthwer. also as gernal drawack of conhost in temrinalc hoice
-
-move travback settings all to dev settings as subcratgoty
-
-choose good RICH_TRACEBACK_COLOR_THEME
-
 can i have rich traveaback nicely scalable in hindsight in conhost? do i want not conhost for newly opended?
-
 add full path to file somewhere in rich and normal traceback print
-
+choose good RICH_TRACEBACK_COLOR_THEME
 checl how it nows how to remove frawmes
-
 checkl rich traveback tempalce color options
-
-test rich traceback for all options where fail and also all types in main sciorpt
-
-maybe i leave exit code 0 to indicate script running to end
-
-does exit code get passed correctly to string
-
 except SystemExit as e:
             if (
                 (e.code is None)
@@ -109,7 +145,6 @@ except SystemExit as e:
                 # catches: sys.exit(True), sys.exit("a string"),sys.exit(non-0-int)
                 save_traceback(e, python_script_path, crash_log_temp_path)
                 sys.exit(1)
-
 -> undop my changes i guess to get rich tracebakc back but ask it to simplify
 
 # soprt and group functions in all scripts
@@ -172,22 +207,7 @@ remove global PROGRAM_HAS_TERMINAL -> down below should never be reached -> alwa
 
 ask AI if functions are not used commonly or are but are not in common
 
-do i still need candidate_hwnds.
-find out what they usualyl return and make it that
-
-normalize naming scemes in common_variables
-
-renamed file to process_exit.py
-
 how do i do traceback and running stuff in same terminal.-> one function for bopth
-
-add params to run_here_or_new_terminal
-
-is json gernally as simple as it gets?
-
-chekc in script wrapper if json stuff is simple
-
-app id is unused in rich tracevbvack
 
 check if i want impreventns in crash log txt
 
@@ -195,17 +215,11 @@ fix shortcut to open logs? should i also have shortcut for crash folder. maybe i
 
 does it handle well if main.py not there?
 
-test if env varaibles get passed
-
 remove env_var_to_signal_startup_time_measurement
-
-make ecvetrything pyrefly strict safe
 
 ask AI where i can simplify code and logic and files and everythiong
 
 waht happens for "overwrite_log = False" just append? write behavior down in developer settings
-
-convert json into readable txt?
 
 is everyginh used in develper_settings?
 
@@ -215,28 +229,12 @@ is implemented ? args_for_main_py
 
 am i checking for global uv and global uv cache. should i write somewher what it does?
 
-rename python_and_packages to "python & packages"
+ask for more ideas for dev_tools so no replacement needed later
 
-should i make crash reports and logs fixed? how to say in gitignore and in settings at same time?
-
-ask for more ideas for developer_tools so no replacement needed later
-
-i guess i should levae backend pyhton and poackages in DONT_change. otherwiese change in requivemnts dont automatically update pyhtron 
-
-fix measrure startupo time script
-
-addd to raedme that appid works for GUI
 
 where do i wirte how main.py can acess globals like icon and so on
 
-write in common_varaible to syn git:
-# backend_python folder:
-backend_python/
-# backend_packages folder:
-backend_packages/
-. I guess also in README and LICENSE
-
-license is not uptodtae. there is no venv anmore
+make better print for default run
 
 
 any more featurs missing in README->backend washdog, rich 
@@ -245,12 +243,6 @@ any more featurs missing in README->backend washdog, rich
 add uv as feature in README and that it can use global cache
 
 make it somehow safer for aborted installltion of stuff. maynbe folder deleation and end file signal creation
-
-make better print for default run
-
-is lnk icon working
-
-udpate license for non syncing backend
 
 for not foiund python exe make better print what folder to search for and where was last time. resolve path. it also does not go to foregorund:
 [Error] Backend Python not found:
@@ -299,13 +291,8 @@ test all options in python verison not matchign case
 it failedt to not install pakcages after i choose that in wrong python verison thing. Also it shoudl roitn what dont get instlaled
 there: "Reset packages" -> remoe packages
 
-open settings fails
-
-apply to pyboson
 
 use dev branch afterwards
-
-fix crash icon
 
 can i raise in watchdog and directly call the rihc functiomn for that?
 
@@ -476,9 +463,6 @@ maybe make easier to reset versions of default packages for current version. doe
 
 add link to developer settings: [Warning] Python version in settings (3.6) is not matching the current one (3.14.5). Please enter how to proceed:
 
-review PID in start_program
-
-
 what if i dont want to foregorund on first print? becasue alread foregound? shpould not matter since first print gets thta out of the sstem iimediatly anyway
 
     # more low tech to brinog to foregorund? on outer most exceptijn
@@ -495,21 +479,15 @@ review backend test tools at some point
 
 have a template for teh dev tools and backend test tools?
 
-do i want the .gitattributes
-
-make all from pathlib import Path to os
 
 
 how do i give nice rich traceback in fails of main_script? launch in same terminal a backend python?
 somehow pass the e
 i cant just run another wrapper for rich traceback
 
-
 test that that error print also unminimiuzes
 
 ask AI to harmonoze alll fail print messages
-
-chekc open_log.py
 
 st terminal appearance for shortcut geneatn. color but also icon and tritle?
 
@@ -520,8 +498,6 @@ cxonhost cant do color ansi!!!! but i can enable in python
 should i do ansi colors insteaf of fg bg coloir of terminal?
 
 do i want all initail python start script and all dev tools and all to change terminal bg? via common funciton . including generatior shprtctu. also increase size for conhost launch
-
-genrtation shortcut try multiple times?
 
 logging in no terminal mode does not work
 
@@ -548,9 +524,6 @@ in generate_shortcuts.py. i guess i go for conhost either way.
 
 for frontend terminal: do i need to set title and icon for conhost?
 
-
-look why setting .py is not same as other .py?
-
 fix that is not moving to forgorund for first print
 
 is working:
@@ -559,38 +532,20 @@ is working:
 does it warn with color if wronig??? doe it notice?
 
 
-add description to all __inits__
-
 update HOW_TO_CHANGE_ICONS.txt
 
 press enter to exit does not exit dev tools. addd prints that file was save and where and clicakbla
 
-how do i realese a clean main_script while WIP dev. do i go dev branch i guess
 
-
-ask AI where bottlenack for length. Wait do i still need shroty python folder???????
-mention shoemwher eaxmple of too long path so one can compare? at this point i can hcek again in shortcut craeation. 
 
 do i want _ in _RUN BEFORE FIRST START AND AFTER FOLDER MOVE TO GENERATE SHORTCUTS? kind of no püurpoe and layman could be ticked off by "_"?
 also renmaed to "RUN TO GENERATE SHORTCUTS BEFORE FIRST START AND AFTER FOLDER MOVE". aks AI if better name
 
-removed unnecessary/useless __init__.pys
-
 wait. stop closes instalngly? or opens mimiimized? make stopper and settings be open. or maybe not setting.lnk. test if it does not creat setting.lnk if something
-
-do i still need tmp.txt in gitignore
-
-can i measure when shortcut cration that path too long and warn and abort? doesnt python or its packages liomit?
 
 is backend terminal minimization as fast as possibel? do i want to set appid icon and title for any print in backend. might just be easyer?
 
-waht varaible should i make capitalized? in common_variables. all i guess? generally all vars that i imoprt i guess but not in dev settings tho
-
-
 ask AI if anything would break for frontend low. I guess wrapper needs to be very lowend safe
-
-add shortcut to logs folder
-i guess that script should look for live setting wher next log woud be produced. need new icon
 
 what type of window d o we want backend to be? probably generic for future proof
 
@@ -603,8 +558,6 @@ does the settings.py import even work for non same wdir? mention? does it work f
 
 test what happends fro prompt of delete_folder_safe. is abort wanted or do i want repeated prompt or print path to fodler and manual prompt and then rechekc ....
 chekc if folder size check and walks are fast enough
-
-check ensure_python_distro
 
 fix wrapper
 simplify wrapper.
@@ -620,7 +573,7 @@ instlling rich traceback is slwo? do i want it maybe only in wrapper? no error s
 sort wrapper
 shouild i use set_terminal_icon from wrapper or starter?
 what if i either way need for app id stuff. can i make that simpler?
-do i want a wrapper_common_code? wither way start and wrapper should be fast and no unncecresasy imports
+do i want a wrappercommon_code? wither way start and wrapper should be fast and no unncecresasy imports
 fix erorr print in wrapper mode haveing blac kcolor for tiomestapmo
 dont i always handle a interpreter crash by wrapper and emulator? no need for setting?
 in wrapper. do i want appearance change attempt for error?
@@ -689,28 +642,18 @@ do i want conhost.exe soemwhere else?
 make setting
 soemhow fix black line in temrinal
 
-have colors for setup cmds?
-do they wanrt titles
-
 do i really want terminal to stay open so long? cant i just spawn invisible to monitor for immeadiate fail and then oipen a cmd to print thta?
 i guess i could only spwn inviebl but risky for change
-
-set color and title in Popen alreay?
-
-set cwd in  crartion of temrinla?
 
 do i want to chatc error in cmd command? would not work for no terminal ; better than waitnig 0.8s
 what if i let python kill the old terminal via thread once its clear it wont fail?
 -> cotineue backed via signal file after main() start_minimized. delete signal. wait for signal. exit. timeout after 2s.
 
-
-recheck start script and script wrapper
-
 test option to start minimized in all modes
 test play sounds and start time
 does it set all terminals ot that icon eg also from differnet opened apps form framework???
 
-check for "todos" in code
+check for "todos"/WIP in code
 ask AI if code or variable is unused
 let it chekc if seomthing looks like a placeholder and unfinsihjesd and nunnnecassy prings
 is the file organication somewher unconventuional? should i renomea seom sutff? 
@@ -732,16 +675,11 @@ crash1,2
 NVMD. os._exit and os.abort should just close i guess. So maybe emulator should just close. Or maybe it should be cauot be close_on_failure. is it being caupt be that in emulator? if that can be cought i guess best is to see if it is 0 or 1 .
 os.abort is either way only used to test a crash so i dont have to respect it other than a crasher. So i guess the wrapper should catch it. does emulator trieat is as failure or crash?
 
-
-
-
 chekc overall start time overhead compared to global python. I guess check with batch i have that measurs execution time and jsut a script that exits immediately. maybe mention that overhead in README
 
 test no terminal error print
 
 am i using faulthandler correctly? do i need to print that to a log? ask ai if works
-
-
 
 add vscode settigns to .vscode/settings.json?
 update ruff.toml but not enable the D
@@ -755,12 +693,6 @@ min version: replace DONT_CHANGE enough
 
 is use_global_python used everywhere and als ohandles iof modeule not present?
 
-cehck for fail of install_packages_from_file and hadnle error
-
-
-
-
-
 
 
 
@@ -768,6 +700,14 @@ cehck for fail of install_packages_from_file and hadnle error
 ==== Must do before release (in end) ====
 =========================================
 
+add a startup workflow to one of the radmes
+
+
+udpat how to chagne icons.txt
+
+in readme image circle what all is different. i guess the terminal title and icon and colors. the taskbar goruping and icon. and have comparison what it would look like wibtittu
+
+chack all files with pyrefly scirtpt
 
 
 updaet license paths
@@ -852,3 +792,6 @@ update all licenses
 
 ask for emtpy readmeas and WIPs
 
+go dev branch after release
+
+run path chekc again
