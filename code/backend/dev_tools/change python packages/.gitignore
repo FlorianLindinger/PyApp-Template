@@ -1,0 +1,4 @@
+# output files of change-python-packages developer tools:
+/*.txt
+# whitelist the default package list stored in this folder:
+!/DEFAULT_PYTHON_PACKAGES.txt

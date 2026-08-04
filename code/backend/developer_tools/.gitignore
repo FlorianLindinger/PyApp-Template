@@ -1,4 +1,0 @@
-# output files of developer tools:
-/*.txt
-# whitelist DEFAULT_PYTHON_PACKAGES file in developer_tools folder:
-!/DEFAULT_PYTHON_PACKAGES.txt
