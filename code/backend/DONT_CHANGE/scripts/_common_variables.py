@@ -15,12 +15,12 @@ def make_abs(x: str) -> str:
 # ------------------------
 
 # Change backend Python version in install_backend_python.bat.
-backend_python_dir = make_abs("..\\backend_python")  # Update contents of backend_python_pth_file and pyproject.toml
+backend_python_dir = make_abs("..\\backend_python")  # Update contents of backend_python_pth_file
 backend_python_pth_file = (
     backend_python_dir + "\\python312._pth"
 )  # must match Python version in install_backend_python.bat
 backend_python_zip_rel_path = "python312.zip"  # must match Python version in install_backend_python.bat
-backend_packages_dir = make_abs("..\\backend_packages")  # Update contents of backend_python_pth_file and pyproject.toml
+backend_packages_dir = make_abs("..\\backend_packages")  # Update contents of backend_python_pth_file
 backend_package_requirements_file = make_abs("..\\backend_packages_list.txt")
 backend_build_tools_requirements_file = make_abs("..\\backend_build_tools_list.txt")
 backend_files_to_delete_on_install = ["sqlite3.dll", "python.cat"]

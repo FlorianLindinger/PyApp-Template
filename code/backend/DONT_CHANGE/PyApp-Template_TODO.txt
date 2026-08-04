@@ -743,10 +743,10 @@ am i using faulthandler correctly? do i need to print that to a log? ask ai if w
 
 
 
-add vscode settigns to pyproject.toml?
-update pyproject.toml but not enable the D
-add only usefual stuff to pyproject
-update good settings for pyrefly for pyproject.toml
+add vscode settigns to .vscode/settings.json?
+update ruff.toml but not enable the D
+add only usefual settings to ruff.toml and pyrefly.toml
+update good settings for pyrefly.toml
 
 mention:  _README in DONT_CHANGE and text of verison file:
 mayor version: remove stuff outside DONT_CHANGE

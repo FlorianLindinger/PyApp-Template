@@ -668,7 +668,7 @@ maybe i only need strenght for cmd terminal generate shrtcuts and dev tools.
 
 better to continue after pipreqs failure i guess. maybe after enter confiramtion
 
-Reduce lint ignores over time. pyproject.toml (line 64) enables a strong Ruff rule set but then disables many important checks. Keep the pragmatic ignores, but shrink them around the backend code once the crash/logging paths are stable.
+Reduce lint ignores over time. ruff.toml enables a strong Ruff rule set but then disables many important checks. Keep the pragmatic ignores, but shrink them around the backend code once the crash/logging paths are stable.
 
 Clean README/onboarding. README.md (line 46) still has a terminal-emulator TODO, and the repo currently has encoding/typo polish issues. Ad d “what happens on first run”, “what files are generated”, “what can be deleted”, and “how to update backend/template code safely”
 
@@ -679,7 +679,7 @@ Make settings typed and validated. developer_settings.py is user-friendly, but v
 
 Replace the terminal control eval. terminal_emulator.py (line 1243) executes text printed by the child process via eval. A small explicit command protocol would be much safer, e.g. JSON lines like {"command": "set_button_visible", "name": "stop", "value": false}.
 
-Reduce lint ignores over time. pyproject.toml (line 64) enables a strong Ruff rule set but then disables many important checks. Keep the pragmatic ignores, but shrink them around the backend code once the crash/logging paths are stable.
+Reduce lint ignores over time. ruff.toml enables a strong Ruff rule set but then disables many important checks. Keep the pragmatic ignores, but shrink them around the backend code once the crash/logging paths are stable.
 
 is there an option to not ship temrinal_emulatro if dev setting say no. like maaybe a batch that deletes that or a way to auto sync that settign wiht gitignore?
 kind of same with pipreqs and size . kind of want to keep backend together tho
