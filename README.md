@@ -50,8 +50,7 @@ The leading `▶️` is a portable play-button marker in the filename. The launc
 .
 ├── code/
 │   ├── main.py                        <<< MAIN APP CODE: EDIT THIS
-│   ├── settings.py                    <<< USER SETTINGS: EDIT AS NEEDED
-│   ├── pyproject.toml                 <<< DEVELOPMENT-TOOL CONFIGURATION
+│   ├── settings.py                    <<< END-USER SETTINGS: EDIT AS NEEDED
 │   └── backend/
 │       ├── developer_settings.py      <<< APP / PYTHON SETTINGS
 │       ├── dev_tools/                 <<< DEVELOPMENT TOOLS
