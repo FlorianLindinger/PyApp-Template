@@ -31,3 +31,15 @@ code/*.pid
 # =============================
 
 # ADD YOUR GIT IGNORE SYNCING RULES HERE
+
+# Keep generated files with local machine paths out of Git.
+__pycache__/
+*.lnk
+nuitka-crash-report.xml
+**/bin/f2py.exe
+**/bin/markdown-it.exe
+**/bin/normalizer.exe
+**/bin/pipreqs.exe
+**/bin/pygmentize.exe
+**/bin/pywin32_postinstall.exe
+**/bin/pywin32_testall.exe
