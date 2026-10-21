@@ -25,13 +25,6 @@ __pycache__
 *.pyo
 # temporary process id indicator files:
 code/*.pid
-
-# =============================
-# ==== specific gitignores ====
-# =============================
-
-# ADD YOUR GIT IGNORE SYNCING RULES HERE
-
 # Keep generated files with local machine paths out of Git.
 __pycache__/
 *.lnk
@@ -43,3 +36,10 @@ nuitka-crash-report.xml
 **/bin/pygmentize.exe
 **/bin/pywin32_postinstall.exe
 **/bin/pywin32_testall.exe
+
+# =============================
+# ==== specific gitignores ====
+# =============================
+
+# ADD YOUR GIT IGNORE SYNCING RULES HERE
+
