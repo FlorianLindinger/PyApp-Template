@@ -7,10 +7,12 @@
 # ==== general gitignores ====
 # ============================
 
-# shortcuts in this folder:
-/*.lnk
+# shortcuts in every folder:
+*.lnk
 # whitelist shortcut to generate shortcuts in this folder:
-!/▶*.lnk
+!/▶️*.lnk
+# whitelist shortcuts in the icons folder:
+!/code/backend/icons/*.lnk
 # contents of "logs" folder in this folder:
 /logs/*
 # contents of "crash logs" folder in this folder:
@@ -27,7 +29,6 @@ __pycache__
 code/*.pid
 # Keep generated files with local machine paths out of Git.
 __pycache__/
-*.lnk
 nuitka-crash-report.xml
 **/bin/f2py.exe
 **/bin/markdown-it.exe

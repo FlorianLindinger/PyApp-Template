@@ -28,6 +28,7 @@ from backend.developer_settings import (
 )
 from backend.DONT_CHANGE.scripts.generic_helpers import (
     can_reach_url,
+    configure_python_package_path,
     delete_folder_safe,
     get_installed_packages,
     input_warn,
@@ -593,6 +594,10 @@ def ensure_python_distro(
         return
 
     else:  # alread existing python distro case:
+        configure_python_package_path(
+            FRONTEND_PYTHON_DIR,
+            os.path.relpath(FRONTEND_PACKAGES_DIR, FRONTEND_PYTHON_DIR),
+        )
         if python_version:
             matching, actual_version = is_python_version_correct(python_version)
         else:

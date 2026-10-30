@@ -1,3 +1,1070 @@
+
+
+
+
+
+
+[Info] Python distribution not found. Installing Python:
+Found Python 3.12.10 (Target: 3.12).
+Download URL: https://www.python.org/ftp/python/3.12.10/amd64/
+Found 6 MSI package(s).
+Downloading core.msi
+Downloading dev.msi
+Downloading exe.msi
+Downloading lib.msi
+Downloading tcltk.msi
+Downloading ucrt.msi
+Installing core.msi
+Installing dev.msi
+Installing exe.msi
+Installing lib.msi
+Installing tcltk.msi
+Installing ucrt.msi
+Looking in links: c:\Users\MAXIZW~1\AppData\Local\Temp\tmpzpn65mgo
+Processing c:\users\maxizw~1\appdata\local\temp\tmpzpn65mgo\pip-25.0.1-py3-none-any.whl
+Installing collected packages: pip
+Successfully installed pip-25.0.1
+Collecting pip
+  Using cached pip-26.2.2-py3-none-any.whl.metadata (4.6 kB)
+Using cached pip-26.2.2-py3-none-any.whl (1.8 MB)
+Installing collected packages: pip
+Successfully installed pip-25.0.1
+Collecting pip
+  Using cached pip-26.2.2-py3-none-any.whl.metadata (4.6 kB)
+Using cached pip-26.2.2-py3-none-any.whl (1.8 MB)
+Installing collected packages: pip
+Successfully installed pip-25.0.1
+
+Successfully created local Python 3.12.10 at "D:\Users\IRScope\Documents\Repositories\PyApp-Template - Kopie\code\backend\python".
+
+[Info] Found flag "# auto_find_required_packages_here_and_reset_installed_packages_to_them = True" in default packages file "D:\Users\IRScope\Documents\Repositories\PyApp-Template - Kopie\code\backend\dev_tools\change python packages\DEFAULT_PYTHON_PACKAGES.txt"
+--> Auto determine needed packages & reset installed packages to them & set them as new defaults if success.
+
+====================
+Start of finding required python packages
+--------------------
+D:\Users\IRScope\Documents\Repositories\PyApp-Template - Kopie\code\backend\DONT_CHANGE\backend_packages\docopt.py:165: SyntaxWarning: invalid escape sequence '\S'
+  name = re.findall('(<\S*?>)', source)[0]
+D:\Users\IRScope\Documents\Repositories\PyApp-Template - Kopie\code\backend\DONT_CHANGE\backend_packages\docopt.py:166: SyntaxWarning: invalid escape sequence '\['
+  value = re.findall('\[default: (.*)\]', source, flags=re.I)
+D:\Users\IRScope\Documents\Repositories\PyApp-Template - Kopie\code\backend\DONT_CHANGE\backend_packages\docopt.py:207: SyntaxWarning: invalid escape sequence '\['
+  matched = re.findall('\[default: (.*)\]', description, flags=re.I)
+D:\Users\IRScope\Documents\Repositories\PyApp-Template - Kopie\code\backend\DONT_CHANGE\backend_packages\docopt.py:456: SyntaxWarning: invalid escape sequence '\S'
+  split = re.split('\n *(<\S+?>|-\S+?)', doc)[1:]
+D:\Users\IRScope\Documents\Repositories\PyApp-Template - Kopie\code\backend\DONT_CHANGE\backend_packages\yarg\package.py:200: SyntaxWarning: invalid escape sequence '\:'
+  """Python \:\: \d\.\d""")
+INFO: Not scanning for jupyter notebooks.
+WARNING: Import named "cupy" not found locally. Trying to resolve it at the PyPI server.
+WARNING: Import named "cupy" was resolved to "cupy:14.2.0" package (https://pypi.org/project/cupy/).
+Please, verify manually the final list of requirements.txt to avoid possible dependency confusions.
+WARNING: Import named "ipython" not found locally. Trying to resolve it at the PyPI server.
+WARNING: Import named "ipython" was resolved to "ipython:9.18.0" package (https://pypi.org/project/ipython/).
+Please, verify manually the final list of requirements.txt to avoid possible dependency confusions.
+WARNING: Import named "matplotlib" not found locally. Trying to resolve it at the PyPI server.
+WARNING: Import named "matplotlib" was resolved to "matplotlib:3.11.2" package (https://pypi.org/project/matplotlib/).
+Please, verify manually the final list of requirements.txt to avoid possible dependency confusions.
+WARNING: Import named "numpy" not found locally. Trying to resolve it at the PyPI server.
+WARNING: Import named "numpy" was resolved to "numpy:2.5.4" package (https://pypi.org/project/numpy/).
+Please, verify manually the final list of requirements.txt to avoid possible dependency confusions.
+WARNING: Import named "nvmath" not found locally. Trying to resolve it at the PyPI server.
+WARNING: Package "nvmath" does not exist or network problems
+WARNING: Import named "pyautogui" not found locally. Trying to resolve it at the PyPI server.
+WARNING: Import named "pyautogui" was resolved to "PyAutoGUI:0.9.54" package (https://pypi.org/project/PyAutoGUI/).
+Please, verify manually the final list of requirements.txt to avoid possible dependency confusions.
+WARNING: Import named "pywin32" not found locally. Trying to resolve it at the PyPI server.
+WARNING: Import named "pywin32" was resolved to "pywin32:312" package (https://pypi.org/project/pywin32/).
+Please, verify manually the final list of requirements.txt to avoid possible dependency confusions.
+WARNING: Import named "pywinauto" not found locally. Trying to resolve it at the PyPI server.
+WARNING: Import named "pywinauto" was resolved to "pywinauto:0.6.9" package (https://pypi.org/project/pywinauto/).
+Please, verify manually the final list of requirements.txt to avoid possible dependency confusions.
+WARNING: Import named "scipy" not found locally. Trying to resolve it at the PyPI server.
+WARNING: Import named "scipy" was resolved to "scipy:1.18.1" package (https://pypi.org/project/scipy/).
+Please, verify manually the final list of requirements.txt to avoid possible dependency confusions.
+INFO: Successfully saved requirements file in D:\Users\IRScope\Documents\Repositories\PyApp-Template - Kopie\code\backend\dev_tools\change python packages\auto_found_required_packages_noVersion.txt
+--------------------
+End of finding required python packages. Result: "D:\Users\IRScope\Documents\Repositories\PyApp-Template - Kopie\code\backend\dev_tools\change python packages\auto_found_required_packages_noVersion.txt":
+
+cupy
+ipython
+matplotlib
+numpy
+pyautogui
+pywin32
+pywinauto
+scipy
+====================
+
+
+[Info] Package list file: "D:\Users\IRScope\Documents\Repositories\PyApp-Template - Kopie\code\backend\dev_tools\change python packages\auto_found_required_packages_noVersion.txt"
+--------------------
+cupy
+ipython
+matplotlib
+numpy
+pyautogui
+pywin32
+pywinauto
+scipy
+--------------------
+
+Using CPython 3.12.10 interpreter at: D:\Users\IRScope\Documents\Repositories\PyApp-Template - Kopie\code\backend\python\python.exe
+Resolved 41 packages in 9.07s
+error: Failed to build `cupy==14.2.0`
+  cause: The build backend returned an error
+  cause: Call to `setuptools.build_meta.get_requires_for_build_wheel` failed (exit code: 1)
+
+         [stdout]
+         Generating CUPY_CACHE_KEY from header files...
+         CUPY_CACHE_KEY (2013 files matching
+         D:\Users\IRScope\Documents\python_cache\uv\sdists-v10\pypi\cupy\14.2.0\Q-zR3LyCQQ6Ue2-q\src\cupy\_core\include\**):
+         143ccd26f46b8894225ba40855966924822009bc
+         Looking for NVTX from: ['C:\\Program Files\\NVIDIA Corporation\\Nsight Systems
+         2026.3.2\\target-windows-x64\\nvtx', 'D:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v13.4\\include']
+         Using NVTX at: D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include
+
+         -------- Configuring Module: cuda --------
+         a.cpp
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(434): warning C4996:
+         'csric02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(438): warning C4996:
+         'csric02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(442): warning C4996:
+         'bsric02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(446): warning C4996:
+         'bsric02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(450): warning C4996:
+         'csrilu02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(454): warning C4996:
+         'csrilu02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(458): warning C4996:
+         'bsrilu02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(462): warning C4996:
+         'bsrilu02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(466): warning C4996:
+         'bsrsv2Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(470): warning C4996:
+         'bsrsv2Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(474): warning C4996:
+         'bsrsm2Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(478): warning C4996:
+         'bsrsm2Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(482): warning C4996:
+         'csru2csrInfo_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(486): warning C4996:
+         'csru2csrInfo_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(490): warning C4996:
+         'cusparseColorInfo_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(494): warning C4996:
+         'cusparseColorInfo_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(498): warning C4996: 'pruneInfo_t':
+         The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(502): warning C4996: 'pruneInfo_t':
+         The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(771): warning C4996:
+         'bsrsv2Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(786): warning C4996:
+         'bsrsv2Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(801): warning C4996:
+         'bsrsv2Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(816): warning C4996:
+         'bsrsv2Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(831): warning C4996:
+         'bsrsv2Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(846): warning C4996:
+         'bsrsv2Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(861): warning C4996:
+         'bsrsv2Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(876): warning C4996:
+         'bsrsv2Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(891): warning C4996:
+         'bsrsv2Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(906): warning C4996:
+         'bsrsv2Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(907): warning C4996:
+         'cusparseSolvePolicy_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(922): warning C4996:
+         'bsrsv2Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(923): warning C4996:
+         'cusparseSolvePolicy_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(938): warning C4996:
+         'bsrsv2Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(939): warning C4996:
+         'cusparseSolvePolicy_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(954): warning C4996:
+         'bsrsv2Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(955): warning C4996:
+         'cusparseSolvePolicy_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(971): warning C4996:
+         'bsrsv2Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(974): warning C4996:
+         'cusparseSolvePolicy_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(990): warning C4996:
+         'bsrsv2Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(993): warning C4996:
+         'cusparseSolvePolicy_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1009): warning C4996:
+         'bsrsv2Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1012): warning C4996:
+         'cusparseSolvePolicy_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1028): warning C4996:
+         'bsrsv2Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1031): warning C4996:
+         'cusparseSolvePolicy_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1129): warning C4996:
+         'bsrsm2Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1146): warning C4996:
+         'bsrsm2Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1163): warning C4996:
+         'bsrsm2Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1180): warning C4996:
+         'bsrsm2Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1197): warning C4996:
+         'bsrsm2Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1214): warning C4996:
+         'bsrsm2Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1231): warning C4996:
+         'bsrsm2Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1248): warning C4996:
+         'bsrsm2Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1265): warning C4996:
+         'bsrsm2Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1282): warning C4996:
+         'bsrsm2Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1283): warning C4996:
+         'cusparseSolvePolicy_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1300): warning C4996:
+         'bsrsm2Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1301): warning C4996:
+         'cusparseSolvePolicy_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1318): warning C4996:
+         'bsrsm2Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1319): warning C4996:
+         'cusparseSolvePolicy_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1336): warning C4996:
+         'bsrsm2Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1337): warning C4996:
+         'cusparseSolvePolicy_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1355): warning C4996:
+         'bsrsm2Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1360): warning C4996:
+         'cusparseSolvePolicy_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1378): warning C4996:
+         'bsrsm2Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1383): warning C4996:
+         'cusparseSolvePolicy_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1401): warning C4996:
+         'bsrsm2Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1406): warning C4996:
+         'cusparseSolvePolicy_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1424): warning C4996:
+         'bsrsm2Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1429): warning C4996:
+         'cusparseSolvePolicy_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1439): warning C4996:
+         'csrilu02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1447): warning C4996:
+         'csrilu02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1455): warning C4996:
+         'csrilu02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1463): warning C4996:
+         'csrilu02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1471): warning C4996:
+         'csrilu02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1483): warning C4996:
+         'csrilu02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1495): warning C4996:
+         'csrilu02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1507): warning C4996:
+         'csrilu02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1519): warning C4996:
+         'csrilu02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1531): warning C4996:
+         'csrilu02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1543): warning C4996:
+         'csrilu02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1555): warning C4996:
+         'csrilu02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1567): warning C4996:
+         'csrilu02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1579): warning C4996:
+         'csrilu02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1580): warning C4996:
+         'cusparseSolvePolicy_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1592): warning C4996:
+         'csrilu02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1593): warning C4996:
+         'cusparseSolvePolicy_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1605): warning C4996:
+         'csrilu02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1606): warning C4996:
+         'cusparseSolvePolicy_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1618): warning C4996:
+         'csrilu02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1619): warning C4996:
+         'cusparseSolvePolicy_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1631): warning C4996:
+         'csrilu02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1632): warning C4996:
+         'cusparseSolvePolicy_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1644): warning C4996:
+         'csrilu02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1645): warning C4996:
+         'cusparseSolvePolicy_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1657): warning C4996:
+         'csrilu02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1658): warning C4996:
+         'cusparseSolvePolicy_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1670): warning C4996:
+         'csrilu02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1671): warning C4996:
+         'cusparseSolvePolicy_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1677): warning C4996:
+         'bsrilu02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1685): warning C4996:
+         'bsrilu02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1693): warning C4996:
+         'bsrilu02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1701): warning C4996:
+         'bsrilu02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1709): warning C4996:
+         'bsrilu02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1723): warning C4996:
+         'bsrilu02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1737): warning C4996:
+         'bsrilu02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1751): warning C4996:
+         'bsrilu02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1765): warning C4996:
+         'bsrilu02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1779): warning C4996:
+         'bsrilu02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1793): warning C4996:
+         'bsrilu02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1807): warning C4996:
+         'bsrilu02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1821): warning C4996:
+         'bsrilu02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1835): warning C4996:
+         'bsrilu02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1836): warning C4996:
+         'cusparseSolvePolicy_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1850): warning C4996:
+         'bsrilu02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1851): warning C4996:
+         'cusparseSolvePolicy_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1865): warning C4996:
+         'bsrilu02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1866): warning C4996:
+         'cusparseSolvePolicy_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1880): warning C4996:
+         'bsrilu02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1881): warning C4996:
+         'cusparseSolvePolicy_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1895): warning C4996:
+         'bsrilu02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1896): warning C4996:
+         'cusparseSolvePolicy_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1910): warning C4996:
+         'bsrilu02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1911): warning C4996:
+         'cusparseSolvePolicy_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1925): warning C4996:
+         'bsrilu02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1926): warning C4996:
+         'cusparseSolvePolicy_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1940): warning C4996:
+         'bsrilu02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1941): warning C4996:
+         'cusparseSolvePolicy_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1947): warning C4996:
+         'csric02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1959): warning C4996:
+         'csric02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1971): warning C4996:
+         'csric02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1983): warning C4996:
+         'csric02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1995): warning C4996:
+         'csric02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2007): warning C4996:
+         'csric02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2019): warning C4996:
+         'csric02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2031): warning C4996:
+         'csric02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2043): warning C4996:
+         'csric02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2055): warning C4996:
+         'csric02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2056): warning C4996:
+         'cusparseSolvePolicy_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2068): warning C4996:
+         'csric02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2069): warning C4996:
+         'cusparseSolvePolicy_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2081): warning C4996:
+         'csric02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2082): warning C4996:
+         'cusparseSolvePolicy_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2094): warning C4996:
+         'csric02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2095): warning C4996:
+         'cusparseSolvePolicy_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2107): warning C4996:
+         'csric02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2108): warning C4996:
+         'cusparseSolvePolicy_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2120): warning C4996:
+         'csric02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2121): warning C4996:
+         'cusparseSolvePolicy_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2133): warning C4996:
+         'csric02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2134): warning C4996:
+         'cusparseSolvePolicy_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2146): warning C4996:
+         'csric02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2147): warning C4996:
+         'cusparseSolvePolicy_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2153): warning C4996:
+         'bsric02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2167): warning C4996:
+         'bsric02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2181): warning C4996:
+         'bsric02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2195): warning C4996:
+         'bsric02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2209): warning C4996:
+         'bsric02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2223): warning C4996:
+         'bsric02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2237): warning C4996:
+         'bsric02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2251): warning C4996:
+         'bsric02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2265): warning C4996:
+         'bsric02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2279): warning C4996:
+         'bsric02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2280): warning C4996:
+         'cusparseSolvePolicy_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2294): warning C4996:
+         'bsric02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2295): warning C4996:
+         'cusparseSolvePolicy_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2309): warning C4996:
+         'bsric02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2310): warning C4996:
+         'cusparseSolvePolicy_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2324): warning C4996:
+         'bsric02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2325): warning C4996:
+         'cusparseSolvePolicy_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2339): warning C4996:
+         'bsric02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2340): warning C4996:
+         'cusparseSolvePolicy_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2354): warning C4996:
+         'bsric02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2355): warning C4996:
+         'cusparseSolvePolicy_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2370): warning C4996:
+         'bsric02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2371): warning C4996:
+         'cusparseSolvePolicy_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2385): warning C4996:
+         'bsric02Info_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2386): warning C4996:
+         'cusparseSolvePolicy_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(3059): warning C4996:
+         'cusparseColorInfo_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(3074): warning C4996:
+         'cusparseColorInfo_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(3089): warning C4996:
+         'cusparseColorInfo_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(3104): warning C4996:
+         'cusparseColorInfo_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(4185): warning C4996:
+         'csru2csrInfo_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(4197): warning C4996:
+         'csru2csrInfo_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(4209): warning C4996:
+         'csru2csrInfo_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(4221): warning C4996:
+         'csru2csrInfo_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(4234): warning C4996:
+         'csru2csrInfo_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(4247): warning C4996:
+         'csru2csrInfo_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(4260): warning C4996:
+         'csru2csrInfo_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(4273): warning C4996:
+         'csru2csrInfo_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(4286): warning C4996:
+         'csru2csrInfo_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(4299): warning C4996:
+         'csru2csrInfo_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(4312): warning C4996:
+         'csru2csrInfo_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(4325): warning C4996:
+         'csru2csrInfo_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(4634): warning C4996:
+         'pruneInfo_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(4652): warning C4996:
+         'pruneInfo_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(4668): warning C4996:
+         'pruneInfo_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(4685): warning C4996:
+         'pruneInfo_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(4701): warning C4996:
+         'pruneInfo_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(4716): warning C4996:
+         'pruneInfo_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(4733): warning C4996:
+         'pruneInfo_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(4750): warning C4996:
+         'pruneInfo_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(4765): warning C4996:
+         'pruneInfo_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(4786): warning C4996:
+         'pruneInfo_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(4807): warning C4996:
+         'pruneInfo_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(4826): warning C4996:
+         'pruneInfo_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(4846): warning C4996:
+         'pruneInfo_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(4866): warning C4996:
+         'pruneInfo_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(4884): warning C4996:
+         'pruneInfo_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(4904): warning C4996:
+         'pruneInfo_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(4924): warning C4996:
+         'pruneInfo_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(4942): warning C4996:
+         'pruneInfo_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(6243): warning C4996:
+         'cusparseSpMMOpPlan_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(6250): warning C4996:
+         'cusparseSpMMOpAlg_t': The enum will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(6261): warning C4996:
+         'cusparseSpMMOpPlan_t': The type will be removed in the next major release
+         D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(6266): warning C4996:
+         'cusparseSpMMOpPlan_t': The type will be removed in the next major release
+         LINK : fatal error LNK1104: Datei "kernel32.lib" kann nicht ge�ffnet werden.
+         Cannot build a stub file.
+         Original error: Command '['D:\\Programs\\Microsoft Visual
+         Studio\\18\\BuildTools\\VC\\Tools\\MSVC\\14.50.35717\\bin\\HostX86\\x64\\link.exe',
+         '/nologo', '/INCREMENTAL:NO', '/LTCG', '/LIBPATH:D:\\Programs\\Microsoft
+         Visual Studio\\18\\BuildTools\\VC\\Tools\\MSVC\\14.50.35717\\lib\\x64',
+         '/LIBPATH:C:\\Program Files (x86)\\Windows Kits\\10\\lib\\10.0.10240.0\\ucrt\\x64',
+         'C:\\Users\\MAXIZW~1\\AppData\\Local\\Temp\\tmp3ehlad7z\\Users\\MAXIZW~1\\AppData\\Local\\Temp\\tmp3ehlad7z\\a.obj',
+         '/OUT:C:\\Users\\MAXIZW~1\\AppData\\Local\\Temp\\tmp3ehlad7z\\a.dll', '/MANIFEST']' returned non-zero exit
+         status 1104.
+         a.cpp
+         LINK : fatal error LNK1104: Datei "uuid.lib" kann nicht ge�ffnet werden.
+         **************************************************
+         *** WARNING: Cannot check compute capability
+         Cannot build a stub file.
+         Original error: Command '['D:\\Programs\\Microsoft Visual
+         Studio\\18\\BuildTools\\VC\\Tools\\MSVC\\14.50.35717\\bin\\HostX86\\x64\\link.exe', '/nologo',
+         '/INCREMENTAL:NO', '/LTCG', '/MANIFEST:EMBED,ID=1', '/LIBPATH:D:\\Program Files\\NVIDIA GPU Computing
+         Toolkit\\CUDA\\v13.4\\bin', '/LIBPATH:D:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v13.4\\lib\\x64',
+         '/LIBPATH:D:\\Programs\\Microsoft Visual Studio\\18\\BuildTools\\VC\\Tools\\MSVC\\14.50.35717\\lib\\x64',
+         '/LIBPATH:C:\\Program Files (x86)\\Windows Kits\\10\\lib\\10.0.10240.0\\ucrt\\x64', 'cudart.lib',
+         'C:\\Users\\MAXIZW~1\\AppData\\Local\\Temp\\tmp7_2aedfe\\Users\\MAXIZW~1\\AppData\\Local\\Temp\\tmp7_2aedfe\\a.obj',
+         '/OUT:C:\\Users\\MAXIZW~1\\AppData\\Local\\Temp\\tmp7_2aedfe\\a.exe', '/MANIFEST']' returned non-zero exit
+         status 1104.
+         **************************************************
+
+         ************************************************************
+         * CuPy Configuration Summary                               *
+         ************************************************************
+
+         Build Environment:
+           Include directories:
+         ['D:\\Users\\IRScope\\Documents\\python_cache\\uv\\sdists-v10\\pypi\\cupy\\14.2.0\\Q-zR3LyCQQ6Ue2-q\\src\\cupy/_core/include\\cupy/_cccl/libcudacxx',
+         'D:\\Users\\IRScope\\Documents\\python_cache\\uv\\sdists-v10\\pypi\\cupy\\14.2.0\\Q-zR3LyCQQ6Ue2-q\\src\\cupy/_core/include\\cupy/_cccl/thrust',
+         'D:\\Users\\IRScope\\Documents\\python_cache\\uv\\sdists-v10\\pypi\\cupy\\14.2.0\\Q-zR3LyCQQ6Ue2-q\\src\\cupy/_core/include\\cupy/_cccl/cub',
+         'D:\\Users\\IRScope\\Documents\\python_cache\\uv\\sdists-v10\\pypi\\cupy\\14.2.0\\Q-zR3LyCQQ6Ue2-q\\src\\cupy/_core/include',
+         'D:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v13.4\\include',
+         'D:\\Users\\IRScope\\Documents\\python_cache\\uv\\builds-v0\\.tmpqvFBKB\\Lib\\site-packages\\numpy\\_core\\include']
+           Library directories: ['D:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v13.4\\bin', 'D:\\Program
+         Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v13.4\\lib\\x64']
+           nvcc command       : ['D:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v13.4\\bin/nvcc.exe']
+           hipcc command      : (not found)
+
+         Environment Variables:
+           CFLAGS          : (none)
+           LDFLAGS         : (none)
+           LIBRARY_PATH    : (none)
+           CUDA_PATH       : D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4
+           NVCC            : (none)
+           HIPCC           : (none)
+           ROCM_HOME       : (none)
+
+         Modules:
+           cuda      : No
+             -> Include files not found: ['cublas_v2.h', 'cuda.h', 'cuda_profiler_api.h', 'cuda_runtime.h', 'cufft.h',
+         'curand.h', 'cusparse.h']
+             -> Check your CFLAGS environment variable.
+
+         ERROR: CUDA could not be found on your system.
+
+         HINT: You are trying to build CuPy from source, which is NOT recommended for general use.
+               Please consider using binary packages instead.
+
+         Please refer to the Installation Guide for details:
+         https://docs.cupy.dev/en/stable/install.html
+
+         ************************************************************
+
+
+         [stderr]
+         Traceback (most recent call last):
+           File "<string>", line 14, in <module>
+           File
+         "D:\Users\IRScope\Documents\python_cache\uv\builds-v0\.tmpqvFBKB\Lib\site-packages\setuptools\build_meta.py",
+         line 333, in get_requires_for_build_wheel
+             return self._get_build_requires(config_settings, requirements=[])
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+           File
+         "D:\Users\IRScope\Documents\python_cache\uv\builds-v0\.tmpqvFBKB\Lib\site-packages\setuptools\build_meta.py",
+         line 301, in _get_build_requires
+             self.run_setup()
+           File
+         "D:\Users\IRScope\Documents\python_cache\uv\builds-v0\.tmpqvFBKB\Lib\site-packages\setuptools\build_meta.py",
+         line 317, in run_setup
+             exec(code, locals())  # noqa: S102 # exec is intentional here
+             ^^^^^^^^^^^^^^^^^^^^
+           File "<string>", line 56, in <module>
+           File
+         "D:\Users\IRScope\Documents\python_cache\uv\sdists-v10\pypi\cupy\14.2.0\Q-zR3LyCQQ6Ue2-q\src\install\cupy_builder\cupy_setup_build.py",
+         line 560, in get_ext_modules
+             extensions = make_extensions(ctx, compiler, use_cython)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+           File
+         "D:\Users\IRScope\Documents\python_cache\uv\sdists-v10\pypi\cupy\14.2.0\Q-zR3LyCQQ6Ue2-q\src\install\cupy_builder\cupy_setup_build.py",
+         line 412, in make_extensions
+             raise Exception('Your CUDA environment is invalid. '
+         Exception: Your CUDA environment is invalid. Please check above error log.
+
+hint: Build failures usually indicate a problem with the package or the build environment
+[Warning] uv package install failed. Falling back to pip.
+Collecting cupy (from -r D:\Users\IRScope\Documents\Repositories\PyApp-Template - Kopie\code\backend\dev_tools\change python packages\auto_found_required_packages_noVersion.txt (line 1))
+  Downloading cupy-14.2.0.tar.gz (4.1 MB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 4.1/4.1 MB 15.2 MB/s  0:00:00
+  Installing build dependencies ... done
+  Getting requirements to build wheel ... error
+  error: subprocess-exited-with-error
+
+  × Getting requirements to build wheel did not run successfully.
+  │ exit code: 1
+  ╰─> [290 lines of output]
+      Generating CUPY_CACHE_KEY from header files...
+      CUPY_CACHE_KEY (2013 files matching C:\Users\Maxi Zwingt Mich\AppData\Local\Temp\pip-install-vp6zcroo\cupy_e265385a22e14ecbb489ba8beff3c097\cupy\_core\include\**): 143ccd26f46b8894225ba40855966924822009bc
+      Looking for NVTX from: ['C:\\Program Files\\NVIDIA Corporation\\Nsight Systems 2026.3.2\\target-windows-x64\\nvtx', 'D:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v13.4\\include']
+      Using NVTX at: D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include
+
+      -------- Configuring Module: cuda --------
+      a.cpp
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(434): warning C4996: 'csric02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(438): warning C4996: 'csric02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(442): warning C4996: 'bsric02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(446): warning C4996: 'bsric02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(450): warning C4996: 'csrilu02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(454): warning C4996: 'csrilu02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(458): warning C4996: 'bsrilu02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(462): warning C4996: 'bsrilu02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(466): warning C4996: 'bsrsv2Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(470): warning C4996: 'bsrsv2Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(474): warning C4996: 'bsrsm2Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(478): warning C4996: 'bsrsm2Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(482): warning C4996: 'csru2csrInfo_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(486): warning C4996: 'csru2csrInfo_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(490): warning C4996: 'cusparseColorInfo_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(494): warning C4996: 'cusparseColorInfo_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(498): warning C4996: 'pruneInfo_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(502): warning C4996: 'pruneInfo_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(771): warning C4996: 'bsrsv2Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(786): warning C4996: 'bsrsv2Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(801): warning C4996: 'bsrsv2Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(816): warning C4996: 'bsrsv2Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(831): warning C4996: 'bsrsv2Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(846): warning C4996: 'bsrsv2Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(861): warning C4996: 'bsrsv2Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(876): warning C4996: 'bsrsv2Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(891): warning C4996: 'bsrsv2Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(906): warning C4996: 'bsrsv2Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(907): warning C4996: 'cusparseSolvePolicy_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(922): warning C4996: 'bsrsv2Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(923): warning C4996: 'cusparseSolvePolicy_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(938): warning C4996: 'bsrsv2Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(939): warning C4996: 'cusparseSolvePolicy_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(954): warning C4996: 'bsrsv2Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(955): warning C4996: 'cusparseSolvePolicy_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(971): warning C4996: 'bsrsv2Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(974): warning C4996: 'cusparseSolvePolicy_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(990): warning C4996: 'bsrsv2Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(993): warning C4996: 'cusparseSolvePolicy_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1009): warning C4996: 'bsrsv2Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1012): warning C4996: 'cusparseSolvePolicy_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1028): warning C4996: 'bsrsv2Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1031): warning C4996: 'cusparseSolvePolicy_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1129): warning C4996: 'bsrsm2Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1146): warning C4996: 'bsrsm2Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1163): warning C4996: 'bsrsm2Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1180): warning C4996: 'bsrsm2Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1197): warning C4996: 'bsrsm2Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1214): warning C4996: 'bsrsm2Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1231): warning C4996: 'bsrsm2Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1248): warning C4996: 'bsrsm2Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1265): warning C4996: 'bsrsm2Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1282): warning C4996: 'bsrsm2Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1283): warning C4996: 'cusparseSolvePolicy_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1300): warning C4996: 'bsrsm2Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1301): warning C4996: 'cusparseSolvePolicy_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1318): warning C4996: 'bsrsm2Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1319): warning C4996: 'cusparseSolvePolicy_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1336): warning C4996: 'bsrsm2Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1337): warning C4996: 'cusparseSolvePolicy_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1355): warning C4996: 'bsrsm2Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1360): warning C4996: 'cusparseSolvePolicy_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1378): warning C4996: 'bsrsm2Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1383): warning C4996: 'cusparseSolvePolicy_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1401): warning C4996: 'bsrsm2Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1406): warning C4996: 'cusparseSolvePolicy_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1424): warning C4996: 'bsrsm2Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1429): warning C4996: 'cusparseSolvePolicy_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1439): warning C4996: 'csrilu02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1447): warning C4996: 'csrilu02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1455): warning C4996: 'csrilu02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1463): warning C4996: 'csrilu02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1471): warning C4996: 'csrilu02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1483): warning C4996: 'csrilu02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1495): warning C4996: 'csrilu02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1507): warning C4996: 'csrilu02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1519): warning C4996: 'csrilu02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1531): warning C4996: 'csrilu02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1543): warning C4996: 'csrilu02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1555): warning C4996: 'csrilu02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1567): warning C4996: 'csrilu02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1579): warning C4996: 'csrilu02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1580): warning C4996: 'cusparseSolvePolicy_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1592): warning C4996: 'csrilu02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1593): warning C4996: 'cusparseSolvePolicy_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1605): warning C4996: 'csrilu02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1606): warning C4996: 'cusparseSolvePolicy_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1618): warning C4996: 'csrilu02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1619): warning C4996: 'cusparseSolvePolicy_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1631): warning C4996: 'csrilu02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1632): warning C4996: 'cusparseSolvePolicy_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1644): warning C4996: 'csrilu02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1645): warning C4996: 'cusparseSolvePolicy_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1657): warning C4996: 'csrilu02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1658): warning C4996: 'cusparseSolvePolicy_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1670): warning C4996: 'csrilu02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1671): warning C4996: 'cusparseSolvePolicy_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1677): warning C4996: 'bsrilu02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1685): warning C4996: 'bsrilu02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1693): warning C4996: 'bsrilu02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1701): warning C4996: 'bsrilu02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1709): warning C4996: 'bsrilu02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1723): warning C4996: 'bsrilu02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1737): warning C4996: 'bsrilu02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1751): warning C4996: 'bsrilu02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1765): warning C4996: 'bsrilu02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1779): warning C4996: 'bsrilu02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1793): warning C4996: 'bsrilu02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1807): warning C4996: 'bsrilu02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1821): warning C4996: 'bsrilu02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1835): warning C4996: 'bsrilu02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1836): warning C4996: 'cusparseSolvePolicy_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1850): warning C4996: 'bsrilu02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1851): warning C4996: 'cusparseSolvePolicy_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1865): warning C4996: 'bsrilu02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1866): warning C4996: 'cusparseSolvePolicy_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1880): warning C4996: 'bsrilu02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1881): warning C4996: 'cusparseSolvePolicy_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1895): warning C4996: 'bsrilu02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1896): warning C4996: 'cusparseSolvePolicy_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1910): warning C4996: 'bsrilu02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1911): warning C4996: 'cusparseSolvePolicy_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1925): warning C4996: 'bsrilu02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1926): warning C4996: 'cusparseSolvePolicy_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1940): warning C4996: 'bsrilu02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1941): warning C4996: 'cusparseSolvePolicy_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1947): warning C4996: 'csric02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1959): warning C4996: 'csric02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1971): warning C4996: 'csric02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1983): warning C4996: 'csric02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(1995): warning C4996: 'csric02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2007): warning C4996: 'csric02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2019): warning C4996: 'csric02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2031): warning C4996: 'csric02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2043): warning C4996: 'csric02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2055): warning C4996: 'csric02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2056): warning C4996: 'cusparseSolvePolicy_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2068): warning C4996: 'csric02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2069): warning C4996: 'cusparseSolvePolicy_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2081): warning C4996: 'csric02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2082): warning C4996: 'cusparseSolvePolicy_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2094): warning C4996: 'csric02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2095): warning C4996: 'cusparseSolvePolicy_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2107): warning C4996: 'csric02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2108): warning C4996: 'cusparseSolvePolicy_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2120): warning C4996: 'csric02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2121): warning C4996: 'cusparseSolvePolicy_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2133): warning C4996: 'csric02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2134): warning C4996: 'cusparseSolvePolicy_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2146): warning C4996: 'csric02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2147): warning C4996: 'cusparseSolvePolicy_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2153): warning C4996: 'bsric02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2167): warning C4996: 'bsric02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2181): warning C4996: 'bsric02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2195): warning C4996: 'bsric02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2209): warning C4996: 'bsric02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2223): warning C4996: 'bsric02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2237): warning C4996: 'bsric02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2251): warning C4996: 'bsric02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2265): warning C4996: 'bsric02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2279): warning C4996: 'bsric02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2280): warning C4996: 'cusparseSolvePolicy_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2294): warning C4996: 'bsric02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2295): warning C4996: 'cusparseSolvePolicy_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2309): warning C4996: 'bsric02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2310): warning C4996: 'cusparseSolvePolicy_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2324): warning C4996: 'bsric02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2325): warning C4996: 'cusparseSolvePolicy_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2339): warning C4996: 'bsric02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2340): warning C4996: 'cusparseSolvePolicy_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2354): warning C4996: 'bsric02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2355): warning C4996: 'cusparseSolvePolicy_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2370): warning C4996: 'bsric02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2371): warning C4996: 'cusparseSolvePolicy_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2385): warning C4996: 'bsric02Info_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(2386): warning C4996: 'cusparseSolvePolicy_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(3059): warning C4996: 'cusparseColorInfo_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(3074): warning C4996: 'cusparseColorInfo_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(3089): warning C4996: 'cusparseColorInfo_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(3104): warning C4996: 'cusparseColorInfo_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(4185): warning C4996: 'csru2csrInfo_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(4197): warning C4996: 'csru2csrInfo_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(4209): warning C4996: 'csru2csrInfo_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(4221): warning C4996: 'csru2csrInfo_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(4234): warning C4996: 'csru2csrInfo_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(4247): warning C4996: 'csru2csrInfo_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(4260): warning C4996: 'csru2csrInfo_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(4273): warning C4996: 'csru2csrInfo_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(4286): warning C4996: 'csru2csrInfo_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(4299): warning C4996: 'csru2csrInfo_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(4312): warning C4996: 'csru2csrInfo_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(4325): warning C4996: 'csru2csrInfo_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(4634): warning C4996: 'pruneInfo_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(4652): warning C4996: 'pruneInfo_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(4668): warning C4996: 'pruneInfo_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(4685): warning C4996: 'pruneInfo_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(4701): warning C4996: 'pruneInfo_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(4716): warning C4996: 'pruneInfo_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(4733): warning C4996: 'pruneInfo_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(4750): warning C4996: 'pruneInfo_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(4765): warning C4996: 'pruneInfo_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(4786): warning C4996: 'pruneInfo_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(4807): warning C4996: 'pruneInfo_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(4826): warning C4996: 'pruneInfo_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(4846): warning C4996: 'pruneInfo_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(4866): warning C4996: 'pruneInfo_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(4884): warning C4996: 'pruneInfo_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(4904): warning C4996: 'pruneInfo_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(4924): warning C4996: 'pruneInfo_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(4942): warning C4996: 'pruneInfo_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(6243): warning C4996: 'cusparseSpMMOpPlan_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(6250): warning C4996: 'cusparseSpMMOpAlg_t': The enum will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(6261): warning C4996: 'cusparseSpMMOpPlan_t': The type will be removed in the next major release
+      D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include\cusparse.h(6266): warning C4996: 'cusparseSpMMOpPlan_t': The type will be removed in the next major release
+      LINK : fatal error LNK1104: Datei "kernel32.lib" kann nicht ge”ffnet werden.
+      Cannot build a stub file.
+      Original error: Command '['D:\\Programs\\Microsoft Visual Studio\\18\\BuildTools\\VC\\Tools\\MSVC\\14.50.35717\\bin\\HostX86\\x64\\link.exe', '/nologo', '/INCREMENTAL:NO', '/LTCG', '/LIBPATH:D:\\Programs\\Microsoft Visual Studio\\18\\BuildTools\\VC\\Tools\\MSVC\\14.50.35717\\lib\\x64', '/LIBPATH:C:\\Program Files (x86)\\Windows Kits\\10\\lib\\10.0.10240.0\\ucrt\\x64', 'C:\\Users\\MAXIZW~1\\AppData\\Local\\Temp\\tmp_tbj_xad\\Users\\MAXIZW~1\\AppData\\Local\\Temp\\tmp_tbj_xad\\a.obj', '/OUT:C:\\Users\\MAXIZW~1\\AppData\\Local\\Temp\\tmp_tbj_xad\\a.dll', '/MANIFEST']' returned non-zero exit status 1104.
+      a.cpp
+      LINK : fatal error LNK1104: Datei "uuid.lib" kann nicht ge”ffnet werden.
+      **************************************************
+      *** WARNING: Cannot check compute capability
+      Cannot build a stub file.
+      Original error: Command '['D:\\Programs\\Microsoft Visual Studio\\18\\BuildTools\\VC\\Tools\\MSVC\\14.50.35717\\bin\\HostX86\\x64\\link.exe', '/nologo', '/INCREMENTAL:NO', '/LTCG', '/MANIFEST:EMBED,ID=1', '/LIBPATH:D:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v13.4\\bin', '/LIBPATH:D:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v13.4\\lib\\x64', '/LIBPATH:D:\\Programs\\Microsoft Visual Studio\\18\\BuildTools\\VC\\Tools\\MSVC\\14.50.35717\\lib\\x64', '/LIBPATH:C:\\Program Files (x86)\\Windows Kits\\10\\lib\\10.0.10240.0\\ucrt\\x64', 'cudart.lib', 'C:\\Users\\MAXIZW~1\\AppData\\Local\\Temp\\tmp0oy4q1cp\\Users\\MAXIZW~1\\AppData\\Local\\Temp\\tmp0oy4q1cp\\a.obj', '/OUT:C:\\Users\\MAXIZW~1\\AppData\\Local\\Temp\\tmp0oy4q1cp\\a.exe', '/MANIFEST']' returned non-zero exit status 1104.
+      **************************************************
+
+      ************************************************************
+      * CuPy Configuration Summary                               *
+      ************************************************************
+
+      Build Environment:
+        Include directories: ['C:\\Users\\Maxi Zwingt Mich\\AppData\\Local\\Temp\\pip-install-vp6zcroo\\cupy_e265385a22e14ecbb489ba8beff3c097\\cupy/_core/include\\cupy/_cccl/libcudacxx', 'C:\\Users\\Maxi Zwingt Mich\\AppData\\Local\\Temp\\pip-install-vp6zcroo\\cupy_e265385a22e14ecbb489ba8beff3c097\\cupy/_core/include\\cupy/_cccl/thrust', 'C:\\Users\\Maxi Zwingt Mich\\AppData\\Local\\Temp\\pip-install-vp6zcroo\\cupy_e265385a22e14ecbb489ba8beff3c097\\cupy/_core/include\\cupy/_cccl/cub', 'C:\\Users\\Maxi Zwingt Mich\\AppData\\Local\\Temp\\pip-install-vp6zcroo\\cupy_e265385a22e14ecbb489ba8beff3c097\\cupy/_core/include', 'D:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v13.4\\include', 'C:\\Users\\Maxi Zwingt Mich\\AppData\\Local\\Temp\\pip-build-env-z25vt42y\\overlay\\Lib\\site-packages\\numpy\\_core\\include']
+        Library directories: ['D:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v13.4\\bin', 'D:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v13.4\\lib\\x64']
+        nvcc command       : ['D:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v13.4\\bin/nvcc.exe']
+        hipcc command      : (not found)
+
+      Environment Variables:
+        CFLAGS          : (none)
+        LDFLAGS         : (none)
+        LIBRARY_PATH    : (none)
+        CUDA_PATH       : D:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4
+        NVCC            : (none)
+        HIPCC           : (none)
+        ROCM_HOME       : (none)
+
+      Modules:
+        cuda      : No
+          -> Include files not found: ['cublas_v2.h', 'cuda.h', 'cuda_profiler_api.h', 'cuda_runtime.h', 'cufft.h', 'curand.h', 'cusparse.h']
+          -> Check your CFLAGS environment variable.
+
+      ERROR: CUDA could not be found on your system.
+
+      HINT: You are trying to build CuPy from source, which is NOT recommended for general use.
+            Please consider using binary packages instead.
+
+      Please refer to the Installation Guide for details:
+      https://docs.cupy.dev/en/stable/install.html
+
+      ************************************************************
+
+      Traceback (most recent call last):
+        File "D:\Users\IRScope\Documents\Repositories\PyApp-Template - Kopie\code\backend\python\Lib\site-packages\pip\_vendor\pyproject_hooks\_in_process\_in_process.py", line 389, in <module>
+          main()
+        File "D:\Users\IRScope\Documents\Repositories\PyApp-Template - Kopie\code\backend\python\Lib\site-packages\pip\_vendor\pyproject_hooks\_in_process\_in_process.py", line 373, in main
+          json_out["return_val"] = hook(**hook_input["kwargs"])
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        File "D:\Users\IRScope\Documents\Repositories\PyApp-Template - Kopie\code\backend\python\Lib\site-packages\pip\_vendor\pyproject_hooks\_in_process\_in_process.py", line 143, in get_requires_for_build_wheel
+          return hook(config_settings)
+                 ^^^^^^^^^^^^^^^^^^^^^
+        File "C:\Users\Maxi Zwingt Mich\AppData\Local\Temp\pip-build-env-z25vt42y\overlay\Lib\site-packages\setuptools\build_meta.py", line 333, in get_requires_for_build_wheel
+          return self._get_build_requires(config_settings, requirements=[])
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        File "C:\Users\Maxi Zwingt Mich\AppData\Local\Temp\pip-build-env-z25vt42y\overlay\Lib\site-packages\setuptools\build_meta.py", line 301, in _get_build_requires
+          self.run_setup()
+        File "C:\Users\Maxi Zwingt Mich\AppData\Local\Temp\pip-build-env-z25vt42y\overlay\Lib\site-packages\setuptools\build_meta.py", line 317, in run_setup
+          exec(code, locals())  # noqa: S102 # exec is intentional here
+          ^^^^^^^^^^^^^^^^^^^^
+        File "<string>", line 56, in <module>
+        File "C:\Users\Maxi Zwingt Mich\AppData\Local\Temp\pip-install-vp6zcroo\cupy_e265385a22e14ecbb489ba8beff3c097\install\cupy_builder\cupy_setup_build.py", line 560, in get_ext_modules
+          extensions = make_extensions(ctx, compiler, use_cython)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        File "C:\Users\Maxi Zwingt Mich\AppData\Local\Temp\pip-install-vp6zcroo\cupy_e265385a22e14ecbb489ba8beff3c097\install\cupy_builder\cupy_setup_build.py", line 412, in make_extensions
+          raise Exception('Your CUDA environment is invalid. '
+      Exception: Your CUDA environment is invalid. Please check above error log.
+      [end of output]
+
+  note: This error originates from a subprocess, and is likely not a problem with pip.
+ERROR: Failed to build 'cupy' when getting requirements to build wheel
+
+
+==============================
+[Error] Failed to install packages: Command '['D:\\Users\\IRScope\\Documents\\Repositories\\PyApp-Template - Kopie\\code\\backend\\python\\python.exe', '-m', 'pip', 'install', '-r', 'D:\\Users\\IRScope\\Documents\\Repositories\\PyApp-Template - Kopie\\code\\backend\\dev_tools\\change python packages\\auto_found_required_packages_noVersion.txt', '--target', 'D:\\Users\\IRScope\\Documents\\Repositories\\PyApp-Template - Kopie\\code\\backend\\packages', '--upgrade', '--disable-pip-version-check', '--no-warn-script-location']' returned non-zero exit status 1.
+------------------------------
+╭─────────────────────────────── Traceback (most recent call last) ────────────────────────────────╮
+│ D:\Users\IRScope\Documents\Repositories\PyApp-Template -                                         │
+│ Kopie\code\backend\DONT_CHANGE\scripts\setup\..\..\..\..\backend\DONT_CHANGE\scripts\common_code │
+│ .py:749 in install_packages_from_file                                                            │
+│                                                                                                  │
+│   746 │   │   set_terminal_appearance_once(app_id_for_slow)                                      │
+│   747 │                                                                                          │
+│   748 │   try:                                                                                   │
+│ ❱ 749 │   │   install_packages(                                                                  │
+│   750 │   │   │   python_exe=FRONTEND_PYTHON_EXE,                                                │
+│   751 │   │   │   requirements_file=path,                                                        │
+│   752 │   │   │   target=FRONTEND_PACKAGES_DIR,                                                  │
+│                                                                                                  │
+│ D:\Users\IRScope\Documents\Repositories\PyApp-Template -                                         │
+│ Kopie\code\backend\DONT_CHANGE\scripts\generic_helpers.py:2161 in install_packages               │
+│                                                                                                  │
+│   2158 │   │   │   f"[Warning] uv package {'uninstall' if uninstall else 'install'} failed. Fal  │
+│   2159 │   │   )                                                                                 │
+│   2160 │                                                                                         │
+│ ❱ 2161 │   return subprocess.run(pip_args, check=True)                                           │
+│   2162                                                                                           │
+│   2163                                                                                           │
+│   2164 def get_installed_packages(exe_path: str, with_version: bool = True):                     │
+│                                                                                                  │
+│ in run:571                                                                                       │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+CalledProcessError: Command '['D:\\Users\\IRScope\\Documents\\Repositories\\PyApp-Template -
+Kopie\\code\\backend\\python\\python.exe', '-m', 'pip', 'install', '-r',
+'D:\\Users\\IRScope\\Documents\\Repositories\\PyApp-Template - Kopie\\code\\backend\\dev_tools\\change python
+packages\\auto_found_required_packages_noVersion.txt', '--target',
+'D:\\Users\\IRScope\\Documents\\Repositories\\PyApp-Template - Kopie\\code\\backend\\packages', '--upgrade',
+'--disable-pip-version-check', '--no-warn-script-location']' returned non-zero exit status 1.
+
+The above exception was the direct cause of the following exception:
+
+╭─────────────────────────────── Traceback (most recent call last) ────────────────────────────────╮
+│ D:\Users\IRScope\Documents\Repositories\PyApp-Template -                                         │
+│ Kopie\code\backend\DONT_CHANGE\scripts\setup\generate_shortcuts.py:548 in <module>               │
+│                                                                                                  │
+│   545                                                                                            │
+│   546 if __name__ == "__main__":                                                                 │
+│   547 │   try:                                                                                   │
+│ ❱ 548 │   │   main()                                                                             │
+│   549 │   except Exception as error:                                                             │
+│   550 │   │   print_traceback(f"[Error] {error}")                                                │
+│   551 │   │   input("[Success] Press enter to exit")                                             │
+│                                                                                                  │
+│ D:\Users\IRScope\Documents\Repositories\PyApp-Template -                                         │
+│ Kopie\code\backend\DONT_CHANGE\scripts\setup\generate_shortcuts.py:455 in main                   │
+│                                                                                                  │
+│   452 │   │   app_id = app_id[:7] + app_id[-7:]                                                  │
+│   453 │                                                                                          │
+│   454 │   if install_python_when_generating_shortcuts and not use_global_python:                 │
+│ ❱ 455 │   │   ensure_frontend_packages(app_id)                                                   │
+│   456 │                                                                                          │
+│   457 │   print()                                                                                │
+│   458 │   print("=" * 30)                                                                        │
+│                                                                                                  │
+│ D:\Users\IRScope\Documents\Repositories\PyApp-Template -                                         │
+│ Kopie\code\backend\DONT_CHANGE\scripts\setup\..\..\..\..\backend\DONT_CHANGE\scripts\common_code │
+│ .py:692 in ensure_frontend_packages                                                              │
+│                                                                                                  │
+│   689 │   ensure_python_distro(used_appid_if_slow=used_appid_if_slow)                            │
+│   690 │                                                                                          │
+│   691 │   if not os.path.exists(FRONTEND_PACKAGES_DIR):  # packages folder not existing - case   │
+│ ❱ 692 │   │   install_default_packages(                                                          │
+│   693 │   │   │   check_auto_determine_flag=True, app_id_for_slow=used_appid_if_slow             │
+│   694 │   │   )                                                                                  │
+│   695                                                                                            │
+│                                                                                                  │
+│ D:\Users\IRScope\Documents\Repositories\PyApp-Template -                                         │
+│ Kopie\code\backend\DONT_CHANGE\scripts\setup\..\..\..\..\backend\DONT_CHANGE\scripts\common_code │
+│ .py:784 in install_default_packages                                                              │
+│                                                                                                  │
+│   781 │   │   │   success, p = save_requirements_of_root_folder_noVersion()                      │
+│   782 │   │   │                                                                                  │
+│   783 │   │   │   if success:                                                                    │
+│ ❱ 784 │   │   │   │   install_packages_from_file(p)                                              │
+│   785 │   │   │   │   save_current_packages_as_default(auto_search_phrase_state=False)           │
+│   786 │   │   │   │   return                                                                     │
+│   787 │   │   │   else:                                                                          │
+│                                                                                                  │
+│ D:\Users\IRScope\Documents\Repositories\PyApp-Template -                                         │
+│ Kopie\code\backend\DONT_CHANGE\scripts\setup\..\..\..\..\backend\DONT_CHANGE\scripts\common_code │
+│ .py:764 in install_packages_from_file                                                            │
+│                                                                                                  │
+│   761 │   │   │   │   f"Failed to install packages because cannot reach PyPI. Check internet,    │
+│   762 │   │   │   ) from e                                                                       │
+│   763 │   │   else:                                                                              │
+│ ❱ 764 │   │   │   raise RuntimeError(f"Failed to install packages: {e}") from e                  │
+│   765                                                                                            │
+│   766                                                                                            │
+│   767 def install_default_packages(                                                              │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+RuntimeError: Failed to install packages: Command '['D:\\Users\\IRScope\\Documents\\Repositories\\PyApp-Template -
+Kopie\\code\\backend\\python\\python.exe', '-m', 'pip', 'install', '-r',
+'D:\\Users\\IRScope\\Documents\\Repositories\\PyApp-Template - Kopie\\code\\backend\\dev_tools\\change python
+packages\\auto_found_required_packages_noVersion.txt', '--target',
+'D:\\Users\\IRScope\\Documents\\Repositories\\PyApp-Template - Kopie\\code\\backend\\packages', '--upgrade',
+'--disable-pip-version-check', '--no-warn-script-location']' returned non-zero exit status 1.
+==============================
+[Success] Press enter to exit^A
+
+
 ======================================
 ==== TODO LIST FOR PyApp-Template ====
 ======================================

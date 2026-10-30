@@ -1450,6 +1450,23 @@ def is_python_version_compatible(actual_version: str, required_version: str) -> 
 # Python installer
 
 
+def configure_python_package_path(
+    python_dir_abs_path: str, rel_path_to_packages: str
+) -> None:
+    """Register the shared package folder, including its .pth startup hooks."""
+    site_packages_dir = Path(python_dir_abs_path) / "Lib" / "site-packages"
+    site_packages_dir.mkdir(parents=True, exist_ok=True)
+    relative_path = rel_path_to_packages.replace("\\", "/")
+    content = (
+        "# Process shared packages and their .pth files at interpreter startup.\n"
+        "import os, site, sys; "
+        f"site.addsitedir(os.path.join(sys.prefix, {relative_path!r}))\n"
+    )
+    path_file = site_packages_dir / "_PATH_TO_PACKAGES_.pth"
+    if not path_file.exists() or path_file.read_text(encoding="utf-8") != content:
+        path_file.write_text(content, encoding="utf-8")
+
+
 def install_full_python(
     python_dir_abs_path: str,
     python_version: str = "",
@@ -1533,8 +1550,6 @@ def install_full_python(
     if not install_docs:
         blacklisted_file_patterns.append("doc.msi")  # Documentation component disabled.
     python_exe = python_dir_abs_path + "\\python.exe"
-    site_packages_dir = python_dir_abs_path + "\\Lib\\site-packages"
-    path_to_packages_file = site_packages_dir + "\\_PATH_TO_PACKAGES_.pth"
     ruff_config = python_dir_abs_path + "\\Lib\\test\\.ruff.toml"
     python_download_timeout_s = 120
     user_agent = "install-full-python/1.0"
@@ -1966,10 +1981,7 @@ def install_full_python(
 
     # tell python where to look for third party packages
     if rel_path_to_packages:
-        # .pth files work best with forward slashes:
-        write_lines(
-            path_to_packages_file, ["../../" + rel_path_to_packages.replace("\\", "/")]
-        )
+        configure_python_package_path(python_dir_abs_path, rel_path_to_packages)
 
     if print_:
         print()
