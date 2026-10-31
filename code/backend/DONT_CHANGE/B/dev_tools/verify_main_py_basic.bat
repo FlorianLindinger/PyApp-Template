@@ -27,7 +27,7 @@ set "target_script=..\..\scripts\dev_tools\verify_main_py.py"
 call "%ensure_backend_python_script%"
 :: exit on failure (print and confirm close handled in child):
 if not "%ERRORLEVEL%"=="0" (
-    exit 1
+    exit /b 1
 )
 
 :run

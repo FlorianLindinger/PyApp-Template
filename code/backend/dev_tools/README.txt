@@ -54,10 +54,10 @@ FRONTEND_VERIFICATION_EXCLUDED_FOLDERS,
 FRONTEND_VERIFICATION_VALID_PRESETS, and
 FRONTEND_VERIFICATION_DEFAULT_PRESET.
 
-Ruff reads its lint and formatting configuration from ../../pyproject.toml
-([tool.ruff]). Pyrefly also looks for a [tool.pyrefly] section in that file,
-but none is configured currently; its preset, targets, and exclusions therefore
-come from the verification launcher and backend_settings.py.
+Verification targets and exclusions are configured in
+../DONT_CHANGE/settings/backend_settings.py. The scripts run Ruff and Pyrefly
+with their available/default configuration; no pyproject.toml is shipped.
+Use the matching basic/default/strict verifier or the safe-fix launcher.
 
 
 CAUTION

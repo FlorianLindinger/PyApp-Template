@@ -1,168 +1,98 @@
 # PyApp-Template backend internals
 
-This folder is the portable Windows launcher layer of [PyApp-Template](https://github.com/FlorianLindinger/PyApp-Template).
-It creates and starts the local Python environments, generated shortcuts, logging, terminal behavior, process monitoring, and error handling around the application in `code/main.py`.
-Files here are not meant to be changed for the implementation of a specific app.
+This folder supplies the portable Windows x64 launcher, isolated app environment,
+logging, process tracking and completion handling around `code/main.py`.
+Application authors normally edit main.py, settings.py and backend/developer_settings.py.
 
-## Project structure
+## Runtime structure
 
-```text
-DONT_CHANGE/
-├── settings/                      Backend configuration and dependencies
-│   ├── backend_settings.py         Shared backend settings
-│   ├── backend_settings.ini        Embedded-Python settings
-│   ├── backend_packages.txt        Runtime dependency list
-│   └── backend_build_tools.txt     Installation dependency list
-├── backend_tools/                 Diagnostics and tests
-├── icon_related/                  Icon assets and instructions
-├── B/                             Batch launchers (short path length)
-│   ├── [*].bat                    Generated-shortcut targets (short path length)
-│   └── .../                       Folders containing helper and other launcher batches
-├── scripts/                       Python implementations
-│   ├── backend_tools/             Backend diagnostics
-│   ├── dev_tools/                 Development tools
-│   ├── git_hooks/                 Git hooks
-│   ├── icon/                      Icon related
-│   ├── setup/                     Installation and shortcuts
-│   ├── shortcut_targets/          Shortcut targets
-│   ├── tests/                     Test entry points
-│   ├── common_code.py             Shared launcher code
-│   └── generic_helpers.py         Shared generic utilities
-├── future/                        Experiments and deferred ideas
-└── ...                            Self-explanatory files and folders
-```
+- `settings/`: backend version/dependencies, paths and verification settings.
+- `B/`: short batch targets for generated shortcuts; shared bootstrap/tool runners
+  live in `B/helper_scripts/`.
+- `scripts/shortcut_targets/`: app launcher, watchdog, frontend wrapper and exit handler.
+- `scripts/setup/`: backend finalization, health checks and shortcut generation.
+- `scripts/dev_tools/`: package, Git and verification utilities for application authors.
+- `scripts/icon/` and `icon_related/`: icon generation and source assets.
+- `LICENSES/` and `LICENSE.md`: template backend licensing.
 
-## How startup works
+## Startup and installation
 
-1. A generated Windows shortcut starts a batch launcher in `B/`.
-2. The launcher ensures the embedded **backend Python** is available.
-3. Backend scripts configure the terminal, logging, process monitoring, and
-   the full local **frontend Python** environment.
-4. Frontend Python runs `code/main.py`.
+1. Root Setup.cmd/Start.cmd or a generated shortcut invokes a batch target.
+2. `B/helper_scripts/ensure_backend_python.bat` delegates to its PowerShell
+   companion. It locks bootstrap, validates actual backend imports and exact
+   versions, and adopts a healthy existing installation.
+3. When installation is needed, a new embedded runtime and dependency target are
+   prepared in staging. Signature/hash checks and module health checks finish
+   before replacement. Failed staging diagnostics are retained.
+4. App startup validates/prepares its full Python and package environment, creates
+   a per-run directory, starts the watchdog, and waits for that run's acknowledgement.
+5. The frontend wrapper receives private JSON configuration, initializes logging
+   and cooperative Stop, and executes main.py with only application arguments.
 
-The two Python environments have different jobs:
+`settings/backend_settings.ini` defines the pinned backend version and approved
+installation/finalization locations. The wrapper validates these fixed locations.
+The generic embedded downloader refuses an existing destination and uses literal
+PowerShell paths. Managed installation supports AMD64; ARM64/x86 fail explicitly.
 
-| Environment | Purpose |
-| --- | --- |
-| Backend Python | Small embedded runtime for launcher and support scripts |
-| Frontend Python | Full local Python installation that runs the application |
+The embedded backend and full frontend have different purposes. Application
+packages are separate from backend packages. Normal managed starts use `-E -s`
+and sanitized Python/package-tool environment settings; this is dependency
+isolation with ordinary user permissions, not an operating-system sandbox.
 
-This separation keeps launcher dependencies isolated from application packages
-and does not require users to install Python globally.
+## Generated state and recovery
 
-## Settings and installation
+`backend_python/`, `backend_packages/`, `temporary/`, `backend/python/` and
+`backend/packages/` are generated and excluded from normal Git tracking.
 
-`settings/backend_settings.py` is the shared source of backend paths and
-constants. Its relative paths are resolved from the `settings/` folder.
+Runtime and package replacements are staged and verified before directory swaps.
+Version/package migration retains the previous runtime until package validation
+succeeds. A locked `.previous` backup is reported and not overwritten.
 
-`B/helper_scripts/ensure_backend_python.bat` validates the backend
-configuration, calls the reusable
-`B/helper_scripts/generic_helpers/install_embedded_python.bat` installer,
-and runs backend finalization. The generic installer accepts only the Python
-version and installation directory. The backend wrapper uses
-`settings/backend_settings.ini` for:
+Package state records actual Python, requirements fingerprints, metadata/RECORD
+hashes and payload existence. Legacy empty markers migrate through additive
+staging to preserve manually installed packages. Explicit reset tools rebuild
+from declared defaults. Commit the frontend runtime and default-package locks
+with a release; they record versions, not a guarantee of identical source builds.
 
-- `backend_python_version` — embeddable CPython version to download
-- `backend_python_install_dir_relative_path` — required runtime location
-- `backend_python_finish_installation_relative_path` — required finalization
-  script
+Each run owns its startup/status/traceback files and unique logs under
+`temporary/runs/`. The `.output.log` companion captures combined native, binary
+and inherited child output; the normal UTF-8 log captures Python text/input and
+shutdown callbacks. Logging uses pipes; disable terminal logging for apps needing
+a real TTY. Retained run and MSI diagnostics are not automatically pruned.
 
-The installer validates these paths against the expected backend locations
-before it deletes or executes anything.
+## Ownership of shared code
 
-To change backend dependencies, edit:
+`generic_helpers.py` and `common_code.py` are compatibility import facades.
+Implementation modules are console_tools, filesystem_tools, process_tools,
+python_runtime, package_tools, image_tools, git_tools and shell_tools.
+`frontend_environment` owns runtime/package repair, `launcher_ui` owns appearance
+and log-path policy, and runtime_state/environment_state own cross-process state
+and directory transactions.
 
-- `settings/backend_packages.txt` for runtime dependencies
-- `settings/backend_build_tools.txt` for temporary installation tools
+Ordinary tools share `entrypoint.run_file` and the batch
+`B/helper_scripts/run_backend_script.bat`: import/main failures are reported once,
+nonzero status is preserved, and KeyboardInterrupt becomes 130. Existing verifier
+rescan loops retain their interaction. Lifecycle workers retain their separate
+application completion protocol. Helpers never terminate an existing caller shell.
 
-Reinstall the backend runtime after changing either list.
+## Cooperative Stop and icons
 
-## What is generated
+Applications may poll `backend.shutdown.shutdown_requested()` on their UI thread
+or register a worker-thread callback. Stop validates process image/creation time,
+requests cooperative shutdown, waits for graceful_stop_timeout_seconds, and only
+escalates when force_stop_after_timeout is enabled. The task-list example saves
+before closing. Old bare PID files are never authority to terminate a process.
 
-Do not normally edit these folders:
-
-| Folder | Why |
-| --- | --- |
-| `backend_python/` | Recreated by the embedded-Python installer |
-| `backend_packages/` | Recreated when backend dependencies are installed |
-| `temporary/` | Runtime signals, logs, and disposable working files |
-
-These folders are intentionally excluded from normal Git tracking.
-
-## Backend tools
-
-Backend tools are diagnostics and tests; they are not part of normal
-application startup.
-
-### Verification
-
-`scripts/backend_tools/verify_backend.py` runs:
-
-1. Ruff lint checking
-2. Ruff formatting verification
-3. Pyrefly type checking
-
-Run a check-only launcher from the `code/` folder:
-
-```bat
-backend\DONT_CHANGE\backend_tools\verify_backend_basic.bat
-backend\DONT_CHANGE\backend_tools\verify_backend_default.bat
-backend\DONT_CHANGE\backend_tools\verify_backend_strict.bat
-```
-
-Each launcher ensures the embedded backend Python before running the selected
-preset. To apply Ruff's safe automatic fixes and formatting first, use the
-equivalent `fix_and_verify_backend_*.bat` launcher.
-Configure verification targets and exclusions in
-`settings/backend_settings.py`:
-
-- `BACKEND_VERIFICATION_TARGETS`
-- `BACKEND_VERIFICATION_EXCLUDED_FILES`
-- `BACKEND_VERIFICATION_EXCLUDED_FOLDERS`
-
-Use forward slashes in those configured paths. Exit code `0` means success,
-`1` means a check failed, and `2` means a required tool was unavailable.
-
-For launcher testing, set `use_standin_main_script = True` in
-`settings/backend_settings.py`. Normal shortcut starts will then run
-`backend_tools/standin_main_py_for_backend_tools.py` instead of
-`code/main.py`. It is `False` by default; startup-time measurements always
-use their dedicated dummy script instead.
-
-Direct batch runners with the same tool names are available in
-`backend_tools/`. They ensure the backend Python where needed, then invoke
-their Python implementation directly.
-
-### Other tools
-
-- `backend_tools/measure_startup_times.bat` measures startup performance.
-- `backend_tools/measure_package_import_times.bat` measures package import
-  performance.
-- `backend_tools/measure_file_import_times.bat` measures selected module
-  import times.
-- `backend_tools/test_script_wrapper.bat` exercises frontend-wrapper
-  traceback and exit handling.
-
-## Icons
-
-`icon_related/` contains the icon assets and instructions.
-`scripts/icon/` contains the Python generators:
-
-- `generate_PNGs_to_be_replaced.py` creates editable placeholder PNGs.
-- `generate_icons.py` creates the multi-resolution `.ico` files.
-
-Use the corresponding launchers in `B/miscellaneous/`. See
-`icon_related/HOW_TO_CHANGE_ICONS.txt` for the icon-editing workflow.
+Icon sources and instructions remain in icon_related; invoke the corresponding
+batch launchers in B/miscellaneous to regenerate editable PNGs or ICO files.
 
 ## Maintenance and licensing
 
-Keep `LICENSE.md` and the license/metadata files in generated Python and
-package folders when distributing the template. If bundled dependencies change,
-update both the package lists and license information.
+The template backend is dual licensed MIT OR Apache-2.0. Python distributions and
+third-party packages retain their own licenses. Keep their license/metadata files
+when distributing a prepared environment.
 
-When updating from PyApp-Template, keep local changes outside `DONT_CHANGE/`
-where possible, record unavoidable backend changes, and rerun backend
-verification afterwards.
-
-`future/` contains unfinished experiments and is excluded from backend
-verification by default.
+Keep app-specific edits outside DONT_CHANGE where possible. This update also
+requires the public `code/backend/shutdown.py` API and documented root launchers.
+Deferred settings live in Dev Helpers' future/developer_settings.py and have no
+production effect. Read its changelog for numbered review details and migration.

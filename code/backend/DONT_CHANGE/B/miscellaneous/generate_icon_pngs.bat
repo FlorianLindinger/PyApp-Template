@@ -1,37 +1,7 @@
-:: Description: Generates editable placeholder PNGs for shortcut icons.
-::
-:: ===========================
-
-:: disable printing of commands:
 @echo off
-
-:: make variables local:
-setlocal
-
-:: ===========================
-:: settings
-
-:: move to folder of this file:
+setlocal EnableExtensions DisableDelayedExpansion
+if not defined PYAPP_START_DIR set "PYAPP_START_DIR=%CD%"
 cd /d "%~dp0"
-
-:: ===========================
-:: local variables
-
-set "ensure_backend_python_script=..\helper_scripts\ensure_backend_python.bat"
-set "target_script=..\..\scripts\icon\generate_PNGs_to_be_replaced.py"
-
-:: ===========================
-:: code execution
-
-call "%ensure_backend_python_script%"
-if not "%ERRORLEVEL%"=="0" exit /b 1
-
-"%python_exe%" "%target_script%" %*
-set "exit_code=%ERRORLEVEL%"
-if "%exit_code%"=="0" exit /b 0
-
-echo [Error] PNG placeholder generation failed. Press any key to exit.
-pause > nul
-exit /b %exit_code%
-::
-:: ===========================
+set "PYAPP_ENTRY_SCRIPT=%~dp0..\..\scripts\icon\generate_PNGs_to_be_replaced.py"
+call "%~dp0..\helper_scripts\run_backend_script.bat" %*
+exit /b %ERRORLEVEL%
