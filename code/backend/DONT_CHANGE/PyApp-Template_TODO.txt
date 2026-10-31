@@ -1,8 +1,25 @@
 
+ignore more cahche and so on and . something folders in root
 
+ask AI what i should add to gitignore
 
+i gues i dont need tempalte anymore bc AI -> remove
 
+simplify project
 
+try fresh download and new app creation and then new user usage
+
+some local shortcut inside code to launch as plan B.
+
+how can i have extra testing stuff for pyapptemplte which doesnt ship to the template itself?
+
+?Tooling is not reproducible. Verification chooses whichever global executable is found or an unpinned uvx tool.
+
+?Too many Python booleans encode competing policies. The three instance-related settings are a good example: a single explicit policy would be easier to validate.
+
+test if folder move work. ask AI if it should
+
+Fix: Frontend/backend verification implementations are nearly duplicated. Use one verifier with target-specific configuration.  
 
 [Info] Python distribution not found. Installing Python:
 Found Python 3.12.10 (Target: 3.12).
