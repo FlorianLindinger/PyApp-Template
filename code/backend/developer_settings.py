@@ -126,8 +126,6 @@ terminal_colors_after_KeyboardInterrupt: str | None = "6C"
 
 # Datetime format shown in crash reports:
 PRINTED_ERROR_DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
-# Include local variables in Rich traceback output. This can expose sensitive values.
-show_traceback_locals: bool = False
 # Number of source-code lines shown before and after the failing line.
 traceback_extra_lines: int = 3
 # Colors/styles used by Rich traceback output:
@@ -178,6 +176,9 @@ keyboardInterrupt_sub_icon_alignment: str | None = "bottom right"
 prevent_start_if_already_running = False
 close_already_running_instances_on_start = False
 prompt_to_close_existing_instances = False
+# Stop first requests cooperative shutdown, then optionally terminates the verified tree.
+graceful_stop_timeout_seconds: float = 5.0
+force_stop_after_timeout: bool = True
 # ---------------------------------------
 # Decide if global default (any version) Python should be used instead of automatic localized download and installation of Python/packages:
 use_global_python = False
@@ -185,11 +186,7 @@ use_global_python = False
 # Install Python environment while generating shortcuts instead of for first start (Ignored when use_global_python = True):
 install_python_when_generating_shortcuts = True
 # ---------------------------------------
-# Unminimize and forground program on first print:
-highlight_window_on_first_print = False
-# supress keyboard interrupt (CTRL+C):
-supress_keyboard_interrupt = False
-# args passed to main script:
+# Application arguments passed to main.py:
 args_for_main_py: list[str] = []
 # ---------------------------------------
 # Decide what parts of vanilla full Python to install:

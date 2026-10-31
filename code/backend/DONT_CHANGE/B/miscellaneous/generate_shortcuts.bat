@@ -31,7 +31,7 @@ title %terminal_title%
 call "%ensure_backend_python_script%"
 :: exit on failure (print and confirm close handled in child):
 if not "%ERRORLEVEL%"=="0" (
-    exit 1
+    exit /b 1
 )
 
 :: generate shortcuts:
@@ -44,7 +44,9 @@ if "%exit_code%"=="0" (
 )
 
 :: print and confirm to close on failure:
-echo [Error] Shortcut generation failed. Aborting. Press any key to exit.
+echo [Error] Shortcut generation failed. Aborting.
+if "%PYAPP_ENTRYPOINT_NO_PAUSE%"=="1" exit /b %exit_code%
+echo Press any key to exit.
 pause > nul
 exit /b %exit_code%
 ::

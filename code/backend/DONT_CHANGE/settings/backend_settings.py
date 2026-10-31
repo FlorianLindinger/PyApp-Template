@@ -43,11 +43,6 @@ def get_ini_file_settings(settings_path: str) -> tuple[str, str]:
 # fmt:off
 
 # ------------------------
-# live settings
-
-use_standin_main_script: bool = True  # If True, normal shortcuts launch TEST_STANDIN_MAIN_SCRIPT_PATH instead of main.py. Use only for backend-tool testing.
-
-# ------------------------
 # folders
 
 DONT_CHANGE_DIR = make_abs("..")
@@ -65,11 +60,7 @@ WINDOWS_DIR = os.environ.get("WINDIR", default="C:\\Windows")
 START_PROGRAM_PATH = SHORTCUT_TARGET_DIR + "\\start_program.py"
 MAIN_PY_SCRIPT_PATH = PYTHON_SCRIPTS_DIR + "\\main.py"
 BACKGROUND_WATCHDOG_PATH = SHORTCUT_TARGET_DIR + "\\childs\\background_watchdog.py"
-STANDIN_MAIN_PY_FOR_START_TIME_MEASUREMENT_PATH = (
-    DONT_CHANGE_DIR + "\\scripts\\backend_tools\\helpers\\startup_probe.py"
-)
 PROCESS_EXIT_PATH = SHORTCUT_TARGET_DIR + "\\childs\\process_exit.py"
-TEST_STANDIN_MAIN_SCRIPT_PATH = DONT_CHANGE_DIR + "\\backend_tools\\standin_main_py_for_backend_tools.py"
 
 # ------------------------
 # shortcut launchers related
@@ -144,20 +135,6 @@ PNG_GENERATION_ITEMS = {
 # ------------------------
 # verification related
 
-# Backend verification settings used by scripts/backend_tools/verify_backend.py.
-# Paths are relative to the code folder and use forward slashes.
-BACKEND_VERIFICATION_TARGETS = ("backend",)
-BACKEND_VERIFICATION_EXCLUDED_FILES = ("backend/DONT_CHANGE/backend_tools/standin_main_py_for_backend_tools.py",)
-BACKEND_VERIFICATION_EXCLUDED_FOLDERS = (
-    "backend/DONT_CHANGE/backend_packages",
-    "backend/DONT_CHANGE/backend_python",
-    "backend/DONT_CHANGE/future",
-    "backend/packages",
-    "backend/python",
-)
-BACKEND_VERIFICATION_VALID_PRESETS = ("basic", "default", "strict")
-BACKEND_VERIFICATION_DEFAULT_PRESET = "default"
-
 # Frontend verification settings used by scripts/dev_tools/verify_main_py.py.
 # Paths are relative to the code folder and use forward slashes.
 FRONTEND_VERIFICATION_TARGETS = ("main.py",)
@@ -195,9 +172,42 @@ NEEDED_PACKAGES_WITH_VERSION_PATH = DEV_TOOLS_FOR_PACKAGES_DIR + "\\auto_found_r
 _backend_settings_ini_path = "backend_settings.ini"
 _backend_python_major_minor_version, BACKEND_PYTHON_DIR = get_ini_file_settings(_backend_settings_ini_path)
 
+# The installer prepares and checks a replacement backend in a temporary folder
+# before replacing the working installation. Its Python helper scripts import this
+# settings file too, so they must see the temporary paths during that preparation.
+def _staged_path(variable: str, default: str) -> str:
+    """Use an installer-supplied temporary path, or the normal installed path.
+
+    ensure_backend_python.ps1 sets PYAPP_BACKEND_STAGING and
+    PYAPP_PACKAGES_STAGING for its installation/health-check subprocesses.
+    For example, BACKEND_PACKAGES_DIR then points to
+    temporary/backend-install-<unique-id>/backend_packages instead of the live
+    DONT_CHANGE/backend_packages folder. Without this override, the preparation
+    scripts could modify or check the live backend instead of its replacement.
+
+    With no override, normal launches simply use ``default``. An override must
+    resolve to a child of TEMPORARY_DIR; the temporary root itself is rejected.
+    Resolving links and checking whole path components prevents an accidental
+    override outside that tree. This function only selects/checks a path: the
+    PowerShell installer creates folders, validates the new installation, swaps
+    it into place, and handles rollback.
+    """
+    value = os.environ.get(variable)
+    if not value:
+        return default
+    # Normalize the override and resolve filesystem links before comparing paths.
+    value = os.path.realpath(value)
+    base = os.path.realpath(TEMPORARY_DIR)
+    # commonpath compares directories, unlike a string prefix test that would
+    # also accept a sibling such as "temporary-other". Require a strict child.
+    if os.path.commonpath([value, base]) != base or value == base:
+        raise ValueError("Backend staging must be inside its temporary directory")
+    return value
+
+BACKEND_PYTHON_DIR = _staged_path("PYAPP_BACKEND_STAGING", BACKEND_PYTHON_DIR)
 BACKEND_PYTHON_pth_FILE = BACKEND_PYTHON_DIR + f"\\python{_backend_python_major_minor_version}._pth"
 BACKEND_PYTHON_ZIP_REL_PATH = f"python{_backend_python_major_minor_version}.zip"
-BACKEND_PACKAGES_DIR = DONT_CHANGE_DIR + "\\backend_packages"  # UPDATE BACKEND_PYTHON_pth_FILE + .gitignore
+BACKEND_PACKAGES_DIR = _staged_path("PYAPP_PACKAGES_STAGING", DONT_CHANGE_DIR + "\\backend_packages")  # UPDATE BACKEND_PYTHON_pth_FILE + .gitignore
 BACKEND_PACKAGE_REQUIREMENTS_FILE = make_abs("backend_packages.txt")
 BACKEND_BUILD_TOOLS_REQUIREMENTS_FILE = make_abs("backend_build_tools.txt")
 BACKEND_FILES_TO_DELETE_AFTER_INSTALL = ["sqlite3.dll", "python.cat"]
@@ -249,7 +259,6 @@ EXCLUDED_FOLDERS_FOR_PACKAGE_SEARCH = [
 VARIABLE_IN_DEFAULT_PACKAGES_THAT_TRIGGERS_SEARCH_IF_TRUE = (
     "# auto_find_required_packages_here_and_reset_installed_packages_to_them"
 )
-ENV_VAR_TO_SIGNAL_STARTUP_TIME_MEASUREMENT = "PYAPP_TEMPLATE_ACTIVE_STARTUP_TIME_MEASUREMENT"
 EMPTY_ARG_INDICATOR = "__EMPTY__"
 
 # =======================================
