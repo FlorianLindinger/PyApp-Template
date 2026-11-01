@@ -1,7 +1,7 @@
-# ruff: noqa: E402
+# ruff: noqa: E402 RUF100
 # The early __main__ handoff lets the shared runner catch dependency import failures.
 
-"""WIP"""
+"""Replace installed application packages with the declared defaults."""
 
 if __name__ == "__main__":
     import sys
@@ -29,6 +29,7 @@ from backend.DONT_CHANGE.settings.backend_settings import DEFAULT_PACKAGES_PATH
 
 
 def main() -> None:
+    """Replace installed application packages with the declared defaults."""
     ensure_python_distro()
     install_packages_from_file(DEFAULT_PACKAGES_PATH, replace=True)
     print()

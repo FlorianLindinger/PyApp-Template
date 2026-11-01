@@ -64,6 +64,7 @@ def set_hidden_in_explorer() -> None:
 
 
 def do_stuff_when_not_normal_start():
+    """Apply the configured Explorer hidden attributes for a non-application action."""
     set_hidden_in_explorer()
 
 
@@ -191,6 +192,7 @@ def get_log_path(
 
 
 def get_running_processes_from_pid_file(pid_path: str) -> tuple[list[int], int]:
+    """Return verified running launcher PIDs and the count of removed stale registry entries."""
     from backend.DONT_CHANGE.scripts.runtime_state import ProcessRegistry
 
     registry = ProcessRegistry(pid_path)
@@ -200,6 +202,7 @@ def get_running_processes_from_pid_file(pid_path: str) -> tuple[list[int], int]:
 
 
 def stop_processes_from_pid_file(pid_path: str) -> tuple[int, int, list[str]]:
+    """Stop verified application process trees and return stopped, stale and failure details."""
     from backend.DONT_CHANGE.scripts.runtime_state import ProcessRegistry
 
     return ProcessRegistry(pid_path).stop()

@@ -7,6 +7,7 @@ import traceback
 
 
 def normalize_exit_code(value):
+    """Convert a return or SystemExit value to a process code, printing nonnumeric errors."""
     if value is None:
         return 0
     if isinstance(value, int):
@@ -17,6 +18,7 @@ def normalize_exit_code(value):
 
 def acknowledge(message):
     # An outer launcher can own the final prompt and preserve native-crash output.
+    """Wait for interactive acknowledgement unless an outer launcher owns the prompt."""
     if os.environ.get("PYAPP_ENTRYPOINT_NO_PAUSE") == "1":
         return
     if sys.stdin is not None and sys.stdin.isatty():

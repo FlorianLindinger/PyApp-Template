@@ -50,6 +50,7 @@ def get_terminal_title() -> str:
 
 
 def set_terminal_title(title: str | None) -> None:
+    """Set the Windows console title when supplied, ignoring unavailable console APIs."""
     if title is None:
         return
 
@@ -126,6 +127,7 @@ def set_terminal_icon(icon_path: str | None) -> None:
         SWP_FRAMECHANGED = 0x0020
 
         def _load_icon(width: int, height: int) -> int:
+            """Load the requested ICO size, falling back to the image's default size."""
             icon = user32.LoadImageW(
                 None, icon_path, IMAGE_ICON, width, height, LR_LOADFROMFILE
             )
@@ -211,12 +213,12 @@ def set_terminal_app_id(app_id: str) -> None:
         )
 
     class _PROPERTYKEY(ctypes.Structure):
-        """WIP"""
+        """Represent the COM property identifier consisting of a GUID and property number."""
 
         _fields_ = (("fmtid", _GUID), ("pid", wintypes.DWORD))
 
     class _PROPVARIANT(ctypes.Structure):
-        """WIP"""
+        """Represent the string-valued PROPVARIANT passed to the Windows property store."""
 
         _fields_ = (
             ("vt", ctypes.c_ushort),
@@ -227,12 +229,12 @@ def set_terminal_app_id(app_id: str) -> None:
         )
 
     class _IPropertyStore(ctypes.Structure):
-        """WIP"""
+        """Declare the COM property-store interface before its vtable is assigned."""
 
     IPropertyStorePtr = ctypes.POINTER(_IPropertyStore)
 
     class _IPropertyStoreVtbl(ctypes.Structure):
-        """WIP"""
+        """Describe the native COM methods used to set the console taskbar identity."""
 
         _fields_ = (
             (
@@ -295,6 +297,7 @@ def set_terminal_app_id(app_id: str) -> None:
         )
 
     def _format_hresult(hr: int) -> str:
+        """Format a COM HRESULT as an unsigned hexadecimal code and Windows error message."""
         code = hr & 0xFFFFFFFF
         try:
             message = ctypes.FormatError(code).strip()
@@ -303,6 +306,7 @@ def set_terminal_app_id(app_id: str) -> None:
         return f"0x{code:08X}: {message}"
 
     def _check_hresult(hr: int, action: str) -> None:
+        """Raise OSError with the action and Windows message when a COM call fails."""
         if hr < 0:
             raise OSError(f"{action} failed with HRESULT {_format_hresult(hr)}")
 
@@ -381,6 +385,7 @@ def set_terminal_app_id(app_id: str) -> None:
 
 
 def unminimize_terminal() -> None:
+    """Restore the current console window when Windows exposes its handle."""
     try:
         import ctypes
 
@@ -394,6 +399,7 @@ def unminimize_terminal() -> None:
 
 
 def foreground_terminal() -> None:
+    """Ask Windows to bring the current console window to the foreground."""
     try:
         import ctypes
 
@@ -407,14 +413,18 @@ def foreground_terminal() -> None:
 
 
 def enable_unminimize_and_foreground_terminal_on_first_print() -> None:
+    """Wrap stdout and stderr so their first nonempty output restores the console."""
+
     class unminimize_plus_foreground_terminal_on_first_output:
         """Unminimize a minimized terminal and set to foreground when output is written for the first time."""
 
         def __init__(self, stream: TextIO) -> None:
+            """Store the wrapped output stream and track whether the console has been restored."""
             self.stream = stream
             self._restored = False
 
         def _restore_if_needed(self, data: object) -> None:
+            """Restore and foreground the console once, on the first nonempty write."""
             if self._restored or data in ("", b""):
                 return
             self._restored = True

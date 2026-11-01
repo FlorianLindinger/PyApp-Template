@@ -86,6 +86,7 @@ def _delete_existing_icon(path: str) -> None:
 
 @cache
 def _cached_png_image_id(path: str) -> str:
+    """Return the cached PNG identifier used to recognize unchanged source assets."""
     return get_png_image_id(path)
 
 
@@ -149,6 +150,7 @@ def main() -> None:
         )
 
     def generate(job: tuple[str, str, str | None, float, str]) -> str:
+        """Generate one ICO from the resolved base image, overlay and placement settings."""
         output_path, base_path, overlay_path, scale, alignment = job
         return generate_ico_from_png(
             output_path,

@@ -1,7 +1,7 @@
-# ruff: noqa: E402
+# ruff: noqa: E402 RUF100
 # The early __main__ handoff lets the shared runner catch dependency import failures.
 
-"""WIP"""
+"""Infer application dependencies and save distribution names without pins."""
 
 if __name__ == "__main__":
     import sys
@@ -27,6 +27,7 @@ from backend.DONT_CHANGE.scripts.frontend_environment import (
 
 
 def main() -> None:
+    """Infer application dependencies and save distribution names without pins."""
     success, _output_path = save_requirements_of_root_folder_noVersion()
     if success:
         print()

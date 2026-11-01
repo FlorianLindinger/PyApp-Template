@@ -1,7 +1,7 @@
 # ruff: noqa: E402
 # The early __main__ handoff lets the shared runner catch dependency import failures.
 
-"""WIP"""
+"""Infer application dependencies and save their installed version pins."""
 
 if __name__ == "__main__":
     import sys
@@ -27,6 +27,7 @@ from backend.DONT_CHANGE.scripts.frontend_environment import (
 
 
 def main() -> None:
+    """Infer application dependencies and save their installed version pins."""
     success = save_requirements_of_root_folder_withVersion()
     if not success:
         raise RuntimeError("Failed to determine needed packages with versions.")

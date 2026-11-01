@@ -1,7 +1,7 @@
-# ruff: noqa: E402
+# ruff: noqa: E402 RUF100
 # The early __main__ handoff lets the shared runner catch dependency import failures.
 
-"""WIP"""
+"""Open a package-management terminal for the managed application Python."""
 
 if __name__ == "__main__":
     import sys
@@ -35,11 +35,12 @@ from backend.DONT_CHANGE.settings.backend_settings import (
 
 @environment_locked
 def main() -> None:
+    """Open a package-management terminal for the managed application Python."""
     ensure_python_distro()
     refuse_mutation_while_running()
     print('Install packages with "pip install package_name"')
     print()
-    subprocess.run(
+    subprocess.run( #noqa:S603
         ["cmd", "/d", "/c", "call", FRONTEND_LAUNCHER_FOR_PIP_INSTALL_TERMINAL],
         check=True,
     )

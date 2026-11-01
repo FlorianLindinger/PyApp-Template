@@ -20,10 +20,12 @@ class FileLock:
     """A reentrant, process-shared lock; Windows releases it after a crash."""
 
     def __init__(self, path, timeout=120):
+        """Store the normalized lock path and acquisition timeout."""
         self.path = str(Path(path).resolve())
         self.timeout = timeout
 
     def __enter__(self):
+        """Acquire or reenter the checkout's file lock, waiting up to the configured timeout."""
         import msvcrt
 
         held = getattr(_local_locks, "held", None)
@@ -51,6 +53,7 @@ class FileLock:
                 time.sleep(0.05)
 
     def __exit__(self, *exc):
+        """Release one acquisition and close the file lock when the final nested context exits."""
         import msvcrt
 
         stream, count = _local_locks.held[self.path]
@@ -64,6 +67,7 @@ class FileLock:
 
 
 def atomic_json(path, payload):
+    """Write JSON through a unique sibling file and atomically replace the destination."""
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     temp = path.with_name(path.name + "." + uuid.uuid4().hex + ".tmp")
@@ -146,6 +150,7 @@ class ProcessRegistry:
     """One atomic identity record per launcher; legacy bare PIDs are never killed."""
 
     def __init__(self, pid_path):
+        """Derive registry and legacy cleanup paths from the configured PID indicator."""
         self.pid_path = Path(pid_path)
         self.directory = Path(str(pid_path) + ".d")
         # Kept only to clean up the old disk lock; new operations use a mutex.
@@ -191,6 +196,7 @@ class ProcessRegistry:
             kernel.CloseHandle(handle)
 
     def register(self, child_pid=None):
+        """Atomically record this launcher's verified identity and optional application child identity."""
         with self.lock(), process_identity(os.getpid()) as identity:
             if identity is None:
                 raise RuntimeError("Cannot establish launcher process identity")
@@ -200,6 +206,7 @@ class ProcessRegistry:
             atomic_json(self.directory / (str(os.getpid()) + ".json"), identity)
 
     def remove(self):
+        """Remove this launcher's record and prune stale records and empty PID artifacts."""
         with self.lock():
             (self.directory / (str(os.getpid()) + ".json")).unlink(missing_ok=True)
             self.records()
@@ -223,12 +230,14 @@ class ProcessRegistry:
                 pass  # An older launcher can still hold its legacy lock file.
 
     def records(self):
+        """Return other live launcher records and a stale count while cleaning empty registry artifacts."""
         with self.lock():
             records, stale = self._records()
             self._cleanup_empty()
             return records, stale
 
     def _records(self):
+        """Validate stored identities and discard stale records, excluding this process from live results."""
         records, stale = [], 0
         for path in self.directory.glob("*.json"):
             try:
@@ -278,12 +287,14 @@ class ProcessRegistry:
 
 
 def matches_identity(record, current):
+    """Compare PID, creation time and executable path to reject stale or reused process IDs."""
     return current is not None and all(
         record.get(key) == current.get(key) for key in ("pid", "created", "image")
     )
 
 
 def unique_log_path(path, run_id=None):
+    """Append the run identifier to a log filename, preserving an empty disabled path."""
     if not path:
         return ""
     p = Path(path)
@@ -291,6 +302,7 @@ def unique_log_path(path, run_id=None):
 
 
 def require_supported_architecture():
+    """Reject managed runtime installation on architectures other than Windows AMD64."""
     architecture = os.environ.get(
         "PROCESSOR_ARCHITEW6432", os.environ.get("PROCESSOR_ARCHITECTURE", "")
     ).upper()
@@ -303,6 +315,7 @@ def require_supported_architecture():
 
 
 def resolve_global_python():
+    """Resolve py or python to its actual interpreter executable using an isolated subprocess."""
     import shutil
 
     launcher = shutil.which("py") or shutil.which("python")

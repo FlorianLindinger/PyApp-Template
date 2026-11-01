@@ -8,6 +8,7 @@ from pathlib import Path
 
 
 def lock_backend_requirements(source, destination):
+    """Resolve exact PyPI pins to artifact hashes and write locked requirements plus provenance."""
     requirements = []
     manifest = []
     for line in Path(source).read_text(encoding="utf-8").splitlines():

@@ -1,4 +1,4 @@
-"""WIP"""
+"""Define internal launcher paths, bootstrap settings and generated-asset configuration."""
 
 # ======================================
 # === helper imports and definitions ===
@@ -108,49 +108,6 @@ ICON_GENERATION_SETTINGS = [
     (KEYBOARD_INTERRUPT_ICON_PATH,*_base,"keyboardInterrupt.png","512x512:0c4eac7f","default_keyboardInterrupt.png"),
 ]
 
-
-# PNG placeholders created by scripts/icons/generate_PNGs_to_be_replaced.py
-PNG_GENERATION_OUTPUT_DIR = ICON_FALLBACK_PNG_DIR + "\\created_PNGS_to_be_replaced"
-PNG_GENERATION_WIDTH = 512
-PNG_GENERATION_HEIGHT = 512
-PNG_GENERATION_FONT_FAMILY = "Arial"
-PNG_GENERATION_FONT_SIZE = 180
-PNG_GENERATION_MIN_FONT_SIZE = 20
-PNG_GENERATION_BOLD = True
-PNG_GENERATION_PADDING = 12
-PNG_GENERATION_TEXT_COLOR = (210, 0, 0, 255)
-PNG_GENERATION_BACKGROUND_COLOR = (255, 255, 255, 255)
-PNG_GENERATION_ITEMS = {
-    "icon.png": ["Replace to change", "base icon.", "Run", '"regenerate icons"', "afterwards"],
-    "settings.png": ["Replace to change", "settings sub-icon.", "Run", '"regenerate icons"', "afterwards"],
-    "stop.png": ["Replace to change", "stop sub-icon.", "Run", '"regenerate icons"', "afterwards"],
-    "log.png": ["Replace to change", "log sub-icon.", "Run", '"regenerate icons"', "afterwards"],
-    "success.png": ["Replace to change", "success sub-icon.", "Run", '"regenerate icons"', "afterwards"],
-    "failure.png": ["Replace to change", "failure sub-icon.", "Run", '"regenerate icons"', "afterwards"],
-    "crash.png": ["Replace to change", "crash sub-icon.", "Run", '"regenerate icons"', "afterwards"],
-    "crash_log.png": ["Replace to change", "crash-log sub-icon.", "Run", '"regenerate icons"', "afterwards"],
-    "open_main_py.png": ["Replace to change", "open-main.py", "sub-icon. Run", '"regenerate icons"', "afterwards"],
-    "keyboardInterrupt.png": ["Replace to change","keyboard-interrupt","sub-icon. Run",'"regenerate icons"',"afterwards"],
-}
-
-# ------------------------
-# verification related
-
-# Frontend verification settings used by scripts/dev_tools/verification/verify_main_py.py.
-# Paths are relative to the code folder and use forward slashes.
-FRONTEND_VERIFICATION_TARGETS = ("main.py",)
-FRONTEND_VERIFICATION_EXCLUDED_FILES: tuple[str, ...] = ()
-FRONTEND_VERIFICATION_EXCLUDED_FOLDERS: tuple[str, ...] = ()
-FRONTEND_VERIFICATION_VALID_PRESETS = ("basic", "default", "strict")
-FRONTEND_VERIFICATION_DEFAULT_PRESET = "default"
-
-# settings.py as target or the variable of the path i guess
-# do i want files or folders?
-# soemhow option to add fodlers and files. maybe dev settings what folders and files to chekc in code
-# does it use FRONTEND_VERIFICATION_PYTHON_INTERPRETER
-# have way for FRONTEND_VERIFICATION_RUFF_FIX_UNSAFE
-# CHECK_ALL_IMPORTS option?
-
 # ------------------------
 # untracked tmp files files
 
@@ -161,7 +118,7 @@ TMP_TRACEBACK_JSON_PATH = TEMPORARY_DIR + "\\last_crash_log.json"
 # ------------------------
 # untracked developer-tools folder related
 
-DEV_TOOLS_FOR_PACKAGES_DIR = BACKEND_DIR + "\\dev_tools\\change python packages"  # UPDATE .gitignore
+DEV_TOOLS_FOR_PACKAGES_DIR = BACKEND_DIR + "\\dev_tools"  # UPDATE .gitignore
 CURRENT_PACKAGES_WITH_VERSION_PATH = DEV_TOOLS_FOR_PACKAGES_DIR + "\\determined_current_packages_withVersion.txt"
 CURRENT_PACKAGES_NO_VERSION_PATH = DEV_TOOLS_FOR_PACKAGES_DIR + "\\determined_current_packages_noVersion.txt"
 NEEDED_PACKAGES_NO_VERSION_PATH = DEV_TOOLS_FOR_PACKAGES_DIR + "\\auto_found_required_packages_noVersion.txt"

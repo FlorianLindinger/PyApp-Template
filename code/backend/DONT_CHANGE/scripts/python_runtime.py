@@ -12,6 +12,7 @@ from backend.DONT_CHANGE.scripts.filesystem_tools import (
 
 
 def get_python_version(python_exe: str) -> str:
+    """Query the selected interpreter's version without Python environment or user-site overrides."""
     import subprocess
 
     from backend.DONT_CHANGE.scripts.runtime_state import clean_python_environment
@@ -26,6 +27,7 @@ def get_python_version(python_exe: str) -> str:
 
 
 def is_python_version_compatible(actual_version: str, required_version: str) -> bool:
+    """Compare a full interpreter version with the requested major, minor or patch prefix."""
     actual_parts = actual_version.split(".")
     required_parts = required_version.strip().split(".")
 
@@ -181,7 +183,10 @@ def _install_full_python_into_staging(
     # define helper functions
 
     def _find_python_version_and_download_links() -> tuple[str, str, list[str]]:
+        """Find the newest requested Python release with the required Windows MSI downloads."""
+
         def _get_download_links_from_url(url: str) -> list[str]:
+            """Fetch a Python download directory and return the links parsed from its HTML."""
             request = urllib.request.Request(url, headers={"User-Agent": user_agent})
 
             with urllib.request.urlopen(
@@ -193,6 +198,7 @@ def _install_full_python_into_staging(
                 """Extract href values from a simple HTML directory listing."""
 
                 def __init__(self) -> None:
+                    """Initialize the HTML parser and its collected download links."""
                     super().__init__()
                     self.links: list[str] = []
 
@@ -200,7 +206,7 @@ def _install_full_python_into_staging(
                 def handle_starttag(
                     self, tag: str, attrs: list[tuple[str, str | None]]
                 ) -> None:
-                    """WIP"""
+                    """Collect nonempty href values from HTML anchor tags."""
                     if tag.lower() == "a":
                         self.links.extend(
                             value
@@ -214,6 +220,7 @@ def _install_full_python_into_staging(
 
         # define key to sort download links: prefer newest version that matches pattern
         def _version_key(version: str) -> tuple[int, int, int]:
+            """Convert a three-component version string into a numeric sorting key."""
             major, minor, patch = version.split(".")
             return int(major), int(minor), int(patch)
 
@@ -310,6 +317,7 @@ def _install_full_python_into_staging(
         )
 
     def _download_file_from_url(url: str, folder: str) -> str:
+        """Download one installer artifact to the selected folder and return its local path."""
         filename = os.path.basename(urllib.parse.urlparse(url).path)
         output_path = os.path.join(folder, filename)
 
@@ -339,6 +347,7 @@ def _install_full_python_into_staging(
         return output_path
 
     def _install_msi_file(msi_path: str) -> None:
+        """Install one Python MSI component into the configured runtime and retain its diagnostic log."""
         msi_name = os.path.basename(msi_path)
         import uuid
 
@@ -517,6 +526,7 @@ def _install_full_python_into_staging(
 
             # install
             def msi_filename(path: str) -> str:
+                """Return the lowercase MSI basename used to select and order installer components."""
                 return os.path.basename(path).lower()
 
             for msi_path in sorted(msi_paths, key=msi_filename):

@@ -8,22 +8,20 @@ Application authors normally edit main.py, settings.py and backend/developer_set
 
 ```text
 DONT_CHANGE/
-  B/               Deliberately short targets for generated app shortcuts
-  batches/
-    bootstrap/     Backend Python bootstrap and shared batch runner
-    setup/         Shortcut setup
-    icons/         Icon-generation launchers
-    dev_tools/     packages/, git/, verification/, paths/
+  B/               Short targets for generated app shortcuts (W/N/Q/S/M/L/C)
+  batches/bootstrap/  Shared backend runner, bootstrap and PowerShell installer
   scripts/
-    actions/       Python entry points behind app shortcuts
-    runtime/       Watchdog, frontend wrapper and completion handler
-    setup/         Installation checks and shortcut generation
-    icons/         Icon generation
-    dev_tools/     packages/, git/, verification/, paths/
+    actions/       App shortcut actions and icon generation
+    runtime/       Watchdog, application wrapper and completion handling
+    setup/         Backend checks, installation and shortcut generation
+    dev_tools/     Package tool implementations
     *_tools.py     Focused reusable helpers
-    ...            Environment, registry and shared entry-point modules
-  settings/        Backend requirements, version, paths and app verification
+  settings/        Backend requirements, version and runtime paths
 ```
+
+Public package-tool batches live in `../dev_tools/` beside their default package
+list. Root setup and the icon-folder command launcher call the shared runner
+directly, without extra forwarding batches.
 
 Batch launchers contain dispatch/bootstrap logic; Python files own the behavior.
 App shortcuts deliberately use short targets: `B/W.bat` (terminal), `B/N.bat`
@@ -100,7 +98,7 @@ directory and legacy PID/lock artifacts. Stale records left by a killed watchdog
 are cleaned during the next launch or Stop.
 
 Icon sources and instructions remain in icon_related; invoke the corresponding
-batch launchers in batches/icons to regenerate editable PNGs or ICO files.
+`../icons/regenerate icons.cmd` to regenerate ICO files.
 
 ## Maintenance and licensing
 

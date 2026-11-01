@@ -31,6 +31,7 @@ from backend.DONT_CHANGE.settings import backend_settings as paths
 
 
 def confirm_replace(has_terminal):
+    """Ask in the terminal or a Windows dialog whether existing instances should be stopped."""
     if has_terminal:
         return input(
             "Close the existing instance(s) and start again? [y/N] "
@@ -49,12 +50,14 @@ def confirm_replace(has_terminal):
 
 
 def acknowledge(run_dir, **payload):
+    """Atomically publish watchdog startup status for the waiting launcher."""
     atomic_json(run_dir / "startup.json", payload)
 
 
 def handle_exit(
     mode, app_id, has_terminal, log_path, script, run_dir, native_code=None
 ):
+    """Run completion handling in the current, hidden or newly created console as needed."""
     env = os.environ.copy()
     env["PYAPP_RUN_DIR"] = str(run_dir)
     if native_code is not None:
@@ -100,6 +103,7 @@ def handle_exit(
 
 
 def main():
+    """Own registration, launch, logging and completion handling for one application run."""
     app_id, launch_mode = sys.argv[1:3]
     if app_id == paths.EMPTY_ARG_INDICATOR:
         app_id = ""
@@ -193,13 +197,18 @@ def main():
             }
         atomic_json(run_dir / "wrapper.json", config)
         env = clean_python_environment()
-        # Keep launcher protocol private; expose only the public app identity below.
+        # Keep launcher protocol private; expose public metadata as a launch-time snapshot.
         for key in list(env):
             if key.startswith("PYAPP_"):
                 env.pop(key)
         env["PROGRAM_NAME"] = settings.program_name
         env["ICON_PATH"] = paths.ICON_PATH
         env["PROGRAM_HAS_TERMINAL"] = "1" if has_terminal else "0"
+        env["LOG_PATH"] = log_path
+        env["APP_ID"] = app_id
+        env["WDIR_IS_SCRIPT_DIR"] = "0" if settings.start_in_shortcut_folder else "1"
+        env["CLOSE_AFTER_FAILURE"] = "1" if settings.close_after_failure else "0"
+        env["CLOSE_AFTER_SUCCESS"] = "1" if settings.close_after_success else "0"
         raw_stream = None
         pump = None
         if log_path:
@@ -229,6 +238,7 @@ def main():
                 output = cast(io.BufferedReader, child.stdout)
 
                 def copy_output():
+                    """Copy combined child output to the raw log and optional terminal, closing streams on exit."""
                     try:
                         while True:
                             chunk = output.read1(65536)

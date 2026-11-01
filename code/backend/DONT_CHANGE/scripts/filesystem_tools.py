@@ -65,6 +65,7 @@ def delete_folder_safe(
     """
 
     def _raise_walk_error(error: OSError) -> None:
+        """Propagate a directory traversal error instead of silently skipping unreadable files."""
         raise error
 
     def _format_bytes(num_bytes: float) -> str:
@@ -81,13 +82,14 @@ def delete_folder_safe(
         return f"{num_bytes} B"
 
     def _is_filesystem_root_path(path: str | os.PathLike[str]) -> bool:
+        """Return whether a normalized path is its own parent, identifying filesystem roots."""
         path_text = os.path.abspath(os.fspath(path))
         return path_text == os.path.abspath(os.path.join(path_text, os.pardir))
 
     def _validate_required_child_names(
         names: list[str] | tuple[str, ...], label: str
     ) -> tuple[str, ...]:
-        """WIP"""
+        """Validate and return simple direct-child marker names; reject paths and traversal."""
         validated_names = []
         for name in names:
             name_text = os.fspath(name)
@@ -124,6 +126,7 @@ def delete_folder_safe(
     def _get_folder_size(
         folder: str | os.PathLike[str], timeout_seconds: float | None = None
     ) -> tuple[int, bool]:
+        """Return the counted file bytes and whether the optional scan deadline was exceeded."""
         total = 0
         deadline = None
         get_time = None
@@ -138,6 +141,7 @@ def delete_folder_safe(
             deadline = get_time() + timeout_seconds
 
         def _scan_timed_out() -> bool:
+            """Return whether the optional folder-size scan deadline has elapsed."""
             if deadline is not None and get_time is not None and get_time() > deadline:
                 return True
             return False
@@ -330,6 +334,7 @@ def delete_folder_safe(
                 empty_check_deadline = empty_check_get_time() + max_size_check_seconds
 
             def _check_empty_scan_timeout() -> None:
+                """Raise TimeoutError if the optional empty-folder scan deadline has elapsed."""
                 if (
                     empty_check_deadline is not None
                     and empty_check_get_time is not None
@@ -652,6 +657,7 @@ def find_longest_paths(
             paths.append(file_path)
 
     def path_length(path: Path) -> int:
+        """Return the character length of a path for descending path-length sorting."""
         return len(str(path))
 
     paths.sort(key=path_length, reverse=True)
@@ -691,7 +697,7 @@ def sanitize_filename(filename: str, replacement: str = "_") -> str:
 
 
 def write_lines(path: str, lines: list[str], override: bool = True) -> None:
-    """lines are a list of strings without the endline symbol ("\n") added.
+    r"""lines are a list of strings without the endline symbol ("\n") added.
     If override==False it will append instead of recreating the file (default:  override=True)."""
 
     os.makedirs(os.path.dirname(path), exist_ok=True)
@@ -703,7 +709,7 @@ def write_lines(path: str, lines: list[str], override: bool = True) -> None:
 
 
 def read_lines(path: str) -> list[str]:
-    """returns a list of strings from path without the endline symbol ("\n" or "\r\n")"""
+    r"""returns a list of strings from path without the endline symbol ("\n" or "\r\n")"""
 
     with open(path, encoding="utf-8") as f:
         lines = f.readlines()  # readlines converts \r\n into \n

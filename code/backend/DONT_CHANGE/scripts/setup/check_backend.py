@@ -5,6 +5,7 @@ from importlib.metadata import version
 
 
 def main():
+    """Check required backend imports, the interpreter version and pinned dependency versions."""
     import ctypes
     import ssl
 

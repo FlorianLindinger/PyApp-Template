@@ -1,4 +1,4 @@
-"""WIP
+"""Configure application identity, runtime, logging and launcher completion behavior.
 
 Relative paths in this file are interpreted as relative to this file."""
 
@@ -51,10 +51,6 @@ use_global_python = False
 # --
 #   Tkinter (Required for Tk-based GUIs or IDLE and used as default backend for matplotlib.pyplot. ~11 MB):
 install_tkinter = True
-#   Test suite (Needed for interpreter testing. ~31 MB):
-install_tests = False
-#   Tools folder: Needed for: Language translation workflows/Python's code demos/old editors/old exe converters. (~1 MB, some installation time):
-install_tools = False
 # ---------------------------------------
 start_minimized = False
 # ---------------------------------------

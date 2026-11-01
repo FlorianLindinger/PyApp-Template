@@ -42,10 +42,10 @@ your own code. A prepared folder can be copied and used offline.
 2. Try the Tkinter GUI example in `code/main.py`, or replace it with your application
 3. (Optional: Change program settings like Python version or program name under `code/backend/developer_settings.py`)
 4. (Optional: Add user settings under `code/settings.py`. Import them in `main.py` via `import settings`)
-5. Execute `Setup.cmd` (or the play-button `.cmd` alias) to validate/setup the environments and generate shortcuts
-6. Run `Start.cmd` or a generated shortcut. Declare dependencies in `code/backend/dev_tools/change python packages/DEFAULT_PYTHON_PACKAGES.txt`; they are installed transactionally. Import inference is an optional, reviewed developer action.
+5. Execute `Setup - run first and after moving folder.cmd` to validate/setup the environments and generate shortcuts
+6. Run `Start.cmd` or a generated shortcut. Declare dependencies in `code/backend/dev_tools/DEFAULT_PYTHON_PACKAGES.txt`; they are installed transactionally. Import inference is an optional, reviewed developer action.
 
-`Setup.cmd` and `Start.cmd` resolve the repository from their own locations. After moving the folder, run `Setup.cmd` to refresh generated shortcuts. The play-button `.cmd` is an alias for setup.
+`Setup - run first and after moving folder.cmd` and `Start.cmd` resolve the repository from their own locations. After moving the folder, rerun setup to refresh generated shortcuts.
 
 ---
 
@@ -96,6 +96,25 @@ Projects created from this template must replace the project-license placeholder
 `main.py`. Generated shortcuts and `Start.cmd` do not forward additional command-line
 arguments to the application. Launcher state such as terminal mode is never added
 to `main.py`'s positional arguments.
+
+The launcher exports these environment variables for `main.py` to read through
+`os.environ`:
+
+| Variable | Value |
+| --- | --- |
+| `PROGRAM_NAME` | Configured application name |
+| `ICON_PATH` | Absolute application icon path |
+| `PROGRAM_HAS_TERMINAL` | `"1"` for terminal launches, otherwise `"0"` |
+| `LOG_PATH` | Resolved text-log path for this run, or `""` when logging is disabled |
+| `APP_ID` | Taskbar identity supplied by the launcher, or `""` when absent |
+| `WDIR_IS_SCRIPT_DIR` | `"1"` when the script directory is selected as the working directory, otherwise `"0"` |
+| `CLOSE_AFTER_FAILURE` | Configured failure-close policy as `"1"` or `"0"` |
+| `CLOSE_AFTER_SUCCESS` | Configured success-close policy as `"1"` or `"0"` |
+
+These are launch-time snapshots. Changing them in `main.py` does not change the
+watchdog's settings. For booleans, compare with `"1"`; `bool("0")` is also true.
+`PROGRAM_HAS_TERMINAL` describes the launch mode; logging can still make stdout
+a pipe rather than a terminal.
 
 `Start.cmd` uses its own folder as the launch folder; generated shortcuts set
 Start in to the repository root. Set a shortcut's Start in directory explicitly

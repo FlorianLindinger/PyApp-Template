@@ -72,6 +72,7 @@ def install_packages(
     import subprocess
 
     def _as_list(value: str | list[str] | tuple[str, ...] | None) -> list[str]:
+        """Normalize an optional package string or sequence into a list of package arguments."""
         if value is None:
             return []
         if isinstance(value, str):
@@ -211,6 +212,7 @@ def install_packages(
 def get_installed_packages(
     exe_path: str, with_version: bool = True, target: str | None = None
 ):
+    """Read installed distribution names or version pins through the selected interpreter's pip."""
     import subprocess
 
     from backend.DONT_CHANGE.scripts.runtime_state import clean_python_environment
@@ -260,6 +262,7 @@ def save_installed_packages(
     with_version: bool = True,
     target: str | None = None,
 ):
+    """Write an installed-package inventory to an absolute requirements path and return it."""
     output_path = os.path.abspath(output_path)
 
     packages = get_installed_packages(
