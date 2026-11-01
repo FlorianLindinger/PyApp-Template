@@ -71,8 +71,20 @@ nuitka-crash-report.xml
 # uv icorn generated files in this folder:
 /code/backend/frontend-python.lock.json
 /code/backend/dev_tools/change python packages/DEFAULT_PYTHON_PACKAGES.txt.lock.json
+# output text files of dev_tools folder:
+/code/backend/dev_tools/*.txt
+# whitelist default package list in dev_tools folder:
+!/code/backend/dev_tools/DEFAULT_PYTHON_PACKAGES.txt
+# whitelist README in dev_tools folder:
+!/code/backend/dev_tools/README.*
+# generated Python distro folder in this folder:
+/code/backend/python/
+# generated packages folder in this folder:
+/code/backend/packages/
 # whitelist ".gitkeep" files anywhere:
 !.gitkeep
+
+
 
 # =================================
 # ==== App specific gitignores ====

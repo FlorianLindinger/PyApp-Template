@@ -137,22 +137,3 @@ when `close_after_success=True`. Failures preserve their diagnostics. Persistent
 MSI logs are under `temporary/installation-logs/`; failed backend staging folders
 are retained with their diagnostic files. These folders can grow and are not
 currently pruned automatically.
-
-## Tkinter example and Stop
-
-The example in `code/main.py` opens a small window displaying "Example GUI".
-The launcher sets `PROGRAM_NAME` and `ICON_PATH` environment variables from the
-project settings. The example reads these for its window title and icon, without
-importing backend settings. Running it directly uses the title "Example GUI"
-and Tkinter's default icon unless these variables are set.
-`PROGRAM_HAS_TERMINAL` is also set to `"1"` for terminal launches and `"0"` for
-hidden launches. Check it with `os.environ.get("PROGRAM_HAS_TERMINAL") == "1"`.
-Replace it with your own application.
-
-Stop directly terminates the verified application process tree. It does not run
-application cleanup callbacks.
-
-PID records exist only while instances are registered. Closing the last instance
-or using Stop removes the empty PID registry folder and legacy PID/lock files.
-If the watchdog itself is forcibly killed, stale records are cleaned on the next
-launch or Stop. Registry synchronization uses a Windows mutex, not a disk lock file.

@@ -44,6 +44,18 @@ input_prepend: str | None = "%H:%M:%S > "
 # Start script in scipt folder or folder of the starting shortcut. (affects log_path_rel_to_start_folder setting below):
 start_in_shortcut_folder = False
 # ---------------------------------------
+# Decide if global default (any version) Python should be used instead of automatic localized download and installation of Python/packages:
+use_global_python = False
+# ---------------------------------------
+# Decide what parts of vanilla full Python to install:
+# --
+#   Tkinter (Required for Tk-based GUIs or IDLE and used as default backend for matplotlib.pyplot. ~11 MB):
+install_tkinter = True
+#   Test suite (Needed for interpreter testing. ~31 MB):
+install_tests = False
+#   Tools folder: Needed for: Language translation workflows/Python's code demos/old editors/old exe converters. (~1 MB, some installation time):
+install_tools = False
+# ---------------------------------------
 start_minimized = False
 # ---------------------------------------
 
@@ -177,23 +189,11 @@ prevent_start_if_already_running = False
 close_already_running_instances_on_start = False
 prompt_to_close_existing_instances = False
 # ---------------------------------------
-# Decide if global default (any version) Python should be used instead of automatic localized download and installation of Python/packages:
-use_global_python = False
-# ---------------------------------------
 # Install Python environment while generating shortcuts instead of for first start (Ignored when use_global_python = True):
 install_python_when_generating_shortcuts = True
 # ---------------------------------------
 # Application arguments passed to main.py:
 args_for_main_py: list[str] = []
-# ---------------------------------------
-# Decide what parts of vanilla full Python to install:
-# --
-#   Tkinter (Required for Tk-based GUIs or IDLE and used as default backend for matplotlib.pyplot. ~11 MB):
-install_tkinter = True
-#   Test suite (Needed for interpreter testing. ~31 MB):
-install_tests = False
-#   Tools folder: Needed for: Language translation workflows/Python's code demos/old editors/old exe converters. (~1 MB, some installation time):
-install_tools = False
 # ---------------------------------------
 # Use uv (faster replacement of pip) to install packages (it uses global uv if available and installs locally otherwise):
 use_uv_to_install_packages = True
