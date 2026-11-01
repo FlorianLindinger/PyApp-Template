@@ -1,7 +1,7 @@
-# ruff: noqa: E402
+# ruff: noqa: E402 RUF100
 # The early __main__ handoff lets the shared runner catch dependency import failures.
 
-"""WIP"""
+"""Replace the managed application packages with an empty environment."""
 
 if __name__ == "__main__":
     import sys
@@ -28,6 +28,7 @@ from backend.DONT_CHANGE.scripts.frontend_environment import (
 
 
 def main() -> None:
+    """Replace the managed application packages with an empty environment."""
     ensure_python_distro()
     install_empty_packages()
     print()

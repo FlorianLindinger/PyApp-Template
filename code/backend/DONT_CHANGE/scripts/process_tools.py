@@ -22,6 +22,7 @@ def exit_code_looks_like_interpreter_crash(exit_code: Any) -> bool:
 
 
 def is_process_running(pid: int) -> bool:
+    """Check whether a positive Windows PID is active using a limited-access process handle."""
     if pid <= 0:
         return False
 

@@ -63,6 +63,7 @@ try:
     # main function
 
     def main() -> None:
+        """Bootstrap verified pip, install locked backend dependencies and configure the embedded runtime."""
         pip_version = "25.2"
 
         pipreqs_mapping_path = BACKEND_PACKAGES_DIR + "\\pipreqs\\mapping"
@@ -128,6 +129,7 @@ try:
 
             # clear packages folder
             def clear_folder_contents(folder: str):
+                """Remove children only from a directory explicitly named python_packages; reject other paths."""
                 import shutil  # lazy import because slow
 
                 forced_name = "python_packages"

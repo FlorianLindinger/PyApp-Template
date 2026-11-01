@@ -9,12 +9,15 @@ if not exist "%instructions%" (
     set "help_exit_code=2"
     goto result
 )
-"%ComSpec%" /d /s /c ""%SystemRoot%\System32\notepad.exe" "%instructions%""
+start "" "%SystemRoot%\System32\notepad.exe" "%instructions%"
 set "help_exit_code=%ERRORLEVEL%"
 :result
 echo.
 if "%help_exit_code%"=="0" (
     echo [Success] Icon instructions opened in Notepad.
+    echo Closing this window in:
+    powershell.exe -NoLogo -NoProfile -NonInteractive -Command "3..1 | ForEach-Object { Write-Host $_; Start-Sleep -Seconds 1 }"
+    exit /b 0
 ) else (
     echo [Error] Could not open the instructions. Exit code: %help_exit_code%
 )

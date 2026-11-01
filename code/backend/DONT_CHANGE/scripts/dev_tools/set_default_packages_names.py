@@ -1,7 +1,7 @@
-# ruff: noqa: E402
+# ruff: noqa: E402 RUF100
 # The early __main__ handoff lets the shared runner catch dependency import failures.
 
-"""WIP"""
+"""Save installed distribution names as the application's default requirements."""
 
 if __name__ == "__main__":
     import sys
@@ -28,6 +28,7 @@ from backend.DONT_CHANGE.scripts.frontend_environment import (
 
 
 def main() -> None:
+    """Save installed distribution names as the application's default requirements."""
     ensure_python_distro()
     save_current_packages_as_default(with_version=False)
     print()

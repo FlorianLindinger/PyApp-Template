@@ -17,6 +17,7 @@ from backend.DONT_CHANGE.settings import backend_settings as paths
 
 
 def main():
+    """Prepare the selected launch mode and wait for the watchdog's startup acknowledgement."""
     app_id = sys.argv[1] if len(sys.argv) > 1 else ""
     batch_mode = os.environ.pop("PYAPP_LAUNCH_MODE", "")
     mode = batch_mode or (sys.argv[2] if len(sys.argv) > 2 else "terminal")

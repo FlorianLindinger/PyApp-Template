@@ -1,4 +1,4 @@
-# ruff: noqa: E402
+# ruff: noqa: E402 RUF100
 # Bootstrap path setup must run before importing project modules.
 
 """Manage the frontend runtime, dependency state, repair menus and package tools."""
@@ -87,8 +87,11 @@ from backend.DONT_CHANGE.settings.backend_settings import (
 
 
 def environment_locked(function):
+    """Decorate an environment operation with the shared, reentrant installation lock."""
+
     @wraps(function)
     def locked(*args, **kwargs):
+        """Run the wrapped operation while holding the environment lock for this checkout."""
         with FileLock(Path(TEMPORARY_DIR) / "environment.lock", timeout=600):
             return function(*args, **kwargs)
 
@@ -96,6 +99,7 @@ def environment_locked(function):
 
 
 def refuse_mutation_while_running():
+    """Reject environment changes while verified application instances remain active."""
     running, _ = get_running_processes_from_pid_file(PROCESS_ID_FILE_PATH)
     if running:
         raise RuntimeError(
@@ -109,6 +113,7 @@ def get_python_version() -> str:
 
 
 def read_python_version_from_file() -> str:
+    """Return the live interpreter version rather than relying on a saved version file."""
     return get_python_version()
 
 
@@ -252,6 +257,7 @@ cmd /k
 
 
 def prompt_for_distro_reinstall(msg: str = "Choose how to replace Python:"):
+    """Prompt for a runtime/package replacement strategy and return its validated menu index."""
     print_warn(msg)
     choices = [
         "Keep current Python and packages",
@@ -276,10 +282,7 @@ def prompt_for_distro_reinstall(msg: str = "Choose how to replace Python:"):
         print_warn("Enter a number from 0 to 8.")
 
 
-def ensure_python_distro(
-    check_auto_determine_flag_for_default_package_install: bool = True,
-    used_appid_if_slow: str = "",
-):
+def ensure_python_distro(used_appid_if_slow: str = ""):
     """Probe the actual runtime and roll back version changes if package setup fails."""
     import shutil
 
@@ -326,11 +329,11 @@ def ensure_python_distro(
             install_packages_from_file(
                 requirements, replace=True, review_inferred=False
             )
-    except BaseException:
+    except BaseException as exc:
         if previous.exists():
             failed = Path(FRONTEND_PYTHON_DIR + ".failed")
             if failed.exists():
-                raise RuntimeError("A failed runtime remains; inspect " + str(failed))
+                raise RuntimeError("A failed runtime remains; inspect " + str(failed)) from exc
             Path(FRONTEND_PYTHON_DIR).rename(failed)
             previous.rename(FRONTEND_PYTHON_DIR)
             shutil.rmtree(failed)
@@ -366,6 +369,7 @@ def delete_frontend_packages():
 
 
 def are_frontend_packages_installed() -> bool:
+    """Check the managed package manifest, requirements and interpreter version for consistency."""
     return packages_healthy(
         FRONTEND_PACKAGES_DIR,
         os.path.basename(FRONTEND_PACKAGES_ARE_INSTALLED_MARKER_PATH),
@@ -375,9 +379,10 @@ def are_frontend_packages_installed() -> bool:
 
 
 def make_file_to_indicate_frontend_pckgs_installed():
+    """Validate package dependencies with pip check, then write the installation manifest."""
     import subprocess
 
-    subprocess.run(
+    subprocess.run( #noqa:S603
         [FRONTEND_PYTHON_EXE, "-E", "-s", "-m", "pip", "check"],
         env=clean_python_environment(),
         check=True,
@@ -395,6 +400,7 @@ def make_file_to_indicate_frontend_pckgs_installed():
 
 
 def ensure_frontend_packages(used_appid_if_slow: str = ""):
+    """Prepare the runtime and repair or migrate packages when their saved state is stale."""
     ensure_python_distro(used_appid_if_slow=used_appid_if_slow)
     if not are_frontend_packages_installed():
         marker = Path(FRONTEND_PACKAGES_ARE_INSTALLED_MARKER_PATH)
@@ -413,6 +419,7 @@ def ensure_frontend_packages(used_appid_if_slow: str = ""):
 
 
 def confirm_inferred_requirements(path):
+    """Show inferred requirements for review and raise if the user declines installation."""
     print(
         "Inferred imports are suggestions. Check distribution names, optional imports and version constraints:"
     )
@@ -427,6 +434,7 @@ def confirm_inferred_requirements(path):
 
 
 def install_empty_packages():
+    """Transactionally replace application packages using an empty requirements file."""
     import tempfile
 
     with tempfile.TemporaryDirectory(prefix="pyapp_empty_") as directory:
@@ -485,7 +493,7 @@ def install_packages_from_file(
             )
         # Check dependency consistency against the staged packages, excluding the old target.
         probe = "import os,sys,site; old=os.path.normcase(os.path.abspath(sys.argv[1])); sys.path[:]=[p for p in sys.path if os.path.normcase(os.path.abspath(p))!=old]; site.addsitedir(sys.argv[2]); from pip._internal.cli.main import main; sys.exit(main(['check']))"
-        subprocess.run(
+        subprocess.run( #noqa:S603
             [
                 FRONTEND_PYTHON_EXE,
                 "-E",
@@ -504,7 +512,7 @@ def install_packages_from_file(
             DEFAULT_PACKAGES_PATH,
             get_python_version(),
         )
-        frozen = subprocess.run(
+        frozen = subprocess.run( #noqa:S603
             [
                 FRONTEND_PYTHON_EXE,
                 "-E",
@@ -542,6 +550,7 @@ def install_packages_from_file(
 def install_default_packages(
     check_auto_determine_flag: bool, app_id_for_slow: str = ""
 ):
+    """Install declared defaults or reviewed inferred imports using the requested strategy."""
     import json
     import tempfile
 
@@ -577,7 +586,7 @@ def install_default_packages(
 
 
 def get_auto_find_pckgs_phrase_state() -> bool | None:
-    """WIP"""
+    """Read the import-inference flag from default requirements, returning None if absent or invalid."""
     if not os.path.exists(DEFAULT_PACKAGES_PATH):
         return None
 

@@ -1,7 +1,7 @@
-# ruff: noqa: E402
+# ruff: noqa: E402 RUF100
 # The early __main__ handoff lets the shared runner catch dependency import failures.
 
-"""WIP"""
+"""Save installed application distributions with their current version pins."""
 
 if __name__ == "__main__":
     import sys
@@ -31,6 +31,7 @@ from backend.DONT_CHANGE.settings.backend_settings import (
 
 
 def main() -> None:
+    """Save installed application distributions with their current version pins."""
     ensure_python_distro()
     save_current_packages(CURRENT_PACKAGES_WITH_VERSION_PATH, with_version=True)
     print()

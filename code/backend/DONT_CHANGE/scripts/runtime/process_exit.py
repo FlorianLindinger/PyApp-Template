@@ -314,12 +314,15 @@ try:
         """Keep Rich output writable on legacy Windows console encodings."""
 
         def __init__(self, stream: TextIO) -> None:
+            """Store the console stream used for encoding-safe Rich traceback output."""
             self.stream = stream
 
         def writable(self) -> bool:
+            """Report that this adapter accepts text writes."""
             return True
 
         def write(self, text: str) -> int:
+            """Replace characters unsupported by the console encoding and return the written character count."""
             encoding = getattr(self.stream, "encoding", None) or "utf-8"
             if encoding:
                 try:
@@ -334,12 +337,15 @@ try:
             return len(text) if written is None else written
 
         def flush(self) -> None:
+            """Flush the wrapped console stream."""
             self.stream.flush()
 
         def isatty(self) -> bool:
+            """Return whether the wrapped console stream is attached to a terminal."""
             return self.stream.isatty()
 
         def fileno(self) -> int:
+            """Return the wrapped console stream's file descriptor."""
             return self.stream.fileno()
 
     def print_traceback_from_json_payload(
@@ -438,6 +444,7 @@ try:
         crash_log_payload: dict[str, Any] | None, message: str | None
     ):
         # write a human readable crash log:
+        """Write a uniquely named crash report when a traceback payload or diagnostic message exists."""
         crash_log_path_resolved = get_log_path(
             crash_log_path, crash_log_path_is_relative_to_start_folder_if_relative
         )
@@ -593,6 +600,7 @@ try:
 
                     @environment_locked
                     def manual_changes():
+                        """Open manual package recovery after checking for active runs, then validate the changed packages."""
                         refuse_mutation_while_running()
                         open_manual_package_terminal()
                         make_file_to_indicate_frontend_pckgs_installed()
@@ -692,6 +700,7 @@ try:
                 wav_path += ".wav"
 
         def _play_exit_sound(wav_path: str, wait: bool = True) -> None:
+            """Play the configured WAV synchronously or asynchronously, reporting playback errors."""
             if not wav_path:
                 return
             try:
@@ -747,6 +756,7 @@ try:
         # ==============================
         # handle args
 
+        """Classify the reported exit and apply diagnostic, recovery and completion actions."""
         (
             _script_path,
             exit_mode,

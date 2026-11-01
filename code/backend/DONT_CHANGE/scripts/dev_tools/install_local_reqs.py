@@ -1,7 +1,7 @@
-# ruff: noqa: E402
+# ruff: noqa: E402 RUF100
 # The early __main__ handoff lets the shared runner catch dependency import failures.
 
-"""WIP"""
+"""Install packages from requirements.txt in the tool's working directory."""
 
 if __name__ == "__main__":
     import sys
@@ -29,6 +29,7 @@ from backend.DONT_CHANGE.scripts.frontend_environment import (
 
 
 def main() -> None:
+    """Install packages from requirements.txt in the tool's working directory."""
     ensure_python_distro()
     install_packages_from_file(os.path.join(os.getcwd(), "requirements.txt"))
     print()

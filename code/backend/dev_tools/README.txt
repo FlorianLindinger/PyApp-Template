@@ -1,83 +1,29 @@
 DEVELOPER TOOLS
 ===============
 
-This folder contains shortcuts and configuration files for maintaining the
-application's frontend Python environment.
+Run the .bat files in this folder to maintain the application's Python and
+packages. Each batch calls its matching DONT_CHANGE/scripts/dev_tools/*.py
+through the shared backend bootstrap/runner; no generated shortcuts are needed.
+Paths are relative to the batch file, so these tools work after moving the project.
 
+DEFAULT_PYTHON_PACKAGES.txt is the shared default dependency list. The adjacent
+.lock.json and determined/auto-found package lists are generated local state.
 
-PACKAGE SHORTCUTS
------------------
+PACKAGE ACTIONS
+---------------
 
-The shortcuts can:
+install_imports.bat              Infer/review dependencies from project imports.
+install_local_reqs.bat           Install requirements.txt from this folder.
+open_package_terminal.bat        Open a terminal using the application Python/pip.
+reset_packages_default.bat       Replace installed packages with the defaults.
+reset_packages_empty.bat         Remove installed application packages.
+reset_packages_imports.bat       Replace packages with inferred dependencies.
+upgrade_packages.bat            Upgrade installed application packages.
+save_current_packages_*.bat      Save installed package names or versions here.
+save_imported_packages_*.bat     Save inferred requirements here.
+set_default_packages_*.bat       Make current packages the default dependency list.
 
-- install packages imported by project Python files;
-- install packages from a local requirements.txt;
-- open a terminal for manual package installation;
-- reset or upgrade the frontend Python environment;
-- save installed or required package lists; and
-- make the current package set the template default.
-
-DEFAULT_PYTHON_PACKAGES.txt contains the default frontend package list used by
-the reset/install tools.
-
-MISCELLANEOUS SHORTCUTS
-----------------------
-
-miscellaneous/check_longest_paths.lnk scans the project root (excluding .git),
-lists the longest paths, and shows the remaining space before the conservative
-260-character Windows limit. Press Enter to check again, or close the terminal
-to exit. If little space remains, move the project closer to a drive root or
-shorten nested names.
-
-
-FRONTEND VERIFICATION
----------------------
-
-The shortcuts in verify code/ run Ruff linting, Ruff format checks, and
-Pyrefly type checking for the frontend targets.
-
-- verify_main_py_basic/default/strict.lnk checks code without changing it.
-- fix_and_verify_main_py_basic/default/strict.lnk applies Ruff's safe fixes
-  and formatting before it verifies the code.
-
-Each verification terminal clears its previous output before a run. Press
-Enter to rescan, type fix to apply Ruff's safe fixes, or type unsafe to apply
-Ruff's unsafe fixes as well. Close the terminal window when finished.
-
-Configure frontend verification in:
-
-    ../DONT_CHANGE/settings/backend_settings.py
-
-The relevant settings are FRONTEND_VERIFICATION_TARGETS,
-FRONTEND_VERIFICATION_EXCLUDED_FILES,
-FRONTEND_VERIFICATION_EXCLUDED_FOLDERS,
-FRONTEND_VERIFICATION_VALID_PRESETS, and
-FRONTEND_VERIFICATION_DEFAULT_PRESET.
-
-Verification targets and exclusions are configured in
-../DONT_CHANGE/settings/backend_settings.py. The scripts run Ruff and Pyrefly
-with their available/default configuration; no pyproject.toml is shipped.
-Use the matching basic/default/strict verifier or the safe-fix launcher.
-
-
-CAUTION
--------
-
-Package-management tools intentionally change the generated frontend Python
-environment. Read the shortcut name before running it. The verify_main_py
-shortcuts are read-only; the fix_and_verify_main_py shortcuts modify files
-only when Ruff can apply a safe fix or formatting change.
-
-
-IMPLEMENTATION LAYOUT
----------------------
-
-DONT_CHANGE/scripts/dev_tools/
-    Contains Python implementations grouped into packages, git, verification
-    and paths folders.
-
-DONT_CHANGE/batches/dev_tools/
-    Contains matching portable .bat launchers in the same four groups.
-
-verify code/
-    Contains the portable Windows .lnk shortcut entry points.
+Package actions can change the generated Python/package environment. Read the
+batch name before running it. Python implementations report failures through the
+shared runner and preserve nonzero exit codes. Successful interactive tools wait
+when configured to do so.

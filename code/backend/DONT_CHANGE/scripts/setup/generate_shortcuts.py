@@ -91,6 +91,8 @@ def generate_shortcut(
     _unused_method = ctypes.c_void_p
 
     class _Guid(ctypes.Structure):
+        """Represent a native Windows GUID for shortcut COM calls."""
+
         _fields_ = (
             ("Data1", wintypes.DWORD),
             ("Data2", wintypes.WORD),
@@ -99,9 +101,13 @@ def generate_shortcut(
         )
 
     class _PropertyKey(ctypes.Structure):
+        """Identify a Windows shortcut property by its format GUID and numeric ID."""
+
         _fields_ = (("fmtid", _Guid), ("pid", wintypes.DWORD))
 
     class _PropVariant(ctypes.Structure):
+        """Hold a string-valued COM variant for the shortcut's taskbar identity."""
+
         _fields_ = (
             ("vt", ctypes.c_ushort),
             ("reserved1", ctypes.c_ushort),
@@ -111,11 +117,15 @@ def generate_shortcut(
         )
 
     class _ShellLink(ctypes.Structure):
+        """Declare the native shell-link interface before assigning its method table."""
+
         pass
 
     _shell_link_pointer = ctypes.POINTER(_ShellLink)
 
     class _ShellLinkVTable(ctypes.Structure):
+        """Describe the COM shell-link methods used to configure generated shortcuts."""
+
         _fields_ = (
             (
                 "QueryInterface",
@@ -160,11 +170,15 @@ def generate_shortcut(
     _ShellLink._fields_ = [("vtable", ctypes.POINTER(_ShellLinkVTable))]
 
     class _PersistFile(ctypes.Structure):
+        """Declare the COM persistence interface used to save shortcut files."""
+
         pass
 
     _persist_file_pointer = ctypes.POINTER(_PersistFile)
 
     class _PersistFileVTable(ctypes.Structure):
+        """Describe the COM persistence methods used to write shortcut files."""
+
         _fields_ = (
             (
                 "QueryInterface",
@@ -193,11 +207,15 @@ def generate_shortcut(
     _PersistFile._fields_ = [("vtable", ctypes.POINTER(_PersistFileVTable))]
 
     class _PropertyStore(ctypes.Structure):
+        """Declare the COM interface used to store shortcut properties."""
+
         pass
 
     _property_store_pointer = ctypes.POINTER(_PropertyStore)
 
     class _PropertyStoreVTable(ctypes.Structure):
+        """Describe the COM property-store methods used to persist the app identity."""
+
         _fields_ = (
             (
                 "QueryInterface",
@@ -228,6 +246,7 @@ def generate_shortcut(
     _PropertyStore._fields_ = [("vtable", ctypes.POINTER(_PropertyStoreVTable))]
 
     def _guid(value: str) -> _Guid:
+        """Convert a UUID string to the native GUID structure expected by Windows COM."""
         parsed = uuid.UUID(value)
         return _Guid(
             parsed.time_low,
@@ -237,6 +256,7 @@ def generate_shortcut(
         )
 
     def _check_hresult(result: int, action: str) -> None:
+        """Raise OSError with the failed COM action and formatted Windows error code."""
         if result >= 0:
             return
         code = result & 4294967295
@@ -247,6 +267,7 @@ def generate_shortcut(
         raise OSError(f"{action} failed with HRESULT 0x{code:08X}: {message}")
 
     def _wait_for_file(output_path: str, should_exist: bool) -> None:
+        """Wait for shortcut creation or retry its deletion, reporting failure after five seconds."""
         timeout = 5.0
         deadline = time.monotonic() + timeout
         last_error = None
@@ -269,6 +290,7 @@ def generate_shortcut(
             time.sleep(0.1)
 
     def _quote(value: str | os.PathLike[str]) -> str:
+        """Quote one filesystem argument for the command string stored in a shortcut."""
         return '"' + os.fspath(value).replace('"', '""') + '"'
 
     _shell_link_class_id = _guid("00021401-0000-0000-C000-000000000046")
@@ -399,6 +421,7 @@ def generate_shortcut(
 
 
 def _sanitize_app_id(value: str) -> str:
+    """Normalize the app name to ASCII letters, digits, dots and hyphens for taskbar identity."""
     name = (
         unicodedata.normalize("NFKD", value)
         .encode("ascii", "ignore")
@@ -413,6 +436,7 @@ def _sanitize_app_id(value: str) -> str:
 
 
 def main() -> None:
+    """Optionally prepare application dependencies and generate the enabled Windows shortcuts."""
     app_id = _sanitize_app_id(program_name)
     if len(app_id) > 15:
         app_id = app_id.replace("-", "").replace(".", "")

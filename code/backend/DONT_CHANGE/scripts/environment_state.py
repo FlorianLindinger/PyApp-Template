@@ -89,6 +89,7 @@ def requirements_fingerprint(path, seen=None):
 
 
 def runtime_healthy(executable, tkinter=False):
+    """Return the interpreter version if required runtime imports succeed, otherwise None."""
     modules = "import sys, ssl, sqlite3, ctypes, encodings, pip"
     if tkinter:
         modules += ", tkinter"
@@ -127,6 +128,7 @@ def package_inventory(directory):
 
 
 def package_payloads_present(directory):
+    """Check that in-directory payloads listed in distribution RECORD files still exist."""
     directory = Path(directory).resolve()
     for record in directory.glob("*.dist-info/RECORD"):
         with record.open(encoding="utf-8", newline="") as stream:
@@ -143,6 +145,7 @@ def package_payloads_present(directory):
 
 
 def write_package_state(directory, marker_name, requirements, python_version):
+    """Atomically record the requirements fingerprint, Python version and installed inventory."""
     atomic_json(
         Path(directory) / marker_name,
         {
@@ -155,6 +158,7 @@ def write_package_state(directory, marker_name, requirements, python_version):
 
 
 def packages_healthy(directory, marker_name, requirements, python_version):
+    """Check saved package state against requirements, interpreter version and present payloads."""
     try:
         state = json.loads((Path(directory) / marker_name).read_text(encoding="utf-8"))
         return (
@@ -169,6 +173,7 @@ def packages_healthy(directory, marker_name, requirements, python_version):
 
 
 def stage_directory(destination):
+    """Create a unique staging directory beside the destination for a transactional install."""
     destination = Path(destination).resolve()
     destination.parent.mkdir(parents=True, exist_ok=True)
     return Path(
@@ -190,6 +195,7 @@ def verify_python_signature(path):
 
 
 def artifact_record(path, url):
+    """Return the source URL, filename and SHA-256 digest of a downloaded artifact."""
     digest = hashlib.sha256()
     with open(path, "rb") as stream:
         for chunk in iter(lambda: stream.read(1024 * 1024), b""):

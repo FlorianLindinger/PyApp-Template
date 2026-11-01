@@ -1,7 +1,7 @@
-# ruff: noqa: E402
+# ruff: noqa: E402 RUF100
 # The early __main__ handoff lets the shared runner catch dependency import failures.
 
-"""WIP"""
+"""Review inferred application imports and install their distributions."""
 
 if __name__ == "__main__":
     import sys
@@ -32,6 +32,7 @@ from backend.DONT_CHANGE.settings.backend_settings import (
 
 
 def main() -> None:
+    """Review inferred application imports and install their distributions."""
     ensure_python_distro()
     success, output_path = save_requirements_of_root_folder_noVersion(
         NEEDED_PACKAGES_NO_VERSION_PATH

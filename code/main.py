@@ -6,6 +6,7 @@ from tkinter import ttk
 
 
 def main():
+    """Show the example Tkinter window using the launcher-provided app name and icon."""
     root = tk.Tk()
     root.title(os.environ.get("PROGRAM_NAME", "Example GUI"))
     if os.environ.get("ICON_PATH"):

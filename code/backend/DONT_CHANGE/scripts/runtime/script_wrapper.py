@@ -1,7 +1,7 @@
 # ruff: noqa: UP032
 
 
-"""WIP
+"""Run the application with isolated arguments, mirrored logging and serialized exit diagnostics.
 
 This script must be compatible for Python 3.5+:
 - No function, argument, variable, or class attribute annotations
@@ -16,8 +16,7 @@ This script must be compatible for Python 3.5+:
 - No pathlib/os.PathLike-only APIs; keep accepting plain strings
 - No subprocess.run(..., capture_output=True) or text=True
 - No breakpoint()
-- No .astimezone() for datetime
-"""
+- No .astimezone() for datetime"""
 
 # {e} will be formatted to exception:
 fail_message = "[Error] Failed during wrapper start: {e}"
@@ -61,13 +60,17 @@ try:
         return fmt
 
     def _format_prepend(fmt):  # pyrefly: ignore [implicit-any-parameter]
+        """Format the current local time using a normalized prefix format, or return an empty prefix."""
         if not fmt:
             return ""
 
         return datetime.now().strftime(_normalize_strftime_format(fmt))  # noqa:DTZ005
 
     class _BinarySplitter:
+        """Mirror binary writes to the original stream and an incrementally decoded text log."""
+
         def __init__(self, owner):
+            """Store the owning splitter and create its incremental binary-to-text decoder."""
             self.owner = owner
             import codecs
 
@@ -76,6 +79,7 @@ try:
             )
 
         def write(self, data):
+            """Mirror bytes to the original output and decoded log under the owner's lock."""
             with self.owner._lock:
                 target = getattr(self.owner.print_stream, "buffer", None)
                 if target is not None:
@@ -90,9 +94,11 @@ try:
             return len(data)
 
         def flush(self):
+            """Flush both output streams through the owning splitter."""
             self.owner.flush()
 
         def __getattr__(self, name):
+            """Delegate unsupported binary-stream attributes to the original stream's buffer."""
             return getattr(self.owner.print_stream.buffer, name)
 
     class pipe_splitter:
@@ -141,6 +147,7 @@ try:
             print_red=False,  # pyrefly: ignore [implicit-any-parameter]
             auto_flush=True,  # pyrefly: ignore [implicit-any-parameter]
         ):
+            """Configure output streams, prefixes, coloring, buffering and the shared write lock."""
             self.print_stream = print_stream
             self.log_stream = log_stream
             self.print_timestamp_format = print_timestamp_format
@@ -171,12 +178,15 @@ try:
             return self.ANSI_escape_re.sub("", text)
 
         def _timestamp_prefix(self, fmt):  # pyrefly: ignore [implicit-any-parameter]
+            """Return the current-time prefix for the supplied console or log format."""
             return _format_prepend(fmt)
 
         def _print_supports_color(self):
+            """Return whether the wrapped print stream reports an interactive terminal."""
             return bool(getattr(self.print_stream, "isatty", lambda: False)())
 
         def write(self, data):  # pyrefly: ignore [implicit-any-parameter]
+            """Mirror text to console and log with line-aware prefixes and optional console coloring."""
             if data is None:
                 data = ""
             if not isinstance(data, str):
@@ -255,6 +265,7 @@ try:
                     self.flush()
 
         def flush(self):
+            """Flush the console and optional log while holding the shared write lock."""
             with self._lock:
                 if hasattr(self.print_stream, "flush"):
                     self.print_stream.flush()
@@ -262,21 +273,26 @@ try:
                     self.log_stream.flush()
 
         def isatty(self):
+            """Return whether the wrapped print stream is attached to a terminal."""
             return bool(getattr(self.print_stream, "isatty", lambda: False)())
 
         def __getattr__(self, name):
+            """Delegate unsupported text-stream attributes to the original print stream."""
             return getattr(self.print_stream, name)
 
         def writable(self):
+            """Report that the splitter accepts text writes."""
             return True
 
         def fileno(self):
+            """Return the wrapped stream's descriptor, raising OSError when none is available."""
             if hasattr(self.print_stream, "fileno"):
                 return self.print_stream.fileno()
             raise OSError("Underlying print_stream does not support fileno()")
 
         @property
         def encoding(self):
+            """Return the wrapped print stream's encoding, if exposed."""
             return getattr(self.print_stream, "encoding", None)
 
     def setup_log_prints(
@@ -326,6 +342,7 @@ try:
             faulthandler.enable(all_threads=True)
 
     def _finish_logging():
+        """Flush and restore standard streams, then disable fault logging and close the text log."""
         import faulthandler
 
         try:
@@ -339,6 +356,7 @@ try:
                 log_file.close()
 
     def save_result(code):
+        """Atomically publish the wrapper outcome so the watchdog can detect abrupt interpreter exits."""
         if result_path:
             import json
 
@@ -392,6 +410,7 @@ try:
         seen = set()
 
         def _add(current_error):  # pyrefly: ignore [implicit-any-parameter]
+            """Append one exception's context or cause before it, avoiding cycles in the chain."""
             if id(current_error) in seen:
                 return
             seen.add(id(current_error))
@@ -417,6 +436,7 @@ try:
     def save_traceback(
         error, excepted_script_path, output_path
     ):  # pyrefly: ignore [implicit-any-parameter]
+        """Serialize an exception chain, source context and interpreter details for backend reporting."""
         import json
 
         def _get_system_exit_code_for_json(
@@ -475,6 +495,7 @@ try:
     # ==============================
 
     def main():
+        """Load launch configuration, prepare logging and argv, then execute the application as __main__."""
         global crash_log_temp_path, result_path, ready_path
 
         # ==============================

@@ -77,7 +77,7 @@ Run:
 The launcher reports success or failure and waits for a keypress before closing.
 It works after moving the project folder because its paths are relative to itself.
 
-This launches scripts/icons/generate_icons.py with the bundled backend Python. It creates:
+This launches scripts/actions/generate_icons.py with the bundled backend Python. It creates:
 
     icon.ico
     settings.ico
@@ -96,20 +96,3 @@ appearance in Windows shortcuts, Explorer, and the taskbar.
 The generator uses built-in Windows PowerShell/WPF and does not require Pillow.
 It caches repeated image checks and generates several independent icons at once
 to reduce regeneration time.
-
-
-=======================================
-==== PLACEHOLDER PNGS ==================
-=======================================
-
-To create readable placeholder PNGs with instructions, run:
-
-    code/backend/DONT_CHANGE/batches/icons/generate_icon_pngs.bat
-
-The files are written to:
-
-    code/backend/DONT_CHANGE/icon_related/created_PNGS_to_be_replaced/
-
-Copy a generated placeholder to code/backend/icons/ only when you want it to
-become an editable input image. PNG size, colors, font, and placeholder text
-are configured in backend/DONT_CHANGE/settings/backend_settings.py.
