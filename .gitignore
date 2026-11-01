@@ -1,17 +1,15 @@
 # Entries in this file will not be synchronized in git. 
-# "!" before a line whitelists synchronization.
 # "*" represents any number of wildcard symbols.
 # Use "/" to separate folder names in paths.
 # Starting with "/" means the path is relative to this file.
 # Use "**" to match any number of folders in a path.
+# "!" before a line whitelists synchronization. Must come after rule that stops sync.
 # Lines with "#" will be ignored.
 
 # ============================
 # ==== General gitignores ====
 # ============================
 
-# whitelist ".gitkeep" files anywhere:
-!.gitkeep
 # Spyder and Rope:
 .spyderproject
 .spyproject
@@ -62,8 +60,6 @@ nuitka-crash-report.xml
 
 # shortcuts in this folder:
 /*.lnk
-# whitelist shortcut to generate shortcuts in this folder:
-!/▶️*.lnk
 # contents of "logs" folder in this folder:
 /logs/*
 # contents of "crash logs" folder in this folder:
@@ -75,6 +71,8 @@ nuitka-crash-report.xml
 # uv icorn generated files in this folder:
 /code/backend/frontend-python.lock.json
 /code/backend/dev_tools/change python packages/DEFAULT_PYTHON_PACKAGES.txt.lock.json
+# whitelist ".gitkeep" files anywhere:
+!.gitkeep
 
 # =================================
 # ==== App specific gitignores ====
