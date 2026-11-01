@@ -141,6 +141,12 @@ currently pruned automatically.
 ## Tkinter example and Stop
 
 The example in `code/main.py` opens a small window displaying "Example GUI".
+The launcher sets `PROGRAM_NAME` and `ICON_PATH` environment variables from the
+project settings. The example reads these for its window title and icon, without
+importing backend settings. Running it directly uses the title "Example GUI"
+and Tkinter's default icon unless these variables are set.
+`PROGRAM_HAS_TERMINAL` is also set to `"1"` for terminal launches and `"0"` for
+hidden launches. Check it with `os.environ.get("PROGRAM_HAS_TERMINAL") == "1"`.
 Replace it with your own application.
 
 Stop directly terminates the verified application process tree. It does not run
