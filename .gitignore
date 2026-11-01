@@ -60,15 +60,11 @@ nuitka-crash-report.xml
 
 # shortcuts in this folder:
 /*.lnk
-# contents of "logs" folder in this folder:
-/logs/*
-# contents of "crash logs" folder in this folder:
-/crash logs/*
 # temporary process id indicator files:
 /code/*.pid
 /code/*.pid.d/
 /code/*.pid.lock
-# uv icorn generated files in this folder:
+# generated runtime-selection and resolved-package locks:
 /code/backend/frontend-python.lock.json
 /code/backend/dev_tools/DEFAULT_PYTHON_PACKAGES.txt.lock.json
 # output text files of dev_tools folder:
@@ -81,8 +77,14 @@ nuitka-crash-report.xml
 !/code/backend/dev_tools/requirements.txt
 # generated Python distro folder in this folder:
 /code/backend/python/
+/code/backend/python.staging-*/
+/code/backend/python.previous/
+/code/backend/python.failed/
 # generated packages folder in this folder:
 /code/backend/packages/
+/code/backend/packages.staging-*/
+/code/backend/packages.previous/
+/code/backend/packages.failed/
 # whitelist ".gitkeep" files anywhere:
 !.gitkeep
 
@@ -92,3 +94,7 @@ nuitka-crash-report.xml
 
 # ADD THE GIT IGNORE SYNCING RULES FOR YOUR APP HERE
 
+# contents of "logs" folder in this folder:
+/logs/*
+# contents of "crash logs" folder in this folder:
+/crash logs/*

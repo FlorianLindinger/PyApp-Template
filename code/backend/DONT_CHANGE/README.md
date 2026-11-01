@@ -9,11 +9,10 @@ Application authors normally edit main.py, settings.py and backend/developer_set
 ```text
 DONT_CHANGE/
   B/               Short targets for generated app shortcuts (W/N/Q/S/M/L/C)
-  batches/bootstrap/  Shared backend runner, bootstrap and PowerShell installer
   scripts/
     actions/       App shortcut actions and icon generation
     runtime/       Watchdog, application wrapper and completion handling
-    setup/         Backend checks, installation and shortcut generation
+    setup/         Shared bootstrap/runner, installers, checks and shortcut generation
     dev_tools/     Package tool implementations
     *_tools.py     Focused reusable helpers
   settings/        Backend requirements, version and runtime paths
@@ -32,8 +31,8 @@ batch files. Root setup regenerates shortcuts for these targets.
 
 ## Startup and installation
 
-1. Root setup/Start.cmd or a generated shortcut invokes a batch target.
-2. `batches/bootstrap/ensure_backend_python.bat` delegates to its PowerShell
+1. Root setup or a generated shortcut invokes a batch target.
+2. `scripts/setup/ensure_backend_python.bat` delegates to its PowerShell
    companion. It locks bootstrap, validates actual backend imports and exact
    versions, and adopts a healthy existing installation.
 3. When installation is needed, a new embedded runtime and dependency target are
@@ -45,7 +44,7 @@ batch files. Root setup regenerates shortcuts for these targets.
    and executes main.py with only application arguments.
 
 `settings/backend_settings.ini` defines the pinned backend version and approved
-installation/finalization locations. The wrapper validates these fixed locations.
+installation/finalization locations. The PowerShell bootstrap validates these fixed locations.
 The generic embedded downloader refuses an existing destination and uses literal
 PowerShell paths. Managed installation supports AMD64; ARM64/x86 fail explicitly.
 
@@ -66,8 +65,18 @@ succeeds. A locked `.previous` backup is reported and not overwritten.
 Package state records actual Python, requirements fingerprints, metadata/RECORD
 hashes and payload existence. Legacy empty markers migrate through additive
 staging to preserve manually installed packages. Explicit reset tools rebuild
-from declared defaults. Commit the frontend runtime and default-package locks
-with a release; they record versions, not a guarantee of identical source builds.
+from declared defaults. Frontend runtime/default-package locks are generated local
+state ignored by the current Git rules. Their reuse is incomplete: first runtime
+installation bypasses the package-lock reader, and compatible installed runtime
+patches are not strictly matched to the runtime lock. Keep requirements inputs
+tracked; do not treat current locks as a complete reproducible-release guarantee.
+
+`settings/backend_settings.py` comments identify paths tied to root or nested
+`.gitignore` rules. If relocating generated directories, update the corresponding
+rules for live folders, staging folders and retained backups. Files inside an entirely ignored runtime/temporary directory inherit
+that rule. Source scripts, icon assets and requirements inputs remain tracked.
+Backend runtime locations also have fixed batch/PowerShell bootstrap consumers;
+changing a Python constant alone does not relocate the whole bootstrap.
 
 Each run owns its startup/status/traceback files and unique logs under
 `temporary/runs/`. The `.output.log` companion captures combined native, binary
@@ -84,9 +93,8 @@ and log-path policy, and runtime_state/environment_state own cross-process state
 and directory transactions.
 
 Ordinary tools share `entrypoint.run_file` and the batch
-`batches/bootstrap/run_backend_script.bat`: import/main failures are reported once,
-nonzero status is preserved, and KeyboardInterrupt becomes 130. Existing verifier
-rescan loops retain their interaction. Lifecycle workers retain their separate
+`scripts/setup/run_backend_script.bat`: import/main failures are reported once,
+nonzero status is preserved, and KeyboardInterrupt becomes 130. Lifecycle workers retain their separate
 application completion protocol. Helpers never terminate an existing caller shell.
 
 ## Stop and icons

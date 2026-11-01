@@ -44,7 +44,8 @@ input_prepend: str | None = "%H:%M:%S > "
 # Start script in scipt folder or folder of the starting shortcut. (affects log_path_rel_to_start_folder setting below):
 start_in_shortcut_folder = False
 # ---------------------------------------
-# Decide if global default (any version) Python should be used instead of automatic localized download and installation of Python/packages:
+# Use an installed app interpreter instead of preparing local app Python/packages.
+# The separate launcher backend is still required; global app dependencies are not installed automatically.
 use_global_python = False
 # ---------------------------------------
 # Decide what parts of vanilla full Python to install:
@@ -63,10 +64,12 @@ start_minimized = False
 enable_log_for_Windows_terminal_start = True
 enable_log_for_no_terminal_start = True
 # if overwrite is False it will append instead if a file with that name exists:
+# Unique run suffixes normally give each launch a separate file, regardless of this flag.
 overwrite_log = True
 # decide if log path (below) is relative to start folder (where shortcut is started) or to this file:
 log_path_is_relative_to_start_folder_if_relative = False
 # Accepts datetime.datetime.strftime usage (e.g. "log_%Y-%m-%d_%H-%M-%S.txt"). None to disable:
+# UPDATE root .gitignore's /logs/* rule if changing the output directory if wanted.
 log_path: str | None = "..\\..\\logs\\log_%Y-%m-%d_%H-%M-%S.txt"
 # ---------------------------------------
 log_print_prepend: str | None = "%H:%M:%S | "
@@ -74,10 +77,12 @@ log_input_prepend: str | None = "%H:%M:%S > "
 # ---------------------------------------
 # Crash logging behavior:
 # if overwrite is False it will append instead if a file with that name exists:
+# Crash reports also receive unique run suffixes rather than sharing one file across launches.
 overwrite_crash_log = True
 # decide if crash log path (below) is relative to start folder (where shortcut is started) or to this file:
 crash_log_path_is_relative_to_start_folder_if_relative = False
 # Accepts datetime.datetime.strftime usage (e.g. "log_%Y-%m-%d_%H-%M-%S.txt"). None to disable:
+# UPDATE root .gitignore's /crash logs/* rule if changing the output directory if wanted.
 crash_log_path: str | None = "..\\..\\crash logs\\crash_log_%Y-%m-%d_%H-%M-%S.txt"
 # ---------------------------------------
 
@@ -184,6 +189,8 @@ keyboardInterrupt_sub_icon_alignment: str | None = "bottom right"
 prevent_start_if_already_running = False
 close_already_running_instances_on_start = False
 prompt_to_close_existing_instances = False
+# The prompt applies only when prevent_start_if_already_running=True and
+# close_already_running_instances_on_start=False; otherwise the other policy wins.
 # ---------------------------------------
 # Install Python environment while generating shortcuts instead of for first start (Ignored when use_global_python = True):
 install_python_when_generating_shortcuts = True
