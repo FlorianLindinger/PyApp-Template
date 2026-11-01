@@ -73,6 +73,9 @@ def _staged_path(variable: str, default: str) -> str:
 # ========================
 # fmt:off
 
+# Optional installer version used when provisioning uv locally.
+UV_VERSION = "0.8.22"
+
 # ------------------------
 # folders
 

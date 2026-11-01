@@ -7,6 +7,8 @@ from collections.abc import Sequence
 from backend.DONT_CHANGE.scripts.console_tools import print_warn
 from backend.DONT_CHANGE.scripts.filesystem_tools import read_lines, write_lines
 
+from backend.DONT_CHANGE.settings.backend_settings import UV_VERSION
+
 
 def install_packages(
     python_exe: str,
@@ -154,7 +156,7 @@ def install_packages(
                     "-m",
                     "pip",
                     "install",
-                    "uv==0.8.22",
+                    f"uv=={UV_VERSION}",
                     "--disable-pip-version-check",
                     "--no-warn-script-location",
                 ]

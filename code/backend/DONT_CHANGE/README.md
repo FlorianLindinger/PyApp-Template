@@ -67,8 +67,10 @@ hashes and payload existence. Legacy empty markers migrate through additive
 staging to preserve manually installed packages. Explicit reset tools rebuild
 from declared defaults. Frontend runtime/default-package locks are generated local
 state ignored by the current Git rules. Their reuse is incomplete: first runtime
-installation bypasses the package-lock reader, and compatible installed runtime
-patches are not strictly matched to the runtime lock. Keep requirements inputs
+installation bypasses the package-lock reader. Configured version components are
+required: "3.14" accepts any 3.14.x; "3.14.6" requires that exact patch. The runtime
+lock chooses a compatible exact download without tightening a minor selector.
+Keep requirements inputs
 tracked; do not treat current locks as a complete reproducible-release guarantee.
 
 `settings/backend_settings.py` comments identify paths tied to root or nested
@@ -83,6 +85,18 @@ Each run owns its startup/status/traceback files and unique logs under
 and inherited child output; the normal UTF-8 log captures Python text/input and
 atexit callbacks. Logging uses pipes; disable terminal logging for apps needing
 a real TTY. Retained run and MSI diagnostics are not automatically pruned.
+
+The manual package console in `scripts/dev_tools/open_package_terminal.py` parses
+Windows arguments without a shell. It accepts bare packages/lists, explicit pip
+and uv package commands, and automatic uv preference with pip fallback. Relative
+pip/uv adapters and the recovery batch use that same entry point. The console
+owns the environment lock, running-instance checks and final package validation;
+recovery must not hold the same lock in its parent while waiting for this child.
+Healthy startup refreshes the adapters after folder moves and runtime installs.
+Uncaught worker errors (Python 3.8+) and errors retained by Tkinter's default
+callback handler make final completion fail without closing the GUI immediately.
+The watchdog also collects worker failures during interpreter shutdown. Custom
+exception hooks and other event loops need their own reporting policy.
 
 ## Ownership of shared code
 
