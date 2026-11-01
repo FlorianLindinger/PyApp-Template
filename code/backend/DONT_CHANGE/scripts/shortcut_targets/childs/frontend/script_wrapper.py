@@ -38,6 +38,8 @@ try:
     # ==============================
 
     crash_log_temp_path = None
+    result_path = None
+    ready_path = None
     log_file = None
 
     # ==============================
@@ -61,6 +63,35 @@ try:
             return ""
 
         return datetime.now().strftime(_normalize_strftime_format(fmt))  # noqa:DTZ005
+
+    class _BinarySplitter:
+        def __init__(self, owner):
+            self.owner = owner
+            import codecs
+
+            self.decoder = codecs.getincrementaldecoder(owner.encoding or "utf-8")(
+                "replace"
+            )
+
+        def write(self, data):
+            with self.owner._lock:
+                target = getattr(self.owner.print_stream, "buffer", None)
+                if target is not None:
+                    target.write(data)
+                else:
+                    self.owner.print_stream.write(
+                        data.decode(self.owner.encoding or "utf-8", "replace")
+                    )
+                if self.owner.log_stream is not None:
+                    self.owner.log_stream.write(self.decoder.decode(data))
+                self.owner.flush()
+            return len(data)
+
+        def flush(self):
+            self.owner.flush()
+
+        def __getattr__(self, name):
+            return getattr(self.owner.print_stream.buffer, name)
 
     class pipe_splitter:
         """
@@ -116,6 +147,7 @@ try:
             self.log_input_timestamp_format = log_input_timestamp_format
             self.print_red = print_red
             self.auto_flush = auto_flush
+            self.buffer = _BinarySplitter(self)
 
             self._at_line_start = True
             self._lock = (
@@ -130,7 +162,9 @@ try:
                 r")"
             )
 
-        def _strip_ansi_escape_sequences(self, text):  # pyrefly: ignore [implicit-any-parameter]
+        def _strip_ansi_escape_sequences(
+            self, text
+        ):  # pyrefly: ignore [implicit-any-parameter]
             """Remove terminal ANSI escape sequences from text."""
             return self.ANSI_escape_re.sub("", text)
 
@@ -184,7 +218,9 @@ try:
 
             return len(data)
 
-        def write_input_prompt(self, prompt):  # pyrefly: ignore [implicit-any-parameter]
+        def write_input_prompt(
+            self, prompt
+        ):  # pyrefly: ignore [implicit-any-parameter]
             """Write the input prompt."""
             if prompt is None:
                 prompt = ""
@@ -226,6 +262,9 @@ try:
         def isatty(self):
             return bool(getattr(self.print_stream, "isatty", lambda: False)())
 
+        def __getattr__(self, name):
+            return getattr(self.print_stream, name)
+
         def writable(self):
             return True
 
@@ -262,7 +301,8 @@ try:
             log_file = open(
                 log_path, "w" if overwrite_log else "a", encoding="utf-8", buffering=1
             )
-            atexit.register(log_file.close)
+        # Registered before application callbacks, so cleanup runs after them.
+        atexit.register(_finish_logging)
         sys.stdout = pipe_splitter(
             sys.__stdout__,
             log_file,
@@ -280,13 +320,38 @@ try:
             log_input_timestamp_format=log_input_prepend,
             print_red=True,
         )
-        if log_file is not None and faulthandler.is_enabled():
+        if log_file is not None:
             faulthandler.enable(file=log_file, all_threads=True)
+        else:
+            faulthandler.enable(all_threads=True)
+
+    def _finish_logging():
+        import faulthandler
+
+        try:
+            sys.stdout.flush()
+            sys.stderr.flush()
+        finally:
+            sys.stdout = sys.__stdout__
+            sys.stderr = sys.__stderr__
+            if log_file is not None:
+                faulthandler.disable()
+                log_file.close()
+
+    def save_result(code):
+        if result_path:
+            import json
+
+            with open(result_path + ".tmp", "w", encoding="utf-8") as stream:
+                json.dump({"wrapper_exit_code": code}, stream)
+            os.replace(result_path + ".tmp", result_path)
 
     # ==============================
     # traceback related
 
-    def _traceback_snapshot_error(error, relation_text=""):  # pyrefly: ignore [implicit-any-parameter]
+    def _traceback_snapshot_error(
+        error, relation_text=""
+    ):  # pyrefly: ignore [implicit-any-parameter]
         """Serialize exception data so backend Python can render it without rerunning the child."""
         frames = [
             {
@@ -349,10 +414,14 @@ try:
         _add(error)
         return snapshots
 
-    def save_traceback(error, excepted_script_path, output_path):  # pyrefly: ignore [implicit-any-parameter]
+    def save_traceback(
+        error, excepted_script_path, output_path
+    ):  # pyrefly: ignore [implicit-any-parameter]
         import json
 
-        def _get_system_exit_code_for_json(error):  # pyrefly: ignore [implicit-any-parameter]
+        def _get_system_exit_code_for_json(
+            error,
+        ):  # pyrefly: ignore [implicit-any-parameter]
             """Return SystemExit.code in a form json.dump can always serialize."""
             if not isinstance(error, SystemExit):
                 return None
@@ -406,26 +475,51 @@ try:
     # ==============================
 
     def main():
-        global crash_log_temp_path
+        global crash_log_temp_path, result_path, ready_path
 
         # ==============================
         # import and convert args
 
-        (
-            _script_name,
-            _EMPTY_ARG_INDICATOR,
-            python_script_path,
-            app_id,
-            print_prepend,
-            input_prepend,
-            log_input_prepend,
-            log_path,
-            overwrite_log,
-            log_print_prepend,
-            crash_log_temp_path,
-        ) = process_args(sys.argv)
+        if len(sys.argv) == 3 and sys.argv[1] == "--config":
+            import json
 
-        overwrite_log = string_to_bool(overwrite_log)
+            with open(sys.argv[2], encoding="utf-8") as stream:
+                config = json.load(stream)
+            python_script_path = config["script"]
+            app_id = config.get("app_id", "")
+            print_prepend = config.get("print_prepend", "") or ""
+            input_prepend = config.get("input_prepend", "") or ""
+            log_input_prepend = config.get("log_input_prepend", "") or ""
+            log_path = config.get("log_path", "")
+            overwrite_log = config.get("overwrite_log", True)
+            log_print_prepend = config.get("log_print_prepend", "") or ""
+            crash_log_temp_path = config["traceback"]
+            result_path = config["result"]
+            ready_path = config.get("ready")
+            application_args = config.get("args", [])
+            # Launcher protocol is not an application API.
+            for key in list(os.environ):
+                if key.startswith("PYAPP_"):
+                    os.environ.pop(key, None)
+            os.environ.update(config.get("benchmark", {}))
+        else:
+            (
+                _script_name,
+                _empty,
+                python_script_path,
+                app_id,
+                print_prepend,
+                input_prepend,
+                log_input_prepend,
+                log_path,
+                overwrite_log,
+                log_print_prepend,
+                crash_log_temp_path,
+            ) = process_args(sys.argv[:11])
+            overwrite_log = string_to_bool(overwrite_log)
+            application_args = sys.argv[11:]
+            result_path = crash_log_temp_path + ".result.json"
+        sys.argv = [python_script_path] + application_args
 
         # ==============================
 
@@ -473,7 +567,9 @@ try:
 
             _original_input = builtins.input
 
-            def _input_with_prepend(prompt=""):  # pyrefly: ignore [implicit-any-parameter]
+            def _input_with_prepend(
+                prompt="",
+            ):  # pyrefly: ignore [implicit-any-parameter]
                 """Prompt for input while applying console and log prefixes."""
                 if hasattr(sys.stdout, "write_input_prompt"):
                     sys.stdout.write_input_prompt(prompt)
@@ -491,16 +587,21 @@ try:
         # ==============================
         # change sys.path[0] to be dir of target script and not this script:
 
-        sys.path[0] = os.path.dirname(python_script_path)
+        sys.path.insert(0, os.path.dirname(python_script_path))
 
         # ==============================
         # run in the current python process and wait for finish
 
+        if ready_path:
+            with open(ready_path, "w", encoding="utf-8") as stream:
+                stream.write("ready")
         try:
             runpy.run_path(python_script_path, run_name="__main__")
+            save_result(0)
 
         except BaseException as e:  # BaseException includes KeyboardInterrupt,GeneratorExit,normal Exception, SystemExit (including success exit)
             save_traceback(e, python_script_path, crash_log_temp_path)
+            save_result(1)
             sys.exit(
                 1
             )  # exit code 1 indicates child script error need to process saved traceback to watchdog and correct handling
@@ -514,54 +615,16 @@ try:
             main()
         except Exception as e:
             save_traceback(e, os.path.abspath(__file__), crash_log_temp_path)
+            save_result(2)
             sys.exit(
                 2
             )  # exit code 2 indicates wrapper error and need to process saved traceback to watchdog
-        finally:  # try close log file
-            try:
-                sys.stdout.flush()
-                sys.stderr.flush()
-                sys.stdout = sys.__stdout__
-                sys.stderr = sys.__stderr__
-                log_file.close()  # type:ignore
-            except Exception:
-                pass
 
     # =============================
 
-except Exception as e:  # fallback exception handling
-    import subprocess
-    import sys
+except Exception:
+    # The watchdog owns error presentation, including no-terminal launches.
     import traceback
 
-    # print error in new terminal in case this program does not have a terminal:
-    error_text = (
-        "=" * 60
-        + "\n[Error] Failed in wrapper script with error: "
-        + "{}: {}\n".format(type(e).__name__, e)
-        + "-" * 60
-        + "\n"
-        + traceback.format_exc()
-        + "=" * 60
-    )
-    display_code = """
-import sys
-
-print(sys.argv[1])
-input("\\nPress Enter to exit...")
-"""
-    subprocess.Popen(
-        [sys.executable, "-c", display_code, error_text],
-        creationflags=subprocess.CREATE_NEW_CONSOLE,
-    )
-
-    # print and wait in case this program has a terminal:
-    print("=" * 20)
-    print("[Error] Failed in wrapper script with error: {}:".format(e))
-    print("-" * 20)
-    print(traceback.format_exc())
-    print("=" * 20)
-    input("Press enter to exit")
-
-    # tell watchdog script with error code 3 that fallback exception handling occured and that watchdog should close because input("Press enter to exit") is already here:
+    traceback.print_exc()
     sys.exit(3)

@@ -1,81 +1,27 @@
 """WIP"""
 
-# ==============================
-# settings
+if __name__ == "__main__":
+    import sys
+    from pathlib import Path
+
+    code_dir = next(
+        parent for parent in Path(__file__).resolve().parents if (parent / "backend" / "DONT_CHANGE").is_dir()
+    )
+    sys.path.insert(0, str(code_dir))
+    from backend.DONT_CHANGE.scripts.entrypoint import run_file
+
+    raise SystemExit(run_file(__file__))
 
 fail_message: str = "[Error] Failed to run install_local_reqs: {e}"
 close_terminal_on_finish: bool = False
-
 import os
+import sys
 
-root_dir: str = os.path.dirname(__file__) + "\\..\\..\\..\\.."
+from backend.DONT_CHANGE.scripts.frontend_environment import ensure_python_distro, install_packages_from_file
 
-# ==============================
 
-try:
-    # ==============================
-    # import Python packages
-
-    import os
-    import sys
-
-    # ==============================
-    # import third-party packages
-
-    # ==============================
-    # import from files
-
-    if root_dir not in sys.path:
-        sys.path.insert(0, root_dir)
-
-    from backend.DONT_CHANGE.scripts.common_code import (
-        ensure_python_distro,
-        install_packages_from_file,
-        print_traceback,
-    )
-    from backend.DONT_CHANGE.scripts.generic_helpers import (
-        close_terminal,
-        input_success,
-        input_warn,
-    )
-
-    # ==============================
-    # local variables
-
-    # ==============================
-    # local functions/classes
-
-    # ==============================
-    # main function
-
-    def main() -> None:
-        ensure_python_distro()
-        install_packages_from_file(os.path.join(os.getcwd(), "requirements.txt"))
-        print()
-        input_success("[Success] Press enter to exit")
-
-    # ==============================
-    # execute main function
-
-    if __name__ == "__main__":
-        try:
-            main()
-        except Exception as e:
-            print_traceback(fail_message.format(e=e))
-            input_warn("[Error] Press enter to exit")
-        if close_terminal_on_finish:
-            close_terminal()
-
-except Exception as e:
-    import traceback
-
+def main() -> None:
+    ensure_python_distro()
+    install_packages_from_file(os.path.join(os.getcwd(), "requirements.txt"))
     print()
-    print()
-    print("=" * 30)
-    print(fail_message.format(e=e))
-    print("-" * 30)
-    print(traceback.format_exc())
-    print("=" * 30)
-    input("[Error] Press enter to exit")
-    if close_terminal_on_finish:
-        os._exit(1)
+    print("[Success] Finished.")

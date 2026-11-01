@@ -1,16 +1,22 @@
 """Generate this project's ICO files from the configured PNG assets."""
 
+if __name__ == "__main__":
+    import sys
+    from pathlib import Path
+
+    code_dir = next(
+        parent for parent in Path(__file__).resolve().parents if (parent / "backend" / "DONT_CHANGE").is_dir()
+    )
+    sys.path.insert(0, str(code_dir))
+    from backend.DONT_CHANGE.scripts.entrypoint import run_file
+
+    raise SystemExit(run_file(__file__))
+
 import os
 import sys
 import time
 from concurrent.futures import ThreadPoolExecutor
 from functools import cache
-
-root_dir = os.path.normpath(
-    os.path.dirname(os.path.abspath(__file__)) + "\\..\\..\\..\\.."
-)
-if root_dir not in sys.path:
-    sys.path.insert(0, root_dir)
 
 from backend.developer_settings import (
     crash_log_sub_icon_alignment,
@@ -32,10 +38,7 @@ from backend.developer_settings import (
     success_sub_icon_alignment,
     success_sub_icon_scale,
 )
-from backend.DONT_CHANGE.scripts.generic_helpers import (
-    generate_ico_from_png,
-    get_png_image_id,
-)
+from backend.DONT_CHANGE.scripts.image_tools import generate_ico_from_png, get_png_image_id
 from backend.DONT_CHANGE.settings.backend_settings import (
     ICON_DELETE_RETRY_DELAY_SECONDS,
     ICON_DELETE_TIMEOUT_SECONDS,
@@ -70,9 +73,7 @@ def _delete_existing_icon(path: str) -> None:
             return
         except OSError as error:
             if time.monotonic() >= deadline:
-                raise RuntimeError(
-                    f'Could not delete existing icon "{path}": {error}'
-                ) from error
+                raise RuntimeError(f'Could not delete existing icon "{path}": {error}') from error
             time.sleep(ICON_DELETE_RETRY_DELAY_SECONDS)
 
 
@@ -81,14 +82,10 @@ def _cached_png_image_id(path: str) -> str:
     return get_png_image_id(path)
 
 
-def _pick_png(
-    filename: str, expected_id: str | None, fallback_filename: str | None
-) -> str:
+def _pick_png(filename: str, expected_id: str | None, fallback_filename: str | None) -> str:
     """Use a changed project PNG, otherwise use its bundled replacement image."""
     project_path = os.path.join(ICON_PNG_DIR, filename)
-    if os.path.isfile(project_path) and (
-        expected_id is None or _cached_png_image_id(project_path) != expected_id
-    ):
+    if os.path.isfile(project_path) and (expected_id is None or _cached_png_image_id(project_path) != expected_id):
         return project_path
     if fallback_filename is None:
         raise FileNotFoundError(f'PNG does not exist: "{project_path}"')
@@ -114,20 +111,14 @@ def main() -> None:
         icon_name = os.path.splitext(os.path.basename(output_path))[0]
         settings = SUB_ICON_SETTINGS.get(icon_name)
         if overlay_name is not None and settings is None:
-            raise KeyError(
-                f'Missing sub-icon settings for "{icon_name}" in developer_settings.py.'
-            )
+            raise KeyError(f'Missing sub-icon settings for "{icon_name}" in developer_settings.py.')
         scale, alignment = settings if settings is not None else (None, None)
         overlay_path = None
-        if overlay_name is not None and scale is not None and alignment is not None:
+        if overlay_name is not None and scale is not None and (alignment is not None):
             if not isinstance(scale, (int, float)) or isinstance(scale, bool):
-                raise TypeError(
-                    f'Sub-icon scale for "{icon_name}" must be a number or None.'
-                )
+                raise TypeError(f'Sub-icon scale for "{icon_name}" must be a number or None.')
             if not isinstance(alignment, str):
-                raise TypeError(
-                    f'Sub-icon alignment for "{icon_name}" must be a string or None.'
-                )
+                raise TypeError(f'Sub-icon alignment for "{icon_name}" must be a string or None.')
             overlay_path = _pick_png(overlay_name, overlay_id, overlay_fallback)
         _delete_existing_icon(output_path)
         jobs.append(
@@ -153,7 +144,3 @@ def main() -> None:
     with ThreadPoolExecutor(max_workers=min(4, len(jobs))) as executor:
         for output_path in executor.map(generate, jobs):
             print(f"Generated: {os.path.basename(output_path)}")
-
-
-if __name__ == "__main__":
-    main()

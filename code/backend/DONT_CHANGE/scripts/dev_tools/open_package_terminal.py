@@ -1,99 +1,41 @@
 """WIP"""
 
-# ==============================
-# settings
+if __name__ == "__main__":
+    import sys
+    from pathlib import Path
+
+    code_dir = next(
+        parent for parent in Path(__file__).resolve().parents if (parent / "backend" / "DONT_CHANGE").is_dir()
+    )
+    sys.path.insert(0, str(code_dir))
+    from backend.DONT_CHANGE.scripts.entrypoint import run_file
+
+    raise SystemExit(run_file(__file__))
 
 fail_message: str = "[Error] Failed to run open_package_terminal: {e}"
 close_terminal_on_finish: bool = False
+import subprocess
+import sys
 
-import os
+from backend.DONT_CHANGE.scripts.frontend_environment import (
+    ensure_python_distro,
+    environment_locked,
+    make_file_to_indicate_frontend_pckgs_installed,
+    refuse_mutation_while_running,
+)
+from backend.DONT_CHANGE.settings.backend_settings import (
+    FRONTEND_LAUNCHER_FOR_PIP_INSTALL_TERMINAL,
+)
 
-root_dir: str = os.path.dirname(__file__) + "\\..\\..\\..\\.."
 
-# ==============================
-
-try:
-    # ==============================
-    # import Python packages
-
-    import os
-    import subprocess
-    import sys
-
-    # ==============================
-    # import third-party packages
-
-    # ==============================
-    # import from files
-
-    if root_dir not in sys.path:
-        sys.path.insert(0, root_dir)
-
-    from backend.DONT_CHANGE.scripts.common_code import (
-        ensure_python_distro,
-        print_traceback,
-    )
-    from backend.DONT_CHANGE.scripts.generic_helpers import close_terminal, input_warn
-    from backend.DONT_CHANGE.settings.backend_settings import (
-        FRONTEND_LAUNCHER_FOR_PIP_INSTALL_TERMINAL,
-        FRONTEND_PYTHON_EXE,
-    )
-
-    # ==============================
-    # local variables
-
-    # ==============================
-    # local functions/classes
-
-    # ==============================
-    # main function
-
-    def main() -> None:
-        ensure_python_distro()
-        try:
-            subprocess.run(
-                (
-                    FRONTEND_PYTHON_EXE,
-                    "-m",
-                    "pip",
-                    "install",
-                    "--upgrade",
-                    "pip",
-                    "--disable-pip-version-check",
-                ),
-                check=True,
-            )
-            subprocess.run("cls", shell=True)  # noqa
-        except subprocess.CalledProcessError:
-            print("[Warning] pip upgrade failed. Opening the terminal anyway.")
-        print('Install packages with "pip install package_name"')
-        print()
-        subprocess.run(
-            ["cmd", "/k", "call", FRONTEND_LAUNCHER_FOR_PIP_INSTALL_TERMINAL]
-        )
-
-    # ==============================
-    # execute main function
-
-    if __name__ == "__main__":
-        try:
-            main()
-        except Exception as e:
-            print_traceback(fail_message.format(e=e))
-            input_warn("[Error] Press enter to exit")
-        if close_terminal_on_finish:
-            close_terminal()
-
-except Exception as e:
-    import traceback
-
+@environment_locked
+def main() -> None:
+    ensure_python_distro()
+    refuse_mutation_while_running()
+    print('Install packages with "pip install package_name"')
     print()
-    print()
-    print("=" * 30)
-    print(fail_message.format(e=e))
-    print("-" * 30)
-    print(traceback.format_exc())
-    print("=" * 30)
-    input("[Error] Press enter to exit")
-    if close_terminal_on_finish:
-        os._exit(1)
+    subprocess.run(
+        ["cmd", "/d", "/c", "call", FRONTEND_LAUNCHER_FOR_PIP_INSTALL_TERMINAL],
+        check=True,
+    )
+    make_file_to_indicate_frontend_pckgs_installed()
