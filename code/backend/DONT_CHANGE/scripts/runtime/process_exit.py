@@ -420,6 +420,14 @@ try:
                     )
                     if os.path.isdir(script_folder):
                         os.chdir(script_folder)
+                    # Relative source names can refer to a different file on the
+                    # next render. Do not reuse linecache's earlier cwd lookup.
+                    import linecache
+
+                    for stack in rich_traceback.trace.stacks:
+                        for frame in stack.frames:
+                            if not os.path.isabs(frame.filename):
+                                linecache.cache.pop(frame.filename, None)
                     console.print(
                         Padding(
                             rich_traceback,
