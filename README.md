@@ -4,7 +4,7 @@ Turn a Python script or Tkinter app into a portable Windows x64 application.
 Users launch a shortcut; the template manages a local Python runtime, dependencies,
 logs, and crash reports. They do not need Python installed.
 
-Start with the included task-list example in `code/main.py`, then replace it with
+Start with the included GUI example in `code/main.py`, then replace it with
 your own code. A prepared folder can be copied and used offline.
 
 ---
@@ -39,7 +39,7 @@ your own code. A prepared folder can be copied and used offline.
 ## Quick Start
 
 1. Clone/download/copy this repository
-2. Try the Tkinter task-list example in `code/main.py`, or replace it with your application
+2. Try the Tkinter GUI example in `code/main.py`, or replace it with your application
 3. (Optional: Change program settings like Python version or program name under `code/backend/developer_settings.py`)
 4. (Optional: Add user settings under `code/settings.py`. Import them in `main.py` via `import settings`)
 5. Execute `Setup.cmd` (or the play-button `.cmd` alias) to validate/setup the environments and generate shortcuts
@@ -126,7 +126,7 @@ folder for an offline distribution.
 
 Each run has its own directory under `code/backend/DONT_CHANGE/temporary/runs/`.
 Logs receive a unique run suffix. The normal UTF-8 log records Python text/input
-and shutdown callbacks; its `.output.log` companion captures raw combined stdout
+and atexit callbacks; its `.output.log` companion captures raw combined stdout
 and stderr, including binary writes and inherited child-process output. With
 logging enabled stdout/stderr are pipes, so applications that require a real
 terminal should disable logging for their terminal launch. Detached subprocesses
@@ -138,38 +138,15 @@ MSI logs are under `temporary/installation-logs/`; failed backend staging folder
 are retained with their diagnostic files. These folders can grow and are not
 currently pruned automatically.
 
-The detailed numbered review changes, migration notes and validation results are
-kept in `PyApp-Template_CHANGELOG.md` in the separate sibling
-`PyApp Template Dev Helpers` directory.
+## Tkinter example and Stop
 
-## Tkinter example and graceful Stop
+The example in `code/main.py` opens a small window displaying "Example GUI".
+Replace it with your own application.
 
-The example supports adding tasks, marking them complete, removing them, and
-saving them automatically to `code/data/tasks.json`. Use `--title "My tasks"`
-or `--data-file "C:\Data\tasks.json"` to customize it. Multiple instances using
-the same file use the last saved contents; enable `prevent_start_if_already_running`
-for a shared task file.
+Stop directly terminates the verified application process tree. It does not run
+application cleanup callbacks.
 
-Stop requests a cooperative shutdown first. The example polls
-`backend.shutdown.shutdown_requested()` through `root.after`, following the
-[official Tkinter event-loop guidance](https://docs.python.org/3.14/library/tkinter.html#threading-model), saves its tasks,
-and destroys the window on the UI thread. Other applications can use
-`backend.shutdown.register_shutdown(callback)`; callbacks run on a worker thread,
-so GUI code should use polling or forward work to its UI loop.
-
-`graceful_stop_timeout_seconds` defaults to 5 seconds. If the application has not
-stopped by then, `force_stop_after_timeout=True` terminates the verified process
-tree. Set it to False when preserving unsaved work matters more than forcing exit.
-The shutdown API does not require launcher metadata arguments or environment variables.
-
-The regression matrix is `tests/REGRESSION_MATRIX.md` in the separate
-`PyApp Template Dev Helpers` directory. It distinguishes automated checks from
-manual Windows/terminal and cold-install checks. Development helpers are not
-required for a distributed application. From this source checkout, run:
-
-```bat
-code\backend\python\python.exe -E -s -B "..\PyApp Template Dev Helpers\tests\run_regressions.py" --project . --native-crashes
-```
-
-Use `PYAPP_DEV_HELPERS_DIR` when the optional diagnostic stand-in is stored
-elsewhere, and `--project` or `PYAPP_TEMPLATE_ROOT` to test a different checkout.
+PID records exist only while instances are registered. Closing the last instance
+or using Stop removes the empty PID registry folder and legacy PID/lock files.
+If the watchdog itself is forcibly killed, stale records are cleaned on the next
+launch or Stop. Registry synchronization uses a Windows mutex, not a disk lock file.

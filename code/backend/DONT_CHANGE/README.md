@@ -26,8 +26,8 @@ Application authors normally edit main.py, settings.py and backend/developer_set
    before replacement. Failed staging diagnostics are retained.
 4. App startup validates/prepares its full Python and package environment, creates
    a per-run directory, starts the watchdog, and waits for that run's acknowledgement.
-5. The frontend wrapper receives private JSON configuration, initializes logging
-   and cooperative Stop, and executes main.py with only application arguments.
+5. The frontend wrapper receives private JSON configuration, initializes logging,
+   and executes main.py with only application arguments.
 
 `settings/backend_settings.ini` defines the pinned backend version and approved
 installation/finalization locations. The wrapper validates these fixed locations.
@@ -57,7 +57,7 @@ with a release; they record versions, not a guarantee of identical source builds
 Each run owns its startup/status/traceback files and unique logs under
 `temporary/runs/`. The `.output.log` companion captures combined native, binary
 and inherited child output; the normal UTF-8 log captures Python text/input and
-shutdown callbacks. Logging uses pipes; disable terminal logging for apps needing
+atexit callbacks. Logging uses pipes; disable terminal logging for apps needing
 a real TTY. Retained run and MSI diagnostics are not automatically pruned.
 
 ## Ownership of shared code
@@ -75,13 +75,13 @@ nonzero status is preserved, and KeyboardInterrupt becomes 130. Existing verifie
 rescan loops retain their interaction. Lifecycle workers retain their separate
 application completion protocol. Helpers never terminate an existing caller shell.
 
-## Cooperative Stop and icons
+## Stop and icons
 
-Applications may poll `backend.shutdown.shutdown_requested()` on their UI thread
-or register a worker-thread callback. Stop validates process image/creation time,
-requests cooperative shutdown, waits for graceful_stop_timeout_seconds, and only
-escalates when force_stop_after_timeout is enabled. The task-list example saves
-before closing. Old bare PID files are never authority to terminate a process.
+Stop validates process image and creation time, then directly terminates the
+verified launcher tree. Old bare PID files never authorize termination.
+Registry changes use a Windows mutex; the last instance removes its empty PID
+directory and legacy PID/lock artifacts. Stale records left by a killed watchdog
+are cleaned during the next launch or Stop.
 
 Icon sources and instructions remain in icon_related; invoke the corresponding
 batch launchers in B/miscellaneous to regenerate editable PNGs or ICO files.
@@ -92,7 +92,4 @@ The template backend is dual licensed MIT OR Apache-2.0. Python distributions an
 third-party packages retain their own licenses. Keep their license/metadata files
 when distributing a prepared environment.
 
-Keep app-specific edits outside DONT_CHANGE where possible. This update also
-requires the public `code/backend/shutdown.py` API and documented root launchers.
-Deferred settings live in Dev Helpers' future/developer_settings.py and have no
-production effect. Read its changelog for numbered review details and migration.
+Keep app-specific edits outside DONT_CHANGE where possible. Use the documented root launchers.

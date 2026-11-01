@@ -176,9 +176,6 @@ keyboardInterrupt_sub_icon_alignment: str | None = "bottom right"
 prevent_start_if_already_running = False
 close_already_running_instances_on_start = False
 prompt_to_close_existing_instances = False
-# Stop first requests cooperative shutdown, then optionally terminates the verified tree.
-graceful_stop_timeout_seconds: float = 5.0
-force_stop_after_timeout: bool = True
 # ---------------------------------------
 # Decide if global default (any version) Python should be used instead of automatic localized download and installation of Python/packages:
 use_global_python = False
