@@ -68,7 +68,9 @@ def atomic_json(path, payload):
     path.parent.mkdir(parents=True, exist_ok=True)
     temp = path.with_name(path.name + "." + uuid.uuid4().hex + ".tmp")
     try:
-        temp.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+        temp.write_text(
+            json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
         os.replace(temp, path)
     finally:
         temp.unlink(missing_ok=True)
@@ -76,7 +78,11 @@ def atomic_json(path, payload):
 
 def clean_python_environment():
     """Retain application/proxy variables, excluding Python/package-tool injection."""
-    env = {k: v for k, v in os.environ.items() if not k.upper().startswith(("PYTHON", "PIP_", "UV_"))}
+    env = {
+        k: v
+        for k, v in os.environ.items()
+        if not k.upper().startswith(("PYTHON", "PIP_", "UV_"))
+    }
     env["PYTHONNOUSERSITE"] = "1"
     env["PIP_CONFIG_FILE"] = os.devnull
     return env
@@ -91,7 +97,9 @@ def process_identity(pid):
     kernel.OpenProcess.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]
     kernel.OpenProcess.restype = wintypes.HANDLE
     kernel.CloseHandle.argtypes = [wintypes.HANDLE]
-    kernel.GetProcessTimes.argtypes = [wintypes.HANDLE] + [ctypes.POINTER(wintypes.FILETIME)] * 4
+    kernel.GetProcessTimes.argtypes = [wintypes.HANDLE] + [
+        ctypes.POINTER(wintypes.FILETIME)
+    ] * 4
     kernel.QueryFullProcessImageNameW.argtypes = [
         wintypes.HANDLE,
         wintypes.DWORD,
@@ -160,7 +168,10 @@ class ProcessRegistry:
         kernel.ReleaseMutex.argtypes = [wintypes.HANDLE]
         kernel.CloseHandle.argtypes = [wintypes.HANDLE]
         identity = os.path.normcase(os.path.realpath(self.pid_path))
-        name = "Global\\PyAppTemplateRegistry-" + hashlib.sha256(identity.encode("utf-8")).hexdigest()
+        name = (
+            "Global\\PyAppTemplateRegistry-"
+            + hashlib.sha256(identity.encode("utf-8")).hexdigest()
+        )
         handle = kernel.CreateMutexW(None, False, name)
         if not handle:
             raise ctypes.WinError(ctypes.get_last_error())
@@ -223,7 +234,7 @@ class ProcessRegistry:
             try:
                 record = json.loads(path.read_text(encoding="utf-8"))
                 with process_identity(int(record["pid"])) as current:
-                    if matches_identity(record, current):
+                    if current is not None and matches_identity(record, current):
                         if current["pid"] != os.getpid():
                             records.append(record)
                         continue
@@ -242,7 +253,9 @@ class ProcessRegistry:
                 with process_identity(record["pid"]) as current:
                     if not matches_identity(record, current):
                         stale += 1
-                        (self.directory / (str(record["pid"]) + ".json")).unlink(missing_ok=True)
+                        (self.directory / (str(record["pid"]) + ".json")).unlink(
+                            missing_ok=True
+                        )
                         continue
                     try:
                         # Retain the verified root handle until taskkill completes.
@@ -255,7 +268,9 @@ class ProcessRegistry:
                         if result.returncode:
                             raise RuntimeError(result.stderr or result.stdout)
                         stopped += 1
-                        (self.directory / (str(record["pid"]) + ".json")).unlink(missing_ok=True)
+                        (self.directory / (str(record["pid"]) + ".json")).unlink(
+                            missing_ok=True
+                        )
                     except (OSError, RuntimeError) as error:
                         failures.append(str(error))
             self._cleanup_empty()
@@ -263,7 +278,9 @@ class ProcessRegistry:
 
 
 def matches_identity(record, current):
-    return current is not None and all(record.get(key) == current.get(key) for key in ("pid", "created", "image"))
+    return current is not None and all(
+        record.get(key) == current.get(key) for key in ("pid", "created", "image")
+    )
 
 
 def unique_log_path(path, run_id=None):
@@ -274,7 +291,9 @@ def unique_log_path(path, run_id=None):
 
 
 def require_supported_architecture():
-    architecture = os.environ.get("PROCESSOR_ARCHITEW6432", os.environ.get("PROCESSOR_ARCHITECTURE", "")).upper()
+    architecture = os.environ.get(
+        "PROCESSOR_ARCHITEW6432", os.environ.get("PROCESSOR_ARCHITECTURE", "")
+    ).upper()
     if architecture != "AMD64":
         raise RuntimeError(
             "Managed runtimes currently require Windows x64 (AMD64). Detected: "
@@ -288,7 +307,9 @@ def resolve_global_python():
 
     launcher = shutil.which("py") or shutil.which("python")
     if not launcher:
-        raise RuntimeError("Global-Python mode requires an installed py/python executable")
+        raise RuntimeError(
+            "Global-Python mode requires an installed py/python executable"
+        )
     result = subprocess.run(
         [launcher, "-E", "-s", "-c", "import sys; print(sys.executable)"],
         env=clean_python_environment(),

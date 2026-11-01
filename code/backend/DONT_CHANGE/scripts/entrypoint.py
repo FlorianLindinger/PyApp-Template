@@ -35,7 +35,8 @@ def run_file(path):
         code = normalize_exit_code(result)
         pause_on_success = namespace.get(
             "pause_on_success",
-            "close_terminal_on_finish" in namespace and not namespace["close_terminal_on_finish"],
+            "close_terminal_on_finish" in namespace
+            and not namespace["close_terminal_on_finish"],
         )
         if pause_on_success:
             acknowledge("Press Enter to exit")

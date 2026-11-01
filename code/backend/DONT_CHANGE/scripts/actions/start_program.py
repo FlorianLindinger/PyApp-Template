@@ -60,14 +60,18 @@ def main():
             args,
             env=env,
             startupinfo=startup,
-            creationflags=subprocess.CREATE_NO_WINDOW if mode == "no_terminal" else subprocess.CREATE_NEW_CONSOLE,
+            creationflags=subprocess.CREATE_NO_WINDOW
+            if mode == "no_terminal"
+            else subprocess.CREATE_NEW_CONSOLE,
             stdout=diagnostics if mode == "no_terminal" else None,
             stderr=diagnostics if mode == "no_terminal" else None,
         )
         deadline = time.monotonic() + 120
         while time.monotonic() < deadline:
             try:
-                status = json.loads((run_dir / "startup.json").read_text(encoding="utf-8"))
+                status = json.loads(
+                    (run_dir / "startup.json").read_text(encoding="utf-8")
+                )
                 if status["status"] in {"started", "cancelled"}:
                     return 0
                 raise RuntimeError(status.get("message", "Watchdog startup failed"))
@@ -75,7 +79,10 @@ def main():
                 pass
             # wt.exe may exit after handing its command to an existing terminal server.
             if mode != "wt" and child.poll() is not None:
-                raise RuntimeError("Watchdog exited before startup. See " + str(run_dir / "bootstrap.log"))
+                raise RuntimeError(
+                    "Watchdog exited before startup. See "
+                    + str(run_dir / "bootstrap.log")
+                )
             time.sleep(0.05)
     raise TimeoutError("No startup acknowledgement. See " + str(run_dir))
 

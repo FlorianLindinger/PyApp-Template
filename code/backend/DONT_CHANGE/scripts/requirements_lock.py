@@ -16,9 +16,13 @@ def lock_backend_requirements(source, destination):
             continue
         match = re.fullmatch(r"([A-Za-z0-9_.-]+)==([A-Za-z0-9_.+-]+)", line)
         if not match:
-            raise ValueError("Backend requirements must use exact name==version pins: " + line)
+            raise ValueError(
+                "Backend requirements must use exact name==version pins: " + line
+            )
         name, version = match.groups()
-        url = "https://pypi.org/pypi/{}/{}/json".format(urllib.parse.quote(name), urllib.parse.quote(version))
+        url = "https://pypi.org/pypi/{}/{}/json".format(
+            urllib.parse.quote(name), urllib.parse.quote(version)
+        )
         with urllib.request.urlopen(url, timeout=60) as response:
             metadata = json.load(response)
         artifacts = [
@@ -30,10 +34,18 @@ def lock_backend_requirements(source, destination):
             for item in metadata["urls"]
             if not item.get("yanked", False)
         ]
-        if not artifacts or not all(re.fullmatch(r"[0-9a-f]{64}", item["sha256"]) for item in artifacts):
+        if not artifacts or not all(
+            re.fullmatch(r"[0-9a-f]{64}", item["sha256"]) for item in artifacts
+        ):
             raise ValueError("No usable published artifact hashes for " + line)
-        requirements.append(line + " " + " ".join("--hash=sha256:" + item["sha256"] for item in artifacts))
+        requirements.append(
+            line
+            + " "
+            + " ".join("--hash=sha256:" + item["sha256"] for item in artifacts)
+        )
         manifest.append({"requirement": line, "artifacts": artifacts})
     Path(destination).write_text("\n".join(requirements) + "\n", encoding="utf-8")
-    Path(str(destination) + ".manifest.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+    Path(str(destination) + ".manifest.json").write_text(
+        json.dumps(manifest, indent=2) + "\n", encoding="utf-8"
+    )
     return str(destination)

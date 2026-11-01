@@ -126,9 +126,13 @@ def set_terminal_icon(icon_path: str | None) -> None:
         SWP_FRAMECHANGED = 0x0020
 
         def _load_icon(width: int, height: int) -> int:
-            icon = user32.LoadImageW(None, icon_path, IMAGE_ICON, width, height, LR_LOADFROMFILE)
+            icon = user32.LoadImageW(
+                None, icon_path, IMAGE_ICON, width, height, LR_LOADFROMFILE
+            )
             if not icon:
-                icon = user32.LoadImageW(None, icon_path, IMAGE_ICON, 0, 0, LR_LOADFROMFILE | LR_DEFAULTSIZE)
+                icon = user32.LoadImageW(
+                    None, icon_path, IMAGE_ICON, 0, 0, LR_LOADFROMFILE | LR_DEFAULTSIZE
+                )
             return int(icon or 0)
 
         small_icon = _load_icon(
@@ -244,7 +248,9 @@ def set_terminal_app_id(app_id: str) -> None:
             ("Release", ctypes.WINFUNCTYPE(ctypes.c_ulong, IPropertyStorePtr)),
             (
                 "GetCount",
-                ctypes.WINFUNCTYPE(HRESULT, IPropertyStorePtr, ctypes.POINTER(wintypes.DWORD)),
+                ctypes.WINFUNCTYPE(
+                    HRESULT, IPropertyStorePtr, ctypes.POINTER(wintypes.DWORD)
+                ),
             ),
             (
                 "GetAt",
@@ -331,8 +337,13 @@ def set_terminal_app_id(app_id: str) -> None:
 
         coinitialize_result = ole32.CoInitialize(None)
         should_uninitialize = coinitialize_result in {S_OK, S_FALSE}
-        if coinitialize_result < 0 and (coinitialize_result & 0xFFFFFFFF) != RPC_E_CHANGED_MODE:
-            raise OSError(f"CoInitialize failed with HRESULT {_format_hresult(coinitialize_result)}")
+        if (
+            coinitialize_result < 0
+            and (coinitialize_result & 0xFFFFFFFF) != RPC_E_CHANGED_MODE
+        ):
+            raise OSError(
+                f"CoInitialize failed with HRESULT {_format_hresult(coinitialize_result)}"
+            )
 
         try:
             property_store = IPropertyStorePtr()
@@ -349,10 +360,14 @@ def set_terminal_app_id(app_id: str) -> None:
                     ctypes.byref(pkey_app_user_model_id),
                     ctypes.byref(prop_var),
                 )
-                _check_hresult(hr, f"SetValue System.AppUserModel.ID for hwnd 0x{hwnd:016X}")
+                _check_hresult(
+                    hr, f"SetValue System.AppUserModel.ID for hwnd 0x{hwnd:016X}"
+                )
 
                 hr = property_store.contents.lpVtbl.contents.Commit(property_store)
-                _check_hresult(hr, f"Commit System.AppUserModel.ID for hwnd 0x{hwnd:016X}")
+                _check_hresult(
+                    hr, f"Commit System.AppUserModel.ID for hwnd 0x{hwnd:016X}"
+                )
 
                 _helper_refresh_nonclient_area(hwnd)
             finally:

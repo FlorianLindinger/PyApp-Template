@@ -7,7 +7,7 @@ TL;DR
 
 1. Replace code/backend/icons/icon.png with the base image you want.
 2. Optionally replace any overlay PNG in the same folder.
-3. Run code/backend/icons/regenerate icons.lnk.
+3. Run code/backend/icons/regenerate icons.cmd.
 
 The generator creates multi-resolution .ico files in code/backend/icons/.
 Do not rename the input PNG files.
@@ -39,7 +39,7 @@ For example, settings.png produces settings.ico.
 If an input image is absent, or has not been changed from the template image,
 the generator uses the matching bundled fallback from:
 
-    code/backend/DONT_CHANGE/scripts/icon/
+    code/backend/DONT_CHANGE/icon_related/
 
 The bundled fallback files are named default_icon.png,
 default_settings.png, default_stop.png, and so on (including
@@ -72,9 +72,12 @@ Set either setting in a pair to None to generate that .ico without its overlay.
 
 Run:
 
-    code/backend/icons/regenerate icons.lnk
+    code/backend/icons/regenerate icons.cmd
 
-This launches scripts/icon/generate_icons.py with the bundled backend Python. It creates:
+The launcher reports success or failure and waits for a keypress before closing.
+It works after moving the project folder because its paths are relative to itself.
+
+This launches scripts/icons/generate_icons.py with the bundled backend Python. It creates:
 
     icon.ico
     settings.ico
@@ -101,7 +104,7 @@ to reduce regeneration time.
 
 To create readable placeholder PNGs with instructions, run:
 
-    code/backend/DONT_CHANGE/scripts/icon/generate_PNGs_to_be_replaced.py
+    code/backend/DONT_CHANGE/batches/icons/generate_icon_pngs.bat
 
 The files are written to:
 

@@ -22,11 +22,19 @@ def replace_directory(staged, destination, keep_previous=False):
     staged, destination = Path(staged).resolve(), Path(destination).resolve()
     if staged.parent != destination.parent or staged == destination:
         raise ValueError("Staging must be a distinct sibling of the destination")
-    if staged.is_symlink() or destination.is_symlink() or staged.is_junction() or destination.is_junction():
+    if (
+        staged.is_symlink()
+        or destination.is_symlink()
+        or staged.is_junction()
+        or destination.is_junction()
+    ):
         raise ValueError("Refusing to replace a linked environment directory")
     backup = destination.with_name(destination.name + ".previous")
     if backup.exists():
-        raise RuntimeError("A previous environment backup remains; inspect it before retrying: " + str(backup))
+        raise RuntimeError(
+            "A previous environment backup remains; inspect it before retrying: "
+            + str(backup)
+        )
     had_destination = destination.exists()
     if had_destination:
         destination.rename(backup)
@@ -58,7 +66,9 @@ def requirements_fingerprint(path, seen=None):
     digest = hashlib.sha256(content.encode("utf-8"))
     for line in content.splitlines():
         line = line.strip()
-        match = re.match(r"^(?:--(?:requirement|constraint)(?:\s+|=)|-[rc]\s*)(.+)$", line)
+        match = re.match(
+            r"^(?:--(?:requirement|constraint)(?:\s+|=)|-[rc]\s*)(.+)$", line
+        )
         if not match:
             continue
         nested = match.group(1).strip()
@@ -71,7 +81,9 @@ def requirements_fingerprint(path, seen=None):
         else:
             nested = re.split(r"\s+#", nested, maxsplit=1)[0].strip()
         if "://" in nested:
-            raise ValueError("Use local requirement includes for reproducible startup: " + nested)
+            raise ValueError(
+                "Use local requirement includes for reproducible startup: " + nested
+            )
         digest.update(requirements_fingerprint(path.parent / nested, seen).encode())
     return digest.hexdigest()
 
@@ -108,7 +120,9 @@ def package_inventory(directory):
             metadata = info / name
             if not metadata.is_file():
                 raise ValueError("Incomplete package metadata: " + str(metadata))
-            result[str(metadata.relative_to(directory))] = hashlib.sha256(metadata.read_bytes()).hexdigest()
+            result[str(metadata.relative_to(directory))] = hashlib.sha256(
+                metadata.read_bytes()
+            ).hexdigest()
     return result
 
 
@@ -157,7 +171,9 @@ def packages_healthy(directory, marker_name, requirements, python_version):
 def stage_directory(destination):
     destination = Path(destination).resolve()
     destination.parent.mkdir(parents=True, exist_ok=True)
-    return Path(tempfile.mkdtemp(prefix=destination.name + ".staging-", dir=destination.parent))
+    return Path(
+        tempfile.mkdtemp(prefix=destination.name + ".staging-", dir=destination.parent)
+    )
 
 
 def verify_python_signature(path):

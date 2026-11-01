@@ -1,3 +1,6 @@
+# ruff: noqa: E402
+# Bootstrap path setup must run before importing project modules.
+
 """Manage the frontend runtime, dependency state, repair menus and package tools."""
 
 # =========================
@@ -31,7 +34,11 @@ from backend.DONT_CHANGE.scripts.environment_state import (
     stage_directory,
     write_package_state,
 )
-from backend.DONT_CHANGE.scripts.filesystem_tools import delete_folder_safe, read_lines, write_lines
+from backend.DONT_CHANGE.scripts.filesystem_tools import (
+    delete_folder_safe,
+    read_lines,
+    write_lines,
+)
 from backend.DONT_CHANGE.scripts.launcher_ui import (
     get_running_processes_from_pid_file,
     set_hidden_in_explorer,
@@ -91,7 +98,9 @@ def environment_locked(function):
 def refuse_mutation_while_running():
     running, _ = get_running_processes_from_pid_file(PROCESS_ID_FILE_PATH)
     if running:
-        raise RuntimeError("Close running application instances before changing their Python environment.")
+        raise RuntimeError(
+            "Close running application instances before changing their Python environment."
+        )
 
 
 def get_python_version() -> str:
@@ -150,7 +159,9 @@ def recreate_python_distro(keep_previous: bool = False) -> None:
     """Install a fresh managed frontend Python distribution and its helper launcher."""
     refuse_mutation_while_running()
 
-    rel_path_dist_to_packages = os.path.relpath(path=FRONTEND_PACKAGES_DIR, start=FRONTEND_PYTHON_DIR)
+    rel_path_dist_to_packages = os.path.relpath(
+        path=FRONTEND_PACKAGES_DIR, start=FRONTEND_PYTHON_DIR
+    )
 
     import json
 
@@ -180,7 +191,9 @@ def recreate_python_distro(keep_previous: bool = False) -> None:
     )
 
     if not os.path.exists(FRONTEND_PYTHON_EXE):
-        raise RuntimeError(f'Python installation did not produce expected file at "{FRONTEND_PYTHON_EXE}"')
+        raise RuntimeError(
+            f'Python installation did not produce expected file at "{FRONTEND_PYTHON_EXE}"'
+        )
     else:
         # Create a batch file that launches a terminal that has python and pip install target set:
         batch_content = r"""
@@ -220,15 +233,21 @@ echo.
 :: don't close terminal
 cmd /k
 """
-        os.makedirs(os.path.dirname(FRONTEND_LAUNCHER_FOR_PIP_INSTALL_TERMINAL), exist_ok=True)
-        with open(FRONTEND_LAUNCHER_FOR_PIP_INSTALL_TERMINAL, "w", encoding="utf-8") as f:
+        os.makedirs(
+            os.path.dirname(FRONTEND_LAUNCHER_FOR_PIP_INSTALL_TERMINAL), exist_ok=True
+        )
+        with open(
+            FRONTEND_LAUNCHER_FOR_PIP_INSTALL_TERMINAL, "w", encoding="utf-8"
+        ) as f:
             f.write(batch_content)
 
         # save python version to file to have version fast readable and to indicate successfull python setup:
         with open(PYTHON_VERSION_INDICATOR_FILE_PATH, "w", encoding="utf-8") as f:
             f.write(get_python_version())
 
-        atomic_json(runtime_lock, {"requested": requested, "resolved": get_python_version()})
+        atomic_json(
+            runtime_lock, {"requested": requested, "resolved": get_python_version()}
+        )
         set_hidden_in_explorer()
 
 
@@ -247,7 +266,9 @@ def prompt_for_distro_reinstall(msg: str = "Choose how to replace Python:"):
     ]
     for index, label in enumerate(choices):
         print_warn(f"{index}: {label}")
-    print("After a successful change this launch continues automatically. No second restart is needed.")
+    print(
+        "After a successful change this launch continues automatically. No second restart is needed."
+    )
     while True:
         choice = input_warn("Choose an option [0-8]: ").strip()
         if choice in {str(i) for i in range(len(choices))}:
@@ -263,7 +284,9 @@ def ensure_python_distro(
     import shutil
 
     actual = runtime_healthy(FRONTEND_PYTHON_EXE, install_tkinter)
-    if actual and (not python_version or is_python_version_compatible(actual, python_version)):
+    if actual and (
+        not python_version or is_python_version_compatible(actual, python_version)
+    ):
         configure_python_package_path(
             FRONTEND_PYTHON_DIR,
             os.path.relpath(FRONTEND_PACKAGES_DIR, FRONTEND_PYTHON_DIR),
@@ -271,7 +294,9 @@ def ensure_python_distro(
         return
     answer = 1
     if actual:
-        answer = prompt_for_distro_reinstall(f"Configured Python {python_version}; installed Python {actual}.")
+        answer = prompt_for_distro_reinstall(
+            f"Configured Python {python_version}; installed Python {actual}."
+        )
     if answer == 0:
         return
     if answer == 8:
@@ -290,13 +315,17 @@ def ensure_python_distro(
     set_terminal_appearance_once(used_appid_if_slow)
     previous = Path(FRONTEND_PYTHON_DIR + ".previous")
     if previous.exists():
-        raise RuntimeError("Inspect the retained runtime backup before retrying: " + str(previous))
+        raise RuntimeError(
+            "Inspect the retained runtime backup before retrying: " + str(previous)
+        )
     try:
         recreate_python_distro(keep_previous=True)
         if answer == 2:
             install_empty_packages()
         else:
-            install_packages_from_file(requirements, replace=True, review_inferred=False)
+            install_packages_from_file(
+                requirements, replace=True, review_inferred=False
+            )
     except BaseException:
         if previous.exists():
             failed = Path(FRONTEND_PYTHON_DIR + ".failed")
@@ -312,7 +341,9 @@ def ensure_python_distro(
         except OSError:
             print("[Warning] Previous runtime retained at " + str(previous))
     if answer in (4, 6):
-        save_current_packages_as_default(auto_search_phrase_state=False, with_version=True)
+        save_current_packages_as_default(
+            auto_search_phrase_state=False, with_version=True
+        )
 
 
 def delete_frontend_packages():
@@ -368,21 +399,31 @@ def ensure_frontend_packages(used_appid_if_slow: str = ""):
     if not are_frontend_packages_installed():
         marker = Path(FRONTEND_PACKAGES_ARE_INSTALLED_MARKER_PATH)
         if marker.is_file() and not marker.read_text(encoding="utf-8").strip():
-            print("[Info] Migrating legacy package state without removing manually installed packages.")
+            print(
+                "[Info] Migrating legacy package state without removing manually installed packages."
+            )
             install_packages_from_file(DEFAULT_PACKAGES_PATH, replace=False)
             return
-        print("[Info] Dependencies changed or installation is incomplete; preparing a verified replacement.")
-        install_default_packages(check_auto_determine_flag=True, app_id_for_slow=used_appid_if_slow)
+        print(
+            "[Info] Dependencies changed or installation is incomplete; preparing a verified replacement."
+        )
+        install_default_packages(
+            check_auto_determine_flag=True, app_id_for_slow=used_appid_if_slow
+        )
 
 
 def confirm_inferred_requirements(path):
-    print("Inferred imports are suggestions. Check distribution names, optional imports and version constraints:")
+    print(
+        "Inferred imports are suggestions. Check distribution names, optional imports and version constraints:"
+    )
     print(Path(path).read_text(encoding="utf-8"))
     if input_warn("Install this reviewed list? [y/N] ").strip().lower() not in {
         "y",
         "yes",
     }:
-        raise RuntimeError("Dependency installation cancelled; existing environment retained")
+        raise RuntimeError(
+            "Dependency installation cancelled; existing environment retained"
+        )
 
 
 def install_empty_packages():
@@ -424,8 +465,14 @@ def install_packages_from_file(
     try:
         if not replace and os.path.isdir(FRONTEND_PACKAGES_DIR):
             shutil.copytree(FRONTEND_PACKAGES_DIR, stage, dirs_exist_ok=True)
-        (stage / os.path.basename(FRONTEND_PACKAGES_ARE_INSTALLED_MARKER_PATH)).unlink(missing_ok=True)
-        actual = [line for line in read_lines(path) if line.strip() and not line.lstrip().startswith("#")]
+        (stage / os.path.basename(FRONTEND_PACKAGES_ARE_INSTALLED_MARKER_PATH)).unlink(
+            missing_ok=True
+        )
+        actual = [
+            line
+            for line in read_lines(path)
+            if line.strip() and not line.lstrip().startswith("#")
+        ]
         if actual:
             install_packages(
                 python_exe=FRONTEND_PYTHON_EXE,
@@ -492,7 +539,9 @@ def install_packages_from_file(
             shutil.rmtree(stage)
 
 
-def install_default_packages(check_auto_determine_flag: bool, app_id_for_slow: str = ""):
+def install_default_packages(
+    check_auto_determine_flag: bool, app_id_for_slow: str = ""
+):
     import json
     import tempfile
 
@@ -503,8 +552,11 @@ def install_default_packages(check_auto_determine_flag: bool, app_id_for_slow: s
         install_packages_from_file(path, replace=True, app_id_for_slow=app_id_for_slow)
         save_current_packages_as_default(auto_search_phrase_state=False)
         return
+    lock = {}
     try:
-        lock = json.loads(Path(DEFAULT_PACKAGES_PATH + ".lock.json").read_text(encoding="utf-8"))
+        lock = json.loads(
+            Path(DEFAULT_PACKAGES_PATH + ".lock.json").read_text(encoding="utf-8")
+        )
         locked = (
             lock["requirements"] == requirements_fingerprint(DEFAULT_PACKAGES_PATH)
             and lock["python"] == get_python_version()
@@ -515,9 +567,13 @@ def install_default_packages(check_auto_determine_flag: bool, app_id_for_slow: s
         with tempfile.TemporaryDirectory(prefix="pyapp_locked_") as directory:
             path = Path(directory) / "requirements.txt"
             path.write_text("\n".join(lock["packages"]) + "\n", encoding="utf-8")
-            install_packages_from_file(str(path), replace=True, app_id_for_slow=app_id_for_slow)
+            install_packages_from_file(
+                str(path), replace=True, app_id_for_slow=app_id_for_slow
+            )
     else:
-        install_packages_from_file(DEFAULT_PACKAGES_PATH, replace=True, app_id_for_slow=app_id_for_slow)
+        install_packages_from_file(
+            DEFAULT_PACKAGES_PATH, replace=True, app_id_for_slow=app_id_for_slow
+        )
 
 
 def get_auto_find_pckgs_phrase_state() -> bool | None:
@@ -597,7 +653,9 @@ def save_current_packages(output_path: str | None = None, with_version: bool = T
     )
 
 
-def save_current_packages_as_default(auto_search_phrase_state: bool | None = None, with_version: bool = True):
+def save_current_packages_as_default(
+    auto_search_phrase_state: bool | None = None, with_version: bool = True
+):
     """Save current frontend packages as the project's default package list."""
     if auto_search_phrase_state is None:
         auto_search_phrase_state = get_auto_find_pckgs_phrase_state()

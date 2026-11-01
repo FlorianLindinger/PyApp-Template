@@ -1,3 +1,6 @@
+# ruff: noqa: E402
+# Failure metadata is defined before the installer's guarded import/bootstrap block.
+
 """Finish installation of backend Python"""
 
 # ==============================
@@ -74,9 +77,13 @@ try:
         import site""")
 
             # Bootstrap a fixed pip wheel and verify its published SHA-256 before executing it.
-            with urllib.request.urlopen("https://pypi.org/pypi/pip/" + pip_version + "/json", timeout=60) as response:
+            with urllib.request.urlopen(
+                "https://pypi.org/pypi/pip/" + pip_version + "/json", timeout=60
+            ) as response:
                 metadata = json.load(response)
-            wheel = next(item for item in metadata["urls"] if item["filename"].endswith(".whl"))
+            wheel = next(
+                item for item in metadata["urls"] if item["filename"].endswith(".whl")
+            )
             with urllib.request.urlopen(wheel["url"], timeout=120) as response:
                 content = response.read()
             if hashlib.sha256(content).hexdigest() != wheel["digests"]["sha256"]:
@@ -135,7 +142,9 @@ try:
 
                 folder_name = os.path.basename(folder)
                 if folder_name != forced_name:
-                    raise ValueError(f"Refusing to delete: expected folder named {forced_name!r}, got {folder_name!r}")
+                    raise ValueError(
+                        f"Refusing to delete: expected folder named {forced_name!r}, got {folder_name!r}"
+                    )
 
                 for item_name in os.listdir(folder):
                     item = os.path.join(folder, item_name)
@@ -151,7 +160,9 @@ try:
                     allowed_base_abs_path=PYTHON_SCRIPTS_DIR,
                 )
                 if not success:
-                    raise RuntimeError(f'Failed to delete "{BACKEND_PACKAGES_DIR}". Aborting.')
+                    raise RuntimeError(
+                        f'Failed to delete "{BACKEND_PACKAGES_DIR}". Aborting.'
+                    )
                     input("Press enter to exit")
             else:
                 os.makedirs(BACKEND_PACKAGES_DIR)

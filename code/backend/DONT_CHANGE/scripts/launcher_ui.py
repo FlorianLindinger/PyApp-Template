@@ -1,3 +1,6 @@
+# ruff: noqa: E402
+# Bootstrap path setup must run before importing project modules.
+
 """Launcher appearance, log-path policy and process-registry compatibility helpers."""
 
 # =========================
@@ -90,7 +93,10 @@ def print_traceback(message: str = "") -> None:
         print_warn(message)
         print("-" * 30)
 
-    console.print(Traceback.from_exception(exc_type, exc_value, traceback_, show_locals=False))  # type:ignore
+    if exc_type is not None and exc_value is not None:
+        console.print(
+            Traceback.from_exception(exc_type, exc_value, traceback_, show_locals=False)
+        )
 
     print_warn("=" * 30)
 
@@ -114,18 +120,26 @@ def set_terminal_colors(colors: str | None = TERMINAL_COLORS) -> None:
     _set_terminal_colors(colors=colors)
 
 
-def get_log_folder_path(log_path: str | bool | None, is_relative_to_start_folder_if_relative: bool) -> str | None:
+def get_log_folder_path(
+    log_path: str | bool | None, is_relative_to_start_folder_if_relative: bool
+) -> str | None:
     """Converts log_path = None, False, "" to None. Converts datetime format. Converts relative path either relative to developer_settings.py or start folder (where the start shortcut is)."""
 
-    assert log_path is not True, "True is not a valid value for the log path. Choose: (relative) path, None, or False."
+    assert log_path is not True, (
+        "True is not a valid value for the log path. Choose: (relative) path, None, or False."
+    )
     if log_path:
         if not os.path.isabs(log_path):
             if is_relative_to_start_folder_if_relative:
                 log_path_resolved = os.path.normpath(
-                    os.path.join(os.environ.get("PYAPP_START_DIR", os.getcwd()), log_path)
+                    os.path.join(
+                        os.environ.get("PYAPP_START_DIR", os.getcwd()), log_path
+                    )
                 )
             else:
-                log_path_resolved = os.path.normpath(os.path.join(DEV_SETTINGS_DIR, log_path))
+                log_path_resolved = os.path.normpath(
+                    os.path.join(DEV_SETTINGS_DIR, log_path)
+                )
         else:
             log_path_resolved = log_path
 
@@ -134,25 +148,35 @@ def get_log_folder_path(log_path: str | bool | None, is_relative_to_start_folder
         if "%" in log_folder_path_resolved:
             from datetime import datetime
 
-            log_folder_path_resolved = datetime.now().astimezone().strftime(log_folder_path_resolved)
+            log_folder_path_resolved = (
+                datetime.now().astimezone().strftime(log_folder_path_resolved)
+            )
 
         return log_folder_path_resolved
     else:
         return None
 
 
-def get_log_path(log_path: str | bool | None, is_relative_to_start_folder_if_relative: bool) -> str:
+def get_log_path(
+    log_path: str | bool | None, is_relative_to_start_folder_if_relative: bool
+) -> str:
     """Handles log paths: Converts None and False to "". Converts datetime format. Converts relative path either relative to developer_settings.py or start folder (where the start shortcut is)."""
 
-    assert log_path is not True, "True is not a valid value for the log path. Choose: (relative) path, None, or False."
+    assert log_path is not True, (
+        "True is not a valid value for the log path. Choose: (relative) path, None, or False."
+    )
     if log_path:
         if not os.path.isabs(log_path):
             if is_relative_to_start_folder_if_relative:
                 log_path_resolved = os.path.normpath(
-                    os.path.join(os.environ.get("PYAPP_START_DIR", os.getcwd()), log_path)
+                    os.path.join(
+                        os.environ.get("PYAPP_START_DIR", os.getcwd()), log_path
+                    )
                 )
             else:
-                log_path_resolved = os.path.normpath(os.path.join(DEV_SETTINGS_DIR, log_path))
+                log_path_resolved = os.path.normpath(
+                    os.path.join(DEV_SETTINGS_DIR, log_path)
+                )
         else:
             log_path_resolved = log_path
 

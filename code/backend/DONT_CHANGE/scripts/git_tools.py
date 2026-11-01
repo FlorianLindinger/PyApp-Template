@@ -31,7 +31,9 @@ def run_git(arguments: list[str]) -> int:
     return subprocess.run(["git", *arguments], cwd=root, check=False).returncode
 
 
-def show_git_results(arguments: list[str], *, heading: str, no_results_message: str) -> int:
+def show_git_results(
+    arguments: list[str], *, heading: str, no_results_message: str
+) -> int:
     """Run a Git listing command and make an empty result explicit."""
     import subprocess
 

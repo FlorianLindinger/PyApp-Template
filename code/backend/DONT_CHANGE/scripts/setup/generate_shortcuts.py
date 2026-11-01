@@ -5,7 +5,9 @@ if __name__ == "__main__":
     from pathlib import Path
 
     code_dir = next(
-        parent for parent in Path(__file__).resolve().parents if (parent / "backend" / "DONT_CHANGE").is_dir()
+        parent
+        for parent in Path(__file__).resolve().parents
+        if (parent / "backend" / "DONT_CHANGE").is_dir()
     )
     sys.path.insert(0, str(code_dir))
     from backend.DONT_CHANGE.scripts.entrypoint import run_file
@@ -34,7 +36,10 @@ from backend.developer_settings import (
     user_settings_path,
     windows_terminal_shortcut_name,
 )
-from backend.DONT_CHANGE.scripts.filesystem_tools import make_abs_path_relative_to_file, sanitize_filename
+from backend.DONT_CHANGE.scripts.filesystem_tools import (
+    make_abs_path_relative_to_file,
+    sanitize_filename,
+)
 from backend.DONT_CHANGE.scripts.frontend_environment import ensure_frontend_packages
 from backend.DONT_CHANGE.settings.backend_settings import (
     CRASH_LOG_ICON_PATH,
@@ -177,7 +182,9 @@ def generate_shortcut(
             ("Load", _unused_method),
             (
                 "Save",
-                _method(_hresult, _persist_file_pointer, ctypes.c_wchar_p, wintypes.BOOL),
+                _method(
+                    _hresult, _persist_file_pointer, ctypes.c_wchar_p, wintypes.BOOL
+                ),
             ),
             ("SaveCompleted", _unused_method),
             ("GetCurFile", _unused_method),
@@ -269,8 +276,14 @@ def generate_shortcut(
     _persist_file_interface_id = _guid("0000010B-0000-0000-C000-000000000046")
     _property_store_interface_id = _guid("886D8EEB-8CF2-4446-8D02-CDBA1DBDCF99")
     _app_id_key = _PropertyKey(_guid("9F4C2855-9F79-4B39-A8D0-E1D42DE1D5F3"), 5)
-    output_path = os.path.abspath(os.path.join(SHORTCUT_OUTPUT_DIR, sanitize_filename(shortcut_name) + ".lnk"))
-    launcher_args = [_quote(launcher_path)] if classic_terminal else ["/d", "/c", "call", _quote(launcher_path)]
+    output_path = os.path.abspath(
+        os.path.join(SHORTCUT_OUTPUT_DIR, sanitize_filename(shortcut_name) + ".lnk")
+    )
+    launcher_args = (
+        [_quote(launcher_path)]
+        if classic_terminal
+        else ["/d", "/c", "call", _quote(launcher_path)]
+    )
     if args not in ("", None):
         launcher_args.append(_quote(args))
     icon_path = os.path.abspath(os.fspath(icon_path)) if icon_path else None
@@ -313,13 +326,19 @@ def generate_shortcut(
         try:
             interface = shell_link.contents.vtable.contents
             target = "conhost.exe" if classic_terminal else "cmd.exe"
-            _check_hresult(interface.SetPath(shell_link, target), f'SetPath("{target}")')
+            _check_hresult(
+                interface.SetPath(shell_link, target), f'SetPath("{target}")'
+            )
             _check_hresult(
                 interface.SetArguments(shell_link, " ".join(launcher_args)),
                 "SetArguments",
             )
-            _check_hresult(interface.SetWorkingDirectory(shell_link, wdir), "SetWorkingDirectory")
-            _check_hresult(interface.SetDescription(shell_link, description), "SetDescription")
+            _check_hresult(
+                interface.SetWorkingDirectory(shell_link, wdir), "SetWorkingDirectory"
+            )
+            _check_hresult(
+                interface.SetDescription(shell_link, description), "SetDescription"
+            )
             _check_hresult(
                 interface.SetShowCmd(shell_link, 7 if start_minimized else 1),
                 "SetShowCmd",
@@ -337,7 +356,9 @@ def generate_shortcut(
                     ctypes.byref(property_store_pointer),
                 )
                 _check_hresult(result, "QueryInterface(IPropertyStore)")
-                property_store = ctypes.cast(property_store_pointer, _property_store_pointer)
+                property_store = ctypes.cast(
+                    property_store_pointer, _property_store_pointer
+                )
                 try:
                     app_id_value = _PropVariant()
                     app_id_value.vt = 31
@@ -363,7 +384,9 @@ def generate_shortcut(
             _check_hresult(result, "QueryInterface(IPersistFile)")
             persist_file = ctypes.cast(persist_file_pointer, _persist_file_pointer)
             try:
-                result = persist_file.contents.vtable.contents.Save(persist_file, output_path, True)
+                result = persist_file.contents.vtable.contents.Save(
+                    persist_file, output_path, True
+                )
                 _check_hresult(result, f'Save shortcut "{output_path}"')
             finally:
                 persist_file.contents.vtable.contents.Release(persist_file)
@@ -376,7 +399,12 @@ def generate_shortcut(
 
 
 def _sanitize_app_id(value: str) -> str:
-    name = unicodedata.normalize("NFKD", value).encode("ascii", "ignore").decode("ascii").lower()
+    name = (
+        unicodedata.normalize("NFKD", value)
+        .encode("ascii", "ignore")
+        .decode("ascii")
+        .lower()
+    )
     name = re.sub("[\\s_]+", "-", name)
     name = re.sub("[^a-z0-9.-]", "", name)
     name = re.sub("-+", "-", name)
@@ -451,7 +479,9 @@ def main() -> None:
         False,
         "",
     ) and open_settings_shortcut_name not in (None, False, ""):
-        settings_file_path_abs = make_abs_path_relative_to_file(user_settings_path, DEV_SETTINGS_PATH)
+        settings_file_path_abs = make_abs_path_relative_to_file(
+            user_settings_path, DEV_SETTINGS_PATH
+        )
         if not os.path.exists(settings_file_path_abs):
             print(
                 f'[Warning] User settings file does not exist at "{settings_file_path_abs}". The settings shortcut will still be created, but it will show an error until the file exists. Disable the settings shortcut by setting user_settings_path = None in "{DEV_SETTINGS_PATH}".'
