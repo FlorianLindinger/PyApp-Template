@@ -1,221 +1,91 @@
-"""WIP
+"""Prepare a managed environment and hand off one uniquely identified run."""
 
-This script is inteded to be launched in a visible terminal that is minimized on start. It will go to foreground on first print.
-"""
+import json
+import os
+import subprocess
+import sys
+import time
+import uuid
+from pathlib import Path
 
-# ==============================
-# settings
+sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
+from backend import developer_settings as settings
+from backend.DONT_CHANGE.scripts.frontend_environment import ensure_frontend_packages
+from backend.DONT_CHANGE.scripts.launcher_ui import print_traceback
+from backend.DONT_CHANGE.scripts.runtime_state import FileLock
+from backend.DONT_CHANGE.settings import backend_settings as paths
 
-# {e} will be formatted to exception:
-fail_message = "[Error] Failed during program start: {e}"
 
-try:
-    # ==============================
-    # import Python packages
-    # ==============================
-
-    import os
-    import subprocess
-    import sys
-    import time
-
-    # ==============================
-    # import third-party packages
-    # ==============================
-
-    # ==============================
-    # import from files
-    # ==============================
-
-    # add root dir to resolve file imports for debug cases where this script is called on its own:
-    root_dir = os.path.dirname(__file__) + "\\..\\..\\..\\.."
-    if root_dir not in sys.path:
-        sys.path.insert(0, root_dir)
-
-    from backend.developer_settings import (
-        program_name,
-        start_minimized,
-        tab_bar_color,
-        use_classic_terminal,
-        use_global_python,
-    )
-    from backend.DONT_CHANGE.scripts.common_code import (
-        ensure_frontend_packages,
-        input_warn,
-        make_empty_args_safe,
-        print_traceback,
-        print_warn,
-        set_terminal_colors,
-    )
-    from backend.DONT_CHANGE.scripts.generic_helpers import (
-        close_terminal,
-        enable_unminimize_and_foreground_terminal_on_first_print,
-    )
-    from backend.DONT_CHANGE.settings.backend_settings import (
-        BACKEND_PYTHON_EXE,
-        BACKGROUND_WATCHDOG_PATH,
-        CORRECT_START_SIGNAL_FILE_PATH,
-    )
-
-    # ==============================
-    # local variables
-    # ==============================
-
-    # ==============================
-    # local functions/classes
-    # ==============================
-
-    def get_startupinfo(minimized: bool = False):
-        """Creates subprocess.Popen STARTUPINFO that opens a child process minimized if minimized, else None (default of Popen)"""
-        if minimized:
-            startupinfo = subprocess.STARTUPINFO()
-            startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-            startupinfo.wShowWindow = getattr(subprocess, "SW_SHOWMINNOACTIVE", 7)
-            return startupinfo
-        else:
-            return None
-
-    # ==============================
-    # main function
-    # ==============================
-
-    def main() -> None:
-        set_terminal_colors()
-
-        enable_unminimize_and_foreground_terminal_on_first_print()
-
-        # ==============================
-        # get and process args
-
-        if len(sys.argv) == 3:
-            app_id = sys.argv[1]
-            launch_mode = sys.argv[2]
-        elif len(sys.argv) == 1:  # script is run on its own - mode
-            app_id = ""
-            launch_mode = "terminal"
-        else:
-            raise ValueError(f"[Error] Wrong number of arguments: {sys.argv}.")
-
-        if launch_mode == "terminal":
-            if use_classic_terminal:
-                launch_mode = "conhost"
-            else:
-                launch_mode = "wt"
-
-        # ==============================
-        # clear old signal file (signals correct launch of child script)
-
-        try:
-            if os.path.exists(CORRECT_START_SIGNAL_FILE_PATH):
-                os.remove(CORRECT_START_SIGNAL_FILE_PATH)
-        except Exception:
-            pass
-
-        # ==============================
-        # setup python (I want it here such that install prints are visible even if terminal if set to off and also such that prionts don't stay for final script execution)
-
-        if use_global_python == False:
-            # pass app-id in case function is slow and i want taskbar grouping in that time:
+def main():
+    app_id = sys.argv[1] if len(sys.argv) > 1 else ""
+    batch_mode = os.environ.pop("PYAPP_LAUNCH_MODE", "")
+    mode = batch_mode or (sys.argv[2] if len(sys.argv) > 2 else "terminal")
+    if mode == "terminal":
+        mode = "conhost" if settings.use_classic_terminal else "wt"
+    if mode not in {"conhost", "wt", "no_terminal"}:
+        raise ValueError("Unknown launch mode: " + mode)
+    if not settings.use_global_python:
+        with FileLock(Path(paths.TEMPORARY_DIR) / "environment.lock", timeout=600):
             ensure_frontend_packages(app_id)
-
-        # ==============================
-        # setup commands for watchdog
-
-        passed_args = [app_id, launch_mode]
-        terminal_args = make_empty_args_safe(
-            [
-                BACKEND_PYTHON_EXE,
-                "-X",
-                "faulthandler",
-                BACKGROUND_WATCHDOG_PATH,
-                *passed_args,
-            ]
+    run_dir = Path(paths.TEMPORARY_DIR) / "runs" / uuid.uuid4().hex
+    run_dir.mkdir(parents=True)
+    env = os.environ.copy()
+    env["PYAPP_RUN_DIR"] = str(run_dir)
+    env.pop("PYAPP_MAIN_ARGS", None)
+    env["PYAPP_START_DIR"] = env.get("PYAPP_START_DIR", os.getcwd())
+    args = [
+        paths.BACKEND_PYTHON_EXE,
+        "-X",
+        "faulthandler",
+        paths.BACKGROUND_WATCHDOG_PATH,
+        app_id or paths.EMPTY_ARG_INDICATOR,
+        mode,
+    ]
+    startup = subprocess.STARTUPINFO()
+    if settings.start_minimized:
+        startup.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+        startup.wShowWindow = 7
+    if mode == "wt":
+        args = [
+            "wt.exe",
+            "--title",
+            settings.program_name,
+            *(["--tabColor", settings.tab_bar_color] if settings.tab_bar_color else []),
+            *args,
+        ]
+    elif mode == "conhost":
+        args = ["conhost.exe", *args]
+    with open(run_dir / "bootstrap.log", "w", encoding="utf-8") as diagnostics:
+        child = subprocess.Popen(
+            args,
+            env=env,
+            startupinfo=startup,
+            creationflags=subprocess.CREATE_NO_WINDOW if mode == "no_terminal" else subprocess.CREATE_NEW_CONSOLE,
+            stdout=diagnostics if mode == "no_terminal" else None,
+            stderr=diagnostics if mode == "no_terminal" else None,
         )
-
-        # ==============================
-        # start background watchdog
-
-        if launch_mode == "wt":
-            if tab_bar_color:
-                terminal_args = ["--tabColor", tab_bar_color] + terminal_args
-            process = subprocess.Popen(
-                ["wt.exe", "--title", program_name, *terminal_args],
-                startupinfo=get_startupinfo(start_minimized),
-                creationflags=subprocess.CREATE_NEW_CONSOLE,
-            )
-
-        elif launch_mode == "conhost":
-            process = subprocess.Popen(
-                ["conhost.exe", *terminal_args],
-                startupinfo=get_startupinfo(start_minimized),
-                creationflags=subprocess.CREATE_NEW_CONSOLE,
-            )
-
-        elif launch_mode == "no_terminal":
-            process = subprocess.Popen(
-                terminal_args,
-                creationflags=subprocess.CREATE_NO_WINDOW,
-            )
-
-        else:
-            raise ValueError(f'[Error] Unknown launch_mode: "{launch_mode}"')
-
-        # ==============================
-        # wait for signal file creation to know watchdog had correct start
-
-        for _ in range(100):  # wait up to ~5s
-            if os.path.exists(CORRECT_START_SIGNAL_FILE_PATH):
-                try:
-                    os.remove(CORRECT_START_SIGNAL_FILE_PATH)
-                except Exception:
-                    pass
-                break
-            time.sleep(0.05)
-        else:
-            error_code = process.poll()
-
-            print()
-            print_warn("=" * 20)
-            print_warn("[Error] Backend code did not seem to launch properly")
-            print_warn("-" * 20)
-            print_warn(f"Launch mode: {launch_mode}")
-            print_warn(f'Error code (potentially meaningless): "{error_code}"')
+        deadline = time.monotonic() + 120
+        while time.monotonic() < deadline:
             try:
-                child_output, _ = process.communicate(timeout=0.2)
-                if child_output:
-                    print_warn("-" * 20)
-                    print_warn(child_output.rstrip())
-            except Exception:
+                status = json.loads((run_dir / "startup.json").read_text(encoding="utf-8"))
+                if status["status"] in {"started", "cancelled"}:
+                    return 0
+                raise RuntimeError(status.get("message", "Watchdog startup failed"))
+            except FileNotFoundError:
                 pass
-            print("=" * 20)
-            input_warn("[Error] Press enter to exit")
+            # wt.exe may exit after handing its command to an existing terminal server.
+            if mode != "wt" and child.poll() is not None:
+                raise RuntimeError("Watchdog exited before startup. See " + str(run_dir / "bootstrap.log"))
+            time.sleep(0.05)
+    raise TimeoutError("No startup acknowledgement. See " + str(run_dir))
 
-    # ==============================
-    # execute main function
-    # ==============================
 
-    if __name__ == "__main__":
-        try:
-            main()
-        except Exception as e:
-            print_traceback(fail_message.format(e=e))
-            input_warn("[Error] Press enter to exit")
-        close_terminal()
-
-    # =============================
-
-except Exception as e:
-    import os
-    import traceback
-
-    print()
-    print()
-    print("=" * 30)
-    print(fail_message.format(e=e))
-    print("-" * 30)
-    print(traceback.format_exc())
-    print("=" * 30)
-    input("[Error] Press enter to exit")
-    os._exit(
-        1
-    )  # instead of sys.exit(1) to prevent exception by script calling this script
+if __name__ == "__main__":
+    try:
+        with FileLock(Path(paths.TEMPORARY_DIR) / "environment.lock", timeout=600):
+            raise SystemExit(main())
+    except Exception as error:
+        print_traceback(str(error))
+        if sys.stdin is not None and sys.stdin.isatty():
+            input("Press Enter to exit")
+        raise SystemExit(1)

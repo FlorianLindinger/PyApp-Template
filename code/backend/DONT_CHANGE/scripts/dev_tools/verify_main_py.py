@@ -1,26 +1,26 @@
 """Run main.py lint, formatting, and type-check verification."""
 
-# ==============================
-# settings
+if __name__ == "__main__":
+    import sys
+    from pathlib import Path
 
-# ==============================
-# import Python packages
+    code_dir = next(
+        parent for parent in Path(__file__).resolve().parents if (parent / "backend" / "DONT_CHANGE").is_dir()
+    )
+    sys.path.insert(0, str(code_dir))
+    from backend.DONT_CHANGE.scripts.entrypoint import run_file
+
+    raise SystemExit(run_file(__file__))
+
 import argparse
 import shutil
 import subprocess
 import sys
 from pathlib import Path
 
-# ==============================
-# import third-party packages
-
-# ==============================
-# import from files
-
 CODE_DIR = Path(__file__).resolve().parents[4]
 if str(CODE_DIR) not in sys.path:
     sys.path.insert(0, str(CODE_DIR))
-
 from backend.DONT_CHANGE.settings.backend_settings import (
     FRONTEND_VERIFICATION_DEFAULT_PRESET,
     FRONTEND_VERIFICATION_EXCLUDED_FILES,
@@ -29,37 +29,26 @@ from backend.DONT_CHANGE.settings.backend_settings import (
     FRONTEND_VERIFICATION_VALID_PRESETS,
 )
 
-# ==============================
-# local variables
-
-# ==============================
-# local functions/classes
-
 
 def tool_command(tool: str) -> list[str]:
     """Use a PATH tool, this interpreter's tool, or an ephemeral uv tool."""
     installed_tool = shutil.which(tool)
     if installed_tool:
         return [installed_tool]
-
     scripts_dir = Path(sys.executable).parent / "Scripts"
     embedded_tool = scripts_dir / f"{tool}.exe"
     if embedded_tool.is_file():
         return [str(embedded_tool)]
-
     embedded_uvx = scripts_dir / "uvx.exe"
     uvx = shutil.which("uvx") or (str(embedded_uvx) if embedded_uvx.is_file() else None)
     if uvx:
         return [uvx, tool]
-
     raise FileNotFoundError(f'Neither "{tool}" nor "uvx" was found on PATH.')
 
 
 def exclusion_patterns() -> tuple[str, ...]:
     """Return file and recursive folder patterns understood by both tools."""
-    folder_patterns = tuple(
-        f"{folder.rstrip('/')}/**" for folder in FRONTEND_VERIFICATION_EXCLUDED_FOLDERS
-    )
+    folder_patterns = tuple((f"{folder.rstrip('/')}/**" for folder in FRONTEND_VERIFICATION_EXCLUDED_FOLDERS))
     return FRONTEND_VERIFICATION_EXCLUDED_FILES + folder_patterns
 
 
@@ -78,18 +67,10 @@ def verify(preset: str, *, fix: bool, unsafe_fixes: bool) -> int:
     except FileNotFoundError as error:
         print(f"[Error] {error}")
         return 2
-
     apply_fixes = fix or unsafe_fixes
-    ruff_patterns = (
-        FRONTEND_VERIFICATION_EXCLUDED_FILES + FRONTEND_VERIFICATION_EXCLUDED_FOLDERS
-    )
+    ruff_patterns = FRONTEND_VERIFICATION_EXCLUDED_FILES + FRONTEND_VERIFICATION_EXCLUDED_FOLDERS
     ruff_exclusions = ["--exclude", ",".join(ruff_patterns)] if ruff_patterns else []
-    pyrefly_exclusions = [
-        argument
-        for pattern in exclusion_patterns()
-        for argument in ("--project-excludes", pattern)
-    ]
-
+    pyrefly_exclusions = [argument for pattern in exclusion_patterns() for argument in ("--project-excludes", pattern)]
     checks = (
         (
             "Ruff lint/unsafe-fix: main.py"
@@ -128,7 +109,6 @@ def verify(preset: str, *, fix: bool, unsafe_fixes: bool) -> int:
             ],
         ),
     )
-
     succeeded = True
     for label, command in checks:
         if not run_check(label, command):
@@ -136,13 +116,8 @@ def verify(preset: str, *, fix: bool, unsafe_fixes: bool) -> int:
     if succeeded:
         print(f"\n[Success] main.py passed {preset} verification.")
         return 0
-
     print(f"\n[Error] main.py failed {preset} verification.")
     return 1
-
-
-# ==============================
-# main function
 
 
 def main() -> int:
@@ -166,14 +141,4 @@ def main() -> int:
         help="Apply Ruff's unsafe fixes as well as safe fixes before verification.",
     )
     arguments = parser.parse_args()
-    return verify(
-        arguments.preset, fix=arguments.fix, unsafe_fixes=arguments.unsafe_fixes
-    )
-
-
-# ==============================
-# execute main function
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())
+    return verify(arguments.preset, fix=arguments.fix, unsafe_fixes=arguments.unsafe_fixes)

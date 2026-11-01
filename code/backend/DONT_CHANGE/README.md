@@ -62,7 +62,6 @@ a real TTY. Retained run and MSI diagnostics are not automatically pruned.
 
 ## Ownership of shared code
 
-`generic_helpers.py` and `common_code.py` are compatibility import facades.
 Implementation modules are console_tools, filesystem_tools, process_tools,
 python_runtime, package_tools, image_tools, git_tools and shell_tools.
 `frontend_environment` owns runtime/package repair, `launcher_ui` owns appearance

@@ -16,6 +16,8 @@ try:
     # ==============================
     # import Python packages
 
+    import hashlib
+    import json
     import os
     import subprocess
     import sys
@@ -29,16 +31,12 @@ try:
 
     if root_dir not in sys.path:
         sys.path.insert(0, root_dir)
-    from backend.developer_settings import use_uv_to_install_packages
-    from backend.DONT_CHANGE.scripts.common_code import (
-        delete_folder_safe,
-        input_warn,
-        install_packages,
-        print_traceback,
-    )
-    from backend.DONT_CHANGE.scripts.generic_helpers import (
-        close_terminal,
-    )
+    from backend.DONT_CHANGE.scripts.console_tools import close_terminal
+    from backend.DONT_CHANGE.scripts.filesystem_tools import delete_folder_safe
+    from backend.DONT_CHANGE.scripts.launcher_ui import print_traceback
+    from backend.DONT_CHANGE.scripts.package_tools import install_packages
+    from backend.DONT_CHANGE.scripts.requirements_lock import lock_backend_requirements
+    from backend.DONT_CHANGE.scripts.runtime_state import clean_python_environment
     from backend.DONT_CHANGE.settings.backend_settings import (
         BACKEND_BUILD_TOOLS_REQUIREMENTS_FILE,
         BACKEND_FILES_TO_DELETE_AFTER_INSTALL,
@@ -62,11 +60,11 @@ try:
     # main function
 
     def main() -> None:
-        get_pip_url = "https://bootstrap.pypa.io/get-pip.py"
+        pip_version = "25.2"
 
         pipreqs_mapping_path = BACKEND_PACKAGES_DIR + "\\pipreqs\\mapping"
 
-        get_pip_path = BACKEND_PYTHON_DIR + "\\get-pip.py"
+        pip_wheel_path = BACKEND_PYTHON_DIR + "\\pip-bootstrap.whl"
 
         try:
             # update pth_file_path temporily to include packages folder for pip installation
@@ -75,18 +73,45 @@ try:
         .
         import site""")
 
-            # install pip
-            try:
-                urllib.request.urlretrieve(get_pip_url, get_pip_path)
-                subprocess.run(
-                    [BACKEND_PYTHON_EXE, get_pip_path, "--no-warn-script-location"],
-                    check=True,
+            # Bootstrap a fixed pip wheel and verify its published SHA-256 before executing it.
+            with urllib.request.urlopen("https://pypi.org/pypi/pip/" + pip_version + "/json", timeout=60) as response:
+                metadata = json.load(response)
+            wheel = next(item for item in metadata["urls"] if item["filename"].endswith(".whl"))
+            with urllib.request.urlopen(wheel["url"], timeout=120) as response:
+                content = response.read()
+            if hashlib.sha256(content).hexdigest() != wheel["digests"]["sha256"]:
+                raise RuntimeError("pip bootstrap wheel checksum mismatch")
+            pip_wheel_path = os.path.join(BACKEND_PYTHON_DIR, wheel["filename"])
+            with open(pip_wheel_path, "wb") as stream:
+                stream.write(content)
+            subprocess.run(
+                [
+                    BACKEND_PYTHON_EXE,
+                    "-c",
+                    "import runpy,sys; sys.path.insert(0,sys.argv.pop(1)); runpy.run_module('pip',run_name='__main__')",
+                    pip_wheel_path,
+                    "install",
+                    "--no-deps",
+                    "--no-warn-script-location",
+                    pip_wheel_path,
+                ],
+                check=True,
+                env=clean_python_environment(),
+            )
+            with open(
+                os.path.join(BACKEND_PYTHON_DIR, "pip-bootstrap-manifest.json"),
+                "w",
+                encoding="utf-8",
+            ) as stream:
+                json.dump(
+                    {
+                        "version": pip_version,
+                        "url": wheel["url"],
+                        "sha256": wheel["digests"]["sha256"],
+                    },
+                    stream,
                 )
-                if os.path.exists(get_pip_path):
-                    os.remove(get_pip_path)
-            except Exception as e:
-                print("[Error] pip installation failed:", e)
-                raise
+            os.remove(pip_wheel_path)
 
             # remove unneeded files to save space
             for filename in BACKEND_FILES_TO_DELETE_AFTER_INSTALL:
@@ -110,9 +135,7 @@ try:
 
                 folder_name = os.path.basename(folder)
                 if folder_name != forced_name:
-                    raise ValueError(
-                        f"Refusing to delete: expected folder named {forced_name!r}, got {folder_name!r}"
-                    )
+                    raise ValueError(f"Refusing to delete: expected folder named {forced_name!r}, got {folder_name!r}")
 
                 for item_name in os.listdir(folder):
                     item = os.path.join(folder, item_name)
@@ -128,9 +151,7 @@ try:
                     allowed_base_abs_path=PYTHON_SCRIPTS_DIR,
                 )
                 if not success:
-                    raise RuntimeError(
-                        f'Failed to delete "{BACKEND_PACKAGES_DIR}". Aborting.'
-                    )
+                    raise RuntimeError(f'Failed to delete "{BACKEND_PACKAGES_DIR}". Aborting.')
                     input("Press enter to exit")
             else:
                 os.makedirs(BACKEND_PACKAGES_DIR)
@@ -142,23 +163,34 @@ try:
             print("==============================")
             print()
 
+            # Lock artifact hashes before either requirements file can execute package code.
+            build_lock = lock_backend_requirements(
+                BACKEND_BUILD_TOOLS_REQUIREMENTS_FILE,
+                os.path.join(BACKEND_PYTHON_DIR, "build-tools.lock.txt"),
+            )
+            runtime_lock = lock_backend_requirements(
+                BACKEND_PACKAGE_REQUIREMENTS_FILE,
+                os.path.join(BACKEND_PYTHON_DIR, "runtime-packages.lock.txt"),
+            )
             # install temporary build tools for packages that need legacy build support
             install_packages(
                 python_exe=BACKEND_PYTHON_EXE,
-                requirements_file=BACKEND_BUILD_TOOLS_REQUIREMENTS_FILE,
+                requirements_file=build_lock,
+                extra_args=["--require-hashes"],
                 upgrade=True,
                 no_deps=True,
-                use_uv=use_uv_to_install_packages,
+                use_uv=False,
             )
 
             # install backend packages
             install_packages(
                 python_exe=BACKEND_PYTHON_EXE,
-                requirements_file=BACKEND_PACKAGE_REQUIREMENTS_FILE,
+                requirements_file=runtime_lock,
+                extra_args=["--require-hashes"],
                 target=BACKEND_PACKAGES_DIR,
                 upgrade=True,
                 no_deps=True,
-                use_uv=use_uv_to_install_packages,
+                use_uv=False,
             )
 
             # Remove console entry points are generated into python_packages\bin by pip --target. The embedded runtime imports packages directly and does not use those scripts.
@@ -1405,6 +1437,9 @@ try:
             sys.exit(0)
 
         except Exception:
+            import traceback
+
+            traceback.print_exc()
             sys.exit(1)
 
     # ==============================
@@ -1415,7 +1450,7 @@ try:
             main()
         except Exception as e:
             print_traceback(fail_message.format(e=e))
-            input_warn("[Error] Press enter to exit")
+            raise SystemExit(1)
         if close_terminal_on_finish:
             close_terminal()
 
@@ -1429,6 +1464,4 @@ except Exception as e:
     print("-" * 30)
     print(traceback.format_exc())
     print("=" * 30)
-    input("[Error] Press enter to exit")
-    if close_terminal_on_finish:
-        os._exit(1)
+    raise SystemExit(1)
