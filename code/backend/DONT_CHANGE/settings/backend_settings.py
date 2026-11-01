@@ -82,7 +82,7 @@ DONT_CHANGE_DIR = make_abs("..")
 BACKEND_DIR = make_abs("..\\..")  # UPDATE root .gitignore's /code/backend/... rules if moved.
 PYTHON_SCRIPTS_DIR = make_abs("..\\..\\..")  # UPDATE root .gitignore's /code/*.pid* rules if moved.
 SHORTCUT_OUTPUT_DIR = make_abs("..\\..\\..\\..")  # UPDATE root .gitignore's /*.lnk rule if moved.
-TEMPORARY_DIR = DONT_CHANGE_DIR + "\\temporary"  # UPDATE DONT_CHANGE/.gitignore, pyrefly.toml and bootstrap's temporary path if moved.
+TEMPORARY_DIR = DONT_CHANGE_DIR + "\\temporary"  # UPDATE DONT_CHANGE/.gitignore and bootstrap's temporary path if moved.
 APP_ACTIONS_DIR = DONT_CHANGE_DIR + "\\scripts\\actions"
 # Keep shortcut targets short to leave room for a long project path.
 ENTRY_BATCHES_DIR = DONT_CHANGE_DIR + "\\B"
@@ -166,8 +166,8 @@ NEEDED_PACKAGES_WITH_VERSION_PATH = DEV_TOOLS_FOR_PACKAGES_DIR + "\\auto_found_r
 # backend related
 
 # Backend folder locations must also agree with the fixed PowerShell bootstrap
-# paths. UPDATE DONT_CHANGE/.gitignore (including .previous backups) and
-# pyrefly.toml when changing installed runtime/package locations.
+# paths. UPDATE DONT_CHANGE/.gitignore (including .previous backups)
+# when changing installed runtime/package locations.
 _backend_settings_ini_path = "backend_settings.ini"
 _backend_python_major_minor_version, BACKEND_PYTHON_DIR = get_ini_file_settings(_backend_settings_ini_path)
 
@@ -186,7 +186,7 @@ BACKEND_FILES_TO_DELETE_AFTER_INSTALL = ["sqlite3.dll", "python.cat"]
 FRONTEND_SCRIPT_WRAPPER_PATH = DONT_CHANGE_DIR + "\\scripts\\runtime\\script_wrapper.py"
 # All markers, manifests, version files and helper batches inside these trees
 # inherit their folder's ignore rule; they do not need individual ignore entries.
-# UPDATE root .gitignore and pyrefly.toml for both the live folder and sibling
+# UPDATE root .gitignore for both the live folder and sibling
 # .staging-*, .previous and .failed directories if either location changes.
 FRONTEND_PACKAGES_DIR = BACKEND_DIR + "\\packages"
 FRONTEND_PYTHON_DIR = BACKEND_DIR + "\\python"

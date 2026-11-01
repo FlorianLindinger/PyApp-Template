@@ -3,5 +3,7 @@
 !temporary/.gitkeep
 # backend_python folder (in this directory. Scripts are also under that name):
 /backend_python/
+/backend_python.previous/
 # backend_packages folder:
 /backend_packages/
+/backend_packages.previous/

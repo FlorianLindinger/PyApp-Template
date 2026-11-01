@@ -672,10 +672,14 @@ def make_abs_path_relative_to_file(path: str, file: str) -> str:
         return path
 
 
-def sanitize_filename(filename: str, replacement: str = "_") -> str:
-    """Sanitize a string so it can be used as a Windows filename."""
+def sanitize_filename(
+    filename: str, replacement: str = "_", *, max_length: int = 255
+) -> str:
+    """Return a Windows-safe filename bounded in UTF-16 units, including device-name checks."""
     import re
 
+    if max_length < 1:
+        raise ValueError("Filename length must be positive")
     # 1. Characters illegal in Windows: < > : " / \ | ? *
     # Also handles control characters (0-31)
     illegal_chars = r'[<>:"/\\|?*\x00-\x1f]'
@@ -683,17 +687,28 @@ def sanitize_filename(filename: str, replacement: str = "_") -> str:
     # 2. Windows reserved filenames (CON, PRN, AUX, NUL, COM1-9, LPT1-9)
     # These cannot be filenames even with an extension (e.g., CON.txt is bad)
     reserved_names = {"CON", "PRN", "AUX", "NUL", "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9", "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9"}  # fmt: skip
-    # Check the "stem" (name before the dot)
-    base_name = os.path.splitext(filename)[0].upper()
+    filename = filename.rstrip(". ") or "unnamed_file"
+    # Windows reserves the first component even when multiple extensions follow.
+    base_name = filename.split(".", 1)[0].rstrip(" ").upper()
     if base_name in reserved_names:
         filename = f"{replacement}{filename}"
     # 3. Strip trailing dots and spaces (Windows ignores/removes these)
     filename = filename.rstrip(". ")
-    # 4. Enforce length limit (255 characters for the filename itself)
-    if len(filename) > 255:
-        filename = filename[:255]
+    # Non-BMP characters consume two UTF-16 code units; never split a surrogate pair.
+    filename = (
+        filename.encode("utf-16-le")[: max_length * 2]
+        .decode("utf-16-le", errors="ignore")
+        .rstrip(". ")
+    )
+    if filename.split(".", 1)[0].rstrip(" ").upper() in reserved_names:
+        filename = (
+            ("_" + filename)
+            .encode("utf-16-le")[: max_length * 2]
+            .decode("utf-16-le", errors="ignore")
+            .rstrip(". ")
+        )
     # 5. Handle empty strings (if sanitization removed everything)
-    return filename if filename else "unnamed_file"
+    return filename or "_"
 
 
 def write_lines(path: str, lines: list[str], override: bool = True) -> None:

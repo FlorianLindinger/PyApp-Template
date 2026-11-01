@@ -40,7 +40,7 @@ def main() -> None:
     refuse_mutation_while_running()
     print('Install packages with "pip install package_name"')
     print()
-    subprocess.run( #noqa:S603
+    subprocess.run(  # noqa:S603
         ["cmd", "/d", "/c", "call", FRONTEND_LAUNCHER_FOR_PIP_INSTALL_TERMINAL],
         check=True,
     )
