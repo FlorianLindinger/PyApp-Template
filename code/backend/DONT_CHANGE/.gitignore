@@ -1,7 +1,6 @@
 # contents of "temporary" folder:
 /temporary/*
-# GIT_IGNORED folders:
-GIT_IGNORED
+!temporary/.gitkeep
 # backend_python folder (in this directory. Scripts are also under that name):
 /backend_python/
 # backend_packages folder:
