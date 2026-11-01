@@ -19,9 +19,7 @@ from functools import wraps
 from pathlib import Path
 
 from backend.developer_settings import (
-    install_tests,
     install_tkinter,
-    install_tools,
     python_version,
     use_uv_to_install_packages,
 )
@@ -174,8 +172,8 @@ def recreate_python_distro(keep_previous: bool = False) -> None:
     requested = {
         "version": python_version,
         "tkinter": install_tkinter,
-        "tests": install_tests,
-        "tools": install_tools,
+        "tests": False,
+        "tools": False,
     }
     selected_version = python_version
     try:
@@ -189,8 +187,8 @@ def recreate_python_distro(keep_previous: bool = False) -> None:
         keep_previous=keep_previous,
         python_dir_abs_path=FRONTEND_PYTHON_DIR,
         install_tkinter=install_tkinter,
-        install_tests=install_tests,
-        install_tools=install_tools,
+        install_tests=False,
+        install_tools=False,
         install_docs=False,
         rel_path_to_packages=rel_path_dist_to_packages,
     )
