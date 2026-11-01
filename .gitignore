@@ -84,8 +84,6 @@ nuitka-crash-report.xml
 # whitelist ".gitkeep" files anywhere:
 !.gitkeep
 
-
-
 # =================================
 # ==== App specific gitignores ====
 # =================================
