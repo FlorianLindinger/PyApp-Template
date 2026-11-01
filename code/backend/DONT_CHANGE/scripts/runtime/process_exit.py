@@ -531,7 +531,7 @@ try:
 
         print()
         print(
-            'Install packages with "pip install package_name", then type "exit" to restart the program.'
+            'Enter package names, "pip install ..." or "uv pip install ...", then type "exit" to restart the program.'
         )
         subprocess.run(
             ["cmd.exe", "/d", "/c", "call", FRONTEND_LAUNCHER_FOR_PIP_INSTALL_TERMINAL],
@@ -600,20 +600,8 @@ try:
                     print("[Info] Auto-detecting and installing required packages...")
                     install_auto_detected_packages(app_id)
                 else:
-                    from backend.DONT_CHANGE.scripts.frontend_environment import (
-                        environment_locked,
-                        make_file_to_indicate_frontend_pckgs_installed,
-                        refuse_mutation_while_running,
-                    )
-
-                    @environment_locked
-                    def manual_changes():
-                        """Open manual package recovery after checking for active runs, then validate the changed packages."""
-                        refuse_mutation_while_running()
-                        open_manual_package_terminal()
-                        make_file_to_indicate_frontend_pckgs_installed()
-
-                    manual_changes()
+                    # The child console owns locking, running-app checks and validation.
+                    open_manual_package_terminal()
             except Exception as error:
                 print_traceback(f"[Error] Package recovery failed: {error}")
                 continue

@@ -178,8 +178,16 @@ def recreate_python_distro(keep_previous: bool = False) -> None:
     selected_version = python_version
     try:
         locked = json.loads(runtime_lock.read_text(encoding="utf-8"))
-        if locked["requested"] == requested:
-            selected_version = locked["resolved"]
+        resolved = locked["resolved"]
+        if (
+            locked["requested"] == requested
+            and isinstance(resolved, str)
+            and (
+                not python_version
+                or is_python_version_compatible(resolved, python_version)
+            )
+        ):
+            selected_version = resolved
     except (OSError, ValueError, KeyError):
         pass
     install_full_python(
@@ -197,68 +205,55 @@ def recreate_python_distro(keep_previous: bool = False) -> None:
         raise RuntimeError(
             f'Python installation did not produce expected file at "{FRONTEND_PYTHON_EXE}"'
         )
-    else:
-        # Create a batch file that launches a terminal that has python and pip install target set:
-        batch_content = r"""
-:: turn off command print and make variables local
-@echo off & setlocal
-
-:: settings (%~dp0 is file dir with "\" at end)
-set "PYTHON_DIR=%~dp0.."
-set "PACKAGES_TARGET=%~dp0..\..\packages"
-
-:: local variables + resolve paths
-for %%I in ("%PYTHON_DIR%") do set "PYTHON_DIR=%%~fI"
-for %%I in ("%PACKAGES_TARGET%") do set "PACKAGES_TARGET=%%~fI"
-set "PYTHON_EXE=%PYTHON_DIR%\python.exe"
-
-:: create folder
-if not exist "%PACKAGES_TARGET%" mkdir "%PACKAGES_TARGET%"
-
-:: set global variables withing terminal to tell set python and package target and disable pip version check
-set "PATH=%PYTHON_DIR%;%PYTHON_DIR%\Scripts;%PATH%"
-set "PIP_TARGET=%PACKAGES_TARGET%"
-set "PIP_DISABLE_PIP_VERSION_CHECK=1"
-set "PYTHONPATH="
-set "PYTHONHOME="
-set "PYTHONNOUSERSITE=1"
-set "PIP_CONFIG_FILE=NUL"
-
-:: prints
-echo Python exe:
-echo "%PYTHON_EXE%"
-echo Package install target:
-echo "%PACKAGES_TARGET%"
-echo.
-echo Note: pip install commands in this terminal use the local package target. Install packages via "pip install {package-name}"
-echo.
-
-:: don't close terminal
-cmd /k
-"""
-        os.makedirs(
-            os.path.dirname(FRONTEND_LAUNCHER_FOR_PIP_INSTALL_TERMINAL), exist_ok=True
+    actual = get_python_version()
+    if python_version and not is_python_version_compatible(actual, python_version):
+        raise RuntimeError(
+            f"Installed Python {actual} does not match configured Python {python_version}."
         )
-        with open(
-            FRONTEND_LAUNCHER_FOR_PIP_INSTALL_TERMINAL, "w", encoding="utf-8"
-        ) as f:
-            f.write(batch_content)
+    prepare_package_terminal(actual)
+    with open(PYTHON_VERSION_INDICATOR_FILE_PATH, "w", encoding="utf-8") as file:
+        file.write(actual)
+    atomic_json(runtime_lock, {"requested": requested, "resolved": actual})
+    set_hidden_in_explorer()
 
-        # save python version to file to have version fast readable and to indicate successfull python setup:
-        with open(PYTHON_VERSION_INDICATOR_FILE_PATH, "w", encoding="utf-8") as f:
-            f.write(get_python_version())
 
-        atomic_json(
-            runtime_lock, {"requested": requested, "resolved": get_python_version()}
-        )
-        set_hidden_in_explorer()
+def prepare_package_terminal(actual_version: str) -> None:
+    """Create relative pip/uv adapters and a package console launcher after installs or moves."""
+    python_dir = Path(FRONTEND_PYTHON_DIR)
+    version = actual_version.split(".")
+    names = {"pip", "pip" + version[0], "pip" + ".".join(version[:2])}
+    for name in names | {"uv"}:
+        tool = "uv" if name == "uv" else "pip"
+        adapter = (
+            "@echo off\r\nsetlocal EnableExtensions DisableDelayedExpansion\r\n"
+            'set "PYAPP_ENTRYPOINT_NO_PAUSE=1"\r\n'
+            'set "PYAPP_ENTRY_SCRIPT=%~dp0..\\DONT_CHANGE\\scripts\\dev_tools\\open_package_terminal.py"\r\n'
+            'call "%~dp0..\\DONT_CHANGE\\scripts\\setup\\run_backend_script.bat" '
+            + tool
+            + " %*\r\nexit /b %ERRORLEVEL%\r\n"
+        ).encode("utf-8")
+        target = python_dir / (name + ".cmd")
+        if not target.exists() or target.read_bytes() != adapter:
+            target.write_bytes(adapter)
+    batch_content = (
+        "@echo off\r\nsetlocal EnableExtensions DisableDelayedExpansion\r\n"
+        'set "PYAPP_ENTRYPOINT_NO_PAUSE=1"\r\n'
+        'set "PYAPP_ENTRY_SCRIPT=%~dp0..\\..\\DONT_CHANGE\\scripts\\dev_tools\\open_package_terminal.py"\r\n'
+        'call "%~dp0..\\..\\DONT_CHANGE\\scripts\\setup\\run_backend_script.bat" %*\r\n'
+        "exit /b %ERRORLEVEL%\r\n"
+    )
+    target = Path(FRONTEND_LAUNCHER_FOR_PIP_INSTALL_TERMINAL)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    content = batch_content.encode("utf-8")
+    if not target.exists() or target.read_bytes() != content:
+        target.write_bytes(content)
 
 
 def prompt_for_distro_reinstall(msg: str = "Choose how to replace Python:"):
     """Prompt for a runtime/package replacement strategy and return its validated menu index."""
     print_warn(msg)
     choices = [
-        "Keep current Python and packages",
+        "Keep current Python/packages and cancel this incompatible launch",
         "Change Python; install declared default packages",
         "Change Python; use an empty package environment",
         "Change Python; re-resolve current package names",
@@ -292,6 +287,7 @@ def ensure_python_distro(used_appid_if_slow: str = ""):
             FRONTEND_PYTHON_DIR,
             os.path.relpath(FRONTEND_PACKAGES_DIR, FRONTEND_PYTHON_DIR),
         )
+        prepare_package_terminal(actual)
         return
     answer = 1
     if actual:
@@ -299,7 +295,10 @@ def ensure_python_distro(used_appid_if_slow: str = ""):
             f"Configured Python {python_version}; installed Python {actual}."
         )
     if answer == 0:
-        return
+        raise RuntimeError(
+            f"Launch cancelled: Python {actual} does not match configured Python {python_version}. "
+            "The existing environment was retained; change the setting or update Python."
+        )
     if answer == 8:
         raise RuntimeError("Launch cancelled; current environment retained")
     if answer not in range(1, 8):
@@ -331,7 +330,9 @@ def ensure_python_distro(used_appid_if_slow: str = ""):
         if previous.exists():
             failed = Path(FRONTEND_PYTHON_DIR + ".failed")
             if failed.exists():
-                raise RuntimeError("A failed runtime remains; inspect " + str(failed)) from exc
+                raise RuntimeError(
+                    "A failed runtime remains; inspect " + str(failed)
+                ) from exc
             Path(FRONTEND_PYTHON_DIR).rename(failed)
             previous.rename(FRONTEND_PYTHON_DIR)
             shutil.rmtree(failed)
@@ -380,7 +381,7 @@ def make_file_to_indicate_frontend_pckgs_installed():
     """Validate package dependencies with pip check, then write the installation manifest."""
     import subprocess
 
-    subprocess.run( #noqa:S603
+    subprocess.run(  # noqa:S603
         [FRONTEND_PYTHON_EXE, "-E", "-s", "-m", "pip", "check"],
         env=clean_python_environment(),
         check=True,
@@ -491,7 +492,7 @@ def install_packages_from_file(
             )
         # Check dependency consistency against the staged packages, excluding the old target.
         probe = "import os,sys,site; old=os.path.normcase(os.path.abspath(sys.argv[1])); sys.path[:]=[p for p in sys.path if os.path.normcase(os.path.abspath(p))!=old]; site.addsitedir(sys.argv[2]); from pip._internal.cli.main import main; sys.exit(main(['check']))"
-        subprocess.run( #noqa:S603
+        subprocess.run(  # noqa:S603
             [
                 FRONTEND_PYTHON_EXE,
                 "-E",
@@ -510,7 +511,7 @@ def install_packages_from_file(
             DEFAULT_PACKAGES_PATH,
             get_python_version(),
         )
-        frozen = subprocess.run( #noqa:S603
+        frozen = subprocess.run(  # noqa:S603
             [
                 FRONTEND_PYTHON_EXE,
                 "-E",

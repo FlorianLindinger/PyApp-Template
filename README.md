@@ -41,7 +41,7 @@ application or clean-machine configuration has been tested.
 | Short shortcut targets | Implemented: compact `B/*.bat` paths leave more room for long project paths. Windows path/filename limits still apply. |
 | Terminal modes | Implemented: classic console, Windows Terminal or no application terminal. Windows Terminal must be installed when selected; no automatic fallback is provided. |
 | Initial terminal appearance | Implemented: app title/icon, console foreground/background colors, Windows Terminal tab color and minimized startup. Effects depend on the selected terminal. |
-| Taskbar identity | Partial: shortcuts and launched processes receive app identity/icon information. Names that normalize to an empty identity and some long-name cases need additional handling. |
+| Taskbar identity | Implemented: shortcuts and launched processes receive app identity/icon information. Non-Latin and long names receive stable compact IDs; shortcut filenames respect Windows component limits. |
 | PNG-to-ICO generation | Implemented: manually run `code/backend/icons/regenerate icons.cmd` to generate ten app/action/status ICOs with multiple image sizes. Setup does not regenerate them automatically. |
 | Configurable icon overlays | Implemented: per-icon overlay scale/alignment, optional overlay removal, bundled fallbacks and unchanged-placeholder detection. Uses Windows WPF without requiring Pillow. |
 | File and folder actions | Implemented: open settings or `main.py` using VS Code when available, otherwise Notepad; open configured log directories in Explorer. |
@@ -52,8 +52,9 @@ application or clean-machine configuration has been tested.
 
 ### Dependencies and developer tools
 
-The [package-tool guide](code/backend/dev_tools/README.txt) lists the 13 direct
-batch commands and their matching Python actions.
+**Change application packages through [code/backend/dev_tools](code/backend/dev_tools/README.md).**
+The guide describes the recommended workflows and all 13 batch commands. A system
+`pip` may target another Python; direct changes can leave installation state stale.
 
 | Feature | Status and behavior |
 | --- | --- |
@@ -62,10 +63,10 @@ batch commands and their matching Python actions.
 | Add, reset, clear and upgrade packages | Implemented: install reviewed imports/local requirements, reset to defaults or inferred imports, empty the package environment, or upgrade current package names. |
 | Package inventories | Implemented: save installed or inferred dependency lists, with or without versions, and save installed packages as the default list. |
 | Import inference | Partial: explicit tools infer distributions and request review before installation. The defaults-file inference flag is currently bypassed during first runtime installation. |
-| Manual package terminal | Partial: open a terminal targeting the managed packages. Use `python -m pip`; a generated `pip.exe` can reference an old or staging interpreter path. |
+| Manual package terminal | Implemented: package-name/list shorthand, explicit pip/uv commands, configured uv preference with pip fallback, help/status/save and dependency validation. Relative command adapters survive folder moves; no Python/module prefix is needed. |
 | Runtime-change menu | Implemented: keep/cancel, change runtime with defaults or no packages, re-resolve installed names, preserve exact versions, or review inferred dependencies; optionally save new defaults. Successful changes continue the launch. |
 | Requirement-change detection | Implemented: fingerprint local requirements and nested `-r`/`-c` inputs. Remote includes are not supported by the startup fingerprint policy. |
-| Runtime/package lock records | Partial: record selections and resolved versions. First runtime installation bypasses the package-lock reader, and an existing compatible runtime patch is not strictly matched against its lock. |
+| Runtime/package lock records | Partial: record selections and resolved versions. First runtime installation bypasses the package-lock reader. Configured Python components are enforced; a minor selector accepts any matching patch. |
 | Concurrent environment changes | Implemented: serialize installs with an interprocess lock and reject package mutations while verified app instances are running. |
 
 ### Logs, errors and process control
@@ -77,7 +78,7 @@ batch commands and their matching Python actions.
 | Independent run diagnostics | Implemented: unique run/log names and per-run startup, traceback and completion files prevent concurrent runs from overwriting one another. |
 | Rich application tracebacks | Implemented for exceptions escaping the main script: source context, syntax-error pointers, exception chaining, interpreter/date details, legacy-encoding handling and plain-text fallback. Locals are hidden. |
 | Failure classification | Implemented: distinguish normal return, successful/failing `SystemExit`, exceptions, Ctrl+C, wrapper/watchdog failures and abrupt/native exits. Native faults use fault-handler diagnostics. |
-| Worker and GUI callback errors | Partial: exceptions caught internally by threads, Tkinter or another event loop can be printed/logged while the main script still finishes successfully. Applications need their own reporting/failure policy. |
+| Worker and GUI callback errors | Partial: uncaught worker errors (Python 3.8+) and errors retained by Tkinter's default callback handler make completion fail, including workers finishing after `main.py` returns. Custom hooks and other event loops need application reporting. |
 | Exception notes and groups | Not implemented in serialized app tracebacks: exception notes and nested `ExceptionGroup` details are omitted. |
 | Completion actions | Implemented separately for success, failure, crash and Ctrl+C: close/wait, open log or source, play a WAV, and change terminal title/colors/status icon where supported. |
 | Hidden success and visible failures | Implemented: successful hidden runs can stay hidden; failure handling can open a diagnostic console. |
@@ -100,6 +101,25 @@ batch commands and their matching Python actions.
 
 `Setup - run first and after moving folder.cmd` resolves the repository from its
 own location. After moving the folder, rerun setup to refresh generated shortcuts.
+
+## Changing dependencies
+
+Close running app instances. Edit
+`code/backend/dev_tools/DEFAULT_PYTHON_PACKAGES.txt`, then run
+`code/backend/dev_tools/reset_packages_default.bat` to apply the declared set.
+Test the app and commit the requirements file. A reset removes packages outside
+that set. Set the defaults file's
+`auto_find_required_packages_here_and_reset_installed_packages_to_them` flag to
+`False` when maintaining an explicit dependency list.
+
+For experiments, use `open_package_terminal.bat`, enter `requests rich`,
+`pip install requests` or `uv pip install requests`, then type `exit` so the tool
+validates and records the installed state. Bare package names and unprefixed
+package actions prefer uv when enabled, with pip fallback. Enter `save` to record
+installed versions as defaults, or run
+`set_default_packages_versions.bat` or `set_default_packages_names.bat` if those
+installed packages should become the declared defaults. Review that file before
+committing. See the [package-tool guide](code/backend/dev_tools/README.md).
 
 ---
 
@@ -191,11 +211,37 @@ the requirements file. Both are generated local files ignored by the current
 `.gitignore`; the requirements inputs themselves should be tracked. Changing
 requirements (including local `-r`/`-c` includes) invalidates a package lock.
 Deliberately remove a lock to request fresh resolution. Reuse is currently
-incomplete: first runtime installation bypasses the package-lock reader, and a
-healthy existing runtime matching the configured version prefix is accepted
-without enforcing the locked patch version. These locks are not currently a
+incomplete: first runtime installation bypasses the package-lock reader.
+`python_version = "3.14"` requires 3.14 and accepts any 3.14.x patch;
+`"3.14.6"` requires that exact patch. Keeping an incompatible installation cancels
+the launch instead of running it. A runtime lock selects a compatible exact
+download when rebuilding; it does not tighten a configured minor selector.
+These locks are not currently a
 complete reproducible-release guarantee. Preserve a prepared folder for an
 offline distribution.
+
+## How installation health is checked
+
+The launcher validates the actual managed Python executable by running it with
+`-E -s` and importing `ssl`, `sqlite3`, `ctypes`, `encodings` and `pip`, plus
+`tkinter` when requested. A successful probe returns its real version, which
+must match the configured version components. File/folder existence alone is
+insufficient. The launcher backend separately verifies its exact Python version,
+required imports and pinned dependency versions.
+
+Application package installation runs `pip check` before publishing the new
+environment. It records a manifest containing the Python version, a fingerprint
+of the default requirements and local includes, and hashes of distribution
+`METADATA` and `RECORD` files. Startup compares that manifest with the current
+inputs and metadata, and checks that in-directory files listed by `RECORD` exist
+(excluding generated `.pyc` files). A mismatch triggers repair rather than trusting
+an old success marker.
+
+These checks detect many incomplete or stale installations; they do not import
+every application dependency, verify every package payload's contents, or prove
+that the application works. Dependency consistency is checked during installation
+and after closing the managed package terminal, rather than by running `pip check`
+on every startup. Run the app's own checks after changing dependencies.
 
 ## Logs and diagnostics
 
@@ -206,6 +252,20 @@ and stderr, including binary writes and inherited child-process output. With
 logging enabled stdout/stderr are pipes, so applications that require a real
 terminal should disable logging for their terminal launch. Detached subprocesses
 that redirect their own output are outside this capture.
+
+Set `enable_log_for_Windows_terminal_start = False` for applications that need
+console handles or interactive terminal features. To diagnose redirection, check
+`PROGRAM_HAS_TERMINAL == "1"` together with `not sys.stdout.isatty()` (and stderr).
+This detects redirected output, not proof that the application is incompatible;
+an application can warn when a feature it needs requires a TTY. Reporting
+`isatty() = True` alone does not restore a console handle. Capturing output through
+a Windows pseudoconsole is not implemented.
+
+Uncaught worker and default Tkinter callback errors retain normal stderr output
+and make final completion fail. The GUI is allowed to keep running; the launcher
+shows its completion error after it closes. A main-script exception takes
+precedence if both contexts fail. Applications replacing these exception hooks
+or using other event loops own their reporting policy.
 
 Successful runs do not create crash reports. Hidden successful runs remain hidden
 when `close_after_success=True`. Failures preserve their diagnostics. Persistent

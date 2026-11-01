@@ -23,6 +23,8 @@ Relative paths in this file are interpreted as relative to this file."""
 program_name = "PyApp-Template"
 # ---------------------------------------
 # Python version (""/"x"/"x.y"/"x.y.z"). Finds latest matching(msi-install-available) Python version ("" == latest):
+# Every specified component is required: "3.14" accepts any 3.14.x; "3.14.6" requires that patch.
+# Keeping an incompatible installed version cancels the launch rather than bypassing this requirement.
 python_version: str = "3.14"
 # ---------------------------------------
 # Path to end-user settings file (None to disable). File type can be anything openable by vscode/editor:
