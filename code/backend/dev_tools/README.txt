@@ -73,10 +73,11 @@ IMPLEMENTATION LAYOUT
 ---------------------
 
 DONT_CHANGE/scripts/dev_tools/
-    Contains the Python implementations.
+    Contains Python implementations grouped into packages, git, verification
+    and paths folders.
 
-DONT_CHANGE/B/dev_tools/
-    Contains the portable .bat launchers used by the verification shortcuts.
+DONT_CHANGE/batches/dev_tools/
+    Contains matching portable .bat launchers in the same four groups.
 
 verify code/
     Contains the portable Windows .lnk shortcut entry points.

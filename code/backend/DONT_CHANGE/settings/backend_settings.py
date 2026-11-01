@@ -50,17 +50,18 @@ BACKEND_DIR = make_abs("..\\..")
 PYTHON_SCRIPTS_DIR = make_abs("..\\..\\..")
 SHORTCUT_OUTPUT_DIR = make_abs("..\\..\\..\\..")  # UPDATE .gitignore
 TEMPORARY_DIR = DONT_CHANGE_DIR + "\\temporary"
-SHORTCUT_TARGET_DIR = DONT_CHANGE_DIR + "\\scripts\\shortcut_targets"
+APP_ACTIONS_DIR = DONT_CHANGE_DIR + "\\scripts\\actions"
+# Keep shortcut targets short to leave room for a long project path.
 ENTRY_BATCHES_DIR = DONT_CHANGE_DIR + "\\B"
 WINDOWS_DIR = os.environ.get("WINDIR", default="C:\\Windows")
 
 # ------------------------
 # scripts
 
-START_PROGRAM_PATH = SHORTCUT_TARGET_DIR + "\\start_program.py"
+START_PROGRAM_PATH = APP_ACTIONS_DIR + "\\start_program.py"
 MAIN_PY_SCRIPT_PATH = PYTHON_SCRIPTS_DIR + "\\main.py"
-BACKGROUND_WATCHDOG_PATH = SHORTCUT_TARGET_DIR + "\\childs\\background_watchdog.py"
-PROCESS_EXIT_PATH = SHORTCUT_TARGET_DIR + "\\childs\\process_exit.py"
+BACKGROUND_WATCHDOG_PATH = DONT_CHANGE_DIR + "\\scripts\\runtime\\background_watchdog.py"
+PROCESS_EXIT_PATH = DONT_CHANGE_DIR + "\\scripts\\runtime\\process_exit.py"
 
 # ------------------------
 # shortcut launchers related
@@ -108,7 +109,7 @@ ICON_GENERATION_SETTINGS = [
 ]
 
 
-# PNG placeholders created by scripts/icon/generate_PNGs_to_be_replaced.py
+# PNG placeholders created by scripts/icons/generate_PNGs_to_be_replaced.py
 PNG_GENERATION_OUTPUT_DIR = ICON_FALLBACK_PNG_DIR + "\\created_PNGS_to_be_replaced"
 PNG_GENERATION_WIDTH = 512
 PNG_GENERATION_HEIGHT = 512
@@ -135,7 +136,7 @@ PNG_GENERATION_ITEMS = {
 # ------------------------
 # verification related
 
-# Frontend verification settings used by scripts/dev_tools/verify_main_py.py.
+# Frontend verification settings used by scripts/dev_tools/verification/verify_main_py.py.
 # Paths are relative to the code folder and use forward slashes.
 FRONTEND_VERIFICATION_TARGETS = ("main.py",)
 FRONTEND_VERIFICATION_EXCLUDED_FILES: tuple[str, ...] = ()
@@ -215,7 +216,7 @@ BACKEND_FILES_TO_DELETE_AFTER_INSTALL = ["sqlite3.dll", "python.cat"]
 # ------------------------
 # frontend related
 
-FRONTEND_SCRIPT_WRAPPER_PATH = SHORTCUT_TARGET_DIR + "\\childs\\frontend\\script_wrapper.py"
+FRONTEND_SCRIPT_WRAPPER_PATH = DONT_CHANGE_DIR + "\\scripts\\runtime\\script_wrapper.py"
 FRONTEND_PACKAGES_DIR = BACKEND_DIR + "\\packages"  # UPDATE .gitignore
 FRONTEND_PYTHON_DIR = BACKEND_DIR + "\\python"  # UPDATE .gitignore
 FRONTEND_PACKAGES_ARE_INSTALLED_MARKER_PATH = FRONTEND_PACKAGES_DIR + "\\_DELETE THIS TO REINSTALL ONLY DEFAULT PACKAGES"

@@ -6,19 +6,36 @@ Application authors normally edit main.py, settings.py and backend/developer_set
 
 ## Runtime structure
 
-- `settings/`: backend version/dependencies, paths and verification settings.
-- `B/`: short batch targets for generated shortcuts; shared bootstrap/tool runners
-  live in `B/helper_scripts/`.
-- `scripts/shortcut_targets/`: app launcher, watchdog, frontend wrapper and exit handler.
-- `scripts/setup/`: backend finalization, health checks and shortcut generation.
-- `scripts/dev_tools/`: package, Git and verification utilities for application authors.
-- `scripts/icon/` and `icon_related/`: icon generation and source assets.
-- `LICENSES/` and `LICENSE.md`: template backend licensing.
+```text
+DONT_CHANGE/
+  B/               Deliberately short targets for generated app shortcuts
+  batches/
+    bootstrap/     Backend Python bootstrap and shared batch runner
+    setup/         Shortcut setup
+    icons/         Icon-generation launchers
+    dev_tools/     packages/, git/, verification/, paths/
+  scripts/
+    actions/       Python entry points behind app shortcuts
+    runtime/       Watchdog, frontend wrapper and completion handler
+    setup/         Installation checks and shortcut generation
+    icons/         Icon generation
+    dev_tools/     packages/, git/, verification/, paths/
+    *_tools.py     Focused reusable helpers
+    ...            Environment, registry and shared entry-point modules
+  settings/        Backend requirements, version, paths and app verification
+```
+
+Batch launchers contain dispatch/bootstrap logic; Python files own the behavior.
+App shortcuts deliberately use short targets: `B/W.bat` (terminal), `B/N.bat`
+(hidden), `B/Q.bat` (Stop), `B/S.bat` (settings), `B/M.bat` (source), `B/L.bat`
+(logs), and `B/C.bat` (crash logs). Keep these names short to reduce the command
+length stored in Windows shortcuts. Longer implementation paths stay inside the
+batch files. Root setup regenerates shortcuts for these targets.
 
 ## Startup and installation
 
-1. Root Setup.cmd/Start.cmd or a generated shortcut invokes a batch target.
-2. `B/helper_scripts/ensure_backend_python.bat` delegates to its PowerShell
+1. Root setup/Start.cmd or a generated shortcut invokes a batch target.
+2. `batches/bootstrap/ensure_backend_python.bat` delegates to its PowerShell
    companion. It locks bootstrap, validates actual backend imports and exact
    versions, and adopts a healthy existing installation.
 3. When installation is needed, a new embedded runtime and dependency target are
@@ -69,7 +86,7 @@ and log-path policy, and runtime_state/environment_state own cross-process state
 and directory transactions.
 
 Ordinary tools share `entrypoint.run_file` and the batch
-`B/helper_scripts/run_backend_script.bat`: import/main failures are reported once,
+`batches/bootstrap/run_backend_script.bat`: import/main failures are reported once,
 nonzero status is preserved, and KeyboardInterrupt becomes 130. Existing verifier
 rescan loops retain their interaction. Lifecycle workers retain their separate
 application completion protocol. Helpers never terminate an existing caller shell.
@@ -83,7 +100,7 @@ directory and legacy PID/lock artifacts. Stale records left by a killed watchdog
 are cleaned during the next launch or Stop.
 
 Icon sources and instructions remain in icon_related; invoke the corresponding
-batch launchers in B/miscellaneous to regenerate editable PNGs or ICO files.
+batch launchers in batches/icons to regenerate editable PNGs or ICO files.
 
 ## Maintenance and licensing
 
