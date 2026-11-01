@@ -1,3 +1,6 @@
+# ruff: noqa: E402
+# The early __main__ handoff lets the shared runner catch dependency import failures.
+
 """Run main.py lint, formatting, and type-check verification."""
 
 if __name__ == "__main__":
@@ -5,7 +8,9 @@ if __name__ == "__main__":
     from pathlib import Path
 
     code_dir = next(
-        parent for parent in Path(__file__).resolve().parents if (parent / "backend" / "DONT_CHANGE").is_dir()
+        parent
+        for parent in Path(__file__).resolve().parents
+        if (parent / "backend" / "DONT_CHANGE").is_dir()
     )
     sys.path.insert(0, str(code_dir))
     from backend.DONT_CHANGE.scripts.entrypoint import run_file
@@ -48,7 +53,12 @@ def tool_command(tool: str) -> list[str]:
 
 def exclusion_patterns() -> tuple[str, ...]:
     """Return file and recursive folder patterns understood by both tools."""
-    folder_patterns = tuple((f"{folder.rstrip('/')}/**" for folder in FRONTEND_VERIFICATION_EXCLUDED_FOLDERS))
+    folder_patterns = tuple(
+        (
+            f"{folder.rstrip('/')}/**"
+            for folder in FRONTEND_VERIFICATION_EXCLUDED_FOLDERS
+        )
+    )
     return FRONTEND_VERIFICATION_EXCLUDED_FILES + folder_patterns
 
 
@@ -68,9 +78,15 @@ def verify(preset: str, *, fix: bool, unsafe_fixes: bool) -> int:
         print(f"[Error] {error}")
         return 2
     apply_fixes = fix or unsafe_fixes
-    ruff_patterns = FRONTEND_VERIFICATION_EXCLUDED_FILES + FRONTEND_VERIFICATION_EXCLUDED_FOLDERS
+    ruff_patterns = (
+        FRONTEND_VERIFICATION_EXCLUDED_FILES + FRONTEND_VERIFICATION_EXCLUDED_FOLDERS
+    )
     ruff_exclusions = ["--exclude", ",".join(ruff_patterns)] if ruff_patterns else []
-    pyrefly_exclusions = [argument for pattern in exclusion_patterns() for argument in ("--project-excludes", pattern)]
+    pyrefly_exclusions = [
+        argument
+        for pattern in exclusion_patterns()
+        for argument in ("--project-excludes", pattern)
+    ]
     checks = (
         (
             "Ruff lint/unsafe-fix: main.py"
@@ -141,4 +157,6 @@ def main() -> int:
         help="Apply Ruff's unsafe fixes as well as safe fixes before verification.",
     )
     arguments = parser.parse_args()
-    return verify(arguments.preset, fix=arguments.fix, unsafe_fixes=arguments.unsafe_fixes)
+    return verify(
+        arguments.preset, fix=arguments.fix, unsafe_fixes=arguments.unsafe_fixes
+    )

@@ -1,9 +1,14 @@
+# ruff: noqa: E402
+# The early __main__ handoff lets the shared runner catch dependency import failures.
+
 if __name__ == "__main__":
     import sys
     from pathlib import Path
 
     code_dir = next(
-        parent for parent in Path(__file__).resolve().parents if (parent / "backend" / "DONT_CHANGE").is_dir()
+        parent
+        for parent in Path(__file__).resolve().parents
+        if (parent / "backend" / "DONT_CHANGE").is_dir()
     )
     sys.path.insert(0, str(code_dir))
     from backend.DONT_CHANGE.scripts.entrypoint import run_file
@@ -16,7 +21,10 @@ import os
 import sys
 from concurrent.futures import ThreadPoolExecutor
 
-from backend.DONT_CHANGE.scripts.image_tools import generate_png_with_text, get_png_image_id
+from backend.DONT_CHANGE.scripts.image_tools import (
+    generate_png_with_text,
+    get_png_image_id,
+)
 from backend.DONT_CHANGE.settings.backend_settings import (
     PNG_GENERATION_BACKGROUND_COLOR,
     PNG_GENERATION_BOLD,

@@ -1,3 +1,6 @@
+# ruff: noqa: E402
+# The early __main__ handoff lets the shared runner catch dependency import failures.
+
 """WIP"""
 
 if __name__ == "__main__":
@@ -5,7 +8,9 @@ if __name__ == "__main__":
     from pathlib import Path
 
     code_dir = next(
-        parent for parent in Path(__file__).resolve().parents if (parent / "backend" / "DONT_CHANGE").is_dir()
+        parent
+        for parent in Path(__file__).resolve().parents
+        if (parent / "backend" / "DONT_CHANGE").is_dir()
     )
     sys.path.insert(0, str(code_dir))
     from backend.DONT_CHANGE.scripts.entrypoint import run_file
@@ -28,7 +33,9 @@ from backend.DONT_CHANGE.settings.backend_settings import (
 
 def main() -> None:
     ensure_python_distro()
-    success, output_path = save_requirements_of_root_folder_noVersion(NEEDED_PACKAGES_NO_VERSION_PATH)
+    success, output_path = save_requirements_of_root_folder_noVersion(
+        NEEDED_PACKAGES_NO_VERSION_PATH
+    )
     if not success:
         raise RuntimeError("Failed to determine needed packages.")
     install_packages_from_file(output_path)

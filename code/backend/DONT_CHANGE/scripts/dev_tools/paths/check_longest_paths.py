@@ -1,3 +1,6 @@
+# ruff: noqa: E402
+# The early __main__ handoff lets the shared runner catch dependency import failures.
+
 """Find the longest project paths and assess their Windows path-length risk."""
 
 if __name__ == "__main__":
@@ -5,7 +8,9 @@ if __name__ == "__main__":
     from pathlib import Path
 
     code_dir = next(
-        parent for parent in Path(__file__).resolve().parents if (parent / "backend" / "DONT_CHANGE").is_dir()
+        parent
+        for parent in Path(__file__).resolve().parents
+        if (parent / "backend" / "DONT_CHANGE").is_dir()
     )
     sys.path.insert(0, str(code_dir))
     from backend.DONT_CHANGE.scripts.entrypoint import run_file
@@ -37,13 +42,21 @@ def print_guidance(path_length: int) -> None:
             f"[Warning] This path exceeds the {LEGACY_WINDOWS_PATH_LIMIT}-character legacy Windows limit by {-remaining} characters."
         )
     elif remaining <= 20:
-        print(f"[Warning] Only {remaining} characters remain before the legacy Windows path limit.")
+        print(
+            f"[Warning] Only {remaining} characters remain before the legacy Windows path limit."
+        )
     else:
-        print(f"[Info] {remaining} characters remain before the legacy Windows path limit.")
+        print(
+            f"[Info] {remaining} characters remain before the legacy Windows path limit."
+        )
     print("\n[Info] If this becomes a problem:")
-    print("- Move the repository closer to the drive root, for example C:\\src\\App-Name.")
+    print(
+        "- Move the repository closer to the drive root, for example C:\\src\\App-Name."
+    )
     print("- Shorten deeply nested folder or file names.")
-    print("- Keep generated environments and package folders out of deeply nested project paths.")
+    print(
+        "- Keep generated environments and package folders out of deeply nested project paths."
+    )
     print(
         "- Enable Windows long paths and Git core.longpaths where appropriate, but do not rely on them for every tool."
     )
@@ -56,11 +69,15 @@ def check_longest_paths() -> None:
     longest_paths, scanned_files, scanned_directories = find_longest_paths(
         ROOT_DIR, top_path_count=TOP_PATH_COUNT, excluded_dir_names=(".git",)
     )
-    print(f"[Info] Scanned {scanned_files} files and {scanned_directories} directories; .git metadata was skipped.")
+    print(
+        f"[Info] Scanned {scanned_files} files and {scanned_directories} directories; .git metadata was skipped."
+    )
     print(f"[Info] Top {len(longest_paths)} longest paths:")
     for index, path in enumerate(longest_paths, start=1):
         relative_path = path.relative_to(ROOT_DIR)
-        print(f"{index:>2}. {len(str(path)):>3} characters  {ANSI_PATH}{relative_path}{ANSI_RESET}")
+        print(
+            f"{index:>2}. {len(str(path)):>3} characters  {ANSI_PATH}{relative_path}{ANSI_RESET}"
+        )
     print_guidance(len(str(longest_paths[0])))
 
 

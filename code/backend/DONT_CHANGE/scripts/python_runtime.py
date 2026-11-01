@@ -4,7 +4,11 @@ import os
 from pathlib import Path
 from typing import override
 
-from backend.DONT_CHANGE.scripts.filesystem_tools import delete_folder_safe, read_lines, write_lines
+from backend.DONT_CHANGE.scripts.filesystem_tools import (
+    delete_folder_safe,
+    read_lines,
+    write_lines,
+)
 
 
 def get_python_version(python_exe: str) -> str:
@@ -38,7 +42,9 @@ def is_python_version_compatible(actual_version: str, required_version: str) -> 
     return actual_parts[: len(required_parts)] == required_parts
 
 
-def configure_python_package_path(python_dir_abs_path: str, rel_path_to_packages: str) -> None:
+def configure_python_package_path(
+    python_dir_abs_path: str, rel_path_to_packages: str
+) -> None:
     """Register the shared package folder, including its .pth startup hooks."""
     site_packages_dir = Path(python_dir_abs_path) / "Lib" / "site-packages"
     site_packages_dir.mkdir(parents=True, exist_ok=True)
@@ -53,7 +59,9 @@ def configure_python_package_path(python_dir_abs_path: str, rel_path_to_packages
         path_file.write_text(content, encoding="utf-8")
 
 
-def install_full_python(python_dir_abs_path: str, *, keep_previous: bool = False, **options) -> None:
+def install_full_python(
+    python_dir_abs_path: str, *, keep_previous: bool = False, **options
+) -> None:
     """Build and probe a sibling runtime before replacing the installed directory."""
     import shutil
 
@@ -69,8 +77,12 @@ def install_full_python(python_dir_abs_path: str, *, keep_previous: bool = False
     staging = stage_directory(destination)
     try:
         _install_full_python_into_staging(str(staging), **options)
-        if not runtime_healthy(staging / "python.exe", options.get("install_tkinter", True)):
-            raise RuntimeError("New Python runtime failed its health check; previous runtime retained")
+        if not runtime_healthy(
+            staging / "python.exe", options.get("install_tkinter", True)
+        ):
+            raise RuntimeError(
+                "New Python runtime failed its health check; previous runtime retained"
+            )
         replace_directory(staging, destination, keep_previous=keep_previous)
     finally:
         if staging.exists():
@@ -172,7 +184,9 @@ def _install_full_python_into_staging(
         def _get_download_links_from_url(url: str) -> list[str]:
             request = urllib.request.Request(url, headers={"User-Agent": user_agent})
 
-            with urllib.request.urlopen(request, timeout=python_download_timeout_s) as response:
+            with urllib.request.urlopen(
+                request, timeout=python_download_timeout_s
+            ) as response:
                 html_text = response.read().decode("utf-8", errors="replace")
 
             class _LinkParser(html.parser.HTMLParser):
@@ -183,10 +197,16 @@ def _install_full_python_into_staging(
                     self.links: list[str] = []
 
                 @override
-                def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+                def handle_starttag(
+                    self, tag: str, attrs: list[tuple[str, str | None]]
+                ) -> None:
                     """WIP"""
                     if tag.lower() == "a":
-                        self.links.extend(value for name, value in attrs if name.lower() == "href" and value)
+                        self.links.extend(
+                            value
+                            for name, value in attrs
+                            if name.lower() == "href" and value
+                        )
 
             parser = _LinkParser()
             parser.feed(html_text)
@@ -230,7 +250,10 @@ def _install_full_python_into_staging(
             filename = os.path.basename(urllib.parse.urlparse(link).path).lower()
 
             # return False if filename matches any blacklisted pattern
-            if any(fnmatch.fnmatchcase(filename.lower(), pattern) for pattern in blacklisted_file_patterns):
+            if any(
+                fnmatch.fnmatchcase(filename.lower(), pattern)
+                for pattern in blacklisted_file_patterns
+            ):
                 return False
 
             _base, extension = os.path.splitext(filename)
@@ -239,7 +262,9 @@ def _install_full_python_into_staging(
             else:
                 return False
 
-        def _find_msi_urls_from_pattern(url_pattern: str, version: str) -> tuple[str, list[str]]:
+        def _find_msi_urls_from_pattern(
+            url_pattern: str, version: str
+        ) -> tuple[str, list[str]]:
             """Find matching MSI URLs from a URL pattern such as .../{version}/amd64/*.msi."""
             resolved_pattern = url_pattern.format(version=version)
             folder_url, filename_pattern = resolved_pattern.rsplit("/", 1)
@@ -248,14 +273,18 @@ def _install_full_python_into_staging(
             msi_urls = []
             for link in links:
                 filename = os.path.basename(urllib.parse.urlparse(link).path).lower()
-                if fnmatch.fnmatchcase(filename, filename_pattern.lower()) and _is_wanted_file(link):
+                if fnmatch.fnmatchcase(
+                    filename, filename_pattern.lower()
+                ) and _is_wanted_file(link):
                     msi_urls.append(urllib.parse.urljoin(folder_url, link))
             return folder_url, sorted(msi_urls)
 
         if python_version == "":
             target_version_pattern = re.compile(r"^\d+\.\d+\.\d+/$")
         elif re.fullmatch(r"\d+", python_version):
-            target_version_pattern = re.compile(rf"^{re.escape(python_version)}\.\d+\.\d+/$")
+            target_version_pattern = re.compile(
+                rf"^{re.escape(python_version)}\.\d+\.\d+/$"
+            )
         elif re.fullmatch(r"\d+\.\d+", python_version):
             target_version_pattern = re.compile(rf"^{re.escape(python_version)}\.\d+/$")
         elif re.fullmatch(r"\d+\.\d+\.\d+", python_version):
@@ -276,7 +305,9 @@ def _install_full_python_into_staging(
                 # return found download links and python version
                 if msi_urls:
                     return version, url, msi_urls
-        raise RuntimeError(f'[Error] Could not find msi-downloadable Python for python_version: "{python_version}".')
+        raise RuntimeError(
+            f'[Error] Could not find msi-downloadable Python for python_version: "{python_version}".'
+        )
 
     def _download_file_from_url(url: str, folder: str) -> str:
         filename = os.path.basename(urllib.parse.urlparse(url).path)
@@ -288,7 +319,9 @@ def _install_full_python_into_staging(
         request = urllib.request.Request(url, headers={"User-Agent": user_agent})
 
         with (
-            urllib.request.urlopen(request, timeout=python_download_timeout_s) as response,
+            urllib.request.urlopen(
+                request, timeout=python_download_timeout_s
+            ) as response,
             open(output_path, "wb") as file,
         ):
             shutil.copyfileobj(response, file)
@@ -325,13 +358,18 @@ def _install_full_python_into_staging(
             check=False,
         )
         if result.returncode != 0:
-            raise RuntimeError(f"msiexec failed for {msi_name} with exit code {result.returncode}. Log: {log_path}")
+            raise RuntimeError(
+                f"msiexec failed for {msi_name} with exit code {result.returncode}. Log: {log_path}"
+            )
 
         if msi_name.lower() == "test.msi":
             # needed to prevent Ruff from complaining/failing for ".ruff.toml" files in Pythons "test" package/folder because this local python installation does not follow the global python source-tree layout.-> it comments out lines starting with "extend" in "Lib\test\.ruff.toml", e.g., "extend = "../.ruff.toml"."""
             if os.path.exists(ruff_config):
                 lines = read_lines(ruff_config)
-                lines = ["# " + line if re.match(r"^\s*extend\s*=", line) else line for line in lines]
+                lines = [
+                    "# " + line if re.match(r"^\s*extend\s*=", line) else line
+                    for line in lines
+                ]
                 write_lines(ruff_config, lines)
 
         # Remove any MSI copy that install left in TARGETDIR.
@@ -351,7 +389,9 @@ def _install_full_python_into_staging(
 
         # Python includes ensurepip starting with 3.4 and 2.7.9.
         supports_ensurepip = (
-            major > 3 or (major == 3 and minor >= 4) or (major == 2 and (minor > 7 or (minor == 7 and patch >= 9)))
+            major > 3
+            or (major == 3 and minor >= 4)
+            or (major == 2 and (minor > 7 or (minor == 7 and patch >= 9)))
         )
         if supports_ensurepip:
             from backend.DONT_CHANGE.scripts.runtime_state import (
@@ -359,7 +399,9 @@ def _install_full_python_into_staging(
             )
 
             env = clean_python_environment()
-            env["PIP_NO_WARN_SCRIPT_LOCATION"] = "1"  # supress warning that pip is not global
+            env["PIP_NO_WARN_SCRIPT_LOCATION"] = (
+                "1"  # supress warning that pip is not global
+            )
             env["PATH"] = os.pathsep.join(
                 [
                     python_dir_abs_path,
@@ -422,16 +464,22 @@ def _install_full_python_into_staging(
         # Verify that pip can be imported and run by the installed Python:
         result = subprocess.run([python_exe, "-m", "pip", "--version"], check=False)
         if result.returncode != 0:
-            raise RuntimeError("Python installation failed: pip is not available after bootstrap.")
+            raise RuntimeError(
+                "Python installation failed: pip is not available after bootstrap."
+            )
 
     # ----------------------------
     # execute code of function
 
     if not os.path.isabs(python_dir_abs_path):
-        raise RuntimeError(f'Paramter "python_dir_abs_path" must be an absolute path. Got "{python_dir_abs_path}"')
+        raise RuntimeError(
+            f'Paramter "python_dir_abs_path" must be an absolute path. Got "{python_dir_abs_path}"'
+        )
 
     # find compatible python version and download links
-    compatible_full_py_vers, download_url, msi_urls = _find_python_version_and_download_links()
+    compatible_full_py_vers, download_url, msi_urls = (
+        _find_python_version_and_download_links()
+    )
 
     if print_:
         print(f"Found Python {compatible_full_py_vers} (Target: {python_version}).")
@@ -443,7 +491,9 @@ def _install_full_python_into_staging(
         if not delete_folder_safe(python_dir_abs_path, max_size_GB_before_prompt=1.2):
             raise RuntimeError("Python installation cancelled")
     except Exception as error:
-        raise RuntimeError(f'[Error] Refusing to delete "{python_dir_abs_path}". {error}') from error
+        raise RuntimeError(
+            f'[Error] Refusing to delete "{python_dir_abs_path}". {error}'
+        ) from error
 
     # create folder
     os.makedirs(python_dir_abs_path, exist_ok=True)
@@ -459,7 +509,9 @@ def _install_full_python_into_staging(
 
     # download and install msi files
     try:
-        with tempfile.TemporaryDirectory(prefix="tmp_python_installation_files_") as tmp:
+        with tempfile.TemporaryDirectory(
+            prefix="tmp_python_installation_files_"
+        ) as tmp:
             # downlaod into temp folder
             msi_paths = [_download_file_from_url(url, tmp) for url in msi_urls]
 
@@ -505,5 +557,7 @@ def _install_full_python_into_staging(
 
     if print_:
         print()
-        print(f'Successfully created local Python {compatible_full_py_vers} at "{python_dir_abs_path}".')
+        print(
+            f'Successfully created local Python {compatible_full_py_vers} at "{python_dir_abs_path}".'
+        )
         print()

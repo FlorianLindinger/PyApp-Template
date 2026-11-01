@@ -28,8 +28,10 @@ try:
     # ==============================
 
     import os
+    import re
     import runpy
     import sys
+    import threading
     import traceback
     from datetime import datetime
 
@@ -289,9 +291,7 @@ try:
         import atexit
         import faulthandler
 
-        global log_file, re, threading  # type:ignore
-        import re
-        import threading
+        global log_file
 
         log_file = None
         if log_path:
@@ -624,6 +624,7 @@ try:
 
 except Exception:
     # The watchdog owns error presentation, including no-terminal launches.
+    import sys
     import traceback
 
     traceback.print_exc()

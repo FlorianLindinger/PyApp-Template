@@ -25,7 +25,11 @@ def _run_wpf_powershell(script: str, **extra_env: str) -> str:
         env=environment,
     )
     if completed.returncode:
-        raise RuntimeError(completed.stderr.strip() or completed.stdout.strip() or "WPF image operation failed.")
+        raise RuntimeError(
+            completed.stderr.strip()
+            or completed.stdout.strip()
+            or "WPF image operation failed."
+        )
     return completed.stdout.strip()
 
 
@@ -52,7 +56,9 @@ $bytes = [byte[]]::new($image.PixelWidth * $image.PixelHeight * 4)
 $image.CopyPixels($bytes, $image.PixelWidth * 4, 0)
 [pscustomobject]@{ width=$image.PixelWidth; height=$image.PixelHeight; pixels=[Convert]::ToBase64String($bytes) } | ConvertTo-Json -Compress
 """
-    payload = json.loads(_run_wpf_powershell(script, IMAGE_URI=Path(path).resolve().as_uri()))
+    payload = json.loads(
+        _run_wpf_powershell(script, IMAGE_URI=Path(path).resolve().as_uri())
+    )
     bgra = base64.b64decode(payload["pixels"])
     rgba = bytearray(bgra)
     rgba[0::4], rgba[2::4] = bgra[2::4], bgra[0::4]
@@ -85,7 +91,13 @@ def generate_png_with_text(
     """
     import json
 
-    if width <= 0 or height <= 0 or min_font_size <= 0 or font_size < min_font_size or padding < 0:
+    if (
+        width <= 0
+        or height <= 0
+        or min_font_size <= 0
+        or font_size < min_font_size
+        or padding < 0
+    ):
         raise ValueError("Invalid PNG text dimensions or font sizes.")
     if not lines or any(not isinstance(line, str) for line in lines):
         raise ValueError("lines must contain one or more strings.")
@@ -179,17 +191,27 @@ def generate_ico_from_png(
     if sub_png_path and not os.path.isfile(sub_png_path):
         raise FileNotFoundError(f'Sub PNG does not exist: "{sub_png_path}"')
     if not 0 < sub_icon_area_scale_factor <= 1:
-        raise ValueError("sub_icon_area_scale_factor must be greater than 0 and at most 1.")
+        raise ValueError(
+            "sub_icon_area_scale_factor must be greater than 0 and at most 1."
+        )
     if not sizes or any(not 0 < size <= 256 for size in sizes):
         raise ValueError("icon_sizes must contain sizes from 1 through 256.")
     aliases = {"up": "top", "down": "bottom", "middle": "center", "centre": "center"}
     tokens = [
-        aliases.get(token, token) for token in sub_icon_alignment.lower().replace("_", " ").replace("-", " ").split()
+        aliases.get(token, token)
+        for token in sub_icon_alignment.lower()
+        .replace("_", " ")
+        .replace("-", " ")
+        .split()
     ]
-    if not tokens or any(token not in {"top", "bottom", "left", "right", "center"} for token in tokens):
+    if not tokens or any(
+        token not in {"top", "bottom", "left", "right", "center"} for token in tokens
+    ):
         raise ValueError(f"Unsupported sub_icon_alignment: {sub_icon_alignment!r}")
     vertical = next((token for token in tokens if token in {"top", "bottom"}), "center")
-    horizontal = next((token for token in tokens if token in {"left", "right"}), "center")
+    horizontal = next(
+        (token for token in tokens if token in {"left", "right"}), "center"
+    )
     if os.path.exists(output_path) and not override:
         return output_path
     output_folder = os.path.dirname(output_path)
@@ -231,7 +253,9 @@ if ($env:ICO_OVERLAY_URI) {
         _run_wpf_powershell(
             script,
             ICO_BASE_URI=Path(base_png_path).resolve().as_uri(),
-            ICO_OVERLAY_URI=Path(sub_png_path).resolve().as_uri() if sub_png_path else "",
+            ICO_OVERLAY_URI=Path(sub_png_path).resolve().as_uri()
+            if sub_png_path
+            else "",
             ICO_OVERLAY_SCALE=str(sub_icon_area_scale_factor),
             ICO_VERTICAL=vertical,
             ICO_HORIZONTAL=horizontal,

@@ -1,5 +1,6 @@
 """Own one application run and its child process without killing caller shells."""
 
+import io
 import json
 import os
 import signal
@@ -9,10 +10,15 @@ import threading
 import time
 import traceback
 from pathlib import Path
+from typing import cast
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
 from backend import developer_settings as settings
-from backend.DONT_CHANGE.scripts.console_tools import set_terminal_app_id, set_terminal_icon, set_terminal_title
+from backend.DONT_CHANGE.scripts.console_tools import (
+    set_terminal_app_id,
+    set_terminal_icon,
+    set_terminal_title,
+)
 from backend.DONT_CHANGE.scripts.launcher_ui import get_log_path, set_terminal_colors
 from backend.DONT_CHANGE.scripts.runtime_state import (
     ProcessRegistry,
@@ -26,7 +32,9 @@ from backend.DONT_CHANGE.settings import backend_settings as paths
 
 def confirm_replace(has_terminal):
     if has_terminal:
-        return input("Close the existing instance(s) and start again? [y/N] ").strip().lower() in {"y", "yes"}
+        return input(
+            "Close the existing instance(s) and start again? [y/N] "
+        ).strip().lower() in {"y", "yes"}
     import ctypes
 
     return (
@@ -44,7 +52,9 @@ def acknowledge(run_dir, **payload):
     atomic_json(run_dir / "startup.json", payload)
 
 
-def handle_exit(mode, app_id, has_terminal, log_path, script, run_dir, native_code=None):
+def handle_exit(
+    mode, app_id, has_terminal, log_path, script, run_dir, native_code=None
+):
     env = os.environ.copy()
     env["PYAPP_RUN_DIR"] = str(run_dir)
     if native_code is not None:
@@ -62,16 +72,22 @@ def handle_exit(mode, app_id, has_terminal, log_path, script, run_dir, native_co
     success = mode == 0
     if mode == 1:
         try:
-            payload = json.loads((run_dir / "traceback.json").read_text(encoding="utf-8"))
+            payload = json.loads(
+                (run_dir / "traceback.json").read_text(encoding="utf-8")
+            )
             entry = payload["traceback"][-1]
             code = payload.get("system_exit_code")
-            success = entry["type"] == "SystemExit" and (code is None or isinstance(code, int) and code == 0)
+            success = entry["type"] == "SystemExit" and (
+                code is None or isinstance(code, int) and code == 0
+            )
         except (OSError, ValueError, KeyError, IndexError):
             pass
     hidden = not has_terminal and success and settings.close_after_success
     if hidden:
         env["PYAPP_SILENT_EXIT"] = "1"
-        subprocess.run(args, env=env, check=False, creationflags=subprocess.CREATE_NO_WINDOW)
+        subprocess.run(
+            args, env=env, check=False, creationflags=subprocess.CREATE_NO_WINDOW
+        )
     elif has_terminal:
         subprocess.run(args, env=env, check=False)
     else:
@@ -105,7 +121,8 @@ def main():
         with registry.lock():
             records, _ = registry.records()
             if records and (
-                settings.close_already_running_instances_on_start or settings.prevent_start_if_already_running
+                settings.close_already_running_instances_on_start
+                or settings.prevent_start_if_already_running
             ):
                 replace = settings.close_already_running_instances_on_start
                 if not replace and settings.prompt_to_close_existing_instances:
@@ -115,11 +132,15 @@ def main():
                     return
                 _, _, errors = registry.stop()
                 if errors:
-                    raise RuntimeError("Could not stop existing instances: " + "; ".join(errors))
+                    raise RuntimeError(
+                        "Could not stop existing instances: " + "; ".join(errors)
+                    )
             registry.register()
             registered = True
         # Private diagnostic protocol; the external benchmark supplies its probe.
-        benchmark_script = os.environ.pop("PYAPP_TEMPLATE_ACTIVE_STARTUP_TIME_MEASUREMENT", "")
+        benchmark_script = os.environ.pop(
+            "PYAPP_TEMPLATE_ACTIVE_STARTUP_TIME_MEASUREMENT", ""
+        )
         measuring = bool(benchmark_script)
         if measuring:
             script = benchmark_script
@@ -130,7 +151,11 @@ def main():
         ):
             raise ValueError("args_for_main_py must be a list of strings")
         args = list(settings.args_for_main_py)
-        python = resolve_global_python() if settings.use_global_python else paths.FRONTEND_PYTHON_EXE
+        python = (
+            resolve_global_python()
+            if settings.use_global_python
+            else paths.FRONTEND_PYTHON_EXE
+        )
         if (has_terminal and settings.enable_log_for_Windows_terminal_start) or (
             not has_terminal and settings.enable_log_for_no_terminal_start
         ):
@@ -146,7 +171,7 @@ def main():
             if settings.start_in_shortcut_folder
             else str(Path(script).parent)
         )
-        config = {
+        config: dict[str, object] = {
             "script": script,
             "args": args,
             "app_id": app_id,
@@ -161,7 +186,11 @@ def main():
             "ready": str(run_dir / "ready"),
         }
         if measuring:
-            config["benchmark"] = {k: v for k, v in os.environ.items() if k.startswith("PYAPP_STARTUP_BENCHMARK_")}
+            config["benchmark"] = {
+                k: v
+                for k, v in os.environ.items()
+                if k.startswith("PYAPP_STARTUP_BENCHMARK_")
+            }
         atomic_json(run_dir / "wrapper.json", config)
         env = clean_python_environment()
         # Keep launcher protocol private; expose only the public app identity below.
@@ -195,11 +224,14 @@ def main():
             )
             registry.register(child.pid)
             if raw_stream:
+                assert child.stdout is not None
+                # Popen's binary PIPE is buffered; read1 keeps live logs responsive.
+                output = cast(io.BufferedReader, child.stdout)
 
                 def copy_output():
                     try:
                         while True:
-                            chunk = child.stdout.read1(65536)
+                            chunk = output.read1(65536)
                             if not chunk:
                                 break
                             raw_stream.write(chunk)
@@ -211,7 +243,7 @@ def main():
                                 except OSError:
                                     pass
                     finally:
-                        child.stdout.close()
+                        output.close()
                         raw_stream.close()
 
                 pump = threading.Thread(target=copy_output, daemon=True)
@@ -245,7 +277,9 @@ def main():
                 pump.join(timeout=5)
             mode, native = code, None
             try:
-                result = json.loads((run_dir / "result.json").read_text(encoding="utf-8"))
+                result = json.loads(
+                    (run_dir / "result.json").read_text(encoding="utf-8")
+                )
                 if result["wrapper_exit_code"] != code:
                     raise ValueError("Abrupt exit during shutdown")
             except (OSError, ValueError, KeyError):
@@ -266,7 +300,9 @@ def main():
         if not (run_dir / "startup.json").exists():
             acknowledge(run_dir, status="failed", message=str(error))
         # Preserve the original traceback even if the Rich presentation fails.
-        (run_dir / "watchdog-error.txt").write_text(traceback.format_exc(), encoding="utf-8")
+        (run_dir / "watchdog-error.txt").write_text(
+            traceback.format_exc(), encoding="utf-8"
+        )
         if registered:
             registry.remove()
             registered = False

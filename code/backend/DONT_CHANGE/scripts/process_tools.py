@@ -43,9 +43,13 @@ def is_process_running(pid: int) -> bool:
         kernel32.CloseHandle.argtypes = [wintypes.HANDLE]
         kernel32.CloseHandle.restype = wintypes.BOOL
 
-        process_handle = kernel32.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, False, pid)
+        process_handle = kernel32.OpenProcess(
+            PROCESS_QUERY_LIMITED_INFORMATION, False, pid
+        )
         if not process_handle:
-            return ctypes.get_last_error() == 5  # ERROR_ACCESS_DENIED means the process still exists.
+            return (
+                ctypes.get_last_error() == 5
+            )  # ERROR_ACCESS_DENIED means the process still exists.
         try:
             exit_code = wintypes.DWORD()
             if not kernel32.GetExitCodeProcess(process_handle, ctypes.byref(exit_code)):

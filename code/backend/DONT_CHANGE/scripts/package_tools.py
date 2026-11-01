@@ -173,7 +173,9 @@ def install_packages(
                 subprocess.run(uv_install_args, check=True, env=install_env)
                 uv_command = local_uv_command
         except Exception as error:
-            print(f"[Warning] local uv installation failed. Falling back to pip. Error: {error}")
+            print(
+                f"[Warning] local uv installation failed. Falling back to pip. Error: {error}"
+            )
 
     if uv_command is not None:
         uv_args = [*uv_command]
@@ -199,12 +201,16 @@ def install_packages(
         if uv_result.returncode == 0:
             return uv_result
 
-        print(f"[Warning] uv package {'uninstall' if uninstall else 'install'} failed. Falling back to pip.")
+        print(
+            f"[Warning] uv package {'uninstall' if uninstall else 'install'} failed. Falling back to pip."
+        )
 
     return subprocess.run(pip_args, check=True, env=install_env)
 
 
-def get_installed_packages(exe_path: str, with_version: bool = True, target: str | None = None):
+def get_installed_packages(
+    exe_path: str, with_version: bool = True, target: str | None = None
+):
     import subprocess
 
     from backend.DONT_CHANGE.scripts.runtime_state import clean_python_environment
@@ -227,7 +233,7 @@ def get_installed_packages(exe_path: str, with_version: bool = True, target: str
     )
     packages_with_version = result.stdout.strip().splitlines()
 
-    if with_version == True:
+    if with_version:
         return packages_with_version
     else:
         packages_without_version = []
@@ -256,7 +262,9 @@ def save_installed_packages(
 ):
     output_path = os.path.abspath(output_path)
 
-    packages = get_installed_packages(with_version=with_version, exe_path=exe_path, target=target)
+    packages = get_installed_packages(
+        with_version=with_version, exe_path=exe_path, target=target
+    )
 
     write_lines(output_path, packages)
 
@@ -313,7 +321,9 @@ def save_requirements_of_folder_noVersion(
         if os.path.exists(output_path):
             if print_:
                 print("-" * 20)
-                print(f'End of finding required python packages. Result: "{output_path}":\n')
+                print(
+                    f'End of finding required python packages. Result: "{output_path}":\n'
+                )
                 packages = read_lines(output_path)
                 print(*packages, sep="\n")
                 print("=" * 20)
@@ -325,11 +335,15 @@ def save_requirements_of_folder_noVersion(
             success = False
             if print_:
                 print()
-                print_warn("[Error] Failed to auto determine needed packages (see above)")
+                print_warn(
+                    "[Error] Failed to auto determine needed packages (see above)"
+                )
     except Exception as e:
         if print_:
             print()
-            print_warn(f"[Error] Failed to auto determine packages (do you have internet?): {e}")
+            print_warn(
+                f"[Error] Failed to auto determine packages (do you have internet?): {e}"
+            )
         success = False
 
     return success
@@ -357,7 +371,9 @@ def save_requirements_of_folder_withVersion(
     output_path = os.path.normpath(os.path.abspath(output_path))
 
     try:
-        with tempfile.TemporaryDirectory(prefix="tmp_venv_to_get_package_version") as tmp:
+        with tempfile.TemporaryDirectory(
+            prefix="tmp_venv_to_get_package_version"
+        ) as tmp:
             temp_requirements = tmp + "\\tmp_package_requirements"
             success = save_requirements_of_folder_noVersion(
                 print_=print_,
@@ -365,14 +381,16 @@ def save_requirements_of_folder_withVersion(
                 output_path=temp_requirements,
                 excluded_folders=excluded_folders,
             )
-            if success == False:
+            if not success:
                 return False
 
             temp_python = tmp + "\\Scripts\\python.exe"
 
             subprocess.run([python_exe, "-m", "venv", tmp], check=True)
             if not os.path.exists(temp_python):
-                raise RuntimeError(f'Temporary environment did not create "{temp_python}"')
+                raise RuntimeError(
+                    f'Temporary environment did not create "{temp_python}"'
+                )
 
             subprocess.run(
                 [
@@ -388,7 +406,9 @@ def save_requirements_of_folder_withVersion(
                 check=True,
             )
 
-            save_installed_packages(exe_path=temp_python, output_path=output_path, with_version=True)
+            save_installed_packages(
+                exe_path=temp_python, output_path=output_path, with_version=True
+            )
 
             return True
 
