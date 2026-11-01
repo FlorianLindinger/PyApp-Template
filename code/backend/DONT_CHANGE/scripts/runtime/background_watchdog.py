@@ -164,10 +164,13 @@ def main():
             config["benchmark"] = {k: v for k, v in os.environ.items() if k.startswith("PYAPP_STARTUP_BENCHMARK_")}
         atomic_json(run_dir / "wrapper.json", config)
         env = clean_python_environment()
-        # Metadata is private protocol, not injected application arguments/environment.
+        # Keep launcher protocol private; expose only the public app identity below.
         for key in list(env):
             if key.startswith("PYAPP_"):
                 env.pop(key)
+        env["PROGRAM_NAME"] = settings.program_name
+        env["ICON_PATH"] = paths.ICON_PATH
+        env["PROGRAM_HAS_TERMINAL"] = "1" if has_terminal else "0"
         raw_stream = None
         pump = None
         if log_path:
