@@ -15,6 +15,7 @@ if __name__ == "__main__":
     raise SystemExit(run_file(__file__))
 
 import ctypes
+import hashlib
 import os
 import re
 import sys
@@ -299,7 +300,7 @@ def generate_shortcut(
     _property_store_interface_id = _guid("886D8EEB-8CF2-4446-8D02-CDBA1DBDCF99")
     _app_id_key = _PropertyKey(_guid("9F4C2855-9F79-4B39-A8D0-E1D42DE1D5F3"), 5)
     output_path = os.path.abspath(
-        os.path.join(SHORTCUT_OUTPUT_DIR, sanitize_filename(shortcut_name) + ".lnk")
+        os.path.join(SHORTCUT_OUTPUT_DIR, _shortcut_filename(os.fspath(shortcut_name)))
     )
     launcher_args = (
         [_quote(launcher_path)]
@@ -421,7 +422,7 @@ def generate_shortcut(
 
 
 def _sanitize_app_id(value: str) -> str:
-    """Normalize the app name to ASCII letters, digits, dots and hyphens for taskbar identity."""
+    """Return a stable compact taskbar identity, including non-Latin and long app names."""
     name = (
         unicodedata.normalize("NFKD", value)
         .encode("ascii", "ignore")
@@ -432,16 +433,42 @@ def _sanitize_app_id(value: str) -> str:
     name = re.sub("[^a-z0-9.-]", "", name)
     name = re.sub("-+", "-", name)
     name = re.sub("\\.+", ".", name)
-    return name.strip("-.")
+    name = name.strip("-.")
+    digest = hashlib.sha256(value.encode("utf-8")).hexdigest()
+    if not name:
+        return "pyapp-" + digest[:9]
+    if len(name) > 15:
+        return name[:7] + "-" + digest[:7]
+    return name
+
+
+def _shortcut_filename(name: str) -> str:
+    """Reserve the .lnk suffix and keep truncated names distinct with a stable digest."""
+    safe = sanitize_filename(name)
+    if len(safe.encode("utf-16-le")) // 2 > 251:
+        digest = hashlib.sha256(name.encode("utf-8")).hexdigest()[:8]
+        safe = sanitize_filename(name, max_length=242) + "-" + digest
+    return safe + ".lnk"
 
 
 def main() -> None:
     """Optionally prepare application dependencies and generate the enabled Windows shortcuts."""
     app_id = _sanitize_app_id(program_name)
-    if len(app_id) > 15:
-        app_id = app_id.replace("-", "").replace(".", "")
-    if len(app_id) > 15:
-        app_id = app_id[:7] + app_id[-7:]
+    names = [
+        windows_terminal_shortcut_name,
+        no_terminal_shortcut_name,
+        stop_running_shortcut_name,
+        open_log_folder_shortcut_name,
+        open_crash_log_folder_shortcut_name,
+        open_main_py_shortcut_name,
+    ]
+    if user_settings_path:
+        names.append(open_settings_shortcut_name)
+    filenames = [_shortcut_filename(name).casefold() for name in names if name]
+    if len(filenames) != len(set(filenames)):
+        raise ValueError(
+            "Shortcut names collide after Windows filename sanitization; choose distinct names."
+        )
     if install_python_when_generating_shortcuts and (not use_global_python):
         ensure_frontend_packages(app_id)
     print()

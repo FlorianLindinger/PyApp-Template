@@ -61,6 +61,7 @@ start_minimized = False
 # ==========================
 
 # ---------------------------------------
+# Logging redirects stdout/stderr to pipes. Disable terminal logging if the app needs real console handles/a TTY.
 enable_log_for_Windows_terminal_start = True
 enable_log_for_no_terminal_start = True
 # if overwrite is False it will append instead if a file with that name exists:

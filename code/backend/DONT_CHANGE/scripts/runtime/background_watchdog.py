@@ -54,6 +54,25 @@ def acknowledge(run_dir, **payload):
     atomic_json(run_dir / "startup.json", payload)
 
 
+def successful_application_exit(mode, run_dir):
+    """Recognize normal return or SystemExit with integer zero/None from the wrapper protocol."""
+    if mode == 0:
+        return True
+    if mode == 1:
+        try:
+            payload = json.loads(
+                (run_dir / "traceback.json").read_text(encoding="utf-8")
+            )
+            entry = payload["traceback"][-1]
+            code = payload.get("system_exit_code")
+            return entry["type"] == "SystemExit" and (
+                code is None or isinstance(code, int) and code == 0
+            )
+        except (OSError, ValueError, KeyError, IndexError):
+            pass
+    return False
+
+
 def handle_exit(
     mode, app_id, has_terminal, log_path, script, run_dir, native_code=None
 ):
@@ -72,19 +91,7 @@ def handle_exit(
         script,
     ]
     # Successful hidden runs perform configured completion actions without opening a console.
-    success = mode == 0
-    if mode == 1:
-        try:
-            payload = json.loads(
-                (run_dir / "traceback.json").read_text(encoding="utf-8")
-            )
-            entry = payload["traceback"][-1]
-            code = payload.get("system_exit_code")
-            success = entry["type"] == "SystemExit" and (
-                code is None or isinstance(code, int) and code == 0
-            )
-        except (OSError, ValueError, KeyError, IndexError):
-            pass
+    success = successful_application_exit(mode, run_dir)
     hidden = not has_terminal and success and settings.close_after_success
     if hidden:
         env["PYAPP_SILENT_EXIT"] = "1"
@@ -294,6 +301,13 @@ def main():
                     raise ValueError("Abrupt exit during shutdown")
             except (OSError, ValueError, KeyError):
                 mode, native = 5, code
+            # Non-daemon workers can fail after main.py returns while Python
+            # waits for them at shutdown. Keep that failure out of the success path.
+            background = run_dir / "traceback.json.background"
+            if background.is_file() and successful_application_exit(mode, run_dir):
+                payload = json.loads(background.read_text(encoding="utf-8"))
+                atomic_json(run_dir / "traceback.json", payload)
+                mode = 1
             # Remove registration before recovery can start a new instance.
             registry.remove()
             registered = False

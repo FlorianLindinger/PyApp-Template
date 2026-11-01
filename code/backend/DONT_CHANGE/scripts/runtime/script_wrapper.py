@@ -461,6 +461,47 @@ try:
         with open(output_path, "w", encoding="utf-8") as f:
             json.dump(payload, f)
 
+    def capture_background_errors(script_path, output_path):
+        """Record unhandled thread errors and default Tkinter callback failures for exit reporting."""
+        first_error = [None]
+        lock = threading.Lock()
+        previous_last = getattr(sys, "last_exc", getattr(sys, "last_value", None))
+
+        def record(error):
+            """Persist the first background failure without changing normal exception printing."""
+            if isinstance(error, SystemExit) and (
+                error.code is None or isinstance(error.code, int) and error.code == 0
+            ):
+                return
+            with lock:
+                if first_error[0] is not None:
+                    return
+                first_error[0] = error
+                temporary = output_path + ".tmp"
+                save_traceback(error, script_path, temporary)
+                os.replace(temporary, output_path)
+
+        previous_hook = getattr(threading, "excepthook", None)
+        if previous_hook is not None:
+
+            def thread_hook(args):
+                """Capture an unhandled worker exception, then retain the existing thread hook."""
+                try:
+                    record(args.exc_value)
+                finally:
+                    previous_hook(args)
+
+            threading.excepthook = thread_hook
+
+        def pending_error():
+            """Return a recorded error, including errors retained by Tkinter's default callback hook."""
+            last = getattr(sys, "last_exc", getattr(sys, "last_value", None))
+            if isinstance(last, BaseException) and last is not previous_last:
+                record(last)
+            return first_error[0]
+
+        return pending_error
+
     # ==============================
     # miscellaneous
 
@@ -613,14 +654,26 @@ try:
         # ==============================
         # run in the current python process and wait for finish
 
+        pending_background_error = capture_background_errors(
+            python_script_path, crash_log_temp_path + ".background"
+        )
         if ready_path:
             with open(ready_path, "w", encoding="utf-8") as stream:
                 stream.write("ready")
         try:
             runpy.run_path(python_script_path, run_name="__main__")
+            background_error = pending_background_error()
+            if background_error is not None:
+                raise background_error
             save_result(0)
 
         except BaseException as e:  # BaseException includes KeyboardInterrupt,GeneratorExit,normal Exception, SystemExit (including success exit)
+            if isinstance(e, SystemExit) and (
+                e.code is None or isinstance(e.code, int) and e.code == 0
+            ):
+                background_error = pending_background_error()
+                if background_error is not None:
+                    e = background_error
             save_traceback(e, python_script_path, crash_log_temp_path)
             save_result(1)
             sys.exit(
