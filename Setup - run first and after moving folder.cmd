@@ -6,7 +6,7 @@ echo.
 :: This outer window owns the final prompt, even if the child shell exits.
 set "PYAPP_ENTRYPOINT_NO_PAUSE=1"
 set "PYAPP_ENTRY_SCRIPT=%~dp0code\backend\DONT_CHANGE\scripts\setup\generate_shortcuts.py"
-"%ComSpec%" /d /s /c ""%~dp0code\backend\DONT_CHANGE\batches\bootstrap\run_backend_script.bat""
+"%ComSpec%" /d /s /c ""%~dp0code\backend\DONT_CHANGE\scripts\setup\run_backend_script.bat""
 set "setup_exit_code=%ERRORLEVEL%"
 echo.
 if "%setup_exit_code%"=="0" (

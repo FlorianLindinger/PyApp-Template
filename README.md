@@ -9,30 +9,83 @@ your own code. A prepared folder can be copied and used offline.
 
 ---
 
-## Main Features
+## Features and implementation status
 
-- **Full Python runtime** with optional Tkinter support for applications that need standard GUI modules. The small embedded backend is separate from the runtime used by your app.
-- **Portable** folder that can be shared offline after first setup execution.
-- **Local Python and package environments**. Managed launches ignore Python environment overrides and user-site packages. Package tools target the local environment. This is dependency isolation, not an operating-system security sandbox; application code still has your normal user permissions.
-- **No prior Python installation required**. Python and packages are automatically installed.
-- **Minimal Git size and license-safe Git sharing**: Python runtimes, virtual environments, and third-party Python packages are not meant to be committed. They are excluded by `.gitignore` and installed/generated on the user's machine, keeping the repository source-focused and avoiding accidental Git distribution of bulky or separately licensed dependency files.
-- **Fast package installation with uv support**: package installs use `uv` by default when globally available or installs it into the repository locally if not disabled in settings. It can benefit from uv's global cache across projects.
-- Ready to use: **Just insert your python code file** and optionally quickly change settings like python version or app name.
-- **Runs fully accessible source code**. This template makes python files behave effectively as if they were compiled with an included python environment while remaining 100% accessible, avoiding compilation time, and simplifying end-user modifications.
-- **Quality of life features for python environment management** (under `code/backend/dev_tools`: environment reset, pip-install launcher, saving current packages, auto-installing packages needed in Python files, ...)
-- Automatic generation of **icons from a png**.
-- Options to **change icon, title, and colors** of the python-launched **terminal**.
-- Automatic generation of **shortcuts with icons** that **can be added to the taskbar**. Usually it is not possible to have multiple shortcuts on the taskbar with **custom icons** that launch python/batch files.
-- If the starting shortcut is in the taskbar, it will group the opened terminal/GUI with that shortcut. This avoids taskbar spamming and overlooking that App is already opened.
-- **Option for no-terminal execution with stop-button and logging** (print & errors) to file.
-- Automatic **handling of code & python interpreter crashes** with visible diagnostics and package-recovery restart options.
-- **Startup health checks** validate the runtime and installed package records. Use the included benchmark to measure overhead on your machine; older timing estimates predate these checks.
-- Plug-and-play **license template** with the template-owned backend available under the permissive `MIT OR Apache-2.0` dual license.
-- Avoids opaque executables to minimize antivirus false positives that compiled python code can suffer from.
-- Choice to have the working directory be the script folder or the shortcut folder.
-- Option to save prints/errors in log files.
-- Option to add timestamps to prints and logging.
-- Feel free to suggest more :)
+**Implemented** means the behavior exists in the active code. **Partial** means
+it has the specific limits described below; it is not a promise that every
+application or clean-machine configuration has been tested.
+
+### Application runtime and startup
+
+| Feature | Status and behavior |
+| --- | --- |
+| Editable application source | Implemented: run `code/main.py` without compiling the application. A minimal Tkinter GUI uses the configured app name and icon. |
+| Separate app and launcher environments | Implemented: a small embedded backend manages the full application Python and its separate package directory. |
+| Setup without preinstalled Python | Implemented for Windows x64: download and prepare local runtimes and dependencies. First setup needs network access, a writable folder, and the required defaults file. |
+| Python version selection | Implemented: choose an available MSI-based release by major, minor or exact patch version, or leave the version empty for the latest matching release. |
+| Optional Tkinter installation | Implemented: `install_tkinter` selects Tcl/Tk support. CPython's own tests, legacy Tools and documentation are excluded from managed app installation. |
+| Transactional installation | Implemented: prepare and validate replacement runtime/package directories before publishing them; retain or restore the previous environment when replacement fails. |
+| Download and installation diagnostics | Implemented: validate Python publisher signatures, record download provenance, hash-lock backend requirements, and retain MSI/failure diagnostics. |
+| Startup health checks | Implemented: probe actual runtime imports/version and compare package manifests, requirements fingerprints, metadata and payload presence. |
+| Dependency isolation | Implemented: managed launches sanitize Python/package-tool environment settings and use `-E -s`. This is not an operating-system security sandbox. |
+| Existing global Python | Implemented: optionally resolve an installed interpreter instead of preparing an application runtime. Its dependencies remain the user's responsibility; the backend is still required. |
+| Prepared offline folders and relocation | Partial: a prepared folder can run offline and app paths are resolved locally. Rerun setup after a move; generated package command launchers may retain absolute interpreter paths. |
+| Working directory | Implemented: select the application script folder or the shortcut's configured launch folder. |
+| Application arguments and metadata | Implemented: `args_for_main_py` supplies application arguments; eight public environment variables expose launch-time metadata. Extra shortcut arguments are intentionally not forwarded. |
+
+### Shortcuts, appearance and icons
+
+| Feature | Status and behavior |
+| --- | --- |
+| Seven configurable shortcut actions | Implemented: terminal start, hidden start, Stop, user settings, normal logs, crash logs and `main.py`. Shortcut names can be changed or disabled. |
+| Short shortcut targets | Implemented: compact `B/*.bat` paths leave more room for long project paths. Windows path/filename limits still apply. |
+| Terminal modes | Implemented: classic console, Windows Terminal or no application terminal. Windows Terminal must be installed when selected; no automatic fallback is provided. |
+| Initial terminal appearance | Implemented: app title/icon, console foreground/background colors, Windows Terminal tab color and minimized startup. Effects depend on the selected terminal. |
+| Taskbar identity | Partial: shortcuts and launched processes receive app identity/icon information. Names that normalize to an empty identity and some long-name cases need additional handling. |
+| PNG-to-ICO generation | Implemented: manually run `code/backend/icons/regenerate icons.cmd` to generate ten app/action/status ICOs with multiple image sizes. Setup does not regenerate them automatically. |
+| Configurable icon overlays | Implemented: per-icon overlay scale/alignment, optional overlay removal, bundled fallbacks and unchanged-placeholder detection. Uses Windows WPF without requiring Pillow. |
+| File and folder actions | Implemented: open settings or `main.py` using VS Code when available, otherwise Notepad; open configured log directories in Explorer. |
+| Setup and icon-command reporting | Implemented: report success/failure, retain the exit code and keep the outer window open for acknowledgement. |
+| Icon-instructions launcher | Implemented: open instructions in Notepad; print a three-second countdown and close on successful launch, or retain an error prompt. |
+| Explorer housekeeping | Implemented: mark selected project metadata paths hidden in Explorer. This does not change Git tracking. |
+| Obsolete shortcut removal | Not implemented: renaming or disabling an action does not remove its previously generated shortcut. Remove old shortcuts manually. |
+
+### Dependencies and developer tools
+
+The [package-tool guide](code/backend/dev_tools/README.txt) lists the 13 direct
+batch commands and their matching Python actions.
+
+| Feature | Status and behavior |
+| --- | --- |
+| Declared requirements | Implemented: use `DEFAULT_PYTHON_PACKAGES.txt` for app defaults or `install_local_reqs.bat` for this tool folder's `requirements.txt`. Keep input files in Git, even when empty. |
+| pip and optional uv | Implemented: use uv when enabled/available, optionally install it locally, and fall back to pip if the uv operation fails. |
+| Add, reset, clear and upgrade packages | Implemented: install reviewed imports/local requirements, reset to defaults or inferred imports, empty the package environment, or upgrade current package names. |
+| Package inventories | Implemented: save installed or inferred dependency lists, with or without versions, and save installed packages as the default list. |
+| Import inference | Partial: explicit tools infer distributions and request review before installation. The defaults-file inference flag is currently bypassed during first runtime installation. |
+| Manual package terminal | Partial: open a terminal targeting the managed packages. Use `python -m pip`; a generated `pip.exe` can reference an old or staging interpreter path. |
+| Runtime-change menu | Implemented: keep/cancel, change runtime with defaults or no packages, re-resolve installed names, preserve exact versions, or review inferred dependencies; optionally save new defaults. Successful changes continue the launch. |
+| Requirement-change detection | Implemented: fingerprint local requirements and nested `-r`/`-c` inputs. Remote includes are not supported by the startup fingerprint policy. |
+| Runtime/package lock records | Partial: record selections and resolved versions. First runtime installation bypasses the package-lock reader, and an existing compatible runtime patch is not strictly matched against its lock. |
+| Concurrent environment changes | Implemented: serialize installs with an interprocess lock and reject package mutations while verified app instances are running. |
+
+### Logs, errors and process control
+
+| Feature | Status and behavior |
+| --- | --- |
+| Normal text/input logs | Implemented: optional UTF-8 logs with separate console/log print and input prefixes, including timestamps and Python shutdown output. |
+| Raw output capture | Implemented: a companion `.output.log` captures combined stdout/stderr, binary writes and inherited child-process output. Detached or separately redirected child output is outside this capture. |
+| Independent run diagnostics | Implemented: unique run/log names and per-run startup, traceback and completion files prevent concurrent runs from overwriting one another. |
+| Rich application tracebacks | Implemented for exceptions escaping the main script: source context, syntax-error pointers, exception chaining, interpreter/date details, legacy-encoding handling and plain-text fallback. Locals are hidden. |
+| Failure classification | Implemented: distinguish normal return, successful/failing `SystemExit`, exceptions, Ctrl+C, wrapper/watchdog failures and abrupt/native exits. Native faults use fault-handler diagnostics. |
+| Worker and GUI callback errors | Partial: exceptions caught internally by threads, Tkinter or another event loop can be printed/logged while the main script still finishes successfully. Applications need their own reporting/failure policy. |
+| Exception notes and groups | Not implemented in serialized app tracebacks: exception notes and nested `ExceptionGroup` details are omitted. |
+| Completion actions | Implemented separately for success, failure, crash and Ctrl+C: close/wait, open log or source, play a WAV, and change terminal title/colors/status icon where supported. |
+| Hidden success and visible failures | Implemented: successful hidden runs can stay hidden; failure handling can open a diagnostic console. |
+| Missing-package recovery | Implemented: install a missing distribution, review inferred imports, or use a manual package terminal, then restart after successful recovery. Global-Python mode instead gives manual instructions. |
+| Existing-instance policy | Implemented: allow multiple runs, prevent a second run, replace existing runs, or ask before replacement using the configured flags. |
+| Stop action and PID protection | Implemented: verify process identity before forced tree termination. Registry changes use a Windows mutex; final cleanup removes empty PID artifacts. Cooperative shutdown is not implemented. |
+| Automatic log retention limits | Not implemented: retained logs, run directories and installation diagnostics are not pruned automatically. |
+| Source-focused Git and licensing | Implemented: ignore generated runtimes/packages/state, provide a project-license placeholder and retain the template backend's `MIT OR Apache-2.0` licensing. Third-party licenses still apply. |
 
 ---
 
@@ -43,9 +96,10 @@ your own code. A prepared folder can be copied and used offline.
 3. (Optional: Change program settings like Python version or program name under `code/backend/developer_settings.py`)
 4. (Optional: Add user settings under `code/settings.py`. Import them in `main.py` via `import settings`)
 5. Execute `Setup - run first and after moving folder.cmd` to validate/setup the environments and generate shortcuts
-6. Run `Start.cmd` or a generated shortcut. Declare dependencies in `code/backend/dev_tools/DEFAULT_PYTHON_PACKAGES.txt`; they are installed transactionally. Import inference is an optional, reviewed developer action.
+6. Run a generated application shortcut. Declare dependencies in `code/backend/dev_tools/DEFAULT_PYTHON_PACKAGES.txt`; keep this required input in Git, even when it contains no packages. Import inference is an optional, reviewed developer action.
 
-`Setup - run first and after moving folder.cmd` and `Start.cmd` resolve the repository from their own locations. After moving the folder, rerun setup to refresh generated shortcuts.
+`Setup - run first and after moving folder.cmd` resolves the repository from its
+own location. After moving the folder, rerun setup to refresh generated shortcuts.
 
 ---
 
@@ -93,7 +147,7 @@ Projects created from this template must replace the project-license placeholder
 ## Arguments, isolation, and dependency updates
 
 `args_for_main_py` in `developer_settings.py` configures the arguments passed to
-`main.py`. Generated shortcuts and `Start.cmd` do not forward additional command-line
+`main.py`. Generated shortcuts do not forward additional command-line
 arguments to the application. Launcher state such as terminal mode is never added
 to `main.py`'s positional arguments.
 
@@ -116,8 +170,7 @@ watchdog's settings. For booleans, compare with `"1"`; `bool("0")` is also true.
 `PROGRAM_HAS_TERMINAL` describes the launch mode; logging can still make stdout
 a pipe rather than a terminal.
 
-`Start.cmd` uses its own folder as the launch folder; generated shortcuts set
-Start in to the repository root. Set a shortcut's Start in directory explicitly
+Generated shortcuts set Start in to the repository root. Set a shortcut's Start in directory explicitly
 when using `start_in_shortcut_folder=True`. Relative-to-launch log paths use
 the same captured directory even after backend setup changes its working directory.
 
@@ -134,12 +187,15 @@ manual command; the local environment is not modified as a substitute.
 
 The template records exact runtime selection in `code/backend/frontend-python.lock.json`
 and resolved default packages in `DEFAULT_PYTHON_PACKAGES.txt.lock.json` beside
-the requirements file. Commit these files with a release. Changing requirements
-(including local `-r`/`-c` includes) invalidates its package lock. Deliberately
-remove the appropriate lock to request fresh resolution. Locks pin versions;
-they are not a promise that third-party source builds are bit-for-bit identical
-or that removed external artifacts will remain downloadable. Preserve a prepared
-folder for an offline distribution.
+the requirements file. Both are generated local files ignored by the current
+`.gitignore`; the requirements inputs themselves should be tracked. Changing
+requirements (including local `-r`/`-c` includes) invalidates a package lock.
+Deliberately remove a lock to request fresh resolution. Reuse is currently
+incomplete: first runtime installation bypasses the package-lock reader, and a
+healthy existing runtime matching the configured version prefix is accepted
+without enforcing the locked patch version. These locks are not currently a
+complete reproducible-release guarantee. Preserve a prepared folder for an
+offline distribution.
 
 ## Logs and diagnostics
 

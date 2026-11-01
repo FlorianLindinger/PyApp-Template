@@ -5,7 +5,7 @@ echo.
 :: Keep this window alive even if the generator's child shell exits.
 set "PYAPP_ENTRYPOINT_NO_PAUSE=1"
 set "PYAPP_ENTRY_SCRIPT=%~dp0..\DONT_CHANGE\scripts\actions\generate_icons.py"
-"%ComSpec%" /d /s /c ""%~dp0..\DONT_CHANGE\batches\bootstrap\run_backend_script.bat""
+"%ComSpec%" /d /s /c ""%~dp0..\DONT_CHANGE\scripts\setup\run_backend_script.bat""
 set "icon_exit_code=%ERRORLEVEL%"
 echo.
 if "%icon_exit_code%"=="0" (
