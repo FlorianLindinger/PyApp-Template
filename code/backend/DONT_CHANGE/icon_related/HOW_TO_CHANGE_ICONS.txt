@@ -77,7 +77,7 @@ Run:
 The launcher reports success or failure and waits for a keypress before closing.
 It works after moving the project folder because its paths are relative to itself.
 
-This launches scripts/actions/generate_icons.py with the bundled backend Python. It creates:
+This launches actions/gen_icons.py with the bundled backend Python. It creates:
 
     icon.ico
     settings.ico

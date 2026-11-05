@@ -38,7 +38,7 @@ shortcut ─▶ B\W.bat / B\N.bat ─▶ bootstrap\ensure_runtime.bat
            ─▶ start_program.py  (runs on the project's Python with -I -S: standard library only)
                 │  validates settings, applies instance_policy, keeps .python-version,
                 │  pyproject.toml, uv.lock and code\.venv in sync (uv lock / uv sync)
-                └▶ background_watchdog.py ─▶ script_wrapper.py ─▶ code\main.py (in code\.venv)
+                └▶ watchdog.py ─▶ script_wrapper.py ─▶ code\main.py (in code\.venv)
                                           └▶ process_exit.py (sounds, crash log, recovery menu)
 ```
 
@@ -93,7 +93,7 @@ nothing changed). Use the tools in `code/backend/dev_tools` — or `Dev Menu.cmd
 | `make_portable.cmd` | put uv, Python and all packages into this folder and offer the settings changes to use them |
 | `export_requirements.cmd` | write `code/requirements.txt` from `uv.lock` |
 | `status.cmd` | show uv, Python, environment, lock and shortcut state |
-| `clean.cmd` | delete logs, per-run diagnostics or folders of the old template version |
+| `clean.cmd` | delete logs, crash logs or per-run diagnostics |
 | `remove_shortcuts.cmd` | remove every shortcut Setup created (project folder, Start Menu, Desktop) |
 
 See [code/backend/dev_tools/README.md](code/backend/dev_tools/README.md) for details.
@@ -112,7 +112,7 @@ another location the environment is re-linked to the copied Python automatically
 
 Setup creates the enabled shortcuts in the project folder, a Start Menu folder
 (`start_menu_shortcuts`) and optionally on the Desktop (`desktop_shortcuts`, e.g.
-`["no_terminal"]`). It remembers what it created (`code/backend/shortcuts.manifest.json`)
+`["no_terminal"]`). It remembers what it created (`code/backend/shortcuts_created_by_setup.json`)
 and removes shortcuts that are no longer wanted, e.g. after renaming one. Shortcuts of
 other copies of the project are never removed.
 

@@ -1,7 +1,7 @@
 """Application environment managed by uv: Python selection, the project venv and packages.
 
 The launcher runs on the project's Python with -I -S (standard library only). The
-batch bootstrap (DONT_CHANGE/scripts/bootstrap) already found uv (PYAPP_UV) and that Python
+batch bootstrap (DONT_CHANGE/bootstrap) already found uv (PYAPP_UV) and that Python
 (sys.executable). This module keeps code/.python-version, pyproject.toml's
 requires-python, uv.lock and code/.venv consistent with developer_settings.py.
 """
@@ -98,7 +98,7 @@ _OWN_UV_VARIABLES = (
 
 
 def uv_environment(s=None, project_environment: str | None = None, python_command: bool = True) -> dict:
-    """Environment for uv calls. Mirrors Set-UvEnvironment in scripts/bootstrap/resolve_runtime.ps1.
+    """Environment for uv calls. Mirrors Set-UvEnvironment in bootstrap/resolve_runtime.ps1.
 
     The user's other UV_* settings (index URLs, proxies, ...) are kept on purpose.
     """

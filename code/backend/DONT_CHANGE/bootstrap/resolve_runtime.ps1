@@ -1,5 +1,5 @@
 # Finds or installs uv and the Python that runs the launcher, then records both in
-# temporary\runtime.cmd for the batch fast path (ensure_runtime.bat).
+# tmp\runtime.cmd for the batch fast path (ensure_runtime.bat).
 # Called only when that cache is missing or stale. Windows PowerShell 5.1 compatible.
 param([string]$Stamp = '')
 
@@ -13,11 +13,11 @@ $originalOutputEncoding = [Console]::OutputEncoding   # restored at the end (it 
 $OutputEncoding = [Console]::OutputEncoding
 
 $bootstrapDir = $PSScriptRoot
-$dontChange = [IO.Path]::GetFullPath((Join-Path $bootstrapDir '..\..'))
+$dontChange = [IO.Path]::GetFullPath((Join-Path $bootstrapDir '..'))
 $backendDir = [IO.Path]::GetFullPath((Join-Path $dontChange '..'))
 $codeDir = [IO.Path]::GetFullPath((Join-Path $backendDir '..'))
 $settingsPath = Join-Path $backendDir 'developer_settings.py'
-$temporary = Join-Path $dontChange 'temporary'
+$temporary = Join-Path $dontChange 'tmp'
 $cachePath = Join-Path $temporary 'runtime.cmd'
 $localUvDir = Join-Path $backendDir 'uv'
 $localUvExe = Join-Path $localUvDir 'uv.exe'
@@ -62,10 +62,10 @@ function Invoke-Native([string]$exe, [string[]]$arguments) {
 }
 
 function Invoke-Live([string]$exe, [string[]]$arguments) {
-    # Shows the tool's own progress output in the console.
+    # Send progress to the console, leaving only the exit code in the success stream.
     $saved = $ErrorActionPreference
     $ErrorActionPreference = 'Continue'
-    try { & $exe @arguments; return $LASTEXITCODE } finally { $ErrorActionPreference = $saved }
+    try { & $exe @arguments | Out-Host; return $LASTEXITCODE } finally { $ErrorActionPreference = $saved }
 }
 
 # ---------------------------------------------------------------- settings

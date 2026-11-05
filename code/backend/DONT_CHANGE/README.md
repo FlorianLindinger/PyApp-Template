@@ -12,24 +12,24 @@ DONT_CHANGE/
                   S (settings), M (main.py), L (logs), C (crash logs)
   backend_settings.py  internal paths and constants
   data/           import_to_package.txt (import name -> PyPI name, for the import finder)
+  bootstrap/      run.bat, ensure_runtime.bat (fast path), resolve_runtime.ps1 (uv + Python)
+  actions/        start_program, stop_program, open_* and icon generation
+  runtime/        watchdog, script_wrapper, process_exit, protocol
+  setup/          generate_shortcuts (Setup)
   scripts/
-    bootstrap/    run.bat, ensure_runtime.bat (fast path), resolve_runtime.ps1 (uv + Python)
-    actions/      start_program, stop_program, open_* and icon generation
-    runtime/      background_watchdog, script_wrapper, process_exit, _pyapp_protocol
-    setup/        generate_shortcuts (Setup)
     config.py     settings loading and validation
     uv_env.py     uv, Python selection, pyproject/uv.lock/.venv management
     dev_tools.py  all dev tools (backend/dev_tools/*.cmd call it)
     ...           focused helpers (console, filesystem, instance policy, window focus,
                   import finder, traceback rendering, process registry)
   icon_related/   shipped placeholder icons and instructions
-  temporary/      runtime cache, locks and per-run diagnostics (ignored)
+  tmp/      runtime cache, locks and per-run diagnostics (ignored)
 ```
 
 ## Startup
 
-1. A shortcut runs `B/W.bat` or `B/N.bat`, which call `scripts/bootstrap/run.bat`.
-2. `ensure_runtime.bat` loads `temporary/runtime.cmd` (uv and launcher-Python paths) when
+1. A shortcut runs `B/W.bat` or `B/N.bat`, which call `bootstrap/run.bat`.
+2. `ensure_runtime.bat` loads `tmp/runtime.cmd` (uv and launcher-Python paths) when
    `developer_settings.py` and `code/.python-version` are unchanged and both files exist.
    Otherwise `resolve_runtime.ps1` reads the `[bootstrap]` settings, finds or installs uv
    according to `uv_prefer` / `uv_install_if_missing` / `uv_version`, finds or installs the
@@ -57,14 +57,14 @@ right after a re-link.
 
 ## Runtime protocol
 
-`runtime/_pyapp_protocol.py` (standard library, Python 3.8+, also imported inside the app
+`runtime/protocol.py` (standard library, Python 3.8+, also imported inside the app
 interpreter) defines the wrapper exit codes (`WrapperExit`), the watchdog outcomes
 (`ExitMode`) and the traceback report. The wrapper strips its own and `runpy`'s frames, so
 reports look like `python main.py`; it stores CPython's own formatting (`plain`, used for
 exception groups) and a structured chain with source context for the app's own frames.
 `traceback_render.py` turns the report into plain text (crash logs) or ANSI colors (terminal).
 
-Each run owns `temporary/runs/<id>/` with its wrapper config, readiness, startup
+Each run owns `tmp/runs/<id>/` with its wrapper config, readiness, startup
 acknowledgement, result and traceback files.
 
 ## Process control
@@ -77,7 +77,7 @@ lock; `windows_focus.py` finds and activates the running instance's window.
 
 ## Compatibility rules
 
-- Everything under `scripts/` must run on Python 3.8+ with the standard library only:
+- Python files under `scripts/`, `actions/`, `runtime/` and `setup/` must run on Python 3.8+ with the standard library only:
   use `from __future__ import annotations`, no `match`, no parenthesized `with`, no
   `str.removeprefix`, no `typing.override`, guard `sys.stdlib_module_names`.
 - Folder locations are mirrored in `backend_settings.py`, the bootstrap batch/PowerShell

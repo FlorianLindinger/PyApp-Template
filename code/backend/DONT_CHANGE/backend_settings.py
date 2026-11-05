@@ -20,17 +20,17 @@ def make_abs(x: str) -> str:
 
 # ------------------------
 # folders
-# The batch bootstrap (DONT_CHANGE/scripts/bootstrap/*.bat, *.ps1) uses the same fixed
+# The batch bootstrap (DONT_CHANGE/bootstrap/*.bat, *.ps1) uses the same fixed
 # relative locations. UPDATE those files and the root .gitignore when moving one.
 
 DONT_CHANGE_DIR = make_abs(".")
 BACKEND_DIR = make_abs("..")
 PYTHON_SCRIPTS_DIR = make_abs("..\\..")              # the "code" folder: main.py, pyproject.toml, .venv
 SHORTCUT_OUTPUT_DIR = make_abs("..\\..\\..")         # repository root
-TEMPORARY_DIR = DONT_CHANGE_DIR + "\\temporary"
+TEMPORARY_DIR = DONT_CHANGE_DIR + "\\tmp"
 SCRIPTS_DIR = DONT_CHANGE_DIR + "\\scripts"
-APP_ACTIONS_DIR = SCRIPTS_DIR + "\\actions"
-BOOTSTRAP_DIR = SCRIPTS_DIR + "\\bootstrap"
+APP_ACTIONS_DIR = DONT_CHANGE_DIR + "\\actions"
+BOOTSTRAP_DIR = DONT_CHANGE_DIR + "\\bootstrap"
 ENTRY_BATCHES_DIR = DONT_CHANGE_DIR + "\\B"        # short shortcut targets
 DATA_DIR = DONT_CHANGE_DIR + "\\data"
 WINDOWS_DIR = os.environ.get("WINDIR", "C:\\Windows")
@@ -47,7 +47,7 @@ UV_LOCK_PATH = PYTHON_SCRIPTS_DIR + "\\uv.lock"
 PYTHON_VERSION_FILE = PYTHON_SCRIPTS_DIR + "\\.python-version"
 VENV_DIR = PYTHON_SCRIPTS_DIR + "\\.venv"
 VENV_PYTHON_EXE = VENV_DIR + "\\Scripts\\python.exe"
-RUNTIME_CACHE_PATH = TEMPORARY_DIR + "\\runtime.cmd"   # written by scripts/bootstrap/resolve_runtime.ps1
+RUNTIME_CACHE_PATH = TEMPORARY_DIR + "\\runtime.cmd"   # written by bootstrap/resolve_runtime.ps1
 ENVIRONMENT_LOCK_PATH = TEMPORARY_DIR + "\\environment.lock"
 MINIMUM_PYTHON = (3, 8)                             # oldest Python the launcher code supports
 
@@ -56,9 +56,9 @@ MINIMUM_PYTHON = (3, 8)                             # oldest Python the launcher
 
 START_PROGRAM_PATH = APP_ACTIONS_DIR + "\\start_program.py"
 MAIN_PY_SCRIPT_PATH = PYTHON_SCRIPTS_DIR + "\\main.py"
-BACKGROUND_WATCHDOG_PATH = SCRIPTS_DIR + "\\runtime\\background_watchdog.py"
-PROCESS_EXIT_PATH = SCRIPTS_DIR + "\\runtime\\process_exit.py"
-FRONTEND_SCRIPT_WRAPPER_PATH = SCRIPTS_DIR + "\\runtime\\script_wrapper.py"
+WATCHDOG_PATH = DONT_CHANGE_DIR + "\\runtime\\background_watchdog.py"
+PROCESS_EXIT_PATH = DONT_CHANGE_DIR + "\\runtime\\process_exit.py"
+FRONTEND_SCRIPT_WRAPPER_PATH = DONT_CHANGE_DIR + "\\runtime\\script_wrapper.py"
 DEV_TOOLS_SCRIPT_PATH = SCRIPTS_DIR + "\\dev_tools.py"
 
 # ------------------------

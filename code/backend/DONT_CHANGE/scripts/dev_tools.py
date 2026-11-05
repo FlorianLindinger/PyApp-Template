@@ -359,7 +359,7 @@ def cmd_clean(arguments):
     options = [
         ("logs", f"Delete all files in the log folder ({display_path(log_folder) if log_folder else 'disabled'})"),
         ("crash", f"Delete all files in the crash log folder ({display_path(crash_folder) if crash_folder else 'disabled'})"),
-        ("runs", "Delete per-run diagnostics (temporary\\runs)"),
+        ("runs", "Delete per-run diagnostics (tmp\\runs)"),
     ]
     for index, (_, label) in enumerate(options, 1):
         print(f"  {index}: {label}")
@@ -380,7 +380,7 @@ def cmd_clean(arguments):
 
 def cmd_remove_shortcuts(arguments):
     """Remove every shortcut Setup created (project folder, Start Menu, Desktop)."""
-    from backend.DONT_CHANGE.scripts.setup.generate_shortcuts import read_created_shortcuts, remove_shortcuts, write_created_shortcuts
+    from backend.DONT_CHANGE.setup.generate_shortcuts import read_created_shortcuts, remove_shortcuts, write_created_shortcuts
 
     removed = remove_shortcuts(read_created_shortcuts())
     write_created_shortcuts([])
@@ -424,7 +424,7 @@ def cmd_status(arguments):
     else:
         lines.append(("uv.lock", "(missing - created on next start)"))
     try:
-        from backend.DONT_CHANGE.scripts.setup.generate_shortcuts import read_created_shortcuts
+        from backend.DONT_CHANGE.setup.generate_shortcuts import read_created_shortcuts
 
         lines.append(("Shortcuts", f"{len(read_created_shortcuts())} created by Setup"))
     except Exception:
