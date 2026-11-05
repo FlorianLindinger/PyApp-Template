@@ -10,7 +10,7 @@ import sys
 
 from backend.DONT_CHANGE.backend_settings import DEV_SETTINGS_PATH
 
-# Read by scripts/bootstrap/resolve_runtime.ps1 before Python exists; must stay one-line literals.
+# Read by bootstrap/resolve_runtime.ps1 before Python exists; must stay one-line literals.
 BOOTSTRAP_SETTINGS = (
     "python_version",
     "python_source",

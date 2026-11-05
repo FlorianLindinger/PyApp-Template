@@ -13,8 +13,9 @@ import time
 import traceback
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
+sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 from backend import developer_settings as settings
+from backend.DONT_CHANGE import backend_settings as paths
 from backend.DONT_CHANGE.scripts.console_tools import (
     set_terminal_app_id,
     set_terminal_icon,
@@ -22,7 +23,7 @@ from backend.DONT_CHANGE.scripts.console_tools import (
 )
 from backend.DONT_CHANGE.scripts.instance_policy import decide
 from backend.DONT_CHANGE.scripts.launcher_ui import get_log_path, set_terminal_colors
-from backend.DONT_CHANGE.scripts.runtime._pyapp_protocol import (
+from backend.DONT_CHANGE.runtime.protocol import (
     ExitMode,
     WrapperExit,
     exit_code_is_success,
@@ -34,7 +35,6 @@ from backend.DONT_CHANGE.scripts.runtime_state import (
     clean_python_environment,
     unique_log_path,
 )
-from backend.DONT_CHANGE import backend_settings as paths
 
 
 def acknowledge(run_dir, **payload):
@@ -48,14 +48,20 @@ def successful_application_exit(mode, run_dir):
         return True
     if mode == ExitMode.APP_EXIT:
         try:
-            report = json.loads((run_dir / "traceback.json").read_text(encoding="utf-8"))
-            return report.get("exception_type") == "SystemExit" and exit_code_is_success(report.get("system_exit_code"))
+            report = json.loads(
+                (run_dir / "traceback.json").read_text(encoding="utf-8")
+            )
+            return report.get(
+                "exception_type"
+            ) == "SystemExit" and exit_code_is_success(report.get("system_exit_code"))
         except (OSError, ValueError):
             pass
     return False
 
 
-def handle_exit(mode, app_id, has_terminal, log_path, script, run_dir, native_code=None):
+def handle_exit(
+    mode, app_id, has_terminal, log_path, script, run_dir, native_code=None
+):
     """Run completion handling in the current, a hidden, or a new console as needed."""
     env = os.environ.copy()
     env["PYAPP_RUN_DIR"] = str(run_dir)
@@ -78,11 +84,18 @@ def handle_exit(mode, app_id, has_terminal, log_path, script, run_dir, native_co
     if not has_terminal and success and settings.close_after_success:
         # Successful hidden runs perform their completion actions without a console.
         env["PYAPP_SILENT_EXIT"] = "1"
-        subprocess.run(args, env=env, check=False, creationflags=subprocess.CREATE_NO_WINDOW)
+        subprocess.run(
+            args, env=env, check=False, creationflags=subprocess.CREATE_NO_WINDOW
+        )
     elif has_terminal:
         subprocess.run(args, env=env, check=False)
     else:
-        subprocess.run(["conhost.exe", *args], env=env, check=False, creationflags=subprocess.CREATE_NEW_CONSOLE)
+        subprocess.run(
+            ["conhost.exe", *args],
+            env=env,
+            check=False,
+            creationflags=subprocess.CREATE_NEW_CONSOLE,
+        )
 
 
 def register_with_policy(registry, has_terminal, run_dir):
@@ -97,7 +110,9 @@ def register_with_policy(registry, has_terminal, run_dir):
             if policy == "replace":
                 _, _, errors = registry.stop()
                 if errors:
-                    raise RuntimeError("Could not stop existing instances: " + "; ".join(errors))
+                    raise RuntimeError(
+                        "Could not stop existing instances: " + "; ".join(errors)
+                    )
                 registry.register()
                 return True
         decision = decide(policy, records, settings.program_name)
@@ -130,7 +145,11 @@ def main():
             return
         registered = True
         # Windows group a window with the pinned shortcut whose System.AppUserModel.ID matches.
-        window_app_id = app_id + paths.NO_TERMINAL_APP_ID_SUFFIX if app_id and launch_mode == "no_terminal" else app_id
+        window_app_id = (
+            app_id + paths.NO_TERMINAL_APP_ID_SUFFIX
+            if app_id and launch_mode == "no_terminal"
+            else app_id
+        )
         app_python = json.loads(os.environ.pop("PYAPP_APP_PYTHON"))
         if not Path(script).is_file():
             raise FileNotFoundError(script)
@@ -138,10 +157,17 @@ def main():
             not has_terminal and settings.enable_log_for_no_terminal_start
         ):
             log_path = unique_log_path(
-                get_log_path(settings.log_path, settings.log_path_is_relative_to_start_folder_if_relative),
+                get_log_path(
+                    settings.log_path,
+                    settings.log_path_is_relative_to_start_folder_if_relative,
+                ),
                 run_dir.name,
             )
-        cwd = os.environ.get("PYAPP_START_DIR", os.getcwd()) if settings.start_in_shortcut_folder else str(Path(script).parent)
+        cwd = (
+            os.environ.get("PYAPP_START_DIR", os.getcwd())
+            if settings.start_in_shortcut_folder
+            else str(Path(script).parent)
+        )
         config = {
             "script": script,
             "args": list(settings.args_for_main_py),
@@ -180,7 +206,15 @@ def main():
             raw_stream = open(log_path + ".output.log", "wb")
         try:
             child = subprocess.Popen(
-                [app_python["exe"], *app_python["flags"], "-X", "faulthandler", paths.FRONTEND_SCRIPT_WRAPPER_PATH, "--config", str(run_dir / "wrapper.json")],
+                [
+                    app_python["exe"],
+                    *app_python["flags"],
+                    "-X",
+                    "faulthandler",
+                    paths.FRONTEND_SCRIPT_WRAPPER_PATH,
+                    "--config",
+                    str(run_dir / "wrapper.json"),
+                ],
                 cwd=cwd,
                 env=env,
                 stdout=subprocess.PIPE if raw_stream else None,
@@ -241,17 +275,27 @@ def main():
                 pump.join(timeout=5)
             mode, native = code, None
             try:
-                result = json.loads((run_dir / "result.json").read_text(encoding="utf-8"))
+                result = json.loads(
+                    (run_dir / "result.json").read_text(encoding="utf-8")
+                )
                 if result["wrapper_exit_code"] != code:
                     raise ValueError("Abrupt exit during shutdown")
             except (OSError, ValueError, KeyError):
                 mode, native = ExitMode.NO_REPORT, code
-            if mode not in (WrapperExit.SUCCESS, WrapperExit.APP_FAILED, WrapperExit.WRAPPER_FAILED, ExitMode.NO_REPORT):
+            if mode not in (
+                WrapperExit.SUCCESS,
+                WrapperExit.APP_FAILED,
+                WrapperExit.WRAPPER_FAILED,
+                ExitMode.NO_REPORT,
+            ):
                 mode, native = ExitMode.NO_REPORT, code
             # Worker threads can fail after main.py returned, while Python waits for them.
             background = run_dir / "traceback.json.background"
             if background.is_file() and successful_application_exit(mode, run_dir):
-                atomic_json(run_dir / "traceback.json", json.loads(background.read_text(encoding="utf-8")))
+                atomic_json(
+                    run_dir / "traceback.json",
+                    json.loads(background.read_text(encoding="utf-8")),
+                )
                 mode = ExitMode.APP_EXIT
             # Remove the registration before recovery can start a new instance.
             registry.remove()
@@ -268,12 +312,16 @@ def main():
             pass
         if not (run_dir / "startup.json").exists():
             acknowledge(run_dir, status="failed", message=str(error))
-        (run_dir / "watchdog-error.txt").write_text(traceback.format_exc(), encoding="utf-8")
+        (run_dir / "watchdog-error.txt").write_text(
+            traceback.format_exc(), encoding="utf-8"
+        )
         if registered:
             registry.remove()
             registered = False
         if not exit_handled:
-            handle_exit(ExitMode.WATCHDOG_ERROR, app_id, has_terminal, log_path, script, run_dir)
+            handle_exit(
+                ExitMode.WATCHDOG_ERROR, app_id, has_terminal, log_path, script, run_dir
+            )
     finally:
         if registered:
             registry.remove()

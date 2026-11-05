@@ -16,7 +16,7 @@ try:
 
     # The protocol module lives next to this file; import it before sys.path[0]
     # is switched to the application's folder.
-    import _pyapp_protocol as protocol
+    import protocol as protocol
 
     log_file = None
     report_path = None
@@ -24,7 +24,9 @@ try:
 
     # ------------------------------------------------------------ logging
 
-    _ANSI_ESCAPE = re.compile(r"\x1b(?:\[[0-?]*[ -/]*[@-~]|\][^\x07]*(?:\x07|\x1b\\)|[@-Z\\-_])")
+    _ANSI_ESCAPE = re.compile(
+        r"\x1b(?:\[[0-?]*[ -/]*[@-~]|\][^\x07]*(?:\x07|\x1b\\)|[@-Z\\-_])"
+    )
 
     def _format_prepend(fmt):
         """Current local time in the configured prefix format, or ""."""
@@ -35,7 +37,9 @@ try:
 
         def __init__(self, owner):
             self.owner = owner
-            self.decoder = codecs.getincrementaldecoder(owner.encoding or "utf-8")("replace")
+            self.decoder = codecs.getincrementaldecoder(owner.encoding or "utf-8")(
+                "replace"
+            )
 
         def write(self, data):
             with self.owner._lock:
@@ -43,7 +47,9 @@ try:
                 if target is not None:
                     target.write(data)
                 else:
-                    self.owner.print_stream.write(data.decode(self.owner.encoding or "utf-8", "replace"))
+                    self.owner.print_stream.write(
+                        data.decode(self.owner.encoding or "utf-8", "replace")
+                    )
                 if self.owner.log_stream is not None:
                     self.owner.log_stream.write(self.decoder.decode(data))
                 self.owner.flush()
@@ -58,8 +64,16 @@ try:
     class PipeSplitter:
         """Mirror text to the console stream and an optional log, with per-line time prefixes."""
 
-        def __init__(self, print_stream, log_stream=None, print_timestamp_format="", log_timestamp_format="",
-                     input_timestamp_format="", log_input_timestamp_format="", print_red=False):
+        def __init__(
+            self,
+            print_stream,
+            log_stream=None,
+            print_timestamp_format="",
+            log_timestamp_format="",
+            input_timestamp_format="",
+            log_input_timestamp_format="",
+            print_red=False,
+        ):
             self.print_stream = print_stream
             self.log_stream = log_stream
             self.print_timestamp_format = print_timestamp_format
@@ -107,9 +121,14 @@ try:
         def write_input_prompt(self, prompt):
             prompt = "" if prompt is None else str(prompt)
             with self._lock:
-                self.print_stream.write(_format_prepend(self.input_timestamp_format) + prompt)
+                self.print_stream.write(
+                    _format_prepend(self.input_timestamp_format) + prompt
+                )
                 if self.log_stream is not None:
-                    self.log_stream.write(_format_prepend(self.log_input_timestamp_format) + _ANSI_ESCAPE.sub("", prompt))
+                    self.log_stream.write(
+                        _format_prepend(self.log_input_timestamp_format)
+                        + _ANSI_ESCAPE.sub("", prompt)
+                    )
                 self._at_line_start = prompt.endswith("\n")
                 self.flush()
 
@@ -145,7 +164,14 @@ try:
         def __getattr__(self, name):
             return getattr(self.print_stream, name)
 
-    def setup_log_prints(log_path, overwrite_log, print_prepend, log_print_prepend, input_prepend, log_input_prepend):
+    def setup_log_prints(
+        log_path,
+        overwrite_log,
+        print_prepend,
+        log_print_prepend,
+        input_prepend,
+        log_input_prepend,
+    ):
         """Install stdout/stderr splitters and point faulthandler at the log."""
         import atexit
         import faulthandler
@@ -155,7 +181,9 @@ try:
             folder = os.path.dirname(log_path)
             if folder:
                 os.makedirs(folder, exist_ok=True)
-            log_file = open(log_path, "w" if overwrite_log else "a", encoding="utf-8", buffering=1)
+            log_file = open(
+                log_path, "w" if overwrite_log else "a", encoding="utf-8", buffering=1
+            )
         # Registered before the application's callbacks, so it runs after them.
         atexit.register(_finish_logging)
         common = dict(
@@ -220,13 +248,17 @@ try:
         previous_last = getattr(sys, "last_exc", getattr(sys, "last_value", None))
 
         def record(error):
-            if isinstance(error, SystemExit) and protocol.exit_code_is_success(error.code):
+            if isinstance(error, SystemExit) and protocol.exit_code_is_success(
+                error.code
+            ):
                 return
             with lock:
                 if first_error[0] is not None:
                     return
                 first_error[0] = error
-                protocol.save_report(error, script_path, output_path, app_root, extra_lines)
+                protocol.save_report(
+                    error, script_path, output_path, app_root, extra_lines
+                )
 
         previous_hook = getattr(threading, "excepthook", None)
         if previous_hook is not None:
@@ -256,7 +288,9 @@ try:
         import json
 
         if len(sys.argv) != 3 or sys.argv[1] != "--config":
-            raise SystemExit("script_wrapper.py is started by the launcher with --config <file>.")
+            raise SystemExit(
+                "script_wrapper.py is started by the launcher with --config <file>."
+            )
         with open(sys.argv[2], encoding="utf-8") as stream:
             config = json.load(stream)
         script_path = config["script"]
@@ -283,25 +317,45 @@ try:
                     stream.reconfigure(encoding="utf-8", errors="backslashreplace")
             except (AttributeError, ValueError, OSError):
                 pass
-        if log_path or print_prepend or log_print_prepend or input_prepend or log_input_prepend:
-            setup_log_prints(log_path, config.get("overwrite_log", True), print_prepend, log_print_prepend,
-                             input_prepend, log_input_prepend)
+        if (
+            log_path
+            or print_prepend
+            or log_print_prepend
+            or input_prepend
+            or log_input_prepend
+        ):
+            setup_log_prints(
+                log_path,
+                config.get("overwrite_log", True),
+                print_prepend,
+                log_print_prepend,
+                input_prepend,
+                log_input_prepend,
+            )
         if config.get("app_id"):
             # Taskbar grouping of windows created by main.py with the pinned shortcut.
             try:
                 import ctypes
 
-                ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(config["app_id"])
+                ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
+                    config["app_id"]
+                )
             except Exception as error:
                 print(f"[Warning] Failed to set app id for taskbar grouping: {error}")
-        if input_prepend or log_input_prepend or hasattr(sys.stdout, "complete_input_line"):
+        if (
+            input_prepend
+            or log_input_prepend
+            or hasattr(sys.stdout, "complete_input_line")
+        ):
             install_input_prefix(input_prepend)
 
         # Make the application's folder sys.path[0], exactly like `python main.py`,
         # instead of this launcher folder.
         sys.path[0] = os.path.dirname(os.path.abspath(script_path))
 
-        pending_background_error = capture_background_errors(script_path, report_path + ".background", app_root, extra_lines)
+        pending_background_error = capture_background_errors(
+            script_path, report_path + ".background", app_root, extra_lines
+        )
         if ready_path:
             with open(ready_path, "w", encoding="utf-8") as stream:
                 stream.write("ready")
@@ -311,8 +365,12 @@ try:
             if background_error is not None:
                 raise background_error
             save_result(protocol.WrapperExit.SUCCESS)
-        except BaseException as error:  # includes SystemExit (also successful ones) and KeyboardInterrupt
-            if isinstance(error, SystemExit) and protocol.exit_code_is_success(error.code):
+        except (
+            BaseException
+        ) as error:  # includes SystemExit (also successful ones) and KeyboardInterrupt
+            if isinstance(error, SystemExit) and protocol.exit_code_is_success(
+                error.code
+            ):
                 background_error = pending_background_error()
                 if background_error is not None:
                     error = background_error
@@ -325,7 +383,9 @@ try:
             main()
         except Exception as wrapper_error:
             if report_path:
-                protocol.save_report(wrapper_error, os.path.abspath(__file__), report_path)
+                protocol.save_report(
+                    wrapper_error, os.path.abspath(__file__), report_path
+                )
             save_result(protocol.WrapperExit.WRAPPER_FAILED)
             sys.exit(protocol.WrapperExit.WRAPPER_FAILED)
 

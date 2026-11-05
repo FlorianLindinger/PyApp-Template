@@ -1,5 +1,5 @@
-# contents of "temporary" folder (runtime cache, locks, per-run diagnostics):
-/temporary/*
-!temporary/.gitkeep
+# contents of "tmp" folder (runtime cache, locks, per-run diagnostics):
+/tmp/*
+!tmp/.gitkeep
 
 
