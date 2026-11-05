@@ -3,6 +3,8 @@
 
 """Stop running PyApp Template program instances recorded in the PID file."""
 
+from __future__ import annotations
+
 if __name__ == "__main__":
     import sys
     from pathlib import Path
@@ -33,7 +35,7 @@ from backend.DONT_CHANGE.scripts.launcher_ui import (
     set_terminal_colors,
     stop_processes_from_pid_file,
 )
-from backend.DONT_CHANGE.settings.backend_settings import (
+from backend.DONT_CHANGE.backend_settings import (
     DEV_SETTINGS_PATH,
     PROCESS_ID_FILE_PATH,
 )

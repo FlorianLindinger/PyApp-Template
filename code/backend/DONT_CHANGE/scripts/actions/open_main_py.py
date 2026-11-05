@@ -3,6 +3,8 @@
 
 """Open the project's main.py file in the configured editor."""
 
+from __future__ import annotations
+
 if __name__ == "__main__":
     import sys
     from pathlib import Path
@@ -28,7 +30,7 @@ from backend.DONT_CHANGE.scripts.console_tools import (
 )
 from backend.DONT_CHANGE.scripts.launcher_ui import set_terminal_colors
 from backend.DONT_CHANGE.scripts.shell_tools import open_in_editor
-from backend.DONT_CHANGE.settings.backend_settings import MAIN_PY_SCRIPT_PATH
+from backend.DONT_CHANGE.backend_settings import MAIN_PY_SCRIPT_PATH
 
 
 def main() -> None:

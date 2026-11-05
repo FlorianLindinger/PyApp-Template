@@ -1,274 +1,169 @@
 # 🐍 PyApp-Template
 
-Turn a Python script or Tkinter app into a portable Windows x64 application.
-Users launch a shortcut; the template manages a local Python runtime, dependencies,
-logs, and crash reports. They do not need Python installed.
+Turn a Python script or Tkinter app into a Windows application that users start from a
+shortcut. The template uses [uv](https://docs.astral.sh/uv/) to provide Python and the
+app's packages, adds logging, readable crash reports, completion actions and process
+control, and can make the whole folder portable for offline use. Users do not need
+Python installed.
 
-Start with the included GUI example in `code/main.py`, then replace it with
-your own code. A prepared folder can be copied and used offline.
-
----
-
-## Features and implementation status
-
-**Implemented** means the behavior exists in the active code. **Partial** means
-it has the specific limits described below; it is not a promise that every
-application or clean-machine configuration has been tested.
-
-### Application runtime and startup
-
-| Feature | Status and behavior |
-| --- | --- |
-| Editable application source | Implemented: run `code/main.py` without compiling the application. A minimal Tkinter GUI uses the configured app name and icon. |
-| Separate app and launcher environments | Implemented: a small embedded backend manages the full application Python and its separate package directory. |
-| Setup without preinstalled Python | Implemented for Windows x64: download and prepare local runtimes and dependencies. First setup needs network access, a writable folder, and the required defaults file. |
-| Python version selection | Implemented: choose an available MSI-based release by major, minor or exact patch version, or leave the version empty for the latest matching release. |
-| Optional Tkinter installation | Implemented: `install_tkinter` selects Tcl/Tk support. CPython's own tests, legacy Tools and documentation are excluded from managed app installation. |
-| Transactional installation | Implemented: prepare and validate replacement runtime/package directories before publishing them; retain or restore the previous environment when replacement fails. |
-| Download and installation diagnostics | Implemented: validate Python publisher signatures, record download provenance, hash-lock backend requirements, and retain MSI/failure diagnostics. |
-| Startup health checks | Implemented: probe actual runtime imports/version and compare package manifests, requirements fingerprints, metadata and payload presence. |
-| Dependency isolation | Implemented: managed launches sanitize Python/package-tool environment settings and use `-E -s`. This is not an operating-system security sandbox. |
-| Existing global Python | Implemented: optionally resolve an installed interpreter instead of preparing an application runtime. Its dependencies remain the user's responsibility; the backend is still required. |
-| Prepared offline folders and relocation | Partial: a prepared folder can run offline and app paths are resolved locally. Rerun setup after a move; generated package command launchers may retain absolute interpreter paths. |
-| Working directory | Implemented: select the application script folder or the shortcut's configured launch folder. |
-| Application arguments and metadata | Implemented: `args_for_main_py` supplies application arguments; eight public environment variables expose launch-time metadata. Extra shortcut arguments are intentionally not forwarded. |
-
-### Shortcuts, appearance and icons
-
-| Feature | Status and behavior |
-| --- | --- |
-| Seven configurable shortcut actions | Implemented: terminal start, hidden start, Stop, user settings, normal logs, crash logs and `main.py`. Shortcut names can be changed or disabled. |
-| Short shortcut targets | Implemented: compact `B/*.bat` paths leave more room for long project paths. Windows path/filename limits still apply. |
-| Terminal modes | Implemented: classic console, Windows Terminal or no application terminal. Windows Terminal must be installed when selected; no automatic fallback is provided. |
-| Initial terminal appearance | Implemented: app title/icon, console foreground/background colors, Windows Terminal tab color and minimized startup. Effects depend on the selected terminal. |
-| Taskbar identity | Implemented: shortcuts and launched processes receive app identity/icon information. Non-Latin and long names receive stable compact IDs; shortcut filenames respect Windows component limits. |
-| PNG-to-ICO generation | Implemented: manually run `code/backend/icons/regenerate icons.cmd` to generate ten app/action/status ICOs with multiple image sizes. Setup does not regenerate them automatically. |
-| Configurable icon overlays | Implemented: per-icon overlay scale/alignment, optional overlay removal, bundled fallbacks and unchanged-placeholder detection. Uses Windows WPF without requiring Pillow. |
-| File and folder actions | Implemented: open settings or `main.py` using VS Code when available, otherwise Notepad; open configured log directories in Explorer. |
-| Setup and icon-command reporting | Implemented: report success/failure, retain the exit code and keep the outer window open for acknowledgement. |
-| Icon-instructions launcher | Implemented: open instructions in Notepad; print a three-second countdown and close on successful launch, or retain an error prompt. |
-| Explorer housekeeping | Implemented: mark selected project metadata paths hidden in Explorer. This does not change Git tracking. |
-| Obsolete shortcut removal | Not implemented: renaming or disabling an action does not remove its previously generated shortcut. Remove old shortcuts manually. |
-
-### Dependencies and developer tools
-
-**Change application packages through [code/backend/dev_tools](code/backend/dev_tools/README.md).**
-The guide describes the recommended workflows and all 13 batch commands. A system
-`pip` may target another Python; direct changes can leave installation state stale.
-
-| Feature | Status and behavior |
-| --- | --- |
-| Declared requirements | Implemented: use `DEFAULT_PYTHON_PACKAGES.txt` for app defaults or `install_local_reqs.bat` for this tool folder's `requirements.txt`. Keep input files in Git, even when empty. |
-| pip and optional uv | Implemented: use uv when enabled/available, optionally install it locally, and fall back to pip if the uv operation fails. |
-| Add, reset, clear and upgrade packages | Implemented: install reviewed imports/local requirements, reset to defaults or inferred imports, empty the package environment, or upgrade current package names. |
-| Package inventories | Implemented: save installed or inferred dependency lists, with or without versions, and save installed packages as the default list. |
-| Import inference | Partial: explicit tools infer distributions and request review before installation. The defaults-file inference flag is currently bypassed during first runtime installation. |
-| Manual package terminal | Implemented: package-name/list shorthand, explicit pip/uv commands, configured uv preference with pip fallback, help/status/save and dependency validation. Relative command adapters survive folder moves; no Python/module prefix is needed. |
-| Runtime-change menu | Implemented: keep/cancel, change runtime with defaults or no packages, re-resolve installed names, preserve exact versions, or review inferred dependencies; optionally save new defaults. Successful changes continue the launch. |
-| Requirement-change detection | Implemented: fingerprint local requirements and nested `-r`/`-c` inputs. Remote includes are not supported by the startup fingerprint policy. |
-| Runtime/package lock records | Partial: record selections and resolved versions. First runtime installation bypasses the package-lock reader. Configured Python components are enforced; a minor selector accepts any matching patch. |
-| Concurrent environment changes | Implemented: serialize installs with an interprocess lock and reject package mutations while verified app instances are running. |
-
-### Logs, errors and process control
-
-| Feature | Status and behavior |
-| --- | --- |
-| Normal text/input logs | Implemented: optional UTF-8 logs with separate console/log print and input prefixes, including timestamps and Python shutdown output. |
-| Raw output capture | Implemented: a companion `.output.log` captures combined stdout/stderr, binary writes and inherited child-process output. Detached or separately redirected child output is outside this capture. |
-| Independent run diagnostics | Implemented: unique run/log names and per-run startup, traceback and completion files prevent concurrent runs from overwriting one another. |
-| Rich application tracebacks | Implemented for exceptions escaping the main script: source context, syntax-error pointers, exception chaining, interpreter/date details, legacy-encoding handling and plain-text fallback. Locals are hidden. |
-| Failure classification | Implemented: distinguish normal return, successful/failing `SystemExit`, exceptions, Ctrl+C, wrapper/watchdog failures and abrupt/native exits. Native faults use fault-handler diagnostics. |
-| Worker and GUI callback errors | Partial: uncaught worker errors (Python 3.8+) and errors retained by Tkinter's default callback handler make completion fail, including workers finishing after `main.py` returns. Custom hooks and other event loops need application reporting. |
-| Exception notes and groups | Not implemented in serialized app tracebacks: exception notes and nested `ExceptionGroup` details are omitted. |
-| Completion actions | Implemented separately for success, failure, crash and Ctrl+C: close/wait, open log or source, play a WAV, and change terminal title/colors/status icon where supported. |
-| Hidden success and visible failures | Implemented: successful hidden runs can stay hidden; failure handling can open a diagnostic console. |
-| Missing-package recovery | Implemented: install a missing distribution, review inferred imports, or use a manual package terminal, then restart after successful recovery. Global-Python mode instead gives manual instructions. |
-| Existing-instance policy | Implemented: allow multiple runs, prevent a second run, replace existing runs, or ask before replacement using the configured flags. |
-| Stop action and PID protection | Implemented: verify process identity before forced tree termination. Registry changes use a Windows mutex; final cleanup removes empty PID artifacts. Cooperative shutdown is not implemented. |
-| Automatic log retention limits | Not implemented: retained logs, run directories and installation diagnostics are not pruned automatically. |
-| Source-focused Git and licensing | Implemented: ignore generated runtimes/packages/state, provide a project-license placeholder and retain the template backend's `MIT OR Apache-2.0` licensing. Third-party licenses still apply. |
+Start with the GUI example in `code/main.py`, then replace it with your own code.
 
 ---
 
-## Quick Start
+## Quick start
 
-1. Clone/download/copy this repository
-2. Try the Tkinter GUI example in `code/main.py`, or replace it with your application
-3. (Optional: Change program settings like Python version or program name under `code/backend/developer_settings.py`)
-4. (Optional: Add user settings under `code/settings.py`. Import them in `main.py` via `import settings`)
-5. Execute `Setup - run first and after moving folder.cmd` to validate/setup the environments and generate shortcuts
-6. Run a generated application shortcut. Declare dependencies in `code/backend/dev_tools/DEFAULT_PYTHON_PACKAGES.txt`; keep this required input in Git, even when it contains no packages. Import inference is an optional, reviewed developer action.
+1. Clone/download/copy this repository.
+2. Optional: change `program_name`, `python_version` and the other settings in
+   `code/backend/developer_settings.py`.
+3. Run **`Setup - run first and after moving folder.cmd`**. It finds or installs uv,
+   installs Python, creates the app environment and creates the shortcuts (project
+   folder and Start Menu).
+4. Start the app with the generated shortcut. Edit `code/main.py`; add packages with
+   `code/backend/dev_tools/add_packages.cmd` (or `uv add NAME` in `code/`).
+5. Commit `code/pyproject.toml`, `code/uv.lock` and `code/.python-version` with your app;
+   they are created on the first run and describe the exact environment.
 
-`Setup - run first and after moving folder.cmd` resolves the repository from its
-own location. After moving the folder, rerun setup to refresh generated shortcuts.
-
-## Changing dependencies
-
-Close running app instances. Edit
-`code/backend/dev_tools/DEFAULT_PYTHON_PACKAGES.txt`, then run
-`code/backend/dev_tools/reset_packages_default.bat` to apply the declared set.
-Test the app and commit the requirements file. A reset removes packages outside
-that set. Set the defaults file's
-`auto_find_required_packages_here_and_reset_installed_packages_to_them` flag to
-`False` when maintaining an explicit dependency list.
-
-For experiments, use `open_package_terminal.bat`, enter `requests rich`,
-`pip install requests` or `uv pip install requests`, then type `exit` so the tool
-validates and records the installed state. Bare package names and unprefixed
-package actions prefer uv when enabled, with pip fallback. Enter `save` to record
-installed versions as defaults, or run
-`set_default_packages_versions.bat` or `set_default_packages_names.bat` if those
-installed packages should become the declared defaults. Review that file before
-committing. See the [package-tool guide](code/backend/dev_tools/README.md).
+Run Setup again after moving or renaming the project folder: it refreshes the shortcuts.
+The Python environment itself adapts to a new location automatically.
 
 ---
 
-## Project Structure
+## How it works
+
+```text
+shortcut ─▶ B\W.bat / B\N.bat ─▶ bootstrap\ensure_runtime.bat
+                                   │  fast path: cached uv + Python paths (no PowerShell)
+                                   └▶ resolve_runtime.ps1 (only when settings changed or files moved):
+                                      find/install uv, find/install Python with uv
+           ─▶ start_program.py  (runs on the project's Python with -I -S: standard library only)
+                │  validates settings, applies instance_policy, keeps .python-version,
+                │  pyproject.toml, uv.lock and code\.venv in sync (uv lock / uv sync)
+                └▶ background_watchdog.py ─▶ script_wrapper.py ─▶ code\main.py (in code\.venv)
+                                          └▶ process_exit.py (sounds, crash log, recovery menu)
+```
+
+### Python versions
+
+`python_version` accepts `""` (newest stable, chosen once and kept), `"3"`, `"3.14"`,
+`"3.14.6"`, `"3.14t"` (free-threaded) and any other request string uv understands.
+
+**Supported are all Python versions the installed uv can provide — currently CPython
+3.8.2 and newer on Windows x64.**
+
+Changing `python_version` later is safe: the next launch (or the `change_python` dev
+tool) shows a menu to switch and re-lock (keeping versions), switch and upgrade, switch
+with an empty dependency list, keep the current Python for now, or write the current
+version back into the settings. The new environment is built next to the old one and
+only swapped in when it works; on failure everything is restored.
+
+### Where uv, Python and the packages come from
+
+| Setting | Options |
+| --- | --- |
+| `python_source` | `"local"` (uv installs Python into `code/backend/pythons`, portable), `"uv_user"` (uv's per-user folder, shared by projects), `"system_if_matching_else_local"` (an installed Python matching `python_version`, else local), `"system_default_any_version"` (the default installed Python, any version; falls back to a local install if there is none) |
+| `package_environment` | `"project_venv"` (uv-managed `code/.venv`, recommended) or `"interpreter_site_packages"` (the selected system interpreter's own packages; the launcher installs nothing there unless `allow_installing_into_global_python = True`) |
+| `uv_prefer` | `"global"` or `"local"`: which uv to use when both exist |
+| `uv_install_if_missing` | `"global"` (Astral's installer, adds uv to your user PATH), `"local"` (download into `code/backend/uv`, verified against the published SHA-256) or `"never"` |
+| `uv_version` | `""` (latest), an exact version (`"0.11.32"`) or a range (`">=0.9,<1"`). A global uv outside the range is left untouched and a local uv is installed instead. |
+| `uv_user_python_visible_globally` | for `"uv_user"`: register the Python with the `py` launcher and put it on PATH |
+| `uv_cache` | `"global"` (uv's per-user cache) or `"local"` (`code/backend/uv-cache`) |
+| `allow_downloads_at_launch` | `False` makes normal launches fail with a clear message instead of downloading (Setup and dev tools may always download) |
+| `use_system_certificates` | use the Windows certificate store (some company proxies need this) |
+
+Settings marked `[bootstrap]` in `developer_settings.py` are read before any Python
+exists; keep them on one line as plain values. All settings are validated before a
+launch, and mistakes are reported with the setting name and the allowed values.
+
+---
+
+## Dependencies and dev tools
+
+Dependencies live in `code/pyproject.toml` and are locked in `code/uv.lock` (with
+hashes). The launcher checks them with an offline `uv sync` on every start (fast when
+nothing changed). Use the tools in `code/backend/dev_tools` — or `Dev Menu.cmd` for all of them:
+
+| Tool | Purpose |
+| --- | --- |
+| `add_packages.cmd` / `remove_packages.cmd` | add or remove packages (`uv add` / `uv remove`) |
+| `upgrade_packages.cmd` | upgrade all (or the named) packages within their limits |
+| `sync_packages.cmd` | make the environment match `uv.lock` exactly |
+| `find_imports.cmd` | find the packages your code imports (offline), review them, add the missing ones |
+| `package_terminal.cmd` | command prompt with the environment activated and uv on PATH |
+| `change_python.cmd` / `update_python.cmd` | switch Python version / newest patch (and newest minor for `python_version = ""`) |
+| `make_portable.cmd` | put uv, Python and all packages into this folder and offer the settings changes to use them |
+| `export_requirements.cmd` | write `code/requirements.txt` from `uv.lock` |
+| `status.cmd` | show uv, Python, environment, lock and shortcut state |
+| `clean.cmd` | delete logs, per-run diagnostics or folders of the old template version |
+| `remove_shortcuts.cmd` | remove every shortcut Setup created (project folder, Start Menu, Desktop) |
+
+See [code/backend/dev_tools/README.md](code/backend/dev_tools/README.md) for details.
+
+### Portable/offline distribution
+
+Run `make_portable.cmd`, accept the suggested settings (`uv_prefer`/`uv_install_if_missing`
+= `"local"`, `python_source = "local"`, `package_environment = "project_venv"`), optionally
+set `allow_downloads_at_launch = False`, and copy the whole folder. On another PC or in
+another location the environment is re-linked to the copied Python automatically
+(no download, no reinstall); run Setup there to create shortcuts.
+
+---
+
+## Shortcuts and instances
+
+Setup creates the enabled shortcuts in the project folder, a Start Menu folder
+(`start_menu_shortcuts`) and optionally on the Desktop (`desktop_shortcuts`, e.g.
+`["no_terminal"]`). It remembers what it created (`code/backend/shortcuts.manifest.json`)
+and removes shortcuts that are no longer wanted, e.g. after renaming one. Shortcuts of
+other copies of the project are never removed.
+
+`instance_policy` decides what happens when the app is started while it already runs:
+`"allow"`, `"focus"` (bring the running window to the front; asks to replace an instance
+without a window), `"prevent"`, `"replace"` or `"ask"`. The Stop shortcut terminates
+verified app process trees directly (no WMI/taskkill, so it also works where those are broken).
+
+---
+
+## Logs, crash reports and tracebacks
+
+Each run gets unique log names. The normal UTF-8 log contains your prints and inputs with
+optional time prefixes; the `.output.log` companion captures raw output including native
+and child-process output. Logging turns stdout/stderr into pipes, so disable terminal
+logging (`enable_log_for_Windows_terminal_start`) if your app needs a real console.
+Old logs and run diagnostics are pruned (`max_log_files`, `max_run_folder_age_days`).
+
+Crash reports and terminal tracebacks look exactly like running `python main.py`
+(launcher frames are removed), including exception chains, notes and exception groups,
+plus `traceback_extra_lines` lines of context around your own code and optional colors.
+
+A missing module offers: add the package to the project, install it without recording,
+
+---
+
+## Project structure
 
 ```text
 .
+├── Setup - run first and after moving folder.cmd
 ├── code/
-│   ├── main.py                        <<< MAIN APP CODE: EDIT THIS
-│   ├── settings.py                    <<< END-USER SETTINGS: EDIT AS NEEDED
+│   ├── main.py                 <<< YOUR APP
+│   ├── settings.py             <<< OPTIONAL END-USER SETTINGS
+│   ├── pyproject.toml          dependencies (commit)
+│   ├── uv.lock, .python-version  generated on first run (commit)
+│   ├── .venv/                  app environment (generated, ignored)
 │   └── backend/
-│       ├── developer_settings.py      <<< APP / PYTHON SETTINGS
-│       ├── dev_tools/                 <<< DEVELOPMENT TOOLS
-│       ├── icons/                     <<< ICON SOURCE & GENERATION TOOLS
-│       ├── DONT_CHANGE/               Template internals (see its README)
-│       └── ...                        Self explanatory folders   
-├── logs/                              Generated program logs
-├── crash logs/                        Generated crash reports
+│       ├── developer_settings.py   <<< APP / PYTHON / UV SETTINGS
+│       ├── dev_tools/          package and Python tools
+│       ├── icons/              icon sources and regeneration
+│       ├── pythons/, uv/       local Python/uv when installed locally (ignored)
+│       └── DONT_CHANGE/        launcher internals (see its README)
+├── logs/                       program logs
+└── crash logs/                 crash reports
 ```
-
-Edit `code/main.py`, `code/settings.py`, and `code/backend/developer_settings.py`
-for normal project work. The `python`, `packages`, `backend_python`,
-`backend_packages`, `logs`, and `crash logs` folders are generated locally and
-are intentionally excluded from normal Git tracking.
-
-`code/backend/DONT_CHANGE` contains the portable launcher implementation. Its
-[own README](code/backend/DONT_CHANGE/README.md) explains the installation
-flow, backend settings, safety checks, package lists, diagnostics, and licensing
-in detail.
-
----
-
-## Notes
-
-Tested to work in current Windows 11 Home and Python 3.14. This repository was originally built by Florian Lindinger and can be accessed under https://github.com/FlorianLindinger/PyApp-Template
-
----
-
 ## Licensing
 
-The template-owned backend files in `code/backend/DONT_CHANGE` are available under your choice of the MIT License or Apache License 2.0 (`MIT OR Apache-2.0`). Python distributions and third-party packages retain their own licenses and are excluded from normal Git tracking.
+The template-owned files in `code/backend/DONT_CHANGE` are available under `MIT OR Apache-2.0`
+(the import-name mapping is derived from pipreqs, Apache-2.0). uv, Python distributions and
+third-party packages keep their own licenses. Projects created from this template must replace
+the project-license placeholder in [`LICENSE.md`](LICENSE.md).
 
-Projects created from this template must replace the project-license placeholder in [`LICENSE.md`](LICENSE.md) with their chosen license. See that file for the complete scope and third-party exceptions.
-
-## Arguments, isolation, and dependency updates
-
-`args_for_main_py` in `developer_settings.py` configures the arguments passed to
-`main.py`. Generated shortcuts do not forward additional command-line
-arguments to the application. Launcher state such as terminal mode is never added
-to `main.py`'s positional arguments.
-
-The launcher exports these environment variables for `main.py` to read through
-`os.environ`:
-
-| Variable | Value |
-| --- | --- |
-| `PROGRAM_NAME` | Configured application name |
-| `ICON_PATH` | Absolute application icon path |
-| `PROGRAM_HAS_TERMINAL` | `"1"` for terminal launches, otherwise `"0"` |
-| `LOG_PATH` | Resolved text-log path for this run, or `""` when logging is disabled |
-| `APP_ID` | Taskbar identity supplied by the launcher, or `""` when absent |
-| `WDIR_IS_SCRIPT_DIR` | `"1"` when the script directory is selected as the working directory, otherwise `"0"` |
-| `CLOSE_AFTER_FAILURE` | Configured failure-close policy as `"1"` or `"0"` |
-| `CLOSE_AFTER_SUCCESS` | Configured success-close policy as `"1"` or `"0"` |
-
-These are launch-time snapshots. Changing them in `main.py` does not change the
-watchdog's settings. For booleans, compare with `"1"`; `bool("0")` is also true.
-`PROGRAM_HAS_TERMINAL` describes the launch mode; logging can still make stdout
-a pipe rather than a terminal.
-
-Generated shortcuts set Start in to the repository root. Set a shortcut's Start in directory explicitly
-when using `start_in_shortcut_folder=True`. Relative-to-launch log paths use
-the same captured directory even after backend setup changes its working directory.
-
-The supported managed platform is **Windows x64 (AMD64)**. Native ARM64 and
-32-bit runtime installation are not implemented. The installer rejects those
-architectures before downloading/replacing a runtime. Python 3.5+ compatibility
-is retained in the frontend wrapper, but the regression suite currently covers
-the locally available Python 3.12, 3.13, and 3.14 interpreters.
-
-Managed and global launches use `-E -s`: `PYTHONHOME`, `PYTHONPATH`, and user-site
-packages do not affect them. Global mode resolves one actual interpreter and
-does not automatically modify it. Missing-package errors show its path and a
-manual command; the local environment is not modified as a substitute.
-
-The template records exact runtime selection in `code/backend/frontend-python.lock.json`
-and resolved default packages in `DEFAULT_PYTHON_PACKAGES.txt.lock.json` beside
-the requirements file. Both are generated local files ignored by the current
-`.gitignore`; the requirements inputs themselves should be tracked. Changing
-requirements (including local `-r`/`-c` includes) invalidates a package lock.
-Deliberately remove a lock to request fresh resolution. Reuse is currently
-incomplete: first runtime installation bypasses the package-lock reader.
-`python_version = "3.14"` requires 3.14 and accepts any 3.14.x patch;
-`"3.14.6"` requires that exact patch. Keeping an incompatible installation cancels
-the launch instead of running it. A runtime lock selects a compatible exact
-download when rebuilding; it does not tighten a configured minor selector.
-These locks are not currently a
-complete reproducible-release guarantee. Preserve a prepared folder for an
-offline distribution.
-
-## How installation health is checked
-
-The launcher validates the actual managed Python executable by running it with
-`-E -s` and importing `ssl`, `sqlite3`, `ctypes`, `encodings` and `pip`, plus
-`tkinter` when requested. A successful probe returns its real version, which
-must match the configured version components. File/folder existence alone is
-insufficient. The launcher backend separately verifies its exact Python version,
-required imports and pinned dependency versions.
-
-Application package installation runs `pip check` before publishing the new
-environment. It records a manifest containing the Python version, a fingerprint
-of the default requirements and local includes, and hashes of distribution
-`METADATA` and `RECORD` files. Startup compares that manifest with the current
-inputs and metadata, and checks that in-directory files listed by `RECORD` exist
-(excluding generated `.pyc` files). A mismatch triggers repair rather than trusting
-an old success marker.
-
-These checks detect many incomplete or stale installations; they do not import
-every application dependency, verify every package payload's contents, or prove
-that the application works. Dependency consistency is checked during installation
-and after closing the managed package terminal, rather than by running `pip check`
-on every startup. Run the app's own checks after changing dependencies.
-
-## Logs and diagnostics
-
-Each run has its own directory under `code/backend/DONT_CHANGE/temporary/runs/`.
-Logs receive a unique run suffix. The normal UTF-8 log records Python text/input
-and atexit callbacks; its `.output.log` companion captures raw combined stdout
-and stderr, including binary writes and inherited child-process output. With
-logging enabled stdout/stderr are pipes, so applications that require a real
-terminal should disable logging for their terminal launch. Detached subprocesses
-that redirect their own output are outside this capture.
-
-Set `enable_log_for_Windows_terminal_start = False` for applications that need
-console handles or interactive terminal features. To diagnose redirection, check
-`PROGRAM_HAS_TERMINAL == "1"` together with `not sys.stdout.isatty()` (and stderr).
-This detects redirected output, not proof that the application is incompatible;
-an application can warn when a feature it needs requires a TTY. Reporting
-`isatty() = True` alone does not restore a console handle. Capturing output through
-a Windows pseudoconsole is not implemented.
-
-Uncaught worker and default Tkinter callback errors retain normal stderr output
-and make final completion fail. The GUI is allowed to keep running; the launcher
-shows its completion error after it closes. A main-script exception takes
-precedence if both contexts fail. Applications replacing these exception hooks
-or using other event loops own their reporting policy.
-
-Successful runs do not create crash reports. Hidden successful runs remain hidden
-when `close_after_success=True`. Failures preserve their diagnostics. Persistent
-MSI logs are under `temporary/installation-logs/`; failed backend staging folders
-are retained with their diagnostic files. These folders can grow and are not
-currently pruned automatically.
+This repository was originally built by Florian Lindinger: https://github.com/FlorianLindinger/PyApp-Template

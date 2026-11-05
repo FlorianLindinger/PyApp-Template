@@ -1,5 +1,7 @@
 """Generate this project's ICO files from the configured PNG assets."""
 
+from __future__ import annotations
+
 if __name__ == "__main__":
     import sys
     from pathlib import Path
@@ -18,7 +20,7 @@ import os
 import sys
 import time
 from concurrent.futures import ThreadPoolExecutor
-from functools import cache
+from functools import lru_cache
 
 from backend.developer_settings import (
     crash_log_sub_icon_alignment,
@@ -44,7 +46,7 @@ from backend.DONT_CHANGE.scripts.image_tools import (
     generate_ico_from_png,
     get_png_image_id,
 )
-from backend.DONT_CHANGE.settings.backend_settings import (
+from backend.DONT_CHANGE.backend_settings import (
     ICON_DELETE_RETRY_DELAY_SECONDS,
     ICON_DELETE_TIMEOUT_SECONDS,
     ICON_FALLBACK_PNG_DIR,
@@ -84,7 +86,7 @@ def _delete_existing_icon(path: str) -> None:
             time.sleep(ICON_DELETE_RETRY_DELAY_SECONDS)
 
 
-@cache
+@lru_cache(maxsize=None)
 def _cached_png_image_id(path: str) -> str:
     """Return the cached PNG identifier used to recognize unchanged source assets."""
     return get_png_image_id(path)

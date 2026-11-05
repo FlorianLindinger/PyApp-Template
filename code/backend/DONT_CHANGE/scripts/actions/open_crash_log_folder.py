@@ -3,6 +3,8 @@
 
 """Open the folder containing the configured crash log."""
 
+from __future__ import annotations
+
 if __name__ == "__main__":
     import sys
     from pathlib import Path
@@ -34,7 +36,7 @@ from backend.DONT_CHANGE.scripts.launcher_ui import (
     get_log_folder_path,
     set_terminal_colors,
 )
-from backend.DONT_CHANGE.settings.backend_settings import DEV_SETTINGS_PATH
+from backend.DONT_CHANGE.backend_settings import DEV_SETTINGS_PATH
 
 
 def main() -> None:

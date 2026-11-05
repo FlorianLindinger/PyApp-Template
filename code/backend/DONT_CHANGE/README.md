@@ -1,131 +1,89 @@
 # PyApp-Template backend internals
 
-This folder supplies the portable Windows x64 launcher, isolated app environment,
-logging, process tracking and completion handling around `code/main.py`.
-Application authors normally edit main.py, settings.py and backend/developer_settings.py.
+This folder holds the Windows launcher around `code/main.py`: the uv bootstrap, the
+environment management, logging, process tracking and completion handling. Application
+authors normally edit only `main.py`, `settings.py` and `backend/developer_settings.py`.
 
-## Runtime structure
+## Layout
 
 ```text
 DONT_CHANGE/
-  B/               Short targets for generated app shortcuts (W/N/Q/S/M/L/C)
+  B/              Short shortcut targets: W (terminal), N (no terminal), Q (stop),
+                  S (settings), M (main.py), L (logs), C (crash logs)
+  backend_settings.py  internal paths and constants
+  data/           import_to_package.txt (import name -> PyPI name, for the import finder)
   scripts/
-    actions/       App shortcut actions and icon generation
-    runtime/       Watchdog, application wrapper and completion handling
-    setup/         Shared bootstrap/runner, installers, checks and shortcut generation
-    dev_tools/     Package tool implementations
-    *_tools.py     Focused reusable helpers
-  settings/        Backend requirements, version and runtime paths
+    bootstrap/    run.bat, ensure_runtime.bat (fast path), resolve_runtime.ps1 (uv + Python)
+    actions/      start_program, stop_program, open_* and icon generation
+    runtime/      background_watchdog, script_wrapper, process_exit, _pyapp_protocol
+    setup/        generate_shortcuts (Setup)
+    config.py     settings loading and validation
+    uv_env.py     uv, Python selection, pyproject/uv.lock/.venv management
+    dev_tools.py  all dev tools (backend/dev_tools/*.cmd call it)
+    ...           focused helpers (console, filesystem, instance policy, window focus,
+                  import finder, traceback rendering, process registry)
+  icon_related/   shipped placeholder icons and instructions
+  temporary/      runtime cache, locks and per-run diagnostics (ignored)
 ```
 
-Public package-tool batches live in `../dev_tools/` beside their default package
-list. Root setup and the icon-folder command launcher call the shared runner
-directly, without extra forwarding batches.
+## Startup
 
-Batch launchers contain dispatch/bootstrap logic; Python files own the behavior.
-App shortcuts deliberately use short targets: `B/W.bat` (terminal), `B/N.bat`
-(hidden), `B/Q.bat` (Stop), `B/S.bat` (settings), `B/M.bat` (source), `B/L.bat`
-(logs), and `B/C.bat` (crash logs). Keep these names short to reduce the command
-length stored in Windows shortcuts. Longer implementation paths stay inside the
-batch files. Root setup regenerates shortcuts for these targets.
+1. A shortcut runs `B/W.bat` or `B/N.bat`, which call `scripts/bootstrap/run.bat`.
+2. `ensure_runtime.bat` loads `temporary/runtime.cmd` (uv and launcher-Python paths) when
+   `developer_settings.py` and `code/.python-version` are unchanged and both files exist.
+   Otherwise `resolve_runtime.ps1` reads the `[bootstrap]` settings, finds or installs uv
+   according to `uv_prefer` / `uv_install_if_missing` / `uv_version`, finds or installs the
+   project's Python with uv (`code/.python-version`, else `python_version`), checks the 3.8
+   minimum and writes the cache. The cache is UTF-8 and read with code page 65001, so
+   non-ASCII project paths work.
+3. The entry script runs as `python -I -S -X utf8`: isolated, no `site`, standard library only.
+4. `start_program.py` validates the settings, applies `instance_policy`, prunes old logs and
+   calls `uv_env.ensure_environment()`:
+   - writes `code/.python-version` and `requires-python = "==X.Y.*"` on the first run;
+   - offers the migration menu when `python_version` differs from `.python-version`;
+   - `uv lock` when `pyproject.toml` changed (offline first);
+   - re-links `code/.venv` to the project's Python when the project moved
+     (`uv venv --allow-existing`, keeps all packages, works offline); rebuilds it beside the
+     old one when the Python minor version changed;
+   - `uv sync --locked --inexact` (offline first) on every start.
+5. The watchdog registers the run, starts `script_wrapper.py` in the app interpreter,
+   captures output, waits, and hands the outcome to `process_exit.py`.
 
-## Startup and installation
+`uv_env.uv_environment()` mirrors `Set-UvEnvironment` in `resolve_runtime.ps1`; keep both
+in sync when changing how uv is configured. Lookups run from the system temp folder,
+because uv would otherwise discover `code/.venv` as "the" Python. Project commands use the
+"prefer managed" Python preference because uv caches interpreter details that are stale
+right after a re-link.
 
-1. Root setup or a generated shortcut invokes a batch target.
-2. `scripts/setup/ensure_backend_python.bat` delegates to its PowerShell
-   companion. It locks bootstrap, validates actual backend imports and exact
-   versions, and adopts a healthy existing installation.
-3. When installation is needed, a new embedded runtime and dependency target are
-   prepared in staging. Signature/hash checks and module health checks finish
-   before replacement. Failed staging diagnostics are retained.
-4. App startup validates/prepares its full Python and package environment, creates
-   a per-run directory, starts the watchdog, and waits for that run's acknowledgement.
-5. The frontend wrapper receives private JSON configuration, initializes logging,
-   and executes main.py with only application arguments.
+## Runtime protocol
 
-`settings/backend_settings.ini` defines the pinned backend version and approved
-installation/finalization locations. The PowerShell bootstrap validates these fixed locations.
-The generic embedded downloader refuses an existing destination and uses literal
-PowerShell paths. Managed installation supports AMD64; ARM64/x86 fail explicitly.
+`runtime/_pyapp_protocol.py` (standard library, Python 3.8+, also imported inside the app
+interpreter) defines the wrapper exit codes (`WrapperExit`), the watchdog outcomes
+(`ExitMode`) and the traceback report. The wrapper strips its own and `runpy`'s frames, so
+reports look like `python main.py`; it stores CPython's own formatting (`plain`, used for
+exception groups) and a structured chain with source context for the app's own frames.
+`traceback_render.py` turns the report into plain text (crash logs) or ANSI colors (terminal).
 
-The embedded backend and full frontend have different purposes. Application
-packages are separate from backend packages. Normal managed starts use `-E -s`
-and sanitized Python/package-tool environment settings; this is dependency
-isolation with ordinary user permissions, not an operating-system sandbox.
+Each run owns `temporary/runs/<id>/` with its wrapper config, readiness, startup
+acknowledgement, result and traceback files.
 
-## Generated state and recovery
+## Process control
 
-`backend_python/`, `backend_packages/`, `temporary/`, `backend/python/` and
-`backend/packages/` are generated and excluded from normal Git tracking.
+`runtime_state.ProcessRegistry` keeps one verified identity record per running watchdog
+(PID, creation time, executable, console window, app child). Stop terminates verified
+process trees with the Win32 API (Toolhelp snapshot + `TerminateProcess`), deliberately
+without `taskkill`/WMI. `instance_policy.py` shows its dialogs without holding the registry
+lock; `windows_focus.py` finds and activates the running instance's window.
 
-Runtime and package replacements are staged and verified before directory swaps.
-Version/package migration retains the previous runtime until package validation
-succeeds. A locked `.previous` backup is reported and not overwritten.
+## Compatibility rules
 
-Package state records actual Python, requirements fingerprints, metadata/RECORD
-hashes and payload existence. Legacy empty markers migrate through additive
-staging to preserve manually installed packages. Explicit reset tools rebuild
-from declared defaults. Frontend runtime/default-package locks are generated local
-state ignored by the current Git rules. Their reuse is incomplete: first runtime
-installation bypasses the package-lock reader. Configured version components are
-required: "3.14" accepts any 3.14.x; "3.14.6" requires that exact patch. The runtime
-lock chooses a compatible exact download without tightening a minor selector.
-Keep requirements inputs
-tracked; do not treat current locks as a complete reproducible-release guarantee.
+- Everything under `scripts/` must run on Python 3.8+ with the standard library only:
+  use `from __future__ import annotations`, no `match`, no parenthesized `with`, no
+  `str.removeprefix`, no `typing.override`, guard `sys.stdlib_module_names`.
+- Folder locations are mirrored in `backend_settings.py`, the bootstrap batch/PowerShell
+  files and the root `.gitignore`; change them together.
 
-`settings/backend_settings.py` comments identify paths tied to root or nested
-`.gitignore` rules. If relocating generated directories, update the corresponding
-rules for live folders, staging folders and retained backups. Files inside an entirely ignored runtime/temporary directory inherit
-that rule. Source scripts, icon assets and requirements inputs remain tracked.
-Backend runtime locations also have fixed batch/PowerShell bootstrap consumers;
-changing a Python constant alone does not relocate the whole bootstrap.
+## Licensing
 
-Each run owns its startup/status/traceback files and unique logs under
-`temporary/runs/`. The `.output.log` companion captures combined native, binary
-and inherited child output; the normal UTF-8 log captures Python text/input and
-atexit callbacks. Logging uses pipes; disable terminal logging for apps needing
-a real TTY. Retained run and MSI diagnostics are not automatically pruned.
-
-The manual package console in `scripts/dev_tools/open_package_terminal.py` parses
-Windows arguments without a shell. It accepts bare packages/lists, explicit pip
-and uv package commands, and automatic uv preference with pip fallback. Relative
-pip/uv adapters and the recovery batch use that same entry point. The console
-owns the environment lock, running-instance checks and final package validation;
-recovery must not hold the same lock in its parent while waiting for this child.
-Healthy startup refreshes the adapters after folder moves and runtime installs.
-Uncaught worker errors (Python 3.8+) and errors retained by Tkinter's default
-callback handler make final completion fail without closing the GUI immediately.
-The watchdog also collects worker failures during interpreter shutdown. Custom
-exception hooks and other event loops need their own reporting policy.
-
-## Ownership of shared code
-
-Implementation modules are console_tools, filesystem_tools, process_tools,
-python_runtime, package_tools, image_tools, git_tools and shell_tools.
-`frontend_environment` owns runtime/package repair, `launcher_ui` owns appearance
-and log-path policy, and runtime_state/environment_state own cross-process state
-and directory transactions.
-
-Ordinary tools share `entrypoint.run_file` and the batch
-`scripts/setup/run_backend_script.bat`: import/main failures are reported once,
-nonzero status is preserved, and KeyboardInterrupt becomes 130. Lifecycle workers retain their separate
-application completion protocol. Helpers never terminate an existing caller shell.
-
-## Stop and icons
-
-Stop validates process image and creation time, then directly terminates the
-verified launcher tree. Old bare PID files never authorize termination.
-Registry changes use a Windows mutex; the last instance removes its empty PID
-directory and legacy PID/lock artifacts. Stale records left by a killed watchdog
-are cleaned during the next launch or Stop.
-
-Icon sources and instructions remain in icon_related; invoke the corresponding
-`../icons/regenerate icons.cmd` to regenerate ICO files.
-
-## Maintenance and licensing
-
-The template backend is dual licensed MIT OR Apache-2.0. Python distributions and
-third-party packages retain their own licenses. Keep their license/metadata files
-when distributing a prepared environment.
-
-Keep app-specific edits outside DONT_CHANGE where possible. Use the documented root launchers.
+Template files here are `MIT OR Apache-2.0`; `data/import_to_package.txt` is derived from
+pipreqs (Apache-2.0). See [LICENSE.md](LICENSE.md).

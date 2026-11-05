@@ -1,23 +1,8 @@
-"""Editor launch and network reachability helpers."""
+"""Open files in an editor."""
+
+from __future__ import annotations
 
 import os
-
-
-def can_reach_url(url: str, timeout_s: float = 5.0) -> bool:
-    """Return True if the given URL can be reached."""
-    import urllib.request
-
-    try:
-        request = urllib.request.Request(
-            url,
-            headers={"User-Agent": "url-reachable-check/1.0"},
-        )
-
-        with urllib.request.urlopen(request, timeout=timeout_s):
-            return True
-
-    except OSError:
-        return False
 
 
 def open_in_editor(path: str) -> None:

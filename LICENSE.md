@@ -22,17 +22,17 @@ The license choice, complete license texts, and applicable exceptions are docume
 
 The following directories, including all files and subdirectories within them, are not covered by the licenses described in Sections 1 or 2:
 
-* **`code/backend/python`**
-* **`code/backend/packages`**
-* **`code/backend/DONT_CHANGE/backend_python`**
-* **`code/backend/DONT_CHANGE/backend_packages`**
+* **`code/.venv`** (the app's virtual environment with third-party packages)
+* **`code/backend/pythons`** (Python distributions installed by uv)
+* **`code/backend/uv`** (the uv executables)
+* **`code/backend/uv-cache`** (downloaded package files)
 
-The `python` and `backend_python` directories contain Python distributions. The `packages` and `backend_packages` directories contain third-party Python packages. Any third-party packages located below a distribution's `Lib/site-packages` directory are also included in this exception because they are descendants of the relevant distribution directory.
+Any third-party packages located below a distribution's `Lib/site-packages` directory are also included in this exception because they are descendants of the relevant distribution directory.
 
 Each Python distribution and third-party package remains governed by its own license terms. Those terms are normally included in the distribution, package, or associated metadata, such as `LICENSE`, `NOTICE`, or `.dist-info` files. Preserve those files when redistributing the corresponding components.
 
 ## 4. Git sharing and other distribution
 
-The repository's current `.gitignore` rules exclude all four directories listed in Section 3. The intended Git repository therefore contains the project source and dual-licensed template files, but not installed or generated Python distributions and packages.
+The repository's current `.gitignore` rules exclude all directories listed in Section 3. The intended Git repository therefore contains the project source and dual-licensed template files, but not installed or generated Python distributions and packages.
 
 `.gitignore` controls which files Git normally tracks; it does not change the license of any file. If you force-add an excluded file, change the ignore rules, or distribute a populated project folder by another method, you are responsible for complying with the license terms of every included Python distribution and third-party package.

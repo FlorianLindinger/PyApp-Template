@@ -1,997 +1,285 @@
-"""Apply configured completion behavior after the wrapper or watchdog exits.
+"""Apply the configured completion behavior after the application (or the watchdog) ended.
 
-This script is always launched with a terminal available for status output.
+Arguments: exit_mode app_id new_terminal_was_created log_path script_path
 """
 
-# ==============================
-# settings
+from __future__ import annotations
 
-# {e} will be formatted to exception:
 fail_message = "[Error] Failed while processing program exit: {e}"
 
 try:
-    # ==============================
-    # import Python packages
-    # ==============================
-
+    import json
     import os
     import subprocess
     import sys
-    from datetime import datetime
-    from typing import Any, Literal, TextIO, cast
 
-    # ==============================
-    # import third-party packages
-    # ==============================
+    sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..")))
 
-    # ==============================
-    # import from files
-    # ==============================
-
-    # add root dir to resolve file imports for debug cases where this script is called on its own:
-    root_dir = os.path.dirname(__file__) + "\\..\\..\\..\\.."
-    if root_dir not in sys.path:
-        sys.path.insert(0, root_dir)
-
-    from backend.developer_settings import (
-        PRINTED_ERROR_DATE_FORMAT,
-        RICH_TRACEBACK_COLOR_THEME,
-        close_after_crash,
-        close_after_failure,
-        close_after_KeyboardInterrupt,
-        close_after_success,
-        crash_log_path,
-        crash_log_path_is_relative_to_start_folder_if_relative,
-        open_log_file_after_crash,
-        open_log_file_after_failure,
-        open_log_file_after_KeyboardInterrupt,
-        open_log_file_after_success,
-        open_main_py_after_crash,
-        open_main_py_after_failure,
-        open_main_py_after_KeyboardInterrupt,
-        open_main_py_after_success,
-        overwrite_crash_log,
-        play_sound_after_crash,
-        play_sound_after_failure,
-        play_sound_after_KeyboardInterrupt,
-        play_sound_after_success,
-        terminal_colors_after_crash,
-        terminal_colors_after_failure,
-        terminal_colors_after_KeyboardInterrupt,
-        terminal_colors_after_success,
-        title_after_crash,
-        title_after_failure,
-        title_after_KeyboardInterrupt,
-        title_after_success,
-        traceback_extra_lines,
-        use_global_python,
-    )
+    from backend import developer_settings as s
     from backend.DONT_CHANGE.scripts.console_tools import (
+        enable_ansi,
         input_warn,
         print_warn,
         set_terminal_app_id,
         set_terminal_icon,
         set_terminal_title,
     )
-    from backend.DONT_CHANGE.scripts.frontend_environment import (
-        install_packages_from_file,
-        save_requirements_of_root_folder_noVersion,
-    )
     from backend.DONT_CHANGE.scripts.launcher_ui import (
         get_log_path,
         print_traceback,
         set_terminal_colors,
     )
-    from backend.DONT_CHANGE.scripts.process_tools import (
-        exit_code_looks_like_interpreter_crash,
-    )
+    from backend.DONT_CHANGE.scripts.process_tools import exit_code_looks_like_interpreter_crash
+    from backend.DONT_CHANGE.scripts.runtime._pyapp_protocol import ExitMode, exit_code_is_success
     from backend.DONT_CHANGE.scripts.runtime_state import unique_log_path
     from backend.DONT_CHANGE.scripts.shell_tools import open_in_editor
-    from backend.DONT_CHANGE.settings.backend_settings import (
-        BACKEND_PYTHON_EXE,
-        CRASH_ICON_PATH,
-        DEFAULT_SOUND_AFTER_CRASH,
-        DEFAULT_SOUND_AFTER_FAILURE,
-        DEFAULT_SOUND_AFTER_SUCCESS,
-        FAILURE_ICON_PATH,
-        FRONTEND_LAUNCHER_FOR_PIP_INSTALL_TERMINAL,
-        KEYBOARD_INTERRUPT_ICON_PATH,
-        MAIN_PY_SCRIPT_PATH,
-        PIPREQS_MAPPING_PATH,
-        START_PROGRAM_PATH,
-        SUCCESS_ICON_PATH,
-        TMP_TRACEBACK_JSON_PATH,
-        WINDOWS_DIR,
-        DEFAULT_SOUND_AFTER_KeyboardInterrupt,
-    )
+    from backend.DONT_CHANGE.scripts.traceback_render import render
+    from backend.DONT_CHANGE import backend_settings as paths
 
-    if os.environ.get("PYAPP_RUN_DIR"):
-        TMP_TRACEBACK_JSON_PATH = os.path.join(
-            os.environ["PYAPP_RUN_DIR"], "traceback.json"
-        )
+    REPORT_PATH = os.path.join(os.environ.get("PYAPP_RUN_DIR", paths.TEMPORARY_DIR), "traceback.json")
 
-    # ==============================
-    # local variables
-    # ==============================
+    OUTCOMES = {
+        "success": dict(icon=paths.SUCCESS_ICON_PATH, default_sound=paths.DEFAULT_SOUND_AFTER_SUCCESS),
+        "failure": dict(icon=paths.FAILURE_ICON_PATH, default_sound=paths.DEFAULT_SOUND_AFTER_FAILURE),
+        "crash": dict(icon=paths.CRASH_ICON_PATH, default_sound=paths.DEFAULT_SOUND_AFTER_CRASH),
+        "KeyboardInterrupt": dict(icon=paths.KEYBOARD_INTERRUPT_ICON_PATH, default_sound=paths.DEFAULT_SOUND_AFTER_KeyboardInterrupt),
+    }
 
-    # ==============================
-    # local functions/classes
-    # ==============================
+    # ------------------------------------------------------------ reports
 
-    # ==============================
-    # traceback related
-
-    def _as_int(value: Any) -> int:
-        """Return a serialized integer value, or zero if it is invalid."""
+    def load_report():
+        """Return (report, problem description)."""
         try:
-            return int(value)
-        except (TypeError, ValueError):
-            return 0
+            with open(REPORT_PATH, encoding="utf-8") as stream:
+                report = json.load(stream)
+        except FileNotFoundError:
+            return None, f'The traceback report was not created at "{REPORT_PATH}".'
+        except (OSError, UnicodeError, ValueError) as error:
+            return None, f'Could not read the traceback report "{REPORT_PATH}": {error}'
+        if not isinstance(report, dict) or "chain" not in report:
+            return None, f'The traceback report "{REPORT_PATH}" has an unknown format.'
+        return report, None
 
-    def _same_file(first_path: str, second_path: str) -> bool:
-        """Compare two real filenames without treating pseudo filenames as paths."""
-        if (
-            not first_path
-            or not second_path
-            or first_path.startswith("<")
-            or second_path.startswith("<")
-        ):
-            return False
-        return os.path.normcase(os.path.abspath(first_path)) == os.path.normcase(
-            os.path.abspath(second_path)
-        )
+    def print_report(report):
+        if report:
+            colors = bool(s.traceback_colors) and sys.stdout is not None and sys.stdout.isatty()
+            if colors:
+                enable_ansi()
+            print("\n".join(render(report, colors=colors, date_format=s.error_date_format)))
 
-    def _display_filename(filename: str, script_path: str) -> str:
-        """Make filenames below the traceback origin relative to its directory."""
-        if not filename or filename.startswith("<") or not script_path:
-            return filename or "?"
-
-        try:
-            relative_filename = os.path.relpath(
-                os.path.abspath(filename), os.path.dirname(os.path.abspath(script_path))
-            )
-        except ValueError:
-            return filename
-
-        if relative_filename != ".." and not relative_filename.startswith(
-            ".." + os.sep
-        ):
-            return relative_filename
-        return filename
-
-    def _traceback_entries(traceback_payload: dict[str, Any]) -> list[dict[str, Any]]:
-        """Return exception entries from the current traceback JSON format."""
-        return [
-            entry
-            for entry in traceback_payload.get("traceback") or []
-            if isinstance(entry, dict)
-        ]
-
-    def _traceback_metadata_lines(traceback_payload: dict[str, Any]) -> list[str]:
-        """Return details about when and where the failure is handled."""
-        lines: list[str] = []
-        if script_path := traceback_payload.get("script_path"):
-            lines.append(f"Script: {os.path.abspath(str(script_path))}")
-
-        error_datetime = datetime.now().astimezone().strftime(PRINTED_ERROR_DATE_FORMAT)
-        lines.append(f"Error date: {error_datetime}")
-        if python_version := traceback_payload.get("python_version"):
-            lines.append(f"Python: {python_version}")
-        return lines
-
-    def _frames_from_traceback_origin(
-        error_data: dict[str, Any], script_path: str
-    ) -> list[dict[str, Any]]:
-        """
-        Return frames from the perspective of the script that produced the payload.
-
-        ``traceback_payload["script_path"]`` is passed as ``script_path``. Each
-        exception-chain entry is handled independently because a chained inner
-        exception may already start inside the target script while the final
-        exception still contains wrapper and ``runpy`` frames.
-
-        Frames before the first filename matching ``script_path`` are removed.
-        For a compile-time SyntaxError, the target may occur only in the syntax
-        metadata; in that case every outer frame is removed. If neither location
-        matches, all frames are retained so an unknown origin loses no evidence.
-        """
-        frames = [
-            frame for frame in error_data.get("frames") or [] if isinstance(frame, dict)
-        ]
-        if not script_path:
-            return frames
-
-        for outer_frames_to_skip, frame in enumerate(frames):
-            if _same_file(str(frame.get("filename") or ""), script_path):
-                return frames[outer_frames_to_skip:]
-
-        syntax = error_data.get("syntax")
-        if isinstance(syntax, dict) and _same_file(
-            str(syntax.get("filename") or ""), script_path
-        ):
-            return []
-        return frames
-
-    def _plain_traceback_lines(traceback_payload: dict[str, Any]) -> list[str]:
-        """Format the current traceback JSON as plain text."""
-        script_path = str(traceback_payload.get("script_path") or "")
-        lines: list[str] = []
-
-        for error_index, error_data in enumerate(_traceback_entries(traceback_payload)):
-            relation = str(error_data.get("relation") or "")
-            if error_index and relation:
-                lines.extend(["", relation, ""])
-
-            frames = _frames_from_traceback_origin(error_data, script_path)
-            if frames:
-                lines.append("Traceback (most recent call last):")
-                for frame in frames:
-                    lines.append(
-                        f'  File "{_display_filename(str(frame.get("filename") or "?"), script_path)}", '
-                        f"line {_as_int(frame.get('lineno')) or '?'}, "
-                        f"in {frame.get('function') or '<module>'}"
-                    )
-                    if source := frame.get("source"):
-                        lines.append(f"    {str(source).strip()}")
-
-            syntax = error_data.get("syntax")
-            if isinstance(syntax, dict):
-                lines.append(
-                    f'  File "{_display_filename(str(syntax.get("filename") or "?"), script_path)}", '
-                    f"line {_as_int(syntax.get('lineno')) or '?'}"
-                )
-                if source := syntax.get("text"):
-                    lines.append(f"    {str(source).rstrip()}")
-                    offset = _as_int(syntax.get("offset"))
-                    if offset > 0:
-                        lines.append("    " + " " * (offset - 1) + "^")
-
-            exception_type = str(error_data.get("type") or "Exception")
-            exception_message = str(error_data.get("message") or "")
-            lines.append(
-                f"{exception_type}: {exception_message}"
-                if exception_message
-                else exception_type
-            )
-
-        return lines or ["No traceback frames were captured."]
-
-    def _rich_stack(error_data: dict[str, Any], script_path: str) -> Any:
-        """Build one native Rich traceback stack from a serialized exception."""
-        from rich.traceback import Frame, Stack, _SyntaxError
-
-        exception_type = str(error_data.get("type") or "Exception")
-        exception_message = str(error_data.get("message") or "")
-        stack = Stack(exc_type=exception_type, exc_value=exception_message)
-
-        syntax = error_data.get("syntax")
-        if isinstance(syntax, dict):
-            stack.syntax_error = _SyntaxError(
-                offset=_as_int(syntax.get("offset")),
-                filename=_display_filename(
-                    str(syntax.get("filename") or "?"), script_path
-                ),
-                line=str(syntax.get("text") or ""),
-                lineno=_as_int(syntax.get("lineno")),
-                msg=exception_message or exception_type,
-            )
-
-        for frame in _frames_from_traceback_origin(error_data, script_path):
-            stack.frames.append(
-                Frame(
-                    filename=_display_filename(
-                        str(frame.get("filename") or "?"), script_path
-                    ),
-                    lineno=_as_int(frame.get("lineno")),
-                    name=str(frame.get("function") or "<module>"),
-                    line=str(frame.get("source") or ""),
-                )
-            )
-        return stack
-
-    def _rich_traceback(traceback_payload: dict[str, Any]) -> Any:
-        """Build a native Rich Traceback from the current JSON format."""
-        from rich.traceback import Trace, Traceback
-
-        script_path = str(traceback_payload.get("script_path") or "")
-        errors = _traceback_entries(traceback_payload)
-        stacks = [_rich_stack(error_data, script_path) for error_data in errors]
-
-        for error_index, error_data in enumerate(errors[1:], 1):
-            if "direct cause" in str(error_data.get("relation") or ""):
-                stacks[error_index - 1].is_cause = True
-
-        return Traceback(
-            Trace(stacks=list(reversed(stacks))),
-            width=None,
-            extra_lines=traceback_extra_lines,
-            theme=RICH_TRACEBACK_COLOR_THEME["code"],
-            word_wrap=True,
-            show_locals=False,
-        )
-
-    class _RichSafeStream:
-        """Keep Rich output writable on legacy Windows console encodings."""
-
-        def __init__(self, stream: TextIO) -> None:
-            """Store the console stream used for encoding-safe Rich traceback output."""
-            self.stream = stream
-
-        def writable(self) -> bool:
-            """Report that this adapter accepts text writes."""
-            return True
-
-        def write(self, text: str) -> int:
-            """Replace characters unsupported by the console encoding and return the written character count."""
-            encoding = getattr(self.stream, "encoding", None) or "utf-8"
-            if encoding:
-                try:
-                    text.encode(encoding)
-                except UnicodeEncodeError:
-                    text = (
-                        text.replace("\u25b2", "^")
-                        .encode(encoding, errors="replace")
-                        .decode(encoding)
-                    )
-            written = self.stream.write(text)
-            return len(text) if written is None else written
-
-        def flush(self) -> None:
-            """Flush the wrapped console stream."""
-            self.stream.flush()
-
-        def isatty(self) -> bool:
-            """Return whether the wrapped console stream is attached to a terminal."""
-            return self.stream.isatty()
-
-        def fileno(self) -> int:
-            """Return the wrapped console stream's file descriptor."""
-            return self.stream.fileno()
-
-    def print_traceback_from_json_payload(
-        traceback_payload: dict[str, Any] | None,
-    ) -> None:
-        """Render the current traceback JSON format, preferring Rich's native layout."""
-        if not traceback_payload:
+    def write_crash_log(report, message):
+        """Write a uniquely named plain-text crash report."""
+        path = get_log_path(s.crash_log_path, s.crash_log_path_is_relative_to_start_folder_if_relative)
+        if not path or (report is None and message is None):
             return
+        path = unique_log_path(path, os.path.basename(os.environ.get("PYAPP_RUN_DIR", "")) or None)
+        lines = ["=" * 30]
+        if message:
+            lines.append(message)
+        if report:
+            lines += render(report, colors=False, date_format=s.error_date_format)
+        lines.append("=" * 30)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w" if s.overwrite_crash_log else "a", encoding="utf-8") as stream:
+            stream.write("\n".join(lines) + "\n")
 
-        script_path = str(traceback_payload.get("script_path") or "")
-        script_path = os.path.abspath(script_path) if script_path else ""
-        script_name = os.path.basename(script_path) or "Python traceback"
-        metadata_lines = _traceback_metadata_lines(traceback_payload)
-        try:
-            from rich.align import Align
-            from rich.console import Console
-            from rich.padding import Padding
-            from rich.text import Text
-            from rich.theme import Theme
+    # ------------------------------------------------------------ recovery
 
-            background = RICH_TRACEBACK_COLOR_THEME["background"]
-            background_style = f"on {background}"
-            border_style = f"{RICH_TRACEBACK_COLOR_THEME['border']} {background_style}"
-            label_style = f"{RICH_TRACEBACK_COLOR_THEME['label']} {background_style}"
-            metadata_style = (
-                f"{RICH_TRACEBACK_COLOR_THEME['metadata']} {background_style}"
-            )
-            text_style = f"{RICH_TRACEBACK_COLOR_THEME['text']} {background_style}"
-            traceback_entries = _traceback_entries(traceback_payload)
-            rich_traceback = (
-                _rich_traceback(traceback_payload) if traceback_entries else None
-            )
-            console = Console(
-                file=cast("TextIO", _RichSafeStream(sys.stdout)),
-                legacy_windows=True,
-                theme=Theme(
-                    {
-                        "traceback.border": border_style,
-                        "traceback.border.syntax_error": (
-                            f"{RICH_TRACEBACK_COLOR_THEME['syntax_border']} {background_style}"
-                        ),
-                        "traceback.text": text_style,
-                        "traceback.title": label_style,
-                        "traceback.exc_type": label_style,
-                        "traceback.exc_value": text_style,
-                        "traceback.offset": (
-                            f"{RICH_TRACEBACK_COLOR_THEME['syntax_pointer']} {background_style}"
-                        ),
-                    },
-                    inherit=True,
-                ),
-            )
-            console.rule(
-                Text(f" {script_name} ", style=label_style),
-                style=border_style,
-            )
-            if metadata_lines:
-                for metadata_line in metadata_lines:
-                    console.print(
-                        Align.left(
-                            Text(metadata_line, style=metadata_style, overflow="fold"),
-                            style=background_style,
-                        ),
-                    )
-            if rich_traceback is not None:
-                old_cwd = os.getcwd()
-                try:
-                    script_folder = (
-                        os.path.dirname(os.path.abspath(script_path))
-                        if script_path
-                        else ""
-                    )
-                    if os.path.isdir(script_folder):
-                        os.chdir(script_folder)
-                    # Relative source names can refer to a different file on the
-                    # next render. Do not reuse linecache's earlier cwd lookup.
-                    import linecache
+    def restart_program(app_id, new_terminal_was_created):
+        """Start the program again with the same terminal behavior."""
+        env = os.environ.copy()
+        env["PYAPP_LAUNCH_MODE"] = "no_terminal" if new_terminal_was_created else "terminal"
+        subprocess.Popen([sys.executable, "-I", "-S", "-X", "utf8", paths.START_PROGRAM_PATH, app_id], env=env)
 
-                    for stack in rich_traceback.trace.stacks:
-                        for frame in stack.frames:
-                            if not os.path.isabs(frame.filename):
-                                linecache.cache.pop(frame.filename, None)
-                    console.print(
-                        Padding(
-                            rich_traceback,
-                            (0, 0, 1, 0),
-                            style=background_style,
-                            expand=True,
-                        )
-                    )
-                finally:
-                    os.chdir(old_cwd)
-            else:
-                console.print("No traceback frames were captured.", style="red")
-        except Exception as error:
-            print(f"[Error] Rich traceback rendering failed: {error}")
-            print()
-            print(script_name)
-            for metadata_line in metadata_lines:
-                print(metadata_line)
-            print("\n".join(_plain_traceback_lines(traceback_payload)))
+    def local_module_exists(name):
+        """True when the missing import is a module/package of the project itself (do not install)."""
+        root = paths.PYTHON_SCRIPTS_DIR
+        return os.path.isfile(os.path.join(root, name + ".py")) or os.path.isdir(os.path.join(root, name))
 
-    def write_txt_crash_log(
-        crash_log_payload: dict[str, Any] | None, message: str | None
-    ):
-        # write a human readable crash log:
-        """Write a uniquely named crash report when a traceback payload or diagnostic message exists."""
-        crash_log_path_resolved = get_log_path(
-            crash_log_path, crash_log_path_is_relative_to_start_folder_if_relative
-        )
+    def handle_missing_module(missing, app_id, new_terminal_was_created):
+        """Offer to install the distribution behind a ModuleNotFoundError, then restart."""
+        from backend.DONT_CHANGE.scripts import uv_env
+        from backend.DONT_CHANGE.scripts.import_finder import distribution_for_import
 
-        divider_length: int = 30
-
-        if crash_log_payload is None and message is None:
+        top = missing.split(".")[0]
+        if local_module_exists(top):
+            print_warn(f'"{top}" is part of your project, not a package to install. Check the file/folder name and the import.')
+            input_warn("Press Enter to exit")
             return
-
-        if crash_log_path_resolved:
-            crash_log_path_resolved = unique_log_path(
-                crash_log_path_resolved,
-                os.path.basename(os.environ.get("PYAPP_RUN_DIR", "")) or None,
-            )
-            lines: list[str] = ["=" * divider_length]
-            if message:
-                lines.append(message)
-            if crash_log_payload:
-                if message:
-                    lines.append("-" * divider_length)
-                lines.extend(_traceback_metadata_lines(crash_log_payload))
-                lines.append("-" * divider_length)
-                lines.extend(_plain_traceback_lines(crash_log_payload))
-            lines.append("=" * divider_length)
-
-            os.makedirs(os.path.dirname(crash_log_path_resolved), exist_ok=True)
-            with open(
-                crash_log_path_resolved,
-                "w" if overwrite_crash_log else "a",
-                encoding="utf-8",
-            ) as f:
-                f.write("\n".join(lines))
-
-    # ==============================
-    # miscellaneous
-
-    def get_package_install_name(import_name: str) -> str:
-        """Uses pipreqs mapping to convert from import name to install name: e.g., "cv2" -> "opencv-python"."""
-
-        with open(PIPREQS_MAPPING_PATH, encoding="utf-8") as f:
-            for line in f:
-                line = line.strip()
-                if not line or ":" not in line:
-                    continue
-                import_package_name, install_package_name = line.split(":", 1)
-                if import_package_name.strip() == import_name:
-                    return install_package_name.strip()
-
-        return import_name  # if not found in mappings
-
-    def restart_program(app_id: str, new_terminal_was_created: bool) -> None:
-        """Relaunch the program using the same visible/hidden terminal behavior."""
-        launch_mode = "no_terminal" if new_terminal_was_created else "terminal"
-        subprocess.Popen(
-            [
-                BACKEND_PYTHON_EXE,
-                START_PROGRAM_PATH,
-                app_id,
-                launch_mode,
-            ],
-        )
-
-    def install_auto_detected_packages(app_id: str) -> None:
-        """Discover project imports and install all inferred distributions."""
-        success, requirements_path = save_requirements_of_root_folder_noVersion()
-        if not success:
-            raise RuntimeError("Could not auto-detect the project's required packages.")
-        install_packages_from_file(requirements_path, app_id_for_slow=app_id)
-
-    def open_manual_package_terminal() -> None:
-        """Wait for the user to finish package changes in a configured terminal."""
-        if not os.path.isfile(FRONTEND_LAUNCHER_FOR_PIP_INSTALL_TERMINAL):
-            raise FileNotFoundError(
-                f'Package-terminal launcher not found at "{FRONTEND_LAUNCHER_FOR_PIP_INSTALL_TERMINAL}"'
-            )
-
-        print()
-        print(
-            'Enter package names, "pip install ..." or "uv pip install ...", then type "exit" to restart the program.'
-        )
-        subprocess.run(
-            ["cmd.exe", "/d", "/c", "call", FRONTEND_LAUNCHER_FOR_PIP_INSTALL_TERMINAL],
-            check=True,
-        )
-
-    def handle_missing_package_options(
-        missing_module: str,
-        install_name: str,
-        app_id: str,
-        new_terminal_was_created: bool,
-    ) -> None:
-        """Prompt for package recovery and restart after a successful recovery action."""
-        if use_global_python:
-            from backend.DONT_CHANGE.scripts.runtime_state import resolve_global_python
-
-            python = resolve_global_python()
-            print_warn(
-                "Global Python is selected. The launcher will not change a different local environment."
-            )
-            print(f'Interpreter: "{python}"')
-            print(
-                f'Review the missing import and install its declared distribution with: "{python}" -m pip install <distribution>'
-            )
-            input_warn(
-                "Press Enter to exit; launch again after fixing that environment."
-            )
+        distribution = distribution_for_import(top)
+        app_python = uv_env.app_python_for_tools()
+        global_packages = s.package_environment == "interpreter_site_packages"
+        if global_packages and not s.allow_installing_into_global_python:
+            print_warn("The app uses the selected interpreter's own packages; the launcher does not change them.")
+            print(f'Install it yourself, e.g.:  "{app_python}" -m pip install {distribution}')
+            print("(or set allow_installing_into_global_python = True in developer_settings.py)")
+            input_warn("Press Enter to exit")
             return
+        if distribution != top:
+            print(f'[Info] The import "{top}" is provided by the package "{distribution}".')
+        options = []
+        if not global_packages:
+            options.append(("add", f'Add "{distribution}" to the project (pyproject.toml + uv.lock) and restart'))
+        options.append(("install", f'Install "{distribution}" without recording it and restart'))
+        if not global_packages:
+            options.append(("find", "Find all imports of the project, review them, add the missing ones and restart"))
+        options.append(("terminal", "Open a package terminal, then restart"))
+        options.append(("quit", "Quit"))
         while True:
             print()
             print_warn("Choose how to proceed:")
-            print("1: Install the missing package and restart")
-            print("2: Auto-detect required packages, install them, and restart")
-            print("3: Open a terminal for manual package installation, then restart")
-            print("4: Quit")
-            choice = input_warn("Choose an option [1-4]: ").strip()
-
-            if choice == "4":
-                return
-            if choice not in {"1", "2", "3"}:
-                print_warn("[Warning] Invalid choice. Please enter 1, 2, 3, or 4.")
+            for index, (_, label) in enumerate(options, 1):
+                print(f"  {index}: {label}")
+            answer = input_warn(f"Choose an option [1-{len(options)}]: ").strip()
+            if not answer.isdigit() or not 1 <= int(answer) <= len(options):
                 continue
-
+            action = options[int(answer) - 1][0]
+            if action == "quit":
+                return
             try:
-                if choice == "1":
-                    if not missing_module:
-                        print_warn(
-                            "[Warning] The exception did not identify a missing module. Choose another option."
-                        )
-                        continue
-                    print(
-                        f'[Info] Installing "{install_name}" for missing import "{missing_module}"...'
-                    )
-                    import tempfile
-                    from pathlib import Path
+                if action == "add":
+                    uv_env.add_packages([distribution])
+                elif action == "install":
+                    uv_env.install_without_recording([distribution], app_python)
+                elif action == "find":
+                    from backend.DONT_CHANGE.scripts.dev_tools import find_imports_and_add
 
-                    with tempfile.TemporaryDirectory(
-                        prefix="pyapp_recovery_"
-                    ) as directory:
-                        requirements = Path(directory) / "requirements.txt"
-                        requirements.write_text(install_name + "\n", encoding="utf-8")
-                        install_packages_from_file(
-                            str(requirements), app_id_for_slow=app_id
-                        )
-                elif choice == "2":
-                    print("[Info] Auto-detecting and installing required packages...")
-                    install_auto_detected_packages(app_id)
+                    find_imports_and_add()
                 else:
-                    # The child console owns locking, running-app checks and validation.
-                    open_manual_package_terminal()
+                    uv_env.open_package_terminal()
             except Exception as error:
                 print_traceback(f"[Error] Package recovery failed: {error}")
                 continue
-
-            print("[Success] Package recovery completed. Restarting the program...")
+            print("[Success] Restarting the program...")
             restart_program(app_id, new_terminal_was_created)
             return
 
-    def load_traceback_payload() -> tuple[dict[str, Any] | None, str | None]:
-        """Load the wrapper's traceback report and describe unusable reports."""
-        import json
+    # ------------------------------------------------------------ completion
 
-        try:
-            with open(TMP_TRACEBACK_JSON_PATH, encoding="utf-8") as f:
-                payload = json.load(f)
-        except FileNotFoundError:
-            return (
-                None,
-                f'Traceback report was not created at "{TMP_TRACEBACK_JSON_PATH}".',
-            )
-        except (OSError, UnicodeError, json.JSONDecodeError) as error:
-            return (
-                None,
-                f'Could not read traceback report "{TMP_TRACEBACK_JSON_PATH}": {error}',
-            )
-
-        if not isinstance(payload, dict):
-            return (
-                None,
-                f'Traceback report "{TMP_TRACEBACK_JSON_PATH}" does not contain a JSON object.',
-            )
-        return payload, None
-
-    def execute_exit_settings(
-        mode: Literal["failure", "success", "KeyboardInterrupt", "crash"],
-        log_path: str = "",
-        traceback_payload: dict[str, Any] | None = None,
-        exit_msg: str | None = None,
-        override_to_not_closing_and_disable_wait: bool = False,
-    ) -> None:
-        """Run completion side effects such as sounds and opening logs."""
-
-        # get settings
-        if mode == "success":
-            play_sound = play_sound_after_success
-            play_sound_default = DEFAULT_SOUND_AFTER_SUCCESS
-            open_log = open_log_file_after_success
-            terminal_colors = terminal_colors_after_success
-            terminal_icon = SUCCESS_ICON_PATH
-            terminal_title = title_after_success
-            close = close_after_success
-            open_main = open_main_py_after_success
-        elif mode == "failure":
-            play_sound = play_sound_after_failure
-            play_sound_default = DEFAULT_SOUND_AFTER_FAILURE
-            open_log = open_log_file_after_failure
-            terminal_colors = terminal_colors_after_failure
-            terminal_icon = FAILURE_ICON_PATH
-            terminal_title = title_after_failure
-            close = close_after_failure
-            open_main = open_main_py_after_failure
-        elif mode == "crash":
-            play_sound = play_sound_after_crash
-            play_sound_default = DEFAULT_SOUND_AFTER_CRASH
-            open_log = open_log_file_after_crash
-            terminal_colors = terminal_colors_after_crash
-            terminal_icon = CRASH_ICON_PATH
-            terminal_title = title_after_crash
-            close = close_after_crash
-            open_main = open_main_py_after_crash
-        elif mode == "KeyboardInterrupt":
-            play_sound = play_sound_after_KeyboardInterrupt
-            play_sound_default = DEFAULT_SOUND_AFTER_KeyboardInterrupt
-            open_log = open_log_file_after_KeyboardInterrupt
-            terminal_colors = terminal_colors_after_KeyboardInterrupt
-            terminal_icon = KEYBOARD_INTERRUPT_ICON_PATH
-            terminal_title = title_after_KeyboardInterrupt
-            close = close_after_KeyboardInterrupt
-            open_main = open_main_py_after_KeyboardInterrupt
-
-        # play sound
-        if play_sound is True:
-            wav_path = play_sound_default
-        elif play_sound in (False, None, ""):
-            wav_path = ""
-        elif not os.path.isabs(play_sound):
-            wav_path = os.path.normpath(WINDOWS_DIR + "\\Media\\" + play_sound)
+    def play_sound(setting, default, wait=True):
+        if setting is True:
+            wav = default
+        elif setting in (False, None, ""):
+            wav = ""
+        elif not os.path.isabs(setting):
+            wav = os.path.join(paths.WINDOWS_DIR, "Media", setting)
         else:
-            wav_path = play_sound
-        if wav_path != "":
-            if wav_path[-4:] != ".wav":
-                wav_path += ".wav"
-
-        def _play_exit_sound(wav_path: str, wait: bool = True) -> None:
-            """Play the configured WAV synchronously or asynchronously, reporting playback errors."""
-            if not wav_path:
-                return
-            try:
-                import winsound
-
-                flags = winsound.SND_FILENAME | winsound.SND_NODEFAULT
-                if not wait:
-                    flags = flags | winsound.SND_ASYNC
-                winsound.PlaySound(
-                    wav_path,
-                    flags,
-                )
-            except Exception as e:
-                print(f"[Error] Failed to play .wav file: {e}")
-
-        # open log
-        if log_path and open_log:
-            try:
-                os.startfile(log_path)  # type: ignore[attr-defined]
-            except Exception as e:
-                print(f"[Error] Failed to open log: {e}")
-
-        if open_main:
-            open_in_editor(MAIN_PY_SCRIPT_PATH)
-
-        # rest
-        print(exit_msg)
-        if mode != "success":
-            write_txt_crash_log(traceback_payload, exit_msg)
-
-        if close is False or override_to_not_closing_and_disable_wait:
-            set_terminal_title(terminal_title)
-            set_terminal_colors(terminal_colors)
-            set_terminal_icon(terminal_icon)
-            print_traceback_from_json_payload(
-                traceback_payload
-            )  # must be after set_terminal_colors
-            _play_exit_sound(
-                wav_path, wait=not override_to_not_closing_and_disable_wait
-            )
-            if not override_to_not_closing_and_disable_wait:
-                input("Press enter to exit")
-        else:
-            print_traceback_from_json_payload(traceback_payload)
-            _play_exit_sound(wav_path)
+            wav = setting
+        if wav and not wav.lower().endswith(".wav"):
+            wav += ".wav"
+        if not wav:
             return
+        try:
+            import winsound
 
-    # ==============================
-    # main function
-    # ==============================
+            flags = winsound.SND_FILENAME | winsound.SND_NODEFAULT | (0 if wait else winsound.SND_ASYNC)
+            winsound.PlaySound(wav, flags)
+        except Exception as error:
+            print(f"[Error] Failed to play .wav file: {error}")
 
-    def main() -> None:
-        # ==============================
-        # handle args
+    def complete(outcome, log_path, report=None, message=None, keep_open=False):
+        """Run the configured actions for success/failure/crash/KeyboardInterrupt."""
+        close = getattr(s, "close_after_" + outcome)
+        if log_path and getattr(s, "open_log_file_after_" + outcome):
+            try:
+                os.startfile(log_path)
+            except Exception as error:
+                print(f"[Error] Failed to open log: {error}")
+        if getattr(s, "open_main_py_after_" + outcome):
+            open_in_editor(paths.MAIN_PY_SCRIPT_PATH)
+        if message:
+            print(message)
+        if outcome != "success":
+            write_crash_log(report, message)
+        sound = getattr(s, "play_sound_after_" + outcome)
+        if close is False or keep_open:
+            set_terminal_title(getattr(s, "title_after_" + outcome))
+            set_terminal_colors(getattr(s, "terminal_colors_after_" + outcome))
+            set_terminal_icon(OUTCOMES[outcome]["icon"])
+            print_report(report)  # after set_terminal_colors, which clears the screen colors
+            play_sound(sound, OUTCOMES[outcome]["default_sound"], wait=not keep_open)
+            if not keep_open:
+                input("Press Enter to exit")
+        else:
+            print_report(report)
+            play_sound(sound, OUTCOMES[outcome]["default_sound"])
 
-        """Classify the reported exit and apply diagnostic, recovery and completion actions."""
-        (
-            _script_path,
-            exit_mode,
-            app_id,
-            new_terminal_was_created,
-            log_path_resolved,
-            selected_python_script_path,
-        ) = sys.argv
+    def main():
+        _, exit_mode, app_id, new_terminal_was_created, log_path, script_path = sys.argv
         exit_mode = int(exit_mode)
         new_terminal_was_created = new_terminal_was_created.lower() == "true"
-
+        script_name = os.path.basename(script_path)
         if new_terminal_was_created:
             set_terminal_app_id(app_id)
 
         if "PYAPP_UNEXPECTED_EXIT" in os.environ:
-            actual_code = int(os.environ["PYAPP_UNEXPECTED_EXIT"])
-            mode = (
-                "crash"
-                if exit_code_looks_like_interpreter_crash(actual_code)
-                else "failure"
-            )
-            execute_exit_settings(
-                mode,
-                log_path_resolved,
+            native = int(os.environ["PYAPP_UNEXPECTED_EXIT"])
+            crashed = exit_code_looks_like_interpreter_crash(native)
+            hint = " See the .output.log next to the log file for the interpreter's last output." if log_path else ""
+            complete(
+                "crash" if crashed else "failure",
+                log_path,
                 None,
-                f"[Failure] Application exited without a completion report (native status {actual_code}).",
+                f'[{"Crash" if crashed else "Failure"}] "{script_name}" ended without a completion report (exit status {native}, 0x{native & 0xFFFFFFFF:08X}).{hint}',
             )
             return
 
-        # ==============================
-        # process exit
-
-        # exit_mode meaning:
-        # 0 = correctly handled end of script in main.py (no json)
-        # 1 = correctly handled other exit of main.py (json)
-        # 2 = handled failure in wrapper of main.py (json)
-        # 3 = unsuccessfully handled failure in wrapper of main.py (no json)
-        # 4 = handled failure watchdog script (json)
-
-        if exit_mode == 0:  # 0 = correctly handled end of script in main.py (no json)
-            execute_exit_settings(
-                "success",
-                log_path_resolved,
-                None,
-                "[Success] Program finished successfully",
-            )
-            sys.exit()
-
-        elif exit_mode == 1:  # 1 = correctly handled other exit of main.py (json)
-            traceback_payload, traceback_error = load_traceback_payload()
-            if traceback_payload is not None:
-                traceback_entries = _traceback_entries(traceback_payload)
-                exception_type = (
-                    str(traceback_entries[-1].get("type") or "Exception")
-                    if traceback_entries
-                    else "Exception"
-                )
-
-                if exception_type == "SystemExit":  # includes success exits
-                    main_exit_code = traceback_payload.get("system_exit_code")
-
-                    # success = main_exit_code: 0, None,False
-                    # failure = main_exit_code: non-0-int, True, float, strings (Anything not mentioned here get converted to string in wrapper)
-
-                    if main_exit_code is None or (
-                        isinstance(main_exit_code, int) and main_exit_code == 0
-                    ):  # success
-                        execute_exit_settings(
-                            "success",
-                            log_path_resolved,
-                            traceback_payload,
-                            "[Success] Program finished successfully",
-                        )
-
-                    elif exit_code_looks_like_interpreter_crash(main_exit_code):
-                        execute_exit_settings(
-                            "crash",
-                            log_path_resolved,
-                            traceback_payload,
-                            f'[Crash] It appears like the Python interpreter crashed with exit code "{main_exit_code}" while running "{selected_python_script_path}".',
-                        )
-
-                    else:
-                        execute_exit_settings(
-                            "failure",
-                            log_path_resolved,
-                            traceback_payload,
-                            f'[Failure] "{selected_python_script_path}" exited with error code "{main_exit_code}".',
-                        )
-
-                elif exception_type in ["ImportError", "ModuleNotFoundError"]:
-                    missing_module = str(
-                        traceback_entries[-1].get("missing_module") or ""
-                    ).strip()
-                    install_name = ""
-
-                    if missing_module:
-                        install_name = get_package_install_name(missing_module)
-
-                        if install_name != missing_module:
-                            exit_message = f'[Missing Package Error] "{selected_python_script_path}" could not import package "{missing_module}" (likely installed as "{install_name}") (see below).'
-                        else:
-                            exit_message = (
-                                f'[Missing Package Error] "{selected_python_script_path}" could not import package '
-                                f'"{missing_module}" (see below).'
-                            )
-                    else:  # can be for cases like "raise ImportError()"
-                        exit_message = f'[Missing Package Error] "{selected_python_script_path}" could not import a package (see below).'
-
-                    execute_exit_settings(
-                        "failure",
-                        log_path_resolved,
-                        traceback_payload,
-                        exit_message,
-                        override_to_not_closing_and_disable_wait=True,
-                    )
-                    handle_missing_package_options(
-                        missing_module,
-                        install_name,
-                        app_id,
-                        new_terminal_was_created,
-                    )
-
-                elif exception_type == "SyntaxError":
-                    execute_exit_settings(
-                        "failure",
-                        log_path_resolved,
-                        traceback_payload,
-                        f'[Failure] "{selected_python_script_path}" had a syntax error (see below).',
-                    )
-
-                elif exception_type == "KeyboardInterrupt":
-                    execute_exit_settings(
-                        "KeyboardInterrupt",
-                        log_path_resolved,
-                        traceback_payload,
-                        f'[Failure] "{selected_python_script_path}" was interrupted by user with Ctrl+C',
-                    )
-
-                else:  # remaining exceptions cases
-                    execute_exit_settings(
-                        "failure",
-                        log_path_resolved,
-                        traceback_payload,
-                        f'[Failure] "{selected_python_script_path}" had exception of type "{exception_type}" (see below).',
-                    )
-
-            else:
-                execute_exit_settings(
-                    "failure",
-                    log_path_resolved,
-                    None,
-                    f'[Failure] "{selected_python_script_path}" failed, but its traceback could not be loaded. '
-                    f"{traceback_error}",
-                )
-
-        elif exit_mode == 2:  # 2 = handled failure in wrapper of main.py (json)
-            traceback_payload, traceback_error = load_traceback_payload()
-            if traceback_payload is not None:
-                traceback_entries = _traceback_entries(traceback_payload)
-                exception_type = (
-                    str(traceback_entries[-1].get("type") or "Exception")
-                    if traceback_entries
-                    else "Exception"
-                )
-                execute_exit_settings(
-                    "failure",
-                    log_path_resolved,
-                    traceback_payload,
-                    f'[Failure] The script wrapper failed with exception of type "{exception_type}" (see below).',
-                )
-            else:
-                execute_exit_settings(
-                    "failure",
-                    log_path_resolved,
-                    None,
-                    f"[Failure] The script wrapper failed, but its traceback could not be loaded. {traceback_error}",
-                )
-        elif (
-            exit_mode == 3
-        ):  # 3 = unsuccessfully handled failure in wrapper of main.py (no json)
-            # The wrapper's last-resort handler already displayed the traceback
-            # and waited for acknowledgement. Avoid a second failure prompt.
+        if exit_mode == ExitMode.SUCCESS:
+            complete("success", log_path, None, "[Success] Program finished successfully")
             return
-        elif exit_mode == 4:  # 4 = handled failure watchdog script (json)
-            traceback_payload, traceback_error = load_traceback_payload()
-            execute_exit_settings(
-                "failure",
-                log_path_resolved,
-                traceback_payload,
-                (
-                    "[Failure] The background watchdog failed (see below)."
-                    if traceback_payload is not None
-                    else f"[Failure] The background watchdog failed, but its traceback could not be loaded. "
-                    f"{traceback_error}"
-                ),
-            )
+
+        report, problem = load_report()
+        if exit_mode == ExitMode.WATCHDOG_ERROR:
+            complete("failure", log_path, report, "[Failure] The background watchdog failed (see below)." + ("" if report else " " + problem))
+            return
+        if exit_mode == ExitMode.WRAPPER_ERROR:
+            complete("failure", log_path, report, "[Failure] The script wrapper failed (see below)." + ("" if report else " " + problem))
+            return
+        if exit_mode != ExitMode.APP_EXIT:
+            crashed = exit_code_looks_like_interpreter_crash(exit_mode)
+            complete("crash" if crashed else "failure", log_path, None, f'[Failure] "{script_name}" ended unexpectedly with status {exit_mode}.')
+            return
+        if report is None:
+            complete("failure", log_path, None, f'[Failure] "{script_name}" failed, but its traceback could not be loaded. {problem}')
+            return
+
+        kind = report.get("exception_type") or "Exception"
+        if kind == "SystemExit":
+            code = report.get("system_exit_code")
+            if exit_code_is_success(code):
+                complete("success", log_path, None, "[Success] Program finished successfully")
+            elif exit_code_looks_like_interpreter_crash(code):
+                complete("crash", log_path, report, f'[Crash] The interpreter appears to have crashed with exit code "{code}" while running "{script_name}".')
+            else:
+                complete("failure", log_path, report, f'[Failure] "{script_name}" exited with error code "{code}".')
+        elif kind == "ModuleNotFoundError" and report.get("missing_module"):
+            missing = report["missing_module"]
+            complete("failure", log_path, report, f'[Missing Package] "{script_name}" could not import "{missing}" (see below).', keep_open=True)
+            handle_missing_module(missing, app_id, new_terminal_was_created)
+        elif kind == "KeyboardInterrupt":
+            complete("KeyboardInterrupt", log_path, report, f'[Interrupted] "{script_name}" was stopped with Ctrl+C.')
+        elif kind == "SyntaxError":
+            complete("failure", log_path, report, f'[Failure] "{script_name}" has a syntax error (see below).')
         else:
-            mode = (
-                "crash"
-                if exit_code_looks_like_interpreter_crash(exit_mode)
-                else "failure"
-            )
-            label = "Crash" if mode == "crash" else "Failure"
-            execute_exit_settings(
-                mode,
-                log_path_resolved,
-                None,
-                f'[{label}] The script wrapper exited unexpectedly with status "{exit_mode}" while running '
-                f'"{selected_python_script_path}".',
-            )
-
-    # ==============================
-    # execute main function
-    # ==============================
+            complete("failure", log_path, report, f'[Failure] "{script_name}" raised {kind} (see below).')
 
     if __name__ == "__main__":
         try:
             main()
-        except Exception as e:
-            print_traceback(fail_message.format(e=e))
-            input_warn("[Error] Press enter to exit")
+        except Exception as error:
+            print_traceback(fail_message.format(e=error))
+            input_warn("[Error] Press Enter to exit")
             sys.exit(1)
         sys.exit(0)
 
-    # ==============================
-
-except Exception as e:
+except Exception as error:
     import os
     import traceback
 
-    print()
-    print()
-    print("=" * 30)
-    print(fail_message.format(e=e))
+    print("\n\n" + "=" * 30)
+    print(fail_message.format(e=error))
     print("-" * 30)
     print(traceback.format_exc())
     print("=" * 30)
-    input("[Error] Press enter to exit")
-    os._exit(
-        1
-    )  # instead of sys.exit(1) to prevent exception by script calling this script
+    input("[Error] Press Enter to exit")
+    os._exit(1)
