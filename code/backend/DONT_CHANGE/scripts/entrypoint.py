@@ -1,5 +1,7 @@
 """One error, exit-code and acknowledgement policy for developer/shortcut tools."""
 
+from __future__ import annotations
+
 import os
 import runpy
 import sys
@@ -49,9 +51,38 @@ def run_file(path):
         print("\n[Info] Interrupted by Ctrl+C", file=sys.stderr)
         return 130
     except Exception as error:
+        if type(error).__name__ == "LaunchCancelled":
+            print("[Info] Launch cancelled.")
+            return 0
+        problem = expected_problem(error)
+        if problem is not None:
+            # Settings mistakes, missing downloads etc.: a clear message, no traceback.
+            _show_console()
+            print("\n[Error] " + problem, file=sys.stderr)
+            acknowledge("Press Enter to exit")
+            return 1
+        _show_console()
         description = namespace.get("fail_message", "[Error] Tool failed: {e}")
         print(description.format(e=error), file=sys.stderr)
-        # Standard-library reporting also works if settings or Rich cannot import.
         traceback.print_exc()
         acknowledge("Press Enter to exit")
         return 1
+
+
+def expected_problem(error):
+    """Return a message for user-fixable errors (no traceback needed), else None."""
+    names = {cls.__name__ for cls in type(error).__mro__}
+    if names & {"SettingsError", "SetupError"}:
+        return str(error)
+    if isinstance(error, SyntaxError) and str(getattr(error, "filename", "") or "").endswith("developer_settings.py"):
+        return f"developer_settings.py has a syntax error in line {error.lineno}: {error.msg}\n  \"{error.filename}\""
+    return None
+
+
+def _show_console():
+    try:
+        from backend.DONT_CHANGE.scripts.console_tools import show_console
+
+        show_console()
+    except Exception:
+        pass

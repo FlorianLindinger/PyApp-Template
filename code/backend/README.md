@@ -1,13 +1,15 @@
 # Application backend
 
-Configure the application in [developer_settings.py](developer_settings.py).
-Change application dependencies using the batches in [dev_tools](dev_tools/README.md).
-That guide explains how to install, remove, upgrade and save package defaults.
+Configure the application in [developer_settings.py](developer_settings.py): name,
+Python version, where uv/Python/packages come from, shortcuts, logging and completion behavior.
 
-The generated `python/` and `packages/` folders are maintained by those tools.
-The launcher's own Python and dependencies are separate, inside `DONT_CHANGE`.
-Application packages belong in the application environment.
+Change packages and the Python version with the tools in [dev_tools](dev_tools/README.md)
+(or uv commands in `../`). Dependencies are declared in `../pyproject.toml` and locked in
+`../uv.lock`; the app environment is `../.venv`.
 
-For normal development, edit `../main.py`, `../settings.py`,
-`developer_settings.py` and `dev_tools/DEFAULT_PYTHON_PACKAGES.txt`.
-See [backend internals](DONT_CHANGE/README.md) when maintaining the template itself.
+Generated folders here: `pythons/` and `uv/` (only when installed locally), `uv-cache/`
+(only with `uv_cache = "local"`) and `shortcuts_created_by_setup.json` (the shortcuts Setup created, so it can
+remove stale ones). All are ignored by Git.
+
+For normal development edit `../main.py`, `../settings.py` and `developer_settings.py`.
+See the [backend internals](DONT_CHANGE/README.md) when maintaining the template itself.

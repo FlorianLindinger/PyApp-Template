@@ -1,18 +1,27 @@
-"""Configure application identity, runtime, logging and launcher completion behavior.
+"""Configure application identity, Python/uv, logging and launcher completion behavior.
 
-Relative paths in this file are interpreted as relative to this file."""
+Relative paths in this file are interpreted as relative to this file.
 
-# =========================
+Settings marked [bootstrap] are also read by the Windows bootstrap before any Python
+exists. Keep each of them on ONE line as a plain literal ("text", True, False, None):
+no expressions, f-strings or line continuations.
+"""
+#ruff: noqa: ERA001
+# Keeps the "str | None" annotations below working on Python 3.8 and 3.9.
+from __future__ import annotations
+
+# ===========================
 # ==== Settings Overview ====
-# =========================
+# ===========================
 
-# 1. Important Settings: program name, Python version, shortcuts, startup, and console prefixes.
-# 2. Logging Settings: normal and crash-log locations and behavior.
-# 3. Program Finish/Crash Settings: what happens after success, failure, crashes, and KeyboardInterrupt.
-# 4. Traceback Settings: displayed crash-report date format and Rich color theme.
-# 5. Icon Settings: individual overlay size and alignment for generated shortcut icons.
-# 6. Less Important Settings: process, Python installation, package, and startup behavior.
-# 7. Launcher Mode Specific Settings: classic-console and Windows Terminal appearance.
+# 1. Important Settings: program name, Python version, shortcuts, startup and instances.
+# 2. Python and Package Settings: where uv, Python and the packages come from.
+# 3. Logging Settings: normal and crash-log locations, behavior and retention.
+# 4. Program Finish/Crash Settings: what happens after success, failure, crashes, and KeyboardInterrupt.
+# 5. Traceback Settings: crash-report date format, context lines and colors.
+# 6. Icon Settings: individual overlay size and alignment for generated shortcut icons.
+# 7. Less Important Settings: application arguments and setup behavior.
+# 8. Launcher Mode Specific Settings: classic-console and Windows Terminal appearance.
 
 # ============================
 # ==== Important Settings ====
@@ -22,40 +31,99 @@ Relative paths in this file are interpreted as relative to this file."""
 # Name of this program:
 program_name = "PyApp-Template"
 # ---------------------------------------
-# Python version (""/"x"/"x.y"/"x.y.z"). Finds latest matching(msi-install-available) Python version ("" == latest):
-# Every specified component is required: "3.14" accepts any 3.14.x; "3.14.6" requires that patch.
-# Keeping an incompatible installed version cancels the launch rather than bypassing this requirement.
-python_version: str = "3.14"
+# [bootstrap] Python version requested from uv:
+#   ""        newest stable Python, chosen once and then kept (see dev tool update_python)
+#   "3.14"    any 3.14.x (uv picks the newest patch)
+#   "3.14.6"  exactly that patch
+#   "3.14t"   free-threaded build; any other uv request string such as "pypy@3.11" also works
+# Supported: every version uv can provide (Windows x64 currently 3.8.2 and newer).
+# The launcher itself needs Python 3.8 or newer. Changing this later offers a migration menu.
+python_version = "3.14"
 # ---------------------------------------
 # Path to end-user settings file (None to disable). File type can be anything openable by vscode/editor:
 user_settings_path: str | None = "..\\settings.py"
 # ---------------------------------------
 # Names of created shortcuts (None to disable). Accepts for example f"{program_name}":
-windows_terminal_shortcut_name: str | None = f"{program_name}"
+# The first one starts the app with a terminal (classic console or Windows Terminal, see section 8).
+terminal_shortcut_name: str | None = f"{program_name}"
 no_terminal_shortcut_name: str | None = f"{program_name} (no Terminal)"
 open_settings_shortcut_name: str | None = f"{program_name} - Settings"
 stop_running_shortcut_name: str | None = f"Stop {program_name}"
 open_log_folder_shortcut_name: str | None = f"{program_name} - Logs"
 open_crash_log_folder_shortcut_name: str | None = f"{program_name} - Crash Logs"
-open_main_py_shortcut_name: str | None = f"{program_name} - Open main.py"
+open_main_py_shortcut_name: str | None = f"{program_name} - Edit main.py"
+# ---------------------------------------
+# Where else to put shortcuts (the project folder always gets all enabled ones).
+# Setup removes shortcuts it created earlier that are no longer wanted.
+# Start Menu: a folder named after program_name with all enabled shortcuts.
+start_menu_shortcuts = True
+# Desktop: list of shortcut kinds, from "terminal", "no_terminal", "stop", "settings",
+# "logs", "crash_logs", "main_py". Example: ["no_terminal"]
+desktop_shortcuts: list[str] = []
 # ---------------------------------------
 # String added before prints/inputs. Accepts datetime.datetime.strftime usage: e.g. "%H:%M:%S | ". None to turn off:
 print_prepend: str | None = "%H:%M:%S | "
 input_prepend: str | None = "%H:%M:%S > "
 # ---------------------------------------
-# Start script in scipt folder or folder of the starting shortcut. (affects log_path_rel_to_start_folder setting below):
+# Start script in script folder or folder of the starting shortcut. (affects log_path_is_relative_to_start_folder_if_relative setting below):
 start_in_shortcut_folder = False
 # ---------------------------------------
-# Use an installed app interpreter instead of preparing local app Python/packages.
-# The separate launcher backend is still required; global app dependencies are not installed automatically.
-use_global_python = False
-# ---------------------------------------
-# Decide what parts of vanilla full Python to install:
-# --
-#   Tkinter (Required for Tk-based GUIs or IDLE and used as default backend for matplotlib.pyplot. ~11 MB):
-install_tkinter = True
-# ---------------------------------------
 start_minimized = False
+# ---------------------------------------
+# What to do when the program is started while it is already running:
+#   "allow"    start another instance
+#   "focus"    bring the running instance's window to the front instead (asks to replace it if it has no window)
+#   "prevent"  show a message and do not start
+#   "replace"  stop the running instance(s), then start
+#   "ask"      ask whether to replace the running instance(s)
+instance_policy = "allow"
+# ---------------------------------------
+
+# ======================================
+# ==== Python and Package Settings ====
+# ======================================
+
+# ---------------------------------------
+# [bootstrap] Where the app's Python comes from:
+#   "local"                          uv installs it inside this project (code/backend/pythons). Portable.
+#   "uv_user"                        uv installs it in its per-user folder, shared by projects.
+#   "system_if_matching_else_local"  use an installed Python matching python_version, otherwise install locally.
+#   "system_default_any_version"     use the default installed Python (py launcher / PATH), whatever its version.
+#                                    Falls back to a local install of python_version if none is found.
+python_source = "uv_user"
+# ---------------------------------------
+# [bootstrap] Where the app's packages live:
+#   "project_venv"               a uv-managed virtual environment in code/.venv (recommended)
+#   "interpreter_site_packages"  the selected interpreter's own packages (only with the "system_..." sources)
+package_environment = "project_venv"
+# ---------------------------------------
+# [bootstrap] uv itself:
+#   uv_prefer: which uv to use when both a global (on PATH) and a local (code/backend/uv) uv exist: "global" | "local"
+#   uv_install_if_missing: "global" (Astral's installer, adds uv to your user PATH) | "local" | "never"
+#   uv_version: "" for the latest, an exact version like "0.11.32", or a range like ">=0.9,<1"
+#   A global uv that does not satisfy uv_version is not changed; a local uv is installed instead.
+uv_prefer = "global"
+uv_install_if_missing = "global"
+uv_version = ""
+# ---------------------------------------
+# [bootstrap] For python_source = "uv_user": also register the Python in Windows (py launcher) and put python3.x.exe on PATH:
+uv_user_python_visible_globally = True
+# ---------------------------------------
+# [bootstrap] uv download cache: "global" (uv's per-user cache) or "local" (code/backend/uv-cache, grows over time):
+uv_cache = "global"
+# ---------------------------------------
+# [bootstrap] Allow normal launches to download uv, Python or packages. Setup and dev tools may always download.
+# False makes launches fail with a clear message instead of using the network.
+allow_downloads_at_launch = True
+# ---------------------------------------
+# [bootstrap] Use Windows' certificate store for downloads (needed behind some company proxies):
+use_system_certificates = False
+# ---------------------------------------
+# package_environment = "interpreter_site_packages": allow the missing-package menu to install into that interpreter:
+allow_installing_into_global_python = False
+# ---------------------------------------
+# Prepare uv, Python and packages when running Setup instead of on the first start:
+install_environment_when_generating_shortcuts = True
 # ---------------------------------------
 
 # ==========================
@@ -87,6 +155,11 @@ crash_log_path_is_relative_to_start_folder_if_relative = False
 # Accepts datetime.datetime.strftime usage (e.g. "log_%Y-%m-%d_%H-%M-%S.txt"). None to disable:
 # UPDATE root .gitignore's /crash logs/* rule if changing the output directory if wanted.
 crash_log_path: str | None = "..\\..\\crash logs\\crash_log_%Y-%m-%d_%H-%M-%S.txt"
+# ---------------------------------------
+# Retention: keep at most this many files in each log folder (None keeps everything):
+max_log_files: int | None = None
+# Delete per-run diagnostic folders (temporary/runs) older than this many days (None keeps them):
+max_run_folder_age_days: int | None = None
 # ---------------------------------------
 
 # =======================================
@@ -128,8 +201,8 @@ title_after_crash: str | None = f"[Crash] {program_name}"
 title_after_KeyboardInterrupt: str | None = f"[KeyboardInterrupt] {program_name}"
 # ---------------------------------------
 # Terminal colors after the program finishes (None or "" keeps the current colors):
-# Background color: 0=Black,1=Blue,2=Green,3=Aqua,4=Red,5=Purple,6=Yellow,8=Gray,7=White,9=LightBlue
-# Text color: A=LightGreen,B=LightAqua,C=LightRed,,D=LightPurple,E=LightYellow,F=BrightWhite:
+# Background color: 0=Black,1=Blue,2=Green,3=Aqua,4=Red,5=Purple,6=Yellow,7=White,8=Gray,9=LightBlue
+# Text color: A=LightGreen,B=LightAqua,C=LightRed,D=LightPurple,E=LightYellow,F=BrightWhite:
 terminal_colors_after_success: str | None = "2F"
 terminal_colors_after_failure: str | None = "4F"
 terminal_colors_after_crash: str | None = "4F"
@@ -141,24 +214,15 @@ terminal_colors_after_KeyboardInterrupt: str | None = "6C"
 # ============================
 
 # Datetime format shown in crash reports:
-PRINTED_ERROR_DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
-# Number of source-code lines shown before and after the failing line.
+error_date_format = "%Y-%m-%d %H:%M:%S"
+# Number of source-code lines shown before and after the failing line of your own code.
 traceback_extra_lines: int = 3
-# Colors/styles used by Rich traceback output:
-RICH_TRACEBACK_COLOR_THEME = {
-    "code": "monokai",
-    "background": "#272822",
-    "border": "bright_red",
-    "syntax_border": "bold bright_red",
-    "label": "bold bright_white",
-    "metadata": "bright_black",
-    "text": "bright_white",
-    "syntax_pointer": "bold bright_yellow",
-}
+# Color tracebacks in the terminal (log files are always plain text):
+traceback_colors = True
 
-# ============================
+# =======================
 # ==== Icon Settings ====
-# ============================
+# =======================
 
 # Configure every generated sub-icon separately. ``scale`` is the fraction of
 # the base icon area it covers (0 < value <= 1); ``alignment`` accepts compass
@@ -188,42 +252,26 @@ keyboardInterrupt_sub_icon_alignment: str | None = "bottom right"
 # =================================
 
 # ---------------------------------------
-# How to treat alredy running program instances:
-prevent_start_if_already_running = False
-close_already_running_instances_on_start = False
-prompt_to_close_existing_instances = False
-# The prompt applies only when prevent_start_if_already_running=True and
-# close_already_running_instances_on_start=False; otherwise the other policy wins.
-# ---------------------------------------
-# Install Python environment while generating shortcuts instead of for first start (Ignored when use_global_python = True):
-install_python_when_generating_shortcuts = True
-# ---------------------------------------
 # Application arguments passed to main.py:
 args_for_main_py: list[str] = []
-# ---------------------------------------
-# Use uv (faster replacement of pip) to install packages (it uses global uv if available and installs locally otherwise):
-use_uv_to_install_packages = True
 # ---------------------------------------
 
 # =========================================
 # ==== Launcher Mode Specific Settings ====
 # =========================================
 
-# --------------------------------
-# ---- Windows Terminal Start ----
-# --------------------------------
-
 # ---------------------------------------
 # use_classic_terminal=True uses classic old-style terminal (conhost.exe) with no tabs (looks more like an app and less like a terminal but text rendering and zooming are worse).
-# use_classic_terminal=False uses modern Windows Terminal (wt.exe): tabs and modern text rendering and zoom:
+# use_classic_terminal=False uses modern Windows Terminal (wt.exe): tabs and modern text rendering and zoom.
+# Falls back to the classic terminal with a warning if Windows Terminal is not installed.
 use_classic_terminal = True
 # ---------------------------------------
 
 # settings for use_classic_terminal = True/False:
 # ---------------------------------------
-# Background color: 0=Black,1=Blue,2=Green,3=Aqua,4=Red,5=Purple,6=Yellow,8=Gray,7=White,9=LightBlue:
+# Background color: 0=Black,1=Blue,2=Green,3=Aqua,4=Red,5=Purple,6=Yellow,7=White,8=Gray,9=LightBlue:
 terminal_bg_color: str | None = "9"
-# Text color: A=LightGreen,B=LightAqua,C=LightRed,,D=LightPurple,E=LightYellow,F=BrightWhite:
+# Text color: A=LightGreen,B=LightAqua,C=LightRed,D=LightPurple,E=LightYellow,F=BrightWhite:
 terminal_text_color: str | None = "F"
 # ---------------------------------------
 
@@ -233,4 +281,16 @@ terminal_text_color: str | None = "F"
 tab_bar_color: str | None = "#3B78FF"
 # ---------------------------------------
 
-# =========================================
+# ---------------------------------------
+# open this file if someone runs it directly (e.g. double-clicks it in Explorer) instead of running the launcher:
+if __name__ == "__main__":
+    import sys
+    from pathlib import Path
+
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+    from backend.DONT_CHANGE.scripts.shell_tools import open_in_editor
+
+    open_in_editor(str(Path(__file__).resolve()))
+
+
+

@@ -1,5 +1,7 @@
 """PNG and ICO generation through Windows WPF."""
 
+from __future__ import annotations
+
 import os
 from collections.abc import Iterable, Sequence
 from pathlib import Path

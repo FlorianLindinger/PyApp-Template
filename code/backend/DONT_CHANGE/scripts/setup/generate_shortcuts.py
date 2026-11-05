@@ -1,4 +1,6 @@
-"""Generate Windows shortcuts for the configured PyApp Template launch modes."""
+"""Generate Windows shortcuts (project folder, Start Menu, Desktop) and remove stale ones."""
+
+from __future__ import annotations
 
 if __name__ == "__main__":
     import sys
@@ -16,35 +18,23 @@ if __name__ == "__main__":
 
 import ctypes
 import hashlib
+import json
 import os
 import re
-import sys
 import time
 import unicodedata
 import uuid
 from ctypes import wintypes
 
-from backend.developer_settings import (
-    install_python_when_generating_shortcuts,
-    no_terminal_shortcut_name,
-    open_crash_log_folder_shortcut_name,
-    open_log_folder_shortcut_name,
-    open_main_py_shortcut_name,
-    open_settings_shortcut_name,
-    program_name,
-    stop_running_shortcut_name,
-    use_global_python,
-    user_settings_path,
-    windows_terminal_shortcut_name,
-)
+from backend.DONT_CHANGE.scripts.config import settings, validate
 from backend.DONT_CHANGE.scripts.filesystem_tools import (
     make_abs_path_relative_to_file,
     sanitize_filename,
 )
-from backend.DONT_CHANGE.scripts.frontend_environment import ensure_frontend_packages
-from backend.DONT_CHANGE.settings.backend_settings import (
+from backend.DONT_CHANGE.backend_settings import (
     CRASH_LOG_ICON_PATH,
     DEV_SETTINGS_PATH,
+    ENTRY_BATCHES_DIR,
     ICON_PATH,
     LAUNCHER_NO_TERMINAL,
     LAUNCHER_OPEN_CRASH_LOG_DIR,
@@ -54,9 +44,12 @@ from backend.DONT_CHANGE.settings.backend_settings import (
     LAUNCHER_STOP,
     LAUNCHER_TERMINAL,
     LOG_ICON_PATH,
+    NO_TERMINAL_APP_ID_SUFFIX,
     OPEN_MAIN_PY_ICON_PATH,
     SETTINGS_ICON_PATH,
+    CREATED_SHORTCUTS_LIST_PATH,
     SHORTCUT_OUTPUT_DIR,
+    SHORTCUT_SIGNATURE,
     STOP_ICON_PATH,
 )
 
@@ -71,7 +64,8 @@ def generate_shortcut(
     start_minimized: bool = False,
     classic_terminal: bool = True,
     wdir: str | os.PathLike[str] = "",
-) -> None:
+    output_dir: str = SHORTCUT_OUTPUT_DIR,
+) -> str:
     """Create one configured Windows ``.lnk`` shortcut.
 
     The function builds the launcher command, applies the icon, description,
@@ -300,7 +294,7 @@ def generate_shortcut(
     _property_store_interface_id = _guid("886D8EEB-8CF2-4446-8D02-CDBA1DBDCF99")
     _app_id_key = _PropertyKey(_guid("9F4C2855-9F79-4B39-A8D0-E1D42DE1D5F3"), 5)
     output_path = os.path.abspath(
-        os.path.join(SHORTCUT_OUTPUT_DIR, _shortcut_filename(os.fspath(shortcut_name)))
+        os.path.join(output_dir, _shortcut_filename(os.fspath(shortcut_name)))
     )
     launcher_args = (
         [_quote(launcher_path)]
@@ -315,7 +309,7 @@ def generate_shortcut(
         icon_path = None
     wdir = os.path.abspath(wdir) if wdir else SHORTCUT_OUTPUT_DIR
     description = "" if description is None else os.fspath(description)
-    print(f"[Info] Generating: {output_path}")
+    print(f"[Info] Creating: {output_path}")
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     _wait_for_file(output_path, should_exist=False)
     ole32 = ctypes.WinDLL("ole32", use_last_error=True)
@@ -419,6 +413,7 @@ def generate_shortcut(
         if should_uninitialize:
             ole32.CoUninitialize()
     _wait_for_file(output_path, should_exist=True)
+    return output_path
 
 
 def _sanitize_app_id(value: str) -> str:
@@ -451,103 +446,145 @@ def _shortcut_filename(name: str) -> str:
     return safe + ".lnk"
 
 
-def main() -> None:
-    """Optionally prepare application dependencies and generate the enabled Windows shortcuts."""
-    app_id = _sanitize_app_id(program_name)
-    names = [
-        windows_terminal_shortcut_name,
-        no_terminal_shortcut_name,
-        stop_running_shortcut_name,
-        open_log_folder_shortcut_name,
-        open_crash_log_folder_shortcut_name,
-        open_main_py_shortcut_name,
+def special_folder(csidl: int) -> str:
+    """Return a Windows shell folder (handles OneDrive-redirected Desktops)."""
+    buffer = ctypes.create_unicode_buffer(32768)
+    result = ctypes.windll.shell32.SHGetFolderPathW(None, csidl, None, 0, buffer)
+    if result != 0 or not buffer.value:
+        raise OSError(f"Could not locate the Windows shell folder {csidl:#x} (HRESULT {result & 0xFFFFFFFF:#010x}).")
+    return buffer.value
+
+
+CSIDL_PROGRAMS = 0x02  # Start Menu\Programs of the current user
+CSIDL_DESKTOPDIRECTORY = 0x10
+
+
+def is_generated_shortcut(path: str) -> bool:
+    """True for .lnk files created by Setup of THIS project, or of a project folder that no longer exists.
+
+    Shortcuts of another existing copy of the template (e.g. a copied project with the same
+    shortcut list) are never deleted.
+    """
+    if not path.lower().endswith(".lnk") or not os.path.isfile(path):
+        return False
+    try:
+        with open(path, "rb") as stream:
+            data = stream.read(65536)
+    except OSError:
+        return False
+    text = data.decode("utf-16-le", errors="ignore") + data[1:].decode("utf-16-le", errors="ignore")
+    targets = re.findall(r'"([^"]*' + re.escape(SHORTCUT_SIGNATURE) + r'[A-Za-z]\.bat)"', text, flags=re.IGNORECASE)
+    for target in targets:
+        if os.path.normcase(os.path.dirname(target)) == os.path.normcase(ENTRY_BATCHES_DIR) or not os.path.exists(target):
+            return True
+    return False
+
+
+def read_created_shortcuts() -> list:
+    try:
+        with open(CREATED_SHORTCUTS_LIST_PATH, encoding="utf-8") as stream:
+            return list(json.load(stream).get("shortcuts", []))
+    except (OSError, ValueError, AttributeError):
+        return []
+
+
+def write_created_shortcuts(paths: list) -> None:
+    with open(CREATED_SHORTCUTS_LIST_PATH, "w", encoding="utf-8") as stream:
+        json.dump({"version": 1, "shortcuts": sorted(set(paths))}, stream, indent=2)
+
+
+def remove_shortcuts(paths, keep=()) -> list:
+    """Delete generated shortcuts that are no longer wanted; returns the removed paths."""
+    keep_keys = {os.path.normcase(os.path.abspath(p)) for p in keep}
+    removed = []
+    for path in paths:
+        if os.path.normcase(os.path.abspath(path)) in keep_keys:
+            continue
+        if is_generated_shortcut(path):
+            try:
+                os.remove(path)
+                removed.append(path)
+            except OSError as error:
+                print(f'[Warning] Could not remove the old shortcut "{path}": {error}')
+        folder = os.path.dirname(path)
+        try:
+            # Remove our now-empty Start Menu folder (never the Start Menu or Desktop itself).
+            if folder not in (special_folder(CSIDL_PROGRAMS), special_folder(CSIDL_DESKTOPDIRECTORY), SHORTCUT_OUTPUT_DIR) and os.path.isdir(folder) and not os.listdir(folder):
+                os.rmdir(folder)
+        except OSError:
+            pass
+    return removed
+
+
+def shortcut_definitions(s, app_id: str) -> list:
+    """(kind, name, icon, launcher, args, app_id, description) for every enabled shortcut."""
+    name = s.program_name
+    definitions = [
+        ("terminal", s.terminal_shortcut_name, ICON_PATH, LAUNCHER_TERMINAL, app_id, app_id, f"Start {name}"),
+        ("no_terminal", s.no_terminal_shortcut_name, ICON_PATH, LAUNCHER_NO_TERMINAL, app_id, app_id + NO_TERMINAL_APP_ID_SUFFIX, f"Start {name} without opening a terminal window"),
+        ("stop", s.stop_running_shortcut_name, STOP_ICON_PATH, LAUNCHER_STOP, "", None, f"Stop running {name} processes"),
+        ("logs", s.open_log_folder_shortcut_name, LOG_ICON_PATH, LAUNCHER_OPEN_LOG_DIR, "", None, f"Open the {name} log folder"),
+        ("crash_logs", s.open_crash_log_folder_shortcut_name, CRASH_LOG_ICON_PATH, LAUNCHER_OPEN_CRASH_LOG_DIR, "", None, f"Open the {name} crash log folder"),
+        ("main_py", s.open_main_py_shortcut_name, OPEN_MAIN_PY_ICON_PATH, LAUNCHER_OPEN_MAIN_PY, "", None, f"Open the {name} main.py file"),
     ]
-    if user_settings_path:
-        names.append(open_settings_shortcut_name)
-    filenames = [_shortcut_filename(name).casefold() for name in names if name]
+    if s.user_settings_path:
+        definitions.append(("settings", s.open_settings_shortcut_name, SETTINGS_ICON_PATH, LAUNCHER_OPEN_SETTINGS, "", None, f"Open the {name} settings file"))
+    return [d for d in definitions if d[1]]
+
+
+def main() -> None:
+    """Optionally prepare the environment, then create the enabled shortcuts and remove stale ones."""
+    s = settings()
+    validate(s)
+    app_id = _sanitize_app_id(s.program_name)
+    definitions = shortcut_definitions(s, app_id)
+    filenames = [_shortcut_filename(d[1]).casefold() for d in definitions]
     if len(filenames) != len(set(filenames)):
-        raise ValueError(
-            "Shortcut names collide after Windows filename sanitization; choose distinct names."
-        )
-    if install_python_when_generating_shortcuts and (not use_global_python):
-        ensure_frontend_packages(app_id)
+        raise ValueError("Shortcut names collide after Windows filename sanitization; choose distinct names.")
+    if s.install_environment_when_generating_shortcuts:
+        from backend.DONT_CHANGE.scripts.uv_env import ensure_environment
+
+        ensure_environment(interactive=True, purpose="setup")
+    if s.user_settings_path:
+        settings_file = make_abs_path_relative_to_file(s.user_settings_path, DEV_SETTINGS_PATH)
+        if not os.path.exists(settings_file):
+            print(f'[Warning] The user settings file does not exist: "{settings_file}". Its shortcut will show an error until the file exists.')
+
+    targets = [SHORTCUT_OUTPUT_DIR]
+    start_menu = None
+    if s.start_menu_shortcuts:
+        start_menu = os.path.join(special_folder(CSIDL_PROGRAMS), sanitize_filename(s.program_name))
+        targets.append(start_menu)
     print()
     print("=" * 30)
-    print()
-    if windows_terminal_shortcut_name:
-        generate_shortcut(
-            windows_terminal_shortcut_name,
-            ICON_PATH,
-            LAUNCHER_TERMINAL,
-            args=app_id,
-            app_id=app_id,
-            description=f"Start {program_name} in Windows Terminal",
-            start_minimized=True,
-        )
-    if no_terminal_shortcut_name:
-        generate_shortcut(
-            no_terminal_shortcut_name,
-            ICON_PATH,
-            LAUNCHER_NO_TERMINAL,
-            args=app_id,
-            app_id=app_id + "W",
-            description=f"Start {program_name} without opening a terminal window",
-            start_minimized=True,
-        )
-    if stop_running_shortcut_name:
-        generate_shortcut(
-            stop_running_shortcut_name,
-            STOP_ICON_PATH,
-            LAUNCHER_STOP,
-            description=f"Stop running {program_name} processes",
-        )
-    if open_log_folder_shortcut_name:
-        generate_shortcut(
-            open_log_folder_shortcut_name,
-            LOG_ICON_PATH,
-            LAUNCHER_OPEN_LOG_DIR,
-            description=f"Open the current {program_name} log file folder",
-            start_minimized=True,
-        )
-    if open_crash_log_folder_shortcut_name:
-        generate_shortcut(
-            open_crash_log_folder_shortcut_name,
-            CRASH_LOG_ICON_PATH,
-            LAUNCHER_OPEN_CRASH_LOG_DIR,
-            description=f"Open the current {program_name} crash log file folder",
-            start_minimized=True,
-        )
-    if open_main_py_shortcut_name:
-        generate_shortcut(
-            open_main_py_shortcut_name,
-            OPEN_MAIN_PY_ICON_PATH,
-            LAUNCHER_OPEN_MAIN_PY,
-            description=f"Open {program_name} main.py file",
-            start_minimized=True,
-        )
-    if user_settings_path not in (
-        None,
-        False,
-        "",
-    ) and open_settings_shortcut_name not in (None, False, ""):
-        settings_file_path_abs = make_abs_path_relative_to_file(
-            user_settings_path, DEV_SETTINGS_PATH
-        )
-        if not os.path.exists(settings_file_path_abs):
-            print(
-                f'[Warning] User settings file does not exist at "{settings_file_path_abs}". The settings shortcut will still be created, but it will show an error until the file exists. Disable the settings shortcut by setting user_settings_path = None in "{DEV_SETTINGS_PATH}".'
+    created = []
+    for kind, name, icon, launcher, args, shortcut_app_id, description in definitions:
+        folders = list(targets)
+        if kind in s.desktop_shortcuts:
+            folders.append(special_folder(CSIDL_DESKTOPDIRECTORY))
+        for folder in folders:
+            created.append(
+                generate_shortcut(
+                    name,
+                    icon,
+                    launcher,
+                    args=args,
+                    app_id=shortcut_app_id,
+                    description=description,
+                    start_minimized=kind != "stop",  # Stop shows a short countdown
+                    output_dir=folder,
+                )
             )
-    if open_settings_shortcut_name and user_settings_path not in (None, False, ""):
-        generate_shortcut(
-            open_settings_shortcut_name,
-            SETTINGS_ICON_PATH,
-            LAUNCHER_OPEN_SETTINGS,
-            description=f"Open the {program_name} settings file",
-            start_minimized=True,
-        )
+    removed = remove_shortcuts(read_created_shortcuts(), keep=created)
+    write_created_shortcuts(created)
     print()
-    print(f"Shortcut(s) created in: {SHORTCUT_OUTPUT_DIR}")
-    print()
+    for path in removed:
+        print(f"[Info] Removed old shortcut: {path}")
+    print(f"Shortcuts created in: {SHORTCUT_OUTPUT_DIR}")
+    if start_menu:
+        print(f"Start Menu folder: {start_menu}")
+    if s.desktop_shortcuts:
+        print("Desktop: " + ", ".join(s.desktop_shortcuts))
     print("=" * 30)
 
 

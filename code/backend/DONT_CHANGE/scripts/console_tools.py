@@ -1,5 +1,7 @@
 """Windows console appearance and interactive messages."""
 
+from __future__ import annotations
+
 import os
 import sys
 from typing import Any, TextIO
@@ -9,44 +11,59 @@ ANSI_SUCCESS = "\x1b[1;37;42m"
 ANSI_RESET = "\033[0m"
 
 
+def enable_ansi() -> None:
+    """Turn on ANSI color processing for this console (classic conhost needs it explicitly)."""
+    try:
+        import ctypes
+
+        kernel32 = ctypes.windll.kernel32
+        for handle_id in (-11, -12):  # stdout, stderr
+            handle = kernel32.GetStdHandle(handle_id)
+            mode = ctypes.c_uint32()
+            if kernel32.GetConsoleMode(handle, ctypes.byref(mode)):
+                kernel32.SetConsoleMode(handle, mode.value | 0x0004)  # ENABLE_VIRTUAL_TERMINAL_PROCESSING
+    except Exception:
+        pass
+
+
+def show_console() -> None:
+    """Restore and focus this process's console window (shortcuts start it minimized)."""
+    unminimize_terminal()
+    foreground_terminal()
+
+
+def _styled(msg: Any, style: str) -> str:
+    """Color only for an interactive console; redirected output stays plain."""
+    try:
+        interactive = sys.stdout is not None and sys.stdout.isatty()
+    except Exception:
+        interactive = False
+    if not interactive:
+        return str(msg)
+    enable_ansi()
+    return f"{style}{msg}{ANSI_RESET}"
+
+
 def print_warn(msg: Any, sep: str | None = " ", end: str | None = "\n") -> None:
     """Print a warning-styled console message."""
     if msg is not None:
-        print(f"{ANSI_WARN}{msg}{ANSI_RESET}", sep=sep, end=end)
+        print(_styled(msg, ANSI_WARN), sep=sep, end=end)
 
 
 def input_warn(msg: str) -> str:
     """Prompt for input using warning console styling."""
-    return input(f"{ANSI_WARN}{msg}{ANSI_RESET}")
-
-
-def input_success(msg: str) -> str:
-    """Prompt for input using success console styling."""
-    return input(f"{ANSI_SUCCESS}{msg}{ANSI_RESET}")
+    return input(_styled(msg, ANSI_WARN))
 
 
 def print_success(msg: Any, sep: str | None = " ", end: str | None = "\n") -> None:
     """Print a success-styled console message."""
     if msg is not None:
-        print(f"{ANSI_SUCCESS}{msg}{ANSI_RESET}", sep=sep, end=end)
+        print(_styled(msg, ANSI_SUCCESS), sep=sep, end=end)
 
 
 def close_terminal(exit_code: Any = None) -> bool:
     """Exit this script only. Its owning batch/console decides whether to close."""
     raise SystemExit(exit_code)
-
-
-def get_terminal_title() -> str:
-    """Returns "" if it fails to get the title."""
-
-    import ctypes
-
-    try:
-        buffer = ctypes.create_unicode_buffer(1024)
-        ctypes.windll.kernel32.GetConsoleTitleW(buffer, len(buffer))
-        return str(buffer.value)
-    except Exception:
-        return ""
 
 
 def set_terminal_title(title: str | None) -> None:

@@ -1,5 +1,6 @@
 """Run ownership, cross-process locks, and atomic state for the Windows launcher."""
 
+
 from __future__ import annotations
 
 import contextlib
@@ -7,7 +8,6 @@ import ctypes
 import hashlib
 import json
 import os
-import subprocess
 import threading
 import time
 import uuid
@@ -80,15 +80,16 @@ def atomic_json(path, payload):
         temp.unlink(missing_ok=True)
 
 
-def clean_python_environment():
-    """Retain application/proxy variables, excluding Python/package-tool injection."""
-    env = {
-        k: v
-        for k, v in os.environ.items()
-        if not k.upper().startswith(("PYTHON", "PIP_", "UV_"))
-    }
-    env["PYTHONNOUSERSITE"] = "1"
-    env["PIP_CONFIG_FILE"] = os.devnull
+def clean_python_environment(isolated=True):
+    """Environment for the application: launcher/package-tool variables removed.
+
+    isolated=False keeps the user's PYTHON* settings (package_environment =
+    "interpreter_site_packages" runs the user's own interpreter as configured).
+    """
+    blocked = ("PIP_", "UV_", "VIRTUAL_ENV") + (("PYTHON",) if isolated else ())
+    env = {k: v for k, v in os.environ.items() if not k.upper().startswith(blocked)}
+    if isolated:
+        env["PYTHONNOUSERSITE"] = "1"
     return env
 
 
@@ -147,14 +148,12 @@ def process_identity(pid):
 
 
 class ProcessRegistry:
-    """One atomic identity record per launcher; legacy bare PIDs are never killed."""
+    """One atomic identity record per running launcher (watchdog)."""
 
     def __init__(self, pid_path):
-        """Derive registry and legacy cleanup paths from the configured PID indicator."""
+        """Derive the registry directory from the configured PID indicator path."""
         self.pid_path = Path(pid_path)
         self.directory = Path(str(pid_path) + ".d")
-        # Kept only to clean up the old disk lock; new operations use a mutex.
-        self.lock_path = str(pid_path) + ".lock"
 
     @contextlib.contextmanager
     def lock(self, timeout=120):
@@ -196,13 +195,17 @@ class ProcessRegistry:
             kernel.CloseHandle(handle)
 
     def register(self, child_pid=None):
-        """Atomically record this launcher's verified identity and optional application child identity."""
+        """Atomically record this launcher's verified identity, its console window and optional app child."""
         with self.lock(), process_identity(os.getpid()) as identity:
             if identity is None:
                 raise RuntimeError("Cannot establish launcher process identity")
             if child_pid is not None:
                 with process_identity(child_pid) as child:
                     identity["child"] = child
+            try:
+                identity["console_hwnd"] = int(ctypes.windll.kernel32.GetConsoleWindow() or 0)
+            except Exception:
+                identity["console_hwnd"] = 0
             atomic_json(self.directory / (str(os.getpid()) + ".json"), identity)
 
     def remove(self):
@@ -215,19 +218,12 @@ class ProcessRegistry:
         """Called under the registry mutex; preserve every remaining record."""
         if any(self.directory.glob("*.json")):
             return
-        # Remove abandoned atomic writes and markers from the former Stop protocol.
-        for pattern in ("*.tmp", "*.stop"):
-            for path in self.directory.glob(pattern):
-                path.unlink(missing_ok=True)
+        for path in self.directory.glob("*.tmp"):  # abandoned atomic writes
+            path.unlink(missing_ok=True)
         try:
             self.directory.rmdir()
         except OSError:
             pass  # Missing or not empty; never recursively delete unknown files.
-        for path in (self.pid_path, Path(self.lock_path)):
-            try:
-                path.unlink(missing_ok=True)
-            except PermissionError:
-                pass  # An older launcher can still hold its legacy lock file.
 
     def records(self):
         """Return other live launcher records and a stale count while cleaning empty registry artifacts."""
@@ -267,15 +263,8 @@ class ProcessRegistry:
                         )
                         continue
                     try:
-                        # Retain the verified root handle until taskkill completes.
-                        result = subprocess.run(
-                            ["taskkill", "/PID", str(record["pid"]), "/T", "/F"],
-                            capture_output=True,
-                            text=True,
-                            errors="replace",
-                        )
-                        if result.returncode:
-                            raise RuntimeError(result.stderr or result.stdout)
+                        # The verified root handle stays open while the tree is terminated.
+                        terminate_tree(record["pid"])
                         stopped += 1
                         (self.directory / (str(record["pid"]) + ".json")).unlink(
                             missing_ok=True
@@ -286,6 +275,35 @@ class ProcessRegistry:
         return stopped, stale, failures
 
 
+def terminate_tree(root_pid):
+    """Force-terminate a process and all its descendants via the Win32 API.
+
+    Deliberately avoids taskkill/WMI, which fail on PCs with a broken WMI service.
+    """
+    from backend.DONT_CHANGE.scripts.windows_focus import process_tree
+
+    kernel = ctypes.WinDLL("kernel32", use_last_error=True)
+    kernel.OpenProcess.restype = ctypes.c_void_p
+    kernel.TerminateProcess.argtypes = [ctypes.c_void_p, ctypes.c_uint]
+    kernel.CloseHandle.argtypes = [ctypes.c_void_p]
+    pids = process_tree([root_pid])
+    failures = []
+    # Root first, so the watchdog cannot react to its children ending.
+    for pid in [root_pid] + sorted(pids - {root_pid}):
+        handle = kernel.OpenProcess(0x0001, False, pid)  # PROCESS_TERMINATE
+        if not handle:
+            if pid == root_pid:
+                failures.append(f"PID {pid}: cannot open process (error {ctypes.get_last_error()})")
+            continue
+        try:
+            if not kernel.TerminateProcess(handle, 1) and pid == root_pid:
+                failures.append(f"PID {pid}: terminate failed (error {ctypes.get_last_error()})")
+        finally:
+            kernel.CloseHandle(handle)
+    if failures:
+        raise RuntimeError("; ".join(failures))
+
+
 def matches_identity(record, current):
     """Compare PID, creation time and executable path to reject stale or reused process IDs."""
     return current is not None and all(
@@ -294,41 +312,10 @@ def matches_identity(record, current):
 
 
 def unique_log_path(path, run_id=None):
-    """Append the run identifier to a log filename, preserving an empty disabled path."""
+    """Append a compact 12-character run suffix, preserving an empty disabled path."""
     if not path:
         return ""
     p = Path(path)
-    return str(p.with_name(p.stem + "_" + (run_id or uuid.uuid4().hex) + p.suffix))
-
-
-def require_supported_architecture():
-    """Reject managed runtime installation on architectures other than Windows AMD64."""
-    architecture = os.environ.get(
-        "PROCESSOR_ARCHITEW6432", os.environ.get("PROCESSOR_ARCHITECTURE", "")
-    ).upper()
-    if architecture != "AMD64":
-        raise RuntimeError(
-            "Managed runtimes currently require Windows x64 (AMD64). Detected: "
-            + architecture
-            + ". Native ARM64/x86 installation is not supported; use a separately managed Python with use_global_python=True."
-        )
-
-
-def resolve_global_python():
-    """Resolve py or python to its actual interpreter executable using an isolated subprocess."""
-    import shutil
-
-    launcher = shutil.which("py") or shutil.which("python")
-    if not launcher:
-        raise RuntimeError(
-            "Global-Python mode requires an installed py/python executable"
-        )
-    result = subprocess.run(
-        [launcher, "-E", "-s", "-c", "import sys; print(sys.executable)"],
-        env=clean_python_environment(),
-        capture_output=True,
-        text=True,
-        check=True,
-        timeout=15,
-    )
-    return result.stdout.strip()
+    # Keep 48 random bits while avoiding a full UUID in Windows log paths.
+    suffix = (run_id or uuid.uuid4().hex)[:12]
+    return str(p.with_name(p.stem + "_" + suffix + p.suffix))
