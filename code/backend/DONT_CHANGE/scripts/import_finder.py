@@ -75,9 +75,8 @@ def local_module_names(root: str = PYTHON_SCRIPTS_DIR) -> set:
         path = os.path.join(root, entry)
         if entry.endswith((".py", ".pyw")):
             names.add(entry.rsplit(".", 1)[0])
-        elif os.path.isdir(path) and not _excluded(entry):
-            if any(f.endswith(".py") for f in os.listdir(path)):
-                names.add(entry)
+        elif os.path.isdir(path) and not _excluded(entry) and any(f.endswith(".py") for f in os.listdir(path)):
+            names.add(entry)
     return names
 
 
@@ -196,7 +195,11 @@ def installed_import_map(site_packages: str | None = None) -> dict:
         if not tops:
             for file in dist.files or []:
                 first = file.parts[0] if file.parts else ""
-                if not first or first.endswith((".dist-info", ".egg-info", ".data")) or first in ("..", "__pycache__", "bin", "Scripts"):
+                if (
+                    not first
+                    or first.endswith((".dist-info", ".egg-info", ".data"))
+                    or first in ("..", "__pycache__", "bin", "Scripts")
+                ):
                     continue
                 tops.append(first[:-3] if first.endswith(".py") else first.split(".")[0])
         for top in tops:
@@ -223,7 +226,10 @@ def find_requirements(root: str = PYTHON_SCRIPTS_DIR, site_packages: str | None 
     imports, problems = imports_in_project(root)
     installed = installed_import_map(site_packages)
     mapping = bundled_mapping()
-    grouped = {}
+    distributions: dict[str, tuple[str, str]] = {}  # lowercase name -> (distribution, source)
+    import_names: dict[str, set[str]] = {}
+    files_by_distribution: dict[str, set[str]] = {}
+    all_optional: dict[str, bool] = {}
     for name, (files, optional) in imports.items():
         if name in installed:
             distribution, source = installed[name], "installed"
@@ -231,13 +237,16 @@ def find_requirements(root: str = PYTHON_SCRIPTS_DIR, site_packages: str | None 
             distribution, source = mapping[name], "mapping"
         else:
             distribution, source = name, "guess"
-        entry = grouped.setdefault(distribution.lower(), [distribution, set(), source, set(), True])
-        entry[1].add(name)
-        entry[3].update(files)
-        entry[4] = entry[4] and optional
+        key = distribution.lower()
+        distributions.setdefault(key, (distribution, source))
+        import_names.setdefault(key, set()).add(name)
+        files_by_distribution.setdefault(key, set()).update(files)
+        all_optional[key] = all_optional.get(key, True) and optional
     requirements = [
-        Requirement(d, sorted(i), src, sorted(f), opt)
-        for d, i, src, f, opt in grouped.values()
+        Requirement(
+            distribution, sorted(import_names[key]), source, sorted(files_by_distribution[key]), all_optional[key]
+        )
+        for key, (distribution, source) in distributions.items()
     ]
     return sorted(requirements, key=lambda r: r.distribution.lower()), problems
 

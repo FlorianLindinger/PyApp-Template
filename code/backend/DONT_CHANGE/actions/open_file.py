@@ -11,9 +11,9 @@ import sys
 
 from backend.DONT_CHANGE.backend_settings import DEV_SETTINGS_PATH, MAIN_PY_SCRIPT_PATH
 from backend.DONT_CHANGE.scripts.config import settings
+from backend.DONT_CHANGE.scripts.console_tools import open_in_editor
 from backend.DONT_CHANGE.scripts.errors import SettingsError
 from backend.DONT_CHANGE.scripts.filesystem_tools import make_abs_path_relative_to_file
-from backend.DONT_CHANGE.scripts.shell_tools import open_in_editor
 
 fail_message = "[Error] Failed to open the file: {e}"
 

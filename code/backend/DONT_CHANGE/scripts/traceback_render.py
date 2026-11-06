@@ -34,9 +34,7 @@ def _display_filename(filename: str, script_path: str) -> str:
     if not filename or filename.startswith("<") or not script_path:
         return filename or "?"
     try:
-        relative = os.path.relpath(
-            os.path.abspath(filename), os.path.dirname(os.path.abspath(script_path))
-        )
+        relative = os.path.relpath(os.path.abspath(filename), os.path.dirname(os.path.abspath(script_path)))
     except ValueError:
         return filename
     return filename if relative.startswith("..") else relative
@@ -46,7 +44,7 @@ def metadata_lines(report: dict, date_format: str) -> list:
     lines = []
     if report.get("script_path"):
         lines.append("Script: " + os.path.abspath(str(report["script_path"])))
-    lines.append("Error date: " + datetime.now().strftime(date_format))
+    lines.append("Error date: " + datetime.now().astimezone().strftime(date_format))
     if report.get("python_version"):
         lines.append("Python: " + str(report["python_version"]))
     return lines
@@ -66,18 +64,13 @@ def render(
     title = f" {os.path.basename(script_path) or 'Traceback'} "
     side = max(3, (width - len(title)) // 2)
     lines = [_style("=" * side + title + "=" * side, "rule", colors)]
-    lines += [
-        _style(line, "meta", colors) for line in metadata_lines(report, date_format)
-    ]
+    lines += [_style(line, "meta", colors) for line in metadata_lines(report, date_format)]
     lines.append("")
 
     chain = report.get("chain") or []
     if report.get("has_group") or not chain:
         body = str(report.get("plain") or "").rstrip("\n").splitlines()
-        lines += [
-            _style(line, "error", colors) if index == len(body) - 1 else line
-            for index, line in enumerate(body)
-        ]
+        lines += [_style(line, "error", colors) if index == len(body) - 1 else line for index, line in enumerate(body)]
         lines.append(_style("=" * (2 * side + len(title)), "rule", colors))
         return lines
 
@@ -86,16 +79,12 @@ def render(
             lines += ["", _style(entry["relation"], "relation", colors), ""]
         frames = entry.get("frames") or []
         if frames:
-            lines.append(
-                _style("Traceback (most recent call last):", "heading", colors)
-            )
+            lines.append(_style("Traceback (most recent call last):", "heading", colors))
         for frame in frames:
             location = (
                 "  File "
                 + _style(
-                    '"'
-                    + _display_filename(frame.get("filename", ""), script_path)
-                    + '"',
+                    '"' + _display_filename(frame.get("filename", ""), script_path) + '"',
                     "file",
                     colors,
                 )
@@ -121,10 +110,7 @@ def render(
                 # "Type: message" (later unindented lines are exception notes)
                 error_line_done = True
                 name, sep, message = text.partition(":")
-                lines.append(
-                    _style(name, "error_type", colors)
-                    + _style(sep + message, "error", colors)
-                )
+                lines.append(_style(name, "error_type", colors) + _style(sep + message, "error", colors))
             else:
                 lines.append(_style(text, "detail", colors))
     lines.append(_style("=" * (2 * side + len(title)), "rule", colors))

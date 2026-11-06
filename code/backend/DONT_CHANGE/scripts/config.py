@@ -25,6 +25,9 @@ BOOTSTRAP_SETTINGS = (
     "use_system_certificates",
 )
 
+# Fonts of the app name banner (scripts/banner.py; files in data/fonts).
+BANNER_FONTS = ("future", "future_smooth", "standard", "coder_mini")
+
 CHOICES = {
     "python_source": (
         "local",
@@ -116,7 +119,7 @@ def _strftime_problem(value: str) -> str | None:
     from datetime import datetime
 
     try:
-        datetime.now().strftime(value)
+        datetime.now().astimezone().strftime(value)
     except ValueError as error:
         return f"invalid date format ({error}); see the strftime codes, e.g. %Y-%m-%d %H:%M:%S"
     return None
@@ -158,23 +161,25 @@ def _bootstrap_literal_problems() -> list[str]:
     with open(DEV_SETTINGS_PATH, encoding="utf-8") as stream:
         tree = ast.parse(stream.read(), DEV_SETTINGS_PATH)
     top_level = {id(node) for node in tree.body}
-    definitions = {}
+    definitions: dict[str, list[ast.Assign | ast.AnnAssign]] = {}
     for node in ast.walk(tree):
         for name in _assigned_names(node):
-            if name in BOOTSTRAP_SETTINGS:
+            if name in BOOTSTRAP_SETTINGS and isinstance(node, (ast.Assign, ast.AnnAssign)):
                 definitions.setdefault(name, []).append(node)
     for name in BOOTSTRAP_SETTINGS:
         nodes = sorted(definitions.get(name, []), key=lambda n: n.lineno)
         if len(nodes) > 1:
             lines = ", ".join(str(n.lineno) for n in nodes)
-            problems.append(f"{name} is set {len(nodes)} times (lines {lines}); keep only one, because the Windows bootstrap reads it.")
+            problems.append(
+                f"{name} is set {len(nodes)} times (lines {lines}); keep only one, because the Windows bootstrap reads it."
+            )
         for node in nodes:
             value = node.value
-            plain = isinstance(value, ast.Constant) and (
-                value.value is None or isinstance(value.value, (str, bool))
-            )
+            plain = isinstance(value, ast.Constant) and (value.value is None or isinstance(value.value, (str, bool)))
             if id(node) not in top_level or node.col_offset != 0:
-                problems.append(f"{name} (line {node.lineno}) must be set unindented at the top of the file because the Windows bootstrap reads it.")
+                problems.append(
+                    f"{name} (line {node.lineno}) must be set unindented at the top of the file because the Windows bootstrap reads it."
+                )
             elif not plain or node.lineno != getattr(node, "end_lineno", node.lineno):
                 problems.append(
                     f'{name} must be a plain one-line value ("text", True, False or None) because the Windows bootstrap reads it.'
@@ -182,7 +187,7 @@ def _bootstrap_literal_problems() -> list[str]:
     return problems
 
 
-def _version_problem(value: str) -> str | None:
+def python_version_problem(value: str) -> str | None:
     """Explain an obviously unsupported python_version; uv validates exotic request strings itself."""
     if not value:
         return None
@@ -217,25 +222,66 @@ def validate(module=None) -> None:
     for name in BOOLEANS:
         need(name, lambda v: isinstance(v, bool), "use True or False")
     need("program_name", lambda v: isinstance(v, str) and v.strip(), "use a non-empty text")
+    need(
+        "app_name_banner_font",
+        lambda v: v is None or v in BANNER_FONTS,
+        "use one of " + ", ".join(repr(font) for font in BANNER_FONTS) + " or None",
+    )
     need("python_version", lambda v: isinstance(v, str), 'use text such as "3.14" or "" for the newest')
-    version_problem = _version_problem(get("python_version", "") if isinstance(get("python_version"), str) else "")
+    python_version = get("python_version")
+    version_problem = python_version_problem(python_version if isinstance(python_version, str) else "")
     if version_problem:
         problems.append(version_problem)
-    need("uv_version", lambda v: isinstance(v, str) and re.fullmatch(r"[0-9.,<>=!~ ]*", v), 'use "" or a version like "0.11.32" or ">=0.9,<1"')
-    need("desktop_shortcuts", lambda v: isinstance(v, (list, tuple)) and all(k in SHORTCUT_KINDS for k in v), "use a list of " + ", ".join(repr(k) for k in SHORTCUT_KINDS))
-    need("args_for_main_py", lambda v: isinstance(v, (list, tuple)) and all(isinstance(a, str) for a in v), "use a list of strings")
-    need("packages", lambda v: isinstance(v, (list, tuple)) and all(isinstance(p, str) and REQUIREMENT_START.match(p) for p in v),
-         'use a list of package requirements such as ["requests", "numpy>=2"]')
+    need(
+        "uv_version",
+        lambda v: isinstance(v, str) and re.fullmatch(r"[0-9.,<>=!~ ]*", v),
+        'use "" or a version like "0.11.32" or ">=0.9,<1"',
+    )
+    need(
+        "desktop_shortcuts",
+        lambda v: isinstance(v, (list, tuple)) and all(k in SHORTCUT_KINDS for k in v),
+        "use a list of " + ", ".join(repr(k) for k in SHORTCUT_KINDS),
+    )
+    need(
+        "args_for_main_py",
+        lambda v: isinstance(v, (list, tuple)) and all(isinstance(a, str) for a in v),
+        "use a list of strings",
+    )
+    need(
+        "packages",
+        lambda v: isinstance(v, (list, tuple)) and all(isinstance(p, str) and REQUIREMENT_START.match(p) for p in v),
+        'use a list of package requirements such as ["requests", "numpy>=2"]',
+    )
     for name in ("max_log_files", "max_run_folder_age_days"):
-        need(name, lambda v: v is None or (isinstance(v, int) and not isinstance(v, bool) and v > 0), "use a positive whole number or None")
-    need("traceback_extra_lines", lambda v: isinstance(v, int) and not isinstance(v, bool) and v >= 0, "use 0 or a positive whole number")
+        need(
+            name,
+            lambda v: v is None or (isinstance(v, int) and not isinstance(v, bool) and v > 0),
+            "use a positive whole number or None",
+        )
+    need(
+        "traceback_extra_lines",
+        lambda v: isinstance(v, int) and not isinstance(v, bool) and v >= 0,
+        "use 0 or a positive whole number",
+    )
     for name in ("log_path", "crash_log_path", "user_settings_path"):
         need(name, lambda v: v is None or isinstance(v, str), "use a path text or None")
     for name in ("terminal_bg_color", "terminal_text_color"):
-        need(name, lambda v: v in (None, "") or (isinstance(v, str) and re.fullmatch(r"[0-9A-Fa-f]", v)), "use one hex digit 0-9/A-F or None")
+        need(
+            name,
+            lambda v: v in (None, "") or (isinstance(v, str) and re.fullmatch(r"[0-9A-Fa-f]", v)),
+            "use one hex digit 0-9/A-F or None",
+        )
     for outcome in OUTCOMES:
-        need("terminal_colors_after_" + outcome, lambda v: v in (None, "") or (isinstance(v, str) and re.fullmatch(r"[0-9A-Fa-f]{2}", v)), 'use two hex digits like "4F" or None')
-    need("tab_bar_color", lambda v: v is None or (isinstance(v, str) and re.fullmatch(r"#[0-9A-Fa-f]{6}", v)), 'use a color like "#3B78FF" or None')
+        need(
+            "terminal_colors_after_" + outcome,
+            lambda v: v in (None, "") or (isinstance(v, str) and re.fullmatch(r"[0-9A-Fa-f]{2}", v)),
+            'use two hex digits like "4F" or None',
+        )
+    need(
+        "tab_bar_color",
+        lambda v: v is None or (isinstance(v, str) and re.fullmatch(r"#[0-9A-Fa-f]{6}", v)),
+        'use a color like "#3B78FF" or None',
+    )
     need("stop_timeout_seconds", lambda v: _number(v) and v >= 0, "use 0 (stop immediately) or a number of seconds")
 
     for name in SHORTCUT_NAME_SETTINGS:
@@ -248,8 +294,18 @@ def validate(module=None) -> None:
         need(name, lambda v: isinstance(v, (bool, str)), 'use True, False or a .wav name such as "Windows Ding.wav"')
         sound = get(name)
         if isinstance(sound, str) and sound and not os.path.isfile(_sound_path(sound)):
-            problems.append(f'{name} = {sound!r}: "{_sound_path(sound)}" does not exist (use True, False or an existing .wav file).')
-    for name in ("print_prepend", "input_prepend", "log_print_prepend", "log_input_prepend", "error_date_format", "log_path", "crash_log_path"):
+            problems.append(
+                f'{name} = {sound!r}: "{_sound_path(sound)}" does not exist (use True, False or an existing .wav file).'
+            )
+    for name in (
+        "print_prepend",
+        "input_prepend",
+        "log_print_prepend",
+        "log_input_prepend",
+        "error_date_format",
+        "log_path",
+        "crash_log_path",
+    ):
         value = get(name)
         if isinstance(value, str) and "%" in value:
             problem = _strftime_problem(value)
@@ -259,8 +315,16 @@ def validate(module=None) -> None:
         need(name, lambda v: v is None or isinstance(v, str), 'use a text such as "%H:%M:%S | " or None')
     need("error_date_format", lambda v: isinstance(v, str), 'use a date format such as "%Y-%m-%d %H:%M:%S"')
     for kind in SUB_ICON_KINDS:
-        need(kind + "_sub_icon_scale", lambda v: v is None or (_number(v) and 0 < v <= 1), "use a number greater than 0 and at most 1, or None")
-        need(kind + "_sub_icon_alignment", lambda v: v is None or _alignment_ok(v), 'use a position such as "bottom right", "top", "center left", or None')
+        need(
+            kind + "_sub_icon_scale",
+            lambda v: v is None or (_number(v) and 0 < v <= 1),
+            "use a number greater than 0 and at most 1, or None",
+        )
+        need(
+            kind + "_sub_icon_alignment",
+            lambda v: v is None or _alignment_ok(v),
+            'use a position such as "bottom right", "top", "center left", or None',
+        )
 
     if get("package_environment") == "interpreter_site_packages" and get("python_source") in ("local", "uv_user"):
         problems.append(
@@ -269,9 +333,7 @@ def validate(module=None) -> None:
         )
     if problems:
         raise SettingsError(
-            "Please fix developer_settings.py:\n  "
-            + "\n  ".join(problems)
-            + f'\n  File: "{DEV_SETTINGS_PATH}"'
+            "Please fix developer_settings.py:\n  " + "\n  ".join(problems) + f'\n  File: "{DEV_SETTINGS_PATH}"'
         )
 
 
@@ -315,7 +377,7 @@ def _replace_setting_value(name: str, make_value) -> list[str]:
             node = item
     if node is None:
         raise SettingsError(f"Could not find the setting {name} in developer_settings.py to edit.")
-    first, last = node.lineno - 1, node.end_lineno - 1
+    first, last = node.lineno - 1, (node.end_lineno or node.lineno) - 1
     # ast offsets count UTF-8 bytes
     head = lines[first].encode("utf-8")[: node.value.col_offset].decode("utf-8")  # e.g. "packages: list[str] = "
     tail = lines[last].encode("utf-8")[node.value.end_col_offset :].decode("utf-8").rstrip("\r\n")  # e.g. a comment
@@ -327,7 +389,9 @@ def _replace_setting_value(name: str, make_value) -> list[str]:
     with open(DEV_SETTINGS_PATH, "w", encoding="utf-8", newline="") as stream:
         stream.write("".join(lines))
     sys.modules.pop("backend.developer_settings", None)
-    return [f"- {line}" for line in old.rstrip().splitlines()] + [f"+ {line}" for line in replacement.rstrip().splitlines()]
+    return [f"- {line}" for line in old.rstrip().splitlines()] + [
+        f"+ {line}" for line in replacement.rstrip().splitlines()
+    ]
 
 
 def _literal(value) -> str:

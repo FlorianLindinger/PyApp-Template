@@ -11,26 +11,29 @@ DONT_CHANGE/
   B/              Short shortcut targets: W (terminal), N (no terminal), Q (stop),
                   S (settings), M (main.py), L (logs), C (crash logs)
   backend_settings.py  internal paths and constants
-  data/           import_to_package.txt (import name -> PyPI name, for the import finder)
+  data/           import_to_package.txt (import name -> PyPI name, for the import finder),
+                  fonts/ (ASCII-art fonts of the app name banner)
   bootstrap/      run.bat, ensure_runtime.bat (fast path), resolve_runtime.ps1 (uv + Python),
                   open_folder.bat / open_file.bat (open shortcuts without Python)
-  actions/        start_program, stop_program, open_folder / open_file (fallbacks of the
-                  open shortcuts) and gen_icons. Plain modules with a main(); every tool
+  actions/        entry tools: start_program, stop_program, setup (Setup), open_folder /
+                  open_file (fallbacks of the open shortcuts) and gen_icons. Plain modules with a main(); every tool
                   runs as `entrypoint.py <tool.py> [args]` (see bootstrap/run.bat)
   runtime/        background_watchdog, script_wrapper, process_exit, _pyapp (protocol),
                   send_ctrl_c (Stop for console apps)
-  setup/          generate_shortcuts (Setup)
   scripts/
     config.py     settings loading and validation
     errors.py     SettingsError / SetupError / LaunchCancelled (shown without a traceback)
     entrypoint.py runs every tool with one error, exit-code and "Press Enter" policy
     com_tools.py  minimal Windows COM helpers (taskbar identity of shortcuts and consoles)
-    uv_env.py     uv, Python selection, generated pyproject.toml, uv.lock/.venv management
+    env/          uv.py (running uv), pythons.py (find/install Python, .python-version),
+                  pyproject.py (generated pyproject.toml), venv.py (.venv, uv.lock, ensure_environment)
     dev_tools.py  all dev tools (backend/dev_tools/*.cmd call it)
     diagnostics.py  records errors that are ignored on purpose (tmp/diagnostics.log)
+    banner.py     program_name as ASCII art (fonts in data/fonts) atop Setup/dev tool/install windows
     ...           focused helpers (console, filesystem, instance policy, window focus,
                   import finder, traceback rendering, process registry)
   icon_related/   shipped placeholder icons and instructions
+  ruff.toml, pyrefly.toml  lint/type-check settings for this folder only (Python 3.8, 120 columns)
   tmp/            runtime cache, environment stamp, locks, running-instance records,
                   per-run folders and diagnostics.log (ignored by Git)
 ```
@@ -53,7 +56,7 @@ DONT_CHANGE/
    time, so a mistake in `developer_settings.py` is reported, not a traceback.
 4. `start_program.py` validates the settings, applies `instance_policy`, sets the console's
    title/icon/taskbar group, hides tool folders in Explorer, prunes old logs and calls
-   `uv_env.ensure_environment()`:
+   `env.venv.ensure_environment()`:
    - writes `backend/.python-version` on the first run;
    - offers the migration menu when `python_version` differs from `.python-version`;
    - generates `backend/pyproject.toml` from `packages` and the project's Python
@@ -71,7 +74,7 @@ DONT_CHANGE/
 5. The watchdog registers the run, starts `script_wrapper.py` in the app interpreter,
    captures output, waits, and hands the outcome to `process_exit.py`.
 
-`uv_env.uv_environment()` mirrors `Set-UvEnvironment` in `resolve_runtime.ps1`; keep both
+`env.uv.uv_environment()` mirrors `Set-UvEnvironment` in `resolve_runtime.ps1`; keep both
 in sync when changing how uv is configured. Lookups run from the system temp folder,
 because uv would otherwise discover `backend/.venv` as "the" Python. Project commands run with
 the backend folder as working directory (the uv project). Project commands use the
@@ -116,7 +119,7 @@ terminated with their process trees through the Win32 API (Toolhelp snapshot +
 `TerminateProcess`), deliberately without `taskkill`/WMI.
 
 Each project copy has its own taskbar identity (AppUserModelID = program name + hash of
-program name and project folder, `setup/generate_shortcuts.project_app_id`). Setup stores it in
+program name and project folder, `scripts/shortcuts.project_app_id`). Setup stores it in
 the shortcuts; the launcher sets it on its console windows and the app's process. The registry lock is not held while
 waiting, because an ending watchdog needs it to unregister. `instance_policy.py` shows its
 dialogs without holding the lock; `windows_focus.py` finds and activates the running
@@ -133,7 +136,7 @@ instance's window.
 
 ## Compatibility rules
 
-- Python files under `scripts/`, `actions/`, `runtime/` and `setup/` must run on Python 3.8+ with the standard library only:
+- Python files under `scripts/`, `actions/` and `runtime/` must run on Python 3.8+ with the standard library only:
   use `from __future__ import annotations`, no `match`, no parenthesized `with`, no
   `str.removeprefix`, no `typing.override`, guard `sys.stdlib_module_names`.
 - Folder locations are mirrored in `backend_settings.py`, the bootstrap batch/PowerShell
@@ -141,5 +144,6 @@ instance's window.
 
 ## Licensing
 
-Template files here are `MIT OR Apache-2.0`; `data/import_to_package.txt` is derived from
-pipreqs (Apache-2.0). See [LICENSE.md](LICENSE.md).
+Everything here is `MIT OR Apache-2.0`, including `data/import_to_package.txt` (generated from
+PyPI wheel file lists by the Dev Helpers' `build_import_mapping.py`), except the banner fonts in
+`data/fonts` (BSD-3-Clause, MIT, WTFPL). See [LICENSE.md](LICENSE.md).

@@ -193,8 +193,8 @@ launcher steps (window icon, colors, focus, ...) never stop the app; they are re
 ## Licensing
 
 The template-owned files in `code/backend/DONT_CHANGE` are available under `MIT OR Apache-2.0`
-(the import-name mapping is derived from pipreqs, Apache-2.0). uv, Python distributions and
-third-party packages keep their own licenses. Projects created from this template must replace
+(except the banner fonts in `data/fonts`: BSD-3-Clause, MIT and WTFPL, see its `LICENSE.md`).
+uv, Python distributions and third-party packages keep their own licenses. Projects created from this template must replace
 the project-license placeholder in [`LICENSE.md`](LICENSE.md).
 
 This repository was originally built by Florian Lindinger: https://github.com/FlorianLindinger/PyApp-Template

@@ -8,6 +8,7 @@ print them.
 
 from __future__ import annotations
 
+import contextlib
 import os
 import sys
 
@@ -18,7 +19,8 @@ _MAX_BYTES = 1_000_000  # then the log is renamed to diagnostics.log.old and sta
 
 def note_ignored(context: str) -> None:
     """Append the exception being handled (with traceback) to the diagnostics log; never raises."""
-    try:
+    # The one place where swallowing every error is the job: a failing log must not add a new error.
+    with contextlib.suppress(Exception):
         import time
         import traceback
 
@@ -27,15 +29,11 @@ def note_ignored(context: str) -> None:
         if os.environ.get("PYAPP_DEBUG") == "1":
             print("[Debug] Ignored error: " + context + "\n" + text, file=sys.stderr)
         os.makedirs(os.path.dirname(DIAGNOSTICS_LOG_PATH), exist_ok=True)
-        try:
+        with contextlib.suppress(OSError):
             if os.path.getsize(DIAGNOSTICS_LOG_PATH) > _MAX_BYTES:
                 os.replace(DIAGNOSTICS_LOG_PATH, DIAGNOSTICS_LOG_PATH + ".old")
-        except OSError:
-            pass
         with open(DIAGNOSTICS_LOG_PATH, "a", encoding="utf-8") as stream:
             stream.write(entry)
-    except Exception:  # noqa: S110 - diagnostics must never break the launcher
-        pass
 
 
 def diagnostics_summary() -> str | None:

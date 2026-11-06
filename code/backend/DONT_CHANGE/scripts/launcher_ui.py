@@ -34,7 +34,6 @@ from backend.DONT_CHANGE.scripts.filesystem_tools import (
 _TERMINAL_APPEARANCE_WAS_SET = False
 # Raw-output companion of each log file (written by the watchdog as log_path + this suffix).
 OUTPUT_LOG_SUFFIX = ".output.log"
-_SETTINGS_COLORS = object()  # default of set_terminal_colors: the colors from developer_settings.py
 
 
 def set_hidden_in_explorer() -> None:
@@ -74,15 +73,10 @@ def set_terminal_appearance_once(app_id: str) -> None:
         _TERMINAL_APPEARANCE_WAS_SET = True
 
 
-def set_terminal_colors(colors=_SETTINGS_COLORS) -> None:
-    """Apply a Windows console color code ("9F"); None or "" leaves the colors unchanged.
-
-    Without an argument: terminal_bg_color + terminal_text_color from developer_settings.py.
-    """
-    if colors is _SETTINGS_COLORS:
-        s = settings()
-        colors = (s.terminal_bg_color or "") + (s.terminal_text_color or "")
-    _set_terminal_colors(colors=colors)
+def set_settings_colors() -> None:
+    """Apply terminal_bg_color + terminal_text_color from developer_settings.py (both empty: unchanged)."""
+    s = settings()
+    _set_terminal_colors((s.terminal_bg_color or "") + (s.terminal_text_color or ""))
 
 
 def get_log_path(log_path, is_relative_to_start_folder_if_relative: bool) -> str:
@@ -95,10 +89,12 @@ def get_log_path(log_path, is_relative_to_start_folder_if_relative: bool) -> str
         return ""
     from datetime import datetime
 
-    configured = datetime.now().strftime(log_path) if "%" in log_path else log_path
+    configured = datetime.now().astimezone().strftime(log_path) if "%" in log_path else log_path
     if os.path.isabs(configured):
         return os.path.normpath(configured)
-    base = os.environ.get("PYAPP_START_DIR", os.getcwd()) if is_relative_to_start_folder_if_relative else DEV_SETTINGS_DIR
+    base = (
+        os.environ.get("PYAPP_START_DIR", os.getcwd()) if is_relative_to_start_folder_if_relative else DEV_SETTINGS_DIR
+    )
     return os.path.normpath(os.path.join(base, configured))
 
 

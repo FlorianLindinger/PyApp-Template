@@ -8,11 +8,18 @@ from concurrent.futures import ThreadPoolExecutor
 from functools import lru_cache
 
 from backend.DONT_CHANGE.backend_settings import (
-    ICON_DELETE_RETRY_DELAY_SECONDS,
-    ICON_DELETE_TIMEOUT_SECONDS,
-    ICON_FALLBACK_PNG_DIR,
-    ICON_GENERATION_SETTINGS,
-    ICON_PNG_DIR,
+    CRASH_ICON_PATH,
+    CRASH_LOG_ICON_PATH,
+    DONT_CHANGE_DIR,
+    FAILURE_ICON_PATH,
+    ICON_DIR,
+    ICON_PATH,
+    KEYBOARD_INTERRUPT_ICON_PATH,
+    LOG_ICON_PATH,
+    OPEN_MAIN_PY_ICON_PATH,
+    SETTINGS_ICON_PATH,
+    STOP_ICON_PATH,
+    SUCCESS_ICON_PATH,
 )
 from backend.DONT_CHANGE.scripts.config import settings as load_settings
 from backend.DONT_CHANGE.scripts.config import validate
@@ -20,6 +27,29 @@ from backend.DONT_CHANGE.scripts.image_tools import (
     generate_ico_from_png,
     get_png_image_id,
 )
+
+# fmt: off
+ICON_PNG_DIR = ICON_DIR  # the project's own PNGs (replace them to change the icons)
+ICON_FALLBACK_PNG_DIR = DONT_CHANGE_DIR + "\\icon_related"
+ICON_DELETE_TIMEOUT_SECONDS = 2.0
+ICON_DELETE_RETRY_DELAY_SECONDS = 0.05
+_base = ("icon.png", "512x512:34babea5", "default_icon.png")
+# IDs identify the shipped placeholder PNGs, not a developer's replacement art.
+# Update an ID only when changing the corresponding shipped placeholder image.
+ICON_GENERATION_SETTINGS = [
+    # output ICO, base PNG, base PNG ID, fallback base PNG, overlay PNG, overlay PNG ID, fallback overlay PNG
+    (ICON_PATH, *_base, None, None, None),
+    (SETTINGS_ICON_PATH, *_base, "settings.png", "512x512:19c7e6d8", "default_settings.png"),
+    (STOP_ICON_PATH, *_base, "stop.png", "512x512:0f35bd9e", "default_stop.png"),
+    (LOG_ICON_PATH, *_base, "log.png", "512x512:66c0a178", "default_log.png"),
+    (SUCCESS_ICON_PATH, *_base, "success.png", "512x512:c33e7909", "default_success.png"),
+    (FAILURE_ICON_PATH, *_base, "failure.png", "512x512:93eddb87", "default_failure.png"),
+    (CRASH_ICON_PATH, *_base, "crash.png", "512x512:d2dd80f5", "default_crash.png"),
+    (CRASH_LOG_ICON_PATH, *_base, "crash_log.png", "512x512:99dee2ae", "default_crash_log.png"),
+    (OPEN_MAIN_PY_ICON_PATH, *_base, "open_main_py.png", "512x512:3bd1b4b4", "default_open_main_py.png"),
+    (KEYBOARD_INTERRUPT_ICON_PATH, *_base, "keyboard_interrupt.png", "512x512:0c4eac7f", "default_keyboard_interrupt.png"),
+]
+# fmt: on
 
 
 def _delete_existing_icon(path: str) -> None:
@@ -32,9 +62,7 @@ def _delete_existing_icon(path: str) -> None:
             return
         except OSError as error:
             if time.monotonic() >= deadline:
-                raise RuntimeError(
-                    f'Could not delete existing icon "{path}": {error}'
-                ) from error
+                raise RuntimeError(f'Could not delete existing icon "{path}": {error}') from error
             time.sleep(ICON_DELETE_RETRY_DELAY_SECONDS)
 
 
@@ -44,14 +72,10 @@ def _cached_png_image_id(path: str) -> str:
     return get_png_image_id(path)
 
 
-def _pick_png(
-    filename: str, expected_id: str | None, fallback_filename: str | None
-) -> str:
+def _pick_png(filename: str, expected_id: str | None, fallback_filename: str | None) -> str:
     """Use a changed project PNG, otherwise use its bundled replacement image."""
     project_path = os.path.join(ICON_PNG_DIR, filename)
-    if os.path.isfile(project_path) and (
-        expected_id is None or _cached_png_image_id(project_path) != expected_id
-    ):
+    if os.path.isfile(project_path) and (expected_id is None or _cached_png_image_id(project_path) != expected_id):
         return project_path
     if fallback_filename is None:
         raise FileNotFoundError(f'PNG does not exist: "{project_path}"')
