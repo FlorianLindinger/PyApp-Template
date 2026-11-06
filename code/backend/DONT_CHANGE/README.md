@@ -18,7 +18,7 @@ DONT_CHANGE/
   setup/          generate_shortcuts (Setup)
   scripts/
     config.py     settings loading and validation
-    uv_env.py     uv, Python selection, pyproject/uv.lock/.venv management
+    uv_env.py     uv, Python selection, generated pyproject.toml, uv.lock/.venv management
     dev_tools.py  all dev tools (backend/dev_tools/*.cmd call it)
     ...           focused helpers (console, filesystem, instance policy, window focus,
                   import finder, traceback rendering, process registry)
@@ -30,19 +30,22 @@ DONT_CHANGE/
 
 1. A shortcut runs `B/W.bat` or `B/N.bat`, which call `bootstrap/run.bat`.
 2. `ensure_runtime.bat` loads `tmp/runtime.cmd` (uv and launcher-Python paths) when
-   `developer_settings.py` and `code/.python-version` are unchanged and both files exist.
+   `developer_settings.py` and `backend/.python-version` are unchanged and both files exist.
    Otherwise `resolve_runtime.ps1` reads the `[bootstrap]` settings, finds or installs uv
    according to `uv_prefer` / `uv_install_if_missing` / `uv_version`, finds or installs the
-   project's Python with uv (`code/.python-version`, else `python_version`), checks the 3.8
+   project's Python with uv (`backend/.python-version`, else `python_version`), checks the 3.8
    minimum and writes the cache. The cache is UTF-8 and read with code page 65001, so
    non-ASCII project paths work.
 3. The entry script runs as `python -I -S -X utf8`: isolated, no `site`, standard library only.
 4. `start_program.py` validates the settings, applies `instance_policy`, prunes old logs and
    calls `uv_env.ensure_environment()`:
-   - writes `code/.python-version` and `requires-python = "==X.Y.*"` on the first run;
+   - writes `backend/.python-version` on the first run;
    - offers the migration menu when `python_version` differs from `.python-version`;
+   - generates `backend/pyproject.toml` from `packages` and the project's Python
+     (`requires-python = "==X.Y.*"`); its header records the list it was generated from, so a
+     change made to the file (e.g. `uv add`) is copied into `packages` instead of being lost;
    - `uv lock` when `pyproject.toml` changed (offline first);
-   - re-links `code/.venv` to the project's Python when the project moved
+   - re-links `backend/.venv` to the project's Python when the project moved
      (`uv venv --allow-existing`, keeps all packages, works offline); rebuilds it beside the
      old one when the Python minor version changed;
    - `uv sync --locked --inexact` (offline first) on every start.
@@ -51,7 +54,8 @@ DONT_CHANGE/
 
 `uv_env.uv_environment()` mirrors `Set-UvEnvironment` in `resolve_runtime.ps1`; keep both
 in sync when changing how uv is configured. Lookups run from the system temp folder,
-because uv would otherwise discover `code/.venv` as "the" Python. Project commands use the
+because uv would otherwise discover `backend/.venv` as "the" Python. Project commands run with
+the backend folder as working directory (the uv project). Project commands use the
 "prefer managed" Python preference because uv caches interpreter details that are stale
 right after a re-link.
 

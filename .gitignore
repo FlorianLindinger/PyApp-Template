@@ -56,9 +56,11 @@ nuitka-crash-report.xml
 # temporary process id indicator files:
 /code/*.pid
 /code/*.pid.d/
-# app environment created by uv (keep pyproject.toml, uv.lock and .python-version tracked):
-/code/.venv/
-/code/.venv.*/
+# uv project in the backend folder: commit uv.lock and .python-version; pyproject.toml is
+# generated from developer_settings.py and .venv is the app environment:
+/code/backend/pyproject.toml
+/code/backend/.venv/
+/code/backend/.venv.*/
 # uv, Pythons and the uv cache when installed into the project:
 /code/backend/uv/
 /code/backend/uv.*/
@@ -66,7 +68,7 @@ nuitka-crash-report.xml
 /code/backend/uv-cache/
 # machine-specific list of generated shortcuts:
 /code/backend/shortcuts_created_by_setup.json
-# folders of the old (pre-uv) template version; remove them with dev_tools\clean.cmd:
+# folders of the old (pre-uv) template version (delete them by hand):
 /code/backend/python/
 /code/backend/packages/
 /code/backend/dev_tools/*.txt

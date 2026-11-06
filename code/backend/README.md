@@ -1,13 +1,20 @@
 # Application backend
 
 Configure the application in [developer_settings.py](developer_settings.py): name,
-Python version, where uv/Python/packages come from, shortcuts, logging and completion behavior.
+Python version, the packages it needs (`packages`), where uv/Python/packages come from,
+shortcuts, logging and completion behavior.
 
-Change packages and the Python version with the tools in [dev_tools](dev_tools/README.md)
-(or uv commands in `../`). Dependencies are declared in `../pyproject.toml` and locked in
-`../uv.lock`; the app environment is `../.venv`.
+This folder is also the app's uv project. Generated on the first run:
 
-Generated folders here: `pythons/` and `uv/` (only when installed locally), `uv-cache/`
+- `uv.lock` and `.python-version`: the exact package and Python versions. **Commit them.**
+- `pyproject.toml`: generated from `packages` and `python_version` for uv. Do not edit it;
+  changes made to it anyway (e.g. `uv add`) are copied into `packages`. Ignored by Git.
+- `.venv/`: the app environment. Ignored by Git.
+
+Change packages and the Python version in `developer_settings.py` or with the tools in
+[dev_tools](dev_tools/README.md).
+
+Other generated items here: `pythons/` and `uv/` (only when installed locally), `uv-cache/`
 (only with `uv_cache = "local"`) and `shortcuts_created_by_setup.json` (the shortcuts Setup created, so it can
 remove stale ones). All are ignored by Git.
 

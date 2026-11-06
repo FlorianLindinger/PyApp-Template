@@ -1,13 +1,13 @@
 @echo off
 rem Sets PYAPP_UV (uv.exe) and PYAPP_PYTHON (the Python that runs the launcher) for the caller.
 rem No setlocal on purpose: the variables must reach the calling batch.
-rem Fast path: reuse tmp\runtime.cmd while developer_settings.py and code\.python-version are unchanged
+rem Fast path: reuse tmp\runtime.cmd while developer_settings.py and backend\.python-version are unchanged
 rem and both executables still exist. Otherwise resolve_runtime.ps1 finds or installs uv and Python.
 
 set "PYAPP_STAMP="
 for %%F in ("%~dp0..\..\developer_settings.py") do set "PYAPP_STAMP=%%~tF#%%~zF"
-if exist "%~dp0..\..\..\.python-version" (
-    for %%F in ("%~dp0..\..\..\.python-version") do set "PYAPP_STAMP_2=%%~tF#%%~zF"
+if exist "%~dp0..\..\.python-version" (
+    for %%F in ("%~dp0..\..\.python-version") do set "PYAPP_STAMP_2=%%~tF#%%~zF"
 ) else (
     set "PYAPP_STAMP_2=none"
 )

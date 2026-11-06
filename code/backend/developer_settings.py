@@ -15,7 +15,7 @@ from __future__ import annotations
 # ===========================
 
 # 1. Important Settings: program name, Python version, shortcuts, startup and instances.
-# 2. Python and Package Settings: where uv, Python and the packages come from.
+# 2. Python and Package Settings: the packages the app needs and where uv, Python and the packages come from.
 # 3. Logging Settings: normal and crash-log locations, behavior and retention.
 # 4. Program Finish/Crash Settings: what happens after success, failure, crashes, and KeyboardInterrupt.
 # 5. Traceback Settings: crash-report date format, context lines and colors.
@@ -84,6 +84,11 @@ instance_policy = "allow"
 # ======================================
 
 # ---------------------------------------
+# Packages the app needs: PyPI names with optional version limits, e.g. ["requests", "numpy>=2", "pillow==11.*"].
+# The launcher installs exactly these, with the versions recorded in backend/uv.lock (commit that file).
+# The dev tools add_packages, remove_packages and find_imports edit this list for you.
+packages: list[str] = []
+# ---------------------------------------
 # [bootstrap] Where the app's Python comes from:
 #   "local"                          uv installs it inside this project (code/backend/pythons). Portable.
 #   "uv_user"                        uv installs it in its per-user folder, shared by projects.
@@ -93,7 +98,7 @@ instance_policy = "allow"
 python_source = "uv_user"
 # ---------------------------------------
 # [bootstrap] Where the app's packages live:
-#   "project_venv"               a uv-managed virtual environment in code/.venv (recommended)
+#   "project_venv"               a uv-managed virtual environment in code/backend/.venv (recommended)
 #   "interpreter_site_packages"  the selected interpreter's own packages (only with the "system_..." sources)
 package_environment = "project_venv"
 # ---------------------------------------

@@ -25,7 +25,7 @@ def make_abs(x: str) -> str:
 
 DONT_CHANGE_DIR = make_abs(".")
 BACKEND_DIR = make_abs("..")
-PYTHON_SCRIPTS_DIR = make_abs("..\\..")              # the "code" folder: main.py, pyproject.toml, .venv
+PYTHON_SCRIPTS_DIR = make_abs("..\\..")              # the "code" folder: main.py and the app's own modules
 SHORTCUT_OUTPUT_DIR = make_abs("..\\..\\..")         # repository root
 TEMPORARY_DIR = DONT_CHANGE_DIR + "\\tmp"
 SCRIPTS_DIR = DONT_CHANGE_DIR + "\\scripts"
@@ -42,10 +42,14 @@ LOCAL_UV_DIR = BACKEND_DIR + "\\uv"                 # uv.exe when installed loca
 LOCAL_UV_EXE = LOCAL_UV_DIR + "\\uv.exe"
 LOCAL_PYTHONS_DIR = BACKEND_DIR + "\\pythons"       # uv-managed Pythons when python_source = "local"
 LOCAL_UV_CACHE_DIR = BACKEND_DIR + "\\uv-cache"     # only used when uv_cache = "local"
-PYPROJECT_PATH = PYTHON_SCRIPTS_DIR + "\\pyproject.toml"
-UV_LOCK_PATH = PYTHON_SCRIPTS_DIR + "\\uv.lock"
-PYTHON_VERSION_FILE = PYTHON_SCRIPTS_DIR + "\\.python-version"
-VENV_DIR = PYTHON_SCRIPTS_DIR + "\\.venv"
+# The uv project lives in the backend folder next to developer_settings.py. pyproject.toml is
+# generated from developer_settings.py (packages, python_version); uv.lock and .python-version
+# are committed; .venv is the app environment. UPDATE bootstrap/*.bat, *.ps1 and .gitignore too.
+PROJECT_DIR = BACKEND_DIR
+PYPROJECT_PATH = PROJECT_DIR + "\\pyproject.toml"
+UV_LOCK_PATH = PROJECT_DIR + "\\uv.lock"
+PYTHON_VERSION_FILE = PROJECT_DIR + "\\.python-version"
+VENV_DIR = PROJECT_DIR + "\\.venv"
 VENV_PYTHON_EXE = VENV_DIR + "\\Scripts\\python.exe"
 RUNTIME_CACHE_PATH = TEMPORARY_DIR + "\\runtime.cmd"   # written by bootstrap/resolve_runtime.ps1
 ENVIRONMENT_LOCK_PATH = TEMPORARY_DIR + "\\environment.lock"
@@ -124,7 +128,7 @@ RUNS_DIR = TEMPORARY_DIR + "\\runs"
 # dev tools and data
 
 DEV_TOOLS_DIR = BACKEND_DIR + "\\dev_tools"
-EXPORTED_REQUIREMENTS_PATH = PYTHON_SCRIPTS_DIR + "\\requirements.txt"
+EXPORTED_REQUIREMENTS_PATH = PROJECT_DIR + "\\requirements.txt"
 IMPORT_MAPPING_PATH = DATA_DIR + "\\import_to_package.txt"
 
 # ------------------------
