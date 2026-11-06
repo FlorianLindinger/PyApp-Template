@@ -66,6 +66,10 @@ BOOLEANS = (
 )
 
 
+# A requirement starts with a distribution name (PEP 508); uv checks the rest (versions, extras, markers).
+REQUIREMENT_START = re.compile(r"\s*[A-Za-z0-9][A-Za-z0-9._-]*\s*($|[\[(<>=!~;@ ])")
+
+
 class SettingsError(Exception):
     """A developer_settings.py value cannot be used."""
 
@@ -147,6 +151,8 @@ def validate(module=None) -> None:
     need("uv_version", lambda v: isinstance(v, str) and re.fullmatch(r"[0-9.,<>=!~ ]*", v), 'use "" or a version like "0.11.32" or ">=0.9,<1"')
     need("desktop_shortcuts", lambda v: isinstance(v, (list, tuple)) and all(k in SHORTCUT_KINDS for k in v), "use a list of " + ", ".join(repr(k) for k in SHORTCUT_KINDS))
     need("args_for_main_py", lambda v: isinstance(v, (list, tuple)) and all(isinstance(a, str) for a in v), "use a list of strings")
+    need("packages", lambda v: isinstance(v, (list, tuple)) and all(isinstance(p, str) and REQUIREMENT_START.match(p) for p in v),
+         'use a list of package requirements such as ["requests", "numpy>=2"]')
     for name in ("max_log_files", "max_run_folder_age_days"):
         need(name, lambda v: v is None or (isinstance(v, int) and not isinstance(v, bool) and v > 0), "use a positive whole number or None")
     need("traceback_extra_lines", lambda v: isinstance(v, int) and not isinstance(v, bool) and v >= 0, "use 0 or a positive whole number")
@@ -191,6 +197,43 @@ def edit_settings(changes: dict) -> list[str]:
         stream.write("".join(lines))
     sys.modules.pop("backend.developer_settings", None)
     return diff
+
+
+def set_list_setting(name: str, values) -> list[str]:
+    """Rewrite the top-level list setting `name` (it may span several lines); return a readable diff."""
+    with open(DEV_SETTINGS_PATH, encoding="utf-8", newline="") as stream:
+        source = stream.read()
+    newline = "\r\n" if "\r\n" in source else "\n"
+    lines = source.splitlines(keepends=True)
+    node = None
+    for item in ast.parse(source).body:
+        target = item.target if isinstance(item, ast.AnnAssign) else (item.targets[0] if isinstance(item, ast.Assign) and len(item.targets) == 1 else None)
+        if isinstance(target, ast.Name) and target.id == name and item.value is not None:
+            node = item
+    if node is None:
+        raise SettingsError(f"Could not find the setting {name} in developer_settings.py to edit.")
+    first, last = node.lineno - 1, node.end_lineno - 1
+    # ast offsets count UTF-8 bytes
+    head = lines[first].encode("utf-8")[: node.value.col_offset].decode("utf-8")  # e.g. "packages: list[str] = "
+    tail = lines[last].encode("utf-8")[node.value.end_col_offset :].decode("utf-8").rstrip("\r\n")  # e.g. a comment
+    if values:
+        body = "[" + newline + "".join("    " + _quoted(v) + "," + newline for v in values) + "]"
+    else:
+        body = "[]"
+    replacement = (head + body + tail).rstrip() + newline
+    old = "".join(lines[first : last + 1])
+    if replacement == old:
+        return []
+    lines[first : last + 1] = [replacement]
+    with open(DEV_SETTINGS_PATH, "w", encoding="utf-8", newline="") as stream:
+        stream.write("".join(lines))
+    sys.modules.pop("backend.developer_settings", None)
+    return [f"- {line}" for line in old.rstrip().splitlines()] + [f"+ {line}" for line in replacement.rstrip().splitlines()]
+
+
+def _quoted(value: str) -> str:
+    """Double-quoted Python string literal (the style used in developer_settings.py)."""
+    return '"' + value.replace("\\", "\\\\").replace('"', '\\"') + '"'
 
 
 def describe_python_request(value: str) -> str:

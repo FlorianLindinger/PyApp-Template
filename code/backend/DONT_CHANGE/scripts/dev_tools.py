@@ -47,6 +47,9 @@ from backend.DONT_CHANGE import backend_settings as paths
 # ---------------------------------------------------------------- helpers
 
 
+COMMIT_HINT = ". Commit developer_settings.py and backend/uv.lock."
+
+
 def ask(question: str) -> bool:
     return input_warn(question + " [y/N] ").strip().lower() in ("y", "yes", "j", "ja")
 
@@ -90,7 +93,7 @@ def ask_package_names(prompt: str) -> list:
 
 
 def cmd_add(arguments):
-    """Add packages to pyproject.toml/uv.lock and install them."""
+    """Add packages (recorded in developer_settings.py and uv.lock) and install them."""
     s = settings()
     names = arguments or ask_package_names("Package(s) to add, e.g. requests numpy>=2: ")
     if not names:
@@ -101,7 +104,7 @@ def cmd_add(arguments):
         return
     uv_env.refuse_mutation_while_running()
     uv_env.add_packages(names)
-    print_success("[Success] Added: " + " ".join(names) + ". Commit pyproject.toml and uv.lock.")
+    print_success("[Success] Added: " + " ".join(names) + COMMIT_HINT)
 
 
 def cmd_remove(arguments):
@@ -112,9 +115,9 @@ def cmd_remove(arguments):
         return
     names = list(arguments)
     if not names:
-        declared = uv_env.declared_dependencies()
+        declared = list(settings().packages)
         if not declared:
-            print("[Info] No packages are declared in pyproject.toml.")
+            print('[Info] "packages" in developer_settings.py is empty.')
             return
         for index, requirement in enumerate(declared, 1):
             print(f"  {index}: {requirement}")
@@ -129,7 +132,7 @@ def cmd_remove(arguments):
     prepare(s)
     uv_env.refuse_mutation_while_running()
     uv_env.remove_packages(names)
-    print_success("[Success] Removed: " + " ".join(names) + ". Commit pyproject.toml and uv.lock.")
+    print_success("[Success] Removed: " + " ".join(names) + COMMIT_HINT)
 
 
 def cmd_upgrade(arguments):
@@ -143,7 +146,7 @@ def cmd_upgrade(arguments):
     lock_arguments = ["lock"] + ([item for name in arguments for item in ("--upgrade-package", name)] if arguments else ["--upgrade"])
     uv_env.run_uv(lock_arguments)
     uv_env.sync(paths.VENV_PYTHON_EXE, exact=True)
-    print_success("[Success] Packages upgraded. Test the app, then commit uv.lock.")
+    print_success("[Success] Packages upgraded. Test the app, then commit backend/uv.lock.")
 
 
 def cmd_sync(arguments):
@@ -167,7 +170,7 @@ def find_imports_and_add():
     requirements, problems = find_requirements()
     for problem in problems:
         print_warn("[Warning] Could not parse " + problem)
-    declared = {requirement_name(r) for r in uv_env.declared_dependencies()}
+    declared = {requirement_name(r) for r in s.packages}
     candidates = [r for r in requirements if normalized(r.distribution) not in declared]
     if requirements:
         print("Imported third-party packages:")
@@ -201,7 +204,7 @@ def find_imports_and_add():
         return
     uv_env.refuse_mutation_while_running()
     uv_env.add_packages(names)
-    print_success("[Success] Added: " + " ".join(names) + ". Commit pyproject.toml and uv.lock.")
+    print_success("[Success] Added: " + " ".join(names) + COMMIT_HINT)
 
 
 def cmd_find_imports(arguments):
@@ -219,7 +222,7 @@ def cmd_terminal(arguments):
 
 
 def cmd_export(arguments):
-    """Write code/requirements.txt from uv.lock (for tools that need that format)."""
+    """Write backend/requirements.txt from uv.lock (for tools that need that format)."""
     prepare()
     uv_env.run_uv(["export", "--format", "requirements.txt", "--no-hashes", "--no-header", "--output-file", paths.EXPORTED_REQUIREMENTS_PATH, "--quiet"])
     print_success(f'[Success] Wrote "{display_path(paths.EXPORTED_REQUIREMENTS_PATH)}".')
@@ -243,7 +246,7 @@ def cmd_change_python(arguments):
     if not new:
         print("[Info] python_version is now empty (newest stable, chosen once). Use update_python to move to a newer Python.")
         return
-    prepare()  # offers the migration menu because the setting now differs from code/.python-version
+    prepare()  # offers the migration menu because the setting now differs from backend/.python-version
 
 
 def cmd_update_python(arguments):
@@ -407,9 +410,10 @@ def cmd_status(arguments):
         ("package_environment", s.package_environment),
         ("uv", f"{uv_env.uv_version()} at {uv}" + (" (local)" if os.path.normcase(uv).startswith(os.path.normcase(paths.LOCAL_UV_DIR)) else " (global)")),
         ("Launcher Python", f"{uv_env.version_text(sys.version_info[:3])} at {sys.executable}"),
-        ("code/.python-version", uv_env.read_python_version_file() or "(missing)"),
+        ("backend/.python-version", uv_env.read_python_version_file() or "(missing)"),
         ("requires-python", uv_env.current_requires_python() or "(missing)"),
-        ("Declared packages", ", ".join(uv_env.declared_dependencies()) or "(none)"),
+        ("packages", ", ".join(s.packages) or "(none)"),
+        ("pyproject.toml", "matches developer_settings.py" if uv_env.declared_dependencies() == list(s.packages) else "differs (updated on the next start or dev tool)"),
         ("Environment", display_path(paths.VENV_DIR) if config else "(not created)"),
     ]
     if config:

@@ -184,7 +184,7 @@ try:
             options.append(
                 (
                     "add",
-                    f'Add "{distribution}" to the project (pyproject.toml + uv.lock) and restart',
+                    f'Add "{distribution}" to the packages in developer_settings.py and restart',
                 )
             )
         options.append(

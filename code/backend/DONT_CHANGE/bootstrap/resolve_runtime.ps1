@@ -15,7 +15,6 @@ $OutputEncoding = [Console]::OutputEncoding
 $bootstrapDir = $PSScriptRoot
 $dontChange = [IO.Path]::GetFullPath((Join-Path $bootstrapDir '..'))
 $backendDir = [IO.Path]::GetFullPath((Join-Path $dontChange '..'))
-$codeDir = [IO.Path]::GetFullPath((Join-Path $backendDir '..'))
 $settingsPath = Join-Path $backendDir 'developer_settings.py'
 $temporary = Join-Path $dontChange 'tmp'
 $cachePath = Join-Path $temporary 'runtime.cmd'
@@ -23,7 +22,7 @@ $localUvDir = Join-Path $backendDir 'uv'
 $localUvExe = Join-Path $localUvDir 'uv.exe'
 $localPythons = Join-Path $backendDir 'pythons'
 $localCache = Join-Path $backendDir 'uv-cache'
-$versionFile = Join-Path $codeDir '.python-version'
+$versionFile = Join-Path $backendDir '.python-version'
 $minimumPython = [version]'3.8'
 
 function Fail([string]$message) { throw [System.Exception]::new($message) }
@@ -268,7 +267,7 @@ function Resolve-Uv($settings, [bool]$allowDownloads) {
 # ---------------------------------------------------------------- Python
 
 function Set-UvEnvironment($settings, [string]$source, [bool]$allowDownloads) {
-    foreach ($name in @('UV_PYTHON', 'UV_PYTHON_INSTALL_DIR', 'UV_MANAGED_PYTHON', 'UV_NO_MANAGED_PYTHON', 'UV_PYTHON_PREFERENCE', 'UV_PYTHON_INSTALL_BIN', 'UV_PYTHON_INSTALL_REGISTRY', 'UV_PROJECT_ENVIRONMENT', 'VIRTUAL_ENV')) {
+    foreach ($name in @('UV_PYTHON', 'UV_PYTHON_INSTALL_DIR', 'UV_MANAGED_PYTHON', 'UV_NO_MANAGED_PYTHON', 'UV_PYTHON_PREFERENCE', 'UV_PYTHON_INSTALL_BIN', 'UV_PYTHON_INSTALL_REGISTRY', 'UV_PROJECT_ENVIRONMENT', 'UV_PROJECT', 'UV_WORKING_DIR', 'VIRTUAL_ENV')) {
         Remove-Item "Env:$name" -ErrorAction SilentlyContinue
     }
     $visible = [bool](Get-Setting $settings 'uv_user_python_visible_globally' $false)
@@ -352,7 +351,7 @@ function Resolve-Python($settings, [string]$uv, [bool]$allowDownloads) {
     Set-UvEnvironment $settings $source $allowDownloads
     Remove-BrokenPythonLinks
 
-    # The project's current Python (code\.python-version) runs the launcher; the launcher
+    # The project's current Python (backend\.python-version) runs the launcher; the launcher
     # itself offers the migration when python_version in the settings differs from it.
     $request = ''
     if (Test-Path -LiteralPath $versionFile) {
@@ -360,7 +359,7 @@ function Resolve-Python($settings, [string]$uv, [bool]$allowDownloads) {
     }
     if (-not $request) { $request = [string](Get-Setting $settings 'python_version' '') }
 
-    # Outside the project: uv would otherwise discover code\.venv as "the" Python.
+    # Outside the project: uv would otherwise discover backend\.venv as "the" Python.
     Push-Location ([IO.Path]::GetTempPath())
     try {
         $python = $null
