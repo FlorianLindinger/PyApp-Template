@@ -7,7 +7,6 @@ import ctypes
 import hashlib
 import json
 import os
-import subprocess
 import threading
 import time
 import uuid
@@ -72,23 +71,22 @@ def atomic_json(path, payload):
     path.parent.mkdir(parents=True, exist_ok=True)
     temp = path.with_name(path.name + "." + uuid.uuid4().hex + ".tmp")
     try:
-        temp.write_text(
-            json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8"
-        )
+        temp.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
         os.replace(temp, path)
     finally:
         temp.unlink(missing_ok=True)
 
 
-def clean_python_environment():
-    """Retain application/proxy variables, excluding Python/package-tool injection."""
-    env = {
-        k: v
-        for k, v in os.environ.items()
-        if not k.upper().startswith(("PYTHON", "PIP_", "UV_"))
-    }
-    env["PYTHONNOUSERSITE"] = "1"
-    env["PIP_CONFIG_FILE"] = os.devnull
+def clean_python_environment(isolated=True):
+    """Environment for the application: launcher/package-tool variables removed.
+
+    isolated=False keeps the user's PYTHON* settings (package_environment =
+    "interpreter_site_packages" runs the user's own interpreter as configured).
+    """
+    blocked = ("PIP_", "UV_", "VIRTUAL_ENV") + (("PYTHON",) if isolated else ())
+    env = {k: v for k, v in os.environ.items() if not k.upper().startswith(blocked)}
+    if isolated:
+        env["PYTHONNOUSERSITE"] = "1"
     return env
 
 
@@ -101,9 +99,7 @@ def process_identity(pid):
     kernel.OpenProcess.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]
     kernel.OpenProcess.restype = wintypes.HANDLE
     kernel.CloseHandle.argtypes = [wintypes.HANDLE]
-    kernel.GetProcessTimes.argtypes = [wintypes.HANDLE] + [
-        ctypes.POINTER(wintypes.FILETIME)
-    ] * 4
+    kernel.GetProcessTimes.argtypes = [wintypes.HANDLE] + [ctypes.POINTER(wintypes.FILETIME)] * 4
     kernel.QueryFullProcessImageNameW.argtypes = [
         wintypes.HANDLE,
         wintypes.DWORD,
@@ -147,14 +143,11 @@ def process_identity(pid):
 
 
 class ProcessRegistry:
-    """One atomic identity record per launcher; legacy bare PIDs are never killed."""
+    """One atomic identity record per running launcher (watchdog)."""
 
-    def __init__(self, pid_path):
-        """Derive registry and legacy cleanup paths from the configured PID indicator."""
-        self.pid_path = Path(pid_path)
-        self.directory = Path(str(pid_path) + ".d")
-        # Kept only to clean up the old disk lock; new operations use a mutex.
-        self.lock_path = str(pid_path) + ".lock"
+    def __init__(self, directory):
+        """directory holds one <pid>.json record per running watchdog."""
+        self.directory = Path(directory)
 
     @contextlib.contextmanager
     def lock(self, timeout=120):
@@ -172,11 +165,8 @@ class ProcessRegistry:
         kernel.WaitForSingleObject.restype = wintypes.DWORD
         kernel.ReleaseMutex.argtypes = [wintypes.HANDLE]
         kernel.CloseHandle.argtypes = [wintypes.HANDLE]
-        identity = os.path.normcase(os.path.realpath(self.pid_path))
-        name = (
-            "Global\\PyAppTemplateRegistry-"
-            + hashlib.sha256(identity.encode("utf-8")).hexdigest()
-        )
+        identity = os.path.normcase(os.path.realpath(self.directory))
+        name = "Global\\PyAppTemplateRegistry-" + hashlib.sha256(identity.encode("utf-8")).hexdigest()
         handle = kernel.CreateMutexW(None, False, name)
         if not handle:
             raise ctypes.WinError(ctypes.get_last_error())
@@ -184,7 +174,7 @@ class ProcessRegistry:
         try:
             result = kernel.WaitForSingleObject(handle, int(timeout * 1000))
             if result == 258:
-                raise TimeoutError("Another launcher is busy: " + str(self.pid_path))
+                raise TimeoutError("Another launcher is busy: " + str(self.directory))
             # An abandoned mutex is acquired too; records are revalidated below.
             if result not in (0, 128):
                 raise ctypes.WinError(ctypes.get_last_error())
@@ -196,13 +186,24 @@ class ProcessRegistry:
             kernel.CloseHandle(handle)
 
     def register(self, child_pid=None):
-        """Atomically record this launcher's verified identity and optional application child identity."""
+        """Atomically record this launcher's verified identity, its console window and optional app child."""
         with self.lock(), process_identity(os.getpid()) as identity:
             if identity is None:
                 raise RuntimeError("Cannot establish launcher process identity")
             if child_pid is not None:
                 with process_identity(child_pid) as child:
                     identity["child"] = child
+            # The run folder lets Stop leave a "stop requested" note for this watchdog.
+            identity["run_dir"] = os.environ.get("PYAPP_RUN_DIR", "")
+            # The job object holding this watchdog and everything it starts (see create_own_job).
+            identity["job"] = _own_job_name
+            try:
+                identity["console_hwnd"] = int(ctypes.windll.kernel32.GetConsoleWindow() or 0)
+            except Exception:
+                from backend.DONT_CHANGE.scripts.diagnostics import note_ignored
+
+                note_ignored("register: console window handle")
+                identity["console_hwnd"] = 0
             atomic_json(self.directory / (str(os.getpid()) + ".json"), identity)
 
     def remove(self):
@@ -215,19 +216,12 @@ class ProcessRegistry:
         """Called under the registry mutex; preserve every remaining record."""
         if any(self.directory.glob("*.json")):
             return
-        # Remove abandoned atomic writes and markers from the former Stop protocol.
-        for pattern in ("*.tmp", "*.stop"):
-            for path in self.directory.glob(pattern):
-                path.unlink(missing_ok=True)
+        for path in self.directory.glob("*.tmp"):  # abandoned atomic writes
+            path.unlink(missing_ok=True)
         try:
             self.directory.rmdir()
         except OSError:
             pass  # Missing or not empty; never recursively delete unknown files.
-        for path in (self.pid_path, Path(self.lock_path)):
-            try:
-                path.unlink(missing_ok=True)
-            except PermissionError:
-                pass  # An older launcher can still hold its legacy lock file.
 
     def records(self):
         """Return other live launcher records and a stale count while cleaning empty registry artifacts."""
@@ -253,82 +247,289 @@ class ProcessRegistry:
             path.unlink(missing_ok=True)
         return records, stale
 
-    def stop(self):
-        """Terminate verified launcher trees directly, without a shutdown callback."""
+    def stop(self, timeout=0.0, report=None):
+        """Stop the running instances; returns (stopped, stale, failures).
+
+        With timeout > 0 each instance is first asked to close (WM_CLOSE to its windows, or
+        Ctrl+C for a console app) and gets that many seconds to end by itself, so it can save
+        its state. Whatever still runs afterwards is terminated with its process tree.
+        The registry lock is not held while waiting: an ending watchdog needs it to unregister.
+        report(text) receives progress messages.
+        """
+        records, stale = self.records()
+        if not records:
+            return 0, stale, []
+        if timeout and timeout > 0:
+            if report:
+                report(f"Asking {len(records)} instance(s) to close (up to {timeout:g} s) ...")
+            for record in records:
+                request_close(record)
+            deadline = time.monotonic() + timeout
+            while time.monotonic() < deadline and any(_still_running(r) for r in records):
+                time.sleep(0.1)
         stopped, failures = 0, []
         with self.lock():
-            records, stale = self.records()
             for record in records:
+                path = self.directory / (str(record["pid"]) + ".json")
                 with process_identity(record["pid"]) as current:
                     if not matches_identity(record, current):
-                        stale += 1
-                        (self.directory / (str(record["pid"]) + ".json")).unlink(
-                            missing_ok=True
-                        )
+                        stopped += 1  # it closed by itself
+                        path.unlink(missing_ok=True)
                         continue
+                    if report and timeout and timeout > 0:
+                        report(f"PID {record['pid']} did not close in time; ending it.")
+                    _write_stop_request(record)
                     try:
-                        # Retain the verified root handle until taskkill completes.
-                        result = subprocess.run(
-                            ["taskkill", "/PID", str(record["pid"]), "/T", "/F"],
-                            capture_output=True,
-                            text=True,
-                            errors="replace",
-                        )
-                        if result.returncode:
-                            raise RuntimeError(result.stderr or result.stdout)
+                        # The job holds the watchdog, the app and all their child processes; the
+                        # tree walk is only the fallback for a record without a usable job.
+                        # The verified root handle stays open meanwhile, so its PID cannot be reused.
+                        if not terminate_job(record.get("job")):
+                            terminate_tree(record["pid"])
                         stopped += 1
-                        (self.directory / (str(record["pid"]) + ".json")).unlink(
-                            missing_ok=True
-                        )
+                        path.unlink(missing_ok=True)
                     except (OSError, RuntimeError) as error:
                         failures.append(str(error))
             self._cleanup_empty()
         return stopped, stale, failures
 
 
+def _still_running(record) -> bool:
+    with process_identity(record["pid"]) as current:
+        return matches_identity(record, current)
+
+
+def _write_stop_request(record) -> None:
+    """Tell the instance's watchdog that its end was requested (no completion actions)."""
+    from backend.DONT_CHANGE.backend_settings import STOP_REQUEST_FILE_NAME
+
+    run_dir = record.get("run_dir")
+    if run_dir and os.path.isdir(run_dir):
+        try:
+            Path(run_dir, STOP_REQUEST_FILE_NAME).write_text("stop", encoding="utf-8")
+        except OSError:
+            from backend.DONT_CHANGE.scripts.diagnostics import note_ignored
+
+            note_ignored("write stop request")
+
+
+def request_close(record) -> None:
+    """Ask one instance to end by itself: WM_CLOSE to its app windows, else Ctrl+C to its console."""
+    import subprocess
+    import sys
+
+    from backend.DONT_CHANGE.backend_settings import CTRL_C_HELPER_PATH
+    from backend.DONT_CHANGE.scripts.diagnostics import note_ignored
+    from backend.DONT_CHANGE.scripts.windows_focus import app_windows, process_tree
+
+    _write_stop_request(record)
+    child = record.get("child") if isinstance(record.get("child"), dict) else None
+    child_pid = None
+    if child:
+        with process_identity(child.get("pid") or 0) as current:
+            if matches_identity(child, current):
+                child_pid = child["pid"]
+    try:
+        job_pids = job_process_ids(record.get("job"))
+        if job_pids:
+            windows = app_windows(job_pids - {record["pid"]})
+        else:
+            windows = app_windows(process_tree([child_pid])) if child_pid else []
+        if windows:
+            user32 = ctypes.WinDLL("user32", use_last_error=True)
+            for hwnd in windows:
+                user32.PostMessageW(hwnd, 0x0010, 0, 0)  # WM_CLOSE, like clicking the window's X
+            return
+        # No window: a console app. Ctrl+C reaches every process of the instance's console; its
+        # watchdog ignores it while the app runs. DETACHED_PROCESS: the helper has no console yet.
+        subprocess.run(
+            [sys.executable, "-I", "-S", CTRL_C_HELPER_PATH, str(child_pid or record["pid"])],
+            creationflags=0x00000008,
+            timeout=10,
+            check=False,
+        )
+    except Exception:
+        note_ignored("request_close")
+
+
+# ---------------------------------------------------------------- job objects
+#
+# The watchdog puts itself into a named job object before it starts the app. Every process the
+# app starts then belongs to that job too (Windows assigns children to their parent's job), so
+# Stop ends exactly this instance's processes with one TerminateJobObject call: no process
+# snapshot, no reused process IDs. The job does not kill on close, so programs the app opens
+# (e.g. a browser) survive a normal end of the app; only Stop ends them. An app can start a
+# process outside the job with CREATE_BREAKAWAY_FROM_JOB (the job allows breakaway).
+
+_own_job_handle = None  # kept open for the life of the watchdog: closing it deletes the job's name
+_own_job_name = ""
+
+JOB_OBJECT_QUERY = 0x0004
+JOB_OBJECT_TERMINATE = 0x0008
+JOB_OBJECT_LIMIT_BREAKAWAY_OK = 0x00000800
+JOB_OBJECT_BASIC_LIMIT_INFORMATION_CLASS = 2
+JOB_OBJECT_BASIC_PROCESS_ID_LIST_CLASS = 3
+
+
+def _job_api():
+    from ctypes import wintypes
+
+    kernel = ctypes.WinDLL("kernel32", use_last_error=True)
+    kernel.CreateJobObjectW.argtypes = [ctypes.c_void_p, wintypes.LPCWSTR]
+    kernel.CreateJobObjectW.restype = wintypes.HANDLE
+    kernel.OpenJobObjectW.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.LPCWSTR]
+    kernel.OpenJobObjectW.restype = wintypes.HANDLE
+    kernel.SetInformationJobObject.argtypes = [wintypes.HANDLE, ctypes.c_int, ctypes.c_void_p, wintypes.DWORD]
+    kernel.QueryInformationJobObject.argtypes = [
+        wintypes.HANDLE,
+        ctypes.c_int,
+        ctypes.c_void_p,
+        wintypes.DWORD,
+        ctypes.POINTER(wintypes.DWORD),
+    ]
+    kernel.AssignProcessToJobObject.argtypes = [wintypes.HANDLE, wintypes.HANDLE]
+    kernel.GetCurrentProcess.restype = wintypes.HANDLE
+    kernel.TerminateJobObject.argtypes = [wintypes.HANDLE, wintypes.UINT]
+    kernel.CloseHandle.argtypes = [wintypes.HANDLE]
+    return kernel
+
+
+class _JobBasicLimits(ctypes.Structure):
+    _fields_ = (
+        ("PerProcessUserTimeLimit", ctypes.c_int64),
+        ("PerJobUserTimeLimit", ctypes.c_int64),
+        ("LimitFlags", ctypes.c_uint32),
+        ("MinimumWorkingSetSize", ctypes.c_size_t),
+        ("MaximumWorkingSetSize", ctypes.c_size_t),
+        ("ActiveProcessLimit", ctypes.c_uint32),
+        ("Affinity", ctypes.c_size_t),
+        ("PriorityClass", ctypes.c_uint32),
+        ("SchedulingClass", ctypes.c_uint32),
+    )
+
+
+def create_own_job() -> str:
+    """Put this process (the watchdog) into a new named job object; returns its name ("" on failure)."""
+    global _own_job_handle, _own_job_name
+    with process_identity(os.getpid()) as identity:
+        if identity is None:
+            return ""
+        # PID plus creation time: unique, and never the name of another (earlier) instance's job.
+        name = f"Local\\PyAppJob-{identity['pid']}-{identity['created']}"
+    kernel = _job_api()
+    handle = kernel.CreateJobObjectW(None, name)
+    if not handle:
+        raise ctypes.WinError(ctypes.get_last_error())
+    limits = _JobBasicLimits(LimitFlags=JOB_OBJECT_LIMIT_BREAKAWAY_OK)
+    kernel.SetInformationJobObject(
+        handle, JOB_OBJECT_BASIC_LIMIT_INFORMATION_CLASS, ctypes.byref(limits), ctypes.sizeof(limits)
+    )
+    if not kernel.AssignProcessToJobObject(handle, kernel.GetCurrentProcess()):
+        error = ctypes.WinError(ctypes.get_last_error())
+        kernel.CloseHandle(handle)
+        raise error
+    _own_job_handle, _own_job_name = handle, name
+    return name
+
+
+def terminate_job(name) -> bool:
+    """End every process of the named job; False if there is no such job (anymore)."""
+    if not name:
+        return False
+    kernel = _job_api()
+    handle = kernel.OpenJobObjectW(JOB_OBJECT_TERMINATE, False, name)
+    if not handle:
+        return False
+    try:
+        if not kernel.TerminateJobObject(handle, 1):
+            raise ctypes.WinError(ctypes.get_last_error())
+        return True
+    finally:
+        kernel.CloseHandle(handle)
+
+
+def job_process_ids(name) -> set:
+    """IDs of the processes currently in the named job (empty if it does not exist)."""
+    if not name:
+        return set()
+    kernel = _job_api()
+    handle = kernel.OpenJobObjectW(JOB_OBJECT_QUERY, False, name)
+    if not handle:
+        return set()
+    try:
+        capacity = 4096
+
+        class _ProcessIdList(ctypes.Structure):
+            _fields_ = (
+                ("NumberOfAssignedProcesses", ctypes.c_uint32),
+                ("NumberOfProcessIdsInList", ctypes.c_uint32),
+                ("ProcessIdList", ctypes.c_size_t * capacity),
+            )
+
+        listing = _ProcessIdList()
+        if not kernel.QueryInformationJobObject(
+            handle, JOB_OBJECT_BASIC_PROCESS_ID_LIST_CLASS, ctypes.byref(listing), ctypes.sizeof(listing), None
+        ):
+            return set()
+        return {int(listing.ProcessIdList[i]) for i in range(listing.NumberOfProcessIdsInList)}
+    finally:
+        kernel.CloseHandle(handle)
+
+
+def terminate_tree(root_pid):
+    """Fallback without a job: force-terminate a process and its descendants via the Win32 API.
+
+    Deliberately avoids taskkill/WMI, which fail on PCs with a broken WMI service.
+    """
+    from backend.DONT_CHANGE.scripts.windows_focus import process_tree
+
+    kernel = ctypes.WinDLL("kernel32", use_last_error=True)
+    kernel.OpenProcess.restype = ctypes.c_void_p
+    kernel.TerminateProcess.argtypes = [ctypes.c_void_p, ctypes.c_uint]
+    kernel.CloseHandle.argtypes = [ctypes.c_void_p]
+    pids = process_tree([root_pid])
+    failures = []
+    # Root first, so the watchdog cannot react to its children ending.
+    for pid in [root_pid] + sorted(pids - {root_pid}):
+        handle = kernel.OpenProcess(0x0001, False, pid)  # PROCESS_TERMINATE
+        if not handle:
+            if pid == root_pid:
+                failures.append(f"PID {pid}: cannot open process (error {ctypes.get_last_error()})")
+            continue
+        try:
+            if not kernel.TerminateProcess(handle, 1) and pid == root_pid:
+                failures.append(f"PID {pid}: terminate failed (error {ctypes.get_last_error()})")
+        finally:
+            kernel.CloseHandle(handle)
+    if failures:
+        raise RuntimeError("; ".join(failures))
+
+
 def matches_identity(record, current):
     """Compare PID, creation time and executable path to reject stale or reused process IDs."""
-    return current is not None and all(
-        record.get(key) == current.get(key) for key in ("pid", "created", "image")
-    )
+    return current is not None and all(record.get(key) == current.get(key) for key in ("pid", "created", "image"))
 
 
 def unique_log_path(path, run_id=None):
-    """Append the run identifier to a log filename, preserving an empty disabled path."""
+    """Append a compact 12-character run suffix, preserving an empty disabled path."""
     if not path:
         return ""
     p = Path(path)
-    return str(p.with_name(p.stem + "_" + (run_id or uuid.uuid4().hex) + p.suffix))
+    # Keep 48 random bits while avoiding a full UUID in Windows log paths.
+    suffix = (run_id or uuid.uuid4().hex)[:12]
+    return str(p.with_name(p.stem + "_" + suffix + p.suffix))
 
 
-def require_supported_architecture():
-    """Reject managed runtime installation on architectures other than Windows AMD64."""
-    architecture = os.environ.get(
-        "PROCESSOR_ARCHITEW6432", os.environ.get("PROCESSOR_ARCHITECTURE", "")
-    ).upper()
-    if architecture != "AMD64":
-        raise RuntimeError(
-            "Managed runtimes currently require Windows x64 (AMD64). Detected: "
-            + architecture
-            + ". Native ARM64/x86 installation is not supported; use a separately managed Python with use_global_python=True."
-        )
+def exit_code_looks_like_interpreter_crash(exit_code: object) -> bool:
+    """Whether a process exit code is a common Windows crash code (NTSTATUS, signed or unsigned)."""
+    if isinstance(exit_code, bool) or not isinstance(exit_code, int):
+        return False
 
-
-def resolve_global_python():
-    """Resolve py or python to its actual interpreter executable using an isolated subprocess."""
-    import shutil
-
-    launcher = shutil.which("py") or shutil.which("python")
-    if not launcher:
-        raise RuntimeError(
-            "Global-Python mode requires an installed py/python executable"
-        )
-    result = subprocess.run(
-        [launcher, "-E", "-s", "-c", "import sys; print(sys.executable)"],
-        env=clean_python_environment(),
-        capture_output=True,
-        text=True,
-        check=True,
-        timeout=15,
-    )
-    return result.stdout.strip()
+    # NTSTATUS values can arrive as signed or unsigned integers.
+    windows_crash_codes = {
+        0xC0000005,  # access violation
+        0xC00000FD,  # stack overflow
+        0xC000001D,  # illegal instruction
+        0xC0000096,  # privileged instruction
+        0xC0000409,  # stack buffer overrun
+    }
+    return (exit_code & 0xFFFFFFFF) in windows_crash_codes

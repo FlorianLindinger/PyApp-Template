@@ -1,7 +1,9 @@
 """PNG and ICO generation through Windows WPF."""
 
+from __future__ import annotations
+
 import os
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterable
 from pathlib import Path
 
 
@@ -25,11 +27,7 @@ def _run_wpf_powershell(script: str, **extra_env: str) -> str:
         env=environment,
     )
     if completed.returncode:
-        raise RuntimeError(
-            completed.stderr.strip()
-            or completed.stdout.strip()
-            or "WPF image operation failed."
-        )
+        raise RuntimeError(completed.stderr.strip() or completed.stdout.strip() or "WPF image operation failed.")
     return completed.stdout.strip()
 
 
@@ -56,107 +54,11 @@ $bytes = [byte[]]::new($image.PixelWidth * $image.PixelHeight * 4)
 $image.CopyPixels($bytes, $image.PixelWidth * 4, 0)
 [pscustomobject]@{ width=$image.PixelWidth; height=$image.PixelHeight; pixels=[Convert]::ToBase64String($bytes) } | ConvertTo-Json -Compress
 """
-    payload = json.loads(
-        _run_wpf_powershell(script, IMAGE_URI=Path(path).resolve().as_uri())
-    )
+    payload = json.loads(_run_wpf_powershell(script, IMAGE_URI=Path(path).resolve().as_uri()))
     bgra = base64.b64decode(payload["pixels"])
     rgba = bytearray(bgra)
     rgba[0::4], rgba[2::4] = bgra[2::4], bgra[0::4]
     return f"{payload['width']}x{payload['height']}:{zlib.crc32(rgba) & 0xFFFFFFFF:08x}"
-
-
-def generate_png_with_text(
-    output_path: str,
-    lines: Sequence[str],
-    *,
-    width: int = 512,
-    height: int = 512,
-    font_family: str = "Arial",
-    font_size: int = 100,
-    min_font_size: int = 8,
-    bold: bool = True,
-    text_color: tuple[int, int, int, int] = (0, 0, 0, 255),
-    background_color: tuple[int, int, int, int] = (255, 255, 255, 255),
-    padding: int = 20,
-) -> str:
-    """Create a PNG with centered, automatically fitted text using Windows WPF.
-
-    The output is ``width`` by ``height`` pixels. Lines are centered as a
-    group and the font size is reduced in two-pixel steps until every line
-    fits within ``padding``. ``text_color`` and ``background_color`` are RGBA
-    tuples. Set ``bold`` to use a bold font face. No third-party Python image
-    package is required.
-
-    Returns the absolute output path.
-    """
-    import json
-
-    if (
-        width <= 0
-        or height <= 0
-        or min_font_size <= 0
-        or font_size < min_font_size
-        or padding < 0
-    ):
-        raise ValueError("Invalid PNG text dimensions or font sizes.")
-    if not lines or any(not isinstance(line, str) for line in lines):
-        raise ValueError("lines must contain one or more strings.")
-    for color in (text_color, background_color):
-        if len(color) != 4 or any(not 0 <= channel <= 255 for channel in color):
-            raise ValueError("Colors must be RGBA tuples with channels from 0 to 255.")
-
-    output_path = os.path.abspath(output_path)
-    output_folder = os.path.dirname(output_path)
-    if output_folder:
-        os.makedirs(output_folder, exist_ok=True)
-    script = r"""
-Add-Type -AssemblyName PresentationCore
-$settings = $env:PNG_TEXT_SETTINGS | ConvertFrom-Json
-function Brush($rgba) { [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb($rgba[3], $rgba[0], $rgba[1], $rgba[2])) }
-$weight = if ($settings.bold) { [System.Windows.FontWeights]::Bold } else { [System.Windows.FontWeights]::Normal }
-$typeface = [System.Windows.Media.Typeface]::new(
-    $settings.font_family,
-    [System.Windows.FontStyles]::Normal,
-    $weight,
-    [System.Windows.FontStretches]::Normal
-)
-$dpi = 96.0
-for ($fontSize = $settings.font_size; $fontSize -ge $settings.min_font_size; $fontSize -= 2) {
-    $text = @($settings.lines | ForEach-Object { [System.Windows.Media.FormattedText]::new($_, [Globalization.CultureInfo]::InvariantCulture, 'LeftToRight', $typeface, $fontSize, (Brush $settings.text_color), $dpi) })
-    $spacing = [Math]::Max(2, [int]($fontSize / 4))
-    $textWidth = ($text | Measure-Object -Property Width -Maximum).Maximum
-    $textHeight = ($text | Measure-Object -Property Height -Sum).Sum + $spacing * ($text.Count - 1)
-    if ($textWidth -le $settings.width - 2 * $settings.padding -and $textHeight -le $settings.height - 2 * $settings.padding) { break }
-}
-if ($fontSize -lt $settings.min_font_size) { throw 'Text does not fit at the minimum font size.' }
-$visual = [System.Windows.Media.DrawingVisual]::new(); $context = $visual.RenderOpen()
-$context.DrawRectangle((Brush $settings.background_color), $null, [Windows.Rect]::new(0, 0, $settings.width, $settings.height))
-$y = ($settings.height - $textHeight) / 2
-foreach ($line in $text) { $context.DrawText($line, [Windows.Point]::new(($settings.width - $line.Width) / 2, $y)); $y += $line.Height + $spacing }
-$context.Close()
-$bitmap = [System.Windows.Media.Imaging.RenderTargetBitmap]::new($settings.width, $settings.height, $dpi, $dpi, [System.Windows.Media.PixelFormats]::Pbgra32); $bitmap.Render($visual)
-$encoder = [System.Windows.Media.Imaging.PngBitmapEncoder]::new(); $encoder.Frames.Add([System.Windows.Media.Imaging.BitmapFrame]::Create($bitmap))
-$stream = [IO.File]::Open($env:PNG_OUTPUT_PATH, 'Create'); try { $encoder.Save($stream) } finally { $stream.Dispose() }
-"""
-    _run_wpf_powershell(
-        script,
-        PNG_OUTPUT_PATH=output_path,
-        PNG_TEXT_SETTINGS=json.dumps(
-            {
-                "lines": list(lines),
-                "width": width,
-                "height": height,
-                "font_family": font_family,
-                "font_size": font_size,
-                "min_font_size": min_font_size,
-                "bold": bold,
-                "text_color": text_color,
-                "background_color": background_color,
-                "padding": padding,
-            }
-        ),
-    )
-    return output_path
 
 
 def generate_ico_from_png(
@@ -191,27 +93,17 @@ def generate_ico_from_png(
     if sub_png_path and not os.path.isfile(sub_png_path):
         raise FileNotFoundError(f'Sub PNG does not exist: "{sub_png_path}"')
     if not 0 < sub_icon_area_scale_factor <= 1:
-        raise ValueError(
-            "sub_icon_area_scale_factor must be greater than 0 and at most 1."
-        )
+        raise ValueError("sub_icon_area_scale_factor must be greater than 0 and at most 1.")
     if not sizes or any(not 0 < size <= 256 for size in sizes):
         raise ValueError("icon_sizes must contain sizes from 1 through 256.")
     aliases = {"up": "top", "down": "bottom", "middle": "center", "centre": "center"}
     tokens = [
-        aliases.get(token, token)
-        for token in sub_icon_alignment.lower()
-        .replace("_", " ")
-        .replace("-", " ")
-        .split()
+        aliases.get(token, token) for token in sub_icon_alignment.lower().replace("_", " ").replace("-", " ").split()
     ]
-    if not tokens or any(
-        token not in {"top", "bottom", "left", "right", "center"} for token in tokens
-    ):
+    if not tokens or any(token not in {"top", "bottom", "left", "right", "center"} for token in tokens):
         raise ValueError(f"Unsupported sub_icon_alignment: {sub_icon_alignment!r}")
     vertical = next((token for token in tokens if token in {"top", "bottom"}), "center")
-    horizontal = next(
-        (token for token in tokens if token in {"left", "right"}), "center"
-    )
+    horizontal = next((token for token in tokens if token in {"left", "right"}), "center")
     if os.path.exists(output_path) and not override:
         return output_path
     output_folder = os.path.dirname(output_path)
@@ -253,9 +145,7 @@ if ($env:ICO_OVERLAY_URI) {
         _run_wpf_powershell(
             script,
             ICO_BASE_URI=Path(base_png_path).resolve().as_uri(),
-            ICO_OVERLAY_URI=Path(sub_png_path).resolve().as_uri()
-            if sub_png_path
-            else "",
+            ICO_OVERLAY_URI=Path(sub_png_path).resolve().as_uri() if sub_png_path else "",
             ICO_OVERLAY_SCALE=str(sub_icon_area_scale_factor),
             ICO_VERTICAL=vertical,
             ICO_HORIZONTAL=horizontal,

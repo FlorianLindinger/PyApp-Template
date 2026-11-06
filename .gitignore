@@ -41,13 +41,6 @@ __pycache__/
 .Python
 # Keep generated files with local machine paths out of Git.
 nuitka-crash-report.xml
-**/bin/f2py.exe
-**/bin/markdown-it.exe
-**/bin/normalizer.exe
-**/bin/pipreqs.exe
-**/bin/pygmentize.exe
-**/bin/pywin32_postinstall.exe
-**/bin/pywin32_testall.exe
 # Profiling results
 *.lprof
 *.prof
@@ -60,31 +53,18 @@ nuitka-crash-report.xml
 
 # shortcuts in this folder:
 /*.lnk
-# temporary process id indicator files:
-/code/*.pid
-/code/*.pid.d/
-/code/*.pid.lock
-# generated runtime-selection and resolved-package locks:
-/code/backend/frontend-python.lock.json
-/code/backend/dev_tools/DEFAULT_PYTHON_PACKAGES.txt.lock.json
-# output text files of dev_tools folder:
-/code/backend/dev_tools/*.txt
-# whitelist default package list in dev_tools folder:
-!/code/backend/dev_tools/DEFAULT_PYTHON_PACKAGES.txt
-# whitelist README in dev_tools folder:
-!/code/backend/dev_tools/README.*
-# Keep optional input for install_local_reqs.bat
-!/code/backend/dev_tools/requirements.txt
-# generated Python distro folder in this folder:
-/code/backend/python/
-/code/backend/python.staging-*/
-/code/backend/python.previous/
-/code/backend/python.failed/
-# generated packages folder in this folder:
-/code/backend/packages/
-/code/backend/packages.staging-*/
-/code/backend/packages.previous/
-/code/backend/packages.failed/
+# uv project in the backend folder: commit uv.lock and .python-version; pyproject.toml is
+# generated from developer_settings.py and .venv is the app environment:
+/code/backend/pyproject.toml
+/code/backend/.venv/
+/code/backend/.venv.*/
+# uv, Pythons and the uv cache when installed into the project:
+/code/backend/uv/
+/code/backend/uv.*/
+/code/backend/pythons/
+/code/backend/uv-cache/
+# machine-specific list of generated shortcuts:
+/code/backend/shortcuts_created_by_setup.json
 # whitelist ".gitkeep" files anywhere:
 !.gitkeep
 

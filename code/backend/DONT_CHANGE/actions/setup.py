@@ -1,0 +1,116 @@
+"""Setup: prepare uv, Python and the packages, then create the shortcuts and remove stale ones.
+
+Run by "Setup - run first and after moving folder.cmd".
+"""
+
+from __future__ import annotations
+
+import os
+
+from backend.DONT_CHANGE.backend_settings import DEV_SETTINGS_PATH, SHORTCUT_OUTPUT_DIR
+from backend.DONT_CHANGE.scripts.banner import print_banner
+from backend.DONT_CHANGE.scripts.config import settings, validate
+from backend.DONT_CHANGE.scripts.console_tools import (
+    ANSI_DIM,
+    ANSI_GOOD,
+    print_heading,
+    print_success,
+    print_warn,
+    styled,
+)
+from backend.DONT_CHANGE.scripts.filesystem_tools import make_abs_path_relative_to_file, sanitize_filename
+from backend.DONT_CHANGE.scripts.shortcuts import (
+    CSIDL_DESKTOPDIRECTORY,
+    CSIDL_PROGRAMS,
+    generate_shortcut,
+    project_app_id,
+    read_created_shortcuts,
+    remove_shortcuts,
+    shortcut_definitions,
+    shortcut_filename,
+    shortcut_targets,
+    special_folder,
+    write_created_shortcuts,
+)
+
+pause_on_success = True
+
+
+def _short(path: str) -> str:
+    """A path for display, with the user profile folder as %USERPROFILE%."""
+    home = os.path.expanduser("~")
+    if os.path.normcase(path).startswith(os.path.normcase(home) + os.sep):
+        return "%USERPROFILE%" + path[len(home) :]
+    return path
+
+
+def main() -> None:
+    """Optionally prepare the environment, then create the enabled shortcuts and remove stale ones."""
+    s = settings()
+    validate(s)
+    print_banner()
+    print("Setup prepares uv, Python and the app's packages, then creates or updates the shortcuts.")
+    print(styled("Run it again after moving or renaming the project folder or a parent folder.", ANSI_DIM))
+    app_id = project_app_id(s.program_name)
+    targets_by_kind = shortcut_targets(s)
+    definitions = shortcut_definitions(s, app_id, targets_by_kind)
+    filenames = [shortcut_filename(d[1]).casefold() for d in definitions]
+    if len(filenames) != len(set(filenames)):
+        raise ValueError("Shortcut names collide after Windows filename sanitization; choose distinct names.")
+    if s.install_environment_when_generating_shortcuts:
+        from backend.DONT_CHANGE.scripts.env.pythons import interpreter_version, version_text
+        from backend.DONT_CHANGE.scripts.env.venv import ensure_environment
+
+        print_heading("Environment")
+        app = ensure_environment(interactive=True)
+        where = "backend\\.venv" if app.kind == "venv" else app.exe
+        print(
+            f"  {styled('ready', ANSI_GOOD)}  Python {version_text(interpreter_version(app.exe))}  {styled(where, ANSI_DIM)}"
+        )
+    if s.user_settings_path:
+        settings_file = make_abs_path_relative_to_file(s.user_settings_path, DEV_SETTINGS_PATH)
+        if not os.path.exists(settings_file):
+            print()
+            print_warn(
+                f'The user settings file does not exist: "{settings_file}". Its shortcut will show an error until the file exists.'
+            )
+    for kind in ("logs", "crash_logs"):
+        if targets_by_kind[kind]:
+            os.makedirs(targets_by_kind[kind], exist_ok=True)  # the shortcut opens it right away
+
+    folders_by_label = [("project folder", SHORTCUT_OUTPUT_DIR)]
+    if s.start_menu_shortcuts:
+        start_menu = os.path.join(special_folder(CSIDL_PROGRAMS), sanitize_filename(s.program_name))
+        folders_by_label.append(("Start Menu", start_menu))
+    desktop = special_folder(CSIDL_DESKTOPDIRECTORY) if s.desktop_shortcuts else None
+    print_heading("Shortcuts")
+    for label, folder in folders_by_label + ([("Desktop", desktop)] if desktop else []):
+        print(f"  {label:<15} {styled(_short(folder), ANSI_DIM)}")
+    print()
+    created = []
+    name_width = max(len(d[1]) for d in definitions) if definitions else 0
+    for kind, name, icon, launcher, args, shortcut_app_id, description in definitions:
+        places = list(folders_by_label)
+        if desktop and kind in s.desktop_shortcuts:
+            places.append(("Desktop", desktop))
+        for _, folder in places:
+            created.append(
+                generate_shortcut(
+                    name,
+                    icon,
+                    launcher,
+                    args=args,
+                    app_id=shortcut_app_id,
+                    description=description,
+                    start_minimized=kind != "stop",  # Stop shows a short countdown
+                    output_dir=folder,
+                )
+            )
+        where = ", ".join(label for label, _ in places)
+        print(f"  {styled('+', ANSI_GOOD)} {name:<{name_width}}  {styled(where, ANSI_DIM)}")
+    removed = remove_shortcuts(read_created_shortcuts(), keep=created)
+    write_created_shortcuts(created, targets_by_kind)
+    for path in removed:
+        print(f"  {styled('-', ANSI_DIM)} {styled('removed ' + _short(path), ANSI_DIM)}")
+    print()
+    print_success(" Setup completed. The shortcuts are ready for this location. ")

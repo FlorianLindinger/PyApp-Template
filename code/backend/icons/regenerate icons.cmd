@@ -1,20 +1,21 @@
 @echo off
 setlocal EnableExtensions DisableDelayedExpansion
+for /f %%e in ('echo prompt $E^| cmd /d') do set "esc=%%e"
 echo Regenerates this project's ICO files from the configured PNG images.
 echo.
 :: Keep this window alive even if the generator's child shell exits.
 set "PYAPP_ENTRYPOINT_NO_PAUSE=1"
-set "PYAPP_ENTRY_SCRIPT=%~dp0..\DONT_CHANGE\scripts\actions\generate_icons.py"
-"%ComSpec%" /d /s /c ""%~dp0..\DONT_CHANGE\scripts\setup\run_backend_script.bat""
+set "PYAPP_ENTRY_SCRIPT=%~dp0..\DONT_CHANGE\actions\gen_icons.py"
+"%ComSpec%" /d /s /c ""%~dp0..\DONT_CHANGE\bootstrap\run.bat""
 set "icon_exit_code=%ERRORLEVEL%"
 echo.
 if "%icon_exit_code%"=="0" (
-    echo [Success] Icons regenerated.
+    echo %esc%[1;37;42m OK %esc%[0m Icons regenerated.
 ) else (
-    echo [Error] Icon generation failed or crashed. Exit code: %icon_exit_code%
-    echo Review the error messages above before trying again.
+    echo %esc%[1;37;41m ERROR %esc%[0m Icon generation failed. Exit code: %icon_exit_code%
+    echo Review the messages above before trying again.
 )
 echo.
-echo Press any key to close this window.
+echo %esc%[90mPress any key to close this window.%esc%[0m
 pause > nul
 exit /b %icon_exit_code%

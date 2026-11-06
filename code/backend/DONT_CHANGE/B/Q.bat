@@ -2,6 +2,6 @@
 setlocal EnableExtensions DisableDelayedExpansion
 if not defined PYAPP_START_DIR set "PYAPP_START_DIR=%CD%"
 cd /d "%~dp0"
-set "PYAPP_ENTRY_SCRIPT=%~dp0..\scripts\actions\stop_program.py"
-call "%~dp0..\scripts\setup\run_backend_script.bat" %*
+set "PYAPP_ENTRY_SCRIPT=%~dp0..\actions\stop_program.py"
+call "%~dp0..\bootstrap\run.bat" %*
 exit /b %ERRORLEVEL%

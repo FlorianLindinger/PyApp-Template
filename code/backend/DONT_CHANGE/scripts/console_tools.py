@@ -1,52 +1,132 @@
 """Windows console appearance and interactive messages."""
 
+from __future__ import annotations
+
 import os
 import sys
 from typing import Any, TextIO
 
-ANSI_WARN = "\x1b[1;37;41m"
-ANSI_SUCCESS = "\x1b[1;37;42m"
+from backend.DONT_CHANGE.scripts.diagnostics import note_ignored
+
+# Message styles. Every launcher window uses the same few, so they look alike:
+#   print_heading   "── Title ────"              sections
+#   print_step      "» Installing packages ..."  something that may take a while
+#   print_info      grey text                    notes and details
+#   print_success   " OK " badge + text          a finished task
+#   print_warn      " ! " badge + text           something to look at; the task goes on
+#   print_error     " ERROR " badge + text       the task failed
+#   ask / wait_for_enter / print_choices         questions and menus
+ANSI_ERROR = "\x1b[1;37;41m"  # white on red
+ANSI_SUCCESS = "\x1b[1;37;42m"  # white on green
+ANSI_WARNING = "\x1b[1;30;43m"  # black on yellow
+ANSI_HEADING = "\x1b[1;36m"  # bold cyan
+ANSI_GOOD = "\x1b[32m"  # green
+ANSI_DIM = "\x1b[90m"  # grey
+ANSI_BOLD = "\x1b[1m"
 ANSI_RESET = "\033[0m"
 
 
-def print_warn(msg: Any, sep: str | None = " ", end: str | None = "\n") -> None:
-    """Print a warning-styled console message."""
-    if msg is not None:
-        print(f"{ANSI_WARN}{msg}{ANSI_RESET}", sep=sep, end=end)
-
-
-def input_warn(msg: str) -> str:
-    """Prompt for input using warning console styling."""
-    return input(f"{ANSI_WARN}{msg}{ANSI_RESET}")
-
-
-def input_success(msg: str) -> str:
-    """Prompt for input using success console styling."""
-    return input(f"{ANSI_SUCCESS}{msg}{ANSI_RESET}")
-
-
-def print_success(msg: Any, sep: str | None = " ", end: str | None = "\n") -> None:
-    """Print a success-styled console message."""
-    if msg is not None:
-        print(f"{ANSI_SUCCESS}{msg}{ANSI_RESET}", sep=sep, end=end)
-
-
-def close_terminal(exit_code: Any = None) -> bool:
-    """Exit this script only. Its owning batch/console decides whether to close."""
-    raise SystemExit(exit_code)
-
-
-def get_terminal_title() -> str:
-    """Returns "" if it fails to get the title."""
-
-    import ctypes
-
+def enable_ansi() -> None:
+    """Turn on ANSI color processing for this console (classic conhost needs it explicitly)."""
     try:
-        buffer = ctypes.create_unicode_buffer(1024)
-        ctypes.windll.kernel32.GetConsoleTitleW(buffer, len(buffer))
-        return str(buffer.value)
+        import ctypes
+
+        kernel32 = ctypes.windll.kernel32
+        for handle_id in (-11, -12):  # stdout, stderr
+            handle = kernel32.GetStdHandle(handle_id)
+            mode = ctypes.c_uint32()
+            if kernel32.GetConsoleMode(handle, ctypes.byref(mode)):
+                kernel32.SetConsoleMode(handle, mode.value | 0x0004)  # ENABLE_VIRTUAL_TERMINAL_PROCESSING
     except Exception:
-        return ""
+        note_ignored("enable_ansi")
+
+
+def show_console() -> None:
+    """Restore and focus this process's console window (shortcuts start it minimized)."""
+    unminimize_terminal()
+    foreground_terminal()
+
+
+def styled(msg: Any, style: str) -> str:
+    """Color only for an interactive console; redirected output stays plain."""
+    try:
+        interactive = sys.stdout is not None and sys.stdout.isatty()
+    except Exception:
+        interactive = False
+    if not interactive:
+        return str(msg)
+    enable_ansi()
+    return f"{style}{msg}{ANSI_RESET}"
+
+
+def print_heading(title: str, width: int = 72) -> None:
+    """Print a section heading: a blank line, then "── title ───..."."""
+    print()
+    print(styled(f"── {title} " + "─" * max(3, width - len(title) - 4), ANSI_HEADING))
+
+
+def _badge_lines(label: str, style: str, msg: Any) -> str:
+    """A colored label before the first line; further lines are indented to match."""
+    lines = str(msg).split("\n")
+    indent = " " * (len(label) + 3)
+    return "\n".join([styled(f" {label} ", style) + " " + lines[0]] + [indent + line for line in lines[1:]])
+
+
+def print_step(msg: Any) -> None:
+    """A step that may take a while (installing, downloading, building)."""
+    print(styled("»", ANSI_HEADING) + " " + str(msg), flush=True)
+
+
+def print_info(msg: Any) -> None:
+    """A note or detail."""
+    print(styled(msg, ANSI_DIM), flush=True)
+
+
+def print_success(msg: Any) -> None:
+    """A finished task."""
+    print(_badge_lines("OK", ANSI_SUCCESS, msg), flush=True)
+
+
+def print_warn(msg: Any) -> None:
+    """Something to look at; the task goes on."""
+    print(_badge_lines("!", ANSI_WARNING, msg), flush=True)
+
+
+def print_error(msg: Any, file: TextIO | None = None) -> None:
+    """The task failed."""
+    print(_badge_lines("ERROR", ANSI_ERROR, msg), file=file or sys.stdout, flush=True)
+
+
+def ask(question: str) -> str:
+    """Ask for an answer on the same line."""
+    return input(styled("?", ANSI_HEADING) + " " + styled(question.rstrip(), ANSI_BOLD) + " ")
+
+
+def wait_for_enter(message: str = "Press Enter to close this window.") -> None:
+    """Keep the window open until Enter (no-op without an interactive console)."""
+    try:
+        input(styled(message, ANSI_DIM))
+    except (EOFError, KeyboardInterrupt):
+        pass
+
+
+def print_fields(rows, indent: int = 2) -> None:
+    """Aligned "label   value" rows; a value whose third item is False is highlighted as a problem."""
+    rows = [row if len(row) == 3 else (*row, True) for row in rows]
+    width = max((len(label) for label, _, _ in rows), default=0)
+    for label, value, ok in rows:
+        print(
+            " " * indent
+            + styled(label.ljust(width), ANSI_DIM)
+            + "  "
+            + (str(value) if ok else styled(value, ANSI_BOLD + "\x1b[33m"))
+        )
+
+
+def print_choices(options) -> None:
+    """A numbered list: "  1  first option"."""
+    for index, option in enumerate(options, 1):
+        print(f"  {styled(str(index).rjust(2), ANSI_HEADING)}  {option}")
 
 
 def set_terminal_title(title: str | None) -> None:
@@ -60,7 +140,7 @@ def set_terminal_title(title: str | None) -> None:
         clean_name = title.replace("\r\n", "").replace("\r", "")
         ctypes.windll.kernel32.SetConsoleTitleW(clean_name)
     except Exception:
-        pass
+        note_ignored("set_terminal_title")
 
 
 def set_terminal_icon(icon_path: str | None) -> None:
@@ -128,13 +208,9 @@ def set_terminal_icon(icon_path: str | None) -> None:
 
         def _load_icon(width: int, height: int) -> int:
             """Load the requested ICO size, falling back to the image's default size."""
-            icon = user32.LoadImageW(
-                None, icon_path, IMAGE_ICON, width, height, LR_LOADFROMFILE
-            )
+            icon = user32.LoadImageW(None, icon_path, IMAGE_ICON, width, height, LR_LOADFROMFILE)
             if not icon:
-                icon = user32.LoadImageW(
-                    None, icon_path, IMAGE_ICON, 0, 0, LR_LOADFROMFILE | LR_DEFAULTSIZE
-                )
+                icon = user32.LoadImageW(None, icon_path, IMAGE_ICON, 0, 0, LR_LOADFROMFILE | LR_DEFAULTSIZE)
             return int(icon or 0)
 
         small_icon = _load_icon(
@@ -163,7 +239,7 @@ def set_terminal_icon(icon_path: str | None) -> None:
         )
 
     except Exception:
-        pass
+        note_ignored("set_terminal_icon")
 
 
 def set_terminal_app_id(app_id: str) -> None:
@@ -171,217 +247,41 @@ def set_terminal_app_id(app_id: str) -> None:
 
     if not app_id:
         return
-
-    import ctypes
-    import uuid
-    from ctypes import wintypes
-
-    HRESULT = ctypes.c_long
-    VT_LPWSTR = 31
-    S_OK = 0
-    S_FALSE = 1
-    RPC_E_CHANGED_MODE = 0x80010106
-
-    def _helper_refresh_nonclient_area(hwnd: int) -> None:
-        """Run the helper refresh nonclient area step."""
-        user32_DLL = ctypes.WinDLL("user32", use_last_error=True)
-
-        SWP_NOMOVE = 0x0002
-        SWP_NOSIZE = 0x0001
-        SWP_NOZORDER = 0x0004
-        SWP_NOACTIVATE = 0x0010
-        SWP_FRAMECHANGED = 0x0020
-
-        user32_DLL.SetWindowPos(
-            hwnd,
-            None,
-            0,
-            0,
-            0,
-            0,
-            SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED,
-        )
-
-    class _GUID(ctypes.Structure):
-        """Represent a Windows GUID/UUID structure used by COM APIs."""
-
-        _fields_ = (
-            ("Data1", ctypes.c_ulong),
-            ("Data2", ctypes.c_ushort),
-            ("Data3", ctypes.c_ushort),
-            ("Data4", ctypes.c_ubyte * 8),
-        )
-
-    class _PROPERTYKEY(ctypes.Structure):
-        """Represent the COM property identifier consisting of a GUID and property number."""
-
-        _fields_ = (("fmtid", _GUID), ("pid", wintypes.DWORD))
-
-    class _PROPVARIANT(ctypes.Structure):
-        """Represent the string-valued PROPVARIANT passed to the Windows property store."""
-
-        _fields_ = (
-            ("vt", ctypes.c_ushort),
-            ("wReserved1", ctypes.c_ushort),
-            ("wReserved2", ctypes.c_ushort),
-            ("wReserved3", ctypes.c_ushort),
-            ("pwszVal", ctypes.c_wchar_p),
-        )
-
-    class _IPropertyStore(ctypes.Structure):
-        """Declare the COM property-store interface before its vtable is assigned."""
-
-    IPropertyStorePtr = ctypes.POINTER(_IPropertyStore)
-
-    class _IPropertyStoreVtbl(ctypes.Structure):
-        """Describe the native COM methods used to set the console taskbar identity."""
-
-        _fields_ = (
-            (
-                "QueryInterface",
-                ctypes.WINFUNCTYPE(
-                    HRESULT,
-                    IPropertyStorePtr,
-                    ctypes.POINTER(_GUID),
-                    ctypes.POINTER(ctypes.c_void_p),
-                ),
-            ),
-            ("AddRef", ctypes.WINFUNCTYPE(ctypes.c_ulong, IPropertyStorePtr)),
-            ("Release", ctypes.WINFUNCTYPE(ctypes.c_ulong, IPropertyStorePtr)),
-            (
-                "GetCount",
-                ctypes.WINFUNCTYPE(
-                    HRESULT, IPropertyStorePtr, ctypes.POINTER(wintypes.DWORD)
-                ),
-            ),
-            (
-                "GetAt",
-                ctypes.WINFUNCTYPE(
-                    HRESULT,
-                    IPropertyStorePtr,
-                    wintypes.DWORD,
-                    ctypes.POINTER(_PROPERTYKEY),
-                ),
-            ),
-            (
-                "GetValue",
-                ctypes.WINFUNCTYPE(
-                    HRESULT,
-                    IPropertyStorePtr,
-                    ctypes.POINTER(_PROPERTYKEY),
-                    ctypes.POINTER(_PROPVARIANT),
-                ),
-            ),
-            (
-                "SetValue",
-                ctypes.WINFUNCTYPE(
-                    HRESULT,
-                    IPropertyStorePtr,
-                    ctypes.POINTER(_PROPERTYKEY),
-                    ctypes.POINTER(_PROPVARIANT),
-                ),
-            ),
-            ("Commit", ctypes.WINFUNCTYPE(HRESULT, IPropertyStorePtr)),
-        )
-
-    _IPropertyStore._fields_ = [("lpVtbl", ctypes.POINTER(_IPropertyStoreVtbl))]
-
-    def _make_guid(value: str) -> _GUID:
-        """Build and return the guid."""
-        parsed = uuid.UUID(value)
-        return _GUID(
-            parsed.time_low,
-            parsed.time_mid,
-            parsed.time_hi_version,
-            (ctypes.c_ubyte * 8)(*parsed.bytes[8:]),
-        )
-
-    def _format_hresult(hr: int) -> str:
-        """Format a COM HRESULT as an unsigned hexadecimal code and Windows error message."""
-        code = hr & 0xFFFFFFFF
-        try:
-            message = ctypes.FormatError(code).strip()
-        except Exception:
-            message = "unknown error"
-        return f"0x{code:08X}: {message}"
-
-    def _check_hresult(hr: int, action: str) -> None:
-        """Raise OSError with the action and Windows message when a COM call fails."""
-        if hr < 0:
-            raise OSError(f"{action} failed with HRESULT {_format_hresult(hr)}")
-
     try:
+        import ctypes
+        from ctypes import wintypes
+
+        from backend.DONT_CHANGE.scripts import com_tools as com
+
         hwnd = int(ctypes.windll.kernel32.GetConsoleWindow() or 0)
         if not hwnd:
             return
-
         shell32 = ctypes.WinDLL("shell32", use_last_error=True)
-        ole32 = ctypes.WinDLL("ole32", use_last_error=True)
-
         shell32.SHGetPropertyStoreForWindow.argtypes = [
             wintypes.HWND,
-            ctypes.POINTER(_GUID),
-            ctypes.POINTER(IPropertyStorePtr),
+            ctypes.POINTER(com.GUID),
+            ctypes.POINTER(com.PropertyStorePointer),
         ]
-        shell32.SHGetPropertyStoreForWindow.restype = HRESULT
-
-        ole32.CoInitialize.argtypes = [ctypes.c_void_p]
-        ole32.CoInitialize.restype = HRESULT
-        ole32.CoUninitialize.argtypes = []
-        ole32.CoUninitialize.restype = None
-
-        iid_property_store = _make_guid("886D8EEB-8CF2-4446-8D02-CDBA1DBDCF99")
-        pkey_app_user_model_id = _PROPERTYKEY(
-            _make_guid("9F4C2855-9F79-4B39-A8D0-E1D42DE1D5F3"),
-            5,
-        )
-        prop_var = _PROPVARIANT()
-        prop_var.vt = VT_LPWSTR
-        prop_var.pwszVal = app_id
-
-        coinitialize_result = ole32.CoInitialize(None)
-        should_uninitialize = coinitialize_result in {S_OK, S_FALSE}
-        if (
-            coinitialize_result < 0
-            and (coinitialize_result & 0xFFFFFFFF) != RPC_E_CHANGED_MODE
-        ):
-            raise OSError(
-                f"CoInitialize failed with HRESULT {_format_hresult(coinitialize_result)}"
-            )
-
+        shell32.SHGetPropertyStoreForWindow.restype = com.HRESULT
+        should_uninitialize = com.co_initialize()
         try:
-            property_store = IPropertyStorePtr()
-            hr = shell32.SHGetPropertyStoreForWindow(
-                wintypes.HWND(hwnd),
-                ctypes.byref(iid_property_store),
-                ctypes.byref(property_store),
+            store = com.PropertyStorePointer()
+            com.check_hresult(
+                shell32.SHGetPropertyStoreForWindow(
+                    wintypes.HWND(hwnd), ctypes.byref(com.IID_PROPERTY_STORE), ctypes.byref(store)
+                ),
+                f"SHGetPropertyStoreForWindow for hwnd 0x{hwnd:016X}",
             )
-            _check_hresult(hr, f"SHGetPropertyStoreForWindow for hwnd 0x{hwnd:016X}")
-
-            try:
-                hr = property_store.contents.lpVtbl.contents.SetValue(
-                    property_store,
-                    ctypes.byref(pkey_app_user_model_id),
-                    ctypes.byref(prop_var),
-                )
-                _check_hresult(
-                    hr, f"SetValue System.AppUserModel.ID for hwnd 0x{hwnd:016X}"
-                )
-
-                hr = property_store.contents.lpVtbl.contents.Commit(property_store)
-                _check_hresult(
-                    hr, f"Commit System.AppUserModel.ID for hwnd 0x{hwnd:016X}"
-                )
-
-                _helper_refresh_nonclient_area(hwnd)
-            finally:
-                if property_store:
-                    property_store.contents.lpVtbl.contents.Release(property_store)
+            com.set_app_user_model_id(store, app_id)
         finally:
-            if should_uninitialize:
-                ole32.CoUninitialize()
+            com.co_uninitialize(should_uninitialize)
+        # Redraw the frame so the taskbar picks up the new identity.
+        SWP_NOSIZE, SWP_NOMOVE, SWP_NOZORDER, SWP_NOACTIVATE, SWP_FRAMECHANGED = 0x1, 0x2, 0x4, 0x10, 0x20
+        ctypes.WinDLL("user32", use_last_error=True).SetWindowPos(
+            hwnd, None, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED
+        )
     except Exception:
-        pass
+        note_ignored("set_terminal_app_id")
 
 
 def unminimize_terminal() -> None:
@@ -395,7 +295,7 @@ def unminimize_terminal() -> None:
             return
         ctypes.windll.user32.ShowWindow(hwnd, 9)  # 9 means unminimized
     except Exception:
-        pass
+        note_ignored("unminimize_terminal")
 
 
 def foreground_terminal() -> None:
@@ -409,7 +309,7 @@ def foreground_terminal() -> None:
             return
         ctypes.windll.user32.SetForegroundWindow(hwnd)
     except Exception:
-        pass
+        note_ignored("foreground_terminal")
 
 
 def enable_unminimize_and_foreground_terminal_on_first_print() -> None:
@@ -472,4 +372,51 @@ def set_terminal_colors(colors: str | None) -> None:
 
             subprocess.run(["cmd.exe", "/c", "color", colors], check=False)
         except Exception:
-            pass
+            note_ignored("set_terminal_colors")
+
+
+# ---------------------------------------------------------------- editor
+
+# Editors whose "code" command on PATH is a batch file next to the real executable.
+_VSCODE_EXECUTABLES = ("Code.exe", "Code - Insiders.exe", "VSCodium.exe", "Cursor.exe")
+
+
+def _editor_executable() -> str | None:
+    """VS Code (or a fork) found via the "code" command, preferring the .exe over bin\\code.cmd."""
+    import shutil
+
+    found = shutil.which("code")
+    if not found:
+        return None
+    if found.lower().endswith((".cmd", ".bat")):
+        # bin\code.cmd sits one folder below Code.exe. Starting the .exe directly avoids
+        # cmd.exe parsing the file path (a folder like "R&D" would otherwise break it).
+        install_dir = os.path.dirname(os.path.dirname(os.path.abspath(found)))
+        for name in _VSCODE_EXECUTABLES:
+            candidate = os.path.join(install_dir, name)
+            if os.path.isfile(candidate):
+                return candidate
+    return found
+
+
+def open_in_editor(path: str) -> None:
+    """Open a file preferably in VS Code with fallback in Windows notepad. Lazily imports subprocess."""
+    import subprocess
+
+    if not os.path.exists(path):
+        raise FileNotFoundError(path)
+    # The editor keeps running after the launcher; do not hand it the launcher's variables
+    # (they would leak into its integrated terminals), or one that makes Code.exe act as Node.
+    env = {
+        key: value
+        for key, value in os.environ.items()
+        if not key.upper().startswith("PYAPP_") and key.upper() != "ELECTRON_RUN_AS_NODE"
+    }
+    editor = _editor_executable()
+    if editor is None:
+        subprocess.Popen(["notepad.exe", path], env=env)
+    elif editor.lower().endswith((".cmd", ".bat")):
+        # Batch files run through cmd.exe: always quote, so & ( ) ^ in the path stay literal.
+        subprocess.Popen(f'"{editor}" "{path}"', env=env)
+    else:
+        subprocess.Popen([editor, path], env=env)
