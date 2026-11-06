@@ -11,9 +11,7 @@ import os
 
 def make_abs(x: str) -> str:
     """Make a path absolute relative to this file when it is relative."""
-    return os.path.normpath(
-        x if os.path.isabs(x) else os.path.join(os.path.dirname(__file__), x)
-    )
+    return os.path.normpath(x if os.path.isabs(x) else os.path.join(os.path.dirname(__file__), x))
 
 
 # fmt: off
@@ -86,7 +84,7 @@ CREATED_SHORTCUTS_LIST_PATH = BACKEND_DIR + "\\shortcuts_created_by_setup.json"
 SHORTCUT_SIGNATURE = "\\DONT_CHANGE\\B\\"
 
 # ------------------------
-# tracked icon assets and generation inputs
+# icons (generated from the PNGs by actions/gen_icons.py)
 
 ICON_DIR = BACKEND_DIR + "\\icons"
 ICON_PATH = ICON_DIR + "\\icon.ico"
@@ -99,27 +97,6 @@ CRASH_ICON_PATH = ICON_DIR + "\\crash.ico"
 CRASH_LOG_ICON_PATH = ICON_DIR + "\\crash_log.ico"
 OPEN_MAIN_PY_ICON_PATH = ICON_DIR + "\\open_main_py.ico"
 KEYBOARD_INTERRUPT_ICON_PATH = ICON_DIR + "\\keyboard_interrupt.ico"
-
-ICON_PNG_DIR = ICON_DIR
-ICON_FALLBACK_PNG_DIR = DONT_CHANGE_DIR + "\\icon_related"
-ICON_DELETE_TIMEOUT_SECONDS = 2.0
-ICON_DELETE_RETRY_DELAY_SECONDS = 0.05
-_base = ("icon.png", "512x512:34babea5", "default_icon.png")
-# IDs identify the shipped placeholder PNGs, not a developer's replacement art.
-# Update an ID only when changing the corresponding shipped placeholder image.
-ICON_GENERATION_SETTINGS = [
-    # output ICO, base PNG, base PNG ID, fallback base PNG, overlay PNG, overlay PNG ID, fallback overlay PNG
-    (ICON_PATH, *_base, None, None, None),
-    (SETTINGS_ICON_PATH, *_base, "settings.png", "512x512:19c7e6d8", "default_settings.png"),
-    (STOP_ICON_PATH, *_base, "stop.png", "512x512:0f35bd9e", "default_stop.png"),
-    (LOG_ICON_PATH, *_base, "log.png", "512x512:66c0a178", "default_log.png"),
-    (SUCCESS_ICON_PATH, *_base, "success.png", "512x512:c33e7909", "default_success.png"),
-    (FAILURE_ICON_PATH, *_base, "failure.png", "512x512:93eddb87", "default_failure.png"),
-    (CRASH_ICON_PATH, *_base, "crash.png", "512x512:d2dd80f5", "default_crash.png"),
-    (CRASH_LOG_ICON_PATH, *_base, "crash_log.png", "512x512:99dee2ae", "default_crash_log.png"),
-    (OPEN_MAIN_PY_ICON_PATH, *_base, "open_main_py.png", "512x512:3bd1b4b4", "default_open_main_py.png"),
-    (KEYBOARD_INTERRUPT_ICON_PATH, *_base, "keyboard_interrupt.png", "512x512:0c4eac7f", "default_keyboard_interrupt.png"),
-]
 
 # ------------------------
 # generated process state
@@ -135,6 +112,7 @@ STOP_REQUEST_FILE_NAME = "stop-requested"
 
 EXPORTED_REQUIREMENTS_PATH = PROJECT_DIR + "\\requirements.txt"
 IMPORT_MAPPING_PATH = DATA_DIR + "\\import_to_package.txt"
+FONTS_DIR = DATA_DIR + "\\fonts"  # ASCII-art fonts of the app name banner (scripts/banner.py)
 
 # ------------------------
 # remaining files

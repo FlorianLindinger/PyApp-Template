@@ -27,9 +27,7 @@ def main() -> None:
     """Resolve the configured folder, create it if needed and open it in Explorer."""
     setting, description = FOLDERS[sys.argv[1] if len(sys.argv) > 1 else "logs"]
     s = settings()
-    folder = get_log_folder_path(
-        getattr(s, setting), getattr(s, setting + "_is_relative_to_start_folder_if_relative")
-    )
+    folder = get_log_folder_path(getattr(s, setting), getattr(s, setting + "_is_relative_to_start_folder_if_relative"))
     if folder is None:
         raise SettingsError(f'There is no {description}: {setting} is None in "{DEV_SETTINGS_PATH}".')
     os.makedirs(folder, exist_ok=True)

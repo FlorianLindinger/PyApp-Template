@@ -11,7 +11,9 @@ def remove_tree_inside(path: str, base: str) -> None:
 
     target = os.path.realpath(path)
     root = os.path.realpath(base)
-    if os.path.normcase(os.path.commonpath([target, root])) != os.path.normcase(root) or os.path.normcase(target) == os.path.normcase(root):
+    if os.path.normcase(os.path.commonpath([target, root])) != os.path.normcase(root) or os.path.normcase(
+        target
+    ) == os.path.normcase(root):
         raise ValueError(f'Refusing to delete "{path}": it is not inside "{base}".')
     if os.path.islink(path) or _is_junction(path):
         os.rmdir(path) if os.path.isdir(path) else os.remove(path)
@@ -69,9 +71,7 @@ def make_abs_path_relative_to_file(path: str, file: str) -> str:
         return path
 
 
-def sanitize_filename(
-    filename: str, replacement: str = "_", *, max_length: int = 255
-) -> str:
+def sanitize_filename(filename: str, replacement: str = "_", *, max_length: int = 255) -> str:
     """Return a Windows-safe filename bounded in UTF-16 units, including device-name checks."""
     import re
 
@@ -92,18 +92,10 @@ def sanitize_filename(
     # 3. Strip trailing dots and spaces (Windows ignores/removes these)
     filename = filename.rstrip(". ")
     # Non-BMP characters consume two UTF-16 code units; never split a surrogate pair.
-    filename = (
-        filename.encode("utf-16-le")[: max_length * 2]
-        .decode("utf-16-le", errors="ignore")
-        .rstrip(". ")
-    )
+    filename = filename.encode("utf-16-le")[: max_length * 2].decode("utf-16-le", errors="ignore").rstrip(". ")
     if filename.split(".", 1)[0].rstrip(" ").upper() in reserved_names:
         filename = (
-            ("_" + filename)
-            .encode("utf-16-le")[: max_length * 2]
-            .decode("utf-16-le", errors="ignore")
-            .rstrip(". ")
+            ("_" + filename).encode("utf-16-le")[: max_length * 2].decode("utf-16-le", errors="ignore").rstrip(". ")
         )
     # 5. Handle empty strings (if sanitization removed everything)
     return filename or "_"
-

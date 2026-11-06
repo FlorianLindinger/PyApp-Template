@@ -9,11 +9,12 @@ import json
 import os
 import subprocess
 import sys
+from typing import NoReturn
 
 fail_message = "[Error] Failed while processing program exit: {e}"
 
 
-def _fail_while_loading(error) -> None:
+def _fail_while_loading(error) -> NoReturn:
     """This window may be the only place the problem is visible: show it and wait."""
     import traceback
 
@@ -37,51 +38,45 @@ try:
     from backend.DONT_CHANGE.scripts.console_tools import (
         enable_ansi,
         input_warn,
+        open_in_editor,
         print_warn,
         set_terminal_app_id,
+        set_terminal_colors,
         set_terminal_icon,
         set_terminal_title,
     )
     from backend.DONT_CHANGE.scripts.launcher_ui import (
         get_log_path,
         print_traceback,
-        set_terminal_colors,
     )
-    from backend.DONT_CHANGE.scripts.process_tools import (
+    from backend.DONT_CHANGE.scripts.runtime_state import (
         exit_code_looks_like_interpreter_crash,
+        unique_log_path,
     )
-    from backend.DONT_CHANGE.scripts.runtime_state import unique_log_path
-    from backend.DONT_CHANGE.scripts.shell_tools import open_in_editor
     from backend.DONT_CHANGE.scripts.traceback_render import render
-except Exception as import_error:  # noqa: BLE001 - shown in this window, then exit
+except Exception as import_error:
     _fail_while_loading(import_error)
 
-# developer_settings, loaded in main() (not at import time).
-s = None
-
-REPORT_PATH = os.path.join(
-    os.environ.get("PYAPP_RUN_DIR", paths.TEMPORARY_DIR), "traceback.json"
-)
+REPORT_PATH = os.path.join(os.environ.get("PYAPP_RUN_DIR", paths.TEMPORARY_DIR), "traceback.json")
 
 OUTCOMES = {
-    "success": dict(
-        icon=paths.SUCCESS_ICON_PATH,
-        default_sound=paths.DEFAULT_SOUND_AFTER_SUCCESS,
-    ),
-    "failure": dict(
-        icon=paths.FAILURE_ICON_PATH,
-        default_sound=paths.DEFAULT_SOUND_AFTER_FAILURE,
-    ),
-    "crash": dict(
-        icon=paths.CRASH_ICON_PATH, default_sound=paths.DEFAULT_SOUND_AFTER_CRASH
-    ),
-    "keyboard_interrupt": dict(
-        icon=paths.KEYBOARD_INTERRUPT_ICON_PATH,
-        default_sound=paths.DEFAULT_SOUND_AFTER_KEYBOARD_INTERRUPT,
-    ),
+    "success": {
+        "icon": paths.SUCCESS_ICON_PATH,
+        "default_sound": paths.DEFAULT_SOUND_AFTER_SUCCESS,
+    },
+    "failure": {
+        "icon": paths.FAILURE_ICON_PATH,
+        "default_sound": paths.DEFAULT_SOUND_AFTER_FAILURE,
+    },
+    "crash": {"icon": paths.CRASH_ICON_PATH, "default_sound": paths.DEFAULT_SOUND_AFTER_CRASH},
+    "keyboard_interrupt": {
+        "icon": paths.KEYBOARD_INTERRUPT_ICON_PATH,
+        "default_sound": paths.DEFAULT_SOUND_AFTER_KEYBOARD_INTERRUPT,
+    },
 }
 
 # ------------------------------------------------------------ reports
+
 
 def load_report():
     """Return (report, problem description)."""
@@ -96,31 +91,23 @@ def load_report():
         return None, f'The traceback report "{REPORT_PATH}" has an unknown format.'
     return report, None
 
+
 def print_report(report):
+    s = settings()
     if report:
-        colors = (
-            bool(s.traceback_colors)
-            and sys.stdout is not None
-            and sys.stdout.isatty()
-        )
+        colors = bool(s.traceback_colors) and sys.stdout is not None and sys.stdout.isatty()
         if colors:
             enable_ansi()
-        print(
-            "\n".join(
-                render(report, colors=colors, date_format=s.error_date_format)
-            )
-        )
+        print("\n".join(render(report, colors=colors, date_format=s.error_date_format)))
+
 
 def write_crash_log(report, message):
     """Write a uniquely named plain-text crash report."""
-    path = get_log_path(
-        s.crash_log_path, s.crash_log_path_is_relative_to_start_folder_if_relative
-    )
+    s = settings()
+    path = get_log_path(s.crash_log_path, s.crash_log_path_is_relative_to_start_folder_if_relative)
     if not path or (report is None and message is None):
         return
-    path = unique_log_path(
-        path, os.path.basename(os.environ.get("PYAPP_RUN_DIR", "")) or None
-    )
+    path = unique_log_path(path, os.path.basename(os.environ.get("PYAPP_RUN_DIR", "")) or None)
     lines = ["=" * 30]
     if message:
         lines.append(message)
@@ -128,19 +115,17 @@ def write_crash_log(report, message):
         lines += render(report, colors=False, date_format=s.error_date_format)
     lines.append("=" * 30)
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(
-        path, "w" if s.overwrite_crash_log else "a", encoding="utf-8"
-    ) as stream:
+    with open(path, "w" if s.overwrite_crash_log else "a", encoding="utf-8") as stream:
         stream.write("\n".join(lines) + "\n")
 
+
 # ------------------------------------------------------------ recovery
+
 
 def restart_program(app_id, new_terminal_was_created):
     """Start the program again with the same terminal behavior."""
     env = os.environ.copy()
-    env["PYAPP_LAUNCH_MODE"] = (
-        "no_terminal" if new_terminal_was_created else "terminal"
-    )
+    env["PYAPP_LAUNCH_MODE"] = "no_terminal" if new_terminal_was_created else "terminal"
     subprocess.Popen(
         [
             sys.executable,
@@ -155,16 +140,17 @@ def restart_program(app_id, new_terminal_was_created):
         env=env,
     )
 
+
 def local_module_exists(name):
     """True when the missing import is a module/package of the project itself (do not install)."""
     root = paths.PYTHON_SCRIPTS_DIR
-    return os.path.isfile(os.path.join(root, name + ".py")) or os.path.isdir(
-        os.path.join(root, name)
-    )
+    return os.path.isfile(os.path.join(root, name + ".py")) or os.path.isdir(os.path.join(root, name))
+
 
 def handle_missing_module(missing, app_id, new_terminal_was_created):
     """Offer to install the distribution behind a ModuleNotFoundError, then restart."""
-    from backend.DONT_CHANGE.scripts import uv_env
+    s = settings()
+    from backend.DONT_CHANGE.scripts.env import venv
     from backend.DONT_CHANGE.scripts.import_finder import distribution_for_import
 
     top = missing.split(".")[0]
@@ -175,24 +161,16 @@ def handle_missing_module(missing, app_id, new_terminal_was_created):
         input_warn("Press Enter to exit")
         return
     distribution = distribution_for_import(top)
-    app_python = uv_env.app_python_for_tools()
+    app_python = venv.app_python_for_tools()
     global_packages = s.package_environment == "interpreter_site_packages"
     if global_packages and not s.allow_installing_into_global_python:
-        print_warn(
-            "The app uses the selected interpreter's own packages; the launcher does not change them."
-        )
-        print(
-            f'Install it yourself, e.g.:  "{app_python}" -m pip install {distribution}'
-        )
-        print(
-            "(or set allow_installing_into_global_python = True in developer_settings.py)"
-        )
+        print_warn("The app uses the selected interpreter's own packages; the launcher does not change them.")
+        print(f'Install it yourself, e.g.:  "{app_python}" -m pip install {distribution}')
+        print("(or set allow_installing_into_global_python = True in developer_settings.py)")
         input_warn("Press Enter to exit")
         return
     if distribution != top:
-        print(
-            f'[Info] The import "{top}" is provided by the package "{distribution}".'
-        )
+        print(f'[Info] The import "{top}" is provided by the package "{distribution}".')
     options = []
     if not global_packages:
         options.append(
@@ -201,9 +179,7 @@ def handle_missing_module(missing, app_id, new_terminal_was_created):
                 f'Add "{distribution}" to the packages in developer_settings.py and restart',
             )
         )
-    options.append(
-        ("install", f'Install "{distribution}" without recording it and restart')
-    )
+    options.append(("install", f'Install "{distribution}" without recording it and restart'))
     if not global_packages:
         options.append(
             (
@@ -226,17 +202,17 @@ def handle_missing_module(missing, app_id, new_terminal_was_created):
             return
         try:
             if action == "add":
-                uv_env.add_packages([distribution])
+                venv.add_packages([distribution])
             elif action == "install":
-                uv_env.install_without_recording([distribution], app_python)
+                venv.install_without_recording([distribution], app_python)
             elif action == "find":
-                from backend.DONT_CHANGE.scripts.dev_tools import (
+                from backend.DONT_CHANGE.scripts.dev.packages import (
                     find_imports_and_add,
                 )
 
                 find_imports_and_add()
             else:
-                uv_env.open_package_terminal()
+                venv.open_package_terminal()
         except Exception as error:
             print_traceback(f"[Error] Package recovery failed: {error}")
             continue
@@ -244,7 +220,9 @@ def handle_missing_module(missing, app_id, new_terminal_was_created):
         restart_program(app_id, new_terminal_was_created)
         return
 
+
 # ------------------------------------------------------------ completion
+
 
 def play_sound(setting, default, wait=True):
     if setting is True:
@@ -262,17 +240,15 @@ def play_sound(setting, default, wait=True):
     try:
         import winsound
 
-        flags = (
-            winsound.SND_FILENAME
-            | winsound.SND_NODEFAULT
-            | (0 if wait else winsound.SND_ASYNC)
-        )
+        flags = winsound.SND_FILENAME | winsound.SND_NODEFAULT | (0 if wait else winsound.SND_ASYNC)
         winsound.PlaySound(wav, flags)
     except Exception as error:
         print(f"[Error] Failed to play .wav file: {error}")
 
+
 def complete(outcome, log_path, report=None, message=None, keep_open=False):
     """Run the configured actions for success/failure/crash/keyboard_interrupt."""
+    s = settings()
     close = getattr(s, "close_after_" + outcome)
     if log_path and getattr(s, "open_log_file_after_" + outcome):
         try:
@@ -290,9 +266,7 @@ def complete(outcome, log_path, report=None, message=None, keep_open=False):
         set_terminal_title(getattr(s, "title_after_" + outcome))
         set_terminal_colors(getattr(s, "terminal_colors_after_" + outcome))
         set_terminal_icon(OUTCOMES[outcome]["icon"])
-        print_report(
-            report
-        )  # after set_terminal_colors, which clears the screen colors
+        print_report(report)  # after set_terminal_colors, which clears the screen colors
         play_sound(sound, OUTCOMES[outcome]["default_sound"], wait=not keep_open)
         if not keep_open:
             input("Press Enter to exit")
@@ -300,9 +274,9 @@ def complete(outcome, log_path, report=None, message=None, keep_open=False):
         print_report(report)
         play_sound(sound, OUTCOMES[outcome]["default_sound"])
 
+
 def main():
-    global s
-    s = settings()
+    settings()  # a broken settings file fails here, first; later calls reuse the import
     _, exit_mode, app_id, new_terminal_was_created, log_path, script_path = sys.argv
     exit_mode = int(exit_mode)
     new_terminal_was_created = new_terminal_was_created.lower() == "true"
@@ -313,11 +287,7 @@ def main():
     if "PYAPP_UNEXPECTED_EXIT" in os.environ:
         native = int(os.environ["PYAPP_UNEXPECTED_EXIT"])
         crashed = exit_code_looks_like_interpreter_crash(native)
-        hint = (
-            " See the .output.log next to the log file for the interpreter's last output."
-            if log_path
-            else ""
-        )
+        hint = " See the .output.log next to the log file for the interpreter's last output." if log_path else ""
         complete(
             "crash" if crashed else "failure",
             log_path,
@@ -327,9 +297,7 @@ def main():
         return
 
     if exit_mode == ExitMode.SUCCESS:
-        complete(
-            "success", log_path, None, "[Success] Program finished successfully"
-        )
+        complete("success", log_path, None, "[Success] Program finished successfully")
         return
 
     report, problem = load_report()
@@ -338,8 +306,7 @@ def main():
             "failure",
             log_path,
             report,
-            "[Failure] The background watchdog failed (see below)."
-            + ("" if report else " " + problem),
+            "[Failure] The background watchdog failed (see below)." + ("" if report else f" {problem}"),
         )
         return
     if exit_mode == ExitMode.WRAPPER_ERROR:
@@ -347,8 +314,7 @@ def main():
             "failure",
             log_path,
             report,
-            "[Failure] The script wrapper failed (see below)."
-            + ("" if report else " " + problem),
+            "[Failure] The script wrapper failed (see below)." + ("" if report else f" {problem}"),
         )
         return
     if exit_mode != ExitMode.APP_EXIT:
@@ -366,9 +332,7 @@ def main():
     if kind == "SystemExit":
         code = report.get("system_exit_code")
         if exit_code_is_success(code):
-            complete(
-                "success", log_path, None, "[Success] Program finished successfully"
-            )
+            complete("success", log_path, None, "[Success] Program finished successfully")
         elif exit_code_looks_like_interpreter_crash(code):
             complete(
                 "crash",

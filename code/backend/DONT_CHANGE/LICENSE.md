@@ -15,8 +15,12 @@ You may use the covered files under either license. You do not have to comply wi
 
 ## Third-party exceptions
 
-* **`data/import_to_package.txt`** is derived from the import-name mapping of the [pipreqs](https://github.com/bndr/pipreqs) project and is available under the [Apache License 2.0](LICENSES/Apache-2.0.txt), with additions by PyApp-Template under the same license.
+The ASCII-art fonts in `data/fonts` (used for the app name banner, see `scripts/banner.py`) keep their own licenses; each file also names its authors in its header:
 
+* **`data/fonts/standard.flf`**: "Standard" FIGlet font by Glenn Chappell and Ian Chai, part of the FIGlet distribution: [BSD 3-Clause License](LICENSES/BSD-3-Clause-FIGlet.txt).
+* **`data/fonts/coder_mini.flf`**: "Coder Mini" by Loic Cressot: [MIT License](LICENSES/MIT-coder_mini.txt).
+* **`data/fonts/future.tlf`**: "Future" TOIlet font by Sam Hocevar: [WTFPL, Version 2](LICENSES/WTFPL.txt).
+* **`data/fonts/future_smooth.tlf`**: "Future Smooth" by John Goodliff, based on "Future" by Sam Hocevar: [WTFPL, Version 2](LICENSES/WTFPL.txt).
 
 ## Distribution note
 

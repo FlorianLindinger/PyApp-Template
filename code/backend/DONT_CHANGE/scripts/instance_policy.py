@@ -52,4 +52,4 @@ def decide(policy: str, records: list, program_name: str) -> str:
     if policy == "ask":
         question = running + "\n\nClose the running instance(s) and start again?"
         return "replace" if ask_yes_no(question, program_name) else "cancel"
-    raise ValueError("Unknown instance_policy: " + str(policy))
+    raise ValueError(f"Unknown instance_policy: {policy!r}")

@@ -32,12 +32,13 @@ from backend.DONT_CHANGE.scripts.instance_policy import decide
 from backend.DONT_CHANGE.scripts.launcher_ui import (
     OUTPUT_LOG_SUFFIX,
     get_log_path,
-    set_terminal_colors,
+    set_settings_colors,
 )
 from backend.DONT_CHANGE.scripts.runtime_state import (
     ProcessRegistry,
     atomic_json,
     clean_python_environment,
+    create_own_job,
     unique_log_path,
 )
 
@@ -53,20 +54,14 @@ def successful_application_exit(mode, run_dir):
         return True
     if mode == ExitMode.APP_EXIT:
         try:
-            report = json.loads(
-                (run_dir / "traceback.json").read_text(encoding="utf-8")
-            )
-            return report.get(
-                "exception_type"
-            ) == "SystemExit" and exit_code_is_success(report.get("system_exit_code"))
+            report = json.loads((run_dir / "traceback.json").read_text(encoding="utf-8"))
+            return report.get("exception_type") == "SystemExit" and exit_code_is_success(report.get("system_exit_code"))
         except (OSError, ValueError):
             pass
     return False
 
 
-def handle_exit(
-    mode, app_id, has_terminal, log_path, script, run_dir, native_code=None
-):
+def handle_exit(settings, mode, app_id, has_terminal, log_path, script, run_dir, native_code=None):
     """Run completion handling in the current, a hidden, or a new console as needed."""
     env = os.environ.copy()
     env["PYAPP_RUN_DIR"] = str(run_dir)
@@ -88,9 +83,7 @@ def handle_exit(
     success = successful_application_exit(mode, run_dir)
     if not has_terminal and success and settings.close_after_success:
         # Successful hidden runs perform their completion actions without a console.
-        subprocess.run(
-            args, env=env, check=False, creationflags=subprocess.CREATE_NO_WINDOW
-        )
+        subprocess.run(args, env=env, check=False, creationflags=subprocess.CREATE_NO_WINDOW)
     elif has_terminal:
         subprocess.run(args, env=env, check=False)
     else:
@@ -102,7 +95,7 @@ def handle_exit(
         )
 
 
-def register_with_policy(registry, run_dir):
+def register_with_policy(settings, registry, run_dir):
     """Apply instance_policy and register.
 
     Dialogs and stopping other instances happen without holding the registry lock (a stopping
@@ -127,13 +120,9 @@ def register_with_policy(registry, run_dir):
     raise RuntimeError("Other instances keep starting; could not replace them.")
 
 
-# developer_settings, loaded in main() (not at import time); start_program.py validated it.
-settings = None
-
-
 def main():
     """Own registration, launch, logging and completion handling for one application run."""
-    global settings
+    # developer_settings, loaded here (not at import time); start_program.py validated it.
     settings = load_settings()
     app_id, launch_mode = sys.argv[1:3]
     if app_id == paths.EMPTY_ARG_INDICATOR:
@@ -141,6 +130,11 @@ def main():
     run_dir = Path(os.environ["PYAPP_RUN_DIR"])
     has_terminal = launch_mode in ("wt", "conhost")
     registry = ProcessRegistry(paths.PROCESS_REGISTRY_DIR)
+    try:
+        # Before anything is started: the app and all its processes then belong to this job.
+        create_own_job()
+    except Exception:
+        note_ignored("create_own_job (Stop falls back to the process tree)")
     script = paths.MAIN_PY_SCRIPT_PATH
     log_path = ""
     registered = False
@@ -149,18 +143,14 @@ def main():
         if launch_mode not in ("wt", "conhost", "no_terminal"):
             raise ValueError("Unknown launch mode: " + launch_mode)
         if has_terminal:
-            set_terminal_colors()
+            set_settings_colors()
             set_terminal_title(settings.program_name)
             set_terminal_app_id(app_id)
-        if not register_with_policy(registry, run_dir):
+        if not register_with_policy(settings, registry, run_dir):
             return
         registered = True
         # Windows group a window with the pinned shortcut whose System.AppUserModel.ID matches.
-        window_app_id = (
-            app_id + paths.NO_TERMINAL_APP_ID_SUFFIX
-            if app_id and launch_mode == "no_terminal"
-            else app_id
-        )
+        window_app_id = app_id + paths.NO_TERMINAL_APP_ID_SUFFIX if app_id and launch_mode == "no_terminal" else app_id
         app_python = json.loads(os.environ.pop("PYAPP_APP_PYTHON"))
         if not Path(script).is_file():
             raise FileNotFoundError(script)
@@ -214,7 +204,7 @@ def main():
         pump = None
         if log_path:
             Path(log_path).parent.mkdir(parents=True, exist_ok=True)
-            raw_stream = open(log_path + OUTPUT_LOG_SUFFIX, "wb")
+            raw_stream = open(log_path + OUTPUT_LOG_SUFFIX, "wb")  # noqa: SIM115 - closed by the output pump
         try:
             child = subprocess.Popen(
                 [
@@ -286,9 +276,7 @@ def main():
                 pump.join(timeout=5)
             native = None
             try:
-                result = json.loads(
-                    (run_dir / "result.json").read_text(encoding="utf-8")
-                )
+                result = json.loads((run_dir / "result.json").read_text(encoding="utf-8"))
                 if result["wrapper_exit_code"] != code:
                     raise ValueError("Abrupt exit during shutdown")
                 mode = EXIT_MODE_FOR_WRAPPER_EXIT[code]
@@ -311,7 +299,7 @@ def main():
                 # Stopped by the Stop shortcut or a replacing launch: no sounds, menus or prompts.
                 print("[Info] Stopped on request.")
                 return
-            handle_exit(mode, app_id, has_terminal, log_path, script, run_dir, native)
+            handle_exit(settings, mode, app_id, has_terminal, log_path, script, run_dir, native)
         finally:
             if raw_stream and pump is None:
                 raw_stream.close()
@@ -322,16 +310,12 @@ def main():
             note_ignored("save_report after a watchdog error")
         if not (run_dir / "startup.json").exists():
             acknowledge(run_dir, status="failed", message=str(error))
-        (run_dir / "watchdog-error.txt").write_text(
-            traceback.format_exc(), encoding="utf-8"
-        )
+        (run_dir / "watchdog-error.txt").write_text(traceback.format_exc(), encoding="utf-8")
         if registered:
             registry.remove()
             registered = False
         if not exit_handled:
-            handle_exit(
-                ExitMode.WATCHDOG_ERROR, app_id, has_terminal, log_path, script, run_dir
-            )
+            handle_exit(settings, ExitMode.WATCHDOG_ERROR, app_id, has_terminal, log_path, script, run_dir)
     finally:
         if registered:
             registry.remove()

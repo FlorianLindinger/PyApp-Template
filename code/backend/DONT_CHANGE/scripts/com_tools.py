@@ -1,6 +1,6 @@
 """Minimal Windows COM helpers (ctypes, no pywin32): GUIDs, HRESULTs and the AppUserModelID.
 
-Shared by setup/generate_shortcuts.py (the ID stored in a .lnk) and console_tools.py (the ID
+Shared by scripts/shortcuts.py (the ID stored in a .lnk) and console_tools.py (the ID
 of the console window), so pinned shortcuts and their windows group together in the taskbar.
 """
 
@@ -82,7 +82,7 @@ def check_hresult(result: int, action: str) -> None:
     code = result & 0xFFFFFFFF
     try:
         message = ctypes.FormatError(code).strip()
-    except Exception:  # noqa: BLE001 - only used to decorate the error message
+    except Exception:
         message = "unknown error"
     raise OSError(f"{action} failed with HRESULT 0x{code:08X}: {message}")
 

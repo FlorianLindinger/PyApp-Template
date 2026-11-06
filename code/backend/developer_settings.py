@@ -6,6 +6,7 @@ Settings marked [bootstrap] are also read by the Windows bootstrap before any Py
 exists. Keep each of them on ONE line as a plain literal ("text", True, False, None):
 no expressions, f-strings or line continuations.
 """
+
 # Keeps the "str | None" annotations below working on Python 3.8 and 3.9.
 from __future__ import annotations
 
@@ -29,6 +30,11 @@ from __future__ import annotations
 # ---------------------------------------
 # Name of this program:
 program_name = "PyApp-Template"
+# ---------------------------------------
+# program_name as ASCII art at the top of windows that stay open for a while (Setup, dev tools,
+# installing Python or packages). Fonts: "future", "future_smooth" (both capitals only, drawn
+# with box characters), "standard", "coder_mini". None: no banner.
+app_name_banner_font: str | None = "future"
 # ---------------------------------------
 # [bootstrap] Python version requested from uv:
 #   ""        newest stable Python, chosen once and then kept (see dev tool update_python)
@@ -298,9 +304,6 @@ if __name__ == "__main__":
     from pathlib import Path
 
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-    from backend.DONT_CHANGE.scripts.shell_tools import open_in_editor
+    from backend.DONT_CHANGE.scripts.console_tools import open_in_editor
 
     open_in_editor(str(Path(__file__).resolve()))
-
-
-
