@@ -6,13 +6,21 @@ live in scripts/dev/.
 
 from __future__ import annotations
 
-fail_message = "[Error] Dev tool failed: {e}"
+fail_message = "Dev tool failed: {e}"
 pause_on_success = True
 
 import sys
 
 from backend.DONT_CHANGE.scripts.banner import print_banner
-from backend.DONT_CHANGE.scripts.console_tools import enable_ansi, input_warn, print_warn
+from backend.DONT_CHANGE.scripts.console_tools import (
+    ANSI_DIM,
+    ask,
+    enable_ansi,
+    print_choices,
+    print_error,
+    print_heading,
+    styled,
+)
 from backend.DONT_CHANGE.scripts.dev.housekeeping import cmd_clean, cmd_remove_shortcuts, cmd_status
 from backend.DONT_CHANGE.scripts.dev.packages import (
     cmd_add,
@@ -51,12 +59,11 @@ def cmd_menu(arguments):
     """Interactive menu of all commands."""
     names = list(COMMANDS)
     while True:
-        print()
-        print("Dev tools:")
-        for index, name in enumerate(names, 1):
-            doc = (COMMANDS[name].__doc__ or "").strip().splitlines()[0]
-            print(f"  {index:2}: {name.ljust(17)} {doc}")
-        answer = input_warn("Choose a number (Enter = quit): ").strip()
+        print_heading("Dev tools")
+        print_choices(
+            name.ljust(17) + styled((COMMANDS[name].__doc__ or "").strip().splitlines()[0], ANSI_DIM) for name in names
+        )
+        answer = ask("Number (Enter = quit):").strip()
         if not answer:
             return
         if answer.isdigit() and 1 <= int(answer) <= len(names):
@@ -66,7 +73,7 @@ def cmd_menu(arguments):
                 problem = expected_problem(error)
                 if problem is None:
                     raise
-                print_warn("[Error] " + problem)
+                print_error(problem)
 
 
 def main():

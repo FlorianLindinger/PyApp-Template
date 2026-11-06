@@ -17,11 +17,13 @@ from backend.DONT_CHANGE.backend_settings import (
 )
 from backend.DONT_CHANGE.scripts.config import settings
 from backend.DONT_CHANGE.scripts.console_tools import (
+    ANSI_DIM,
     enable_ansi,
-    print_warn,
+    print_error,
     set_terminal_app_id,
     set_terminal_icon,
     set_terminal_title,
+    styled,
 )
 from backend.DONT_CHANGE.scripts.console_tools import (
     set_terminal_colors as _set_terminal_colors,
@@ -53,13 +55,10 @@ def print_traceback(message: str = "") -> None:
 
     enable_ansi()
     print()
-    print_warn("=" * 30)
     if message:
-        print_warn(message)
-        print("-" * 30)
+        print_error(message)
     if sys.exc_info()[0] is not None:
-        print(traceback.format_exc().rstrip())
-    print_warn("=" * 30)
+        print(styled(traceback.format_exc().rstrip(), ANSI_DIM))
 
 
 def set_terminal_appearance_once(app_id: str) -> None:

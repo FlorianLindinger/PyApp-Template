@@ -23,6 +23,7 @@ from backend.DONT_CHANGE.runtime._pyapp import (
 )
 from backend.DONT_CHANGE.scripts.config import settings as load_settings
 from backend.DONT_CHANGE.scripts.console_tools import (
+    print_info,
     set_terminal_app_id,
     set_terminal_icon,
     set_terminal_title,
@@ -297,7 +298,7 @@ def main():
             exit_handled = True
             if (run_dir / paths.STOP_REQUEST_FILE_NAME).exists():
                 # Stopped by the Stop shortcut or a replacing launch: no sounds, menus or prompts.
-                print("[Info] Stopped on request.")
+                print_info("Stopped on request.")
                 return
             handle_exit(settings, mode, app_id, has_terminal, log_path, script, run_dir, native)
         finally:

@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-fail_message = "[Error] Failed to start the program: {e}"
+from backend.DONT_CHANGE.scripts.console_tools import print_info, print_warn
+
+fail_message = "Failed to start the program: {e}"
 
 import json
 import os
@@ -34,7 +36,7 @@ def resolve_mode(s, requested: str) -> str:
     if mode not in {"conhost", "wt", "no_terminal"}:
         raise ValueError("Unknown launch mode: " + mode)
     if mode == "wt" and not shutil.which("wt.exe"):
-        print("[Warning] Windows Terminal (wt.exe) is not installed; using the classic terminal instead.")
+        print_warn("Windows Terminal (wt.exe) is not installed; using the classic terminal instead.")
         mode = "conhost"
     return mode
 
@@ -46,8 +48,8 @@ def _hint_outdated_shortcuts(s) -> None:
 
         outdated = outdated_shortcut_targets(s)
         if outdated:
-            print(
-                "[Info] These shortcuts still open the previous location: "
+            print_info(
+                "These shortcuts still open the previous location: "
                 + ", ".join(outdated)
                 + ". Run 'Setup - run first and after moving folder.cmd' to update them."
             )

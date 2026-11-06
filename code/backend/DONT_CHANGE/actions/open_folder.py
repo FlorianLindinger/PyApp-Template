@@ -14,7 +14,7 @@ from backend.DONT_CHANGE.scripts.config import settings
 from backend.DONT_CHANGE.scripts.errors import SettingsError
 from backend.DONT_CHANGE.scripts.launcher_ui import get_log_folder_path
 
-fail_message = "[Error] Failed to open the folder: {e}"
+fail_message = "Failed to open the folder: {e}"
 
 # kind: (path setting, description)
 FOLDERS = {

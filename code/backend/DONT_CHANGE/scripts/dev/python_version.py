@@ -8,8 +8,15 @@ import tempfile
 
 from backend.DONT_CHANGE import backend_settings as paths
 from backend.DONT_CHANGE.scripts.config import describe_python_request, edit_settings, python_version_problem, settings
-from backend.DONT_CHANGE.scripts.console_tools import input_warn, print_success
-from backend.DONT_CHANGE.scripts.dev.common import ask, prepare
+from backend.DONT_CHANGE.scripts.console_tools import (
+    ask,
+    print_fields,
+    print_heading,
+    print_info,
+    print_step,
+    print_success,
+)
+from backend.DONT_CHANGE.scripts.dev.common import confirm, prepare
 from backend.DONT_CHANGE.scripts.env.pythons import (
     available_summary,
     find_python,
@@ -34,14 +41,18 @@ def cmd_change_python(arguments):
     """Set a new python_version and migrate the project to it."""
     s = settings()
     current = read_python_version_file()
-    print(
-        f"Current project Python: {current or '(not set up yet)'}; python_version setting: {describe_python_request(s.python_version)}"
+    print_heading("Change Python")
+    print_fields(
+        [
+            ("Project Python", current or "(not set up yet)"),
+            ("python_version", describe_python_request(s.python_version)),
+        ]
     )
-    print(available_summary(s))
+    print_info(available_summary(s))
     new = (
         arguments[0]
         if arguments
-        else input_warn('New python_version (e.g. "3.13", "3.14t", empty = newest stable): ').strip().strip('"')
+        else ask('New python_version (e.g. "3.13", "3.14t", empty = newest stable):').strip().strip('"')
     )
     problem = python_version_problem(new)
     if problem:
@@ -49,8 +60,8 @@ def cmd_change_python(arguments):
     for line in edit_settings({"python_version": new}):
         print(line)
     if not new:
-        print(
-            "[Info] python_version is now empty (newest stable, chosen once). Use update_python to move to a newer Python."
+        print_info(
+            "python_version is now empty (newest stable, chosen once). Use update_python to move to a newer Python."
         )
         return
     prepare()  # offers the migration menu because the setting now differs from backend/.python-version
@@ -63,7 +74,7 @@ def cmd_update_python(arguments):
     current = read_python_version_file()
     if not s.python_version:
         newest = newest_stable_minor(s)
-        if (current and newest != current and version_key(newest) > version_key(current)) and ask(
+        if (current and newest != current and version_key(newest) > version_key(current)) and confirm(
             f"Python {newest} is available (the project uses {current}). Switch now?"
         ):
             switch_python(newest, s=s)
@@ -73,9 +84,9 @@ def cmd_update_python(arguments):
     if s.python_source.startswith("system") and not os.path.normcase(in_use).startswith(
         os.path.normcase(paths.LOCAL_PYTHONS_DIR)
     ):
-        print("[Info] The project uses an installed system Python; update it with its own installer.")
+        print_info("The project uses an installed system Python; update it with its own installer.")
         return
-    print(f"[Setup] Updating Python {request} to its newest patch release...")
+    print_step(f"Updating Python {request} to its newest patch release...")
     run_uv(["python", "install", "--upgrade", request], cwd=tempfile.gettempdir())
     newest_exe = find_python(request, s)
     in_use = os.path.join(read_venv_config().get("home", ""), "python.exe")
@@ -84,4 +95,4 @@ def cmd_update_python(arguments):
         refuse_mutation_while_running()
         build_venv(newest_exe, locked=True, s=s)
     invalidate_runtime_cache()
-    print_success(f"[Success] Python {version_text(interpreter_version(newest_exe or sys.executable))} is ready.")
+    print_success(f"Python {version_text(interpreter_version(newest_exe or sys.executable))} is ready.")

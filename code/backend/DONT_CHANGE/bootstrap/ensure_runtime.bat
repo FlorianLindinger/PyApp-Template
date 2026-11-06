@@ -37,7 +37,7 @@ if errorlevel 1 exit /b 1
 set "PYAPP_CACHED_STAMP="
 call :load_cache
 if not defined PYAPP_PYTHON (
-    echo [Error] The bootstrap did not record a Python interpreter.
+    echo ERROR  The bootstrap did not record a Python interpreter.
     exit /b 1
 )
 exit /b 0
