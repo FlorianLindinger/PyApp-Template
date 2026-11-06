@@ -6,7 +6,6 @@ Settings marked [bootstrap] are also read by the Windows bootstrap before any Py
 exists. Keep each of them on ONE line as a plain literal ("text", True, False, None):
 no expressions, f-strings or line continuations.
 """
-#ruff: noqa: ERA001
 # Keeps the "str | None" annotations below working on Python 3.8 and 3.9.
 from __future__ import annotations
 
@@ -17,10 +16,10 @@ from __future__ import annotations
 # 1. Important Settings: program name, Python version, shortcuts, startup and instances.
 # 2. Python and Package Settings: the packages the app needs and where uv, Python and the packages come from.
 # 3. Logging Settings: normal and crash-log locations, behavior and retention.
-# 4. Program Finish/Crash Settings: what happens after success, failure, crashes, and KeyboardInterrupt.
+# 4. Program Finish/Crash Settings: what happens after success, failure, crashes, and Ctrl+C (keyboard_interrupt).
 # 5. Traceback Settings: crash-report date format, context lines and colors.
 # 6. Icon Settings: individual overlay size and alignment for generated shortcut icons.
-# 7. Less Important Settings: application arguments and setup behavior.
+# 7. Less Important Settings: application arguments.
 # 8. Launcher Mode Specific Settings: classic-console and Windows Terminal appearance.
 
 # ============================
@@ -40,7 +39,8 @@ program_name = "PyApp-Template"
 # The launcher itself needs Python 3.8 or newer. Changing this later offers a migration menu.
 python_version = "3.14"
 # ---------------------------------------
-# Path to end-user settings file (None to disable). File type can be anything openable by vscode/editor:
+# Path to end-user settings file (None to disable). File type can be anything openable by vscode/editor.
+# Run Setup again after changing it (the Settings shortcut opens it):
 user_settings_path: str | None = "..\\settings.py"
 # ---------------------------------------
 # Names of created shortcuts (None to disable). Accepts for example f"{program_name}":
@@ -77,6 +77,11 @@ start_minimized = False
 #   "replace"  stop the running instance(s), then start
 #   "ask"      ask whether to replace the running instance(s)
 instance_policy = "allow"
+# ---------------------------------------
+# Stop shortcut and instance_policy "replace": seconds a running instance gets to close by itself
+# (its windows receive a normal close request, a console app gets Ctrl+C) before it is terminated.
+# 0 terminates immediately.
+stop_timeout_seconds: float = 5
 # ---------------------------------------
 
 # ======================================
@@ -137,7 +142,7 @@ install_environment_when_generating_shortcuts = True
 
 # ---------------------------------------
 # Logging redirects stdout/stderr to pipes. Disable terminal logging if the app needs real console handles/a TTY.
-enable_log_for_Windows_terminal_start = True
+enable_log_for_terminal_start = True
 enable_log_for_no_terminal_start = True
 # if overwrite is False it will append instead if a file with that name exists:
 # Unique run suffixes normally give each launch a separate file, regardless of this flag.
@@ -145,7 +150,7 @@ overwrite_log = True
 # decide if log path (below) is relative to start folder (where shortcut is started) or to this file:
 log_path_is_relative_to_start_folder_if_relative = False
 # Accepts datetime.datetime.strftime usage (e.g. "log_%Y-%m-%d_%H-%M-%S.txt"). None to disable:
-# UPDATE root .gitignore's /logs/* rule if changing the output directory if wanted.
+# After changing the folder, run Setup again (the Logs shortcut opens it) and update the root .gitignore's /logs/* rule.
 log_path: str | None = "..\\..\\logs\\log_%Y-%m-%d_%H-%M-%S.txt"
 # ---------------------------------------
 log_print_prepend: str | None = "%H:%M:%S | "
@@ -158,12 +163,12 @@ overwrite_crash_log = True
 # decide if crash log path (below) is relative to start folder (where shortcut is started) or to this file:
 crash_log_path_is_relative_to_start_folder_if_relative = False
 # Accepts datetime.datetime.strftime usage (e.g. "log_%Y-%m-%d_%H-%M-%S.txt"). None to disable:
-# UPDATE root .gitignore's /crash logs/* rule if changing the output directory if wanted.
+# After changing the folder, run Setup again (the Crash Logs shortcut opens it) and update the root .gitignore's /crash logs/* rule.
 crash_log_path: str | None = "..\\..\\crash logs\\crash_log_%Y-%m-%d_%H-%M-%S.txt"
 # ---------------------------------------
-# Retention: keep at most this many files in each log folder (None keeps everything):
+# Retention: keep the logs of at most this many runs in each log folder (None keeps everything):
 max_log_files: int | None = None
-# Delete per-run diagnostic folders (temporary/runs) older than this many days (None keeps them):
+# Delete per-run diagnostic folders (DONT_CHANGE/tmp/runs) older than this many days (None keeps them):
 max_run_folder_age_days: int | None = None
 # ---------------------------------------
 
@@ -174,36 +179,36 @@ max_run_folder_age_days: int | None = None
 # ---------------------------------------
 # Program exit behavior:
 # success = sys.exit(0)/sys.exit()/file-end
-# failure = sys.exit(not-a-zero) e.g. raised Exception.Exception
+# failure = sys.exit(non-zero) or an unhandled exception
 # crash   = python interpreter crash (aka where even try/except fails)
-# KeyboardInterrupt = user presses CTRL+C
+# keyboard_interrupt = user presses CTRL+C (KeyboardInterrupt)
 # ---------------------------------------
 close_after_success = True
 close_after_failure = False
 close_after_crash = False
-close_after_KeyboardInterrupt = False
+close_after_keyboard_interrupt = False
 # ---------------------------------------
 open_log_file_after_success = False
 open_log_file_after_failure = False
 open_log_file_after_crash = False
-open_log_file_after_KeyboardInterrupt = False
+open_log_file_after_keyboard_interrupt = False
 # ---------------------------------------
 open_main_py_after_success = False
 open_main_py_after_failure = False
 open_main_py_after_crash = False
-open_main_py_after_KeyboardInterrupt = False
+open_main_py_after_keyboard_interrupt = False
 # ---------------------------------------
 # False for off. True for default. String for rel. path to .wav in C:\Windows\Media:
 play_sound_after_success: str | bool = False
 play_sound_after_failure: str | bool = True
 play_sound_after_crash: str | bool = True
-play_sound_after_KeyboardInterrupt: str | bool = False
+play_sound_after_keyboard_interrupt: str | bool = False
 # ---------------------------------------
 # None to disable change
 title_after_success: str | None = f"[Finished] {program_name}"
 title_after_failure: str | None = f"[Failure] {program_name}"
 title_after_crash: str | None = f"[Crash] {program_name}"
-title_after_KeyboardInterrupt: str | None = f"[KeyboardInterrupt] {program_name}"
+title_after_keyboard_interrupt: str | None = f"[KeyboardInterrupt] {program_name}"
 # ---------------------------------------
 # Terminal colors after the program finishes (None or "" keeps the current colors):
 # Background color: 0=Black,1=Blue,2=Green,3=Aqua,4=Red,5=Purple,6=Yellow,7=White,8=Gray,9=LightBlue
@@ -211,7 +216,7 @@ title_after_KeyboardInterrupt: str | None = f"[KeyboardInterrupt] {program_name}
 terminal_colors_after_success: str | None = "2F"
 terminal_colors_after_failure: str | None = "4F"
 terminal_colors_after_crash: str | None = "4F"
-terminal_colors_after_KeyboardInterrupt: str | None = "6C"
+terminal_colors_after_keyboard_interrupt: str | None = "6C"
 # ---------------------------------------
 
 # ============================
@@ -249,8 +254,8 @@ crash_log_sub_icon_scale: float | None = 0.35
 crash_log_sub_icon_alignment: str | None = "bottom right"
 open_main_py_sub_icon_scale: float | None = 0.35
 open_main_py_sub_icon_alignment: str | None = "bottom right"
-keyboardInterrupt_sub_icon_scale: float | None = 0.35
-keyboardInterrupt_sub_icon_alignment: str | None = "bottom right"
+keyboard_interrupt_sub_icon_scale: float | None = 0.35
+keyboard_interrupt_sub_icon_alignment: str | None = "bottom right"
 
 # =================================
 # ==== Less Important Settings ====

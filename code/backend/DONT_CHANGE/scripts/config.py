@@ -9,6 +9,7 @@ import re
 import sys
 
 from backend.DONT_CHANGE.backend_settings import DEV_SETTINGS_PATH
+from backend.DONT_CHANGE.scripts.errors import SettingsError
 
 # Read by bootstrap/resolve_runtime.ps1 before Python exists; must stay one-line literals.
 BOOTSTRAP_SETTINGS = (
@@ -57,7 +58,7 @@ BOOLEANS = (
     "start_minimized",
     "use_classic_terminal",
     "traceback_colors",
-    "enable_log_for_Windows_terminal_start",
+    "enable_log_for_terminal_start",
     "enable_log_for_no_terminal_start",
     "overwrite_log",
     "overwrite_crash_log",
@@ -66,43 +67,115 @@ BOOLEANS = (
 )
 
 
+OUTCOMES = ("success", "failure", "crash", "keyboard_interrupt")
+SHORTCUT_NAME_SETTINGS = (
+    "terminal_shortcut_name",
+    "no_terminal_shortcut_name",
+    "open_settings_shortcut_name",
+    "stop_running_shortcut_name",
+    "open_log_folder_shortcut_name",
+    "open_crash_log_folder_shortcut_name",
+    "open_main_py_shortcut_name",
+)
+SUB_ICON_KINDS = (
+    "settings",
+    "stop",
+    "log",
+    "success",
+    "failure",
+    "crash",
+    "crash_log",
+    "open_main_py",
+    "keyboard_interrupt",
+)
+_ALIGNMENT_WORDS = {"top", "bottom", "left", "right", "center", "up", "down", "middle", "centre"}
+
+
+def _number(value) -> bool:
+    return isinstance(value, (int, float)) and not isinstance(value, bool)
+
+
+def _alignment_ok(value) -> bool:
+    """Same rules as image_tools.generate_ico_from_png."""
+    if not isinstance(value, str):
+        return False
+    words = value.lower().replace("_", " ").replace("-", " ").split()
+    return bool(words) and all(word in _ALIGNMENT_WORDS for word in words)
+
+
+def _sound_path(value: str) -> str:
+    """Same rules as process_exit.play_sound: relative names are in C:\\Windows\\Media, ".wav" is optional."""
+    from backend.DONT_CHANGE.backend_settings import WINDOWS_DIR
+
+    path = value if os.path.isabs(value) else os.path.join(WINDOWS_DIR, "Media", value)
+    return path if path.lower().endswith(".wav") else path + ".wav"
+
+
+def _strftime_problem(value: str) -> str | None:
+    """Explain a date format Windows' strftime rejects (e.g. "%Q" or a trailing "%")."""
+    from datetime import datetime
+
+    try:
+        datetime.now().strftime(value)
+    except ValueError as error:
+        return f"invalid date format ({error}); see the strftime codes, e.g. %Y-%m-%d %H:%M:%S"
+    return None
+
+
 # A requirement starts with a distribution name (PEP 508); uv checks the rest (versions, extras, markers).
 REQUIREMENT_START = re.compile(r"\s*[A-Za-z0-9][A-Za-z0-9._-]*\s*($|[\[(<>=!~;@ ])")
 
 
-class SettingsError(Exception):
-    """A developer_settings.py value cannot be used."""
-
-
 def settings():
-    """Import developer_settings, turning syntax errors into a short actionable message."""
+    """Import developer_settings, turning any error in the file into a short actionable message."""
+    from backend.DONT_CHANGE.scripts.entrypoint import settings_file_problem
+
     try:
         return importlib.import_module("backend.developer_settings")
-    except SyntaxError as error:
-        raise SettingsError(
-            f'developer_settings.py has a syntax error in line {error.lineno}: {error.msg}\n  "{DEV_SETTINGS_PATH}"'
-        ) from None
+    except Exception as error:
+        problem = settings_file_problem(error)
+        if problem is None:
+            raise
+        raise SettingsError(problem) from None
+
+
+def _assigned_names(node) -> list[str]:
+    """Names a plain `name = ...` or `name: type = ...` statement assigns."""
+    if isinstance(node, ast.Assign):
+        return [t.id for t in node.targets if isinstance(t, ast.Name)]
+    if isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name) and node.value is not None:
+        return [node.target.id]
+    return []
 
 
 def _bootstrap_literal_problems() -> list[str]:
-    """The batch bootstrap parses some settings with a regex; require plain one-line literals."""
+    """The batch bootstrap reads some settings with a line-based parser; keep them simple and unique.
+
+    It reads only unindented lines and takes the last definition, like Python; a setting that is
+    defined twice, indented (e.g. inside an "if") or not a one-line literal could differ between the two.
+    """
     problems = []
     with open(DEV_SETTINGS_PATH, encoding="utf-8") as stream:
-        tree = ast.parse(stream.read())
-    for node in tree.body:
-        targets = []
-        if isinstance(node, ast.Assign):
-            targets = [t.id for t in node.targets if isinstance(t, ast.Name)]
-        elif isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
-            targets = [node.target.id]
-        for name in targets:
-            if name not in BOOTSTRAP_SETTINGS:
-                continue
+        tree = ast.parse(stream.read(), DEV_SETTINGS_PATH)
+    top_level = {id(node) for node in tree.body}
+    definitions = {}
+    for node in ast.walk(tree):
+        for name in _assigned_names(node):
+            if name in BOOTSTRAP_SETTINGS:
+                definitions.setdefault(name, []).append(node)
+    for name in BOOTSTRAP_SETTINGS:
+        nodes = sorted(definitions.get(name, []), key=lambda n: n.lineno)
+        if len(nodes) > 1:
+            lines = ", ".join(str(n.lineno) for n in nodes)
+            problems.append(f"{name} is set {len(nodes)} times (lines {lines}); keep only one, because the Windows bootstrap reads it.")
+        for node in nodes:
             value = node.value
             plain = isinstance(value, ast.Constant) and (
                 value.value is None or isinstance(value.value, (str, bool))
             )
-            if not plain or node.lineno != getattr(node, "end_lineno", node.lineno):
+            if id(node) not in top_level or node.col_offset != 0:
+                problems.append(f"{name} (line {node.lineno}) must be set unindented at the top of the file because the Windows bootstrap reads it.")
+            elif not plain or node.lineno != getattr(node, "end_lineno", node.lineno):
                 problems.append(
                     f'{name} must be a plain one-line value ("text", True, False or None) because the Windows bootstrap reads it.'
                 )
@@ -157,12 +230,37 @@ def validate(module=None) -> None:
         need(name, lambda v: v is None or (isinstance(v, int) and not isinstance(v, bool) and v > 0), "use a positive whole number or None")
     need("traceback_extra_lines", lambda v: isinstance(v, int) and not isinstance(v, bool) and v >= 0, "use 0 or a positive whole number")
     for name in ("log_path", "crash_log_path", "user_settings_path"):
-        need(name, lambda v: v is None or v is False or isinstance(v, str), "use a path text or None")
+        need(name, lambda v: v is None or isinstance(v, str), "use a path text or None")
     for name in ("terminal_bg_color", "terminal_text_color"):
         need(name, lambda v: v in (None, "") or (isinstance(v, str) and re.fullmatch(r"[0-9A-Fa-f]", v)), "use one hex digit 0-9/A-F or None")
-    for outcome in ("success", "failure", "crash", "KeyboardInterrupt"):
+    for outcome in OUTCOMES:
         need("terminal_colors_after_" + outcome, lambda v: v in (None, "") or (isinstance(v, str) and re.fullmatch(r"[0-9A-Fa-f]{2}", v)), 'use two hex digits like "4F" or None')
     need("tab_bar_color", lambda v: v is None or (isinstance(v, str) and re.fullmatch(r"#[0-9A-Fa-f]{6}", v)), 'use a color like "#3B78FF" or None')
+    need("stop_timeout_seconds", lambda v: _number(v) and v >= 0, "use 0 (stop immediately) or a number of seconds")
+
+    for name in SHORTCUT_NAME_SETTINGS:
+        need(name, lambda v: v is None or (isinstance(v, str) and v.strip()), "use a non-empty text or None")
+    for outcome in OUTCOMES:
+        for prefix in ("close_after_", "open_log_file_after_", "open_main_py_after_"):
+            need(prefix + outcome, lambda v: isinstance(v, bool), "use True or False")
+        need("title_after_" + outcome, lambda v: v is None or isinstance(v, str), "use a text or None")
+        name = "play_sound_after_" + outcome
+        need(name, lambda v: isinstance(v, (bool, str)), 'use True, False or a .wav name such as "Windows Ding.wav"')
+        sound = get(name)
+        if isinstance(sound, str) and sound and not os.path.isfile(_sound_path(sound)):
+            problems.append(f'{name} = {sound!r}: "{_sound_path(sound)}" does not exist (use True, False or an existing .wav file).')
+    for name in ("print_prepend", "input_prepend", "log_print_prepend", "log_input_prepend", "error_date_format", "log_path", "crash_log_path"):
+        value = get(name)
+        if isinstance(value, str) and "%" in value:
+            problem = _strftime_problem(value)
+            if problem:
+                problems.append(f"{name} = {value!r}: {problem}")
+    for name in ("print_prepend", "input_prepend", "log_print_prepend", "log_input_prepend"):
+        need(name, lambda v: v is None or isinstance(v, str), 'use a text such as "%H:%M:%S | " or None')
+    need("error_date_format", lambda v: isinstance(v, str), 'use a date format such as "%Y-%m-%d %H:%M:%S"')
+    for kind in SUB_ICON_KINDS:
+        need(kind + "_sub_icon_scale", lambda v: v is None or (_number(v) and 0 < v <= 1), "use a number greater than 0 and at most 1, or None")
+        need(kind + "_sub_icon_alignment", lambda v: v is None or _alignment_ok(v), 'use a position such as "bottom right", "top", "center left", or None')
 
     if get("package_environment") == "interpreter_site_packages" and get("python_source") in ("local", "uv_user"):
         problems.append(
@@ -178,37 +276,42 @@ def validate(module=None) -> None:
 
 
 def edit_settings(changes: dict) -> list[str]:
-    """Rewrite top-level `name = value` lines in developer_settings.py; return a readable diff."""
-    with open(DEV_SETTINGS_PATH, encoding="utf-8") as stream:
-        lines = stream.read().splitlines(keepends=True)
+    """Set top-level settings in developer_settings.py to new values; return a readable diff.
+
+    Only the value is replaced: annotations, trailing comments and line endings are kept.
+    """
     diff = []
-    remaining = dict(changes)
-    for index, line in enumerate(lines):
-        for name in list(remaining):
-            match = re.match(r"^(" + re.escape(name) + r"\s*(?::[^=]*)?=\s*)(.*?)(\r?\n)?$", line)
-            if match:
-                new = match.group(1) + repr(remaining.pop(name)).replace("'", '"') + (match.group(3) or "")
-                if new != line:
-                    diff.append(f"- {line.rstrip()}\n+ {new.rstrip()}")
-                lines[index] = new
-    if remaining:
-        raise SettingsError("Could not find these settings to edit: " + ", ".join(remaining))
-    with open(DEV_SETTINGS_PATH, "w", encoding="utf-8", newline="") as stream:
-        stream.write("".join(lines))
-    sys.modules.pop("backend.developer_settings", None)
+    for name, value in changes.items():
+        literal = _literal(value)
+        diff += _replace_setting_value(name, lambda newline, literal=literal: literal)
     return diff
 
 
 def set_list_setting(name: str, values) -> list[str]:
     """Rewrite the top-level list setting `name` (it may span several lines); return a readable diff."""
+    values = list(values)
+
+    def body(newline: str) -> str:
+        if not values:
+            return "[]"
+        return "[" + newline + "".join("    " + _quoted(v) + "," + newline for v in values) + "]"
+
+    return _replace_setting_value(name, body)
+
+
+def _replace_setting_value(name: str, make_value) -> list[str]:
+    """Replace the value of the last top-level assignment to `name` (the one Python uses).
+
+    make_value(newline) returns the new value's source text. The file's line endings are kept.
+    """
     with open(DEV_SETTINGS_PATH, encoding="utf-8", newline="") as stream:
         source = stream.read()
     newline = "\r\n" if "\r\n" in source else "\n"
-    lines = source.splitlines(keepends=True)
+    # Split exactly where ast counts lines (str.splitlines also splits at e.g. U+2028).
+    lines = re.findall(r"[^\r\n]*(?:\r\n|\r|\n)|[^\r\n]+$", source)
     node = None
-    for item in ast.parse(source).body:
-        target = item.target if isinstance(item, ast.AnnAssign) else (item.targets[0] if isinstance(item, ast.Assign) and len(item.targets) == 1 else None)
-        if isinstance(target, ast.Name) and target.id == name and item.value is not None:
+    for item in ast.parse(source, DEV_SETTINGS_PATH).body:
+        if name in _assigned_names(item):
             node = item
     if node is None:
         raise SettingsError(f"Could not find the setting {name} in developer_settings.py to edit.")
@@ -216,11 +319,7 @@ def set_list_setting(name: str, values) -> list[str]:
     # ast offsets count UTF-8 bytes
     head = lines[first].encode("utf-8")[: node.value.col_offset].decode("utf-8")  # e.g. "packages: list[str] = "
     tail = lines[last].encode("utf-8")[node.value.end_col_offset :].decode("utf-8").rstrip("\r\n")  # e.g. a comment
-    if values:
-        body = "[" + newline + "".join("    " + _quoted(v) + "," + newline for v in values) + "]"
-    else:
-        body = "[]"
-    replacement = (head + body + tail).rstrip() + newline
+    replacement = (head + make_value(newline) + tail).rstrip() + newline
     old = "".join(lines[first : last + 1])
     if replacement == old:
         return []
@@ -229,6 +328,15 @@ def set_list_setting(name: str, values) -> list[str]:
         stream.write("".join(lines))
     sys.modules.pop("backend.developer_settings", None)
     return [f"- {line}" for line in old.rstrip().splitlines()] + [f"+ {line}" for line in replacement.rstrip().splitlines()]
+
+
+def _literal(value) -> str:
+    """Python source text for a setting value."""
+    if isinstance(value, str):
+        return _quoted(value)
+    if value is None or isinstance(value, (bool, int, float)):
+        return repr(value)
+    raise SettingsError(f"Cannot write the value {value!r} into developer_settings.py.")
 
 
 def _quoted(value: str) -> str:

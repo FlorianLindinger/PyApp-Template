@@ -1,7 +1,9 @@
 """Exit codes and traceback reports shared by the wrapper, watchdog and completion handler.
 
 Imported inside the application's interpreter too, so: standard library only and
-Python 3.8 compatible (no match statements, no X | Y types at runtime, ...).
+Python 3.8 compatible (no match statements, no X | Y types at runtime, ...). There it is a
+top-level module, so its name must not collide with the app's modules or packages
+(a plain "protocol" would shadow the app's own protocol.py).
 """
 
 import json
@@ -23,13 +25,22 @@ class WrapperExit:
 
 
 class ExitMode:
-    """Outcome the watchdog passes to process_exit.py."""
+    """Outcome the watchdog passes to process_exit.py (independent of the wrapper's exit codes)."""
 
-    SUCCESS = 0
-    APP_EXIT = 1  # see traceback.json: SystemExit, exception, Ctrl+C
-    WRAPPER_ERROR = 2
-    WATCHDOG_ERROR = 4
-    NO_REPORT = 5  # the interpreter ended without its completion report (native crash, os._exit, ...)
+    SUCCESS = 10
+    APP_EXIT = 11  # see traceback.json: SystemExit, exception, Ctrl+C
+    WRAPPER_ERROR = 12
+    WATCHDOG_ERROR = 13
+    NO_REPORT = 14  # the interpreter ended without its completion report (native crash, os._exit, ...)
+
+
+# How the watchdog reports a wrapper exit code that came with a matching result.json.
+# WrapperExit.INIT_FAILED writes no result.json and therefore becomes ExitMode.NO_REPORT.
+EXIT_MODE_FOR_WRAPPER_EXIT = {
+    WrapperExit.SUCCESS: ExitMode.SUCCESS,
+    WrapperExit.APP_FAILED: ExitMode.APP_EXIT,
+    WrapperExit.WRAPPER_FAILED: ExitMode.WRAPPER_ERROR,
+}
 
 
 def _launcher_files():
@@ -42,7 +53,7 @@ def _launcher_files():
     except Exception:
         pass
     here = os.path.dirname(os.path.realpath(__file__))
-    for name in ("script_wrapper.py", "protocol.py"):
+    for name in ("script_wrapper.py", "_pyapp.py"):
         names.add(os.path.normcase(os.path.join(here, name)))
     return names
 

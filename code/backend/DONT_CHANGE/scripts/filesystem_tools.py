@@ -28,17 +28,7 @@ def _is_junction(path: str) -> bool:
 
 
 def set_hidden_in_explorer(paths: list[str], hidden: bool = True):
-    """
-    Hide or unhide multiple Windows files and folders.
-
-    Args:
-        paths: Iterable of file/folder paths.
-        hidden: True to hide, False to unhide.
-
-    Returns:
-        A dictionary mapping each path to None on success,
-        or an exception object on failure.
-    """
+    """Hide (or unhide) existing files and folders in Explorer; missing paths and failures are skipped."""
 
     import ctypes
 
@@ -117,23 +107,3 @@ def sanitize_filename(
     # 5. Handle empty strings (if sanitization removed everything)
     return filename or "_"
 
-
-def write_lines(path: str, lines: list[str], override: bool = True) -> None:
-    r"""lines are a list of strings without the endline symbol ("\n") added.
-    If override==False it will append instead of recreating the file (default:  override=True)."""
-
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-
-    lines_str = "\n".join(lines) + "\n"
-
-    with open(path, "w" if override else "a", encoding="utf-8") as f:
-        f.write(lines_str)
-
-
-def read_lines(path: str) -> list[str]:
-    r"""returns a list of strings from path without the endline symbol ("\n" or "\r\n")"""
-
-    with open(path, encoding="utf-8") as f:
-        lines = f.readlines()  # readlines converts \r\n into \n
-
-    return [line.rstrip("\n") for line in lines]

@@ -53,9 +53,6 @@ nuitka-crash-report.xml
 
 # shortcuts in this folder:
 /*.lnk
-# temporary process id indicator files:
-/code/*.pid
-/code/*.pid.d/
 # uv project in the backend folder: commit uv.lock and .python-version; pyproject.toml is
 # generated from developer_settings.py and .venv is the app environment:
 /code/backend/pyproject.toml
@@ -68,12 +65,6 @@ nuitka-crash-report.xml
 /code/backend/uv-cache/
 # machine-specific list of generated shortcuts:
 /code/backend/shortcuts_created_by_setup.json
-# folders of the old (pre-uv) template version (delete them by hand):
-/code/backend/python/
-/code/backend/packages/
-/code/backend/dev_tools/*.txt
-/code/backend/dev_tools/*.lock.json
-/code/backend/frontend-python.lock.json
 # whitelist ".gitkeep" files anywhere:
 !.gitkeep
 

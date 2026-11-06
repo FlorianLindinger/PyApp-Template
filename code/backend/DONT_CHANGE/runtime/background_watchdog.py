@@ -14,20 +14,25 @@ import traceback
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
-from backend import developer_settings as settings
 from backend.DONT_CHANGE import backend_settings as paths
+from backend.DONT_CHANGE.runtime._pyapp import (
+    EXIT_MODE_FOR_WRAPPER_EXIT,
+    ExitMode,
+    exit_code_is_success,
+    save_report,
+)
+from backend.DONT_CHANGE.scripts.config import settings as load_settings
 from backend.DONT_CHANGE.scripts.console_tools import (
     set_terminal_app_id,
     set_terminal_icon,
     set_terminal_title,
 )
+from backend.DONT_CHANGE.scripts.diagnostics import note_ignored
 from backend.DONT_CHANGE.scripts.instance_policy import decide
-from backend.DONT_CHANGE.scripts.launcher_ui import get_log_path, set_terminal_colors
-from backend.DONT_CHANGE.runtime.protocol import (
-    ExitMode,
-    WrapperExit,
-    exit_code_is_success,
-    save_report,
+from backend.DONT_CHANGE.scripts.launcher_ui import (
+    OUTPUT_LOG_SUFFIX,
+    get_log_path,
+    set_terminal_colors,
 )
 from backend.DONT_CHANGE.scripts.runtime_state import (
     ProcessRegistry,
@@ -83,7 +88,6 @@ def handle_exit(
     success = successful_application_exit(mode, run_dir)
     if not has_terminal and success and settings.close_after_success:
         # Successful hidden runs perform their completion actions without a console.
-        env["PYAPP_SILENT_EXIT"] = "1"
         subprocess.run(
             args, env=env, check=False, creationflags=subprocess.CREATE_NO_WINDOW
         )
@@ -98,38 +102,45 @@ def handle_exit(
         )
 
 
-def register_with_policy(registry, has_terminal, run_dir):
-    """Apply instance_policy and register; dialogs are shown without holding the registry lock."""
+def register_with_policy(registry, run_dir):
+    """Apply instance_policy and register.
+
+    Dialogs and stopping other instances happen without holding the registry lock (a stopping
+    watchdog needs it to unregister); the check is then repeated under the lock.
+    """
     policy = settings.instance_policy
-    while True:
+    for _ in range(5):
         with registry.lock():
             records, _ = registry.records()
             if not records or policy == "allow":
                 registry.register()
                 return True
-            if policy == "replace":
-                _, _, errors = registry.stop()
-                if errors:
-                    raise RuntimeError(
-                        "Could not stop existing instances: " + "; ".join(errors)
-                    )
-                registry.register()
-                return True
-        decision = decide(policy, records, settings.program_name)
-        if decision == "cancel":
-            acknowledge(run_dir, status="cancelled")
-            return False
-        policy = "replace"
+        if policy != "replace":
+            decision = decide(policy, records, settings.program_name)
+            if decision == "cancel":
+                acknowledge(run_dir, status="cancelled")
+                return False
+            policy = "replace"
+        _, _, errors = registry.stop(settings.stop_timeout_seconds, report=print)
+        if errors:
+            raise RuntimeError("Could not stop existing instances: " + "; ".join(errors))
+    raise RuntimeError("Other instances keep starting; could not replace them.")
+
+
+# developer_settings, loaded in main() (not at import time); start_program.py validated it.
+settings = None
 
 
 def main():
     """Own registration, launch, logging and completion handling for one application run."""
+    global settings
+    settings = load_settings()
     app_id, launch_mode = sys.argv[1:3]
     if app_id == paths.EMPTY_ARG_INDICATOR:
         app_id = ""
     run_dir = Path(os.environ["PYAPP_RUN_DIR"])
     has_terminal = launch_mode in ("wt", "conhost")
-    registry = ProcessRegistry(paths.PROCESS_ID_FILE_PATH)
+    registry = ProcessRegistry(paths.PROCESS_REGISTRY_DIR)
     script = paths.MAIN_PY_SCRIPT_PATH
     log_path = ""
     registered = False
@@ -141,7 +152,7 @@ def main():
             set_terminal_colors()
             set_terminal_title(settings.program_name)
             set_terminal_app_id(app_id)
-        if not register_with_policy(registry, has_terminal, run_dir):
+        if not register_with_policy(registry, run_dir):
             return
         registered = True
         # Windows group a window with the pinned shortcut whose System.AppUserModel.ID matches.
@@ -153,7 +164,7 @@ def main():
         app_python = json.loads(os.environ.pop("PYAPP_APP_PYTHON"))
         if not Path(script).is_file():
             raise FileNotFoundError(script)
-        if (has_terminal and settings.enable_log_for_Windows_terminal_start) or (
+        if (has_terminal and settings.enable_log_for_terminal_start) or (
             not has_terminal and settings.enable_log_for_no_terminal_start
         ):
             log_path = unique_log_path(
@@ -203,7 +214,7 @@ def main():
         pump = None
         if log_path:
             Path(log_path).parent.mkdir(parents=True, exist_ok=True)
-            raw_stream = open(log_path + ".output.log", "wb")
+            raw_stream = open(log_path + OUTPUT_LOG_SUFFIX, "wb")
         try:
             child = subprocess.Popen(
                 [
@@ -211,7 +222,7 @@ def main():
                     *app_python["flags"],
                     "-X",
                     "faulthandler",
-                    paths.FRONTEND_SCRIPT_WRAPPER_PATH,
+                    paths.SCRIPT_WRAPPER_PATH,
                     "--config",
                     str(run_dir / "wrapper.json"),
                 ],
@@ -265,7 +276,7 @@ def main():
                 try:
                     set_terminal_icon(paths.ICON_PATH)
                 except Exception:
-                    pass
+                    note_ignored("set_terminal_icon")
             previous = signal.signal(signal.SIGINT, signal.SIG_IGN)
             try:
                 code = child.wait()
@@ -273,21 +284,16 @@ def main():
                 signal.signal(signal.SIGINT, previous)
             if pump:
                 pump.join(timeout=5)
-            mode, native = code, None
+            native = None
             try:
                 result = json.loads(
                     (run_dir / "result.json").read_text(encoding="utf-8")
                 )
                 if result["wrapper_exit_code"] != code:
                     raise ValueError("Abrupt exit during shutdown")
+                mode = EXIT_MODE_FOR_WRAPPER_EXIT[code]
             except (OSError, ValueError, KeyError):
-                mode, native = ExitMode.NO_REPORT, code
-            if mode not in (
-                WrapperExit.SUCCESS,
-                WrapperExit.APP_FAILED,
-                WrapperExit.WRAPPER_FAILED,
-                ExitMode.NO_REPORT,
-            ):
+                # No (matching) completion report: native crash, os._exit, killed, ...
                 mode, native = ExitMode.NO_REPORT, code
             # Worker threads can fail after main.py returned, while Python waits for them.
             background = run_dir / "traceback.json.background"
@@ -301,6 +307,10 @@ def main():
             registry.remove()
             registered = False
             exit_handled = True
+            if (run_dir / paths.STOP_REQUEST_FILE_NAME).exists():
+                # Stopped by the Stop shortcut or a replacing launch: no sounds, menus or prompts.
+                print("[Info] Stopped on request.")
+                return
             handle_exit(mode, app_id, has_terminal, log_path, script, run_dir, native)
         finally:
             if raw_stream and pump is None:
@@ -309,7 +319,7 @@ def main():
         try:
             save_report(error, __file__, str(run_dir / "traceback.json"))
         except Exception:
-            pass
+            note_ignored("save_report after a watchdog error")
         if not (run_dir / "startup.json").exists():
             acknowledge(run_dir, status="failed", message=str(error))
         (run_dir / "watchdog-error.txt").write_text(

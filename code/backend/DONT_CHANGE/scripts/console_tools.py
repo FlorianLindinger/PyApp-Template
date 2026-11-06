@@ -6,6 +6,8 @@ import os
 import sys
 from typing import Any, TextIO
 
+from backend.DONT_CHANGE.scripts.diagnostics import note_ignored
+
 ANSI_WARN = "\x1b[1;37;41m"
 ANSI_SUCCESS = "\x1b[1;37;42m"
 ANSI_RESET = "\033[0m"
@@ -23,7 +25,7 @@ def enable_ansi() -> None:
             if kernel32.GetConsoleMode(handle, ctypes.byref(mode)):
                 kernel32.SetConsoleMode(handle, mode.value | 0x0004)  # ENABLE_VIRTUAL_TERMINAL_PROCESSING
     except Exception:
-        pass
+        note_ignored("enable_ansi")
 
 
 def show_console() -> None:
@@ -61,11 +63,6 @@ def print_success(msg: Any, sep: str | None = " ", end: str | None = "\n") -> No
         print(_styled(msg, ANSI_SUCCESS), sep=sep, end=end)
 
 
-def close_terminal(exit_code: Any = None) -> bool:
-    """Exit this script only. Its owning batch/console decides whether to close."""
-    raise SystemExit(exit_code)
-
-
 def set_terminal_title(title: str | None) -> None:
     """Set the Windows console title when supplied, ignoring unavailable console APIs."""
     if title is None:
@@ -77,7 +74,7 @@ def set_terminal_title(title: str | None) -> None:
         clean_name = title.replace("\r\n", "").replace("\r", "")
         ctypes.windll.kernel32.SetConsoleTitleW(clean_name)
     except Exception:
-        pass
+        note_ignored("set_terminal_title")
 
 
 def set_terminal_icon(icon_path: str | None) -> None:
@@ -180,7 +177,7 @@ def set_terminal_icon(icon_path: str | None) -> None:
         )
 
     except Exception:
-        pass
+        note_ignored("set_terminal_icon")
 
 
 def set_terminal_app_id(app_id: str) -> None:
@@ -188,217 +185,41 @@ def set_terminal_app_id(app_id: str) -> None:
 
     if not app_id:
         return
-
-    import ctypes
-    import uuid
-    from ctypes import wintypes
-
-    HRESULT = ctypes.c_long
-    VT_LPWSTR = 31
-    S_OK = 0
-    S_FALSE = 1
-    RPC_E_CHANGED_MODE = 0x80010106
-
-    def _helper_refresh_nonclient_area(hwnd: int) -> None:
-        """Run the helper refresh nonclient area step."""
-        user32_DLL = ctypes.WinDLL("user32", use_last_error=True)
-
-        SWP_NOMOVE = 0x0002
-        SWP_NOSIZE = 0x0001
-        SWP_NOZORDER = 0x0004
-        SWP_NOACTIVATE = 0x0010
-        SWP_FRAMECHANGED = 0x0020
-
-        user32_DLL.SetWindowPos(
-            hwnd,
-            None,
-            0,
-            0,
-            0,
-            0,
-            SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED,
-        )
-
-    class _GUID(ctypes.Structure):
-        """Represent a Windows GUID/UUID structure used by COM APIs."""
-
-        _fields_ = (
-            ("Data1", ctypes.c_ulong),
-            ("Data2", ctypes.c_ushort),
-            ("Data3", ctypes.c_ushort),
-            ("Data4", ctypes.c_ubyte * 8),
-        )
-
-    class _PROPERTYKEY(ctypes.Structure):
-        """Represent the COM property identifier consisting of a GUID and property number."""
-
-        _fields_ = (("fmtid", _GUID), ("pid", wintypes.DWORD))
-
-    class _PROPVARIANT(ctypes.Structure):
-        """Represent the string-valued PROPVARIANT passed to the Windows property store."""
-
-        _fields_ = (
-            ("vt", ctypes.c_ushort),
-            ("wReserved1", ctypes.c_ushort),
-            ("wReserved2", ctypes.c_ushort),
-            ("wReserved3", ctypes.c_ushort),
-            ("pwszVal", ctypes.c_wchar_p),
-        )
-
-    class _IPropertyStore(ctypes.Structure):
-        """Declare the COM property-store interface before its vtable is assigned."""
-
-    IPropertyStorePtr = ctypes.POINTER(_IPropertyStore)
-
-    class _IPropertyStoreVtbl(ctypes.Structure):
-        """Describe the native COM methods used to set the console taskbar identity."""
-
-        _fields_ = (
-            (
-                "QueryInterface",
-                ctypes.WINFUNCTYPE(
-                    HRESULT,
-                    IPropertyStorePtr,
-                    ctypes.POINTER(_GUID),
-                    ctypes.POINTER(ctypes.c_void_p),
-                ),
-            ),
-            ("AddRef", ctypes.WINFUNCTYPE(ctypes.c_ulong, IPropertyStorePtr)),
-            ("Release", ctypes.WINFUNCTYPE(ctypes.c_ulong, IPropertyStorePtr)),
-            (
-                "GetCount",
-                ctypes.WINFUNCTYPE(
-                    HRESULT, IPropertyStorePtr, ctypes.POINTER(wintypes.DWORD)
-                ),
-            ),
-            (
-                "GetAt",
-                ctypes.WINFUNCTYPE(
-                    HRESULT,
-                    IPropertyStorePtr,
-                    wintypes.DWORD,
-                    ctypes.POINTER(_PROPERTYKEY),
-                ),
-            ),
-            (
-                "GetValue",
-                ctypes.WINFUNCTYPE(
-                    HRESULT,
-                    IPropertyStorePtr,
-                    ctypes.POINTER(_PROPERTYKEY),
-                    ctypes.POINTER(_PROPVARIANT),
-                ),
-            ),
-            (
-                "SetValue",
-                ctypes.WINFUNCTYPE(
-                    HRESULT,
-                    IPropertyStorePtr,
-                    ctypes.POINTER(_PROPERTYKEY),
-                    ctypes.POINTER(_PROPVARIANT),
-                ),
-            ),
-            ("Commit", ctypes.WINFUNCTYPE(HRESULT, IPropertyStorePtr)),
-        )
-
-    _IPropertyStore._fields_ = [("lpVtbl", ctypes.POINTER(_IPropertyStoreVtbl))]
-
-    def _make_guid(value: str) -> _GUID:
-        """Build and return the guid."""
-        parsed = uuid.UUID(value)
-        return _GUID(
-            parsed.time_low,
-            parsed.time_mid,
-            parsed.time_hi_version,
-            (ctypes.c_ubyte * 8)(*parsed.bytes[8:]),
-        )
-
-    def _format_hresult(hr: int) -> str:
-        """Format a COM HRESULT as an unsigned hexadecimal code and Windows error message."""
-        code = hr & 0xFFFFFFFF
-        try:
-            message = ctypes.FormatError(code).strip()
-        except Exception:
-            message = "unknown error"
-        return f"0x{code:08X}: {message}"
-
-    def _check_hresult(hr: int, action: str) -> None:
-        """Raise OSError with the action and Windows message when a COM call fails."""
-        if hr < 0:
-            raise OSError(f"{action} failed with HRESULT {_format_hresult(hr)}")
-
     try:
+        import ctypes
+        from ctypes import wintypes
+
+        from backend.DONT_CHANGE.scripts import com_tools as com
+
         hwnd = int(ctypes.windll.kernel32.GetConsoleWindow() or 0)
         if not hwnd:
             return
-
         shell32 = ctypes.WinDLL("shell32", use_last_error=True)
-        ole32 = ctypes.WinDLL("ole32", use_last_error=True)
-
         shell32.SHGetPropertyStoreForWindow.argtypes = [
             wintypes.HWND,
-            ctypes.POINTER(_GUID),
-            ctypes.POINTER(IPropertyStorePtr),
+            ctypes.POINTER(com.GUID),
+            ctypes.POINTER(com.PropertyStorePointer),
         ]
-        shell32.SHGetPropertyStoreForWindow.restype = HRESULT
-
-        ole32.CoInitialize.argtypes = [ctypes.c_void_p]
-        ole32.CoInitialize.restype = HRESULT
-        ole32.CoUninitialize.argtypes = []
-        ole32.CoUninitialize.restype = None
-
-        iid_property_store = _make_guid("886D8EEB-8CF2-4446-8D02-CDBA1DBDCF99")
-        pkey_app_user_model_id = _PROPERTYKEY(
-            _make_guid("9F4C2855-9F79-4B39-A8D0-E1D42DE1D5F3"),
-            5,
-        )
-        prop_var = _PROPVARIANT()
-        prop_var.vt = VT_LPWSTR
-        prop_var.pwszVal = app_id
-
-        coinitialize_result = ole32.CoInitialize(None)
-        should_uninitialize = coinitialize_result in {S_OK, S_FALSE}
-        if (
-            coinitialize_result < 0
-            and (coinitialize_result & 0xFFFFFFFF) != RPC_E_CHANGED_MODE
-        ):
-            raise OSError(
-                f"CoInitialize failed with HRESULT {_format_hresult(coinitialize_result)}"
-            )
-
+        shell32.SHGetPropertyStoreForWindow.restype = com.HRESULT
+        should_uninitialize = com.co_initialize()
         try:
-            property_store = IPropertyStorePtr()
-            hr = shell32.SHGetPropertyStoreForWindow(
-                wintypes.HWND(hwnd),
-                ctypes.byref(iid_property_store),
-                ctypes.byref(property_store),
+            store = com.PropertyStorePointer()
+            com.check_hresult(
+                shell32.SHGetPropertyStoreForWindow(
+                    wintypes.HWND(hwnd), ctypes.byref(com.IID_PROPERTY_STORE), ctypes.byref(store)
+                ),
+                f"SHGetPropertyStoreForWindow for hwnd 0x{hwnd:016X}",
             )
-            _check_hresult(hr, f"SHGetPropertyStoreForWindow for hwnd 0x{hwnd:016X}")
-
-            try:
-                hr = property_store.contents.lpVtbl.contents.SetValue(
-                    property_store,
-                    ctypes.byref(pkey_app_user_model_id),
-                    ctypes.byref(prop_var),
-                )
-                _check_hresult(
-                    hr, f"SetValue System.AppUserModel.ID for hwnd 0x{hwnd:016X}"
-                )
-
-                hr = property_store.contents.lpVtbl.contents.Commit(property_store)
-                _check_hresult(
-                    hr, f"Commit System.AppUserModel.ID for hwnd 0x{hwnd:016X}"
-                )
-
-                _helper_refresh_nonclient_area(hwnd)
-            finally:
-                if property_store:
-                    property_store.contents.lpVtbl.contents.Release(property_store)
+            com.set_app_user_model_id(store, app_id)
         finally:
-            if should_uninitialize:
-                ole32.CoUninitialize()
+            com.co_uninitialize(should_uninitialize)
+        # Redraw the frame so the taskbar picks up the new identity.
+        SWP_NOSIZE, SWP_NOMOVE, SWP_NOZORDER, SWP_NOACTIVATE, SWP_FRAMECHANGED = 0x1, 0x2, 0x4, 0x10, 0x20
+        ctypes.WinDLL("user32", use_last_error=True).SetWindowPos(
+            hwnd, None, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED
+        )
     except Exception:
-        pass
+        note_ignored("set_terminal_app_id")
 
 
 def unminimize_terminal() -> None:
@@ -412,7 +233,7 @@ def unminimize_terminal() -> None:
             return
         ctypes.windll.user32.ShowWindow(hwnd, 9)  # 9 means unminimized
     except Exception:
-        pass
+        note_ignored("unminimize_terminal")
 
 
 def foreground_terminal() -> None:
@@ -426,7 +247,7 @@ def foreground_terminal() -> None:
             return
         ctypes.windll.user32.SetForegroundWindow(hwnd)
     except Exception:
-        pass
+        note_ignored("foreground_terminal")
 
 
 def enable_unminimize_and_foreground_terminal_on_first_print() -> None:
@@ -489,4 +310,4 @@ def set_terminal_colors(colors: str | None) -> None:
 
             subprocess.run(["cmd.exe", "/c", "color", colors], check=False)
         except Exception:
-            pass
+            note_ignored("set_terminal_colors")

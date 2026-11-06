@@ -1,17 +1,26 @@
 @echo off
 rem Sets PYAPP_UV (uv.exe) and PYAPP_PYTHON (the Python that runs the launcher) for the caller.
 rem No setlocal on purpose: the variables must reach the calling batch.
-rem Fast path: reuse tmp\runtime.cmd while developer_settings.py and backend\.python-version are unchanged
-rem and both executables still exist. Otherwise resolve_runtime.ps1 finds or installs uv and Python.
+rem Fast path: reuse tmp\runtime.cmd while this project folder, developer_settings.py and
+rem backend\.python-version are unchanged and both executables still exist. Otherwise
+rem resolve_runtime.ps1 finds or installs uv and Python.
+rem The stamp contains this folder's path (a copied project must not use the original's uv/Python)
+rem and the SHA-256 of developer_settings.py (file times only have minute resolution here).
 
-set "PYAPP_STAMP="
-for %%F in ("%~dp0..\..\developer_settings.py") do set "PYAPP_STAMP=%%~tF#%%~zF"
+set "PYAPP_STAMP_1="
+for /f "skip=1 delims=" %%H in ('certutil.exe -hashfile "%~dp0..\..\developer_settings.py" SHA256 2^>nul') do (
+    if not defined PYAPP_STAMP_1 set "PYAPP_STAMP_1=%%H"
+)
+if not defined PYAPP_STAMP_1 (
+    for %%F in ("%~dp0..\..\developer_settings.py") do set "PYAPP_STAMP_1=%%~tF#%%~zF"
+)
 if exist "%~dp0..\..\.python-version" (
     for %%F in ("%~dp0..\..\.python-version") do set "PYAPP_STAMP_2=%%~tF#%%~zF"
 ) else (
     set "PYAPP_STAMP_2=none"
 )
-set "PYAPP_STAMP=%PYAPP_STAMP%#%PYAPP_STAMP_2%"
+set "PYAPP_STAMP=%~dp0#%PYAPP_STAMP_1%#%PYAPP_STAMP_2%"
+set "PYAPP_STAMP_1="
 set "PYAPP_STAMP_2="
 set "PYAPP_CACHED_STAMP="
 
@@ -34,7 +43,16 @@ if not defined PYAPP_PYTHON (
 exit /b 0
 
 :load_cache
-rem The cache is UTF-8 so non-ASCII project paths survive; read it with code page 65001.
+rem The cache is UTF-8 and is read with code page 65001, unless its first line says it is
+rem plain ASCII (the usual case): then the three chcp calls are skipped.
+set "PYAPP_CACHE_HEAD="
+set /p PYAPP_CACHE_HEAD=<"%~dp0..\tmp\runtime.cmd"
+if "%PYAPP_CACHE_HEAD%"=="rem ascii" (
+    set "PYAPP_CACHE_HEAD="
+    call "%~dp0..\tmp\runtime.cmd"
+    exit /b 0
+)
+set "PYAPP_CACHE_HEAD="
 set "PYAPP_OLD_CP="
 for /f "tokens=2 delims=:." %%C in ('chcp') do set "PYAPP_OLD_CP=%%C"
 chcp 65001 >nul

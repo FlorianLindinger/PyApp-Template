@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import ctypes
 
+from backend.DONT_CHANGE.scripts.diagnostics import note_ignored
+
 MB_YESNO = 0x04
 MB_ICONINFORMATION = 0x40
 MB_ICONQUESTION = 0x20
@@ -44,7 +46,7 @@ def decide(policy: str, records: list, program_name: str) -> str:
                 if focus_instance(record) == "focused":
                     return "cancel"
             except Exception:
-                pass
+                note_ignored("focus_instance")
         question = running + "\n\nIt has no window to show. Close it and start again?"
         return "replace" if ask_yes_no(question, program_name) else "cancel"
     if policy == "ask":

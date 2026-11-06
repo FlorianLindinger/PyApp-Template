@@ -150,10 +150,9 @@ def process_identity(pid):
 class ProcessRegistry:
     """One atomic identity record per running launcher (watchdog)."""
 
-    def __init__(self, pid_path):
-        """Derive the registry directory from the configured PID indicator path."""
-        self.pid_path = Path(pid_path)
-        self.directory = Path(str(pid_path) + ".d")
+    def __init__(self, directory):
+        """directory holds one <pid>.json record per running watchdog."""
+        self.directory = Path(directory)
 
     @contextlib.contextmanager
     def lock(self, timeout=120):
@@ -171,7 +170,7 @@ class ProcessRegistry:
         kernel.WaitForSingleObject.restype = wintypes.DWORD
         kernel.ReleaseMutex.argtypes = [wintypes.HANDLE]
         kernel.CloseHandle.argtypes = [wintypes.HANDLE]
-        identity = os.path.normcase(os.path.realpath(self.pid_path))
+        identity = os.path.normcase(os.path.realpath(self.directory))
         name = (
             "Global\\PyAppTemplateRegistry-"
             + hashlib.sha256(identity.encode("utf-8")).hexdigest()
@@ -183,7 +182,7 @@ class ProcessRegistry:
         try:
             result = kernel.WaitForSingleObject(handle, int(timeout * 1000))
             if result == 258:
-                raise TimeoutError("Another launcher is busy: " + str(self.pid_path))
+                raise TimeoutError("Another launcher is busy: " + str(self.directory))
             # An abandoned mutex is acquired too; records are revalidated below.
             if result not in (0, 128):
                 raise ctypes.WinError(ctypes.get_last_error())
@@ -202,9 +201,14 @@ class ProcessRegistry:
             if child_pid is not None:
                 with process_identity(child_pid) as child:
                     identity["child"] = child
+            # The run folder lets Stop leave a "stop requested" note for this watchdog.
+            identity["run_dir"] = os.environ.get("PYAPP_RUN_DIR", "")
             try:
                 identity["console_hwnd"] = int(ctypes.windll.kernel32.GetConsoleWindow() or 0)
             except Exception:
+                from backend.DONT_CHANGE.scripts.diagnostics import note_ignored
+
+                note_ignored("register: console window handle")
                 identity["console_hwnd"] = 0
             atomic_json(self.directory / (str(os.getpid()) + ".json"), identity)
 
@@ -249,30 +253,101 @@ class ProcessRegistry:
             path.unlink(missing_ok=True)
         return records, stale
 
-    def stop(self):
-        """Terminate verified launcher trees directly, without a shutdown callback."""
+    def stop(self, timeout=0.0, report=None):
+        """Stop the running instances; returns (stopped, stale, failures).
+
+        With timeout > 0 each instance is first asked to close (WM_CLOSE to its windows, or
+        Ctrl+C for a console app) and gets that many seconds to end by itself, so it can save
+        its state. Whatever still runs afterwards is terminated with its process tree.
+        The registry lock is not held while waiting: an ending watchdog needs it to unregister.
+        report(text) receives progress messages.
+        """
+        records, stale = self.records()
+        if not records:
+            return 0, stale, []
+        if timeout and timeout > 0:
+            if report:
+                report(f"[Info] Asking {len(records)} instance(s) to close (up to {timeout:g} s)...")
+            for record in records:
+                request_close(record)
+            deadline = time.monotonic() + timeout
+            while time.monotonic() < deadline and any(_still_running(r) for r in records):
+                time.sleep(0.1)
         stopped, failures = 0, []
         with self.lock():
-            records, stale = self.records()
             for record in records:
+                path = self.directory / (str(record["pid"]) + ".json")
                 with process_identity(record["pid"]) as current:
                     if not matches_identity(record, current):
-                        stale += 1
-                        (self.directory / (str(record["pid"]) + ".json")).unlink(
-                            missing_ok=True
-                        )
+                        stopped += 1  # it closed by itself
+                        path.unlink(missing_ok=True)
                         continue
+                    if report and timeout and timeout > 0:
+                        report(f"[Info] PID {record['pid']} did not close in time; terminating it.")
+                    _write_stop_request(record)
                     try:
                         # The verified root handle stays open while the tree is terminated.
                         terminate_tree(record["pid"])
                         stopped += 1
-                        (self.directory / (str(record["pid"]) + ".json")).unlink(
-                            missing_ok=True
-                        )
+                        path.unlink(missing_ok=True)
                     except (OSError, RuntimeError) as error:
                         failures.append(str(error))
             self._cleanup_empty()
         return stopped, stale, failures
+
+
+def _still_running(record) -> bool:
+    with process_identity(record["pid"]) as current:
+        return matches_identity(record, current)
+
+
+def _write_stop_request(record) -> None:
+    """Tell the instance's watchdog that its end was requested (no completion actions)."""
+    from backend.DONT_CHANGE.backend_settings import STOP_REQUEST_FILE_NAME
+
+    run_dir = record.get("run_dir")
+    if run_dir and os.path.isdir(run_dir):
+        try:
+            Path(run_dir, STOP_REQUEST_FILE_NAME).write_text("stop", encoding="utf-8")
+        except OSError:
+            from backend.DONT_CHANGE.scripts.diagnostics import note_ignored
+
+            note_ignored("write stop request")
+
+
+def request_close(record) -> None:
+    """Ask one instance to end by itself: WM_CLOSE to its app windows, else Ctrl+C to its console."""
+    import subprocess
+    import sys
+
+    from backend.DONT_CHANGE.backend_settings import CTRL_C_HELPER_PATH
+    from backend.DONT_CHANGE.scripts.diagnostics import note_ignored
+    from backend.DONT_CHANGE.scripts.windows_focus import app_windows, process_tree
+
+    _write_stop_request(record)
+    child = record.get("child") if isinstance(record.get("child"), dict) else None
+    child_pid = None
+    if child:
+        with process_identity(child.get("pid") or 0) as current:
+            if matches_identity(child, current):
+                child_pid = child["pid"]
+    try:
+        windows = app_windows(process_tree([child_pid])) if child_pid else []
+        if windows:
+            user32 = ctypes.WinDLL("user32", use_last_error=True)
+            for hwnd in windows:
+                user32.PostMessageW(hwnd, 0x0010, 0, 0)  # WM_CLOSE, like clicking the window's X
+            return
+        # No window: a console app. Ctrl+C reaches every process of the instance's console; its
+        # watchdog ignores it while the app runs. DETACHED_PROCESS: the helper has no console yet.
+        subprocess.run(
+            [sys.executable, "-I", "-S", CTRL_C_HELPER_PATH, str(child_pid or record["pid"])],
+            creationflags=0x00000008,
+            timeout=10,
+            check=False,
+        )
+    except Exception:
+        note_ignored("request_close")
 
 
 def terminate_tree(root_pid):

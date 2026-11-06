@@ -1,4 +1,4 @@
-"""Render traceback reports (runtime/protocol.py) as plain or ANSI-colored text.
+"""Render traceback reports (runtime/_pyapp.py) as plain or ANSI-colored text.
 
 Frames of your own code get a few lines of context; library frames look like CPython's.
 """
