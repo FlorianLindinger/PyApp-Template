@@ -30,7 +30,6 @@ SHORTCUT_OUTPUT_DIR = make_abs("..\\..\\..")         # repository root
 TEMPORARY_DIR = DONT_CHANGE_DIR + "\\tmp"
 SCRIPTS_DIR = DONT_CHANGE_DIR + "\\scripts"
 APP_ACTIONS_DIR = DONT_CHANGE_DIR + "\\actions"
-BOOTSTRAP_DIR = DONT_CHANGE_DIR + "\\bootstrap"
 ENTRY_BATCHES_DIR = DONT_CHANGE_DIR + "\\B"        # short shortcut targets
 DATA_DIR = DONT_CHANGE_DIR + "\\data"
 WINDOWS_DIR = os.environ.get("WINDIR", "C:\\Windows")
@@ -53,17 +52,22 @@ VENV_DIR = PROJECT_DIR + "\\.venv"
 VENV_PYTHON_EXE = VENV_DIR + "\\Scripts\\python.exe"
 RUNTIME_CACHE_PATH = TEMPORARY_DIR + "\\runtime.cmd"   # written by bootstrap/resolve_runtime.ps1
 ENVIRONMENT_LOCK_PATH = TEMPORARY_DIR + "\\environment.lock"
+# Written after a successful environment check; while it matches, launches skip the uv checks.
+ENVIRONMENT_STAMP_PATH = TEMPORARY_DIR + "\\environment.ok"
+# Errors the launcher ignores on purpose (cosmetic steps), see scripts/diagnostics.py.
+DIAGNOSTICS_LOG_PATH = TEMPORARY_DIR + "\\diagnostics.log"
 MINIMUM_PYTHON = (3, 8)                             # oldest Python the launcher code supports
 
 # ------------------------
 # scripts
 
+ENTRYPOINT_PATH = SCRIPTS_DIR + "\\entrypoint.py"        # runs every tool: entrypoint.py <tool.py> [args]
 START_PROGRAM_PATH = APP_ACTIONS_DIR + "\\start_program.py"
 MAIN_PY_SCRIPT_PATH = PYTHON_SCRIPTS_DIR + "\\main.py"
 WATCHDOG_PATH = DONT_CHANGE_DIR + "\\runtime\\background_watchdog.py"
 PROCESS_EXIT_PATH = DONT_CHANGE_DIR + "\\runtime\\process_exit.py"
-FRONTEND_SCRIPT_WRAPPER_PATH = DONT_CHANGE_DIR + "\\runtime\\script_wrapper.py"
-DEV_TOOLS_SCRIPT_PATH = SCRIPTS_DIR + "\\dev_tools.py"
+SCRIPT_WRAPPER_PATH = DONT_CHANGE_DIR + "\\runtime\\script_wrapper.py"
+CTRL_C_HELPER_PATH = DONT_CHANGE_DIR + "\\runtime\\send_ctrl_c.py"
 
 # ------------------------
 # shortcut launchers
@@ -94,7 +98,7 @@ FAILURE_ICON_PATH = ICON_DIR + "\\failure.ico"
 CRASH_ICON_PATH = ICON_DIR + "\\crash.ico"
 CRASH_LOG_ICON_PATH = ICON_DIR + "\\crash_log.ico"
 OPEN_MAIN_PY_ICON_PATH = ICON_DIR + "\\open_main_py.ico"
-KEYBOARD_INTERRUPT_ICON_PATH = ICON_DIR + "\\keyboardInterrupt.ico"
+KEYBOARD_INTERRUPT_ICON_PATH = ICON_DIR + "\\keyboard_interrupt.ico"
 
 ICON_PNG_DIR = ICON_DIR
 ICON_FALLBACK_PNG_DIR = DONT_CHANGE_DIR + "\\icon_related"
@@ -114,20 +118,21 @@ ICON_GENERATION_SETTINGS = [
     (CRASH_ICON_PATH, *_base, "crash.png", "512x512:d2dd80f5", "default_crash.png"),
     (CRASH_LOG_ICON_PATH, *_base, "crash_log.png", "512x512:99dee2ae", "default_crash_log.png"),
     (OPEN_MAIN_PY_ICON_PATH, *_base, "open_main_py.png", "512x512:3bd1b4b4", "default_open_main_py.png"),
-    (KEYBOARD_INTERRUPT_ICON_PATH, *_base, "keyboardInterrupt.png", "512x512:0c4eac7f", "default_keyboardInterrupt.png"),
+    (KEYBOARD_INTERRUPT_ICON_PATH, *_base, "keyboard_interrupt.png", "512x512:0c4eac7f", "default_keyboard_interrupt.png"),
 ]
 
 # ------------------------
 # generated process state
 
-# UPDATE root .gitignore's *.pid rules if parent/suffix changes.
-PROCESS_ID_FILE_PATH = PYTHON_SCRIPTS_DIR + "\\_CURRENTLY_RUNNING_.pid"
+# One identity record (JSON) per running watchdog; see runtime_state.ProcessRegistry.
+PROCESS_REGISTRY_DIR = TEMPORARY_DIR + "\\running"
 RUNS_DIR = TEMPORARY_DIR + "\\runs"
+# Written into a run's folder by Stop/"replace"; the watchdog then ends without completion actions.
+STOP_REQUEST_FILE_NAME = "stop-requested"
 
 # ------------------------
 # dev tools and data
 
-DEV_TOOLS_DIR = BACKEND_DIR + "\\dev_tools"
 EXPORTED_REQUIREMENTS_PATH = PROJECT_DIR + "\\requirements.txt"
 IMPORT_MAPPING_PATH = DATA_DIR + "\\import_to_package.txt"
 
@@ -140,7 +145,7 @@ DEFAULT_SOUND_AFTER_CRASH = WINDOWS_DIR + "\\Media\\Windows Critical Stop.wav"
 DEFAULT_SOUND_AFTER_FAILURE = WINDOWS_DIR + "\\Media\\Windows Critical Stop.wav"
 DEFAULT_SOUND_AFTER_SUCCESS = WINDOWS_DIR + "\\Media\\notify.wav"
 # Ctrl+C has no default sound; an explicit WAV can still be configured per app.
-DEFAULT_SOUND_AFTER_KeyboardInterrupt = ""
+DEFAULT_SOUND_AFTER_KEYBOARD_INTERRUPT = ""
 
 # Explorer visibility only; this does not control .gitignore or Git tracking.
 FOLDERS_TO_MAKE_HIDDEN_IN_SHORTCUT_AND_ROOT_FOLDERS = [
@@ -151,9 +156,10 @@ FOLDERS_TO_MAKE_HIDDEN_IN_SHORTCUT_AND_ROOT_FOLDERS = [
     ".ruff_cache",
     "__pycache__",
 ]
-# Import-finder scan exclusions (folder names anywhere below the code folder).
+# Import-finder scan exclusions (folder names anywhere below the code folder; folders starting
+# with "." are always skipped). The launcher's own backend folder is skipped only directly in
+# the code folder, so an app subpackage that happens to be named "backend" is still scanned.
 EXCLUDED_FOLDERS_FOR_IMPORT_SEARCH = [
-    os.path.basename(BACKEND_DIR),
     "__pycache__",
     ".git",
     ".hg",

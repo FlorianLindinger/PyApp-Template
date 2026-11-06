@@ -1,6 +1,7 @@
 @echo off
 setlocal EnableExtensions DisableDelayedExpansion
-rem Runs %PYAPP_ENTRY_SCRIPT% with the launcher Python. -I -S: standard library only,
+rem Runs %PYAPP_ENTRY_SCRIPT% (a tool with a main() function) through scripts\entrypoint.py,
+rem which applies the shared error and exit policy, with the launcher Python. -I -S: standard library only,
 rem so application packages can never break the launcher itself. -X utf8: output and
 rem files use UTF-8, so non-ASCII project paths also work when output is redirected.
 if not defined PYAPP_ENTRY_SCRIPT (
@@ -10,7 +11,7 @@ if not defined PYAPP_ENTRY_SCRIPT (
 if not defined PYAPP_START_DIR set "PYAPP_START_DIR=%CD%"
 call "%~dp0ensure_runtime.bat"
 if errorlevel 1 goto bootstrap_failed
-"%PYAPP_PYTHON%" -I -S -X utf8 "%PYAPP_ENTRY_SCRIPT%" %*
+"%PYAPP_PYTHON%" -I -S -X utf8 "%~dp0..\scripts\entrypoint.py" "%PYAPP_ENTRY_SCRIPT%" %*
 exit /b %ERRORLEVEL%
 
 :bootstrap_failed

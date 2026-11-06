@@ -24,6 +24,9 @@ Start with the GUI example in `code/main.py`, then replace it with your own code
    created on the first run and pin the exact Python and package versions.
 
 Run Setup again after moving or renaming the project folder: it refreshes the shortcuts.
+Each copy of the project gets its own taskbar group, so two copies (or two apps made from
+this template) never mix their windows or pinned shortcuts. After a move, pin the new
+shortcut again.
 The Python environment itself adapts to a new location automatically.
 
 ---
@@ -37,8 +40,9 @@ shortcut ─▶ B\W.bat / B\N.bat ─▶ bootstrap\ensure_runtime.bat
                                       find/install uv, find/install Python with uv
            ─▶ start_program.py  (runs on the project's Python with -I -S: standard library only)
                 │  validates settings, applies instance_policy, generates pyproject.toml from
-                │  developer_settings.py, keeps uv.lock and backend\.venv in sync (uv lock / uv sync)
-                └▶ watchdog.py ─▶ script_wrapper.py ─▶ code\main.py (in backend\.venv)
+                │  developer_settings.py, keeps uv.lock and backend\.venv in sync (uv lock / uv sync;
+                │  skipped while nothing changed since the last successful start)
+                └▶ background_watchdog.py ─▶ script_wrapper.py ─▶ code\main.py (in backend\.venv)
                                           └▶ process_exit.py (sounds, crash log, recovery menu)
 ```
 
@@ -98,9 +102,9 @@ The tools in `code/backend/dev_tools` (or `Dev Menu.cmd` for all of them) edit `
 | `find_imports.cmd` | find the packages your code imports (offline), review them, add the missing ones |
 | `package_terminal.cmd` | command prompt with the environment activated and uv on PATH |
 | `change_python.cmd` / `update_python.cmd` | switch Python version / newest patch (and newest minor for `python_version = ""`) |
-| `make_portable.cmd` | put uv, Python and all packages into this folder and offer the settings changes to use them |
+| `make_portable.cmd` | put uv, Python and all packages into this folder and switch the settings to them (asks first) |
 | `export_requirements.cmd` | write `code/backend/requirements.txt` from `uv.lock` |
-| `status.cmd` | show uv, Python, environment, lock and shortcut state |
+| `status.cmd` | show uv, Python, environment, lock and shortcut state and errors the launcher ignored |
 | `clean.cmd` | delete logs, crash logs or per-run diagnostics |
 | `remove_shortcuts.cmd` | remove every shortcut Setup created (project folder, Start Menu, Desktop) |
 
@@ -108,7 +112,7 @@ See [code/backend/dev_tools/README.md](code/backend/dev_tools/README.md) for det
 
 ### Portable/offline distribution
 
-Run `make_portable.cmd`, accept the suggested settings (`uv_prefer`/`uv_install_if_missing`
+Run `make_portable.cmd` and accept the settings it shows (`uv_prefer`/`uv_install_if_missing`
 = `"local"`, `python_source = "local"`, `package_environment = "project_venv"`), optionally
 set `allow_downloads_at_launch = False`, and copy the whole folder. On another PC or in
 another location the environment is re-linked to the copied Python automatically
@@ -122,12 +126,23 @@ Setup creates the enabled shortcuts in the project folder, a Start Menu folder
 (`start_menu_shortcuts`) and optionally on the Desktop (`desktop_shortcuts`, e.g.
 `["no_terminal"]`). It remembers what it created (`code/backend/shortcuts_created_by_setup.json`)
 and removes shortcuts that are no longer wanted, e.g. after renaming one. Shortcuts of
-other copies of the project are never removed.
+other copies of the project are never removed. Existing shortcuts are replaced only by a
+complete new one.
+
+The Logs, Crash Logs, Settings and Edit-main.py shortcuts open their folder or file directly,
+without starting Python (main.py and the settings file open in VS Code if installed, else
+Notepad). They store the location Setup resolved, so run Setup again after changing
+`log_path`, `crash_log_path` or `user_settings_path`; each start reminds you if they differ.
 
 `instance_policy` decides what happens when the app is started while it already runs:
 `"allow"`, `"focus"` (bring the running window to the front; asks to replace an instance
-without a window), `"prevent"`, `"replace"` or `"ask"`. The Stop shortcut terminates
-verified app process trees directly (no WMI/taskkill, so it also works where those are broken).
+without a window), `"prevent"`, `"replace"` or `"ask"`.
+
+The Stop shortcut (and replacing an instance) first asks the app to close, like clicking
+its window's X (a console app gets Ctrl+C), so it can save its work, and then waits up to
+`stop_timeout_seconds`. Whatever still runs after that is terminated with its process tree
+(Win32 API, no WMI/taskkill, so it also works where those are broken). A stopped run ends
+without completion sounds, menus or prompts.
 
 ---
 
@@ -136,14 +151,22 @@ verified app process trees directly (no WMI/taskkill, so it also works where tho
 Each run gets unique log names. The normal UTF-8 log contains your prints and inputs with
 optional time prefixes; the `.output.log` companion captures raw output including native
 and child-process output. Logging turns stdout/stderr into pipes, so disable terminal
-logging (`enable_log_for_Windows_terminal_start`) if your app needs a real console.
-Old logs and run diagnostics are pruned (`max_log_files`, `max_run_folder_age_days`).
+logging (`enable_log_for_terminal_start`) if your app needs a real console.
+Old logs and run diagnostics are pruned (`max_log_files` counts runs: a log and its
+`.output.log` are kept or deleted together; `max_run_folder_age_days`).
 
 Crash reports and terminal tracebacks look exactly like running `python main.py`
 (launcher frames are removed), including exception chains, notes and exception groups,
 plus `traceback_extra_lines` lines of context around your own code and optional colors.
 
 A missing module offers: add the package to the project, install it without recording,
+find all imports of the project and add the missing ones, or open a package terminal; the
+app then restarts. If the missing import is one of your own modules, it says so instead.
+
+Mistakes in `developer_settings.py` (wrong values, typos such as `Ture`, syntax errors) are
+reported with the setting name or line number instead of a traceback. Errors of cosmetic
+launcher steps (window icon, colors, focus, ...) never stop the app; they are recorded in
+`code/backend/DONT_CHANGE/tmp/diagnostics.log` (see `status.cmd`).
 
 ---
 

@@ -2,20 +2,6 @@
 
 from __future__ import annotations
 
-if __name__ == "__main__":
-    import sys
-    from pathlib import Path
-
-    code_dir = next(
-        parent
-        for parent in Path(__file__).resolve().parents
-        if (parent / "backend" / "DONT_CHANGE").is_dir()
-    )
-    sys.path.insert(0, str(code_dir))
-    from backend.DONT_CHANGE.scripts.entrypoint import run_file
-
-    raise SystemExit(run_file(__file__))
-
 import ctypes
 import hashlib
 import json
@@ -26,13 +12,9 @@ import unicodedata
 import uuid
 from ctypes import wintypes
 
-from backend.DONT_CHANGE.scripts.config import settings, validate
-from backend.DONT_CHANGE.scripts.filesystem_tools import (
-    make_abs_path_relative_to_file,
-    sanitize_filename,
-)
 from backend.DONT_CHANGE.backend_settings import (
     CRASH_LOG_ICON_PATH,
+    CREATED_SHORTCUTS_LIST_PATH,
     DEV_SETTINGS_PATH,
     ENTRY_BATCHES_DIR,
     ICON_PATH,
@@ -44,13 +26,19 @@ from backend.DONT_CHANGE.backend_settings import (
     LAUNCHER_STOP,
     LAUNCHER_TERMINAL,
     LOG_ICON_PATH,
+    MAIN_PY_SCRIPT_PATH,
     NO_TERMINAL_APP_ID_SUFFIX,
     OPEN_MAIN_PY_ICON_PATH,
     SETTINGS_ICON_PATH,
-    CREATED_SHORTCUTS_LIST_PATH,
     SHORTCUT_OUTPUT_DIR,
     SHORTCUT_SIGNATURE,
     STOP_ICON_PATH,
+)
+from backend.DONT_CHANGE.scripts import com_tools as com
+from backend.DONT_CHANGE.scripts.config import settings, validate
+from backend.DONT_CHANGE.scripts.filesystem_tools import (
+    make_abs_path_relative_to_file,
+    sanitize_filename,
 )
 
 
@@ -81,40 +69,16 @@ def generate_shortcut(
     """
     if start_minimized and (not classic_terminal):
         raise ValueError("A minimized shortcut requires classic_terminal=True")
-    _hresult = ctypes.c_long
-    _method = getattr(ctypes, "WINFUNCTYPE", ctypes.CFUNCTYPE)
-    _unused_method = ctypes.c_void_p
-
-    class _Guid(ctypes.Structure):
-        """Represent a native Windows GUID for shortcut COM calls."""
-
-        _fields_ = (
-            ("Data1", wintypes.DWORD),
-            ("Data2", wintypes.WORD),
-            ("Data3", wintypes.WORD),
-            ("Data4", wintypes.BYTE * 8),
-        )
-
-    class _PropertyKey(ctypes.Structure):
-        """Identify a Windows shortcut property by its format GUID and numeric ID."""
-
-        _fields_ = (("fmtid", _Guid), ("pid", wintypes.DWORD))
-
-    class _PropVariant(ctypes.Structure):
-        """Hold a string-valued COM variant for the shortcut's taskbar identity."""
-
-        _fields_ = (
-            ("vt", ctypes.c_ushort),
-            ("reserved1", ctypes.c_ushort),
-            ("reserved2", ctypes.c_ushort),
-            ("reserved3", ctypes.c_ushort),
-            ("string_value", ctypes.c_wchar_p),
-        )
+    _hresult = com.HRESULT
+    _method = com.METHOD
+    _unused_method = com.UNUSED_METHOD
+    _Guid = com.GUID
+    _guid = com.guid
+    _check_hresult = com.check_hresult
 
     class _ShellLink(ctypes.Structure):
         """Declare the native shell-link interface before assigning its method table."""
 
-        pass
 
     _shell_link_pointer = ctypes.POINTER(_ShellLink)
 
@@ -167,7 +131,6 @@ def generate_shortcut(
     class _PersistFile(ctypes.Structure):
         """Declare the COM persistence interface used to save shortcut files."""
 
-        pass
 
     _persist_file_pointer = ctypes.POINTER(_PersistFile)
 
@@ -201,88 +164,20 @@ def generate_shortcut(
 
     _PersistFile._fields_ = [("vtable", ctypes.POINTER(_PersistFileVTable))]
 
-    class _PropertyStore(ctypes.Structure):
-        """Declare the COM interface used to store shortcut properties."""
-
-        pass
-
-    _property_store_pointer = ctypes.POINTER(_PropertyStore)
-
-    class _PropertyStoreVTable(ctypes.Structure):
-        """Describe the COM property-store methods used to persist the app identity."""
-
-        _fields_ = (
-            (
-                "QueryInterface",
-                _method(
-                    _hresult,
-                    _property_store_pointer,
-                    ctypes.POINTER(_Guid),
-                    ctypes.POINTER(ctypes.c_void_p),
-                ),
-            ),
-            ("AddRef", _unused_method),
-            ("Release", _method(ctypes.c_ulong, _property_store_pointer)),
-            ("GetCount", _unused_method),
-            ("GetAt", _unused_method),
-            ("GetValue", _unused_method),
-            (
-                "SetValue",
-                _method(
-                    _hresult,
-                    _property_store_pointer,
-                    ctypes.POINTER(_PropertyKey),
-                    ctypes.POINTER(_PropVariant),
-                ),
-            ),
-            ("Commit", _method(_hresult, _property_store_pointer)),
-        )
-
-    _PropertyStore._fields_ = [("vtable", ctypes.POINTER(_PropertyStoreVTable))]
-
-    def _guid(value: str) -> _Guid:
-        """Convert a UUID string to the native GUID structure expected by Windows COM."""
-        parsed = uuid.UUID(value)
-        return _Guid(
-            parsed.time_low,
-            parsed.time_mid,
-            parsed.time_hi_version,
-            (wintypes.BYTE * 8)(*parsed.bytes[8:]),
-        )
-
-    def _check_hresult(result: int, action: str) -> None:
-        """Raise OSError with the failed COM action and formatted Windows error code."""
-        if result >= 0:
-            return
-        code = result & 4294967295
-        try:
-            message = ctypes.FormatError(code).strip()
-        except Exception:
-            message = "unknown error"
-        raise OSError(f"{action} failed with HRESULT 0x{code:08X}: {message}")
-
-    def _wait_for_file(output_path: str, should_exist: bool) -> None:
-        """Wait for shortcut creation or retry its deletion, reporting failure after five seconds."""
+    def _move_into_place(temporary_path: str, output_path: str) -> None:
+        """Replace the shortcut in one step; retry for five seconds while Explorer holds it open."""
         timeout = 5.0
         deadline = time.monotonic() + timeout
-        last_error = None
-        while os.path.exists(output_path) != should_exist:
-            if not should_exist:
-                try:
-                    os.remove(output_path)
-                except FileNotFoundError:
-                    return
-                except OSError as error:
-                    last_error = error
-            if os.path.exists(output_path) == should_exist:
+        while True:
+            try:
+                os.replace(temporary_path, output_path)
                 return
-            if time.monotonic() >= deadline:
-                action = "create" if should_exist else "delete existing"
-                detail = f" Last Windows error: {last_error}" if last_error else ""
-                raise RuntimeError(
-                    f'Failed to {action} shortcut within {timeout:.1f} seconds: "{output_path}".{detail}'
-                )
-            time.sleep(0.1)
+            except OSError as error:
+                if time.monotonic() >= deadline:
+                    raise RuntimeError(
+                        f'Failed to replace the shortcut within {timeout:.1f} seconds: "{output_path}". Windows error: {error}'
+                    ) from error
+                time.sleep(0.1)
 
     def _quote(value: str | os.PathLike[str]) -> str:
         """Quote one filesystem argument for the command string stored in a shortcut."""
@@ -291,8 +186,6 @@ def generate_shortcut(
     _shell_link_class_id = _guid("00021401-0000-0000-C000-000000000046")
     _shell_link_interface_id = _guid("000214F9-0000-0000-C000-000000000046")
     _persist_file_interface_id = _guid("0000010B-0000-0000-C000-000000000046")
-    _property_store_interface_id = _guid("886D8EEB-8CF2-4446-8D02-CDBA1DBDCF99")
-    _app_id_key = _PropertyKey(_guid("9F4C2855-9F79-4B39-A8D0-E1D42DE1D5F3"), 5)
     output_path = os.path.abspath(
         os.path.join(output_dir, _shortcut_filename(os.fspath(shortcut_name)))
     )
@@ -311,12 +204,9 @@ def generate_shortcut(
     description = "" if description is None else os.fspath(description)
     print(f"[Info] Creating: {output_path}")
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
-    _wait_for_file(output_path, should_exist=False)
+    # Saved under a temporary name first: an existing shortcut is only replaced by a complete one.
+    temporary_path = os.path.join(os.path.dirname(output_path), f"~{uuid.uuid4().hex[:8]}.tmp.lnk")
     ole32 = ctypes.WinDLL("ole32", use_last_error=True)
-    ole32.CoInitialize.argtypes = [ctypes.c_void_p]
-    ole32.CoInitialize.restype = _hresult
-    ole32.CoUninitialize.argtypes = []
-    ole32.CoUninitialize.restype = None
     ole32.CoCreateInstance.argtypes = [
         ctypes.POINTER(_Guid),
         ctypes.c_void_p,
@@ -325,10 +215,7 @@ def generate_shortcut(
         ctypes.POINTER(ctypes.c_void_p),
     ]
     ole32.CoCreateInstance.restype = _hresult
-    result = ole32.CoInitialize(None)
-    should_uninitialize = result in (0, 1)
-    if result < 0 and result & 4294967295 != 2147549446:
-        _check_hresult(result, "CoInitialize")
+    should_uninitialize = com.co_initialize()
     try:
         shell_link_pointer = ctypes.c_void_p()
         result = ole32.CoCreateInstance(
@@ -369,29 +256,13 @@ def generate_shortcut(
                 property_store_pointer = ctypes.c_void_p()
                 result = interface.QueryInterface(
                     shell_link,
-                    ctypes.byref(_property_store_interface_id),
+                    ctypes.byref(com.IID_PROPERTY_STORE),
                     ctypes.byref(property_store_pointer),
                 )
                 _check_hresult(result, "QueryInterface(IPropertyStore)")
-                property_store = ctypes.cast(
-                    property_store_pointer, _property_store_pointer
+                com.set_app_user_model_id(
+                    ctypes.cast(property_store_pointer, com.PropertyStorePointer), app_id
                 )
-                try:
-                    app_id_value = _PropVariant()
-                    app_id_value.vt = 31
-                    app_id_value.string_value = app_id
-                    result = property_store.contents.vtable.contents.SetValue(
-                        property_store,
-                        ctypes.byref(_app_id_key),
-                        ctypes.byref(app_id_value),
-                    )
-                    _check_hresult(result, "SetValue(System.AppUserModel.ID)")
-                    _check_hresult(
-                        property_store.contents.vtable.contents.Commit(property_store),
-                        "Commit(IPropertyStore)",
-                    )
-                finally:
-                    property_store.contents.vtable.contents.Release(property_store)
             persist_file_pointer = ctypes.c_void_p()
             result = interface.QueryInterface(
                 shell_link,
@@ -402,39 +273,40 @@ def generate_shortcut(
             persist_file = ctypes.cast(persist_file_pointer, _persist_file_pointer)
             try:
                 result = persist_file.contents.vtable.contents.Save(
-                    persist_file, output_path, True
+                    persist_file, temporary_path, True
                 )
                 _check_hresult(result, f'Save shortcut "{output_path}"')
             finally:
                 persist_file.contents.vtable.contents.Release(persist_file)
         finally:
             shell_link.contents.vtable.contents.Release(shell_link)
+        _move_into_place(temporary_path, output_path)
     finally:
-        if should_uninitialize:
-            ole32.CoUninitialize()
-    _wait_for_file(output_path, should_exist=True)
+        com.co_uninitialize(should_uninitialize)
+        if os.path.exists(temporary_path):
+            os.remove(temporary_path)
     return output_path
 
 
-def _sanitize_app_id(value: str) -> str:
-    """Return a stable compact taskbar identity, including non-Latin and long app names."""
+def project_app_id(program_name: str, project_dir: str = SHORTCUT_OUTPUT_DIR) -> str:
+    """Taskbar identity (AppUserModelID) of this copy of the project.
+
+    The readable program name plus a hash of name and project folder: copies of the project in
+    other folders, and other apps that kept the template's name, get their own taskbar group
+    and pinned shortcut. After moving the folder, Setup creates shortcuts with the new identity
+    (shortcuts pinned to the taskbar before must be pinned again; their old path is gone anyway).
+    """
     name = (
-        unicodedata.normalize("NFKD", value)
+        unicodedata.normalize("NFKD", program_name)
         .encode("ascii", "ignore")
         .decode("ascii")
         .lower()
     )
-    name = re.sub("[\\s_]+", "-", name)
-    name = re.sub("[^a-z0-9.-]", "", name)
-    name = re.sub("-+", "-", name)
-    name = re.sub("\\.+", ".", name)
-    name = name.strip("-.")
-    digest = hashlib.sha256(value.encode("utf-8")).hexdigest()
-    if not name:
-        return "pyapp-" + digest[:9]
-    if len(name) > 15:
-        return name[:7] + "-" + digest[:7]
-    return name
+    name = re.sub("[\\s_.]+", "-", name)
+    name = re.sub("[^a-z0-9-]", "", name)
+    name = re.sub("-+", "-", name).strip("-")[:40] or "pyapp"
+    key = program_name + "|" + os.path.normcase(os.path.abspath(project_dir))
+    return name + "." + hashlib.sha256(key.encode("utf-8")).hexdigest()[:10]
 
 
 def _shortcut_filename(name: str) -> str:
@@ -480,17 +352,23 @@ def is_generated_shortcut(path: str) -> bool:
     return False
 
 
-def read_created_shortcuts() -> list:
+def _read_created_shortcuts_file() -> dict:
     try:
         with open(CREATED_SHORTCUTS_LIST_PATH, encoding="utf-8") as stream:
-            return list(json.load(stream).get("shortcuts", []))
-    except (OSError, ValueError, AttributeError):
-        return []
+            data = json.load(stream)
+        return data if isinstance(data, dict) else {}
+    except (OSError, ValueError):
+        return {}
 
 
-def write_created_shortcuts(paths: list) -> None:
+def read_created_shortcuts() -> list:
+    return list(_read_created_shortcuts_file().get("shortcuts", []))
+
+
+def write_created_shortcuts(paths: list, targets: dict | None = None) -> None:
+    """Record the created .lnk files (to remove stale ones later) and the targets they open."""
     with open(CREATED_SHORTCUTS_LIST_PATH, "w", encoding="utf-8") as stream:
-        json.dump({"version": 1, "shortcuts": sorted(set(paths))}, stream, indent=2)
+        json.dump({"version": 2, "shortcuts": sorted(set(paths)), "targets": targets or {}}, stream, indent=2)
 
 
 def remove_shortcuts(paths, keep=()) -> list:
@@ -516,39 +394,72 @@ def remove_shortcuts(paths, keep=()) -> list:
     return removed
 
 
-def shortcut_definitions(s, app_id: str) -> list:
+def shortcut_targets(s) -> dict:
+    """Folder/file each "open" shortcut passes to its B\\*.bat, which then opens it without Python.
+
+    "" means the target can only be resolved at click time (a path relative to the start folder
+    or with date codes in the folder part); the B\\*.bat then runs the Python action instead.
+    """
+    from backend.DONT_CHANGE.scripts.launcher_ui import get_log_folder_path
+
+    targets = {"main_py": MAIN_PY_SCRIPT_PATH, "settings": ""}
+    for kind, path, relative in (
+        ("logs", s.log_path, s.log_path_is_relative_to_start_folder_if_relative),
+        ("crash_logs", s.crash_log_path, s.crash_log_path_is_relative_to_start_folder_if_relative),
+    ):
+        fixed_folder = path and not relative and "%" not in os.path.dirname(path)
+        targets[kind] = (get_log_folder_path(path, False) or "") if fixed_folder else ""
+    if s.user_settings_path:
+        targets["settings"] = make_abs_path_relative_to_file(s.user_settings_path, DEV_SETTINGS_PATH)
+    return targets
+
+
+def shortcut_definitions(s, app_id: str, targets: dict) -> list:
     """(kind, name, icon, launcher, args, app_id, description) for every enabled shortcut."""
     name = s.program_name
     definitions = [
         ("terminal", s.terminal_shortcut_name, ICON_PATH, LAUNCHER_TERMINAL, app_id, app_id, f"Start {name}"),
         ("no_terminal", s.no_terminal_shortcut_name, ICON_PATH, LAUNCHER_NO_TERMINAL, app_id, app_id + NO_TERMINAL_APP_ID_SUFFIX, f"Start {name} without opening a terminal window"),
         ("stop", s.stop_running_shortcut_name, STOP_ICON_PATH, LAUNCHER_STOP, "", None, f"Stop running {name} processes"),
-        ("logs", s.open_log_folder_shortcut_name, LOG_ICON_PATH, LAUNCHER_OPEN_LOG_DIR, "", None, f"Open the {name} log folder"),
-        ("crash_logs", s.open_crash_log_folder_shortcut_name, CRASH_LOG_ICON_PATH, LAUNCHER_OPEN_CRASH_LOG_DIR, "", None, f"Open the {name} crash log folder"),
-        ("main_py", s.open_main_py_shortcut_name, OPEN_MAIN_PY_ICON_PATH, LAUNCHER_OPEN_MAIN_PY, "", None, f"Open the {name} main.py file"),
+        ("logs", s.open_log_folder_shortcut_name, LOG_ICON_PATH, LAUNCHER_OPEN_LOG_DIR, targets["logs"], None, f"Open the {name} log folder"),
+        ("crash_logs", s.open_crash_log_folder_shortcut_name, CRASH_LOG_ICON_PATH, LAUNCHER_OPEN_CRASH_LOG_DIR, targets["crash_logs"], None, f"Open the {name} crash log folder"),
+        ("main_py", s.open_main_py_shortcut_name, OPEN_MAIN_PY_ICON_PATH, LAUNCHER_OPEN_MAIN_PY, targets["main_py"], None, f"Open the {name} main.py file"),
     ]
     if s.user_settings_path:
-        definitions.append(("settings", s.open_settings_shortcut_name, SETTINGS_ICON_PATH, LAUNCHER_OPEN_SETTINGS, "", None, f"Open the {name} settings file"))
+        definitions.append(("settings", s.open_settings_shortcut_name, SETTINGS_ICON_PATH, LAUNCHER_OPEN_SETTINGS, targets["settings"], None, f"Open the {name} settings file"))
     return [d for d in definitions if d[1]]
+
+
+def outdated_shortcut_targets(s) -> list:
+    """Kinds of "open" shortcuts whose recorded target no longer matches the settings (run Setup)."""
+    recorded = _read_created_shortcuts_file().get("targets")
+    if not isinstance(recorded, dict):
+        return []
+    current = shortcut_targets(s)
+    return [kind for kind, path in recorded.items() if kind in current and os.path.normcase(path) != os.path.normcase(current[kind])]
 
 
 def main() -> None:
     """Optionally prepare the environment, then create the enabled shortcuts and remove stale ones."""
     s = settings()
     validate(s)
-    app_id = _sanitize_app_id(s.program_name)
-    definitions = shortcut_definitions(s, app_id)
+    app_id = project_app_id(s.program_name)
+    targets_by_kind = shortcut_targets(s)
+    definitions = shortcut_definitions(s, app_id, targets_by_kind)
     filenames = [_shortcut_filename(d[1]).casefold() for d in definitions]
     if len(filenames) != len(set(filenames)):
         raise ValueError("Shortcut names collide after Windows filename sanitization; choose distinct names.")
     if s.install_environment_when_generating_shortcuts:
         from backend.DONT_CHANGE.scripts.uv_env import ensure_environment
 
-        ensure_environment(interactive=True, purpose="setup")
+        ensure_environment(interactive=True)
     if s.user_settings_path:
         settings_file = make_abs_path_relative_to_file(s.user_settings_path, DEV_SETTINGS_PATH)
         if not os.path.exists(settings_file):
             print(f'[Warning] The user settings file does not exist: "{settings_file}". Its shortcut will show an error until the file exists.')
+    for kind in ("logs", "crash_logs"):
+        if targets_by_kind[kind]:
+            os.makedirs(targets_by_kind[kind], exist_ok=True)  # the shortcut opens it right away
 
     targets = [SHORTCUT_OUTPUT_DIR]
     start_menu = None
@@ -576,7 +487,7 @@ def main() -> None:
                 )
             )
     removed = remove_shortcuts(read_created_shortcuts(), keep=created)
-    write_created_shortcuts(created)
+    write_created_shortcuts(created, targets_by_kind)
     print()
     for path in removed:
         print(f"[Info] Removed old shortcut: {path}")

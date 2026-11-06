@@ -18,6 +18,7 @@ import sysconfig
 from collections import namedtuple
 
 from backend.DONT_CHANGE.backend_settings import (
+    BACKEND_DIR,
     EXCLUDED_FOLDERS_FOR_IMPORT_SEARCH,
     IMPORT_MAPPING_PATH,
     PYTHON_SCRIPTS_DIR,
@@ -49,13 +50,19 @@ def standard_library_names() -> set:
     return names
 
 
+# The launcher (code/backend) is skipped only directly below the code folder.
+LAUNCHER_FOLDER = os.path.basename(BACKEND_DIR)
+
+
 def _excluded(folder_name: str) -> bool:
     return folder_name in EXCLUDED_FOLDERS_FOR_IMPORT_SEARCH or folder_name.startswith(".")
 
 
 def python_files(root: str = PYTHON_SCRIPTS_DIR):
+    root_key = os.path.normcase(os.path.abspath(root))
     for current, folders, files in os.walk(root):
-        folders[:] = [f for f in folders if not _excluded(f)]
+        at_root = os.path.normcase(os.path.abspath(current)) == root_key
+        folders[:] = [f for f in folders if not _excluded(f) and not (at_root and f == LAUNCHER_FOLDER)]
         for name in files:
             if name.endswith((".py", ".pyw")):
                 yield os.path.join(current, name)
@@ -74,17 +81,49 @@ def local_module_names(root: str = PYTHON_SCRIPTS_DIR) -> set:
     return names
 
 
-def _is_import_error_guard(handler: ast.ExceptHandler) -> bool:
-    names = []
+def _handler_names(handler: ast.ExceptHandler) -> list:
+    """Exception class names an except clause catches ([] for a bare "except:")."""
     if handler.type is None:
-        return True
+        return []
     nodes = handler.type.elts if isinstance(handler.type, ast.Tuple) else [handler.type]
+    names = []
     for node in nodes:
         if isinstance(node, ast.Name):
             names.append(node.id)
         elif isinstance(node, ast.Attribute):
             names.append(node.attr)
-    return any(n in ("ImportError", "ModuleNotFoundError", "Exception", "BaseException") for n in names)
+    return names
+
+
+def _only_imports(body) -> bool:
+    """True for a try body that just imports (optionally setting simple flags like HAS_X = True)."""
+    for statement in body:
+        if isinstance(statement, (ast.Import, ast.ImportFrom, ast.Pass)):
+            continue
+        if isinstance(statement, (ast.Assign, ast.AnnAssign)) and isinstance(statement.value, ast.Constant):
+            continue
+        return False
+    return True
+
+
+def _is_import_error_guard(node) -> bool:
+    """Is this try statement an optional-import guard?
+
+    "except ImportError/ModuleNotFoundError" always is. A broad "except:", "except Exception" or
+    "except BaseException" only counts when the try body does nothing but import, so code that
+    wraps a whole program in try/except still has its imports reported as required.
+    """
+    broad_only_imports = None
+    for handler in node.handlers:
+        names = _handler_names(handler)
+        if any(n in ("ImportError", "ModuleNotFoundError") for n in names):
+            return True
+        if not names or any(n in ("Exception", "BaseException") for n in names):
+            if broad_only_imports is None:
+                broad_only_imports = _only_imports(node.body)
+            if broad_only_imports:
+                return True
+    return False
 
 
 class _ImportVisitor(ast.NodeVisitor):
@@ -94,7 +133,7 @@ class _ImportVisitor(ast.NodeVisitor):
         self._guard = 0
 
     def visit_Try(self, node):
-        guarded = any(_is_import_error_guard(h) for h in node.handlers)
+        guarded = _is_import_error_guard(node)
         if guarded:
             self._guard += 1
         for child in node.body:

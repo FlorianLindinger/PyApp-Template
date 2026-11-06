@@ -2,50 +2,11 @@
 
 from __future__ import annotations
 
-if __name__ == "__main__":
-    import sys
-    from pathlib import Path
-
-    code_dir = next(
-        parent
-        for parent in Path(__file__).resolve().parents
-        if (parent / "backend" / "DONT_CHANGE").is_dir()
-    )
-    sys.path.insert(0, str(code_dir))
-    from backend.DONT_CHANGE.scripts.entrypoint import run_file
-
-    raise SystemExit(run_file(__file__))
-
 import os
-import sys
 import time
 from concurrent.futures import ThreadPoolExecutor
 from functools import lru_cache
 
-from backend.developer_settings import (
-    crash_log_sub_icon_alignment,
-    crash_log_sub_icon_scale,
-    crash_sub_icon_alignment,
-    crash_sub_icon_scale,
-    failure_sub_icon_alignment,
-    failure_sub_icon_scale,
-    keyboardInterrupt_sub_icon_alignment,
-    keyboardInterrupt_sub_icon_scale,
-    log_sub_icon_alignment,
-    log_sub_icon_scale,
-    open_main_py_sub_icon_alignment,
-    open_main_py_sub_icon_scale,
-    settings_sub_icon_alignment,
-    settings_sub_icon_scale,
-    stop_sub_icon_alignment,
-    stop_sub_icon_scale,
-    success_sub_icon_alignment,
-    success_sub_icon_scale,
-)
-from backend.DONT_CHANGE.scripts.image_tools import (
-    generate_ico_from_png,
-    get_png_image_id,
-)
 from backend.DONT_CHANGE.backend_settings import (
     ICON_DELETE_RETRY_DELAY_SECONDS,
     ICON_DELETE_TIMEOUT_SECONDS,
@@ -53,21 +14,12 @@ from backend.DONT_CHANGE.backend_settings import (
     ICON_GENERATION_SETTINGS,
     ICON_PNG_DIR,
 )
-
-SUB_ICON_SETTINGS: dict[str, tuple[float | None, str | None]] = {
-    "settings": (settings_sub_icon_scale, settings_sub_icon_alignment),
-    "stop": (stop_sub_icon_scale, stop_sub_icon_alignment),
-    "log": (log_sub_icon_scale, log_sub_icon_alignment),
-    "success": (success_sub_icon_scale, success_sub_icon_alignment),
-    "failure": (failure_sub_icon_scale, failure_sub_icon_alignment),
-    "crash": (crash_sub_icon_scale, crash_sub_icon_alignment),
-    "crash_log": (crash_log_sub_icon_scale, crash_log_sub_icon_alignment),
-    "open_main_py": (open_main_py_sub_icon_scale, open_main_py_sub_icon_alignment),
-    "keyboardInterrupt": (
-        keyboardInterrupt_sub_icon_scale,
-        keyboardInterrupt_sub_icon_alignment,
-    ),
-}
+from backend.DONT_CHANGE.scripts.config import settings as load_settings
+from backend.DONT_CHANGE.scripts.config import validate
+from backend.DONT_CHANGE.scripts.image_tools import (
+    generate_ico_from_png,
+    get_png_image_id,
+)
 
 
 def _delete_existing_icon(path: str) -> None:
@@ -111,6 +63,8 @@ def _pick_png(
 
 def main() -> None:
     """Generate every enabled icon described by ``ICON_GENERATION_SETTINGS``."""
+    s = load_settings()
+    validate(s)
     jobs: list[tuple[str, str, str | None, float, str]] = []
     for (
         output_path,
@@ -122,23 +76,12 @@ def main() -> None:
         overlay_fallback,
     ) in ICON_GENERATION_SETTINGS:
         base_path = _pick_png(base_name, base_id, base_fallback)
+        # e.g. stop.ico -> stop_sub_icon_scale / stop_sub_icon_alignment (checked by validate()).
         icon_name = os.path.splitext(os.path.basename(output_path))[0]
-        settings = SUB_ICON_SETTINGS.get(icon_name)
-        if overlay_name is not None and settings is None:
-            raise KeyError(
-                f'Missing sub-icon settings for "{icon_name}" in developer_settings.py.'
-            )
-        scale, alignment = settings if settings is not None else (None, None)
+        scale = getattr(s, icon_name + "_sub_icon_scale", None)
+        alignment = getattr(s, icon_name + "_sub_icon_alignment", None)
         overlay_path = None
         if overlay_name is not None and scale is not None and (alignment is not None):
-            if not isinstance(scale, (int, float)) or isinstance(scale, bool):
-                raise TypeError(
-                    f'Sub-icon scale for "{icon_name}" must be a number or None.'
-                )
-            if not isinstance(alignment, str):
-                raise TypeError(
-                    f'Sub-icon alignment for "{icon_name}" must be a string or None.'
-                )
             overlay_path = _pick_png(overlay_name, overlay_id, overlay_fallback)
         _delete_existing_icon(output_path)
         jobs.append(

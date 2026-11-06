@@ -1,4 +1,9 @@
-"""One error, exit-code and acknowledgement policy for developer/shortcut tools."""
+"""Runs every launcher tool with one error, exit-code and acknowledgement policy.
+
+bootstrap/run.bat starts `python -I -S -X utf8 entrypoint.py <tool.py> [arguments]`. The tool
+is a plain module with a main() function; the optional module variables `fail_message` (text
+with {e}) and `pause_on_success` (keep the window open after success) customize the policy.
+"""
 
 from __future__ import annotations
 
@@ -6,6 +11,13 @@ import os
 import runpy
 import sys
 import traceback
+
+if __name__ == "__main__":
+    # -I leaves the script folder off sys.path; make "backend...." importable (the code folder).
+    sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..")))
+
+from backend.DONT_CHANGE.scripts.diagnostics import note_ignored
+from backend.DONT_CHANGE.scripts.errors import LaunchCancelled, SettingsError, SetupError
 
 
 def normalize_exit_code(value):
@@ -30,18 +42,20 @@ def acknowledge(message):
             pass
 
 
-def run_file(path):
-    """Load imports and run main under the same failure policy, with one prompt."""
+def run_file(path, arguments=()):
+    """Load the tool, run its main() under the shared failure policy, with at most one prompt."""
     namespace = {}
+    sys.argv = [str(path), *arguments]
     try:
         namespace = runpy.run_path(str(path), run_name="_pyapp_entry")
-        result = namespace["main"]()
+        main = namespace["main"]
+        result = main()
         code = normalize_exit_code(result)
-        pause_on_success = namespace.get(
-            "pause_on_success",
-            "close_terminal_on_finish" in namespace
-            and not namespace["close_terminal_on_finish"],
-        )
+        # run_path returns a copy of the module globals; read the live ones, which main() may
+        # have changed (e.g. "global pause_on_success").
+        namespace = getattr(main, "__globals__", namespace)
+        # A tool sets pause_on_success = True to keep its window open after success.
+        pause_on_success = namespace.get("pause_on_success", False)
         if pause_on_success:
             acknowledge("Press Enter to exit")
         return code
@@ -51,7 +65,7 @@ def run_file(path):
         print("\n[Info] Interrupted by Ctrl+C", file=sys.stderr)
         return 130
     except Exception as error:
-        if type(error).__name__ == "LaunchCancelled":
+        if isinstance(error, LaunchCancelled):
             print("[Info] Launch cancelled.")
             return 0
         problem = expected_problem(error)
@@ -71,12 +85,36 @@ def run_file(path):
 
 def expected_problem(error):
     """Return a message for user-fixable errors (no traceback needed), else None."""
-    names = {cls.__name__ for cls in type(error).__mro__}
-    if names & {"SettingsError", "SetupError"}:
+    if isinstance(error, (SettingsError, SetupError)):
         return str(error)
-    if isinstance(error, SyntaxError) and str(getattr(error, "filename", "") or "").endswith("developer_settings.py"):
-        return f"developer_settings.py has a syntax error in line {error.lineno}: {error.msg}\n  \"{error.filename}\""
-    return None
+    return settings_file_problem(error)
+
+
+SETTINGS_FILE_NAME = "developer_settings.py"
+
+
+def settings_file_problem(error):
+    """A short message if the error comes from running developer_settings.py itself, else None.
+
+    Catches syntax errors and mistakes such as `Ture` (NameError) or `"a" + 1` (TypeError).
+    """
+    if isinstance(error, SyntaxError):
+        filename = str(getattr(error, "filename", "") or "")
+        if not filename.endswith(SETTINGS_FILE_NAME):
+            return None
+        return f'{SETTINGS_FILE_NAME} has a syntax error in line {error.lineno}: {error.msg}\n  "{filename}"'
+    line = filename = None
+    tb = error.__traceback__
+    while tb is not None:
+        if tb.tb_frame.f_code.co_filename.endswith(SETTINGS_FILE_NAME):
+            filename, line = tb.tb_frame.f_code.co_filename, tb.tb_lineno
+        tb = tb.tb_next
+    if filename is None:
+        return None
+    hint = ""
+    if isinstance(error, NameError):
+        hint = "\n  Check the spelling: True, False and None start with a capital letter, and text needs quotes."
+    return f'{SETTINGS_FILE_NAME} line {line}: {type(error).__name__}: {error}{hint}\n  "{filename}"'
 
 
 def _show_console():
@@ -85,4 +123,8 @@ def _show_console():
 
         show_console()
     except Exception:
-        pass
+        note_ignored("_show_console")
+
+
+if __name__ == "__main__":
+    raise SystemExit(run_file(sys.argv[1], sys.argv[2:]))

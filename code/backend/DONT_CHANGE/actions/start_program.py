@@ -1,26 +1,8 @@
-# ruff: noqa: E402
-# The early __main__ handoff lets the shared runner report import failures once.
-
 """Prepare the app environment and hand off one uniquely identified run to the watchdog."""
 
 from __future__ import annotations
 
-if __name__ == "__main__":
-    import sys
-    from pathlib import Path
-
-    code_dir = next(
-        parent
-        for parent in Path(__file__).resolve().parents
-        if (parent / "backend" / "DONT_CHANGE").is_dir()
-    )
-    sys.path.insert(0, str(code_dir))
-    from backend.DONT_CHANGE.scripts.entrypoint import run_file
-
-    raise SystemExit(run_file(__file__))
-
 fail_message = "[Error] Failed to start the program: {e}"
-close_terminal_on_finish = True
 
 import json
 import os
@@ -33,8 +15,13 @@ from pathlib import Path
 
 from backend.DONT_CHANGE import backend_settings as paths
 from backend.DONT_CHANGE.scripts.config import settings, validate
+from backend.DONT_CHANGE.scripts.diagnostics import note_ignored
 from backend.DONT_CHANGE.scripts.instance_policy import decide
-from backend.DONT_CHANGE.scripts.launcher_ui import prune_logs
+from backend.DONT_CHANGE.scripts.launcher_ui import (
+    prune_logs,
+    set_hidden_in_explorer,
+    set_terminal_appearance_once,
+)
 from backend.DONT_CHANGE.scripts.runtime_state import ProcessRegistry
 from backend.DONT_CHANGE.scripts.uv_env import ensure_environment
 
@@ -54,6 +41,21 @@ def resolve_mode(s, requested: str) -> str:
     return mode
 
 
+def _hint_outdated_shortcuts(s) -> None:
+    """The "open" shortcuts store their target; tell the user when the settings changed it."""
+    try:
+        from backend.DONT_CHANGE.setup.generate_shortcuts import outdated_shortcut_targets
+
+        outdated = outdated_shortcut_targets(s)
+        if outdated:
+            print(
+                "[Info] These shortcuts still open the previous location: " + ", ".join(outdated)
+                + ". Run 'Setup - run first and after moving folder.cmd' to update them."
+            )
+    except Exception:
+        note_ignored("outdated shortcut check")
+
+
 def main():
     """Apply the instance policy, prepare the environment, start the watchdog and wait for it."""
     app_id = sys.argv[1] if len(sys.argv) > 1 else ""
@@ -63,21 +65,26 @@ def main():
     s = settings()
     validate(s)
     mode = resolve_mode(s, requested)
+    # This (minimized) window shows progress while the environment is prepared: give it the
+    # app's title, icon and taskbar group, and keep tool folders out of sight in Explorer.
+    set_terminal_appearance_once(app_id)
+    set_hidden_in_explorer()
 
     # Quick check before any environment work; the watchdog repeats it under the registry lock.
-    registry = ProcessRegistry(paths.PROCESS_ID_FILE_PATH)
+    registry = ProcessRegistry(paths.PROCESS_REGISTRY_DIR)
     records, _ = registry.records()
     decision = decide(s.instance_policy, records, s.program_name)
     if decision == "cancel":
         return 0
     if decision == "replace":
-        _, _, errors = registry.stop()
+        _, _, errors = registry.stop(s.stop_timeout_seconds, report=print)
         if errors:
             raise RuntimeError(
                 "Could not stop the running instance(s): " + "; ".join(errors)
             )
 
     prune_logs(s)
+    _hint_outdated_shortcuts(s)
     app = ensure_environment(interactive=True)
 
     # Keep run paths short; mkdir reserves the name even with concurrent launches.

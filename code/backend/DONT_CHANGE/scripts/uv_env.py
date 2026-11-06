@@ -18,23 +18,15 @@ import tempfile
 import uuid
 from collections import namedtuple
 
-from backend.DONT_CHANGE.scripts.config import (
-    SettingsError,
-    describe_python_request,
-    edit_settings,
-    settings,
-    validate,
-)
-from backend.DONT_CHANGE.scripts.console_tools import input_warn, print_warn, show_console
-from backend.DONT_CHANGE.scripts.runtime_state import FileLock
 from backend.DONT_CHANGE.backend_settings import (
+    DEV_SETTINGS_PATH,
     ENVIRONMENT_LOCK_PATH,
+    ENVIRONMENT_STAMP_PATH,
     LOCAL_PYTHONS_DIR,
     LOCAL_UV_CACHE_DIR,
     LOCAL_UV_EXE,
     MINIMUM_PYTHON,
-    PROCESS_ID_FILE_PATH,
-    DEV_SETTINGS_PATH,
+    PROCESS_REGISTRY_DIR,
     PROJECT_DIR,
     PYPROJECT_PATH,
     PYTHON_SCRIPTS_DIR,
@@ -44,17 +36,18 @@ from backend.DONT_CHANGE.backend_settings import (
     VENV_DIR,
     VENV_PYTHON_EXE,
 )
+from backend.DONT_CHANGE.scripts.config import (
+    describe_python_request,
+    edit_settings,
+    settings,
+    validate,
+)
+from backend.DONT_CHANGE.scripts.console_tools import input_warn, print_warn, show_console
+from backend.DONT_CHANGE.scripts.errors import LaunchCancelled, SettingsError, SetupError
+from backend.DONT_CHANGE.scripts.runtime_state import FileLock
 
 AppPython = namedtuple("AppPython", "exe flags kind")
 """exe: interpreter that runs main.py; flags: extra interpreter options; kind: "venv" or "interpreter"."""
-
-
-class SetupError(RuntimeError):
-    """The environment cannot be prepared; the message says what to do."""
-
-
-class LaunchCancelled(Exception):
-    """The user chose to cancel this launch."""
 
 
 # ---------------------------------------------------------------- uv
@@ -147,7 +140,7 @@ def run_uv(arguments, *, capture=False, check=True, cwd=None, project_environmen
         env=uv_environment(s, project_environment, python_command=arguments[:1] == ["python"]),
         stdout=subprocess.PIPE if capture else None,
         stderr=subprocess.PIPE if capture else None,
-        universal_newlines=True if capture else None,
+        text=True if capture else None,
         encoding="utf-8" if capture else None,
         errors="replace" if capture else None,
     )
@@ -352,7 +345,7 @@ def render_pyproject(packages, requires: str) -> str:
 
 
 def _recorded_packages(text: str):
-    """The package list the file was generated from, or None (hand-written or older file)."""
+    """The package list the file was generated from, or None if the marker line is missing."""
     for line in text.splitlines():
         if line.startswith(GENERATED_FROM_MARKER):
             try:
@@ -379,9 +372,7 @@ def reconcile_pyproject(s=None, version: tuple | None = None):
         in_file = declared_dependencies(text)
         recorded = _recorded_packages(text)
         if recorded is None:
-            # Hand-written file (or one from before packages moved into the settings): take its
-            # packages over only when the settings have none, otherwise the settings win.
-            recorded = [] if in_file and not wanted else wanted
+            recorded = wanted  # no generator marker: treat it as unchanged, the settings win
         if in_file != recorded and wanted == recorded:
             print("[Info] Copied package changes made in pyproject.toml (e.g. with uv add) into developer_settings.py: " + _change_summary(wanted, in_file))
             set_list_setting("packages", in_file)
@@ -440,7 +431,41 @@ def declared_dependencies(text: str | None = None) -> list:
     span = _dependencies_span(text)
     if not span:
         return []
-    return re.findall(r'"([^"]+)"', text[span[0] : span[1]])
+    return [value for kind, value in _toml_tokens(text, *span) if kind == "string"]
+
+
+# A TOML basic string ("..." with backslash escapes) or literal string ('...', no escapes).
+_TOML_STRING = re.compile(r'"((?:[^"\\\n]|\\.)*)"|\'([^\'\n]*)\'')
+
+
+def _toml_string_value(match) -> str:
+    basic, literal = match.groups()
+    if basic is None:
+        return literal
+    try:
+        return json.loads('"' + basic + '"')  # TOML basic-string escapes are JSON's (plus rare \\U)
+    except ValueError:
+        return basic
+
+
+def _toml_tokens(text: str, start: int, end: int):
+    """Yield ("string", value), ("[", None) and ("]", None) between start and end; skips comments."""
+    index = start
+    while index < end:
+        char = text[index]
+        if char == "#":
+            newline = text.find("\n", index, end)
+            index = end if newline < 0 else newline + 1
+            continue
+        if char in "\"'":
+            match = _TOML_STRING.match(text, index)
+            if match and match.end() <= end:
+                yield "string", _toml_string_value(match)
+                index = match.end()
+                continue
+        if char in "[]":
+            yield char, index
+        index += 1
 
 
 def _dependencies_span(text: str):
@@ -455,14 +480,10 @@ def _dependencies_span(text: str):
         return None
     start = key.end() - 1
     depth = 0
-    in_string = False
-    for index in range(start, end_of_table):
-        char = text[index]
-        if char == '"' and text[index - 1] != "\\":
-            in_string = not in_string
-        elif not in_string and char == "[":
+    for kind, index in _toml_tokens(text, start, end_of_table):
+        if kind == "[":
             depth += 1
-        elif not in_string and char == "]":
+        elif kind == "]":
             depth -= 1
             if depth == 0:
                 return start, index + 1
@@ -560,7 +581,7 @@ def refuse_mutation_while_running() -> None:
     """Running app instances lock files inside the environment."""
     from backend.DONT_CHANGE.scripts.runtime_state import ProcessRegistry
 
-    records, _ = ProcessRegistry(PROCESS_ID_FILE_PATH).records()
+    records, _ = ProcessRegistry(PROCESS_REGISTRY_DIR).records()
     if records:
         raise SetupError("Close the running app instance(s) first; they use the files in the Python environment.")
 
@@ -647,7 +668,7 @@ def swap_in_venv(staging: str) -> None:
 # ---------------------------------------------------------------- main entry
 
 
-def ensure_environment(interactive: bool = True, purpose: str = "launch") -> AppPython:
+def ensure_environment(interactive: bool = True) -> AppPython:
     """Validate settings and make sure the app's interpreter and packages are ready."""
     s = settings()
     validate(s)
@@ -656,7 +677,7 @@ def ensure_environment(interactive: bool = True, purpose: str = "launch") -> App
         return AppPython(base_python, [], "interpreter")
 
     with FileLock(ENVIRONMENT_LOCK_PATH, timeout=600):
-        base_version = interpreter_version(base_python)
+        base_version = tuple(sys.version_info[:3])  # base_python is this interpreter
         any_version = s.python_source == "system_default_any_version"
         file_request = read_python_version_file()
 
@@ -671,6 +692,13 @@ def ensure_environment(interactive: bool = True, purpose: str = "launch") -> App
                 return AppPython(VENV_PYTHON_EXE, ["-E", "-s"], "venv")
         # pyproject.toml follows developer_settings.py ("packages"); requires-python follows the project's Python.
         s = reconcile_pyproject(s, None if current_requires_python() else base_version)
+
+        # Fast path: nothing relevant changed since the last successful check, so skip the uv
+        # lock check, the sync and the venv check (each starts a process).
+        fingerprint = _environment_fingerprint(s)
+        if _read_stamp() == fingerprint:
+            return AppPython(VENV_PYTHON_EXE, ["-E", "-s"], "venv")
+        _write_stamp(None)
 
         locked = version_satisfies_requires(base_version, current_requires_python())
         if not locked:
@@ -698,7 +726,67 @@ def ensure_environment(interactive: bool = True, purpose: str = "launch") -> App
                 sync(VENV_PYTHON_EXE, s=s)
             else:
                 best_effort_install(VENV_PYTHON_EXE, s)
+        if locked:
+            _write_stamp(_environment_fingerprint(s))
     return AppPython(VENV_PYTHON_EXE, ["-E", "-s"], "venv")
+
+
+def _environment_fingerprint(s) -> str:
+    """Everything the environment check depends on: files (time and size), paths and settings.
+
+    Any change (uv.lock, pyproject.toml, packages added or removed in site-packages, a moved
+    project, another Python or uv, ...) makes the next launch run the full check again.
+    """
+    import hashlib
+
+    parts = [
+        "v1",
+        PROJECT_DIR,
+        sys.executable,
+        ".".join(map(str, sys.version_info)),
+        os.environ.get("PYAPP_UV", ""),
+        s.python_source,
+        s.package_environment,
+        s.uv_cache,
+    ]
+    for path in (
+        sys.executable,
+        PYPROJECT_PATH,
+        UV_LOCK_PATH,
+        PYTHON_VERSION_FILE,
+        VENV_PYTHON_EXE,
+        os.path.join(VENV_DIR, "pyvenv.cfg"),
+        os.path.join(VENV_DIR, "Lib", "site-packages"),
+    ):
+        try:
+            stat = os.stat(path)
+            parts.append(f"{path}|{stat.st_mtime_ns}|{stat.st_size}")
+        except OSError:
+            parts.append(f"{path}|missing")
+    return hashlib.sha256("\n".join(parts).encode("utf-8")).hexdigest()
+
+
+def _read_stamp() -> str | None:
+    try:
+        with open(ENVIRONMENT_STAMP_PATH, encoding="utf-8") as stream:
+            return stream.read().strip()
+    except OSError:
+        return None
+
+
+def _write_stamp(fingerprint: str | None) -> None:
+    """Record a successful check (None forgets it, e.g. before changing the environment)."""
+    try:
+        if fingerprint is None:
+            if os.path.exists(ENVIRONMENT_STAMP_PATH):
+                os.remove(ENVIRONMENT_STAMP_PATH)
+        else:
+            with open(ENVIRONMENT_STAMP_PATH, "w", encoding="utf-8") as stream:
+                stream.write(fingerprint)
+    except OSError:
+        from backend.DONT_CHANGE.scripts.diagnostics import note_ignored
+
+        note_ignored("environment stamp")
 
 
 def handle_version_change(current: str, s, interactive: bool) -> bool:
@@ -823,26 +911,23 @@ def open_package_terminal(s=None) -> int:
     env["UV_PROJECT"] = PROJECT_DIR  # uv add/remove/lock work from the code folder too
     env["PATH"] = os.pathsep.join(extra + [env.get("PATH", "")])
     env["PROMPT"] = "(app packages) $P$G"
+    # Printed here, not with "echo" inside the cmd command line: paths like "R&D" would break that.
     lines = [
-        "echo.",
-        "echo Package terminal for this app. Python: " + python,
-        "echo   uv add NAME          add a package and install it (copied into developer_settings.py on the next start)",
-        "echo   uv remove NAME       remove a package",
-        "echo   uv lock --upgrade    upgrade all packages, then: uv sync",
-        "echo   uv pip list          show installed packages",
-        "echo   uv pip install NAME  install without recording it (next exact sync removes it)",
-        "echo   python ...           run this Python",
-        "echo   exit                 close this terminal",
-        "echo.",
+        "",
+        "Package terminal for this app. Python: " + python,
+        "  uv add NAME          add a package and install it (copied into developer_settings.py on the next start)",
+        "  uv remove NAME       remove a package",
+        "  uv lock --upgrade    upgrade all packages, then: uv sync",
+        "  uv pip list          show installed packages",
+        "  uv pip install NAME  install without recording it (next exact sync removes it)",
+        "  python ...           run this Python",
+        "  exit                 close this terminal",
+        "",
     ]
     if s.package_environment == "interpreter_site_packages":
-        lines.insert(2, "echo   Note: this changes the selected interpreter's own packages; use: uv pip install --python python NAME")
-    return subprocess.run(["cmd.exe", "/d", "/k", " & ".join(lines)], cwd=PYTHON_SCRIPTS_DIR, env=env).returncode
-
-
-def ensure_valid_settings() -> None:
-    """Raise SettingsError with readable messages (used by tools before doing work)."""
-    validate(settings())
+        lines.insert(2, "  Note: this changes the selected interpreter's own packages; use: uv pip install --python python NAME")
+    print("\n".join(lines), flush=True)
+    return subprocess.run(["cmd.exe", "/d"], cwd=PYTHON_SCRIPTS_DIR, env=env).returncode
 
 
 __all__ = [
