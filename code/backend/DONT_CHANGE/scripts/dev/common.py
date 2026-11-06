@@ -5,18 +5,19 @@ from __future__ import annotations
 import re
 
 from backend.DONT_CHANGE.scripts.config import settings, validate
-from backend.DONT_CHANGE.scripts.console_tools import input_warn, print_warn
+from backend.DONT_CHANGE.scripts.console_tools import ask, print_warn
 from backend.DONT_CHANGE.scripts.env.venv import (
     app_python_for_tools,
     ensure_environment,
     install_without_recording,
 )
 
-COMMIT_HINT = ". Commit developer_settings.py and backend/uv.lock."
+COMMIT_HINT = "Commit developer_settings.py and backend/uv.lock."
 
 
-def ask(question: str) -> bool:
-    return input_warn(question + " [y/N] ").strip().lower() in ("y", "yes", "j", "ja")
+def confirm(question: str) -> bool:
+    """A yes/no question; only "y"/"yes" (or German "j"/"ja") means yes."""
+    return ask(question + " [y/N]").strip().lower() in ("y", "yes", "j", "ja")
 
 
 def normalized(name: str) -> str:
@@ -51,4 +52,4 @@ def install_into_interpreter(s, names) -> None:
 
 
 def ask_package_names(prompt: str) -> list:
-    return input_warn(prompt).replace(",", " ").split()
+    return ask(prompt).replace(",", " ").split()

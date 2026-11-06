@@ -11,19 +11,17 @@ import subprocess
 import sys
 from typing import NoReturn
 
-fail_message = "[Error] Failed while processing program exit: {e}"
+fail_message = "Failed while processing program exit: {e}"
 
 
 def _fail_while_loading(error) -> NoReturn:
     """This window may be the only place the problem is visible: show it and wait."""
     import traceback
 
-    print("\n\n" + "=" * 30)
-    print(fail_message.format(e=error))
-    print("-" * 30)
+    print()
+    print("ERROR  " + fail_message.format(e=error))
     print(traceback.format_exc())
-    print("=" * 30)
-    input("[Error] Press Enter to exit")
+    input("Press Enter to close this window.")
     os._exit(1)
 
 
@@ -36,14 +34,19 @@ try:
     )
     from backend.DONT_CHANGE.scripts.config import settings
     from backend.DONT_CHANGE.scripts.console_tools import (
+        ask,
         enable_ansi,
-        input_warn,
         open_in_editor,
+        print_choices,
+        print_error,
+        print_info,
+        print_success,
         print_warn,
         set_terminal_app_id,
         set_terminal_colors,
         set_terminal_icon,
         set_terminal_title,
+        wait_for_enter,
     )
     from backend.DONT_CHANGE.scripts.launcher_ui import (
         get_log_path,
@@ -158,19 +161,21 @@ def handle_missing_module(missing, app_id, new_terminal_was_created):
         print_warn(
             f'"{top}" is part of your project, not a package to install. Check the file/folder name and the import.'
         )
-        input_warn("Press Enter to exit")
+        wait_for_enter()
         return
     distribution = distribution_for_import(top)
     app_python = venv.app_python_for_tools()
     global_packages = s.package_environment == "interpreter_site_packages"
     if global_packages and not s.allow_installing_into_global_python:
-        print_warn("The app uses the selected interpreter's own packages; the launcher does not change them.")
-        print(f'Install it yourself, e.g.:  "{app_python}" -m pip install {distribution}')
-        print("(or set allow_installing_into_global_python = True in developer_settings.py)")
-        input_warn("Press Enter to exit")
+        print_warn(
+            f'"{top}" is missing. The app uses the selected interpreter\'s own packages, which the launcher does not change.'
+        )
+        print(f'Install it yourself:  "{app_python}" -m pip install {distribution}')
+        print_info("(or set allow_installing_into_global_python = True in developer_settings.py)")
+        wait_for_enter()
         return
     if distribution != top:
-        print(f'[Info] The import "{top}" is provided by the package "{distribution}".')
+        print_info(f'The import "{top}" is provided by the package "{distribution}".')
     options = []
     if not global_packages:
         options.append(
@@ -191,10 +196,9 @@ def handle_missing_module(missing, app_id, new_terminal_was_created):
     options.append(("quit", "Quit"))
     while True:
         print()
-        print_warn("Choose how to proceed:")
-        for index, (_, label) in enumerate(options, 1):
-            print(f"  {index}: {label}")
-        answer = input_warn(f"Choose an option [1-{len(options)}]: ").strip()
+        print_warn(f'The package for "{top}" is not installed.')
+        print_choices(label for _, label in options)
+        answer = ask(f"What now? [1-{len(options)}]").strip()
         if not answer.isdigit() or not 1 <= int(answer) <= len(options):
             continue
         action = options[int(answer) - 1][0]
@@ -214,9 +218,9 @@ def handle_missing_module(missing, app_id, new_terminal_was_created):
             else:
                 venv.open_package_terminal()
         except Exception as error:
-            print_traceback(f"[Error] Package recovery failed: {error}")
+            print_traceback(f"Package recovery failed: {error}")
             continue
-        print("[Success] Restarting the program...")
+        print_success("Restarting the program ...")
         restart_program(app_id, new_terminal_was_created)
         return
 
@@ -243,7 +247,7 @@ def play_sound(setting, default, wait=True):
         flags = winsound.SND_FILENAME | winsound.SND_NODEFAULT | (0 if wait else winsound.SND_ASYNC)
         winsound.PlaySound(wav, flags)
     except Exception as error:
-        print(f"[Error] Failed to play .wav file: {error}")
+        print_error(f"Failed to play .wav file: {error}")
 
 
 def complete(outcome, log_path, report=None, message=None, keep_open=False):
@@ -254,11 +258,12 @@ def complete(outcome, log_path, report=None, message=None, keep_open=False):
         try:
             os.startfile(log_path)
         except Exception as error:
-            print(f"[Error] Failed to open log: {error}")
+            print_error(f"Failed to open log: {error}")
     if getattr(s, "open_main_py_after_" + outcome):
         open_in_editor(paths.MAIN_PY_SCRIPT_PATH)
     if message:
-        print(message)
+        print()
+        {"success": print_success, "keyboard_interrupt": print_warn}.get(outcome, print_error)(message)
     if outcome != "success":
         write_crash_log(report, message)
     sound = getattr(s, "play_sound_after_" + outcome)
@@ -269,7 +274,7 @@ def complete(outcome, log_path, report=None, message=None, keep_open=False):
         print_report(report)  # after set_terminal_colors, which clears the screen colors
         play_sound(sound, OUTCOMES[outcome]["default_sound"], wait=not keep_open)
         if not keep_open:
-            input("Press Enter to exit")
+            wait_for_enter()
     else:
         print_report(report)
         play_sound(sound, OUTCOMES[outcome]["default_sound"])
@@ -292,12 +297,12 @@ def main():
             "crash" if crashed else "failure",
             log_path,
             None,
-            f'[{"Crash" if crashed else "Failure"}] "{script_name}" ended without a completion report (exit status {native}, 0x{native & 0xFFFFFFFF:08X}).{hint}',
+            f'"{script_name}" {"crashed" if crashed else "ended unexpectedly"} without a completion report (exit status {native}, 0x{native & 0xFFFFFFFF:08X}).{hint}',
         )
         return
 
     if exit_mode == ExitMode.SUCCESS:
-        complete("success", log_path, None, "[Success] Program finished successfully")
+        complete("success", log_path, None, f'"{script_name}" finished successfully.')
         return
 
     report, problem = load_report()
@@ -306,7 +311,7 @@ def main():
             "failure",
             log_path,
             report,
-            "[Failure] The background watchdog failed (see below)." + ("" if report else f" {problem}"),
+            "The launcher's background watchdog failed (details below)." + ("" if report else f" {problem}"),
         )
         return
     if exit_mode == ExitMode.WRAPPER_ERROR:
@@ -314,7 +319,7 @@ def main():
             "failure",
             log_path,
             report,
-            "[Failure] The script wrapper failed (see below)." + ("" if report else f" {problem}"),
+            "The launcher's script wrapper failed (details below)." + ("" if report else f" {problem}"),
         )
         return
     if exit_mode != ExitMode.APP_EXIT:
@@ -324,7 +329,7 @@ def main():
             "failure",
             log_path,
             None,
-            f'[Failure] "{script_name}" failed, but its traceback could not be loaded. {problem}',
+            f'"{script_name}" failed, but its traceback could not be loaded. {problem}',
         )
         return
 
@@ -332,20 +337,20 @@ def main():
     if kind == "SystemExit":
         code = report.get("system_exit_code")
         if exit_code_is_success(code):
-            complete("success", log_path, None, "[Success] Program finished successfully")
+            complete("success", log_path, None, f'"{script_name}" finished successfully.')
         elif exit_code_looks_like_interpreter_crash(code):
             complete(
                 "crash",
                 log_path,
                 report,
-                f'[Crash] The interpreter appears to have crashed with exit code "{code}" while running "{script_name}".',
+                f'The Python interpreter crashed while running "{script_name}" (exit code {code}).',
             )
         else:
             complete(
                 "failure",
                 log_path,
                 report,
-                f'[Failure] "{script_name}" exited with error code "{code}".',
+                f'"{script_name}" exited with error code {code}.',
             )
     elif kind == "ModuleNotFoundError" and report.get("missing_module"):
         missing = report["missing_module"]
@@ -362,21 +367,21 @@ def main():
             "keyboard_interrupt",
             log_path,
             report,
-            f'[Interrupted] "{script_name}" was stopped with Ctrl+C.',
+            f'"{script_name}" was stopped with Ctrl+C.',
         )
     elif kind == "SyntaxError":
         complete(
             "failure",
             log_path,
             report,
-            f'[Failure] "{script_name}" has a syntax error (see below).',
+            f'"{script_name}" has a syntax error (details below).',
         )
     else:
         complete(
             "failure",
             log_path,
             report,
-            f'[Failure] "{script_name}" raised {kind} (see below).',
+            f'"{script_name}" raised {kind} (details below).',
         )
 
 
@@ -385,6 +390,6 @@ if __name__ == "__main__":
         main()
     except Exception as error:
         print_traceback(fail_message.format(e=error))
-        input_warn("[Error] Press Enter to exit")
+        wait_for_enter()
         sys.exit(1)
     sys.exit(0)

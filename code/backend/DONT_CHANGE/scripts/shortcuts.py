@@ -38,6 +38,7 @@ from backend.DONT_CHANGE.backend_settings import (
     STOP_ICON_PATH,
 )
 from backend.DONT_CHANGE.scripts import com_tools as com
+from backend.DONT_CHANGE.scripts.console_tools import print_warn
 from backend.DONT_CHANGE.scripts.filesystem_tools import (
     make_abs_path_relative_to_file,
     sanitize_filename,
@@ -190,11 +191,10 @@ def generate_shortcut(
         launcher_args.append(_quote(args))
     icon_path = os.path.abspath(os.fspath(icon_path)) if icon_path else None
     if icon_path and (not os.path.exists(icon_path)):
-        print(f'[Warning] icon not existing at "{icon_path}"')
+        print_warn(f'icon not existing at "{icon_path}"')
         icon_path = None
     wdir = os.path.abspath(wdir) if wdir else SHORTCUT_OUTPUT_DIR
     description = "" if description is None else os.fspath(description)
-    print(f"[Info] Creating: {output_path}")
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     # Saved under a temporary name first: an existing shortcut is only replaced by a complete one.
     temporary_path = os.path.join(os.path.dirname(output_path), f"~{uuid.uuid4().hex[:8]}.tmp.lnk")
@@ -362,7 +362,7 @@ def remove_shortcuts(paths, keep=()) -> list:
                 os.remove(path)
                 removed.append(path)
             except OSError as error:
-                print(f'[Warning] Could not remove the old shortcut "{path}": {error}')
+                print_warn(f'Could not remove the old shortcut "{path}": {error}')
         folder = os.path.dirname(path)
         try:
             # Remove our now-empty Start Menu folder (never the Start Menu or Desktop itself).

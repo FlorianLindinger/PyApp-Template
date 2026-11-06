@@ -57,7 +57,7 @@ open_settings_shortcut_name: str | None = f"{program_name} - Settings"
 stop_running_shortcut_name: str | None = f"Stop {program_name}"
 open_log_folder_shortcut_name: str | None = f"{program_name} - Logs"
 open_crash_log_folder_shortcut_name: str | None = f"{program_name} - Crash Logs"
-open_main_py_shortcut_name: str | None = f"{program_name} - Edit main.py"
+open_main_py_shortcut_name: str | None = f"{program_name} - Edit Code"
 # ---------------------------------------
 # Where else to put shortcuts (the project folder always gets all enabled ones).
 # Setup removes shortcuts it created earlier that are no longer wanted.

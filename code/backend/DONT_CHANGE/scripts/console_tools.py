@@ -8,8 +8,21 @@ from typing import Any, TextIO
 
 from backend.DONT_CHANGE.scripts.diagnostics import note_ignored
 
-ANSI_WARN = "\x1b[1;37;41m"
-ANSI_SUCCESS = "\x1b[1;37;42m"
+# Message styles. Every launcher window uses the same few, so they look alike:
+#   print_heading   "── Title ────"              sections
+#   print_step      "» Installing packages ..."  something that may take a while
+#   print_info      grey text                    notes and details
+#   print_success   " OK " badge + text          a finished task
+#   print_warn      " ! " badge + text           something to look at; the task goes on
+#   print_error     " ERROR " badge + text       the task failed
+#   ask / wait_for_enter / print_choices         questions and menus
+ANSI_ERROR = "\x1b[1;37;41m"  # white on red
+ANSI_SUCCESS = "\x1b[1;37;42m"  # white on green
+ANSI_WARNING = "\x1b[1;30;43m"  # black on yellow
+ANSI_HEADING = "\x1b[1;36m"  # bold cyan
+ANSI_GOOD = "\x1b[32m"  # green
+ANSI_DIM = "\x1b[90m"  # grey
+ANSI_BOLD = "\x1b[1m"
 ANSI_RESET = "\033[0m"
 
 
@@ -34,7 +47,7 @@ def show_console() -> None:
     foreground_terminal()
 
 
-def _styled(msg: Any, style: str) -> str:
+def styled(msg: Any, style: str) -> str:
     """Color only for an interactive console; redirected output stays plain."""
     try:
         interactive = sys.stdout is not None and sys.stdout.isatty()
@@ -46,21 +59,74 @@ def _styled(msg: Any, style: str) -> str:
     return f"{style}{msg}{ANSI_RESET}"
 
 
-def print_warn(msg: Any, sep: str | None = " ", end: str | None = "\n") -> None:
-    """Print a warning-styled console message."""
-    if msg is not None:
-        print(_styled(msg, ANSI_WARN), end=end)
+def print_heading(title: str, width: int = 72) -> None:
+    """Print a section heading: a blank line, then "── title ───..."."""
+    print()
+    print(styled(f"── {title} " + "─" * max(3, width - len(title) - 4), ANSI_HEADING))
 
 
-def input_warn(msg: str) -> str:
-    """Prompt for input using warning console styling."""
-    return input(_styled(msg, ANSI_WARN))
+def _badge_lines(label: str, style: str, msg: Any) -> str:
+    """A colored label before the first line; further lines are indented to match."""
+    lines = str(msg).split("\n")
+    indent = " " * (len(label) + 3)
+    return "\n".join([styled(f" {label} ", style) + " " + lines[0]] + [indent + line for line in lines[1:]])
 
 
-def print_success(msg: Any, sep: str | None = " ", end: str | None = "\n") -> None:
-    """Print a success-styled console message."""
-    if msg is not None:
-        print(_styled(msg, ANSI_SUCCESS), end=end)
+def print_step(msg: Any) -> None:
+    """A step that may take a while (installing, downloading, building)."""
+    print(styled("»", ANSI_HEADING) + " " + str(msg), flush=True)
+
+
+def print_info(msg: Any) -> None:
+    """A note or detail."""
+    print(styled(msg, ANSI_DIM), flush=True)
+
+
+def print_success(msg: Any) -> None:
+    """A finished task."""
+    print(_badge_lines("OK", ANSI_SUCCESS, msg), flush=True)
+
+
+def print_warn(msg: Any) -> None:
+    """Something to look at; the task goes on."""
+    print(_badge_lines("!", ANSI_WARNING, msg), flush=True)
+
+
+def print_error(msg: Any, file: TextIO | None = None) -> None:
+    """The task failed."""
+    print(_badge_lines("ERROR", ANSI_ERROR, msg), file=file or sys.stdout, flush=True)
+
+
+def ask(question: str) -> str:
+    """Ask for an answer on the same line."""
+    return input(styled("?", ANSI_HEADING) + " " + styled(question.rstrip(), ANSI_BOLD) + " ")
+
+
+def wait_for_enter(message: str = "Press Enter to close this window.") -> None:
+    """Keep the window open until Enter (no-op without an interactive console)."""
+    try:
+        input(styled(message, ANSI_DIM))
+    except (EOFError, KeyboardInterrupt):
+        pass
+
+
+def print_fields(rows, indent: int = 2) -> None:
+    """Aligned "label   value" rows; a value whose third item is False is highlighted as a problem."""
+    rows = [row if len(row) == 3 else (*row, True) for row in rows]
+    width = max((len(label) for label, _, _ in rows), default=0)
+    for label, value, ok in rows:
+        print(
+            " " * indent
+            + styled(label.ljust(width), ANSI_DIM)
+            + "  "
+            + (str(value) if ok else styled(value, ANSI_BOLD + "\x1b[33m"))
+        )
+
+
+def print_choices(options) -> None:
+    """A numbered list: "  1  first option"."""
+    for index, option in enumerate(options, 1):
+        print(f"  {styled(str(index).rjust(2), ANSI_HEADING)}  {option}")
 
 
 def set_terminal_title(title: str | None) -> None:

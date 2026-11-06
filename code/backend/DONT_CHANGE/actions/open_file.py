@@ -15,7 +15,7 @@ from backend.DONT_CHANGE.scripts.console_tools import open_in_editor
 from backend.DONT_CHANGE.scripts.errors import SettingsError
 from backend.DONT_CHANGE.scripts.filesystem_tools import make_abs_path_relative_to_file
 
-fail_message = "[Error] Failed to open the file: {e}"
+fail_message = "Failed to open the file: {e}"
 
 
 def main() -> None:

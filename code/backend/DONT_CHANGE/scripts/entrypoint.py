@@ -57,29 +57,31 @@ def run_file(path, arguments=()):
         # A tool sets pause_on_success = True to keep its window open after success.
         pause_on_success = namespace.get("pause_on_success", False)
         if pause_on_success:
-            acknowledge("Press Enter to exit")
+            acknowledge("Press Enter to close this window.")
         return code
     except SystemExit as error:
         return normalize_exit_code(error.code)
     except KeyboardInterrupt:
-        print("\n[Info] Interrupted by Ctrl+C", file=sys.stderr)
+        print("\nStopped with Ctrl+C.", file=sys.stderr)
         return 130
     except Exception as error:
         if isinstance(error, LaunchCancelled):
-            print("[Info] Launch cancelled.")
+            print("Launch cancelled.")
             return 0
         problem = expected_problem(error)
         if problem is not None:
             # Settings mistakes, missing downloads etc.: a clear message, no traceback.
             _show_console()
-            print("\n[Error] " + problem, file=sys.stderr)
-            acknowledge("Press Enter to exit")
+            print(file=sys.stderr)
+            _print_error(problem)
+            acknowledge("Press Enter to close this window.")
             return 1
         _show_console()
-        description = namespace.get("fail_message", "[Error] Tool failed: {e}")
-        print(description.format(e=error), file=sys.stderr)
+        description = namespace.get("fail_message", "Tool failed: {e}")
+        print(file=sys.stderr)
+        _print_error(description.format(e=error))
         traceback.print_exc()
-        acknowledge("Press Enter to exit")
+        acknowledge("Press Enter to close this window.")
         return 1
 
 
@@ -115,6 +117,15 @@ def settings_file_problem(error):
     if isinstance(error, NameError):
         hint = "\n  Check the spelling: True, False and None start with a capital letter, and text needs quotes."
     return f'{SETTINGS_FILE_NAME} line {line}: {type(error).__name__}: {error}{hint}\n  "{filename}"'
+
+
+def _print_error(message):
+    try:
+        from backend.DONT_CHANGE.scripts.console_tools import print_error
+
+        print_error(message, file=sys.stderr)
+    except Exception:
+        print("ERROR  " + message, file=sys.stderr)
 
 
 def _show_console():

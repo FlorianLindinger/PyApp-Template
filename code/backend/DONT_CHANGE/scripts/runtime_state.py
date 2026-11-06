@@ -261,7 +261,7 @@ class ProcessRegistry:
             return 0, stale, []
         if timeout and timeout > 0:
             if report:
-                report(f"[Info] Asking {len(records)} instance(s) to close (up to {timeout:g} s)...")
+                report(f"Asking {len(records)} instance(s) to close (up to {timeout:g} s) ...")
             for record in records:
                 request_close(record)
             deadline = time.monotonic() + timeout
@@ -277,7 +277,7 @@ class ProcessRegistry:
                         path.unlink(missing_ok=True)
                         continue
                     if report and timeout and timeout > 0:
-                        report(f"[Info] PID {record['pid']} did not close in time; terminating it.")
+                        report(f"PID {record['pid']} did not close in time; ending it.")
                     _write_stop_request(record)
                     try:
                         # The job holds the watchdog, the app and all their child processes; the

@@ -5,7 +5,7 @@ rem which applies the shared error and exit policy, with the launcher Python. -I
 rem so application packages can never break the launcher itself. -X utf8: output and
 rem files use UTF-8, so non-ASCII project paths also work when output is redirected.
 if not defined PYAPP_ENTRY_SCRIPT (
-    echo [Error] Missing launcher entry script.
+    echo ERROR  Missing launcher entry script.
     exit /b 2
 )
 if not defined PYAPP_START_DIR set "PYAPP_START_DIR=%CD%"

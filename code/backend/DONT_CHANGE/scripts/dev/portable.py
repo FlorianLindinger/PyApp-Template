@@ -8,8 +8,8 @@ import types
 
 from backend.DONT_CHANGE import backend_settings as paths
 from backend.DONT_CHANGE.scripts.config import display_path, edit_settings, settings
-from backend.DONT_CHANGE.scripts.console_tools import print_success
-from backend.DONT_CHANGE.scripts.dev.common import ask, prepare
+from backend.DONT_CHANGE.scripts.console_tools import print_fields, print_heading, print_info, print_step, print_success
+from backend.DONT_CHANGE.scripts.dev.common import confirm, prepare
 from backend.DONT_CHANGE.scripts.env.pyproject import set_requires_python
 from backend.DONT_CHANGE.scripts.env.pythons import (
     find_python,
@@ -52,11 +52,11 @@ def cmd_make_portable(arguments):
     # environment to the non-local Python and the local copies would go unused.
     changes = {name: value for name, value in PORTABLE_SETTINGS.items() if getattr(s, name) != value}
     if changes:
-        print("Making the project portable sets these values in developer_settings.py:")
-        for name, value in changes.items():
-            print(f'  {name} = "{value}"   (now "{getattr(s, name)}")')
-        if not ask("Continue?"):
-            print("[Info] Nothing was changed.")
+        print_heading("Make portable")
+        print("These settings in developer_settings.py change:")
+        print_fields([(name, f'"{getattr(s, name)}"  ->  "{value}"') for name, value in changes.items()])
+        if not confirm("Continue?"):
+            print_info("Nothing was changed.")
             return
     prepare(s)
     refuse_mutation_while_running()
@@ -75,7 +75,7 @@ def cmd_make_portable(arguments):
         if os.path.isdir(paths.LOCAL_UV_DIR):
             shutil.rmtree(paths.LOCAL_UV_DIR)
         os.rename(staging, paths.LOCAL_UV_DIR)
-        print(f"[Setup] Copied uv {uv_version()} into {display_path(paths.LOCAL_UV_DIR)}")
+        print_step(f"Copied uv {uv_version()} into {display_path(paths.LOCAL_UV_DIR)}")
     os.environ["PYAPP_UV"] = paths.LOCAL_UV_EXE
 
     # 2. Python
@@ -83,7 +83,7 @@ def cmd_make_portable(arguments):
     python = find_python(request, local) or install_python(request, local)
     if not os.path.normcase(os.path.abspath(python)).startswith(os.path.normcase(paths.LOCAL_PYTHONS_DIR)):
         raise SetupError(f"uv did not install Python {request} into {paths.LOCAL_PYTHONS_DIR}.")
-    print(f"[Setup] Local Python: {display_path(python)}")
+    print_step(f"Local Python: {display_path(python)}")
 
     # 3. packages
     if read_python_version_file() is None:
@@ -102,10 +102,7 @@ def cmd_make_portable(arguments):
         for line in edit_settings(changes):
             print(line)
     print()
-    print_success(
-        "[Success] uv, Python and all packages are now inside this folder, and developer_settings.py uses them."
-    )
-    print()
-    print("Optional for strictly offline use: allow_downloads_at_launch = False (launches never try the network).")
-    print("Copy the whole project folder. After moving it, run 'Setup - run first and after moving folder.cmd'")
-    print("to refresh the shortcuts; the environment adapts to the new location automatically.")
+    print_success("uv, Python and all packages are now inside this folder, and developer_settings.py uses them.")
+    print_info("Copy the whole project folder. After moving it, run 'Setup - run first and after moving folder.cmd'")
+    print_info("to refresh the shortcuts; the environment adapts to the new location by itself.")
+    print_info("Strictly offline: set allow_downloads_at_launch = False (launches then never try the network).")

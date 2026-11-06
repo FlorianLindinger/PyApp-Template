@@ -27,6 +27,12 @@ $minimumPython = [version]'3.8'
 
 function Fail([string]$message) { throw [System.Exception]::new($message) }
 
+# Same look as the Python side (scripts/console_tools.py): a cyan step marker and an ERROR badge.
+function Write-Step([string]$message) {
+    Write-Host ([string][char]0xBB) -ForegroundColor Cyan -NoNewline
+    Write-Host (' ' + $message)
+}
+
 function Show-Console {
     # Shortcuts start the launcher minimized; restore the window before long work or errors.
     try {
@@ -187,7 +193,7 @@ function Install-LocalUv([string]$spec) {
     if ($exact) { $base = "https://github.com/astral-sh/uv/releases/download/$exact" }
     else { $base = 'https://github.com/astral-sh/uv/releases/latest/download' }
     Show-Console
-    Write-Host "[Setup] Downloading uv $(if ($exact) { $exact } else { '(latest)' }) into this project..."
+    Write-Step "Downloading uv $(if ($exact) { $exact } else { '(latest)' }) into this project..."
     $stage = Join-Path $temporary ('uv-download-' + [Guid]::NewGuid().ToString('N'))
     [IO.Directory]::CreateDirectory($stage) | Out-Null
     try {
@@ -210,7 +216,7 @@ function Install-LocalUv([string]$spec) {
         if (Test-Path -LiteralPath $localUvDir) { Move-Item -LiteralPath $localUvDir -Destination $previous }
         Move-Item -LiteralPath $exe.Directory.FullName -Destination $localUvDir
         if (Test-Path -LiteralPath $previous) { Remove-Item -LiteralPath $previous -Recurse -Force -ErrorAction SilentlyContinue }
-        Write-Host "[Setup] uv $version installed in $localUvDir"
+        Write-Step "uv $version installed in $localUvDir"
         return $localUvExe
     } finally {
         Remove-Item -LiteralPath $stage -Recurse -Force -ErrorAction SilentlyContinue
@@ -221,7 +227,7 @@ function Install-GlobalUv([string]$spec) {
     $exact = Get-ExactVersion $spec
     if ($exact) { $url = "https://astral.sh/uv/$exact/install.ps1" } else { $url = 'https://astral.sh/uv/install.ps1' }
     Show-Console
-    Write-Host "[Setup] Installing uv $(if ($exact) { $exact } else { '(latest)' }) for your Windows user with Astral's installer ($url)..."
+    Write-Step "Installing uv $(if ($exact) { $exact } else { '(latest)' }) for your Windows user with Astral's installer ($url)..."
     $code = Invoke-Live 'powershell.exe' @('-NoLogo', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', "irm '$url' | iex")
     if ($code -ne 0) { Fail "Astral's uv installer failed (exit code $code)." }
     $uv = Find-GlobalUv
@@ -257,7 +263,7 @@ function Resolve-Uv($settings, [bool]$allowDownloads) {
         Fail "uv is missing and downloads at launch are disabled (allow_downloads_at_launch = False). Run 'Setup - run first and after moving folder.cmd' once with internet access."
     }
     if ($outdatedGlobal) {
-        Write-Host "[Setup] The global uv $outdatedGlobal does not satisfy uv_version '$spec'; it is left unchanged and a local uv is installed instead."
+        Write-Step "The global uv $outdatedGlobal does not satisfy uv_version '$spec'; it is left unchanged and a local uv is installed instead."
         return Install-LocalUv $spec
     }
     if ($install -eq 'global') { return Install-GlobalUv $spec }
@@ -368,12 +374,12 @@ function Resolve-Python($settings, [string]$uv, [bool]$allowDownloads) {
             if (-not $python) {
                 $python = (Get-Command python.exe -ErrorAction SilentlyContinue | Where-Object { $_.Source -notmatch '\\WindowsApps\\' } | Select-Object -First 1).Source
             }
-            if (-not $python) { Write-Host "[Setup] No installed default Python found; falling back to a local Python $(if ($request) { $request } else { '(newest)' })." }
+            if (-not $python) { Write-Step "No installed default Python found; falling back to a local Python $(if ($request) { $request } else { '(newest)' })." }
         }
         if (-not $python) {
             if (-not $request) {
                 $request = Get-NewestStablePython $uv
-                Write-Host "[Setup] python_version is empty: using the newest stable Python, $request."
+                Write-Step "python_version is empty: using the newest stable Python, $request."
             }
             $python = Find-Python $uv $request
             if (-not $python) {
@@ -381,7 +387,7 @@ function Resolve-Python($settings, [string]$uv, [bool]$allowDownloads) {
                     Fail "Python $request is not installed and downloads at launch are disabled (allow_downloads_at_launch = False). Run 'Setup - run first and after moving folder.cmd' once with internet access."
                 }
                 Show-Console
-                Write-Host "[Setup] Installing Python $request with uv..."
+                Write-Step "Installing Python $request with uv..."
                 $code = Invoke-Live $uv @('python', 'install', $request)
                 if ($code -ne 0) {
                     Fail ("uv could not install Python '$request'. " + (Get-AvailableSummary $uv) + " The launcher needs Python 3.8 or newer. Check python_version in developer_settings.py.")
@@ -434,7 +440,8 @@ try {
 } catch {
     Show-Console
     Write-Host ''
-    Write-Host ('[Error] ' + $_.Exception.Message) -ForegroundColor Red
+    Write-Host ' ERROR ' -ForegroundColor White -BackgroundColor DarkRed -NoNewline
+    Write-Host (' ' + $_.Exception.Message)
     Write-Host ''
     exit 1
 } finally {

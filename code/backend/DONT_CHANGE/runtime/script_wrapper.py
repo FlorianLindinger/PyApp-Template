@@ -334,7 +334,7 @@ def main():
 
             ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(config["app_id"])
         except Exception as error:
-            print(f"[Warning] Failed to set app id for taskbar grouping: {error}")
+            print(f"Warning: could not set the taskbar identity of this window: {error}")
     if input_prepend or log_input_prepend or hasattr(sys.stdout, "complete_input_line"):
         install_input_prefix(input_prepend)
 

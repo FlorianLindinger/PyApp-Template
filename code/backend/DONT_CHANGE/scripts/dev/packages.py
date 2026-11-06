@@ -4,7 +4,17 @@ from __future__ import annotations
 
 from backend.DONT_CHANGE import backend_settings as paths
 from backend.DONT_CHANGE.scripts.config import display_path, settings
-from backend.DONT_CHANGE.scripts.console_tools import input_warn, print_success, print_warn
+from backend.DONT_CHANGE.scripts.console_tools import (
+    ANSI_DIM,
+    ANSI_GOOD,
+    ask,
+    print_choices,
+    print_heading,
+    print_info,
+    print_success,
+    print_warn,
+    styled,
+)
 from backend.DONT_CHANGE.scripts.dev.common import (
     COMMIT_HINT,
     ask_package_names,
@@ -28,7 +38,7 @@ from backend.DONT_CHANGE.scripts.env.venv import (
 def cmd_add(arguments):
     """Add packages (recorded in developer_settings.py and uv.lock) and install them."""
     s = settings()
-    names = arguments or ask_package_names("Package(s) to add, e.g. requests numpy>=2: ")
+    names = arguments or ask_package_names("Package(s) to add, e.g. requests numpy>=2:")
     if not names:
         return
     prepare(s)
@@ -37,7 +47,8 @@ def cmd_add(arguments):
         return
     refuse_mutation_while_running()
     add_packages(names)
-    print_success("[Success] Added: " + " ".join(names) + COMMIT_HINT)
+    print_success("Added: " + " ".join(names))
+    print_info(COMMIT_HINT)
 
 
 def cmd_remove(arguments):
@@ -50,11 +61,11 @@ def cmd_remove(arguments):
     if not names:
         declared = list(settings().packages)
         if not declared:
-            print('[Info] "packages" in developer_settings.py is empty.')
+            print_info('"packages" in developer_settings.py is empty.')
             return
-        for index, requirement in enumerate(declared, 1):
-            print(f"  {index}: {requirement}")
-        chosen = input_warn("Numbers or names to remove (space separated): ").replace(",", " ").split()
+        print_heading("Declared packages")
+        print_choices(declared)
+        chosen = ask("Numbers or names to remove (space separated):").replace(",", " ").split()
         for item in chosen:
             if item.isdigit() and 1 <= int(item) <= len(declared):
                 names.append(requirement_name(declared[int(item) - 1]))
@@ -65,7 +76,8 @@ def cmd_remove(arguments):
     prepare(s)
     refuse_mutation_while_running()
     remove_packages(names)
-    print_success("[Success] Removed: " + " ".join(names) + COMMIT_HINT)
+    print_success("Removed: " + " ".join(names))
+    print_info(COMMIT_HINT)
 
 
 def cmd_upgrade(arguments):
@@ -81,7 +93,7 @@ def cmd_upgrade(arguments):
     )
     run_uv(lock_arguments)
     sync(paths.VENV_PYTHON_EXE, exact=True)
-    print_success("[Success] Packages upgraded. Test the app, then commit backend/uv.lock.")
+    print_success("Packages upgraded. Test the app, then commit backend/uv.lock.")
 
 
 def cmd_sync(arguments):
@@ -94,7 +106,7 @@ def cmd_sync(arguments):
     refuse_mutation_while_running()
     ensure_lock(s)
     sync(paths.VENV_PYTHON_EXE, exact=True)
-    print_success("[Success] The environment matches uv.lock.")
+    print_success("The environment matches uv.lock.")
 
 
 def find_imports_and_add():
@@ -104,36 +116,39 @@ def find_imports_and_add():
     s = settings()
     requirements, problems = find_requirements()
     for problem in problems:
-        print_warn("[Warning] Could not parse " + problem)
+        print_warn("Could not parse " + problem)
     declared = {requirement_name(r) for r in s.packages}
     candidates = [r for r in requirements if normalized(r.distribution) not in declared]
-    if requirements:
-        print("Imported third-party packages:")
-        for r in requirements:
-            state = "declared" if normalized(r.distribution) in declared else r.source
-            note = ", optional import" if r.optional else ""
-            print(
-                f"  - {r.distribution}  (import {', '.join(r.imports)}; {state}{note}; in {', '.join(r.files[:3])}{' ...' if len(r.files) > 3 else ''})"
-            )
-    if not candidates:
-        print_success(
-            "[Success] Every imported package is already declared."
-            if requirements
-            else "[Info] No third-party imports found."
+    if not requirements:
+        print_info("No third-party imports found.")
+        return
+    print_heading("Third-party imports")
+    width = max(len(r.distribution) for r in requirements)
+    for r in requirements:
+        state = "declared" if normalized(r.distribution) in declared else r.source
+        note = ", optional import" if r.optional else ""
+        files = ", ".join(r.files[:3]) + (" ..." if len(r.files) > 3 else "")
+        print(
+            f"  {r.distribution:<{width}}  "
+            + styled(f"import {', '.join(r.imports)}; {state}{note}; in {files}", ANSI_DIM)
         )
+    if not candidates:
+        print()
+        print_success("Every imported package is already declared.")
         return
     selected = [not r.optional for r in candidates]
-    print()
-    print(
-        'Sources: "installed" = found in the environment, "mapping" = bundled list, "guess" = same as the import name (check it!).'
+    print_heading("Packages to add")
+    print_info(
+        "installed = found in the environment, mapping = bundled list, guess = same as the import name (check it!)"
     )
     while True:
-        print("Packages to add:")
-        for index, (r, chosen) in enumerate(zip(candidates, selected), 1):
-            print(
-                f"  [{'x' if chosen else ' '}] {index}: {r.distribution}  ({r.source}{', optional' if r.optional else ''})"
-            )
-        answer = input_warn("Enter = add the checked ones, numbers = toggle (e.g. 2 5), n = cancel: ").strip().lower()
+        print()
+        print_choices(
+            f"[{styled('x', ANSI_GOOD) if chosen else ' '}] {r.distribution}  "
+            + styled(r.source + (", optional" if r.optional else ""), ANSI_DIM)
+            for r, chosen in zip(candidates, selected)
+        )
+        answer = ask("Enter = add the checked ones, numbers = toggle (e.g. 2 5), n = cancel:").strip().lower()
         if answer in ("n", "no", "q"):
             return
         if not answer:
@@ -149,7 +164,8 @@ def find_imports_and_add():
         return
     refuse_mutation_while_running()
     add_packages(names)
-    print_success("[Success] Added: " + " ".join(names) + COMMIT_HINT)
+    print_success("Added: " + " ".join(names))
+    print_info(COMMIT_HINT)
 
 
 def cmd_find_imports(arguments):
@@ -179,4 +195,4 @@ def cmd_export(arguments):
             "--quiet",
         ]
     )
-    print_success(f'[Success] Wrote "{display_path(paths.EXPORTED_REQUIREMENTS_PATH)}".')
+    print_success(f'Wrote "{display_path(paths.EXPORTED_REQUIREMENTS_PATH)}".')
