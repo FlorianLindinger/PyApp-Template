@@ -86,10 +86,8 @@ SUB_ICON_KINDS = (
     "log",
     "success",
     "failure",
-    "crash",
     "crash_log",
     "open_main_py",
-    "keyboard_interrupt",
 )
 _ALIGNMENT_WORDS = {"top", "bottom", "left", "right", "center", "up", "down", "middle", "centre"}
 

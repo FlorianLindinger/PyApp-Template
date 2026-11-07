@@ -93,10 +93,8 @@ STOP_ICON_PATH = ICON_DIR + "\\stop.ico"
 LOG_ICON_PATH = ICON_DIR + "\\log.ico"
 SUCCESS_ICON_PATH = ICON_DIR + "\\success.ico"
 FAILURE_ICON_PATH = ICON_DIR + "\\failure.ico"
-CRASH_ICON_PATH = ICON_DIR + "\\crash.ico"
 CRASH_LOG_ICON_PATH = ICON_DIR + "\\crash_log.ico"
 OPEN_MAIN_PY_ICON_PATH = ICON_DIR + "\\open_main_py.ico"
-KEYBOARD_INTERRUPT_ICON_PATH = ICON_DIR + "\\keyboard_interrupt.ico"
 
 # ------------------------
 # generated process state

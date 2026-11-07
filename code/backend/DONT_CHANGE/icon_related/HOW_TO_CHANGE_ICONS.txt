@@ -27,11 +27,9 @@ Optional overlay images:
     stop.png
     log.png
     success.png
-    failure.png
-    crash.png
+    failure.png          (also shown after a crash or Ctrl+C)
     crash_log.png
     open_main_py.png
-    keyboard_interrupt.png
 
 Each overlay is placed on top of icon.png to create a matching .ico file.
 For example, settings.png produces settings.ico.
@@ -43,7 +41,7 @@ the generator uses the matching bundled fallback from:
 
 The bundled fallback files are named default_icon.png,
 default_settings.png, default_stop.png, and so on (including
-default_open_main_py.png and default_keyboard_interrupt.png).
+default_open_main_py.png).
 
 
 =======================================
@@ -85,10 +83,8 @@ This launches actions/gen_icons.py with the project's Python. It creates:
     log.ico
     success.ico
     failure.ico
-    crash.ico
     crash_log.ico
     open_main_py.ico
-    keyboard_interrupt.ico
 
 Each ICO contains 256, 128, 64, 48, 32, and 16 pixel versions for good
 appearance in Windows shortcuts, Explorer, and the taskbar.
