@@ -1,9 +1,10 @@
 """developer_settings.py: validation, friendly errors, and editing without damaging the file."""
 
+import re
 import unittest
 
 import support
-from project_location import CODE
+from project_location import CODE, DONT_CHANGE
 
 # isort: split
 
@@ -64,6 +65,46 @@ class ValidationTests(unittest.TestCase):
 
     def test_errors_elsewhere_are_not_blamed_on_the_settings(self):
         self.assertIsNone(entrypoint.settings_file_problem(ValueError("x")))
+
+
+class DefaultsTests(unittest.TestCase):
+    """Settings missing in an older developer_settings.py fall back to data/developer_settings_defaults.py."""
+
+    DEFAULTS = DONT_CHANGE / "data" / "developer_settings_defaults.py"
+
+    def test_defaults_file_is_complete_and_valid(self):
+        defaults = self.DEFAULTS.read_text(encoding="utf-8")
+        with support.temporary_settings(lambda text: defaults) as (_, load):
+            config.validate(load())
+
+    def test_missing_settings_get_their_defaults(self):
+        def drop(text):
+            text = re.sub(r"(?m)^app_name_banner_font\b.*\n", "", text)
+            text = re.sub(r"(?m)^terminal_shortcut_name\b.*\n", "", text)
+            return text.replace('program_name = "PyApp-Template"', 'program_name = "Other App"')
+
+        with support.temporary_settings(drop) as (_, load):
+            module = load()
+            filled = config.fill_missing_settings(module)
+            self.assertEqual(sorted(filled), ["app_name_banner_font", "terminal_shortcut_name"])
+            self.assertEqual(module.app_name_banner_font, "future")
+            self.assertEqual(module.terminal_shortcut_name, "Other App")  # f"{program_name}" of the project
+            config.validate(module)
+
+    def test_editing_a_missing_setting_appends_it(self):
+        with support.temporary_settings(lambda text: re.sub(r"(?m)^uv_version\b.*\n", "", text)) as (path, load):
+            config.edit_settings({"uv_version": ">=0.9"})
+            self.assertEqual(load().uv_version, ">=0.9")
+            self.assertIn("\r\n", path.read_bytes().decode("utf-8")[-20:])
+
+    def test_bootstrap_defaults_match_the_defaults_file(self):
+        script = (DONT_CHANGE / "bootstrap" / "resolve_runtime.ps1").read_text(encoding="utf-8")
+        found = re.findall(r"Get-Setting \$settings '(\w+)' ('[^']*'|\$true|\$false)", script)
+        self.assertGreaterEqual(len(found), 8)
+        expressions = config.default_setting_expressions(str(self.DEFAULTS))
+        for name, literal in found:
+            expected = {"$true": True, "$false": False}.get(literal, literal.strip("'"))
+            self.assertEqual(expressions[name].value, expected, f"default of {name} in resolve_runtime.ps1")
 
 
 class EditingTests(unittest.TestCase):

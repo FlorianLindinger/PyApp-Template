@@ -7,7 +7,7 @@ import tempfile
 from pathlib import Path
 from unittest import mock
 
-from project_location import CODE
+from project_location import CODE, DONT_CHANGE
 
 # isort: split
 
@@ -46,6 +46,7 @@ def temporary_settings(transform=None):
             "settings": load,
             "PYPROJECT_PATH": str(Path(folder) / "pyproject.toml"),
             "UV_LOCK_PATH": str(Path(folder) / "uv.lock"),
+            "DEFAULT_SETTINGS_PATH": str(DONT_CHANGE / "data" / "developer_settings_defaults.py"),
         }
         patches = [
             mock.patch.object(module, name, value)

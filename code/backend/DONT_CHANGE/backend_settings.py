@@ -16,6 +16,13 @@ def make_abs(x: str) -> str:
 
 # fmt: off
 
+# Version of this DONT_CHANGE folder (Semantic Versioning, see README.md "Versions"):
+#   PATCH: bug fixes and minor improvements; update by replacing the DONT_CHANGE folder
+#   MINOR: new features, nothing breaks; replace DONT_CHANGE (new settings fall back to their
+#          defaults, new optional files outside it may be copied)
+#   MAJOR: something breaks; replace DONT_CHANGE and follow the steps in CHANGELOG.md
+LAUNCHER_VERSION = "1.0.0"
+
 # ------------------------
 # folders
 # The batch bootstrap (DONT_CHANGE/bootstrap/*.bat, *.ps1) uses the same fixed
@@ -53,7 +60,8 @@ ENVIRONMENT_LOCK_PATH = TEMPORARY_DIR + "\\environment.lock"
 # Written after a successful environment check; while it matches, launches skip the uv checks.
 ENVIRONMENT_STAMP_PATH = TEMPORARY_DIR + "\\environment.ok"
 # Errors the launcher ignores on purpose (cosmetic steps), see scripts/diagnostics.py.
-DIAGNOSTICS_LOG_PATH = TEMPORARY_DIR + "\\diagnostics.log"
+# PYAPP_DIAGNOSTICS_LOG: only for the tests, which must not write into the project folder.
+DIAGNOSTICS_LOG_PATH = os.environ.get("PYAPP_DIAGNOSTICS_LOG") or TEMPORARY_DIR + "\\diagnostics.log"
 MINIMUM_PYTHON = (3, 8)                             # oldest Python the launcher code supports
 
 # ------------------------
@@ -110,6 +118,7 @@ STOP_REQUEST_FILE_NAME = "stop-requested"
 
 EXPORTED_REQUIREMENTS_PATH = PROJECT_DIR + "\\requirements.txt"
 IMPORT_MAPPING_PATH = DATA_DIR + "\\import_to_package.txt"
+DEFAULT_SETTINGS_PATH = DATA_DIR + "\\developer_settings_defaults.py"  # defaults for missing settings
 FONTS_DIR = DATA_DIR + "\\fonts"  # ASCII-art fonts of the app name banner (scripts/banner.py)
 
 # ------------------------

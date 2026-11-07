@@ -25,6 +25,10 @@ The first versioned release; it contains every change below.
   TODO.md and a detailed README.md moved here too; `LAUNCHER_VERSION` added (shown by Setup and
   the `status` dev tool); `tmp/` is created by the bootstrap when it is missing;
   `icon_related/` renamed to `icons/`.
+- Settings missing in a project's `developer_settings.py` (e.g. after a launcher update) use
+  their defaults from `data/developer_settings_defaults.py` instead of failing; dev tools that
+  change such a setting add it to the file. The bootstrap's fallbacks now match these defaults
+  (`python_source`, `python_version`, `uv_user_python_visible_globally` differed).
 
 ### 2026-11-06 - structure, type checking, banner, consistent console output
 

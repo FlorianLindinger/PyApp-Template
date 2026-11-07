@@ -8,7 +8,7 @@ import os
 import re
 import sys
 
-from backend.DONT_CHANGE.backend_settings import DEV_SETTINGS_PATH
+from backend.DONT_CHANGE.backend_settings import DEFAULT_SETTINGS_PATH, DEV_SETTINGS_PATH
 from backend.DONT_CHANGE.scripts.errors import SettingsError
 
 # Read by bootstrap/resolve_runtime.ps1 before Python exists; must stay one-line literals.
@@ -132,12 +132,55 @@ def settings():
     from backend.DONT_CHANGE.scripts.entrypoint import settings_file_problem
 
     try:
-        return importlib.import_module("backend.developer_settings")
+        module = importlib.import_module("backend.developer_settings")
     except Exception as error:
         problem = settings_file_problem(error)
         if problem is None:
             raise
         raise SettingsError(problem) from None
+    fill_missing_settings(module)
+    return module
+
+
+def default_setting_expressions(path: str | None = None) -> dict:
+    """{name: expression node} of every top-level setting in the defaults file (last one wins)."""
+    path = path or DEFAULT_SETTINGS_PATH
+    with open(path, encoding="utf-8") as stream:
+        tree = ast.parse(stream.read(), path)
+    expressions = {}
+    for node in tree.body:
+        if isinstance(node, (ast.Assign, ast.AnnAssign)) and node.value is not None:
+            for name in _assigned_names(node):
+                expressions[name] = node.value
+    return expressions
+
+
+def fill_missing_settings(module) -> list:
+    """Give settings that the project's file lacks their default value; return their names.
+
+    Defaults may refer to other settings (f"{program_name}"), which then use the project's values.
+    """
+    if hasattr(module, "MISSING_SETTINGS_FILLED_IN"):
+        return module.MISSING_SETTINGS_FILLED_IN
+    filled = []
+    try:
+        expressions = default_setting_expressions()
+    except OSError:
+        expressions = {}
+    for name, expression in expressions.items():
+        if hasattr(module, name):
+            continue
+        try:
+            value = eval(compile(ast.Expression(expression), DEFAULT_SETTINGS_PATH, "eval"), vars(module))
+        except Exception:
+            from backend.DONT_CHANGE.scripts.diagnostics import note_ignored
+
+            note_ignored(f"default of {name}")  # validate() then reports the setting as missing
+            continue
+        setattr(module, name, value)
+        filled.append(name)
+    module.MISSING_SETTINGS_FILLED_IN = filled
+    return filled
 
 
 def _assigned_names(node) -> list[str]:
@@ -201,10 +244,29 @@ def python_version_problem(value: str) -> str | None:
     return None
 
 
+_noted_defaults = set()
+
+
+def _note_defaults_once(module) -> None:
+    """Tell once per process which settings were missing and use their defaults."""
+    names = [n for n in getattr(module, "MISSING_SETTINGS_FILLED_IN", []) if n not in _noted_defaults]
+    if not names:
+        return
+    _noted_defaults.update(names)
+    from backend.DONT_CHANGE.scripts.console_tools import print_info
+
+    values = ", ".join(f"{name} = {getattr(module, name)!r}" for name in names)
+    print_info(
+        f"Not in developer_settings.py, using the defaults: {values}. To change them, copy the lines"
+        " from backend/DONT_CHANGE/data/developer_settings_defaults.py."
+    )
+
+
 def validate(module=None) -> None:
     """Raise SettingsError listing every unusable setting."""
     s = module or settings()
     problems = list(_bootstrap_literal_problems())
+    _note_defaults_once(s)
 
     def get(name, default=None):
         return getattr(s, name, default)
@@ -375,7 +437,14 @@ def _replace_setting_value(name: str, make_value) -> list[str]:
         if name in _assigned_names(item):
             node = item
     if node is None:
-        raise SettingsError(f"Could not find the setting {name} in developer_settings.py to edit.")
+        if name not in default_setting_expressions():
+            raise SettingsError(f"Could not find the setting {name} in developer_settings.py to edit.")
+        # A setting that only had its default (added by a newer launcher version): append it.
+        addition = f"{name} = {make_value(newline)}{newline}"
+        with open(DEV_SETTINGS_PATH, "w", encoding="utf-8", newline="") as stream:
+            stream.write(source + ("" if source.endswith(("\n", "\r")) else newline) + addition)
+        sys.modules.pop("backend.developer_settings", None)
+        return [f"+ {line}" for line in addition.rstrip().splitlines()]
     first, last = node.lineno - 1, (node.end_lineno or node.lineno) - 1
     # ast offsets count UTF-8 bytes
     head = lines[first].encode("utf-8")[: node.value.col_offset].decode("utf-8")  # e.g. "packages: list[str] = "

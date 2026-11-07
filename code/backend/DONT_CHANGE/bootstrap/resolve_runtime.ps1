@@ -276,7 +276,7 @@ function Set-UvEnvironment($settings, [string]$source, [bool]$allowDownloads) {
     foreach ($name in @('UV_PYTHON', 'UV_PYTHON_INSTALL_DIR', 'UV_MANAGED_PYTHON', 'UV_NO_MANAGED_PYTHON', 'UV_PYTHON_PREFERENCE', 'UV_PYTHON_INSTALL_BIN', 'UV_PYTHON_INSTALL_REGISTRY', 'UV_PROJECT_ENVIRONMENT', 'UV_PROJECT', 'UV_WORKING_DIR', 'VIRTUAL_ENV')) {
         Remove-Item "Env:$name" -ErrorAction SilentlyContinue
     }
-    $visible = [bool](Get-Setting $settings 'uv_user_python_visible_globally' $false)
+    $visible = [bool](Get-Setting $settings 'uv_user_python_visible_globally' $true)
     switch ($source) {
         'uv_user' {
             $env:UV_MANAGED_PYTHON = '1'
@@ -351,7 +351,7 @@ function Find-Python([string]$uv, [string]$request) {
 }
 
 function Resolve-Python($settings, [string]$uv, [bool]$allowDownloads) {
-    $source = Get-Setting $settings 'python_source' 'local'
+    $source = Get-Setting $settings 'python_source' 'uv_user'
     Assert-Choice 'python_source' $source @('local', 'uv_user', 'system_if_matching_else_local', 'system_default_any_version')
     Assert-Choice 'package_environment' (Get-Setting $settings 'package_environment' 'project_venv') @('project_venv', 'interpreter_site_packages')
     Set-UvEnvironment $settings $source $allowDownloads
@@ -363,7 +363,7 @@ function Resolve-Python($settings, [string]$uv, [bool]$allowDownloads) {
     if (Test-Path -LiteralPath $versionFile) {
         $request = @([IO.File]::ReadAllLines($versionFile) | ForEach-Object { $_.Trim() } | Where-Object { $_ -and -not $_.StartsWith('#') }) | Select-Object -First 1
     }
-    if (-not $request) { $request = [string](Get-Setting $settings 'python_version' '') }
+    if (-not $request) { $request = [string](Get-Setting $settings 'python_version' '3.14') }
 
     # Outside the project: uv would otherwise discover backend\.venv as "the" Python.
     Push-Location ([IO.Path]::GetTempPath())
