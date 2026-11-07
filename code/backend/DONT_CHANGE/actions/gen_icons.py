@@ -8,13 +8,11 @@ from concurrent.futures import ThreadPoolExecutor
 from functools import lru_cache
 
 from backend.DONT_CHANGE.backend_settings import (
-    CRASH_ICON_PATH,
     CRASH_LOG_ICON_PATH,
     DONT_CHANGE_DIR,
     FAILURE_ICON_PATH,
     ICON_DIR,
     ICON_PATH,
-    KEYBOARD_INTERRUPT_ICON_PATH,
     LOG_ICON_PATH,
     OPEN_MAIN_PY_ICON_PATH,
     SETTINGS_ICON_PATH,
@@ -45,10 +43,8 @@ ICON_GENERATION_SETTINGS = [
     (LOG_ICON_PATH, *_base, "log.png", "512x512:66c0a178", "default_log.png"),
     (SUCCESS_ICON_PATH, *_base, "success.png", "512x512:c33e7909", "default_success.png"),
     (FAILURE_ICON_PATH, *_base, "failure.png", "512x512:93eddb87", "default_failure.png"),
-    (CRASH_ICON_PATH, *_base, "crash.png", "512x512:d2dd80f5", "default_crash.png"),
     (CRASH_LOG_ICON_PATH, *_base, "crash_log.png", "512x512:99dee2ae", "default_crash_log.png"),
     (OPEN_MAIN_PY_ICON_PATH, *_base, "open_main_py.png", "512x512:3bd1b4b4", "default_open_main_py.png"),
-    (KEYBOARD_INTERRUPT_ICON_PATH, *_base, "keyboard_interrupt.png", "512x512:0c4eac7f", "default_keyboard_interrupt.png"),
 ]
 # fmt: on
 

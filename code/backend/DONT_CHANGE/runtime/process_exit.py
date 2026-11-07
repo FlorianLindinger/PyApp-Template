@@ -72,9 +72,10 @@ OUTCOMES = {
         "icon": paths.FAILURE_ICON_PATH,
         "default_sound": paths.DEFAULT_SOUND_AFTER_FAILURE,
     },
-    "crash": {"icon": paths.CRASH_ICON_PATH, "default_sound": paths.DEFAULT_SOUND_AFTER_CRASH},
+    # Crashes and Ctrl+C show the failure icon too.
+    "crash": {"icon": paths.FAILURE_ICON_PATH, "default_sound": paths.DEFAULT_SOUND_AFTER_CRASH},
     "keyboard_interrupt": {
-        "icon": paths.KEYBOARD_INTERRUPT_ICON_PATH,
+        "icon": paths.FAILURE_ICON_PATH,
         "default_sound": paths.DEFAULT_SOUND_AFTER_KEYBOARD_INTERRUPT,
     },
 }

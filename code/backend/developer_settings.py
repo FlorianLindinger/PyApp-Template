@@ -256,14 +256,10 @@ success_sub_icon_scale: float | None = 0.35
 success_sub_icon_alignment: str | None = "bottom right"
 failure_sub_icon_scale: float | None = 0.35
 failure_sub_icon_alignment: str | None = "bottom right"
-crash_sub_icon_scale: float | None = 0.35
-crash_sub_icon_alignment: str | None = "bottom right"
 crash_log_sub_icon_scale: float | None = 0.35
 crash_log_sub_icon_alignment: str | None = "bottom right"
 open_main_py_sub_icon_scale: float | None = 0.35
 open_main_py_sub_icon_alignment: str | None = "bottom right"
-keyboard_interrupt_sub_icon_scale: float | None = 0.35
-keyboard_interrupt_sub_icon_alignment: str | None = "bottom right"
 
 # =================================
 # ==== Less Important Settings ====

@@ -148,3 +148,33 @@ Traceback (most recent call last):
     kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
 AttributeError: module 'ctypes' has no attribute 'WinDLL'
 
+2026-11-07 15:40:38  pid 20  tool.py: unminimize_terminal
+Traceback (most recent call last):
+  File "/sessions/rcw-01n1ygmqfcpguhupc3w5nbwp/mnt/PyApp Template/code/backend/DONT_CHANGE/scripts/entrypoint.py", line 52, in run_file
+    result = main()
+  File "/sessions/rcw-01n1ygmqfcpguhupc3w5nbwp/tmp/tmppvh4_7m9/tool.py", line 6, in main
+    raise SettingsError('python_version is wrong')
+backend.DONT_CHANGE.scripts.errors.SettingsError: python_version is wrong
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/sessions/rcw-01n1ygmqfcpguhupc3w5nbwp/mnt/PyApp Template/code/backend/DONT_CHANGE/scripts/console_tools.py", line 292, in unminimize_terminal
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+AttributeError: module 'ctypes' has no attribute 'WinDLL'
+
+2026-11-07 15:40:38  pid 20  tool.py: foreground_terminal
+Traceback (most recent call last):
+  File "/sessions/rcw-01n1ygmqfcpguhupc3w5nbwp/mnt/PyApp Template/code/backend/DONT_CHANGE/scripts/entrypoint.py", line 52, in run_file
+    result = main()
+  File "/sessions/rcw-01n1ygmqfcpguhupc3w5nbwp/tmp/tmppvh4_7m9/tool.py", line 6, in main
+    raise SettingsError('python_version is wrong')
+backend.DONT_CHANGE.scripts.errors.SettingsError: python_version is wrong
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/sessions/rcw-01n1ygmqfcpguhupc3w5nbwp/mnt/PyApp Template/code/backend/DONT_CHANGE/scripts/console_tools.py", line 306, in foreground_terminal
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+AttributeError: module 'ctypes' has no attribute 'WinDLL'
+
