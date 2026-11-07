@@ -231,8 +231,10 @@ terminal_colors_after_keyboard_interrupt: str | None = "6C"
 
 # Datetime format shown in crash reports:
 error_date_format = "%Y-%m-%d %H:%M:%S"
-# Number of source-code lines shown before and after the failing line of your own code.
-traceback_extra_lines: int = 3
+# Source lines of your own code shown before and after each failing line (0 for none).
+# Library code always shows just the failing line, like Python does.
+traceback_lines_before: int = 3
+traceback_lines_after: int = 3
 # Color tracebacks in the terminal (log files are always plain text):
 traceback_colors = True
 

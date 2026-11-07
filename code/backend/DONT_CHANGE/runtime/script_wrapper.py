@@ -246,7 +246,7 @@ def save_result(code):
         os.replace(result_path + ".tmp", result_path)
 
 
-def capture_background_errors(script_path, output_path, app_root, extra_lines):
+def capture_background_errors(script_path, output_path, app_root, context_lines):
     """Record the first unhandled worker-thread error and Tkinter callback error."""
     first_error = [None]
     lock = threading.Lock()
@@ -259,7 +259,7 @@ def capture_background_errors(script_path, output_path, app_root, extra_lines):
             if first_error[0] is not None:
                 return
             first_error[0] = error
-            protocol.save_report(error, script_path, output_path, app_root, extra_lines)
+            protocol.save_report(error, script_path, output_path, app_root, context_lines)
 
     previous_hook = getattr(threading, "excepthook", None)
     if previous_hook is not None:
@@ -299,7 +299,7 @@ def main():
     result_path = config["result"]
     ready_path = config.get("ready")
     app_root = config.get("app_root") or os.path.dirname(script_path)
-    extra_lines = int(config.get("traceback_extra_lines", 3))
+    context_lines = (int(config.get("traceback_lines_before", 3)), int(config.get("traceback_lines_after", 3)))
     print_prepend = config.get("print_prepend") or ""
     input_prepend = config.get("input_prepend") or ""
     log_print_prepend = config.get("log_print_prepend") or ""
@@ -343,7 +343,7 @@ def main():
     sys.path[0] = os.path.dirname(os.path.abspath(script_path))
 
     pending_background_error = capture_background_errors(
-        script_path, report_path + ".background", app_root, extra_lines
+        script_path, report_path + ".background", app_root, context_lines
     )
     if ready_path:
         with open(ready_path, "w", encoding="utf-8") as stream:
@@ -359,7 +359,7 @@ def main():
             background_error = pending_background_error()
             if background_error is not None:
                 error = background_error
-        protocol.save_report(error, script_path, report_path, app_root, extra_lines)
+        protocol.save_report(error, script_path, report_path, app_root, context_lines)
         save_result(protocol.WrapperExit.APP_FAILED)
         sys.exit(protocol.WrapperExit.APP_FAILED)
 
