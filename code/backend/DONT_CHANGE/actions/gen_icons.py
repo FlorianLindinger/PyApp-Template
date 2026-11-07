@@ -23,6 +23,7 @@ from backend.DONT_CHANGE.backend_settings import (
 )
 from backend.DONT_CHANGE.scripts.config import settings as load_settings
 from backend.DONT_CHANGE.scripts.config import validate
+from backend.DONT_CHANGE.scripts.console_tools import ANSI_GOOD, styled
 from backend.DONT_CHANGE.scripts.image_tools import (
     generate_ico_from_png,
     get_png_image_id,
@@ -131,4 +132,4 @@ def main() -> None:
 
     with ThreadPoolExecutor(max_workers=min(4, len(jobs))) as executor:
         for output_path in executor.map(generate, jobs):
-            print(f"Generated: {os.path.basename(output_path)}")
+            print(f"  {styled('+', ANSI_GOOD)} {os.path.basename(output_path)}")

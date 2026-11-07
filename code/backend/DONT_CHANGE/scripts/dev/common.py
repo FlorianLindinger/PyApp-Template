@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 
 from backend.DONT_CHANGE.scripts.config import settings, validate
-from backend.DONT_CHANGE.scripts.console_tools import ask, print_warn
+from backend.DONT_CHANGE.scripts.console_tools import ask, print_info, print_warn
 from backend.DONT_CHANGE.scripts.env.venv import (
     app_python_for_tools,
     ensure_environment,
@@ -46,7 +46,7 @@ def install_into_interpreter(s, names) -> None:
     if not s.allow_installing_into_global_python:
         print_warn("The app uses the selected interpreter's own packages; this tool does not change them.")
         print(f'Install them yourself:  "{python}" -m pip install {" ".join(names)}')
-        print("(or set allow_installing_into_global_python = True in developer_settings.py)")
+        print_info("(or set allow_installing_into_global_python = True in developer_settings.py)")
         return
     install_without_recording(names, python)
 

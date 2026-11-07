@@ -157,7 +157,7 @@ Old logs and run diagnostics are pruned (`max_log_files` counts runs: a log and 
 
 Crash reports and terminal tracebacks look exactly like running `python main.py`
 (launcher frames are removed), including exception chains, notes and exception groups,
-plus `traceback_extra_lines` lines of context around your own code and optional colors.
+plus `traceback_lines_before` / `traceback_lines_after` lines of context around your own code and optional colors.
 
 A missing module offers: add the package to the project, install it without recording,
 find all imports of the project and add the missing ones, or open a package terminal; the

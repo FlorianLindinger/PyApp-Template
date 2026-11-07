@@ -258,11 +258,12 @@ def validate(module=None) -> None:
             lambda v: v is None or (isinstance(v, int) and not isinstance(v, bool) and v > 0),
             "use a positive whole number or None",
         )
-    need(
-        "traceback_extra_lines",
-        lambda v: isinstance(v, int) and not isinstance(v, bool) and v >= 0,
-        "use 0 or a positive whole number",
-    )
+    for name in ("traceback_lines_before", "traceback_lines_after"):
+        need(
+            name,
+            lambda v: isinstance(v, int) and not isinstance(v, bool) and v >= 0,
+            "use 0 or a positive whole number",
+        )
     for name in ("log_path", "crash_log_path", "user_settings_path"):
         need(name, lambda v: v is None or isinstance(v, str), "use a path text or None")
     for name in ("terminal_bg_color", "terminal_text_color"):

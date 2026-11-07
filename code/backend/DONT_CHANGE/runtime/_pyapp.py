@@ -80,13 +80,14 @@ def _is_app_file(filename, app_root):
     return first not in ("backend", ".venv") and not first.startswith(".venv")
 
 
-def _frames(te, app_root, extra_lines):
+def _frames(te, app_root, context_lines):
     frames = []
     for frame in te.stack:
         is_app = _is_app_file(frame.filename, app_root)
         context = []
-        if is_app and extra_lines and frame.lineno:
-            for number in range(max(1, frame.lineno - extra_lines), frame.lineno + extra_lines + 1):
+        before, after = context_lines
+        if is_app and frame.lineno:
+            for number in range(max(1, frame.lineno - before), frame.lineno + after + 1):
                 text = linecache.getline(frame.filename, number)
                 if text:
                     context.append([number, text.rstrip("\r\n")])
@@ -103,7 +104,7 @@ def _frames(te, app_root, extra_lines):
     return frames
 
 
-def _chain(te, app_root, extra_lines):
+def _chain(te, app_root, context_lines):
     """Exception chain oldest first, like CPython prints it.
 
     Each entry's "relation" is the sentence printed between the previous entry and it.
@@ -125,7 +126,7 @@ def _chain(te, app_root, extra_lines):
         entries.append(
             {
                 "relation": relation,
-                "frames": _frames(current, app_root, extra_lines),
+                "frames": _frames(current, app_root, context_lines),
                 "exception_only": [line.rstrip("\n") for line in current.format_exception_only()],
                 "group": bool(getattr(current, "exceptions", None)),
             }
@@ -135,15 +136,18 @@ def _chain(te, app_root, extra_lines):
     return entries
 
 
-def build_report(error, script_path, app_root=None, extra_lines=3):
-    """Serializable report of an exception as if main.py had been run directly."""
+def build_report(error, script_path, app_root=None, context_lines=(3, 3)):
+    """Serializable report of an exception as if main.py had been run directly.
+
+    context_lines: (lines before, lines after) the failing line shown for the app's own files.
+    """
     tb = strip_launcher_frames(error.__traceback__)
     te = traceback.TracebackException(type(error), error, tb, capture_locals=False)
     exit_code = None
     if isinstance(error, SystemExit):
         code = error.code
         exit_code = code if code is None or isinstance(code, (bool, int, float, str)) else repr(code)
-    chain = _chain(te, app_root, extra_lines)
+    chain = _chain(te, app_root, context_lines)
     return {
         "script_path": script_path,
         "python_version": sys.version.split()[0],
@@ -156,9 +160,9 @@ def build_report(error, script_path, app_root=None, extra_lines=3):
     }
 
 
-def save_report(error, script_path, output_path, app_root=None, extra_lines=3):
+def save_report(error, script_path, output_path, app_root=None, context_lines=(3, 3)):
     """Write the report atomically (temporary file + replace)."""
-    report = build_report(error, script_path, app_root, extra_lines)
+    report = build_report(error, script_path, app_root, context_lines)
     temporary = output_path + ".tmp"
     with open(temporary, "w", encoding="utf-8") as stream:
         json.dump(report, stream)

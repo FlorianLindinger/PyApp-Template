@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import subprocess
 import sys
 from typing import NoReturn
@@ -101,7 +102,8 @@ def print_report(report):
         colors = bool(s.traceback_colors) and sys.stdout is not None and sys.stdout.isatty()
         if colors:
             enable_ansi()
-        print("\n".join(render(report, colors=colors, date_format=s.error_date_format)))
+        width = max(40, min(120, shutil.get_terminal_size((100, 30)).columns - 1))
+        print("\n".join(render(report, colors=colors, date_format=s.error_date_format, width=width)))
 
 
 def write_crash_log(report, message):
@@ -286,8 +288,9 @@ def main():
     exit_mode = int(exit_mode)
     new_terminal_was_created = new_terminal_was_created.lower() == "true"
     script_name = os.path.basename(script_path)
-    if new_terminal_was_created:
-        set_terminal_app_id(app_id)
+    if new_terminal_was_created and app_id:
+        # Started by the "(no Terminal)" shortcut: group this window with that shortcut.
+        set_terminal_app_id(app_id + paths.NO_TERMINAL_APP_ID_SUFFIX)
 
     if "PYAPP_UNEXPECTED_EXIT" in os.environ:
         native = int(os.environ["PYAPP_UNEXPECTED_EXIT"])

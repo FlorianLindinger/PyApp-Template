@@ -16,7 +16,6 @@ from backend.DONT_CHANGE.scripts.console_tools import (
     styled,
 )
 from backend.DONT_CHANGE.scripts.launcher_ui import (
-    set_settings_colors,
     stop_running_instances,
 )
 
@@ -32,7 +31,6 @@ def print_close_countdown(seconds: int) -> None:
 def main() -> None:
     """Ask running instances to close, terminate those that do not, and drop stale records."""
     s = settings()
-    set_settings_colors()
     enable_unminimize_and_foreground_terminal_on_first_print()
     stopped_count, stale_count, failed_messages = stop_running_instances(s.stop_timeout_seconds, report=print_info)
     if failed_messages:
