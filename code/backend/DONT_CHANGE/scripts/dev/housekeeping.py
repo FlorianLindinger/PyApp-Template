@@ -110,6 +110,7 @@ def cmd_status(arguments):
     sections: dict[str, list[tuple]] = {
         "Project": [
             ("Program", s.program_name),
+            ("Launcher version", paths.LAUNCHER_VERSION),
             ("Settings", settings_state, settings_state == "valid"),
             ("Shortcuts", shortcut_count),
             ("Downloads at launch", "allowed" if s.allow_downloads_at_launch else "disabled"),
@@ -153,3 +154,19 @@ def cmd_status(arguments):
     for title, rows in sections.items():
         print_heading(title)
         print_fields(rows)
+
+
+def cmd_test(arguments):
+    """Run the launcher's regression tests (DONT_CHANGE/tests); optional file pattern."""
+    import subprocess
+
+    script = os.path.join(paths.DONT_CHANGE_DIR, "tests", "run_regressions.py")
+    if not os.path.isfile(script):
+        print_info("The tests folder DONT_CHANGE/tests was removed; nothing to run.")
+        return
+    print_heading("Launcher tests")
+    code = subprocess.run([sys.executable, "-B", script, "-q", *arguments], check=False).returncode
+    print()
+    if code:
+        raise SetupError("Some launcher tests failed (see above).")
+    print_success("All launcher tests passed.")

@@ -21,7 +21,7 @@ from backend.DONT_CHANGE.scripts.console_tools import (
     print_heading,
     styled,
 )
-from backend.DONT_CHANGE.scripts.dev.housekeeping import cmd_clean, cmd_remove_shortcuts, cmd_status
+from backend.DONT_CHANGE.scripts.dev.housekeeping import cmd_clean, cmd_remove_shortcuts, cmd_status, cmd_test
 from backend.DONT_CHANGE.scripts.dev.packages import (
     cmd_add,
     cmd_export,
@@ -52,6 +52,7 @@ COMMANDS = {
     "clean": cmd_clean,
     "remove-shortcuts": cmd_remove_shortcuts,
     "status": cmd_status,
+    "test": cmd_test,
 }
 
 

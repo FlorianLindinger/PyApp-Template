@@ -21,6 +21,7 @@ or Python — Windows locks the files they use.
 | `status.cmd` | Settings validity, uv (version, local/global), launcher Python, `.python-version`, `requires-python`, `packages` (and whether `pyproject.toml` matches), environment base/relocatability, lock state, shortcuts, and errors the launcher ignored on purpose (`DONT_CHANGE/tmp/diagnostics.log`). Works without uv. |
 | `clean.cmd` | Deletes logs, crash logs or per-run diagnostics. |
 | `remove_shortcuts.cmd` | Removes every shortcut Setup created (project folder, Start Menu, Desktop). Run Setup to create them again. |
+| `run_launcher_tests.cmd [pattern]` | Runs the launcher's regression tests in `DONT_CHANGE/tests` (about 10 s, offline, only temporary copies). For after changing `DONT_CHANGE` or updating the template; see `DONT_CHANGE/tests/README.md`. |
 
 ## Typical workflows
 

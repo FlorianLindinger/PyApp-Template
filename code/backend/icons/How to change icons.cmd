@@ -3,7 +3,7 @@ setlocal EnableExtensions DisableDelayedExpansion
 for /f %%e in ('echo prompt $E^| cmd /d') do set "esc=%%e"
 echo Opens the icon customization instructions in Notepad.
 echo.
-set "instructions=%~dp0..\DONT_CHANGE\icon_related\HOW_TO_CHANGE_ICONS.txt"
+set "instructions=%~dp0..\DONT_CHANGE\icons\HOW_TO_CHANGE_ICONS.txt"
 if not exist "%instructions%" (
     echo %esc%[1;37;41m ERROR %esc%[0m Cannot find the icon instructions:
     echo "%instructions%"

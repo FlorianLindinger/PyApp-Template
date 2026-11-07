@@ -1,5 +1,3 @@
-# contents of "tmp" folder (runtime cache, locks, per-run diagnostics):
-/tmp/*
-!tmp/.gitkeep
-
-
+/tmp/
+.ruff_cache/
+__pycache__/

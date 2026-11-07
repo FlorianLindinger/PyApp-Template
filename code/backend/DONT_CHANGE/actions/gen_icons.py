@@ -29,7 +29,7 @@ from backend.DONT_CHANGE.scripts.image_tools import (
 
 # fmt: off
 ICON_PNG_DIR = ICON_DIR  # the project's own PNGs (replace them to change the icons)
-ICON_FALLBACK_PNG_DIR = DONT_CHANGE_DIR + "\\icon_related"
+ICON_FALLBACK_PNG_DIR = DONT_CHANGE_DIR + "\\icons"
 ICON_DELETE_TIMEOUT_SECONDS = 2.0
 ICON_DELETE_RETRY_DELAY_SECONDS = 0.05
 _base = ("icon.png", "512x512:34babea5", "default_icon.png")

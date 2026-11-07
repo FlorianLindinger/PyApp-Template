@@ -37,7 +37,7 @@ For example, settings.png produces settings.ico.
 If an input image is absent, or has not been changed from the template image,
 the generator uses the matching bundled fallback from:
 
-    code/backend/DONT_CHANGE/icon_related/
+    code/backend/DONT_CHANGE/icons/
 
 The bundled fallback files are named default_icon.png,
 default_settings.png, default_stop.png, and so on (including

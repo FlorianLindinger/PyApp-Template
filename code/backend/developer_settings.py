@@ -216,12 +216,11 @@ title_after_failure: str | None = f"[Failure] {program_name}"
 title_after_crash: str | None = f"[Crash] {program_name}"
 title_after_keyboard_interrupt: str | None = f"[KeyboardInterrupt] {program_name}"
 # ---------------------------------------
-# Terminal colors after the program finishes (None or "" keeps the current colors):
+# Terminal colors after the program finishes (None or "" keeps the current colors).
+# After a failure or crash the window is always black, so the traceback colors stay readable:
 # Background color: 0=Black,1=Blue,2=Green,3=Aqua,4=Red,5=Purple,6=Yellow,7=White,8=Gray,9=LightBlue
 # Text color: A=LightGreen,B=LightAqua,C=LightRed,D=LightPurple,E=LightYellow,F=BrightWhite:
 terminal_colors_after_success: str | None = "2F"
-terminal_colors_after_failure: str | None = "4F"
-terminal_colors_after_crash: str | None = "4F"
 terminal_colors_after_keyboard_interrupt: str | None = "6C"
 # ---------------------------------------
 

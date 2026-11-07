@@ -270,7 +270,7 @@ def validate(module=None) -> None:
             lambda v: v in (None, "") or (isinstance(v, str) and re.fullmatch(r"[0-9A-Fa-f]", v)),
             "use one hex digit 0-9/A-F or None",
         )
-    for outcome in OUTCOMES:
+    for outcome in ("success", "keyboard_interrupt"):  # failures and crashes always turn black
         need(
             "terminal_colors_after_" + outcome,
             lambda v: v in (None, "") or (isinstance(v, str) and re.fullmatch(r"[0-9A-Fa-f]{2}", v)),

@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from backend.DONT_CHANGE.scripts.console_tools import print_info, print_warn
-
 fail_message = "Failed to start the program: {e}"
 
 import json
@@ -17,6 +15,7 @@ from pathlib import Path
 
 from backend.DONT_CHANGE import backend_settings as paths
 from backend.DONT_CHANGE.scripts.config import settings, validate
+from backend.DONT_CHANGE.scripts.console_tools import print_info, print_warn
 from backend.DONT_CHANGE.scripts.diagnostics import note_ignored
 from backend.DONT_CHANGE.scripts.env.venv import ensure_environment
 from backend.DONT_CHANGE.scripts.instance_policy import decide

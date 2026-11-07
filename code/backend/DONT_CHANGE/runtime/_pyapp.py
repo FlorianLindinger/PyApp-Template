@@ -151,6 +151,7 @@ def build_report(error, script_path, app_root=None, context_lines=(3, 3)):
     return {
         "script_path": script_path,
         "python_version": sys.version.split()[0],
+        "python_executable": sys.executable,
         "exception_type": type(error).__name__,
         "missing_module": getattr(error, "name", None) if isinstance(error, ModuleNotFoundError) else None,
         "system_exit_code": exit_code,

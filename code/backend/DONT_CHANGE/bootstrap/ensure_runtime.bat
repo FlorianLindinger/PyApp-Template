@@ -1,4 +1,6 @@
 @echo off
+rem tmp\ is not in Git (caches, locks, run folders): create it on the first start.
+if not exist "%~dp0..\tmp\" mkdir "%~dp0..\tmp" 2>nul
 rem Sets PYAPP_UV (uv.exe) and PYAPP_PYTHON (the Python that runs the launcher) for the caller.
 rem No setlocal on purpose: the variables must reach the calling batch.
 rem Fast path: reuse tmp\runtime.cmd while this project folder, developer_settings.py and

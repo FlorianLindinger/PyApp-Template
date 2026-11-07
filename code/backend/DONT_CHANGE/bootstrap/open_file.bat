@@ -2,7 +2,7 @@
 setlocal EnableExtensions DisableDelayedExpansion
 rem Opens file %1 in VS Code (or a fork, else Notepad) without starting Python. Setup passes the
 rem file as the shortcut argument. Exit code 1 = the file does not exist, the calling B\*.bat
-rem then lets the Python action report it. Same editor rules as scripts\shell_tools.py.
+rem then lets the Python action report it. Same editor rules as scripts\console_tools.py (open_in_editor).
 if "%~1"=="" exit /b 1
 if not exist "%~1" exit /b 1
 set "ELECTRON_RUN_AS_NODE="

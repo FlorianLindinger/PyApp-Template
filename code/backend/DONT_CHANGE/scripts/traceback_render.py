@@ -3,7 +3,7 @@
 Frames of your own code get source lines around the failing line (traceback_lines_before /
 traceback_lines_after); library frames are one line each, like CPython's. In color, every line
 is drawn on a black background so the colors stay readable on any terminal color scheme
-(terminal_colors_after_failure etc. may make the rest of the window red or green).
+(terminal_colors_after_success etc. may color the rest of the window).
 """
 
 from __future__ import annotations
@@ -15,8 +15,7 @@ RESET = "\x1b[0m"
 BLACK_BACKGROUND = "\x1b[40m"
 CLEAR_TO_END_OF_LINE = "\x1b[K"  # fills the rest of the row with the current (black) background
 STYLES = {
-    "rule": "\x1b[90m",
-    "title": "\x1b[1;91m",
+    "rule": "\x1b[1;91m",
     "meta": "\x1b[90m",
     "file": "\x1b[96m",
     "library_file": "\x1b[36m",
@@ -38,14 +37,22 @@ def _style(text: str, style: str, colors: bool) -> str:
     return f"{STYLES[style]}{text}{RESET}" if colors and text else text
 
 
-def _display_filename(filename: str, script_path: str) -> str:
-    if not filename or filename.startswith("<") or not script_path:
+def _display_filename(filename: str) -> str:
+    """The full path: editors and Windows Terminal recognize "path:line" for jumping there."""
+    if not filename or filename.startswith("<"):
         return filename or "?"
-    try:
-        relative = os.path.relpath(os.path.abspath(filename), os.path.dirname(os.path.abspath(script_path)))
-    except ValueError:
-        return filename
-    return filename if relative.startswith("..") else relative
+    return os.path.abspath(filename)
+
+
+def on_black(line: str) -> str:
+    """Draw a colored line on a black background up to the end of the row."""
+    return BLACK_BACKGROUND + line.replace(RESET, RESET + BLACK_BACKGROUND) + CLEAR_TO_END_OF_LINE + RESET
+
+
+def rule_line(width: int = 100, colors: bool = False) -> str:
+    """The separator line around tracebacks (bold red in color)."""
+    line = _style("-" * width, "rule", colors)
+    return on_black(line) if colors else line
 
 
 def metadata_lines(report: dict, date_format: str) -> list:
@@ -54,15 +61,16 @@ def metadata_lines(report: dict, date_format: str) -> list:
         lines.append("Script  " + os.path.abspath(str(report["script_path"])))
     lines.append("Time    " + datetime.now().astimezone().strftime(date_format))
     if report.get("python_version"):
-        lines.append("Python  " + str(report["python_version"]))
+        executable = report.get("python_executable")
+        lines.append("Python  " + str(report["python_version"]) + (f"  {executable}" if executable else ""))
     return lines
 
 
-def _frame_lines(frame: dict, script_path: str, colors: bool) -> list:
+def _frame_lines(frame: dict, colors: bool) -> list:
     app = bool(frame.get("app"))
     location = (
         "  "
-        + _style(_display_filename(frame.get("filename", ""), script_path), "file" if app else "library_file", colors)
+        + _style(_display_filename(frame.get("filename", "")), "file" if app else "library_file", colors)
         + _style(":", "gutter", colors)
         + _style(str(frame.get("lineno") or "?"), "lineno", colors)
         + _style(" in ", "gutter", colors)
@@ -92,9 +100,8 @@ def render(
     """Return the report as a list of lines (without newlines)."""
     if not report:
         return []
-    script_path = str(report.get("script_path") or "")
     rule = _style("-" * width, "rule", colors)
-    lines = [rule, _style(f"Traceback of {os.path.basename(script_path) or 'the program'}", "title", colors)]
+    lines = [rule]
     lines += [_style(line, "meta", colors) for line in metadata_lines(report, date_format)]
     lines.append(rule)
 
@@ -112,7 +119,7 @@ def render(
             for frame in entry.get("frames") or []:
                 if frame.get("context") and lines[-1]:
                     lines.append("")  # space around frames that show source lines
-                lines += _frame_lines(frame, script_path, colors)
+                lines += _frame_lines(frame, colors)
                 if frame.get("context"):
                     lines.append("")
             error_line_done = False
@@ -127,8 +134,5 @@ def render(
     lines.append(rule)
     if colors:
         # Keep the black background through every color change and to the end of each row.
-        lines = [
-            BLACK_BACKGROUND + line.replace(RESET, RESET + BLACK_BACKGROUND) + CLEAR_TO_END_OF_LINE + RESET
-            for line in lines
-        ]
+        lines = [on_black(line) for line in lines]
     return lines

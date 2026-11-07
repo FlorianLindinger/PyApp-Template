@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import os
 
-from backend.DONT_CHANGE.backend_settings import DEV_SETTINGS_PATH, SHORTCUT_OUTPUT_DIR
+from backend.DONT_CHANGE.backend_settings import DEV_SETTINGS_PATH, LAUNCHER_VERSION, SHORTCUT_OUTPUT_DIR
 from backend.DONT_CHANGE.scripts.banner import print_banner
 from backend.DONT_CHANGE.scripts.config import settings, validate
 from backend.DONT_CHANGE.scripts.console_tools import (
@@ -51,6 +51,7 @@ def main() -> None:
     print_banner()
     print("Setup prepares uv, Python and the app's packages, then creates or updates the shortcuts.")
     print(styled("Run it again after moving or renaming the project folder or a parent folder.", ANSI_DIM))
+    print(styled(f"Launcher version {LAUNCHER_VERSION}", ANSI_DIM))
     app_id = project_app_id(s.program_name)
     targets_by_kind = shortcut_targets(s)
     definitions = shortcut_definitions(s, app_id, targets_by_kind)

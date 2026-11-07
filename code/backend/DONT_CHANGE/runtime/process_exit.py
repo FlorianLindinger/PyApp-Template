@@ -57,11 +57,14 @@ try:
         exit_code_looks_like_interpreter_crash,
         unique_log_path,
     )
-    from backend.DONT_CHANGE.scripts.traceback_render import render
+    from backend.DONT_CHANGE.scripts.traceback_render import render, rule_line
 except Exception as import_error:
     _fail_while_loading(import_error)
 
 REPORT_PATH = os.path.join(os.environ.get("PYAPP_RUN_DIR", paths.TEMPORARY_DIR), "traceback.json")
+
+# Failures and crashes: black background (bright white text) so the colored traceback stays readable.
+FAILURE_COLORS = "0F"
 
 OUTCOMES = {
     "success": {
@@ -97,14 +100,28 @@ def load_report():
     return report, None
 
 
+def _report_style():
+    """(colors, width) for tracebacks in this window."""
+    colors = bool(settings().traceback_colors) and sys.stdout is not None and sys.stdout.isatty()
+    if colors:
+        enable_ansi()
+    return colors, max(40, min(120, shutil.get_terminal_size((100, 30)).columns - 1))
+
+
+def error_summary(report, limit=200):
+    """The last exception's own line, e.g. "ZeroDivisionError: division by zero" (shortened)."""
+    chain = report.get("chain") or []
+    lines = (chain[-1].get("exception_only") or []) if chain else []
+    text = next((line for line in lines if line and not line.startswith(" ")), "") or str(
+        report.get("exception_type") or "Exception"
+    )
+    return text if len(text) <= limit else text[: limit - 3] + "..."
+
+
 def print_report(report):
-    s = settings()
     if report:
-        colors = bool(s.traceback_colors) and sys.stdout is not None and sys.stdout.isatty()
-        if colors:
-            enable_ansi()
-        width = max(40, min(120, shutil.get_terminal_size((100, 30)).columns - 1))
-        print("\n".join(render(report, colors=colors, date_format=s.error_date_format, width=width)))
+        colors, width = _report_style()
+        print("\n".join(render(report, colors=colors, date_format=settings().error_date_format, width=width)))
 
 
 def write_crash_log(report, message):
@@ -264,23 +281,26 @@ def complete(outcome, log_path, report=None, message=None, keep_open=False):
             print_error(f"Failed to open log: {error}")
     if getattr(s, "open_main_py_after_" + outcome):
         open_in_editor(paths.MAIN_PY_SCRIPT_PATH)
+    stays_open = close is False or keep_open
+    if stays_open:
+        # First: changing the window colors repaints everything already printed.
+        set_terminal_title(getattr(s, "title_after_" + outcome))
+        failed = outcome in ("failure", "crash")
+        set_terminal_colors(FAILURE_COLORS if failed else getattr(s, "terminal_colors_after_" + outcome))
+        set_terminal_icon(OUTCOMES[outcome]["icon"])
     if message:
         print()
+        if outcome != "success":
+            colors, width = _report_style()
+            print(rule_line(width, colors))
         {"success": print_success, "keyboard_interrupt": print_warn}.get(outcome, print_error)(message)
     if outcome != "success":
         write_crash_log(report, message)
+    print_report(report)
     sound = getattr(s, "play_sound_after_" + outcome)
-    if close is False or keep_open:
-        set_terminal_title(getattr(s, "title_after_" + outcome))
-        set_terminal_colors(getattr(s, "terminal_colors_after_" + outcome))
-        set_terminal_icon(OUTCOMES[outcome]["icon"])
-        print_report(report)  # after set_terminal_colors, which clears the screen colors
-        play_sound(sound, OUTCOMES[outcome]["default_sound"], wait=not keep_open)
-        if not keep_open:
-            wait_for_enter()
-    else:
-        print_report(report)
-        play_sound(sound, OUTCOMES[outcome]["default_sound"])
+    play_sound(sound, OUTCOMES[outcome]["default_sound"], wait=not keep_open)
+    if stays_open and not keep_open:
+        wait_for_enter()
 
 
 def main():
@@ -315,7 +335,7 @@ def main():
             "failure",
             log_path,
             report,
-            "The launcher's background watchdog failed (details below)." + ("" if report else f" {problem}"),
+            "The launcher's background watchdog failed (see below)." + ("" if report else f" {problem}"),
         )
         return
     if exit_mode == ExitMode.WRAPPER_ERROR:
@@ -323,7 +343,7 @@ def main():
             "failure",
             log_path,
             report,
-            "The launcher's script wrapper failed (details below)." + ("" if report else f" {problem}"),
+            "The launcher's script wrapper failed (see below)." + ("" if report else f" {problem}"),
         )
         return
     if exit_mode != ExitMode.APP_EXIT:
@@ -362,7 +382,7 @@ def main():
             "failure",
             log_path,
             report,
-            f'[Missing Package] "{script_name}" could not import "{missing}" (see below).',
+            f'"{script_name}" failed: {error_summary(report)}',
             keep_open=True,
         )
         handle_missing_module(missing, app_id, new_terminal_was_created)
@@ -373,20 +393,9 @@ def main():
             report,
             f'"{script_name}" was stopped with Ctrl+C.',
         )
-    elif kind == "SyntaxError":
-        complete(
-            "failure",
-            log_path,
-            report,
-            f'"{script_name}" has a syntax error (details below).',
-        )
     else:
-        complete(
-            "failure",
-            log_path,
-            report,
-            f'"{script_name}" raised {kind} (details below).',
-        )
+        # SyntaxError and every other exception: the error itself on the first line.
+        complete("failure", log_path, report, f'"{script_name}" failed: {error_summary(report)}')
 
 
 if __name__ == "__main__":
