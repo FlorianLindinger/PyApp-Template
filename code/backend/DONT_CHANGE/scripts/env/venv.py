@@ -57,12 +57,12 @@ from backend.DONT_CHANGE.scripts.env.pythons import (
     version_text,
     write_python_version_file,
 )
-from backend.DONT_CHANGE.scripts.env.uv import downloads_allowed, run_uv, uv_environment, uv_exe, uv_succeeds
+from backend.DONT_CHANGE.scripts.env.uv import run_uv, uv_environment, uv_exe, uv_succeeds
 from backend.DONT_CHANGE.scripts.errors import LaunchCancelled, SetupError
 from backend.DONT_CHANGE.scripts.runtime_state import FileLock
 
-AppPython = namedtuple("AppPython", "exe flags kind")
-"""exe: interpreter that runs main.py; flags: extra interpreter options; kind: "venv" or "interpreter"."""
+AppPython = namedtuple("AppPython", "exe flags")
+"""exe: interpreter that runs main.py; flags: extra interpreter options."""
 
 
 def read_venv_config(venv_dir: str = VENV_DIR) -> dict:
@@ -168,25 +168,17 @@ def ensure_lock(s=None) -> None:
     print_step("Updating uv.lock for the declared dependencies...")
     if uv_succeeds(["lock", "--offline"], s=s):
         return
-    if not downloads_allowed(s):
-        raise SetupError(
-            "uv.lock needs an update that requires internet, but downloads at launch are disabled (allow_downloads_at_launch = False)."
-        )
     run_uv(["lock"], s=s)
 
 
 def sync(python_exe: str, *, venv_dir: str = VENV_DIR, exact: bool = False, s=None) -> None:
-    """Install exactly what uv.lock says (offline first, then online if allowed)."""
+    """Install exactly what uv.lock says (offline first, then online)."""
     arguments = ["sync", "--locked", "--python", python_exe]
     if not exact:
         arguments.append("--inexact")  # keep packages added by hand (uv pip install) until the next exact sync
     project_environment = None if os.path.normcase(venv_dir) == os.path.normcase(VENV_DIR) else venv_dir
     if uv_succeeds(arguments + ["--offline"], project_environment=project_environment, s=s):
         return
-    if not downloads_allowed(s):
-        raise SetupError(
-            "Installing the locked packages needs internet, but downloads at launch are disabled (allow_downloads_at_launch = False)."
-        )
     show_setup_window()
     print_step("Installing packages...")
     run_uv(arguments, project_environment=project_environment, s=s)
@@ -196,9 +188,7 @@ def best_effort_install(python_exe: str, s=None) -> None:
     """For a Python outside requires-python: install the declared dependencies without the lock."""
     if not declared_dependencies():
         return
-    if not uv_succeeds(
-        ["pip", "install", "--python", python_exe, "-r", PYPROJECT_PATH, "--offline"], s=s
-    ) and downloads_allowed(s):
+    if not uv_succeeds(["pip", "install", "--python", python_exe, "-r", PYPROJECT_PATH, "--offline"], s=s):
         run_uv(["pip", "install", "--python", python_exe, "-r", PYPROJECT_PATH], s=s)
 
 
@@ -245,12 +235,9 @@ def ensure_environment(interactive: bool = True) -> AppPython:
     s = settings()
     validate(s)
     base_python = sys.executable
-    if s.package_environment == "interpreter_site_packages":
-        return AppPython(base_python, [], "interpreter")
 
     with FileLock(ENVIRONMENT_LOCK_PATH, timeout=600):
         base_version = tuple(sys.version_info[:3])  # base_python is this interpreter
-        any_version = s.python_source == "system_default_any_version"
         file_request = read_python_version_file()
 
         if file_request is None:
@@ -258,10 +245,10 @@ def ensure_environment(interactive: bool = True) -> AppPython:
             # An empty python_version keeps the newest Python chosen now ("pick once").
             request = s.python_version or ".".join(str(n) for n in base_version[:2])
             write_python_version_file(request)
-        elif not any_version and not request_matches(s.python_version, file_request):
+        elif not request_matches(s.python_version, file_request):
             switched = handle_version_change(file_request, s, interactive)
             if switched:
-                return AppPython(VENV_PYTHON_EXE, ["-E", "-s"], "venv")
+                return AppPython(VENV_PYTHON_EXE, ["-E", "-s"])
         # pyproject.toml follows developer_settings.py ("packages"); requires-python follows the project's Python.
         s = reconcile_pyproject(s, None if current_requires_python() else base_version)
 
@@ -269,7 +256,7 @@ def ensure_environment(interactive: bool = True) -> AppPython:
         # lock check, the sync and the venv check (each starts a process).
         fingerprint = environment_fingerprint(s)
         if _read_stamp() == fingerprint:
-            return AppPython(VENV_PYTHON_EXE, ["-E", "-s"], "venv")
+            return AppPython(VENV_PYTHON_EXE, ["-E", "-s"])
         _write_stamp(None)
 
         locked = version_satisfies_requires(base_version, current_requires_python())
@@ -302,7 +289,7 @@ def ensure_environment(interactive: bool = True) -> AppPython:
                 best_effort_install(VENV_PYTHON_EXE, s)
         if locked:
             _write_stamp(environment_fingerprint(s))
-    return AppPython(VENV_PYTHON_EXE, ["-E", "-s"], "venv")
+    return AppPython(VENV_PYTHON_EXE, ["-E", "-s"])
 
 
 def environment_fingerprint(s) -> str:
@@ -320,7 +307,6 @@ def environment_fingerprint(s) -> str:
         ".".join(map(str, sys.version_info)),
         os.environ.get("PYAPP_UV", ""),
         s.python_source,
-        s.package_environment,
         s.uv_cache,
     ]
     for path in (
@@ -468,37 +454,17 @@ def install_without_recording(names, python_exe: str, s=None) -> None:
     run_uv(["pip", "install", "--python", python_exe, *names], s=s)
 
 
-def app_python_for_tools() -> str:
-    """Interpreter whose packages the dev tools change."""
-    s = settings()
-    if s.package_environment == "interpreter_site_packages":
-        return sys.executable
-    return VENV_PYTHON_EXE
-
-
 def open_package_terminal(s=None) -> int:
     """Open a command prompt with the app environment activated and uv on PATH; wait for exit."""
     s = s or settings()
     env = uv_environment(s, python_command=False)
-    python = app_python_for_tools()
-    scripts = (
-        os.path.dirname(python)
-        if s.package_environment == "interpreter_site_packages"
-        else os.path.join(VENV_DIR, "Scripts")
-    )
-    extra = [scripts, os.path.dirname(uv_exe())]
-    if s.package_environment == "interpreter_site_packages":
-        extra.append(os.path.join(os.path.dirname(python), "Scripts"))
-    else:
-        env["VIRTUAL_ENV"] = VENV_DIR
+    env["VIRTUAL_ENV"] = VENV_DIR
     env["UV_PROJECT"] = PROJECT_DIR  # uv add/remove/lock work from the code folder too
-    env["PATH"] = os.pathsep.join(extra + [env.get("PATH", "")])
+    env["PATH"] = os.pathsep.join([os.path.join(VENV_DIR, "Scripts"), os.path.dirname(uv_exe()), env.get("PATH", "")])
     env["PROMPT"] = "(app packages) $P$G"
     # Printed here, not with "echo" inside the cmd command line: paths like "R&D" would break that.
     print_heading("Package terminal")
-    print_info("Python: " + python)
-    if s.package_environment == "interpreter_site_packages":
-        print_warn("This changes the selected interpreter's own packages; use: uv pip install --python python NAME")
+    print_info("Python: " + VENV_PYTHON_EXE)
     print_fields(
         [
             ("uv add NAME", "add a package and install it (copied into developer_settings.py on the next start)"),

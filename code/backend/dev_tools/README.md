@@ -2,8 +2,7 @@
 
 Double-click a tool, or run it from a terminal with arguments (e.g. `add_packages.cmd requests numpy>=2`).
 `Dev Menu.cmd` lists all of them. Every tool validates `developer_settings.py` first and
-prepares the environment if needed; tools may download (unlike normal launches with
-`allow_downloads_at_launch = False`). Close running app instances before changing packages
+prepares the environment if needed. Close running app instances before changing packages
 or Python — Windows locks the files they use.
 
 | Tool | What it does |
@@ -16,7 +15,7 @@ or Python — Windows locks the files they use.
 | `package_terminal.cmd` | Command prompt in `code/` with the environment activated and uv on PATH: `uv add`, `uv pip list`, `python ...` (uv commands use the project in `backend/`; `uv add`/`uv remove` are copied into `packages` on the next start). `uv pip install NAME` installs without recording (the next exact sync removes it). |
 | `change_python.cmd [version]` | Writes a new `python_version` into the settings and runs the migration menu (re-lock keeping versions / upgrade / empty package list / keep / write back). |
 | `update_python.cmd` | Installs the newest patch release of the project's Python and rebuilds the environment if needed. With `python_version = ""` it also offers a newer minor version. System Pythons are updated with their own installers. |
-| `make_portable.cmd` | First shows the settings it will change (`uv_prefer`, `uv_install_if_missing`, `python_source`, `package_environment` → local) and asks; then copies uv into `backend/uv`, installs the project's Python into `backend/pythons`, rebuilds the environment on it and applies those settings. Declining changes nothing. |
+| `make_portable.cmd` | First shows the settings it will change (`uv_prefer`, `uv_install_if_missing`, `python_source` → local) and asks; then copies uv into `backend/uv`, installs the project's Python into `backend/pythons`, rebuilds the environment on it and applies those settings. Declining changes nothing. |
 | `export_requirements.cmd` | Writes `backend/requirements.txt` (pinned, without hashes) from `uv.lock` for tools that need that format. |
 | `status.cmd` | Settings validity, uv (version, local/global), launcher Python, `.python-version`, `requires-python`, `packages` (and whether `pyproject.toml` matches), environment base/relocatability, lock state, shortcuts, and errors the launcher ignored on purpose (`DONT_CHANGE/tmp/diagnostics.log`). Works without uv. |
 | `clean.cmd` | Deletes logs, crash logs or per-run diagnostics. |
@@ -27,4 +26,4 @@ or Python — Windows locks the files they use.
 - **New dependency:** add it to `packages` in `developer_settings.py` and start the app, or `add_packages.cmd requests` → test → commit `developer_settings.py` and `backend/uv.lock`.
 - **Existing code with imports:** `find_imports.cmd` → review → add.
 - **New Python version:** `change_python.cmd 3.13` → option 1 → test → commit `developer_settings.py`, `backend/.python-version` and `backend/uv.lock`.
-- **Hand over an offline folder:** `make_portable.cmd` → accept → optionally `allow_downloads_at_launch = False` → copy the folder → run Setup on the target PC for shortcuts.
+- **Hand over an offline folder:** `make_portable.cmd` → accept → copy the folder → run Setup on the target PC for shortcuts.

@@ -41,8 +41,8 @@ Three Pythons can be involved, but usually they are the same installation:
 
 | Name | What it is | Runs |
 | --- | --- | --- |
-| launcher Python | The project's Python (or any 3.8+ found by the bootstrap), started with `-I -S`: isolated, no `site`, standard library only | everything in this folder except the wrapper |
-| app Python | `code/backend/.venv/Scripts/python.exe` (or the interpreter itself with `package_environment = "interpreter_site_packages"`) | `script_wrapper.py` and `main.py` |
+| launcher Python | The project's Python, started with `-I -S`: isolated, no `site`, standard library only | everything in this folder except the wrapper |
+| app Python | `code/backend/.venv/Scripts/python.exe` | `script_wrapper.py` and `main.py` |
 | uv's Python downloads | Python builds uv installs (per user, or inside the project with `python_source = "local"`) | the base of both of the above |
 
 ## Design rules
@@ -166,8 +166,9 @@ and `code\backend\icons\*.cmd` run `actions\gen_icons.py`.
    one when the Python minor version changed, then `uv sync --locked --inexact` (offline first),
    and write the new stamp.
 
-Downloads happen only when needed and allowed (`allow_downloads_at_launch`; Setup and the dev
-tools always allow them). `scripts/env/uv.py: uv_environment()` builds uv's environment
+Downloads happen only when needed. If the chosen uv cannot install the requested Python, the
+newest uv is fetched to `%LOCALAPPDATA%\PyApp-Template\uv` (never on PATH), the install is
+retried, and that uv is used from then on while it is newer. `scripts/env/uv.py: uv_environment()` builds uv's environment
 variables and mirrors `Set-UvEnvironment` in `resolve_runtime.ps1`; keep both in sync. Python
 lookups run from the system temp folder, because uv would otherwise treat `backend/.venv` as
 "the" Python; project commands run in `code/backend`.
@@ -216,11 +217,12 @@ move, so a copied folder works offline on another PC.
   `path:line in function`, a `>` at the failing line, then the error and the script, time and
   Python details; in color on black so it stays readable on any window color, plain in crash
   logs.
-- **Outcomes** (`process_exit.py`): `success`, `failure`, `crash` (the interpreter died, e.g. an
-  access violation, or no report was written) and `keyboard_interrupt`. Each has its own
-  settings (`close_after_*`, `title_after_*`, `play_sound_after_*`, `open_log_file_after_*`,
-  `open_main_py_after_*`; window colors for success and Ctrl+C; failures and crashes always turn
-  the window black). Every non-success writes a crash log.
+- **Outcomes** (`process_exit.py`): `success`, `failure` (an exception, a non-zero exit, an
+  interpreter crash such as an access violation, no report written, or a launcher error) and
+  `keyboard_interrupt`. Each has `close_after_*` and `open_log_file_after_*`; success and failure
+  have `play_sound_after_*`, and failure has `open_crash_log_after_failure`. Window titles are
+  `TITLE_AFTER_*` in `backend_settings.py`. Failures turn the window black. Every non-success
+  writes a crash log unless `enable_crash_log = False`.
 - **Missing packages**: a `ModuleNotFoundError` for an import that is not one of the app's own
   modules offers to add the package (`uv add`), install it without recording it, find all
   imports (`scripts/import_finder.py`), open the package terminal, or quit; then it restarts.
@@ -233,7 +235,7 @@ All launcher windows share one look (`scripts/console_tools.py`): `print_heading
 `wait_for_enter`, `print_choices` (numbered menus) and `print_fields` (aligned values). Colors
 appear only on a real console, never in redirected output or log files. Windows that stay open
 for a while (Setup, dev tools, installing Python or packages) start with the program name in
-ASCII art (`scripts/banner.py`, font `app_name_banner_font`). The PowerShell bootstrap and the
+ASCII art (`scripts/banner.py`). The PowerShell bootstrap and the
 `.cmd` files use the same badges.
 
 ## Every file
@@ -245,7 +247,7 @@ ASCII art (`scripts/banner.py`, font `app_name_banner_font`). The PowerShell boo
 | `README.md` | This document. |
 | `CHANGELOG.md` | Changes per version; the newest heading matches `LAUNCHER_VERSION`. |
 | `TODO.md` | Open items and ideas. |
-| `LICENSE.md`, `LICENSES/` | License of this folder (`MIT OR Apache-2.0`) and of the bundled fonts. |
+| `LICENSE.md`, `LICENSES/` | License of this folder (`MIT OR Apache-2.0`) and of the bundled font. |
 | `backend_settings.py` | Every internal path and constant (`LAUNCHER_VERSION`, folders, icon paths, file names, defaults). Imported by almost everything; changes nothing on import. |
 | `ruff.toml`, `pyrefly.toml` | Lint and type-check settings for this folder only (Python 3.8, Windows, 120 columns). |
 | `.gitignore` | Keeps `tmp/`, caches and `__pycache__` out of Git. |
@@ -299,8 +301,8 @@ ASCII art (`scripts/banner.py`, font `app_name_banner_font`). The PowerShell boo
 | `errors.py` | `SettingsError`, `SetupError`, `LaunchCancelled`. |
 | `diagnostics.py` | Records deliberately ignored errors in `tmp/diagnostics.log`. |
 | `console_tools.py` | Message styles, prompts, console title/icon/colors/taskbar identity, minimize/foreground, opening files in the editor. |
-| `launcher_ui.py` | Launcher-level appearance (settings colors, hidden tool folders), tracebacks of tools, log paths and retention, Stop of running instances. |
-| `banner.py` | FIGlet/TOIlet font reader and the ASCII-art program name. |
+| `launcher_ui.py` | Launcher-level appearance (settings colors, hidden tool folders), tracebacks of tools, log paths, Stop of running instances. |
+| `banner.py` | Reads the banner font and prints the ASCII-art program name. |
 | `traceback_render.py` | Turns traceback reports into colored or plain text. |
 | `runtime_state.py` | File lock, atomic JSON, process identities, the instance registry, job objects, process-tree termination, unique log names, interpreter-crash exit codes. |
 | `instance_policy.py` | What to do when the app is already running (message boxes). |
@@ -327,7 +329,7 @@ ASCII art (`scripts/banner.py`, font `app_name_banner_font`). The PowerShell boo
 | --- | --- |
 | `data/import_to_package.txt` | Import name → PyPI name for about 2,500 packages whose names differ; generated by the Dev Helpers' `build_import_mapping.py`. Your own pairs can be added at the end. |
 | `data/developer_settings_defaults.py` | The settings file this version ships with: defaults for settings a project's `developer_settings.py` lacks (see [Versions](#versions)). Read with `ast`, never imported. |
-| `data/fonts/` | Banner fonts (see [Licensing](#licensing)). |
+| `data/fonts/` | Banner font (see [Licensing](#licensing)). |
 | `data/icons/` | Bundled default PNGs (used when the project's PNG in `code/backend/icons` is missing or unchanged) and `HOW_TO_CHANGE_ICONS.txt`. |
 | `tests/` | Regression tests for this folder; see `tests/README.md`. |
 
@@ -363,5 +365,4 @@ releases are tagged `v<version>` on GitHub. Setup and the `status` dev tool show
 ## Licensing
 
 Everything here is `MIT OR Apache-2.0`, including `data/import_to_package.txt`, except the
-banner fonts in `data/fonts`: `standard.flf` (BSD-3-Clause, FIGlet), `coder_mini.flf` (MIT,
-Loic Cressot), `future.tlf` and `future_smooth.tlf` (WTFPL). See [LICENSE.md](LICENSE.md).
+banner font `data/fonts/future.tlf` (WTFPL). See [LICENSE.md](LICENSE.md).

@@ -1,9 +1,8 @@
-"""Log paths and retention, the diagnostics log, and shortcut names, targets and taskbar identity."""
+"""Log paths, the diagnostics log, and shortcut names, targets and taskbar identity."""
 
 import json
 import os
 import tempfile
-import types
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -16,26 +15,6 @@ from backend.DONT_CHANGE.scripts import diagnostics, launcher_ui, runtime_state,
 
 
 class LogTests(unittest.TestCase):
-    def test_retention_counts_runs_with_their_output_logs(self):
-        with tempfile.TemporaryDirectory() as folder:
-            for index in range(5):
-                for name in (f"log_{index}.txt", f"log_{index}.txt.output.log"):
-                    path = os.path.join(folder, name)
-                    Path(path).write_text("x", encoding="utf-8")
-                    os.utime(path, (1000 + index, 1000 + index))
-            settings = types.SimpleNamespace(
-                log_path=os.path.join(folder, "log_%Y.txt"),
-                log_path_is_relative_to_start_folder_if_relative=False,
-                crash_log_path=None,
-                crash_log_path_is_relative_to_start_folder_if_relative=False,
-                max_log_files=2,
-                max_run_folder_age_days=None,
-            )
-            launcher_ui.prune_logs(settings)
-            self.assertEqual(
-                sorted(os.listdir(folder)), ["log_3.txt", "log_3.txt.output.log", "log_4.txt", "log_4.txt.output.log"]
-            )
-
     def test_log_path_resolution(self):
         with tempfile.TemporaryDirectory() as folder:
             self.assertEqual(

@@ -1,7 +1,7 @@
 # Finds or installs uv and the Python that runs the launcher, then records both in
 # tmp\runtime.cmd for the batch fast path (ensure_runtime.bat).
 # Called only when that cache is missing or stale. Windows PowerShell 5.1 compatible.
-param([string]$Stamp = '')
+param([string]$Stamp = '', [string]$InstallNewerThan = '')
 
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'   # Invoke-WebRequest is very slow with its progress bar
@@ -20,6 +20,10 @@ $temporary = Join-Path $dontChange 'tmp'
 $cachePath = Join-Path $temporary 'runtime.cmd'
 $localUvDir = Join-Path $backendDir 'uv'
 $localUvExe = Join-Path $localUvDir 'uv.exe'
+# A per-user uv shared by projects, never on PATH: used when the usual uv is too old for a Python.
+$userData = $(if ($env:LOCALAPPDATA) { $env:LOCALAPPDATA } else { Join-Path $env:USERPROFILE 'AppData\Local' })
+$sharedUvDir = Join-Path $userData 'PyApp-Template\uv'
+$sharedUvExe = Join-Path $sharedUvDir 'uv.exe'
 $localPythons = Join-Path $backendDir 'pythons'
 $localCache = Join-Path $backendDir 'uv-cache'
 $versionFile = Join-Path $backendDir '.python-version'
@@ -186,15 +190,18 @@ function Get-UvTarget {
     }
 }
 
-function Install-LocalUv([string]$spec) {
+function Install-Uv([string]$spec, [string]$destination) {
     $target = Get-UvTarget
     $exact = Get-ExactVersion $spec
     $file = "uv-$target.zip"
     if ($exact) { $base = "https://github.com/astral-sh/uv/releases/download/$exact" }
     else { $base = 'https://github.com/astral-sh/uv/releases/latest/download' }
     Show-Console
-    Write-Step "Downloading uv $(if ($exact) { $exact } else { '(latest)' }) into this project..."
-    $stage = Join-Path $temporary ('uv-download-' + [Guid]::NewGuid().ToString('N'))
+    Write-Step "Downloading uv $(if ($exact) { $exact } else { '(latest)' }) to $destination..."
+    # Next to the destination: Move-Item cannot move a folder to another drive.
+    $parent = Split-Path -Parent $destination
+    [IO.Directory]::CreateDirectory($parent) | Out-Null
+    $stage = Join-Path $parent ('uv-download-' + [Guid]::NewGuid().ToString('N'))
     [IO.Directory]::CreateDirectory($stage) | Out-Null
     try {
         $zip = Join-Path $stage $file
@@ -211,13 +218,13 @@ function Install-LocalUv([string]$spec) {
         if (-not $exe) { Fail 'The uv archive did not contain uv.exe.' }
         $version = Get-UvVersion $exe.FullName
         if (-not (Test-VersionSpec $version $spec)) { Fail "The latest uv ($version) does not satisfy uv_version '$spec'. Use an exact version in uv_version." }
-        $previous = $localUvDir + '.previous'
+        $previous = $destination + '.previous'
         if (Test-Path -LiteralPath $previous) { Remove-Item -LiteralPath $previous -Recurse -Force }
-        if (Test-Path -LiteralPath $localUvDir) { Move-Item -LiteralPath $localUvDir -Destination $previous }
-        Move-Item -LiteralPath $exe.Directory.FullName -Destination $localUvDir
+        if (Test-Path -LiteralPath $destination) { Move-Item -LiteralPath $destination -Destination $previous }
+        Move-Item -LiteralPath $exe.Directory.FullName -Destination $destination
         if (Test-Path -LiteralPath $previous) { Remove-Item -LiteralPath $previous -Recurse -Force -ErrorAction SilentlyContinue }
-        Write-Step "uv $version installed in $localUvDir"
-        return $localUvExe
+        Write-Step "uv $version installed in $destination"
+        return (Join-Path $destination 'uv.exe')
     } finally {
         Remove-Item -LiteralPath $stage -Recurse -Force -ErrorAction SilentlyContinue
     }
@@ -237,7 +244,7 @@ function Install-GlobalUv([string]$spec) {
     return $uv
 }
 
-function Resolve-Uv($settings, [bool]$allowDownloads) {
+function Resolve-Uv($settings) {
     $prefer = Get-Setting $settings 'uv_prefer' 'global'
     $install = Get-Setting $settings 'uv_install_if_missing' 'global'
     $spec = [string](Get-Setting $settings 'uv_version' '')
@@ -259,20 +266,47 @@ function Resolve-Uv($settings, [bool]$allowDownloads) {
     if ($install -eq 'never') {
         Fail ("No usable uv found" + $(if ($outdatedGlobal) { " (global uv $outdatedGlobal does not satisfy uv_version '$spec')" } else { '' }) + " and uv_install_if_missing = 'never'. Install uv or change the uv settings in developer_settings.py.")
     }
-    if (-not $allowDownloads) {
-        Fail "uv is missing and downloads at launch are disabled (allow_downloads_at_launch = False). Run 'Setup - run first and after moving folder.cmd' once with internet access."
-    }
     if ($outdatedGlobal) {
         Write-Step "The global uv $outdatedGlobal does not satisfy uv_version '$spec'; it is left unchanged and a local uv is installed instead."
-        return Install-LocalUv $spec
+        return Install-Uv $spec $localUvDir
     }
     if ($install -eq 'global') { return Install-GlobalUv $spec }
-    return Install-LocalUv $spec
+    return Install-Uv $spec $localUvDir
+}
+
+function Test-SharedUvAllowed($settings) {
+    # An exact uv_version is a deliberate pin, and "never" means the launcher must not fetch uv.
+    if ((Get-Setting $settings 'uv_install_if_missing' 'global') -eq 'never') { return $false }
+    return -not (Get-ExactVersion ([string](Get-Setting $settings 'uv_version' '')))
+}
+
+function Select-NewestUv($settings, [string]$uv) {
+    # The shared uv exists because an older one could not provide a Python: keep using it.
+    if (-not (Test-SharedUvAllowed $settings) -or -not (Test-Path -LiteralPath $sharedUvExe)) { return $uv }
+    $sharedVersion = Get-UvVersion $sharedUvExe
+    if (-not $sharedVersion -or -not (Test-VersionSpec $sharedVersion ([string](Get-Setting $settings 'uv_version' '')))) { return $uv }
+    if ((ConvertTo-Version $sharedVersion) -gt (ConvertTo-Version (Get-UvVersion $uv))) { return $sharedUvExe }
+    return $uv
+}
+
+function Install-NewerSharedUv($settings, [string]$currentUv) {
+    # Returns the shared uv when it is newer than $currentUv, otherwise $null; never fails the launch.
+    if (-not (Test-SharedUvAllowed $settings)) { return $null }
+    $current = ConvertTo-Version (Get-UvVersion $currentUv)
+    Write-Step "uv $current cannot provide this Python. Getting the newest uv; the uv on PATH stays as it is."
+    try {
+        $new = Install-Uv ([string](Get-Setting $settings 'uv_version' '')) $sharedUvDir
+    } catch {
+        Write-Step "Could not get a newer uv: $($_.Exception.Message)"
+        return $null
+    }
+    if ((ConvertTo-Version (Get-UvVersion $new)) -le $current) { return $null }
+    return $new
 }
 
 # ---------------------------------------------------------------- Python
 
-function Set-UvEnvironment($settings, [string]$source, [bool]$allowDownloads) {
+function Set-UvEnvironment($settings, [string]$source) {
     foreach ($name in @('UV_PYTHON', 'UV_PYTHON_INSTALL_DIR', 'UV_MANAGED_PYTHON', 'UV_NO_MANAGED_PYTHON', 'UV_PYTHON_PREFERENCE', 'UV_PYTHON_INSTALL_BIN', 'UV_PYTHON_INSTALL_REGISTRY', 'UV_PROJECT_ENVIRONMENT', 'UV_PROJECT', 'UV_WORKING_DIR', 'VIRTUAL_ENV')) {
         Remove-Item "Env:$name" -ErrorAction SilentlyContinue
     }
@@ -289,16 +323,10 @@ function Set-UvEnvironment($settings, [string]$source, [bool]$allowDownloads) {
             $env:UV_PYTHON_INSTALL_BIN = '0'
             $env:UV_PYTHON_INSTALL_REGISTRY = '0'
         }
-        default {
-            $env:UV_PYTHON_INSTALL_DIR = $localPythons
-            $env:UV_PYTHON_PREFERENCE = 'system'
-            $env:UV_PYTHON_INSTALL_BIN = '0'
-            $env:UV_PYTHON_INSTALL_REGISTRY = '0'
-        }
     }
     if ((Get-Setting $settings 'uv_cache' 'global') -eq 'local') { $env:UV_CACHE_DIR = $localCache }
     if ([bool](Get-Setting $settings 'use_system_certificates' $false)) { $env:UV_SYSTEM_CERTS = '1' }
-    $env:UV_PYTHON_DOWNLOADS = $(if ($allowDownloads) { 'automatic' } else { 'never' })
+    $env:UV_PYTHON_DOWNLOADS = 'automatic'
 }
 
 function Remove-BrokenPythonLinks {
@@ -350,11 +378,10 @@ function Find-Python([string]$uv, [string]$request) {
     return $result.Out[-1].Trim()
 }
 
-function Resolve-Python($settings, [string]$uv, [bool]$allowDownloads) {
+function Resolve-Python($settings, [string]$uv) {
     $source = Get-Setting $settings 'python_source' 'uv_user'
-    Assert-Choice 'python_source' $source @('local', 'uv_user', 'system_if_matching_else_local', 'system_default_any_version')
-    Assert-Choice 'package_environment' (Get-Setting $settings 'package_environment' 'project_venv') @('project_venv', 'interpreter_site_packages')
-    Set-UvEnvironment $settings $source $allowDownloads
+    Assert-Choice 'python_source' $source @('local', 'uv_user')
+    Set-UvEnvironment $settings $source
     Remove-BrokenPythonLinks
 
     # The project's current Python (backend\.python-version) runs the launcher; the launcher
@@ -368,33 +395,28 @@ function Resolve-Python($settings, [string]$uv, [bool]$allowDownloads) {
     # Outside the project: uv would otherwise discover backend\.venv as "the" Python.
     Push-Location ([IO.Path]::GetTempPath())
     try {
-        $python = $null
-        if ($source -eq 'system_default_any_version') {
-            $python = Find-Python $uv ''
-            if (-not $python) {
-                $python = (Get-Command python.exe -ErrorAction SilentlyContinue | Where-Object { $_.Source -notmatch '\\WindowsApps\\' } | Select-Object -First 1).Source
-            }
-            if (-not $python) { Write-Step "No installed default Python found; falling back to a local Python $(if ($request) { $request } else { '(newest)' })." }
+        if (-not $request) {
+            $request = Get-NewestStablePython $uv
+            Write-Step "python_version is empty: using the newest stable Python, $request."
         }
+        $python = Find-Python $uv $request
         if (-not $python) {
-            if (-not $request) {
-                $request = Get-NewestStablePython $uv
-                Write-Step "python_version is empty: using the newest stable Python, $request."
+            Show-Console
+            Write-Step "Installing Python $request with uv..."
+            $code = Invoke-Live $uv @('python', 'install', $request)
+            if ($code -ne 0) {
+                $newer = Install-NewerSharedUv $settings $uv
+                if ($newer) {
+                    $uv = $newer
+                    $script:currentUv = $newer
+                    $code = Invoke-Live $uv @('python', 'install', $request)
+                }
+            }
+            if ($code -ne 0) {
+                Fail ("uv could not install Python '$request'. " + (Get-AvailableSummary $uv) + " The launcher needs Python 3.8 or newer. Check python_version in developer_settings.py.")
             }
             $python = Find-Python $uv $request
-            if (-not $python) {
-                if (-not $allowDownloads) {
-                    Fail "Python $request is not installed and downloads at launch are disabled (allow_downloads_at_launch = False). Run 'Setup - run first and after moving folder.cmd' once with internet access."
-                }
-                Show-Console
-                Write-Step "Installing Python $request with uv..."
-                $code = Invoke-Live $uv @('python', 'install', $request)
-                if ($code -ne 0) {
-                    Fail ("uv could not install Python '$request'. " + (Get-AvailableSummary $uv) + " The launcher needs Python 3.8 or newer. Check python_version in developer_settings.py.")
-                }
-                $python = Find-Python $uv $request
-                if (-not $python) { Fail "Python $request was installed but uv cannot find it." }
-            }
+            if (-not $python) { Fail "Python $request was installed but uv cannot find it." }
         }
     } finally {
         Pop-Location
@@ -403,7 +425,7 @@ function Resolve-Python($settings, [string]$uv, [bool]$allowDownloads) {
     $version = Get-PythonVersion $python
     if (-not $version) { Fail "The Python at '$python' does not start." }
     if ((ConvertTo-Version $version) -lt $minimumPython) {
-        Fail "Python $version at '$python' is older than 3.8, which the launcher needs. Choose python_version 3.8 or newer, or another python_source, in developer_settings.py."
+        Fail "Python $version at '$python' is older than 3.8, which the launcher needs. Choose python_version 3.8 or newer in developer_settings.py."
     }
     return $python
 }
@@ -422,9 +444,14 @@ try {
         }
     }
     $settings = Read-Settings
-    $allowDownloads = [bool](Get-Setting $settings 'allow_downloads_at_launch' $true) -or ($env:PYAPP_ALLOW_DOWNLOADS -eq '1')
-    $uv = Resolve-Uv $settings $allowDownloads
-    $python = Resolve-Python $settings $uv $allowDownloads
+    if ($InstallNewerThan) {
+        # Called by the launcher (scripts/env/uv.py) when changing the project's Python.
+        if (Install-NewerSharedUv $settings $InstallNewerThan) { exit 0 }
+        exit 1
+    }
+    $script:currentUv = Select-NewestUv $settings (Resolve-Uv $settings)
+    $python = Resolve-Python $settings $script:currentUv
+    $uv = $script:currentUv
 
     # ensure_runtime.bat skips its code page switch for caches whose first line is "rem ascii".
     $ascii = (($uv + $python + $Stamp) -cmatch '^[\x20-\x7E]*$')

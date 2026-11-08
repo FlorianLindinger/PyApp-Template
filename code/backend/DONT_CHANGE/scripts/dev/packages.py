@@ -18,8 +18,6 @@ from backend.DONT_CHANGE.scripts.console_tools import (
 from backend.DONT_CHANGE.scripts.dev.common import (
     COMMIT_HINT,
     ask_package_names,
-    global_packages_mode,
-    install_into_interpreter,
     normalized,
     prepare,
     requirement_name,
@@ -42,9 +40,6 @@ def cmd_add(arguments):
     if not names:
         return
     prepare(s)
-    if global_packages_mode(s):
-        install_into_interpreter(s, names)
-        return
     refuse_mutation_while_running()
     add_packages(names)
     print_success("Added: " + " ".join(names))
@@ -54,9 +49,6 @@ def cmd_add(arguments):
 def cmd_remove(arguments):
     """Remove declared packages."""
     s = settings()
-    if global_packages_mode(s):
-        print_warn('Removing packages is only available for package_environment = "project_venv".')
-        return
     names = list(arguments)
     if not names:
         declared = list(settings().packages)
@@ -83,9 +75,6 @@ def cmd_remove(arguments):
 def cmd_upgrade(arguments):
     """Upgrade all (or the named) packages within their declared limits."""
     s = settings()
-    if global_packages_mode(s):
-        install_into_interpreter(s, ["--upgrade", *(arguments or [])])
-        return
     prepare(s)
     refuse_mutation_while_running()
     lock_arguments = ["lock"] + (
@@ -99,9 +88,6 @@ def cmd_upgrade(arguments):
 def cmd_sync(arguments):
     """Make the environment match uv.lock exactly (removes packages installed by hand)."""
     s = settings()
-    if global_packages_mode(s):
-        print_warn('Syncing is only available for package_environment = "project_venv".')
-        return
     prepare(s)
     refuse_mutation_while_running()
     ensure_lock(s)
@@ -158,9 +144,6 @@ def find_imports_and_add():
                 selected[int(item) - 1] = not selected[int(item) - 1]
     names = [r.distribution for r, chosen in zip(candidates, selected) if chosen]
     if not names:
-        return
-    if global_packages_mode(s):
-        install_into_interpreter(s, names)
         return
     refuse_mutation_while_running()
     add_packages(names)

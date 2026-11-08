@@ -64,14 +64,12 @@ only swapped in when it works; on failure everything is restored.
 
 | Setting | Options |
 | --- | --- |
-| `python_source` | `"local"` (uv installs Python into `code/backend/pythons`, portable), `"uv_user"` (uv's per-user folder, shared by projects), `"system_if_matching_else_local"` (an installed Python matching `python_version`, else local), `"system_default_any_version"` (the default installed Python, any version; falls back to a local install if there is none) |
-| `package_environment` | `"project_venv"` (uv-managed `code/backend/.venv`, recommended) or `"interpreter_site_packages"` (the selected system interpreter's own packages; the launcher installs nothing there unless `allow_installing_into_global_python = True`) |
+| `python_source` | `"local"` (uv installs Python into `code/backend/pythons`, portable), `"uv_user"` (uv's per-user folder, shared by projects) |
 | `uv_prefer` | `"global"` or `"local"`: which uv to use when both exist |
 | `uv_install_if_missing` | `"global"` (Astral's installer, adds uv to your user PATH), `"local"` (download into `code/backend/uv`, verified against the published SHA-256) or `"never"` |
 | `uv_version` | `""` (latest), an exact version (`"0.11.32"`) or a range (`">=0.9,<1"`). A global uv outside the range is left untouched and a local uv is installed instead. |
 | `uv_user_python_visible_globally` | for `"uv_user"`: register the Python with the `py` launcher and put it on PATH |
 | `uv_cache` | `"global"` (uv's per-user cache) or `"local"` (`code/backend/uv-cache`) |
-| `allow_downloads_at_launch` | `False` makes normal launches fail with a clear message instead of downloading (Setup and dev tools may always download) |
 | `use_system_certificates` | use the Windows certificate store (some company proxies need this) |
 
 Settings marked `[bootstrap]` in `developer_settings.py` are read before any Python
@@ -113,8 +111,8 @@ See [code/backend/dev_tools/README.md](code/backend/dev_tools/README.md) for det
 ### Portable/offline distribution
 
 Run `make_portable.cmd` and accept the settings it shows (`uv_prefer`/`uv_install_if_missing`
-= `"local"`, `python_source = "local"`, `package_environment = "project_venv"`), optionally
-set `allow_downloads_at_launch = False`, and copy the whole folder. On another PC or in
+= `"local"`, `python_source = "local"`), and copy
+the whole folder. On another PC or in
 another location the environment is re-linked to the copied Python automatically
 (no download, no reinstall); run Setup there to create shortcuts.
 
@@ -152,8 +150,6 @@ Each run gets unique log names. The normal UTF-8 log contains your prints and in
 optional time prefixes; the `.output.log` companion captures raw output including native
 and child-process output. Logging turns stdout/stderr into pipes, so disable terminal
 logging (`enable_log_for_terminal_start`) if your app needs a real console.
-Old logs and run diagnostics are pruned (`max_log_files` counts runs: a log and its
-`.output.log` are kept or deleted together; `max_run_folder_age_days`).
 
 Crash reports and terminal tracebacks look exactly like running `python main.py`
 (launcher frames are removed), including exception chains, notes and exception groups,
@@ -193,7 +189,7 @@ launcher steps (window icon, colors, focus, ...) never stop the app; they are re
 ## Licensing
 
 The template-owned files in `code/backend/DONT_CHANGE` are available under `MIT OR Apache-2.0`
-(except the banner fonts in `data/fonts`: BSD-3-Clause, MIT and WTFPL, see its `LICENSE.md`).
+(except the banner font in `data/fonts`: WTFPL, see its `LICENSE.md`).
 uv, Python distributions and third-party packages keep their own licenses. Projects created from this template must replace
 the project-license placeholder in [`LICENSE.md`](LICENSE.md).
 

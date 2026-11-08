@@ -182,15 +182,12 @@ def main():
             "log_print_prepend": settings.log_print_prepend,
             "log_input_prepend": settings.log_input_prepend,
             "log_path": log_path,
-            "overwrite_log": settings.overwrite_log,
             "traceback": str(run_dir / "traceback.json"),
             "result": str(run_dir / "result.json"),
             "ready": str(run_dir / "ready"),
         }
         atomic_json(run_dir / "wrapper.json", config)
-        # The user's own interpreter keeps its PYTHON* settings; a project venv is isolated.
-        isolated = app_python["kind"] == "venv"
-        env = clean_python_environment(isolated=isolated)
+        env = clean_python_environment()
         for key in list(env):
             if key.startswith("PYAPP_"):
                 env.pop(key)

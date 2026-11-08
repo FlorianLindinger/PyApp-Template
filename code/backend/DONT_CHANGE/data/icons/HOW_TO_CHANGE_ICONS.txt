@@ -48,20 +48,19 @@ default_open_main_py.png).
 ==== OVERLAY SETTINGS ==================
 =======================================
 
-Configure each overlay independently in:
+Each overlay is configured in SUB_ICONS in:
 
-    code/backend/developer_settings.py
+    code/backend/DONT_CHANGE/backend_settings.py
 
-Every overlay has two settings, for example:
+Every overlay has a scale and an alignment, for example:
 
-    settings_sub_icon_scale: float | None = 0.35
-    settings_sub_icon_alignment: str | None = "bottom right"
+    "settings": (0.35, "bottom right"),
 
 Scale is the fraction of the base icon area covered by the overlay. It must be
 greater than 0 and at most 1. Alignment accepts compass-style positions such
 as "bottom right", "top", "center", or "center left".
 
-Set either setting in a pair to None to generate that .ico without its overlay.
+Use None instead of the pair to generate that .ico without its overlay.
 
 
 =======================================

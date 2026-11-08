@@ -41,7 +41,6 @@ PORTABLE_SETTINGS = {
     "uv_prefer": "local",
     "uv_install_if_missing": "local",
     "python_source": "local",
-    "package_environment": "project_venv",
 }
 
 
@@ -60,7 +59,7 @@ def cmd_make_portable(arguments):
             return
     prepare(s)
     refuse_mutation_while_running()
-    local = _settings_copy(s, python_source="local", package_environment="project_venv")
+    local = _settings_copy(s, python_source="local")
 
     # 1. uv
     current_uv = uv_exe()
@@ -105,4 +104,3 @@ def cmd_make_portable(arguments):
     print_success("uv, Python and all packages are now inside this folder, and developer_settings.py uses them.")
     print_info("Copy the whole project folder. After moving it, run 'Setup - run first and after moving folder.cmd'")
     print_info("to refresh the shortcuts; the environment adapts to the new location by itself.")
-    print_info("Strictly offline: set allow_downloads_at_launch = False (launches then never try the network).")

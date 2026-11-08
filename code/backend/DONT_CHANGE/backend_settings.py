@@ -44,6 +44,8 @@ WINDOWS_DIR = os.environ.get("WINDIR", "C:\\Windows")
 
 LOCAL_UV_DIR = BACKEND_DIR + "\\uv"                 # uv.exe when installed locally
 LOCAL_UV_EXE = LOCAL_UV_DIR + "\\uv.exe"
+# Per-user uv, not on PATH: fetched when the usual uv is too old for a Python. UPDATE resolve_runtime.ps1 too.
+SHARED_UV_EXE = (os.environ.get("LOCALAPPDATA") or os.path.expanduser("~\\AppData\\Local")) + "\\PyApp-Template\\uv\\uv.exe"
 LOCAL_PYTHONS_DIR = BACKEND_DIR + "\\pythons"       # uv-managed Pythons when python_source = "local"
 LOCAL_UV_CACHE_DIR = BACKEND_DIR + "\\uv-cache"     # only used when uv_cache = "local"
 # The uv project lives in the backend folder next to developer_settings.py. pyproject.toml is
@@ -74,6 +76,7 @@ WATCHDOG_PATH = DONT_CHANGE_DIR + "\\runtime\\background_watchdog.py"
 PROCESS_EXIT_PATH = DONT_CHANGE_DIR + "\\runtime\\process_exit.py"
 SCRIPT_WRAPPER_PATH = DONT_CHANGE_DIR + "\\runtime\\script_wrapper.py"
 CTRL_C_HELPER_PATH = DONT_CHANGE_DIR + "\\runtime\\send_ctrl_c.py"
+RESOLVE_RUNTIME_PATH = DONT_CHANGE_DIR + "\\bootstrap\\resolve_runtime.ps1"
 
 # ------------------------
 # shortcut launchers
@@ -119,7 +122,7 @@ STOP_REQUEST_FILE_NAME = "stop-requested"
 EXPORTED_REQUIREMENTS_PATH = PROJECT_DIR + "\\requirements.txt"
 IMPORT_MAPPING_PATH = DATA_DIR + "\\import_to_package.txt"
 DEFAULT_SETTINGS_PATH = DATA_DIR + "\\developer_settings_defaults.py"  # defaults for missing settings
-FONTS_DIR = DATA_DIR + "\\fonts"  # ASCII-art fonts of the app name banner (scripts/banner.py)
+BANNER_FONT_PATH = DATA_DIR + "\\fonts\\future.tlf"  # ASCII-art font of the app name banner (scripts/banner.py)
 DEFAULT_ICON_DIR = DATA_DIR + "\\icons"  # bundled placeholder PNGs, used when the project's own are missing or unchanged
 
 # ------------------------
@@ -127,11 +130,25 @@ DEFAULT_ICON_DIR = DATA_DIR + "\\icons"  # bundled placeholder PNGs, used when t
 
 DEV_SETTINGS_PATH = BACKEND_DIR + "\\developer_settings.py"
 DEV_SETTINGS_DIR = BACKEND_DIR
-DEFAULT_SOUND_AFTER_CRASH = WINDOWS_DIR + "\\Media\\Windows Critical Stop.wav"
 DEFAULT_SOUND_AFTER_FAILURE = WINDOWS_DIR + "\\Media\\Windows Critical Stop.wav"
 DEFAULT_SOUND_AFTER_SUCCESS = WINDOWS_DIR + "\\Media\\notify.wav"
-# Ctrl+C has no default sound; an explicit WAV can still be configured per app.
-DEFAULT_SOUND_AFTER_KEYBOARD_INTERRUPT = ""
+# Window titles after the program ended ({program_name} is filled in).
+TITLE_AFTER_SUCCESS = "[Finished] {program_name}"
+TITLE_AFTER_FAILURE = "[Failure] {program_name}"
+TITLE_AFTER_KEYBOARD_INTERRUPT = "[KeyboardInterrupt] {program_name}"
+
+# Overlay of each generated icon, by icon file name: (fraction of the base icon area it covers,
+# greater than 0 and at most 1; position such as "bottom right", "top" or "center left").
+# Use None instead of the pair to generate that icon without its overlay.
+SUB_ICONS = {
+    "settings": (0.35, "bottom right"),
+    "stop": (0.35, "bottom right"),
+    "log": (0.35, "bottom right"),
+    "success": (0.35, "bottom right"),
+    "failure": (0.35, "bottom right"),
+    "crash_log": (0.35, "bottom right"),
+    "open_main_py": (0.35, "bottom right"),
+}
 
 # Explorer visibility only; this does not control .gitignore or Git tracking.
 FOLDERS_TO_MAKE_HIDDEN_IN_SHORTCUT_AND_ROOT_FOLDERS = [
@@ -152,6 +169,8 @@ EXCLUDED_FOLDERS_FOR_IMPORT_SEARCH = [
     ".svn",
     "node_modules",
 ]
+# Setup prepares uv, Python and packages, so the first start does not have to.
+INSTALL_ENVIRONMENT_WHEN_GENERATING_SHORTCUTS = True
 EMPTY_ARG_INDICATOR = "__EMPTY__"
 # Taskbar identity suffix of the no-terminal shortcut and of the windows it launches, so a
 # pinned no-terminal shortcut groups its app windows separately from the terminal shortcut.

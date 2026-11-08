@@ -6,7 +6,6 @@ import os
 import sys
 import tempfile
 
-from backend.DONT_CHANGE import backend_settings as paths
 from backend.DONT_CHANGE.scripts.config import describe_python_request, edit_settings, python_version_problem, settings
 from backend.DONT_CHANGE.scripts.console_tools import (
     ask,
@@ -80,12 +79,6 @@ def cmd_update_python(arguments):
             switch_python(newest, s=s)
             return
     request = current or s.python_version
-    in_use = find_python(request, s) or ""
-    if s.python_source.startswith("system") and not os.path.normcase(in_use).startswith(
-        os.path.normcase(paths.LOCAL_PYTHONS_DIR)
-    ):
-        print_info("The project uses an installed system Python; update it with its own installer.")
-        return
     print_step(f"Updating Python {request} to its newest patch release...")
     run_uv(["python", "install", "--upgrade", request], cwd=tempfile.gettempdir())
     newest_exe = find_python(request, s)

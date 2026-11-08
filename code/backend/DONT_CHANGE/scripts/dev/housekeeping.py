@@ -113,7 +113,6 @@ def cmd_status(arguments):
             ("Launcher version", paths.LAUNCHER_VERSION),
             ("Settings", settings_state, settings_state == "valid"),
             ("Shortcuts", shortcut_count),
-            ("Downloads at launch", "allowed" if s.allow_downloads_at_launch else "disabled"),
             (
                 "Ignored errors",
                 f"{ignored} (see {display_path(paths.DIAGNOSTICS_LOG_PATH)})" if ignored else "none",
@@ -129,7 +128,6 @@ def cmd_status(arguments):
             ("requires-python", current_requires_python() or "(missing)"),
         ],
         "Packages": [
-            ("package_environment", s.package_environment),
             ("packages", ", ".join(s.packages) or "(none)"),
             (
                 "pyproject.toml",

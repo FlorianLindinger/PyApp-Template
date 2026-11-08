@@ -15,27 +15,16 @@ from backend.DONT_CHANGE.scripts.errors import SettingsError
 BOOTSTRAP_SETTINGS = (
     "python_version",
     "python_source",
-    "package_environment",
     "uv_prefer",
     "uv_install_if_missing",
     "uv_version",
     "uv_user_python_visible_globally",
     "uv_cache",
-    "allow_downloads_at_launch",
     "use_system_certificates",
 )
 
-# Fonts of the app name banner (scripts/banner.py; files in data/fonts).
-BANNER_FONTS = ("future", "future_smooth", "standard", "coder_mini")
-
 CHOICES = {
-    "python_source": (
-        "local",
-        "uv_user",
-        "system_if_matching_else_local",
-        "system_default_any_version",
-    ),
-    "package_environment": ("project_venv", "interpreter_site_packages"),
+    "python_source": ("local", "uv_user"),
     "uv_prefer": ("global", "local"),
     "uv_install_if_missing": ("global", "local", "never"),
     "uv_cache": ("global", "local"),
@@ -52,25 +41,23 @@ SHORTCUT_KINDS = (
 )
 BOOLEANS = (
     "uv_user_python_visible_globally",
-    "allow_downloads_at_launch",
     "use_system_certificates",
-    "allow_installing_into_global_python",
-    "install_environment_when_generating_shortcuts",
     "start_menu_shortcuts",
     "start_in_shortcut_folder",
     "start_minimized",
     "use_classic_terminal",
-    "traceback_colors",
     "enable_log_for_terminal_start",
     "enable_log_for_no_terminal_start",
-    "overwrite_log",
-    "overwrite_crash_log",
+    "enable_crash_log",
+    "open_crash_log_after_failure",
+    "play_sound_after_success",
+    "play_sound_after_failure",
     "log_path_is_relative_to_start_folder_if_relative",
     "crash_log_path_is_relative_to_start_folder_if_relative",
 )
 
 
-OUTCOMES = ("success", "failure", "crash", "keyboard_interrupt")
+OUTCOMES = ("success", "failure", "keyboard_interrupt")
 SHORTCUT_NAME_SETTINGS = (
     "terminal_shortcut_name",
     "no_terminal_shortcut_name",
@@ -80,36 +67,10 @@ SHORTCUT_NAME_SETTINGS = (
     "open_crash_log_folder_shortcut_name",
     "open_main_py_shortcut_name",
 )
-SUB_ICON_KINDS = (
-    "settings",
-    "stop",
-    "log",
-    "success",
-    "failure",
-    "crash_log",
-    "open_main_py",
-)
-_ALIGNMENT_WORDS = {"top", "bottom", "left", "right", "center", "up", "down", "middle", "centre"}
 
 
 def _number(value) -> bool:
     return isinstance(value, (int, float)) and not isinstance(value, bool)
-
-
-def _alignment_ok(value) -> bool:
-    """Same rules as image_tools.generate_ico_from_png."""
-    if not isinstance(value, str):
-        return False
-    words = value.lower().replace("_", " ").replace("-", " ").split()
-    return bool(words) and all(word in _ALIGNMENT_WORDS for word in words)
-
-
-def _sound_path(value: str) -> str:
-    """Same rules as process_exit.play_sound: relative names are in C:\\Windows\\Media, ".wav" is optional."""
-    from backend.DONT_CHANGE.backend_settings import WINDOWS_DIR
-
-    path = value if os.path.isabs(value) else os.path.join(WINDOWS_DIR, "Media", value)
-    return path if path.lower().endswith(".wav") else path + ".wav"
 
 
 def _strftime_problem(value: str) -> str | None:
@@ -127,6 +88,17 @@ def _strftime_problem(value: str) -> str | None:
 REQUIREMENT_START = re.compile(r"\s*[A-Za-z0-9][A-Za-z0-9._-]*\s*($|[\[(<>=!~;@ ])")
 
 
+def parse_requirements(text: str) -> list:
+    """The packages of a pasted requirements.txt: one per line, without comments and --hash options."""
+    entries = []
+    for line in text.splitlines():
+        line = re.sub(r"(^|\s)#.*$", "", line)  # pip's rule: "#" starts a comment only after whitespace
+        line = re.sub(r"\s--hash=\S+", "", line).strip()
+        if line:
+            entries.append(line)
+    return entries
+
+
 def settings():
     """Import developer_settings, turning any error in the file into a short actionable message."""
     from backend.DONT_CHANGE.scripts.entrypoint import settings_file_problem
@@ -139,6 +111,8 @@ def settings():
             raise
         raise SettingsError(problem) from None
     fill_missing_settings(module)
+    if isinstance(getattr(module, "packages", None), str):
+        module.packages = parse_requirements(module.packages)
     return module
 
 
@@ -282,11 +256,6 @@ def validate(module=None) -> None:
     for name in BOOLEANS:
         need(name, lambda v: isinstance(v, bool), "use True or False")
     need("program_name", lambda v: isinstance(v, str) and v.strip(), "use a non-empty text")
-    need(
-        "app_name_banner_font",
-        lambda v: v is None or v in BANNER_FONTS,
-        "use one of " + ", ".join(repr(font) for font in BANNER_FONTS) + " or None",
-    )
     need("python_version", lambda v: isinstance(v, str), 'use text such as "3.14" or "" for the newest')
     python_version = get("python_version")
     version_problem = python_version_problem(python_version if isinstance(python_version, str) else "")
@@ -307,17 +276,16 @@ def validate(module=None) -> None:
         lambda v: isinstance(v, (list, tuple)) and all(isinstance(a, str) for a in v),
         "use a list of strings",
     )
-    need(
-        "packages",
-        lambda v: isinstance(v, (list, tuple)) and all(isinstance(p, str) and REQUIREMENT_START.match(p) for p in v),
-        'use a list of package requirements such as ["requests", "numpy>=2"]',
-    )
-    for name in ("max_log_files", "max_run_folder_age_days"):
-        need(
-            name,
-            lambda v: v is None or (isinstance(v, int) and not isinstance(v, bool) and v > 0),
-            "use a positive whole number or None",
+    packages = get("packages")
+    entries = parse_requirements(packages) if isinstance(packages, str) else packages
+    if isinstance(entries, (list, tuple)):
+        problems.extend(
+            f"packages: {entry!r} is not a package requirement such as \"numpy>=2\" (options such as -r or -e are not supported)."
+            for entry in entries
+            if not (isinstance(entry, str) and REQUIREMENT_START.match(entry))
         )
+    else:
+        need("packages", lambda v: False, 'use a list such as ["requests", "numpy>=2"] or a triple-quoted block')
     for name in ("traceback_lines_before", "traceback_lines_after"):
         need(
             name,
@@ -332,12 +300,6 @@ def validate(module=None) -> None:
             lambda v: v in (None, "") or (isinstance(v, str) and re.fullmatch(r"[0-9A-Fa-f]", v)),
             "use one hex digit 0-9/A-F or None",
         )
-    for outcome in ("success", "keyboard_interrupt"):  # failures and crashes always turn black
-        need(
-            "terminal_colors_after_" + outcome,
-            lambda v: v in (None, "") or (isinstance(v, str) and re.fullmatch(r"[0-9A-Fa-f]{2}", v)),
-            'use two hex digits like "4F" or None',
-        )
     need(
         "tab_bar_color",
         lambda v: v is None or (isinstance(v, str) and re.fullmatch(r"#[0-9A-Fa-f]{6}", v)),
@@ -348,16 +310,8 @@ def validate(module=None) -> None:
     for name in SHORTCUT_NAME_SETTINGS:
         need(name, lambda v: v is None or (isinstance(v, str) and v.strip()), "use a non-empty text or None")
     for outcome in OUTCOMES:
-        for prefix in ("close_after_", "open_log_file_after_", "open_main_py_after_"):
+        for prefix in ("close_after_", "open_log_file_after_"):
             need(prefix + outcome, lambda v: isinstance(v, bool), "use True or False")
-        need("title_after_" + outcome, lambda v: v is None or isinstance(v, str), "use a text or None")
-        name = "play_sound_after_" + outcome
-        need(name, lambda v: isinstance(v, (bool, str)), 'use True, False or a .wav name such as "Windows Ding.wav"')
-        sound = get(name)
-        if isinstance(sound, str) and sound and not os.path.isfile(_sound_path(sound)):
-            problems.append(
-                f'{name} = {sound!r}: "{_sound_path(sound)}" does not exist (use True, False or an existing .wav file).'
-            )
     for name in (
         "print_prepend",
         "input_prepend",
@@ -375,23 +329,7 @@ def validate(module=None) -> None:
     for name in ("print_prepend", "input_prepend", "log_print_prepend", "log_input_prepend"):
         need(name, lambda v: v is None or isinstance(v, str), 'use a text such as "%H:%M:%S | " or None')
     need("error_date_format", lambda v: isinstance(v, str), 'use a date format such as "%Y-%m-%d %H:%M:%S"')
-    for kind in SUB_ICON_KINDS:
-        need(
-            kind + "_sub_icon_scale",
-            lambda v: v is None or (_number(v) and 0 < v <= 1),
-            "use a number greater than 0 and at most 1, or None",
-        )
-        need(
-            kind + "_sub_icon_alignment",
-            lambda v: v is None or _alignment_ok(v),
-            'use a position such as "bottom right", "top", "center left", or None',
-        )
 
-    if get("package_environment") == "interpreter_site_packages" and get("python_source") in ("local", "uv_user"):
-        problems.append(
-            'package_environment = "interpreter_site_packages" only works with python_source = "system_if_matching_else_local" '
-            'or "system_default_any_version" (a uv-managed Python must not be modified directly). Use "project_venv".'
-        )
     if problems:
         raise SettingsError(
             "Please fix developer_settings.py:\n  " + "\n  ".join(problems) + f'\n  File: "{DEV_SETTINGS_PATH}"'
@@ -406,15 +344,21 @@ def edit_settings(changes: dict) -> list[str]:
     diff = []
     for name, value in changes.items():
         literal = _literal(value)
-        diff += _replace_setting_value(name, lambda newline, literal=literal: literal)
+        diff += _replace_setting_value(name, lambda newline, node, literal=literal: literal)
     return diff
 
 
 def set_list_setting(name: str, values) -> list[str]:
-    """Rewrite the top-level list setting `name` (it may span several lines); return a readable diff."""
+    """Rewrite the top-level list setting `name` (it may span several lines); return a readable diff.
+
+    A setting written as a triple-quoted block stays one, so a pasted requirements list keeps its form.
+    """
     values = list(values)
 
-    def body(newline: str) -> str:
+    def body(newline: str, node) -> str:
+        was_block = node is not None and isinstance(node.value, ast.Constant) and isinstance(node.value.value, str)
+        if was_block and not any("\\" in v or '"""' in v for v in values):
+            return '"""' + newline + "".join(v + newline for v in values) + '"""'
         if not values:
             return "[]"
         return "[" + newline + "".join("    " + _quoted(v) + "," + newline for v in values) + "]"
@@ -425,7 +369,8 @@ def set_list_setting(name: str, values) -> list[str]:
 def _replace_setting_value(name: str, make_value) -> list[str]:
     """Replace the value of the last top-level assignment to `name` (the one Python uses).
 
-    make_value(newline) returns the new value's source text. The file's line endings are kept.
+    make_value(newline, node) returns the new value's source text (node: the current assignment or
+    None). The file's line endings are kept.
     """
     with open(DEV_SETTINGS_PATH, encoding="utf-8", newline="") as stream:
         source = stream.read()
@@ -440,7 +385,7 @@ def _replace_setting_value(name: str, make_value) -> list[str]:
         if name not in default_setting_expressions():
             raise SettingsError(f"Could not find the setting {name} in developer_settings.py to edit.")
         # A setting that only had its default (added by a newer launcher version): append it.
-        addition = f"{name} = {make_value(newline)}{newline}"
+        addition = f"{name} = {make_value(newline, None)}{newline}"
         with open(DEV_SETTINGS_PATH, "w", encoding="utf-8", newline="") as stream:
             stream.write(source + ("" if source.endswith(("\n", "\r")) else newline) + addition)
         sys.modules.pop("backend.developer_settings", None)
@@ -449,7 +394,7 @@ def _replace_setting_value(name: str, make_value) -> list[str]:
     # ast offsets count UTF-8 bytes
     head = lines[first].encode("utf-8")[: node.value.col_offset].decode("utf-8")  # e.g. "packages: list[str] = "
     tail = lines[last].encode("utf-8")[node.value.end_col_offset :].decode("utf-8").rstrip("\r\n")  # e.g. a comment
-    replacement = (head + make_value(newline) + tail).rstrip() + newline
+    replacement = (head + make_value(newline, node) + tail).rstrip() + newline
     old = "".join(lines[first : last + 1])
     if replacement == old:
         return []

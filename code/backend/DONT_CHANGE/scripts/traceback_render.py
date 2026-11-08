@@ -2,8 +2,7 @@
 
 Frames of your own code get source lines around the failing line (traceback_lines_before /
 traceback_lines_after); library frames are one line each, like CPython's. In color, every line
-is drawn on a black background so the colors stay readable on any terminal color scheme
-(terminal_colors_after_success etc. may color the rest of the window).
+is drawn on a black background so the colors stay readable on any terminal color scheme.
 """
 
 from __future__ import annotations

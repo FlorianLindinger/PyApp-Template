@@ -20,7 +20,6 @@ from backend.DONT_CHANGE.scripts.diagnostics import note_ignored
 from backend.DONT_CHANGE.scripts.env.venv import ensure_environment
 from backend.DONT_CHANGE.scripts.instance_policy import decide
 from backend.DONT_CHANGE.scripts.launcher_ui import (
-    prune_logs,
     set_hidden_in_explorer,
     set_terminal_appearance_once,
 )
@@ -79,7 +78,6 @@ def main():
         if errors:
             raise RuntimeError("Could not stop the running instance(s): " + "; ".join(errors))
 
-    prune_logs(s)
     _hint_outdated_shortcuts(s)
     app = ensure_environment(interactive=True)
 
@@ -94,7 +92,7 @@ def main():
     env = os.environ.copy()
     env["PYAPP_RUN_DIR"] = str(run_dir)
     env["PYAPP_START_DIR"] = env.get("PYAPP_START_DIR", os.getcwd())
-    env["PYAPP_APP_PYTHON"] = json.dumps({"exe": app.exe, "flags": list(app.flags), "kind": app.kind})
+    env["PYAPP_APP_PYTHON"] = json.dumps({"exe": app.exe, "flags": list(app.flags)})
     args = [
         sys.executable,
         "-I",

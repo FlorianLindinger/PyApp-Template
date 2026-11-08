@@ -77,16 +77,11 @@ def atomic_json(path, payload):
         temp.unlink(missing_ok=True)
 
 
-def clean_python_environment(isolated=True):
-    """Environment for the application: launcher/package-tool variables removed.
-
-    isolated=False keeps the user's PYTHON* settings (package_environment =
-    "interpreter_site_packages" runs the user's own interpreter as configured).
-    """
-    blocked = ("PIP_", "UV_", "VIRTUAL_ENV") + (("PYTHON",) if isolated else ())
+def clean_python_environment():
+    """Environment for the application: launcher/package-tool and PYTHON* variables removed."""
+    blocked = ("PIP_", "UV_", "VIRTUAL_ENV", "PYTHON")
     env = {k: v for k, v in os.environ.items() if not k.upper().startswith(blocked)}
-    if isolated:
-        env["PYTHONNOUSERSITE"] = "1"
+    env["PYTHONNOUSERSITE"] = "1"
     return env
 
 

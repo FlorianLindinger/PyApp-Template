@@ -17,6 +17,7 @@ from backend.DONT_CHANGE.backend_settings import (
     OPEN_MAIN_PY_ICON_PATH,
     SETTINGS_ICON_PATH,
     STOP_ICON_PATH,
+    SUB_ICONS,
     SUCCESS_ICON_PATH,
 )
 from backend.DONT_CHANGE.scripts.config import settings as load_settings
@@ -84,8 +85,7 @@ def _pick_png(filename: str, expected_id: str | None, fallback_filename: str | N
 
 def main() -> None:
     """Generate every enabled icon described by ``ICON_GENERATION_SETTINGS``."""
-    s = load_settings()
-    validate(s)
+    validate(load_settings())
     jobs: list[tuple[str, str, str | None, float, str]] = []
     for (
         output_path,
@@ -97,21 +97,20 @@ def main() -> None:
         overlay_fallback,
     ) in ICON_GENERATION_SETTINGS:
         base_path = _pick_png(base_name, base_id, base_fallback)
-        # e.g. stop.ico -> stop_sub_icon_scale / stop_sub_icon_alignment (checked by validate()).
-        icon_name = os.path.splitext(os.path.basename(output_path))[0]
-        scale = getattr(s, icon_name + "_sub_icon_scale", None)
-        alignment = getattr(s, icon_name + "_sub_icon_alignment", None)
+        # e.g. stop.ico -> SUB_ICONS["stop"]
+        placement = SUB_ICONS.get(os.path.splitext(os.path.basename(output_path))[0])
         overlay_path = None
-        if overlay_name is not None and scale is not None and (alignment is not None):
+        if overlay_name is not None and placement is not None:
             overlay_path = _pick_png(overlay_name, overlay_id, overlay_fallback)
+        scale, alignment = placement or (0.35, "bottom right")
         _delete_existing_icon(output_path)
         jobs.append(
             (
                 output_path,
                 base_path,
                 overlay_path,
-                0.35 if scale is None else scale,
-                "bottom right" if alignment is None else alignment,
+                scale,
+                alignment,
             )
         )
 

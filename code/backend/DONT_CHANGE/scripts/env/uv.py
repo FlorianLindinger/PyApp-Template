@@ -6,15 +6,16 @@ import os
 import shutil
 import subprocess
 
-from backend.DONT_CHANGE.backend_settings import LOCAL_PYTHONS_DIR, LOCAL_UV_CACHE_DIR, LOCAL_UV_EXE, PROJECT_DIR
+from backend.DONT_CHANGE.backend_settings import (
+    LOCAL_PYTHONS_DIR,
+    LOCAL_UV_CACHE_DIR,
+    LOCAL_UV_EXE,
+    PROJECT_DIR,
+    RESOLVE_RUNTIME_PATH,
+    SHARED_UV_EXE,
+)
 from backend.DONT_CHANGE.scripts.config import settings
 from backend.DONT_CHANGE.scripts.errors import SetupError
-
-
-def downloads_allowed(s=None) -> bool:
-    """Normal launches follow allow_downloads_at_launch; Setup and dev tools set PYAPP_ALLOW_DOWNLOADS=1."""
-    s = s or settings()
-    return bool(s.allow_downloads_at_launch) or os.environ.get("PYAPP_ALLOW_DOWNLOADS") == "1"
 
 
 def uv_exe() -> str:
@@ -30,6 +31,16 @@ def uv_exe() -> str:
     raise SetupError(
         "uv was not found. Start the app through a shortcut or 'Setup - run first and after moving folder.cmd' so the bootstrap can install it."
     )
+
+
+def install_newer_uv() -> bool:
+    """Fetch the newest uv into the per-user folder; True when this process now uses a newer uv."""
+    arguments = ["-NoLogo", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", RESOLVE_RUNTIME_PATH]
+    code = subprocess.run(["powershell.exe", *arguments, "-InstallNewerThan", uv_exe()], check=False).returncode
+    if code:
+        return False
+    os.environ["PYAPP_UV"] = SHARED_UV_EXE
+    return True
 
 
 _OWN_UV_VARIABLES = (
@@ -65,21 +76,13 @@ def uv_environment(s=None, project_environment: str | None = None, python_comman
         and key.upper() not in ("VIRTUAL_ENV", "PYAPP_ENTRY_SCRIPT")
         and key.upper() not in _OWN_UV_VARIABLES
     }
-    source = s.python_source
-    if source == "uv_user":
+    if s.python_source == "uv_user":
         visible = "1" if s.uv_user_python_visible_globally else "0"
         env.update(UV_MANAGED_PYTHON="1", UV_PYTHON_INSTALL_BIN=visible, UV_PYTHON_INSTALL_REGISTRY=visible)
-    elif source == "local":
-        env.update(
-            UV_PYTHON_INSTALL_DIR=LOCAL_PYTHONS_DIR,
-            UV_MANAGED_PYTHON="1",
-            UV_PYTHON_INSTALL_BIN="0",
-            UV_PYTHON_INSTALL_REGISTRY="0",
-        )
     else:
         env.update(
             UV_PYTHON_INSTALL_DIR=LOCAL_PYTHONS_DIR,
-            UV_PYTHON_PREFERENCE="system",
+            UV_MANAGED_PYTHON="1",
             UV_PYTHON_INSTALL_BIN="0",
             UV_PYTHON_INSTALL_REGISTRY="0",
         )
@@ -87,7 +90,7 @@ def uv_environment(s=None, project_environment: str | None = None, python_comman
         env["UV_CACHE_DIR"] = LOCAL_UV_CACHE_DIR
     if s.use_system_certificates:
         env["UV_SYSTEM_CERTS"] = "1"
-    env["UV_PYTHON_DOWNLOADS"] = "automatic" if downloads_allowed(s) else "never"
+    env["UV_PYTHON_DOWNLOADS"] = "automatic"
     # The uv cache is often on another drive than the project; copying avoids uv's hard-link warning.
     env.setdefault("UV_LINK_MODE", "copy")
     if project_environment:

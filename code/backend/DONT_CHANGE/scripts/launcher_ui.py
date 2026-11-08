@@ -1,10 +1,9 @@
-"""Launcher appearance, error printing, log paths and log retention."""
+"""Launcher appearance, error printing and log paths."""
 
 from __future__ import annotations
 
 import os
 import sys
-import time
 
 from backend.DONT_CHANGE.backend_settings import (
     DEV_SETTINGS_DIR,
@@ -12,7 +11,6 @@ from backend.DONT_CHANGE.backend_settings import (
     ICON_PATH,
     PROCESS_REGISTRY_DIR,
     PYTHON_SCRIPTS_DIR,
-    RUNS_DIR,
     SHORTCUT_OUTPUT_DIR,
 )
 from backend.DONT_CHANGE.scripts.config import settings
@@ -28,7 +26,6 @@ from backend.DONT_CHANGE.scripts.console_tools import (
 from backend.DONT_CHANGE.scripts.console_tools import (
     set_terminal_colors as _set_terminal_colors,
 )
-from backend.DONT_CHANGE.scripts.diagnostics import note_ignored
 from backend.DONT_CHANGE.scripts.filesystem_tools import (
     set_hidden_in_explorer as _set_hidden_in_explorer,
 )
@@ -101,47 +98,6 @@ def get_log_folder_path(log_path, is_relative_to_start_folder_if_relative: bool)
     """Folder of the resolved log path, or None when logging is disabled."""
     resolved = get_log_path(log_path, is_relative_to_start_folder_if_relative)
     return os.path.dirname(resolved) if resolved else None
-
-
-def prune_logs(s) -> None:
-    """Apply max_log_files and max_run_folder_age_days (best effort, never raises)."""
-    import shutil
-
-    try:
-        for path_setting, relative_setting in (
-            ("log_path", "log_path_is_relative_to_start_folder_if_relative"),
-            ("crash_log_path", "crash_log_path_is_relative_to_start_folder_if_relative"),
-        ):
-            pattern = getattr(s, path_setting)
-            if not pattern or not s.max_log_files:
-                continue
-            folder = get_log_folder_path(pattern, getattr(s, relative_setting))
-            prefix = os.path.basename(pattern).split("%", 1)[0]
-            if not folder or not os.path.isdir(folder) or not prefix:
-                continue
-            # One run = one log; its raw-output companion (OUTPUT_LOG_SUFFIX) counts with it.
-            files = [
-                os.path.join(folder, name)
-                for name in os.listdir(folder)
-                if name.startswith(prefix)
-                and not name.endswith(OUTPUT_LOG_SUFFIX)
-                and os.path.isfile(os.path.join(folder, name))
-            ]
-            files.sort(key=os.path.getmtime, reverse=True)
-            for old in files[s.max_log_files :]:
-                for path in (old, old + OUTPUT_LOG_SUFFIX):
-                    try:
-                        os.remove(path)
-                    except OSError:
-                        pass
-        if s.max_run_folder_age_days and os.path.isdir(RUNS_DIR):
-            limit = time.time() - s.max_run_folder_age_days * 86400
-            for name in os.listdir(RUNS_DIR):
-                path = os.path.join(RUNS_DIR, name)
-                if os.path.isdir(path) and os.path.getmtime(path) < limit:
-                    shutil.rmtree(path, ignore_errors=True)
-    except Exception:
-        note_ignored("prune_logs")
 
 
 def stop_running_instances(timeout: float = 0.0, report=None):

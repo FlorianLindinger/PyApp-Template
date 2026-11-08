@@ -15,12 +15,9 @@ You may use the covered files under either license. You do not have to comply wi
 
 ## Third-party exceptions
 
-The ASCII-art fonts in `data/fonts` (used for the app name banner, see `scripts/banner.py`) keep their own licenses; each file also names its authors in its header:
+The ASCII-art font in `data/fonts` (used for the app name banner, see `scripts/banner.py`) keeps its own license; the file also names its author in its header:
 
-* **`data/fonts/standard.flf`**: "Standard" FIGlet font by Glenn Chappell and Ian Chai, part of the FIGlet distribution: [BSD 3-Clause License](LICENSES/BSD-3-Clause-FIGlet.txt).
-* **`data/fonts/coder_mini.flf`**: "Coder Mini" by Loic Cressot: [MIT License](LICENSES/MIT-coder_mini.txt).
 * **`data/fonts/future.tlf`**: "Future" TOIlet font by Sam Hocevar: [WTFPL, Version 2](LICENSES/WTFPL.txt).
-* **`data/fonts/future_smooth.tlf`**: "Future Smooth" by John Goodliff, based on "Future" by Sam Hocevar: [WTFPL, Version 2](LICENSES/WTFPL.txt).
 
 ## Distribution note
 

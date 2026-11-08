@@ -129,7 +129,6 @@ do i want to remvoe stuff from pyproject. ask AI what is houd do with it
 
 rename sub icon to overlay icon everywher
 
-test terminal_colors_after_KeyboardInterrupt
 
 
 in common code see if functions still need params
@@ -261,8 +260,6 @@ does it handle well if main.py not there?
 remove env_var_to_signal_startup_time_measurement
 
 ask AI where i can simplify code and logic and files and everythiong
-
-waht happens for "overwrite_log = False" just append? write behavior down in developer settings
 
 is everyginh used in develper_settings?
 

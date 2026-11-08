@@ -7,7 +7,12 @@ from __future__ import annotations
 
 import os
 
-from backend.DONT_CHANGE.backend_settings import DEV_SETTINGS_PATH, LAUNCHER_VERSION, SHORTCUT_OUTPUT_DIR
+from backend.DONT_CHANGE.backend_settings import (
+    DEV_SETTINGS_PATH,
+    INSTALL_ENVIRONMENT_WHEN_GENERATING_SHORTCUTS,
+    LAUNCHER_VERSION,
+    SHORTCUT_OUTPUT_DIR,
+)
 from backend.DONT_CHANGE.scripts.banner import print_banner
 from backend.DONT_CHANGE.scripts.config import settings, validate
 from backend.DONT_CHANGE.scripts.console_tools import (
@@ -58,13 +63,13 @@ def main() -> None:
     filenames = [shortcut_filename(d[1]).casefold() for d in definitions]
     if len(filenames) != len(set(filenames)):
         raise ValueError("Shortcut names collide after Windows filename sanitization; choose distinct names.")
-    if s.install_environment_when_generating_shortcuts:
+    if INSTALL_ENVIRONMENT_WHEN_GENERATING_SHORTCUTS:
         from backend.DONT_CHANGE.scripts.env.pythons import interpreter_version, version_text
         from backend.DONT_CHANGE.scripts.env.venv import ensure_environment
 
         print_heading("Environment")
         app = ensure_environment(interactive=True)
-        where = "backend\\.venv" if app.kind == "venv" else app.exe
+        where = "backend\\.venv"
         print(
             f"  {styled('ready', ANSI_GOOD)}  Python {version_text(interpreter_version(app.exe))}  {styled(where, ANSI_DIM)}"
         )

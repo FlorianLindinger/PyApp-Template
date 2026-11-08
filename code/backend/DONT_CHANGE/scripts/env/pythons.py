@@ -12,7 +12,7 @@ from backend.DONT_CHANGE.backend_settings import MINIMUM_PYTHON, PYTHON_VERSION_
 from backend.DONT_CHANGE.scripts.banner import show_setup_window
 from backend.DONT_CHANGE.scripts.config import settings
 from backend.DONT_CHANGE.scripts.console_tools import print_step
-from backend.DONT_CHANGE.scripts.env.uv import downloads_allowed, run_uv, run_uv_captured
+from backend.DONT_CHANGE.scripts.env.uv import install_newer_uv, run_uv, run_uv_captured
 from backend.DONT_CHANGE.scripts.errors import SetupError
 
 
@@ -85,14 +85,14 @@ def available_summary(s=None) -> str:
 def install_python(request: str, s=None) -> str:
     """Install a Python with uv (location per python_source) and return its executable."""
     s = s or settings()
-    if not downloads_allowed(s):
-        raise SetupError(
-            f"Python {request} is not installed and downloads at launch are disabled (allow_downloads_at_launch = False). "
-            "Run Setup or a dev tool once with internet access."
-        )
     show_setup_window()
     print_step(f"Installing Python {request} with uv...")
-    if run_uv(["python", "install", request], check=False, cwd=tempfile.gettempdir(), s=s):
+    arguments = ["python", "install", request]
+    failed = run_uv(arguments, check=False, cwd=tempfile.gettempdir(), s=s)
+    if failed and install_newer_uv():
+        invalidate_runtime_cache()  # the next launch looks up uv again and finds the newer one
+        failed = run_uv(arguments, check=False, cwd=tempfile.gettempdir(), s=s)
+    if failed:
         raise SetupError(
             f"uv could not install Python '{request}'. {available_summary(s)} The launcher needs Python 3.8 or newer. "
             "Check python_version in developer_settings.py."

@@ -1,7 +1,9 @@
 """developer_settings.py: validation, friendly errors, and editing without damaging the file."""
 
 import re
+import types
 import unittest
+from unittest import mock
 
 import support
 from project_location import CODE, DONT_CHANGE
@@ -23,10 +25,8 @@ class ValidationTests(unittest.TestCase):
 
     def test_wrong_values_are_reported_by_name(self):
         bad = [
-            'close_after_crash = "no"',
+            'close_after_failure = "no"',
             "play_sound_after_failure = 3",
-            "settings_sub_icon_scale = 2",
-            'log_sub_icon_alignment = "middle-ish"',
             "print_prepend = 5",
             'terminal_shortcut_name = "  "',
             "stop_timeout_seconds = -1",
@@ -79,15 +79,15 @@ class DefaultsTests(unittest.TestCase):
 
     def test_missing_settings_get_their_defaults(self):
         def drop(text):
-            text = re.sub(r"(?m)^app_name_banner_font\b.*\n", "", text)
+            text = re.sub(r"(?m)^start_minimized\b.*\n", "", text)
             text = re.sub(r"(?m)^terminal_shortcut_name\b.*\n", "", text)
             return text.replace('program_name = "PyApp-Template"', 'program_name = "Other App"')
 
         with support.temporary_settings(drop) as (_, load):
             module = load()
             filled = config.fill_missing_settings(module)
-            self.assertEqual(sorted(filled), ["app_name_banner_font", "terminal_shortcut_name"])
-            self.assertEqual(module.app_name_banner_font, "future")
+            self.assertEqual(sorted(filled), ["start_minimized", "terminal_shortcut_name"])
+            self.assertIs(module.start_minimized, False)
             self.assertEqual(module.terminal_shortcut_name, "Other App")  # f"{program_name}" of the project
             config.validate(module)
 
@@ -131,6 +131,26 @@ class EditingTests(unittest.TestCase):
             self.assertEqual(load().packages, packages)
             config.set_list_setting("packages", [])
             self.assertEqual(load().packages, [])
+
+    def test_pasted_requirements_block(self):
+        text = "# pasted\nrequests>=2  # via x\n\nnumpy==2.1 --hash=sha256:ab --hash=sha256:cd\npkg @ https://x.org/a#egg=pkg\n"
+        self.assertEqual(config.parse_requirements(text), ["requests>=2", "numpy==2.1", "pkg @ https://x.org/a#egg=pkg"])
+        block = ['packages = """', "requests>=2  # via x", "numpy==2.1", '"""']
+        with support.temporary_settings(append(block)) as (_, load):
+            config.validate(load())
+            config.set_list_setting("packages", ["a", "b>=1"])
+            self.assertEqual(load().packages.split(), ["a", "b>=1"])  # still a block
+
+    def test_settings_turn_a_block_into_a_list(self):
+        module = types.SimpleNamespace(packages="requests\nnumpy>=2\n", MISSING_SETTINGS_FILLED_IN=[])
+        with mock.patch.object(config.importlib, "import_module", return_value=module):
+            self.assertEqual(config.settings().packages, ["requests", "numpy>=2"])
+
+    def test_bad_line_in_a_block_is_named(self):
+        block = ['packages = """', "requests", "-r base.txt", '"""']
+        with support.temporary_settings(append(block)) as (_, load), self.assertRaises(SettingsError) as raised:
+            config.validate(load())
+        self.assertIn("-r base.txt", str(raised.exception))
 
     def test_unknown_setting_is_an_error(self):
         with support.temporary_settings(), self.assertRaises(SettingsError):

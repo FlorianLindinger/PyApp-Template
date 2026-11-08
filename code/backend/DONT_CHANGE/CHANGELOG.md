@@ -12,6 +12,25 @@ The first versioned release; it contains every change below.
 - Error reports are one block between two rules: headline, frames, error, then the script, time
   and Python details (they used to sit above the traceback between two more rules). File names
   and the failing line's number stand out in color.
+- Removed `traceback_colors`: tracebacks are colored in a terminal and plain everywhere else.
+- One banner font: `future` is always used; `app_name_banner_font` and the fonts `future_smooth`,
+  `standard` and `coder_mini` are removed.
+- Removed `overwrite_log` and `overwrite_crash_log`: every run writes its own uniquely named file.
+- Added `enable_crash_log` (default `True`): `False` stops writing crash log files.
+- Crashes count as failures: every `*_after_crash` setting is merged into `*_after_failure`.
+- Added `open_crash_log_after_failure` (default `False`; Ctrl+C does not count).
+- `title_after_*` moved to `backend_settings.py` (`TITLE_AFTER_*`).
+- Removed `open_main_py_after_*`, `terminal_colors_after_success`,
+  `terminal_colors_after_keyboard_interrupt` and `play_sound_after_keyboard_interrupt`;
+  `play_sound_after_*` are True/False only (no custom `.wav` paths).
+- The `*_sub_icon_scale` / `*_sub_icon_alignment` settings moved to `backend_settings.py` (`SUB_ICONS`).
+- Removed `allow_downloads_at_launch` and `PYAPP_ALLOW_DOWNLOADS`: launches may always download what is missing.
+- Removed `package_environment` and `allow_installing_into_global_python`: the app always uses the project's `.venv`.
+- `python_source` is `"local"` or `"uv_user"`: the two `system_...` options are removed, so uv always provides Python.
+- If uv cannot install the requested Python, the newest uv is fetched to `%LOCALAPPDATA%\PyApp-Template\uv` (not on PATH) and the install is retried.
+- Removed `max_log_files` and `max_run_folder_age_days`: logs and run folders are kept until deleted (dev tool `clean`).
+- `install_environment_when_generating_shortcuts` moved to `backend_settings.py`.
+- `packages` can also be a pasted requirements.txt in a `"""` block (comments and `--hash` are ignored).
 
 ### 2026-11-07 - tracebacks, simpler icons and colors, tests and docs in DONT_CHANGE
 

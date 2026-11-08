@@ -166,7 +166,6 @@ class PipeSplitter:
 
 def setup_log_prints(
     log_path,
-    overwrite_log,
     print_prepend,
     log_print_prepend,
     input_prepend,
@@ -182,7 +181,7 @@ def setup_log_prints(
         if folder:
             os.makedirs(folder, exist_ok=True)
         log_file = open(  # noqa: SIM115 - open for the whole run, closed by _finish_logging
-            log_path, "w" if overwrite_log else "a", encoding="utf-8", buffering=1
+            log_path, "w", encoding="utf-8", buffering=1
         )
     # Registered before the application's callbacks, so it runs after them.
     atexit.register(_finish_logging)
@@ -321,7 +320,6 @@ def main():
     if log_path or print_prepend or log_print_prepend or input_prepend or log_input_prepend:
         setup_log_prints(
             log_path,
-            config.get("overwrite_log", True),
             print_prepend,
             log_print_prepend,
             input_prepend,
