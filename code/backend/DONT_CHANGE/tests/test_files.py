@@ -65,7 +65,7 @@ class LauncherFileTests(unittest.TestCase):
             r"zip\([^)]*strict=": "zip(strict=...)",
         }
         for path in DONT_CHANGE.rglob("*.py"):
-            if path.name == "test_launcher_files.py":  # this file names the patterns
+            if path.name == "test_files.py":  # this file names the patterns
                 continue
             text = path.read_text(encoding="utf-8")
             for pattern, what in forbidden.items():

@@ -72,9 +72,9 @@ class ValidationTests(unittest.TestCase):
 
 
 class DefaultsTests(unittest.TestCase):
-    """Settings missing in an older developer_settings.py fall back to data/developer_settings_defaults.py."""
+    """Settings missing in an older developer_settings.py fall back to data/dev_settings_default.py."""
 
-    DEFAULTS = DONT_CHANGE / "data" / "developer_settings_defaults.py"
+    DEFAULTS = DONT_CHANGE / "data" / "dev_settings_default.py"
 
     def test_defaults_file_is_complete_and_valid(self):
         defaults = self.DEFAULTS.read_text(encoding="utf-8")
@@ -97,7 +97,7 @@ class DefaultsTests(unittest.TestCase):
         self.assertEqual(
             self.settings_part(project).splitlines(),
             self.settings_part(self.DEFAULTS).splitlines(),
-            "data/developer_settings_defaults.py must match developer_settings.py (settings, values and comments)",
+            "data/dev_settings_default.py must match developer_settings.py (settings, values and comments)",
         )
 
     def test_missing_settings_get_their_defaults(self):

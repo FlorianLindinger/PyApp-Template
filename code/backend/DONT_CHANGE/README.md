@@ -32,7 +32,7 @@ or change it.
              │    └─ bootstrap\resolve_runtime.ps1   only when the cache is stale: installs uv/Python
              └─ python -I -S scripts\entrypoint.py actions\start_program.py
                   ├─ scripts\env\venv.py: ensure_environment()   backend\generated\.venv matches uv.lock
-                  └─ runtime\background_watchdog.py   (new console, or hidden)
+                  └─ runtime\bg_watchdog.py   (new console, or hidden)
                        ├─ runtime\script_wrapper.py  ──runs──▶ code\main.py   (app's .venv Python)
                        └─ runtime\process_exit.py    success / failure / crash / Ctrl+C handling
 ```
@@ -50,7 +50,7 @@ Three Pythons can be involved, but usually they are the same installation:
 - **Standard library only, Python 3.8+.** Every `.py` file here runs on any Python uv can
   install, without packages: the app's packages can never break the launcher. Use
   `from __future__ import annotations`; no `match`, no parenthesized `with`, no
-  `str.removeprefix`, no `functools.cache` (`tests/test_launcher_files.py` checks this).
+  `str.removeprefix`, no `functools.cache` (`tests/test_files.py` checks this).
 - **Settings are read when needed, never at import time** (`config.settings()`), so a mistake
   in `developer_settings.py` becomes a short message with a line number instead of a traceback.
 - **Every tool is a plain module with a `main()`**, run by `scripts/entrypoint.py`, which owns
@@ -96,7 +96,7 @@ Three Pythons can be involved, but usually they are the same installation:
    It then reserves a run folder `tmp\runs\<id>\` and starts the watchdog in a new console
    (`conhost.exe` or `wt.exe`) or hidden, and waits until the watchdog writes
    `startup.json` ("started", "cancelled" or an error). Then this window closes.
-8. **`runtime\background_watchdog.py`** puts itself into a Windows job object (so Stop can end
+8. **`runtime\bg_watchdog.py`** puts itself into a Windows job object (so Stop can end
    every process the app starts, see [Process control](#process-control-and-stop)), registers
    the run in `tmp\running\` under the instance policy, sets the console's title, icon, colors
    and taskbar identity, opens the log file, and starts the app Python with
@@ -286,7 +286,7 @@ ASCII art (`scripts/banner.py`). The PowerShell bootstrap and the
 
 | File | Purpose |
 | --- | --- |
-| `background_watchdog.py` | Owns one run: job object, registry, console appearance, log, starts the wrapper, copies output, hands the outcome to `process_exit.py`. |
+| `bg_watchdog.py` | Owns one run: job object, registry, console appearance, log, starts the wrapper, copies output, hands the outcome to `process_exit.py`. |
 | `script_wrapper.py` | Runs inside the app Python: clean environment, `sys.argv`/`sys.path` like `python main.py`, logging and prefixes, runs `main.py`, writes the result and traceback report. |
 | `_pyapp.py` | The protocol shared by wrapper and watchdog (exit codes, traceback reports). Imported in the app process as the top-level module `_pyapp`, a name that cannot shadow the app's modules. |
 | `process_exit.py` | Completion handling per outcome; missing-package menu and restart. |
@@ -309,13 +309,13 @@ ASCII art (`scripts/banner.py`). The PowerShell bootstrap and the
 | `windows_focus.py` | Finds and activates the windows of a running instance. |
 | `shortcuts.py` | Creates `.lnk` files (via COM), their targets and taskbar identity, the record of created shortcuts, removal of stale ones. |
 | `com_tools.py` | Minimal COM helpers with `ctypes` (GUIDs, property store, AppUserModelID). |
-| `filesystem_tools.py` | Safe folder removal (refuses paths outside the expected parent, junction-aware), hidden attribute, path helpers, file-name sanitizing. |
+| `file_tools.py` | Safe folder removal (refuses paths outside the expected parent, junction-aware), hidden attribute, path helpers, file-name sanitizing. |
 | `image_tools.py` | PNG checks and ICO generation through Windows' own WPF (no Pillow). |
 | `import_finder.py` | Offline import finder: scans the code folder with `ast`, drops the standard library and the app's own modules, maps imports to PyPI names (installed metadata, then `data/import_to_package.txt`, else a guess); imports guarded by `try/except ImportError` are optional. |
 | `dev_tools.py` | Entry point of all dev tools: the command table, the menu, `NO_PAUSE`. |
 | `dev/common.py` | Shared helpers of the dev tools (`confirm`, `prepare`, requirement names). |
 | `dev/packages.py` | add, remove, upgrade, sync, find imports, package terminal, export requirements. |
-| `dev/python_version.py` | change_python, update_python. |
+| `dev/py_vers.py` | change_python, update_python. |
 | `dev/portable.py` | make_portable. |
 | `dev/housekeeping.py` | clean, remove_shortcuts, status, test. |
 | `env/uv.py` | Which uv to use, its environment variables, running it. |
@@ -327,9 +327,9 @@ ASCII art (`scripts/banner.py`). The PowerShell bootstrap and the
 
 | Path | Purpose |
 | --- | --- |
-| `data/import_to_package.txt` | Import name → PyPI name for about 2,500 packages whose names differ; generated by the Dev Helpers' `build_import_mapping.py`. Your own pairs can be added at the end. |
-| `tools/` | Development tools for the launcher itself, `.bat` files whose code is in `scripts/tools`: `verify_launcher` (Ruff, Pyrefly), `measure_startup_time`, `measure_import_times`, `build_import_mapping`, `show_longest_paths`. The launcher never uses them. |
-| `data/developer_settings_defaults.py` | The settings file this version ships with: defaults for settings a project's `developer_settings.py` lacks (see [Versions](#versions)). Read with `ast`, never imported. |
+| `data/import_to_package.txt` | Import name → PyPI name for about 2,500 packages whose names differ; generated by the Dev Helpers' `make_import_map.py`. Your own pairs can be added at the end. |
+| `tools/` | Development tools for the launcher itself, `.bat` files whose code is in `scripts/tools`: `verify_launcher` (Ruff, Pyrefly), `get_startup_time`, `get_import_times`, `make_import_map`, `show_longest_paths`. The launcher never uses them. |
+| `data/dev_settings_default.py` | The settings file this version ships with: defaults for settings a project's `developer_settings.py` lacks (see [Versions](#versions)). Read with `ast`, never imported. |
 | `data/fonts/` | Banner font (see [Licensing](#licensing)). |
 | `data/icons/` | Bundled default PNGs (used when the project's PNG in `code/backend/icons` is missing or unchanged) and `HOW_TO_CHANGE_ICONS.txt`. |
 | `tests/` | Regression tests for this folder; see `tests/README.md`. |
@@ -346,7 +346,7 @@ Semantic Versioning, and each part also says what an update takes:
 | **MAJOR** (**2**.0.0) | something breaks (a setting renamed or removed, a file moved) | replacing `DONT_CHANGE` and following the steps in `CHANGELOG.md` |
 
 New settings never break an update: when a project's `developer_settings.py` lacks a setting,
-the launcher uses its value from `data/developer_settings_defaults.py` (a copy of the settings
+the launcher uses its value from `data/dev_settings_default.py` (a copy of the settings
 file this version ships with) and says so once; expressions like `f"{program_name}"` use the
 project's own values. The dev tools that change a setting add a missing one to the file. The
 bootstrap's fallbacks in `resolve_runtime.ps1` are the same values (checked by the tests).

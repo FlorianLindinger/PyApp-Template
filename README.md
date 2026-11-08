@@ -42,7 +42,7 @@ shortcut ─▶ B\W.bat / B\N.bat ─▶ bootstrap\ensure_runtime.bat
                 │  validates settings, applies instance_policy, generates pyproject.toml from
                 │  developer_settings.py, keeps uv.lock and backend\generated\.venv in sync (uv lock / uv sync;
                 │  skipped while nothing changed since the last successful start)
-                └▶ background_watchdog.py ─▶ script_wrapper.py ─▶ code\main.py (in backend\generated\.venv)
+                └▶ bg_watchdog.py ─▶ script_wrapper.py ─▶ code\main.py (in backend\generated\.venv)
                                           └▶ process_exit.py (sounds, crash log, recovery menu)
 ```
 

@@ -32,7 +32,7 @@ from backend.DONT_CHANGE.scripts.dev.packages import (
     cmd_upgrade,
 )
 from backend.DONT_CHANGE.scripts.dev.portable import cmd_make_portable
-from backend.DONT_CHANGE.scripts.dev.python_version import cmd_change_python, cmd_update_python
+from backend.DONT_CHANGE.scripts.dev.py_vers import cmd_change_python, cmd_update_python
 from backend.DONT_CHANGE.scripts.entrypoint import expected_problem
 
 # Commands that end on their own (a menu, a terminal); no "Press Enter" afterwards.

@@ -13,7 +13,7 @@ from backend.DONT_CHANGE.backend_settings import DEV_SETTINGS_PATH
 from backend.DONT_CHANGE.scripts.config import main_script_path, settings
 from backend.DONT_CHANGE.scripts.console_tools import open_in_editor
 from backend.DONT_CHANGE.scripts.errors import SettingsError
-from backend.DONT_CHANGE.scripts.filesystem_tools import make_abs_path_relative_to_file
+from backend.DONT_CHANGE.scripts.file_tools import make_abs_path_relative_to_file
 
 fail_message = "Failed to open the file: {e}"
 

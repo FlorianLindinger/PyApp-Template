@@ -72,7 +72,7 @@ MINIMUM_PYTHON = (3, 8)                             # oldest Python the launcher
 
 ENTRYPOINT_PATH = SCRIPTS_DIR + "\\entrypoint.py"        # runs every tool: entrypoint.py <tool.py> [args]
 START_PROGRAM_PATH = APP_ACTIONS_DIR + "\\start_program.py"
-WATCHDOG_PATH = DONT_CHANGE_DIR + "\\runtime\\background_watchdog.py"
+WATCHDOG_PATH = DONT_CHANGE_DIR + "\\runtime\\bg_watchdog.py"
 PROCESS_EXIT_PATH = DONT_CHANGE_DIR + "\\runtime\\process_exit.py"
 SCRIPT_WRAPPER_PATH = DONT_CHANGE_DIR + "\\runtime\\script_wrapper.py"
 CTRL_C_HELPER_PATH = DONT_CHANGE_DIR + "\\runtime\\send_ctrl_c.py"
@@ -123,7 +123,7 @@ STOP_REQUEST_FILE_NAME = "stop-requested"
 
 EXPORTED_REQUIREMENTS_PATH = BACKEND_DIR + "\\requirements.txt"
 IMPORT_MAPPING_PATH = DATA_DIR + "\\import_to_package.txt"
-DEFAULT_SETTINGS_PATH = DATA_DIR + "\\developer_settings_defaults.py"  # defaults for missing settings
+DEFAULT_SETTINGS_PATH = DATA_DIR + "\\dev_settings_default.py"  # defaults for missing settings
 BANNER_FONT_PATH = DATA_DIR + "\\fonts\\future.tlf"  # ASCII-art font of the app name banner (scripts/banner.py)
 DEFAULT_ICON_DIR = DATA_DIR + "\\icons"  # bundled placeholder PNGs, used when the project's own are missing or unchanged
 

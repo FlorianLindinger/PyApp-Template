@@ -23,7 +23,7 @@ from backend.DONT_CHANGE.scripts.console_tools import (
     print_warn,
     styled,
 )
-from backend.DONT_CHANGE.scripts.filesystem_tools import make_abs_path_relative_to_file, sanitize_filename
+from backend.DONT_CHANGE.scripts.file_tools import make_abs_path_relative_to_file, sanitize_filename
 from backend.DONT_CHANGE.scripts.shortcuts import (
     CSIDL_DESKTOPDIRECTORY,
     CSIDL_PROGRAMS,

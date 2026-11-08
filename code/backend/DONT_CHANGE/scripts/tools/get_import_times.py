@@ -1,8 +1,8 @@
 """Measure what importing modules adds to a fresh interpreter start.
 
-    python measure_import_times.py launcher             the launcher's own modules (launcher Python, -I -S)
-    python measure_import_times.py app numpy pandas     packages in the app's .venv
-    python measure_import_times.py app                  every package in developer_settings.py "packages"
+    python get_import_times.py launcher             the launcher's own modules (launcher Python, -I -S)
+    python get_import_times.py app numpy pandas     packages in the app's .venv
+    python get_import_times.py app                  every package in developer_settings.py "packages"
 
 Each module is imported in a new process; the median start-up of an empty interpreter is
 subtracted. For a breakdown of one import use: python -X importtime -c "import numpy".
@@ -23,7 +23,7 @@ LAUNCHER_MODULES = (
     "backend.DONT_CHANGE.scripts.entrypoint",
     "backend.DONT_CHANGE.scripts.config",
     "backend.DONT_CHANGE.actions.start_program",
-    "backend.DONT_CHANGE.runtime.background_watchdog",
+    "backend.DONT_CHANGE.runtime.bg_watchdog",
     "backend.DONT_CHANGE.runtime.process_exit",
 )
 IMPORT = "import importlib, sys; sys.path.insert(0, sys.argv[1]); sys.argv[2] and importlib.import_module(sys.argv[2])"

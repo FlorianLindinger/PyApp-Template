@@ -12,7 +12,7 @@ Every target is started once untimed first, so the runtime cache, the environmen
 .venv of the copy are ready (the first launch after a change is slower by design). The project
 itself is never touched.
 
-Usage: python measure_startup_time.py [--runs 5] [--timeout 60] [--targets terminal direct] [--keep]
+Usage: python get_startup_time.py [--runs 5] [--timeout 60] [--targets terminal direct] [--keep]
 """
 
 from __future__ import annotations

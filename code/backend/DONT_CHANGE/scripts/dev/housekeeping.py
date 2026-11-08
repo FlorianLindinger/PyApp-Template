@@ -26,7 +26,7 @@ from backend.DONT_CHANGE.scripts.errors import SettingsError, SetupError
 
 def cmd_clean(arguments):
     """Delete logs or run diagnostics."""
-    from backend.DONT_CHANGE.scripts.filesystem_tools import remove_tree_inside
+    from backend.DONT_CHANGE.scripts.file_tools import remove_tree_inside
     from backend.DONT_CHANGE.scripts.launcher_ui import get_log_folder_path
 
     s = settings()

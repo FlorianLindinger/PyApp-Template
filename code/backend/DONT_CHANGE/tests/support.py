@@ -46,7 +46,7 @@ def temporary_settings(transform=None):
             "settings": load,
             "PYPROJECT_PATH": str(Path(folder) / "pyproject.toml"),
             "UV_LOCK_PATH": str(Path(folder) / "uv.lock"),
-            "DEFAULT_SETTINGS_PATH": str(DONT_CHANGE / "data" / "developer_settings_defaults.py"),
+            "DEFAULT_SETTINGS_PATH": str(DONT_CHANGE / "data" / "dev_settings_default.py"),
         }
         patches = [
             mock.patch.object(module, name, value)

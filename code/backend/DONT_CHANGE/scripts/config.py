@@ -259,7 +259,7 @@ def _note_defaults_once(module) -> None:
     values = ", ".join(f"{name} = {getattr(module, name)!r}" for name in names)
     print_info(
         f"Not in developer_settings.py, using the defaults: {values}. To change them, copy the lines"
-        " from backend/DONT_CHANGE/data/developer_settings_defaults.py."
+        " from backend/DONT_CHANGE/data/dev_settings_default.py."
     )
 
 
