@@ -46,7 +46,7 @@ WINDOWS_DIR = os.environ.get("WINDIR", "C:\\Windows")
 GENERATED_DIR = BACKEND_DIR + "\\generated"
 LOCAL_UV_DIR = GENERATED_DIR + "\\uv"                 # uv.exe when installed locally
 LOCAL_UV_EXE = LOCAL_UV_DIR + "\\uv.exe"
-# Per-user uv, not on PATH: fetched when the usual uv is too old for a Python. UPDATE resolve_runtime.ps1 too.
+# Per-user uv, not on PATH: fetched when the usual uv is too old for a Python. UPDATE bootstrap/resolve_runtime.* too.
 SHARED_UV_EXE = (os.environ.get("LOCALAPPDATA") or str(Path("~\\AppData\\Local").expanduser())) + "\\PyApp-Template\\uv\\uv.exe"
 LOCAL_PYTHONS_DIR = GENERATED_DIR + "\\pythons"       # uv-managed Pythons when python_source = "local"
 LOCAL_UV_CACHE_DIR = GENERATED_DIR + "\\uv-cache"     # only used when uv_cache = "local"
@@ -76,7 +76,7 @@ WATCHDOG_PATH = DONT_CHANGE_DIR + "\\runtime\\bg_watchdog.py"
 PROCESS_EXIT_PATH = DONT_CHANGE_DIR + "\\runtime\\process_exit.py"
 SCRIPT_WRAPPER_PATH = DONT_CHANGE_DIR + "\\runtime\\script_wrapper.py"
 CTRL_C_HELPER_PATH = DONT_CHANGE_DIR + "\\runtime\\send_ctrl_c.py"
-RESOLVE_RUNTIME_PATH = DONT_CHANGE_DIR + "\\bootstrap\\resolve_runtime.ps1"
+RESOLVE_RUNTIME_PATH = DONT_CHANGE_DIR + "\\bootstrap\\resolve_runtime.py"
 
 # ------------------------
 # shortcut launchers
@@ -127,6 +127,10 @@ DEFAULT_SETTINGS_PATH = DATA_DIR + "\\dev_settings_default.py"  # defaults for m
 BANNER_FONT_PATH = DATA_DIR + "\\fonts\\pyapp-grid.tlf"  # Pixel banner font (scripts/banner.py)
 DEFAULT_ICON_DIR = DATA_DIR + "\\icons"  # bundled placeholder PNGs, used when the project's own are missing or unchanged
 
+# GitHub Actions an app can switch on (github_actions in developer_settings.py); Setup copies them:
+APP_WORKFLOW_SOURCE_DIR = DATA_DIR + "\\workflows"
+APP_WORKFLOW_TARGET_DIR = SHORTCUT_OUTPUT_DIR + "\\.github\\workflows"
+
 # ------------------------
 # remaining files
 
@@ -152,15 +156,6 @@ SUB_ICONS = {
     "open_code": (0.35, "bottom right"),
 }
 
-# Explorer visibility only; this does not control .gitignore or Git tracking.
-FOLDERS_TO_MAKE_HIDDEN_IN_SHORTCUT_AND_ROOT_FOLDERS = [
-    ".git",
-    ".vscode",
-    ".gitignore",
-    ".gitattributes",
-    ".ruff_cache",
-    "__pycache__",
-]
 # Import-finder scan exclusions (folder names anywhere below the code folder; folders starting
 # with "." are always skipped). The launcher's own backend folder is skipped only directly in
 # the code folder, so an app subpackage that happens to be named "backend" is still scanned.

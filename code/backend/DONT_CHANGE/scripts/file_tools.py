@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import List
 
 
 def remove_tree_inside(path: str, base: str) -> None:
@@ -29,37 +28,6 @@ def _is_junction(path: str) -> bool:
         return bool(os.lstat(path).st_file_attributes & 0x400)  # FILE_ATTRIBUTE_REPARSE_POINT
     except (OSError, AttributeError):
         return False
-
-
-def set_hidden_in_explorer(paths: List[str], hidden: bool = True):
-    """Hide (or unhide) existing files and folders in Explorer; missing paths and failures are skipped."""
-
-    import ctypes
-
-    FILE_ATTRIBUTE_HIDDEN = 0x02
-    INVALID_FILE_ATTRIBUTES = 0xFFFFFFFF
-    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
-    kernel32.GetFileAttributesW.argtypes = [ctypes.c_wchar_p]
-    kernel32.GetFileAttributesW.restype = ctypes.c_uint32
-    kernel32.SetFileAttributesW.argtypes = [ctypes.c_wchar_p, ctypes.c_uint32]
-    kernel32.SetFileAttributesW.restype = ctypes.c_int
-
-    for path in paths:
-        path = os.path.normpath(str(Path(path).absolute()))
-
-        attributes = kernel32.GetFileAttributesW(path)
-
-        if attributes == INVALID_FILE_ATTRIBUTES:
-            continue
-
-        if hidden:
-            new_attributes = attributes | FILE_ATTRIBUTE_HIDDEN
-        else:
-            new_attributes = attributes & ~FILE_ATTRIBUTE_HIDDEN
-
-        # Avoid an unnecessary filesystem operation.
-        if new_attributes != attributes:
-            kernel32.SetFileAttributesW(path, new_attributes)
 
 
 def make_abs_path_relative_to_file(path: str, file: str) -> str:

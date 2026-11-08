@@ -49,6 +49,7 @@ try:
         set_terminal_title,
         wait_for_enter,
     )
+    from backend.DONT_CHANGE.scripts.diagnostics import note_ignored
     from backend.DONT_CHANGE.scripts.launcher_ui import (
         get_log_path,
         print_traceback,
@@ -126,7 +127,20 @@ def print_report(report: Optional[Dict[str, Any]]):
         print("\n".join(render(report, colors=colors, date_format=settings().error_date_format, width=width)))
 
 
-def write_crash_log(report: Optional[Dict[str, Any]], message: Optional[str]):
+def append_printed_output(crash_log: str, log_path: Optional[str]) -> None:
+    """Add what the app printed below the report, so that one file tells the whole story."""
+    if not log_path or not Path(log_path).is_file():
+        return  # logging is off for this kind of start, so the prints were not recorded
+    title = os.linesep + "Everything the program printed before this (from the normal log):" + os.linesep * 2
+    try:
+        with Path(crash_log).open("ab") as target, Path(log_path).open("rb") as source:
+            target.write(title.encode("utf-8"))
+            shutil.copyfileobj(source, target)
+    except OSError:
+        note_ignored("append the printed output to the crash log")  # the report itself is already saved
+
+
+def write_crash_log(report: Optional[Dict[str, Any]], message: Optional[str], log_path: Optional[str] = None):
     """Write a uniquely named plain-text crash report and return its path (None if none was written)."""
     s = settings()
     if not s.enable_crash_log:
@@ -144,6 +158,7 @@ def write_crash_log(report: Optional[Dict[str, Any]], message: Optional[str]):
     (Path(path).parent).mkdir(parents=True, exist_ok=True)
     with Path(path).open("w", encoding="utf-8") as stream:
         stream.write("\n".join(lines) + "\n")
+    append_printed_output(path, log_path)
     return path
 
 
@@ -272,7 +287,7 @@ def complete(
             print(rule_line(width, colors))
         {"success": print_success, "keyboard_interrupt": print_warn}.get(outcome, print_error)(message)
     if outcome != "success":
-        crash_log = write_crash_log(report, message)
+        crash_log = write_crash_log(report, message, log_path)
         if crash_log and outcome == "failure" and s.open_crash_log_after_failure:
             try:
                 # Run the launcher restart helper or open the configured local log file.

@@ -5,17 +5,12 @@ rem Sets PYAPP_UV (uv.exe) and PYAPP_PYTHON (the Python that runs the launcher) 
 rem No setlocal on purpose: the variables must reach the calling batch.
 rem Fast path: reuse tmp\runtime.cmd while this project folder, developer_settings.py and
 rem backend\generated\.python-version are unchanged and both executables still exist. Otherwise
-rem resolve_runtime.ps1 finds or installs uv and Python.
+rem resolve_runtime.bat finds or installs uv and Python.
 rem The stamp contains this folder's path (a copied project must not use the original's uv/Python)
-rem and the SHA-256 of developer_settings.py (file times only have minute resolution here).
+rem and the time and size of developer_settings.py. Not a hash: the one tool batch has for that,
+rem certutil, is distrusted by antivirus programs, and this runs on every launch.
 
-set "PYAPP_STAMP_1="
-for /f "skip=1 delims=" %%H in ('certutil.exe -hashfile "%~dp0..\..\developer_settings.py" SHA256 2^>nul') do (
-    if not defined PYAPP_STAMP_1 set "PYAPP_STAMP_1=%%H"
-)
-if not defined PYAPP_STAMP_1 (
-    for %%F in ("%~dp0..\..\developer_settings.py") do set "PYAPP_STAMP_1=%%~tF#%%~zF"
-)
+for %%F in ("%~dp0..\..\developer_settings.py") do set "PYAPP_STAMP_1=%%~tF#%%~zF"
 if exist "%~dp0..\..\generated\.python-version" (
     for %%F in ("%~dp0..\..\generated\.python-version") do set "PYAPP_STAMP_2=%%~tF#%%~zF"
 ) else (
@@ -34,7 +29,7 @@ if not exist "%PYAPP_UV%" goto resolve
 exit /b 0
 
 :resolve
-powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "%~dp0resolve_runtime.ps1" -Stamp "%PYAPP_STAMP%"
+call "%~dp0resolve_runtime.bat" "%PYAPP_STAMP%"
 if errorlevel 1 exit /b 1
 set "PYAPP_CACHED_STAMP="
 call :load_cache

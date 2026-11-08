@@ -178,9 +178,9 @@ All of these are in `developer_settings.py`. Mistakes are reported with the sett
 
 | Setting | Options |
 | --- | --- |
-| `python_source` | `"uv_user"` (per-user folder shared by projects) or `"local"` (inside this project, portable) |
+| `python_source` | `"uv_user"` (per-user folder shared by projects), `"local"` (inside this project, portable) or `"system"` (a Python already on this PC, e.g. from IT; nothing is downloaded) |
 | `uv_prefer` | `"global"` or `"local"`: which uv to use when both exist |
-| `uv_install_if_missing` | `"global"` (Astral's installer, adds uv to your user PATH), `"local"` (downloaded into the project and checked against its published SHA-256) or `"never"` |
+| `uv_install_if_missing` | `"global"` (for your Windows user, added to your user PATH), `"local"` (downloaded into the project and checked against its published SHA-256) or `"never"` |
 | `uv_version` | `""` (latest), an exact version such as `"0.11.32"`, or a range such as `">=0.9,<1"` |
 | `uv_user_python_visible_globally` | For `"uv_user"`: register the Python with the `py` launcher and put it on PATH |
 | `uv_cache` | `"global"` (per-user cache) or `"local"` (inside the project) |
@@ -193,7 +193,7 @@ Settings marked `[bootstrap]` are read before any Python exists, so keep them on
 ## Logs and crash reports
 
 - **Normal log:** a UTF-8 file with your prints and inputs, with optional timestamps.
-- **`.output.log`:** the raw output next to it, including native code and child processes.
+- **`.output.log`:** the raw output next to it, including native code and child processes. Kept only when the app does not end normally.
 - **Crash log:** the error report, written after every failure and Ctrl+C.
 
 Errors are reported however they happen, including unhandled exceptions, `sys.exit(1)`, errors in worker threads, and hard interpreter crashes. Exception chains, notes and exception groups are all shown, with the launcher's own frames removed.
@@ -252,7 +252,7 @@ Start with `code/backend/dev_tools/status.cmd`. It shows the current state and a
 shortcut
  └─ B\W.bat or B\N.bat
      └─ bootstrap\ensure_runtime.bat     uses cached uv and Python paths when still valid
-         └─ resolve_runtime.ps1          only when needed: finds or installs uv and Python
+         └─ resolve_runtime.bat and .py  only when needed: finds or installs uv and Python
      └─ actions\start_program.py         checks settings and instance policy, syncs .venv with uv.lock
          └─ runtime\bg_watchdog.py       owns the run: window, log, process group
              ├─ runtime\script_wrapper.py  ──▶  code\main.py

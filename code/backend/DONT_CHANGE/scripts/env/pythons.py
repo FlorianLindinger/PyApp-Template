@@ -90,6 +90,11 @@ def available_summary(s: Optional[Union[ModuleType, SimpleNamespace]] = None) ->
 def install_python(request: str, s: Optional[Union[ModuleType, SimpleNamespace]] = None) -> str:
     """Install a Python with uv (location per python_source) and return its executable."""
     s = s or settings()
+    if s.python_source == "system":
+        raise SetupError(
+            f"python_source is \"system\", but no Python '{request}' is installed on this PC. Install one, "
+            "or change python_version in developer_settings.py."
+        )
     show_setup_window()
     print_step(f"Installing Python {request} with uv...")
     arguments = ["python", "install", request]

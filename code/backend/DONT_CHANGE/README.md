@@ -29,7 +29,7 @@ or change it.
    └─ B\W.bat / B\N.bat                       tiny batch file, the shortcut's target
         └─ bootstrap\run.bat
              ├─ bootstrap\ensure_runtime.bat   finds uv and a Python (cached in tmp\runtime.cmd)
-             │    └─ bootstrap\resolve_runtime.ps1   only when the cache is stale: installs uv/Python
+             │    └─ bootstrap\resolve_runtime.py   only when the cache is stale: installs uv/Python
              └─ python -I -S scripts\entrypoint.py actions\start_program.py
                   ├─ scripts\env\venv.py: ensure_environment()   backend\generated\.venv matches uv.lock
                   └─ runtime\bg_watchdog.py   (new console, or hidden)
@@ -76,11 +76,11 @@ Three Pythons can be involved, but usually they are the same installation:
    `"%PYAPP_PYTHON%" -I -S -X utf8 scripts\entrypoint.py "%PYAPP_ENTRY_SCRIPT%" %*`.
 4. **`bootstrap\ensure_runtime.bat`** creates `tmp\` if needed and loads `tmp\runtime.cmd`
    (the paths of uv and the launcher Python) when its stamp still matches: this folder's path
-   (a copied project never uses the original's uv/Python), the SHA-256 of
+   (a copied project never uses the original's uv/Python), the time and size of
    `developer_settings.py` and the time/size of `backend\generated\.python-version`, and both executables
-   exist. Otherwise it runs `resolve_runtime.ps1`. The cache is UTF-8 and read with code page
+   exist. Otherwise it runs `resolve_runtime.py`. The cache is UTF-8 and read with code page
    65001 unless its first line is `rem ascii`, so non-ASCII project paths work.
-5. **`bootstrap\resolve_runtime.ps1`** (only when the cache is stale) reads the `[bootstrap]`
+5. **`bootstrap\resolve_runtime.py`** (only when the cache is stale) reads the `[bootstrap]`
    settings from `developer_settings.py` with a line parser (one-line literals; the last
    definition wins, like Python), finds or installs uv (`uv_prefer`, `uv_install_if_missing`,
    `uv_version`; a local uv is downloaded from GitHub and checked against its SHA-256), finds
@@ -103,7 +103,7 @@ Three Pythons can be involved, but usually they are the same installation:
    the run in `tmp\running\` under the instance policy, sets the console's title, icon, colors
    and taskbar identity, opens the log file, and starts the app Python with
    `script_wrapper.py --config tmp\runs\<id>\wrapper.json`. It copies the app's output to the
-   console and to the log (`<log>.output.log` keeps the raw bytes), waits for the app to end,
+   console and to the log (`<log>.output.log` keeps the raw bytes, and is deleted after a normal end), waits for the app to end,
    unregisters, and calls `process_exit.py` with the outcome. In no-terminal mode a completion
    window only appears when something needs to be shown.
 9. **`runtime\script_wrapper.py`** runs inside the app Python. It removes the launcher's
@@ -171,7 +171,7 @@ and `code\backend\icons\*.cmd` run `actions\gen_icons.py`.
 Downloads happen only when needed. If the chosen uv cannot install the requested Python, the
 newest uv is fetched to `%LOCALAPPDATA%\PyApp-Template\uv` (never on PATH), the install is
 retried, and that uv is used from then on while it is newer. `scripts/env/uv.py: uv_environment()` builds uv's environment
-variables and mirrors `Set-UvEnvironment` in `resolve_runtime.ps1`; keep both in sync. Python
+variables and mirrors `set_uv_environment` in `resolve_runtime.py`; keep both in sync. Python
 lookups run from the system temp folder, because uv would otherwise treat `backend/generated/.venv` as
 "the" Python; project commands run in `code/backend`.
 
@@ -270,8 +270,9 @@ ASCII art (`scripts/banner.py`). The PowerShell bootstrap and the
 | File | Purpose |
 | --- | --- |
 | `run.bat` | Runs `%PYAPP_ENTRY_SCRIPT%` through `entrypoint.py` with the launcher Python; pauses on bootstrap failures. |
-| `ensure_runtime.bat` | Creates `tmp\`, loads the cached uv/Python paths or calls `resolve_runtime.ps1`; sets `PYAPP_UV` and `PYAPP_PYTHON`. |
-| `resolve_runtime.ps1` | Reads the `[bootstrap]` settings, finds/installs uv and the project's Python, writes `tmp\runtime.cmd`. |
+| `ensure_runtime.bat` | Creates `tmp\`, loads the cached uv/Python paths or calls `resolve_runtime.py`; sets `PYAPP_UV` and `PYAPP_PYTHON`. |
+| `resolve_runtime.bat` | Gets any working uv and Python with tools built into Windows (`curl`, `tar`), then runs `resolve_runtime.py`. No PowerShell script, so policies that block those don't matter. |
+| `resolve_runtime.py` | Reads the `[bootstrap]` settings, finds/installs uv and the project's Python, writes `tmp\runtime.cmd`. |
 | `open_file.bat`, `open_folder.bat` | Open a file (VS Code, else Notepad) or folder without Python. |
 
 ### `actions/` – entry tools (each has a `main()`, run by `entrypoint.py`)
@@ -303,7 +304,7 @@ ASCII art (`scripts/banner.py`). The PowerShell bootstrap and the
 | `errors.py` | `SettingsError`, `SetupError`, `LaunchCancelled`. |
 | `diagnostics.py` | Records deliberately ignored errors in `tmp/diagnostics.log`. |
 | `console_tools.py` | Message styles, prompts, console title/icon/colors/taskbar identity, minimize/foreground, opening files in the editor. |
-| `launcher_ui.py` | Launcher-level appearance (settings colors, hidden tool folders), tracebacks of tools, log paths, Stop of running instances. |
+| `launcher_ui.py` | Launcher-level appearance (settings colors), tracebacks of tools, log paths, Stop of running instances. |
 | `banner.py` | Reads the banner font and prints the ASCII-art program name. |
 | `traceback_render.py` | Turns traceback reports into colored or plain text. |
 | `runtime_state.py` | File lock, atomic JSON, process identities, the instance registry, job objects, process-tree termination, unique log names, interpreter-crash exit codes. |
@@ -311,7 +312,7 @@ ASCII art (`scripts/banner.py`). The PowerShell bootstrap and the
 | `windows_focus.py` | Finds and activates the windows of a running instance. |
 | `shortcuts.py` | Creates `.lnk` files (via COM), their targets and taskbar identity, the record of created shortcuts, removal of stale ones. |
 | `com_tools.py` | Minimal COM helpers with `ctypes` (GUIDs, property store, AppUserModelID). |
-| `file_tools.py` | Safe folder removal (refuses paths outside the expected parent, junction-aware), hidden attribute, path helpers, file-name sanitizing. |
+| `file_tools.py` | Safe folder removal (refuses paths outside the expected parent, junction-aware), path helpers, file-name sanitizing. |
 | `image_tools.py` | PNG checks and ICO generation through Windows' own WPF (no Pillow). |
 | `import_finder.py` | Offline import finder: scans the code folder with `ast`, drops the standard library and the app's own modules, maps imports to PyPI names (installed metadata, then `data/import_to_package.txt`, else a guess); imports guarded by `try/except ImportError` are optional. |
 | `dev_tools.py` | Entry point of all dev tools: the command table, the menu, `NO_PAUSE`. |
@@ -351,7 +352,7 @@ New settings never break an update: when a project's `developer_settings.py` lac
 the launcher uses its value from `data/dev_settings_default.py` (a copy of the settings
 file this version ships with) and says so once; expressions like `f"{program_name}"` use the
 project's own values. The dev tools that change a setting add a missing one to the file. The
-bootstrap's fallbacks in `resolve_runtime.ps1` are the same values (checked by the tests).
+bootstrap's fallbacks in `resolve_runtime.py` are the same values (checked by the tests).
 
 The newest heading in `CHANGELOG.md` names the same version (also checked by the tests);
 releases are tagged `v<version>` on GitHub. Setup and the `status` dev tool show the version.

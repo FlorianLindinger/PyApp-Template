@@ -12,6 +12,12 @@ The first versioned release; it contains every change below.
 - The tools in `tools/` use the launcher's headings, badges and aligned tables; `verify_launcher` ends with a summary of its checks and names the configuration files it uses.
 - New `tools/check_git_leaks.bat` looks for secrets and personal data in the current files and the Git history.
 - The dev tools: a grouped menu that waits before returning, a heading on every tool, a verdict in `status`, file counts in `clean`, and colored settings changes.
+- The bootstrap no longer runs a downloaded install script, uses `certutil` or compiles code at runtime, which antivirus programs distrust. A global uv now comes from the checksum-verified download.
+- Setup no longer runs a PowerShell script, so company policies that block those no longer stop it: `resolve_runtime.bat` gets uv with Windows' own `curl` and `tar`, and `resolve_runtime.py` does the rest. Company-policy and firewall problems now get a clear message.
+- New `python_source = "system"` uses a Python already installed on the PC and downloads none.
+- New setting `github_actions`: with `"leaks"` in it, Setup adds a GitHub Action to the app that looks for secrets and personal data.
+- Crash logs also contain everything the app printed, when logging is on. The raw `.output.log` is deleted after a normal end.
+- The launcher no longer marks files and folders such as `.git` or `.gitignore` as hidden in Explorer.
 - New `tools/release.bat` bumps the version, finishes the changelog and builds the zip; new `scripts/tools/git_hooks/pre-push` runs the leak check on the commits being pushed.
 - New `tools/fresh_clone_test.bat` checks that a fresh clone of the current commit sets up and starts; new `tools/test_all_pythons.bat` runs the tests on Python 3.8 and the newest Python.
 - The tools show a short message instead of a traceback for expected problems and Ctrl+C; `make_import_map` keeps the existing map when most of a download fails.

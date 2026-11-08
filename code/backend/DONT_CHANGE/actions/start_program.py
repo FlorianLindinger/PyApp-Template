@@ -24,7 +24,6 @@ from backend.DONT_CHANGE.scripts.env.venv import ensure_environment
 from backend.DONT_CHANGE.scripts.instance_policy import decide
 from backend.DONT_CHANGE.scripts.launcher_ui import (
     delete_finished_run_folders,
-    set_hidden_in_explorer,
     set_terminal_appearance_once,
 )
 from backend.DONT_CHANGE.scripts.runtime_state import ProcessRegistry
@@ -67,9 +66,8 @@ def main():
     validate(s)
     mode = resolve_mode(s, requested)
     # This (minimized) window shows progress while the environment is prepared: give it the
-    # app's title, icon and taskbar group, and keep tool folders out of sight in Explorer.
+    # app's title, icon and taskbar group.
     set_terminal_appearance_once(app_id)
-    set_hidden_in_explorer()
 
     # Quick check before any environment work; the watchdog repeats it under the registry lock.
     registry = ProcessRegistry(paths.PROCESS_REGISTRY_DIR)

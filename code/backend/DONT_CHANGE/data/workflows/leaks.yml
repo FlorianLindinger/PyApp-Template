@@ -1,0 +1,25 @@
+# Created by Setup because "leaks" is in github_actions in developer_settings.py. Setup also updates
+# and removes this file; to customize it, rename it and take "leaks" off that list.
+name: Leak check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  leaks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0  # the whole history: something deleted later is still readable there
+          persist-credentials: false
+      - name: Look for secrets and personal data
+        run: python3 code/backend/DONT_CHANGE/scripts/tools/check_git_leaks.py

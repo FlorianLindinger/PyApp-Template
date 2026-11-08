@@ -19,7 +19,7 @@ from backend.DONT_CHANGE.backend_settings import (
 )
 from backend.DONT_CHANGE.scripts.errors import SettingsError
 
-# Read by bootstrap/resolve_runtime.ps1 before Python exists; must stay one-line literals.
+# Read by bootstrap/resolve_runtime.py before Python exists; must stay one-line literals.
 BOOTSTRAP_SETTINGS = (
     "python_version",
     "python_source",
@@ -32,7 +32,7 @@ BOOTSTRAP_SETTINGS = (
 )
 
 CHOICES = {
-    "python_source": ("local", "uv_user"),
+    "python_source": ("local", "uv_user", "system"),
     "uv_prefer": ("global", "local"),
     "uv_install_if_missing": ("global", "local", "never"),
     "uv_cache": ("global", "local"),
@@ -47,6 +47,8 @@ SHORTCUT_KINDS = (
     "crash_logs",
     "open_code",
 )
+# GitHub Actions an app can choose in github_actions; one data/workflows/<name>.yml each.
+APP_WORKFLOWS = ("leaks",)
 BOOLEANS = (
     "uv_user_python_visible_globally",
     "use_system_certificates",
@@ -302,6 +304,11 @@ def validate(module: Optional[Union[ModuleType, SimpleNamespace]] = None) -> Non
         "desktop_shortcuts",
         lambda v: isinstance(v, (list, tuple)) and all(k in SHORTCUT_KINDS for k in v),
         "use a list of " + ", ".join(repr(k) for k in SHORTCUT_KINDS),
+    )
+    need(
+        "github_actions",
+        lambda v: isinstance(v, (list, tuple)) and all(name in APP_WORKFLOWS for name in v),
+        "use a list of " + ", ".join(repr(name) for name in APP_WORKFLOWS),
     )
     need(
         "args_for_main_py",

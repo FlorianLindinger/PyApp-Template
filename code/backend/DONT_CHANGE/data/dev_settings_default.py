@@ -122,6 +122,7 @@ stop_timeout_seconds: float = 3
 # [bootstrap] Where the app's Python comes from:
 #   "local"    uv installs it inside this project (code/backend/generated/pythons). Portable.
 #   "uv_user"  uv installs it in its per-user folder, shared by projects.
+#   "system"   a Python already installed on this PC, e.g. by your IT department. Nothing is downloaded.
 python_source = "uv_user"
 
 # --- Settings file and shortcut locations ---
@@ -147,7 +148,7 @@ log_print_prepend: str | None = "%H:%M:%S | "
 log_input_prepend: str | None = "%H:%M:%S > "
 
 # --- Crash logs ---
-# A text file with the error report, written after every failure and after Ctrl+C. Your prints are in the normal log.
+# A text file with the error report, written after every failure and after Ctrl+C. It also has everything the app printed, if logging is on.
 enable_crash_log = True
 # Accepts strftime codes, e.g. "crash_log_%Y-%m-%d_%H-%M-%S.txt". None: no crash log.
 # After changing the folder, run Setup again (the Crash Logs shortcut opens it) and update the root .gitignore's /crash logs/* rule.
@@ -176,7 +177,7 @@ start_minimized = False
 # --- uv ---
 # [bootstrap] Which uv is used and how it gets installed:
 #   uv_prefer: which uv to use when both a global (on PATH) and a local (code/backend/generated/uv) uv exist: "global" | "local"
-#   uv_install_if_missing: "global" (Astral's installer, adds uv to your user PATH) | "local" | "never"
+#   uv_install_if_missing: "global" (for your Windows user, added to your user PATH) | "local" | "never"
 #   uv_version: "" for the latest, an exact version like "0.11.32", or a range like ">=0.9,<1"
 #   A global uv that does not satisfy uv_version is not changed; a local uv is installed instead.
 #   If that uv cannot provide python_version, the newest uv is downloaded to %LOCALAPPDATA%\PyApp-Template\uv and used
@@ -194,6 +195,11 @@ uv_cache = "global"
 
 # [bootstrap] Use Windows' certificate store for downloads (needed behind some company proxies):
 use_system_certificates = False
+
+# --- GitHub ---
+# GitHub Actions for this app; Setup creates or removes their files in .github/workflows:
+#   "leaks"    on every push and PR to main: look for secrets and personal data
+github_actions: list[str] = []
 
 # --- Error reports ---
 # Date format in crash reports:

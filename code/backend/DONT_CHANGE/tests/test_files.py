@@ -37,10 +37,22 @@ class LauncherFileTests(unittest.TestCase):
     def test_bootstrap_and_launcher_agree_on_the_environment_folder(self):
         settings = (DONT_CHANGE / "backend_settings.py").read_text(encoding="utf-8")
         self.assertIn('GENERATED_DIR = BACKEND_DIR + "\\\\generated"', settings)
-        script = (DONT_CHANGE / "bootstrap" / "resolve_runtime.ps1").read_text(encoding="utf-8")
-        self.assertIn("$generatedDir = Join-Path $backendDir 'generated'", script)
+        script = (DONT_CHANGE / "bootstrap" / "resolve_runtime.py").read_text(encoding="utf-8")
+        self.assertIn('GENERATED_DIR = BACKEND_DIR / "generated"', script)
         batch = (DONT_CHANGE / "bootstrap" / "ensure_runtime.bat").read_text(encoding="utf-8")
         self.assertIn("..\\..\\generated\\.python-version", batch)
+
+    def test_the_bootstrap_avoids_what_antivirus_programs_distrust(self):
+        for name in ("resolve_runtime.py", "ensure_runtime.bat", "run.bat"):
+            text = (DONT_CHANGE / "bootstrap" / name).read_text(encoding="utf-8").lower()
+            for pattern in ("| iex", "invoke-expression", "certutil.exe -", "dllimport"):
+                self.assertNotIn(pattern, text, f"{name} uses {pattern}")
+
+    def test_the_setup_runs_no_powershell_script(self):
+        for name in ("resolve_runtime.bat", "ensure_runtime.bat", "run.bat"):
+            text = (DONT_CHANGE / "bootstrap" / name).read_text(encoding="utf-8").lower()
+            self.assertNotIn("executionpolicy", text, name)
+            self.assertNotIn(".ps1", text, name)
 
     def test_the_app_runs_in_utf8_mode(self):
         source = (DONT_CHANGE / "scripts" / "env" / "venv.py").read_text(encoding="utf-8")

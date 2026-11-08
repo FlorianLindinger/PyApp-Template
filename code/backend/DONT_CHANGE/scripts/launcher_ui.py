@@ -9,12 +9,9 @@ from typing import Callable, Optional
 
 from backend.DONT_CHANGE.backend_settings import (
     DEV_SETTINGS_DIR,
-    FOLDERS_TO_MAKE_HIDDEN_IN_SHORTCUT_AND_ROOT_FOLDERS,
     ICON_PATH,
     PROCESS_REGISTRY_DIR,
-    PYTHON_SCRIPTS_DIR,
     RUNS_DIR,
-    SHORTCUT_OUTPUT_DIR,
 )
 from backend.DONT_CHANGE.scripts.config import settings
 from backend.DONT_CHANGE.scripts.console_tools import (
@@ -33,26 +30,12 @@ from backend.DONT_CHANGE.scripts.diagnostics import note_ignored
 from backend.DONT_CHANGE.scripts.file_tools import (
     remove_tree_inside,
 )
-from backend.DONT_CHANGE.scripts.file_tools import (
-    set_hidden_in_explorer as _set_hidden_in_explorer,
-)
 
 _TERMINAL_APPEARANCE_WAS_SET = False
 # Raw-output companion of each log file (written by the watchdog as log_path + this suffix).
 OUTPUT_LOG_SUFFIX = ".output.log"
 # A run that is starting or has just ended is not registered as running but still uses its folder.
 RUN_FOLDER_IN_USE_SECONDS = 300
-
-
-def set_hidden_in_explorer() -> None:
-    """Apply the configured hidden attribute in the project root and the code folder."""
-    _set_hidden_in_explorer(
-        [
-            str(Path(base_dir) / path)
-            for base_dir in (PYTHON_SCRIPTS_DIR, SHORTCUT_OUTPUT_DIR)
-            for path in FOLDERS_TO_MAKE_HIDDEN_IN_SHORTCUT_AND_ROOT_FOLDERS
-        ]
-    )
 
 
 def print_traceback(message: str = "") -> None:

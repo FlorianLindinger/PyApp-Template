@@ -65,6 +65,15 @@ def successful_application_exit(mode: int, run_dir: Path):
     return False
 
 
+def remove_raw_output_after_success(log_path: str, mode: int, run_dir: Path) -> None:
+    """The raw output is evidence for failures; after a normal end the normal log is enough."""
+    if log_path and successful_application_exit(mode, run_dir):
+        try:
+            Path(log_path + OUTPUT_LOG_SUFFIX).unlink(missing_ok=True)
+        except OSError:
+            note_ignored("remove the raw output")  # e.g. a child program of the app still has it open
+
+
 def handle_exit(
     settings: Union[ModuleType, SimpleNamespace],
     mode: int,
@@ -310,6 +319,7 @@ def main():
                     json.loads(background.read_text(encoding="utf-8")),
                 )
                 mode = ExitMode.APP_EXIT
+            remove_raw_output_after_success(log_path, mode, run_dir)
             # Remove the registration before recovery can start a new instance.
             registry.remove()
             registered = False

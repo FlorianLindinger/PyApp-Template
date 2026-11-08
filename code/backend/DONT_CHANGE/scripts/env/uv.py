@@ -1,10 +1,11 @@
-"""Running uv for the launcher: which uv, its environment variables (mirrors resolve_runtime.ps1) and calls."""
+"""Running uv for the launcher: which uv, its environment variables (mirrors bootstrap/resolve_runtime.py) and calls."""
 
 from __future__ import annotations
 
 import os
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 from types import ModuleType, SimpleNamespace
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Union
@@ -45,17 +46,9 @@ def uv_exe() -> str:
 
 def install_newer_uv() -> bool:
     """Fetch the newest uv into the per-user folder; True when this process now uses a newer uv."""
-    arguments = [
-        "-NoLogo",
-        "-NoProfile",
-        "-NonInteractive",
-        "-ExecutionPolicy",
-        "Bypass",
-        "-File",
-        RESOLVE_RUNTIME_PATH,
-    ]
-    # Run the selected local uv executable or the bundled bootstrap script.
-    code = subprocess.run(["powershell.exe", *arguments, "-InstallNewerThan", uv_exe()], check=False).returncode  # noqa: S603, S607
+    command = [sys.executable, "-I", "-S", "-X", "utf8", RESOLVE_RUNTIME_PATH, "--install-newer-than", uv_exe()]
+    # This Python runs the bundled bootstrap script with a fixed argument list.
+    code = subprocess.run(command, check=False).returncode  # noqa: S603
     if code:
         return False
     os.environ["PYAPP_UV"] = SHARED_UV_EXE
@@ -87,7 +80,7 @@ def uv_environment(
     project_environment: Optional[str] = None,
     python_command: bool = True,
 ) -> Dict[str, str]:
-    """Environment for uv calls. Mirrors Set-UvEnvironment in bootstrap/resolve_runtime.ps1.
+    """Environment for uv calls. Mirrors set_uv_environment in bootstrap/resolve_runtime.py.
 
     The user's other UV_* settings (index URLs, proxies, ...) are kept on purpose.
     """
@@ -102,6 +95,8 @@ def uv_environment(
     if s.python_source == "uv_user":
         visible = "1" if s.uv_user_python_visible_globally else "0"
         env.update(UV_MANAGED_PYTHON="1", UV_PYTHON_INSTALL_BIN=visible, UV_PYTHON_INSTALL_REGISTRY=visible)
+    elif s.python_source == "system":
+        env["UV_PYTHON_PREFERENCE"] = "only-system"
     else:
         env.update(
             UV_PYTHON_INSTALL_DIR=LOCAL_PYTHONS_DIR,
@@ -113,7 +108,7 @@ def uv_environment(
         env["UV_CACHE_DIR"] = LOCAL_UV_CACHE_DIR
     if s.use_system_certificates:
         env["UV_SYSTEM_CERTS"] = "1"
-    env["UV_PYTHON_DOWNLOADS"] = "automatic"
+    env["UV_PYTHON_DOWNLOADS"] = "never" if s.python_source == "system" else "automatic"
     # The uv cache is often on another drive than the project; copying avoids uv's hard-link warning.
     env.setdefault("UV_LINK_MODE", "copy")
     if project_environment:

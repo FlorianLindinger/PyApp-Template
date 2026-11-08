@@ -14,6 +14,7 @@ from backend.DONT_CHANGE.backend_settings import (
     LAUNCHER_VERSION,
     SHORTCUT_OUTPUT_DIR,
 )
+from backend.DONT_CHANGE.scripts.app_workflows import sync_app_workflows
 from backend.DONT_CHANGE.scripts.banner import print_banner
 from backend.DONT_CHANGE.scripts.config import settings, validate
 from backend.DONT_CHANGE.scripts.console_tools import (
@@ -85,6 +86,14 @@ def main() -> None:
     for kind in ("logs", "crash_logs"):
         if targets_by_kind[kind]:
             Path(targets_by_kind[kind]).mkdir(parents=True, exist_ok=True)  # the shortcut opens it right away
+
+    added, removed_workflows = sync_app_workflows(s.github_actions)
+    if added or removed_workflows:
+        print_heading("GitHub Actions")
+        for name in added:
+            print(f"  {styled('+', ANSI_GOOD)} {name}")
+        for name in removed_workflows:
+            print(f"  {styled('-', ANSI_DIM)} {styled('removed ' + name, ANSI_DIM)}")
 
     folders_by_label = [("project folder", SHORTCUT_OUTPUT_DIR)]
     if s.start_menu_shortcuts:

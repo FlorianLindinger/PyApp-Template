@@ -125,16 +125,16 @@ class DefaultsTests(unittest.TestCase):
             self.assertIn("\r\n", path.read_bytes().decode("utf-8")[-20:])
 
     def test_bootstrap_defaults_match_the_defaults_file(self):
-        script = (DONT_CHANGE / "bootstrap" / "resolve_runtime.ps1").read_text(encoding="utf-8")
-        found = re.findall(r"Get-Setting \$settings '(\w+)' ('[^']*'|\$true|\$false)", script)
+        script = (DONT_CHANGE / "bootstrap" / "resolve_runtime.py").read_text(encoding="utf-8")
+        found = re.findall(r'setting\(settings, "(\w+)", ("[^"]*"|True|False)\)', script)
         self.assertGreaterEqual(len(found), 8)
         expressions = config.default_setting_expressions(str(self.DEFAULTS))
         for name, literal in found:
-            expected = {"$true": True, "$false": False}.get(literal, literal.strip("'"))
+            expected = {"True": True, "False": False}.get(literal, literal.strip('"'))
             expression = expressions[name]
             if not isinstance(expression, ast.Constant):
                 self.fail(f"The bootstrap default of {name} must be a literal.")
-            self.assertEqual(expression.value, expected, f"default of {name} in resolve_runtime.ps1")
+            self.assertEqual(expression.value, expected, f"default of {name} in resolve_runtime.py")
 
 
 class MainScriptTests(unittest.TestCase):
