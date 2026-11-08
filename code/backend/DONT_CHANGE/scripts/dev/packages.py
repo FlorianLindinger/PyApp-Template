@@ -82,7 +82,7 @@ def cmd_upgrade(arguments):
     )
     run_uv(lock_arguments)
     sync(paths.VENV_PYTHON_EXE, exact=True)
-    print_success("Packages upgraded. Test the app, then commit backend/env/uv.lock.")
+    print_success("Packages upgraded. Test the app, then commit backend/generated/uv.lock.")
 
 
 def cmd_sync(arguments):

@@ -42,17 +42,17 @@ WINDOWS_DIR = os.environ.get("WINDIR", "C:\\Windows")
 # ------------------------
 # uv, Python and the application environment
 
-# Everything uv-related, created by the launcher. UPDATE bootstrap/*.bat, *.ps1 and code/backend/.gitignore too.
-ENV_DIR = BACKEND_DIR + "\\env"
-LOCAL_UV_DIR = ENV_DIR + "\\uv"                 # uv.exe when installed locally
+# Everything the launcher creates and maintains. UPDATE bootstrap/*.bat, *.ps1 and code/backend/.gitignore too.
+GENERATED_DIR = BACKEND_DIR + "\\generated"
+LOCAL_UV_DIR = GENERATED_DIR + "\\uv"                 # uv.exe when installed locally
 LOCAL_UV_EXE = LOCAL_UV_DIR + "\\uv.exe"
 # Per-user uv, not on PATH: fetched when the usual uv is too old for a Python. UPDATE resolve_runtime.ps1 too.
 SHARED_UV_EXE = (os.environ.get("LOCALAPPDATA") or os.path.expanduser("~\\AppData\\Local")) + "\\PyApp-Template\\uv\\uv.exe"
-LOCAL_PYTHONS_DIR = ENV_DIR + "\\pythons"       # uv-managed Pythons when python_source = "local"
-LOCAL_UV_CACHE_DIR = ENV_DIR + "\\uv-cache"     # only used when uv_cache = "local"
+LOCAL_PYTHONS_DIR = GENERATED_DIR + "\\pythons"       # uv-managed Pythons when python_source = "local"
+LOCAL_UV_CACHE_DIR = GENERATED_DIR + "\\uv-cache"     # only used when uv_cache = "local"
 # pyproject.toml is generated from developer_settings.py (packages, python_version);
 # uv.lock and .python-version are committed; .venv is the app environment.
-PROJECT_DIR = ENV_DIR
+PROJECT_DIR = GENERATED_DIR
 PYPROJECT_PATH = PROJECT_DIR + "\\pyproject.toml"
 UV_LOCK_PATH = PROJECT_DIR + "\\uv.lock"
 PYTHON_VERSION_FILE = PROJECT_DIR + "\\.python-version"
@@ -90,23 +90,25 @@ LAUNCHER_OPEN_LOG_DIR = ENTRY_BATCHES_DIR + "\\L.bat"
 LAUNCHER_OPEN_CRASH_LOG_DIR = ENTRY_BATCHES_DIR + "\\C.bat"
 LAUNCHER_OPEN_MAIN_PY = ENTRY_BATCHES_DIR + "\\M.bat"
 # Machine-specific list of every generated .lnk, used to remove stale shortcuts.
-CREATED_SHORTCUTS_LIST_PATH = BACKEND_DIR + "\\shortcuts_created_by_setup.json"
+CREATED_SHORTCUTS_LIST_PATH = GENERATED_DIR + "\\shortcuts_created_by_setup.json"
 # Every generated shortcut's arguments contain this fragment; stale-shortcut removal
 # only deletes .lnk files that contain it.
 SHORTCUT_SIGNATURE = "\\DONT_CHANGE\\B\\"
 
 # ------------------------
-# icons (generated from the PNGs by actions/gen_icons.py)
+# icons (generated from icon.png and the bundled overlays by actions/gen_icons.py)
 
 ICON_DIR = BACKEND_DIR + "\\icons"
 ICON_PATH = ICON_DIR + "\\icon.ico"
+# Hashes of the icons the generator made; any other .ico was placed by hand and needs a question.
+GENERATED_ICONS_RECORD_PATH = GENERATED_DIR + "\\auto_generated_icons.json"
 SETTINGS_ICON_PATH = ICON_DIR + "\\settings.ico"
 STOP_ICON_PATH = ICON_DIR + "\\stop.ico"
 LOG_ICON_PATH = ICON_DIR + "\\log.ico"
 SUCCESS_ICON_PATH = ICON_DIR + "\\success.ico"
 FAILURE_ICON_PATH = ICON_DIR + "\\failure.ico"
 CRASH_LOG_ICON_PATH = ICON_DIR + "\\crash_log.ico"
-OPEN_MAIN_PY_ICON_PATH = ICON_DIR + "\\open_main_py.ico"
+OPEN_CODE_ICON_PATH = ICON_DIR + "\\open_code.ico"
 
 # ------------------------
 # generated process state
@@ -148,7 +150,7 @@ SUB_ICONS = {
     "success": (0.35, "bottom right"),
     "failure": (0.35, "bottom right"),
     "crash_log": (0.35, "bottom right"),
-    "open_main_py": (0.35, "bottom right"),
+    "open_code": (0.35, "bottom right"),
 }
 
 # Explorer visibility only; this does not control .gitignore or Git tracking.

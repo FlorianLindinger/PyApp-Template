@@ -1,4 +1,4 @@
-"""The app environment (backend/env/.venv): checked on every launch, built, re-linked, synced.
+"""The app environment (backend/generated/.venv): checked on every launch, built, re-linked, synced.
 
 ensure_environment() is the entry point; it also handles a changed python_version and offers
 the package actions used by the dev tools and the missing-package menu.
@@ -359,7 +359,7 @@ def handle_version_change(current: str, s, interactive: bool) -> bool:
     show_setup_window()
     print()
     print_warn(
-        f"python_version in developer_settings.py is {describe_python_request(wanted)}, but this project uses Python {current} (backend\\env\\.python-version)."
+        f"python_version in developer_settings.py is {describe_python_request(wanted)}, but this project uses Python {current} (backend\\generated\\.python-version)."
     )
     choices = [
         f"Switch to Python {wanted}; re-lock, keeping package versions where possible",

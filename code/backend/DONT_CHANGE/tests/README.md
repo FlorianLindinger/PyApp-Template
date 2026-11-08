@@ -19,6 +19,7 @@ Run them after changing anything in `DONT_CHANGE`, or after updating the templat
 | `test_wrapper.py` | `script_wrapper.py` in a real interpreter: arguments, hidden launcher variables, no shadowing of the app's `protocol.py`, reports for exceptions, `SystemExit`, missing modules, `os._exit`, late worker-thread errors, log and print prefixes |
 | `test_tracebacks.py` | exception chains, suppressed context, notes and groups (3.11+), success rules, the explicit exit-code mapping, rendering |
 | `test_uv_fallback.py` | installing a Python retries once with a newer uv, and reports the error when none is available |
+| `test_icons.py` | icons always use the bundled overlays; generated icons update silently, a question per icon for placed ones |
 | `test_import_finder.py` | stdlib/local/launcher exclusions, nested `backend` folders, optional-import guards, unparsable files, installed metadata, the mapping file |
 | `test_banner.py` | the banner font renders the app name, missing characters are skipped, the font file has a license entry |
 | `test_entrypoint.py` | exit codes, prompts (`pause_on_success`), class-based expected problems, the `entrypoint.py <tool>` runner |

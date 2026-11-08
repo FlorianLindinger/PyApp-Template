@@ -34,7 +34,10 @@ The first versioned release; it contains every change below.
 - Added `environment_for_main_py`: environment variables set for `main.py`.
 - `main.py` runs in UTF-8 mode (`-X utf8`): `open()` without an `encoding` and `subprocess` text use UTF-8.
 - The ignore rules for `code/backend` moved from the root `.gitignore` to `code/backend/.gitignore`.
-- `pyproject.toml`, `uv.lock`, `.python-version`, `.venv` and the local `uv`, `pythons` and `uv-cache` moved to `code/backend/env`, which the launcher
+- `open_main_py.ico` is now `open_code.ico`, and its overlay says OPEN CODE. Run Setup so existing shortcuts use it.
+- `shortcuts_created_by_setup.json` moved to `code/backend/generated`.
+- Overlay images are always the bundled ones (the overlay PNGs in `code/backend/icons` are gone). `regenerate icons.cmd` updates the icons it made and asks, per icon, before replacing any other `.ico` (`generated/auto_generated_icons.json`).
+- `pyproject.toml`, `uv.lock`, `.python-version`, `.venv` and the local `uv`, `pythons` and `uv-cache` moved to `code/backend/generated`, which the launcher
   creates; files in the old location are moved on the next launch. The `.gitignore` of older projects needs the new paths.
 
 ### 2026-11-07 - tracebacks, simpler icons and colors, tests and docs in DONT_CHANGE

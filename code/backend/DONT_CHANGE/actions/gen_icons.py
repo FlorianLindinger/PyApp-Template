@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 import os
+import shutil
+import tempfile
 import time
 from concurrent.futures import ThreadPoolExecutor
 from functools import lru_cache
@@ -11,10 +15,11 @@ from backend.DONT_CHANGE.backend_settings import (
     CRASH_LOG_ICON_PATH,
     DEFAULT_ICON_DIR,
     FAILURE_ICON_PATH,
+    GENERATED_ICONS_RECORD_PATH,
     ICON_DIR,
     ICON_PATH,
     LOG_ICON_PATH,
-    OPEN_MAIN_PY_ICON_PATH,
+    OPEN_CODE_ICON_PATH,
     SETTINGS_ICON_PATH,
     STOP_ICON_PATH,
     SUB_ICONS,
@@ -22,30 +27,30 @@ from backend.DONT_CHANGE.backend_settings import (
 )
 from backend.DONT_CHANGE.scripts.config import settings as load_settings
 from backend.DONT_CHANGE.scripts.config import validate
-from backend.DONT_CHANGE.scripts.console_tools import ANSI_GOOD, styled
+from backend.DONT_CHANGE.scripts.console_tools import ANSI_DIM, ANSI_GOOD, ask, styled
 from backend.DONT_CHANGE.scripts.image_tools import (
     generate_ico_from_png,
     get_png_image_id,
 )
 
 # fmt: off
-ICON_PNG_DIR = ICON_DIR  # the project's own PNGs (replace them to change the icons)
+ICON_PNG_DIR = ICON_DIR  # the project's own icon.png (replace it to change the icons)
 ICON_FALLBACK_PNG_DIR = DEFAULT_ICON_DIR
 ICON_DELETE_TIMEOUT_SECONDS = 2.0
 ICON_DELETE_RETRY_DELAY_SECONDS = 0.05
 _base = ("icon.png", "512x512:34babea5", "default_icon.png")
-# IDs identify the shipped placeholder PNGs, not a developer's replacement art.
-# Update an ID only when changing the corresponding shipped placeholder image.
+# The ID identifies the shipped placeholder icon.png, not a developer's replacement art.
+# Update it only when changing the shipped placeholder image.
 ICON_GENERATION_SETTINGS = [
-    # output ICO, base PNG, base PNG ID, fallback base PNG, overlay PNG, overlay PNG ID, fallback overlay PNG
-    (ICON_PATH, *_base, None, None, None),
-    (SETTINGS_ICON_PATH, *_base, "settings.png", "512x512:19c7e6d8", "default_settings.png"),
-    (STOP_ICON_PATH, *_base, "stop.png", "512x512:0f35bd9e", "default_stop.png"),
-    (LOG_ICON_PATH, *_base, "log.png", "512x512:66c0a178", "default_log.png"),
-    (SUCCESS_ICON_PATH, *_base, "success.png", "512x512:c33e7909", "default_success.png"),
-    (FAILURE_ICON_PATH, *_base, "failure.png", "512x512:93eddb87", "default_failure.png"),
-    (CRASH_LOG_ICON_PATH, *_base, "crash_log.png", "512x512:99dee2ae", "default_crash_log.png"),
-    (OPEN_MAIN_PY_ICON_PATH, *_base, "open_main_py.png", "512x512:3bd1b4b4", "default_open_main_py.png"),
+    # output ICO, base PNG, base PNG ID, fallback base PNG, bundled overlay PNG
+    (ICON_PATH, *_base, None),
+    (SETTINGS_ICON_PATH, *_base, "default_settings.png"),
+    (STOP_ICON_PATH, *_base, "default_stop.png"),
+    (LOG_ICON_PATH, *_base, "default_log.png"),
+    (SUCCESS_ICON_PATH, *_base, "default_success.png"),
+    (FAILURE_ICON_PATH, *_base, "default_failure.png"),
+    (CRASH_LOG_ICON_PATH, *_base, "default_crash_log.png"),
+    (OPEN_CODE_ICON_PATH, *_base, "default_open_code.png"),
 ]
 # fmt: on
 
@@ -83,48 +88,90 @@ def _pick_png(filename: str, expected_id: str | None, fallback_filename: str | N
     return fallback_path
 
 
+def _file_hash(path: str) -> str:
+    with open(path, "rb") as stream:
+        return hashlib.sha256(stream.read()).hexdigest()
+
+
+def _read_record() -> dict:
+    """{ICO file name: hash of the file the generator last installed}."""
+    try:
+        with open(GENERATED_ICONS_RECORD_PATH, encoding="utf-8") as stream:
+            return json.load(stream)
+    except (OSError, ValueError):
+        return {}
+
+
+def _write_record(record: dict) -> None:
+    os.makedirs(os.path.dirname(GENERATED_ICONS_RECORD_PATH), exist_ok=True)
+    with open(GENERATED_ICONS_RECORD_PATH, "w", encoding="utf-8") as stream:
+        json.dump(record, stream, indent=2, sort_keys=True)
+        stream.write("\n")
+
+
+def _may_replace(output_path: str) -> bool:
+    """Ask before overwriting an ICO the generator did not make."""
+    question = f"{os.path.basename(output_path)} was not made by the generator, so it may be your own. Replace it? [y/N]"
+    try:
+        return ask(question).strip().lower() in ("y", "yes", "j", "ja")
+    except EOFError:
+        return False
+
+
+def _install(output_path: str, built_path: str, record: dict) -> None:
+    """Put a freshly built ICO in place: generated ones update silently, others only when the user agrees."""
+    name = os.path.basename(output_path)
+    built = _file_hash(built_path)
+    if os.path.isfile(output_path):
+        current = _file_hash(output_path)
+        if current == built:
+            record[name] = built
+            print(f"  {styled('=', ANSI_DIM)} {name} (unchanged)")
+            return
+        if current != record.get(name) and not _may_replace(output_path):
+            print(f"  {styled('=', ANSI_DIM)} {name} (kept)")
+            return
+    _delete_existing_icon(output_path)
+    shutil.copyfile(built_path, output_path)
+    record[name] = built
+    print(f"  {styled('+', ANSI_GOOD)} {name}")
+
+
 def main() -> None:
-    """Generate every enabled icon described by ``ICON_GENERATION_SETTINGS``."""
+    """Build the icons in ``ICON_GENERATION_SETTINGS`` in a temporary folder, then install them one by one."""
     validate(load_settings())
-    jobs: list[tuple[str, str, str | None, float, str]] = []
-    for (
-        output_path,
-        base_name,
-        base_id,
-        base_fallback,
-        overlay_name,
-        overlay_id,
-        overlay_fallback,
-    ) in ICON_GENERATION_SETTINGS:
-        base_path = _pick_png(base_name, base_id, base_fallback)
-        # e.g. stop.ico -> SUB_ICONS["stop"]
-        placement = SUB_ICONS.get(os.path.splitext(os.path.basename(output_path))[0])
-        overlay_path = None
-        if overlay_name is not None and placement is not None:
-            overlay_path = _pick_png(overlay_name, overlay_id, overlay_fallback)
-        scale, alignment = placement or (0.35, "bottom right")
-        _delete_existing_icon(output_path)
-        jobs.append(
-            (
-                output_path,
+    record = _read_record()
+    with tempfile.TemporaryDirectory() as folder:
+        jobs: list[tuple[str, str, str, str | None, float, str]] = []
+        for output_path, base_name, base_id, base_fallback, overlay_name in ICON_GENERATION_SETTINGS:
+            base_path = _pick_png(base_name, base_id, base_fallback)
+            # e.g. stop.ico -> SUB_ICONS["stop"]
+            placement = SUB_ICONS.get(os.path.splitext(os.path.basename(output_path))[0])
+            overlay_path = None
+            if overlay_name is not None and placement is not None:
+                overlay_path = os.path.join(ICON_FALLBACK_PNG_DIR, overlay_name)
+                if not os.path.isfile(overlay_path):
+                    raise FileNotFoundError(f'Bundled overlay PNG does not exist: "{overlay_path}"')
+            scale, alignment = placement or (0.35, "bottom right")
+            built_path = os.path.join(folder, os.path.basename(output_path))
+            jobs.append((output_path, built_path, base_path, overlay_path, scale, alignment))
+
+        def generate(job: tuple[str, str, str, str | None, float, str]) -> str:
+            """Build one ICO from the resolved base image, overlay and placement settings."""
+            _, built_path, base_path, overlay_path, scale, alignment = job
+            return generate_ico_from_png(
+                built_path,
                 base_path,
                 overlay_path,
-                scale,
-                alignment,
+                sub_icon_area_scale_factor=scale,
+                sub_icon_alignment=alignment,
             )
-        )
 
-    def generate(job: tuple[str, str, str | None, float, str]) -> str:
-        """Generate one ICO from the resolved base image, overlay and placement settings."""
-        output_path, base_path, overlay_path, scale, alignment = job
-        return generate_ico_from_png(
-            output_path,
-            base_path,
-            overlay_path,
-            sub_icon_area_scale_factor=scale,
-            sub_icon_alignment=alignment,
-        )
-
-    with ThreadPoolExecutor(max_workers=min(4, len(jobs))) as executor:
-        for output_path in executor.map(generate, jobs):
-            print(f"  {styled('+', ANSI_GOOD)} {os.path.basename(output_path)}")
+        with ThreadPoolExecutor(max_workers=max(1, min(4, len(jobs)))) as executor:
+            list(executor.map(generate, jobs))
+        # One at a time, in order: this may ask questions.
+        try:
+            for output_path, built_path, *_ in jobs:
+                _install(output_path, built_path, record)
+        finally:
+            _write_record(record)

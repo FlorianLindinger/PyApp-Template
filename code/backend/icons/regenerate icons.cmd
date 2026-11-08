@@ -1,7 +1,7 @@
 @echo off
 setlocal EnableExtensions DisableDelayedExpansion
 for /f %%e in ('echo prompt $E^| cmd /d') do set "esc=%%e"
-echo Regenerates this project's ICO files from the configured PNG images.
+echo Regenerates this project's ICO files from icon.png. Asks before replacing an ICO you placed yourself.
 echo.
 :: Keep this window alive even if the generator's child shell exits.
 set "PYAPP_ENTRYPOINT_NO_PAUSE=1"

@@ -1,4 +1,4 @@
-"""The project's Python: find or install it with uv, and the backend/env/.python-version file."""
+"""The project's Python: find or install it with uv, and the backend/generated/.python-version file."""
 
 from __future__ import annotations
 
@@ -115,7 +115,7 @@ def find_or_install_python(request: str, s=None) -> str:
 
 
 def read_python_version_file() -> str | None:
-    """Return the request stored in backend/env/.python-version, or None."""
+    """Return the request stored in backend/generated/.python-version, or None."""
     try:
         with open(PYTHON_VERSION_FILE, encoding="utf-8") as stream:
             for line in stream:

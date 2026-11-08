@@ -18,16 +18,16 @@ $backendDir = [IO.Path]::GetFullPath((Join-Path $dontChange '..'))
 $settingsPath = Join-Path $backendDir 'developer_settings.py'
 $temporary = Join-Path $dontChange 'tmp'
 $cachePath = Join-Path $temporary 'runtime.cmd'
-$envDir = Join-Path $backendDir 'env'
-$localUvDir = Join-Path $envDir 'uv'
+$generatedDir = Join-Path $backendDir 'generated'
+$localUvDir = Join-Path $generatedDir 'uv'
 $localUvExe = Join-Path $localUvDir 'uv.exe'
 # A per-user uv shared by projects, never on PATH: used when the usual uv is too old for a Python.
 $userData = $(if ($env:LOCALAPPDATA) { $env:LOCALAPPDATA } else { Join-Path $env:USERPROFILE 'AppData\Local' })
 $sharedUvDir = Join-Path $userData 'PyApp-Template\uv'
 $sharedUvExe = Join-Path $sharedUvDir 'uv.exe'
-$localPythons = Join-Path $envDir 'pythons'
-$localCache = Join-Path $envDir 'uv-cache'
-$versionFile = Join-Path $envDir '.python-version'
+$localPythons = Join-Path $generatedDir 'pythons'
+$localCache = Join-Path $generatedDir 'uv-cache'
+$versionFile = Join-Path $generatedDir '.python-version'
 $minimumPython = [version]'3.8'
 
 function Fail([string]$message) { throw [System.Exception]::new($message) }
@@ -385,7 +385,7 @@ function Resolve-Python($settings, [string]$uv) {
     Set-UvEnvironment $settings $source
     Remove-BrokenPythonLinks
 
-    # The project's current Python (backend\env\.python-version) runs the launcher; the launcher
+    # The project's current Python (backend\generated\.python-version) runs the launcher; the launcher
     # itself offers the migration when python_version in the settings differs from it.
     $request = ''
     if (Test-Path -LiteralPath $versionFile) {
@@ -393,7 +393,7 @@ function Resolve-Python($settings, [string]$uv) {
     }
     if (-not $request) { $request = [string](Get-Setting $settings 'python_version' '3.14') }
 
-    # Outside the project: uv would otherwise discover backend\env\.venv as "the" Python.
+    # Outside the project: uv would otherwise discover backend\generated\.venv as "the" Python.
     Push-Location ([IO.Path]::GetTempPath())
     try {
         if (-not $request) {
@@ -433,17 +433,22 @@ function Resolve-Python($settings, [string]$uv) {
 
 # ---------------------------------------------------------------- project folder
 
-function Move-ProjectFilesIntoEnv {
-    # Creates code\backend\env and moves files from where older versions kept them.
-    [IO.Directory]::CreateDirectory($envDir) | Out-Null
+function Move-ProjectFilesIntoGenerated {
+    # Creates code\backend\generated and moves files from where older versions kept them.
+    $oldEnv = Join-Path $backendDir 'env'
+    if ((Test-Path -LiteralPath $oldEnv) -and -not (Test-Path -LiteralPath $generatedDir)) {
+        try { Move-Item -LiteralPath $oldEnv -Destination $generatedDir }
+        catch { Fail "Could not rename '$oldEnv' to $generatedDir. Close the running app and programs using it, then start again. ($($_.Exception.Message))" }
+    }
+    [IO.Directory]::CreateDirectory($generatedDir) | Out-Null
     $oldEnvironment = Join-Path $backendDir 'environment'
     foreach ($folder in @($oldEnvironment, $backendDir)) {
-        foreach ($name in @('pyproject.toml', 'uv.lock', '.python-version', '.venv', 'uv', 'pythons', 'uv-cache')) {
+        foreach ($name in @('pyproject.toml', 'uv.lock', '.python-version', '.venv', 'uv', 'pythons', 'uv-cache', 'shortcuts_created_by_setup.json')) {
             $old = Join-Path $folder $name
-            $new = Join-Path $envDir $name
+            $new = Join-Path $generatedDir $name
             if ((Test-Path -LiteralPath $old) -and -not (Test-Path -LiteralPath $new)) {
                 try { Move-Item -LiteralPath $old -Destination $new }
-                catch { Fail "Could not move '$name' into $envDir. Close the running app and programs using it, then start again. ($($_.Exception.Message))" }
+                catch { Fail "Could not move '$name' into $generatedDir. Close the running app and programs using it, then start again. ($($_.Exception.Message))" }
             }
         }
     }
@@ -471,7 +476,7 @@ try {
         if (Install-NewerSharedUv $settings $InstallNewerThan) { exit 0 }
         exit 1
     }
-    Move-ProjectFilesIntoEnv
+    Move-ProjectFilesIntoGenerated
     $script:currentUv = Select-NewestUv $settings (Resolve-Uv $settings)
     $python = Resolve-Python $settings $script:currentUv
     $uv = $script:currentUv

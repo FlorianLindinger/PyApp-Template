@@ -22,10 +22,10 @@ The license choice, complete license texts, and applicable exceptions are docume
 
 The following directories, including all files and subdirectories within them, are not covered by the licenses described in Sections 1 or 2:
 
-* **`code/backend/env/.venv`** (the app's virtual environment with third-party packages)
-* **`code/backend/env/pythons`** (Python distributions installed by uv)
-* **`code/backend/env/uv`** (the uv executables)
-* **`code/backend/env/uv-cache`** (downloaded package files)
+* **`code/backend/generated/.venv`** (the app's virtual environment with third-party packages)
+* **`code/backend/generated/pythons`** (Python distributions installed by uv)
+* **`code/backend/generated/uv`** (the uv executables)
+* **`code/backend/generated/uv-cache`** (downloaded package files)
 
 Any third-party packages located below a distribution's `Lib/site-packages` directory are also included in this exception because they are descendants of the relevant distribution directory.
 

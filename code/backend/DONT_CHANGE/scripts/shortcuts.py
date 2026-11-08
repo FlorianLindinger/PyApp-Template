@@ -31,7 +31,7 @@ from backend.DONT_CHANGE.backend_settings import (
     LOG_ICON_PATH,
     MAIN_PY_SCRIPT_PATH,
     NO_TERMINAL_APP_ID_SUFFIX,
-    OPEN_MAIN_PY_ICON_PATH,
+    OPEN_CODE_ICON_PATH,
     SETTINGS_ICON_PATH,
     SHORTCUT_OUTPUT_DIR,
     SHORTCUT_SIGNATURE,
@@ -442,7 +442,7 @@ def shortcut_definitions(s, app_id: str, targets: dict) -> list:
         (
             "main_py",
             s.open_main_py_shortcut_name,
-            OPEN_MAIN_PY_ICON_PATH,
+            OPEN_CODE_ICON_PATH,
             LAUNCHER_OPEN_MAIN_PY,
             targets["main_py"],
             None,
