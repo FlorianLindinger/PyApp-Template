@@ -7,18 +7,16 @@ This repository is a project template and may contain components governed by dif
 Except for the paths listed in Sections 2 and 3, all files in this repository are governed by the license chosen by the project author:
 
 ```text
-[Replace this notice with the complete text of your chosen project license.]
+[Replace this notice with the complete text of your chosen project license. 
+
+Until that placeholder is replaced, no license is granted for those files beyond rights provided by applicable law.]
 ```
 
-Until that placeholder is replaced, no license is granted for those files beyond rights provided by applicable law.
 
-## 2. PyApp Template backend
 
-The files in **`code/backend/DONT_CHANGE`**, except for the two third-party directories listed in Section 3, are provided by [PyApp Template](https://github.com/FlorianLindinger/PyApp-Template) and are available under either the MIT License or the Apache License 2.0, at the recipient's choice (`MIT OR Apache-2.0`).
+## 2. PyApp-Template backend
 
-The license choice, complete license texts, and applicable exceptions are documented in **`code/backend/DONT_CHANGE/LICENSE.md`** and its **`LICENSES`** directory.
-
-Font exception: `code/backend/DONT_CHANGE/data/fonts/pyapp-grid.tlf` follows the project author's chosen license in Section 1 instead of the backend dual license. See the backend `LICENSE.md` for its scope.
+The files in **`code/backend/DONT_CHANGE`** are provided by [PyApp-Template](https://github.com/FlorianLindinger/PyApp-Template). You may use the backend under either MIT or Apache-2.0, at your choice (`MIT OR Apache-2.0`). Both license texts are included in **`code/backend/DONT_CHANGE/LICENSES/`**.
 
 ## 3. Python distributions and third-party packages
 

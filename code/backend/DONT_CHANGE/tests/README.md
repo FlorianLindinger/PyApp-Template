@@ -21,7 +21,7 @@ Run them after changing anything in `DONT_CHANGE`, or after updating the templat
 | `test_uv_fallback.py` | installing a Python retries once with a newer uv, and reports the error when none is available |
 | `test_icons.py` | icons always use the bundled overlays; generated icons update silently, a question per icon for placed ones |
 | `test_imports.py` | stdlib/local/launcher exclusions, nested `backend` folders, optional-import guards, unparsable files, installed metadata, the mapping file |
-| `test_banner.py` | the banner font renders the app name, missing characters are skipped, the font file has a license entry |
+| `test_banner.py` | the expected banner font is shipped, renders the app name, supports German letters and Latin-1, and skips missing characters |
 | `test_entrypoint.py` | exit codes, prompts (`pause_on_success`), class-based expected problems, the `entrypoint.py <tool>` runner |
 | `test_logs.py` | log paths, unique names, diagnostics log, taskbar identity per folder, shortcut file names, outdated shortcut targets |
 | `test_files.py` | CRLF batch files, every referenced script exists, every tool has `main()`, lint configs, Python 3.8 compatibility of the launcher |

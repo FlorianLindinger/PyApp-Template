@@ -1,7 +1,7 @@
 """The program name in ASCII art at the top of windows that stay open for a while.
 
 Shown once per process by Setup, the dev tools and the first-time installation of Python or
-packages. The font is data/fonts/pyapp-grid.tlf; its license is listed in LICENSE.md.
+packages. The font is data/fonts/pyapp-grid.tlf.
 """
 
 from __future__ import annotations

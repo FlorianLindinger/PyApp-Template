@@ -1,8 +1,6 @@
-tlf2a 6 5 7 -1 7 0 0 143
+tlf2a 6 5 7 -1 5 0 0 143
 PyApp Grid 1.1 Compact - terminal pixel banner font.
 New AI-assisted pixel drawings; not a conversion of Future's glyph data.
-License: project author's chosen license in repository root LICENSE.md.
-Until that placeholder is filled, no additional license is granted.
 6 rows; lossless 2x2 pixel packing into Unicode quadrant cells; one cell right bearing.
 Printable ASCII, Latin-1, German capital sharp S, and common symbols.
 No kerning/smushing; UTF-8 and a monospaced quadrant-capable terminal required.

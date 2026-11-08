@@ -1,4 +1,4 @@
-"""The app name banner: the shipped font renders and has a license entry."""
+"""The shipped banner font and its character coverage."""
 
 import unicodedata
 import unittest
@@ -10,7 +10,6 @@ from project_location import CODE
 from backend.DONT_CHANGE.scripts import banner
 
 FONTS = CODE / "backend" / "DONT_CHANGE" / "data" / "fonts"
-LICENSE = CODE / "backend" / "DONT_CHANGE" / "LICENSE.md"
 
 
 class BannerTests(unittest.TestCase):
@@ -25,9 +24,8 @@ class BannerTests(unittest.TestCase):
     def test_missing_characters_are_left_out(self):
         self.assertEqual(banner.render("A\u4e00B"), banner.render("AB"))
 
-    def test_the_font_file_is_listed_with_its_license(self):
+    def test_the_expected_font_is_shipped(self):
         self.assertEqual(sorted(path.name for path in FONTS.iterdir()), ["pyapp-grid.tlf"])
-        self.assertIn("data/fonts/pyapp-grid.tlf", LICENSE.read_text(encoding="utf-8"))
 
     def test_printable_ascii_latin1_and_german_have_visible_glyphs(self):
         glyphs = banner.load_font()

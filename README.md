@@ -285,6 +285,6 @@ Replace `code/backend/DONT_CHANGE` with the newer version. Your code and setting
 
 ## License
 
-The launcher in `code/backend/DONT_CHANGE` is available under `MIT OR Apache-2.0`, except its banner font, which follows your chosen project license. uv, Python and third-party packages keep their own licenses. Your project's own license goes in [`LICENSE.md`](LICENSE.md), which explains which terms cover which files.
+The launcher in `code/backend/DONT_CHANGE` is available under `MIT OR Apache-2.0`. uv, Python and third-party packages keep their own licenses. Your project's own license goes in [`LICENSE.md`](LICENSE.md), which explains which terms cover which files.
 
 Originally built by [Florian Lindinger](https://github.com/FlorianLindinger/PyApp-Template).
