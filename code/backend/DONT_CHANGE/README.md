@@ -365,5 +365,6 @@ releases are tagged `v<version>` on GitHub. Setup and the `status` dev tool show
 
 ## Licensing
 
-Everything here is `MIT OR Apache-2.0`, including `data/import_to_package.txt`, except the
-banner font `data/fonts/future.tlf` (WTFPL). See [LICENSE.md](LICENSE.md).
+Everything here is `MIT OR Apache-2.0`, including `data/import_to_package.txt`, except
+the banner font `data/fonts/pyapp-grid.tlf`, which follows the project author's
+chosen license in the root `LICENSE.md`. See [LICENSE.md](LICENSE.md).

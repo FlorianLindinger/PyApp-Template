@@ -124,7 +124,7 @@ STOP_REQUEST_FILE_NAME = "stop-requested"
 EXPORTED_REQUIREMENTS_PATH = BACKEND_DIR + "\\requirements.txt"
 IMPORT_MAPPING_PATH = DATA_DIR + "\\import_to_package.txt"
 DEFAULT_SETTINGS_PATH = DATA_DIR + "\\dev_settings_default.py"  # defaults for missing settings
-BANNER_FONT_PATH = DATA_DIR + "\\fonts\\future.tlf"  # ASCII-art font of the app name banner (scripts/banner.py)
+BANNER_FONT_PATH = DATA_DIR + "\\fonts\\pyapp-grid.tlf"  # Pixel banner font (scripts/banner.py)
 DEFAULT_ICON_DIR = DATA_DIR + "\\icons"  # bundled placeholder PNGs, used when the project's own are missing or unchanged
 
 # ------------------------

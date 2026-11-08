@@ -1,12 +1,13 @@
 """The program name in ASCII art at the top of windows that stay open for a while.
 
 Shown once per process by Setup, the dev tools and the first-time installation of Python or
-packages. The font is data/fonts/future.tlf; its license is listed in LICENSE.md.
+packages. The font is data/fonts/pyapp-grid.tlf; its license is listed in LICENSE.md.
 """
 
 from __future__ import annotations
 
 import shutil
+import unicodedata
 
 from backend.DONT_CHANGE.backend_settings import BANNER_FONT_PATH
 from backend.DONT_CHANGE.scripts.config import settings
@@ -62,7 +63,7 @@ def render(text: str) -> list:
     glyphs = load_font()
     height = len(next(iter(glyphs.values())))
     result = [""] * height
-    for character in text:
+    for character in unicodedata.normalize("NFC", text):
         rows = glyphs.get(character)
         if rows is None:
             continue

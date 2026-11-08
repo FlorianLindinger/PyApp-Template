@@ -18,6 +18,8 @@ The files in **`code/backend/DONT_CHANGE`**, except for the two third-party dire
 
 The license choice, complete license texts, and applicable exceptions are documented in **`code/backend/DONT_CHANGE/LICENSE.md`** and its **`LICENSES`** directory.
 
+Font exception: `code/backend/DONT_CHANGE/data/fonts/pyapp-grid.tlf` follows the project author's chosen license in Section 1 instead of the backend dual license. See the backend `LICENSE.md` for its scope.
+
 ## 3. Python distributions and third-party packages
 
 The following directories, including all files and subdirectories within them, are not covered by the licenses described in Sections 1 or 2:
