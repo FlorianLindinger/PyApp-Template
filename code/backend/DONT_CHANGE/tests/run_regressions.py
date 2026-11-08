@@ -1,7 +1,7 @@
 """Run the launcher's regression tests (any Python 3.8+, standard library only).
 
 Usage: run_regressions.py [pattern]    e.g. run_regressions.py test_wrapper.py
-The dev tool "run_launcher_tests.cmd" runs this with the launcher's Python.
+"run_launcher_tests.cmd" in this folder runs this with the launcher's Python.
 """
 
 import argparse

@@ -7,6 +7,12 @@ README.md ("Versions"); `LAUNCHER_VERSION` in `backend_settings.py` names the cu
 
 The first versioned release; it contains every change below.
 
+### 2026-11-08 - calmer error reports
+
+- Error reports are one block between two rules: headline, frames, error, then the script, time
+  and Python details (they used to sit above the traceback between two more rules). File names
+  and the failing line's number stand out in color.
+
 ### 2026-11-07 - tracebacks, simpler icons and colors, tests and docs in DONT_CHANGE
 
 - Tracebacks: every frame shows the file's full path as `path:line in function`; your own files
@@ -21,7 +27,7 @@ The first versioned release; it contains every change below.
   sub-icon settings removed).
 - Only the app's own window uses `terminal_bg_color` / `terminal_text_color`; Stop stays black.
 - The completion window of a "(no Terminal)" launch groups with that shortcut on the taskbar.
-- The regression tests moved into `tests/` (dev tool `run_launcher_tests.cmd`); this changelog,
+- The regression tests moved into `tests/` (`tests/run_launcher_tests.cmd`); this changelog,
   TODO.md and a detailed README.md moved here too; `LAUNCHER_VERSION` added (shown by Setup and
   the `status` dev tool); `tmp/` is created by the bootstrap when it is missing;
   `icon_related/` renamed to `icons/`.

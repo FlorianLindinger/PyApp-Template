@@ -87,6 +87,15 @@ class RenderTests(unittest.TestCase):
         self.assertIn(">", text)
         self.assertNotIn("\x1b[", text)
 
+    def test_error_comes_before_the_metadata(self):
+        report = report_for("raise RuntimeError('boom')\n")
+        lines = render(report, colors=False)
+        error = next(index for index, line in enumerate(lines) if line.startswith("RuntimeError: boom"))
+        script = next(index for index, line in enumerate(lines) if line.startswith("Script  "))
+        self.assertLess(error, script)
+        self.assertEqual(lines[0], "")
+        self.assertEqual(set(lines[-1]), {"─"})
+
     def test_lines_before_and_after_are_separate(self):
         source = "a = 1\nb = 2\nc = 3\nraise RuntimeError('boom')\nd = 4\ne = 5\n"
         with tempfile.TemporaryDirectory() as folder:

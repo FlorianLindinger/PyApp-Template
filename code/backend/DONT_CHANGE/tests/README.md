@@ -6,7 +6,7 @@ is a temporary copy, so they are safe to run at any time.
 
 Run them after changing anything in `DONT_CHANGE`, or after updating the template:
 
-- double-click `code/backend/dev_tools/run_launcher_tests.cmd` (uses the launcher's Python), or
+- double-click `run_launcher_tests.cmd` in this folder (uses the launcher's Python), or
 - from a terminal in this folder: `python run_regressions.py` (all, about 10 s) or
   `python run_regressions.py test_wrapper.py` (one file); `-q` prints one dot per test.
 

@@ -213,8 +213,9 @@ move, so a copied folder works offline on another PC.
   like `python main.py`. It stores CPython's formatting (used for exception groups) and a
   structured chain (cause/context, notes) with `traceback_lines_before` / `_after` source lines
   for the app's own files. `scripts/traceback_render.py` renders it: full paths as
-  `path:line in function`, a `>` at the failing line, the error last; in color on black so it
-  stays readable on any window color, plain in crash logs.
+  `path:line in function`, a `>` at the failing line, then the error and the script, time and
+  Python details; in color on black so it stays readable on any window color, plain in crash
+  logs.
 - **Outcomes** (`process_exit.py`): `success`, `failure`, `crash` (the interpreter died, e.g. an
   access violation, or no report was written) and `keyboard_interrupt`. Each has its own
   settings (`close_after_*`, `title_after_*`, `play_sound_after_*`, `open_log_file_after_*`,
@@ -353,7 +354,7 @@ releases are tagged `v<version>` on GitHub. Setup and the `status` dev tool show
 ## Tests, linting and type checking
 
 - `tests/` holds the regression tests (about 10 s, offline, standard library only):
-  `code/backend/dev_tools/run_launcher_tests.cmd`, or `python run_regressions.py` in that folder.
+  `code/backend/DONT_CHANGE/tests/run_launcher_tests.cmd`, or `python run_regressions.py` in that folder.
   `test_windows.py` runs on Windows only. See `tests/README.md` for what each file covers.
 - `ruff.toml` and `pyrefly.toml` apply to this folder only (the app's own code keeps the
   developer's settings). Run `ruff check`, `ruff format --check` and `pyrefly check` here; the

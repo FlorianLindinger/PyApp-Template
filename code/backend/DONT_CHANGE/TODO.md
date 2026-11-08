@@ -8,7 +8,7 @@ Git history of the Dev Helpers repository. Longer-term ideas: Dev Helpers `futur
 - Test on Windows: Setup, start twice (second start fast), Stop on the example window (closes
   by itself), Logs/Settings/Edit main.py shortcuts, `status.cmd`, `change_python`,
   `make_portable`, a failing `main.py` (black window, traceback, "(no Terminal)" grouping).
-- Run `dev_tools/run_launcher_tests.cmd` on Windows (`test_windows.py` and the batch/Stop paths
+- Run `DONT_CHANGE/tests/run_launcher_tests.cmd` on Windows (`test_windows.py` and the batch/Stop paths
   are skipped elsewhere) and `verify_launcher.bat` from the Dev Helpers.
 - Test a fresh download / new app creation / first use by someone else, and a moved and a
   copied project folder.

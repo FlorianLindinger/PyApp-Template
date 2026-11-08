@@ -17,7 +17,8 @@ CLEAR_TO_END_OF_LINE = "\x1b[K"  # fills the rest of the row with the current (b
 STYLES = {
     "rule": "\x1b[1;91m",
     "meta": "\x1b[90m",
-    "file": "\x1b[96m",
+    "folder": "\x1b[90m",
+    "file": "\x1b[1;96m",
     "library_file": "\x1b[36m",
     "lineno": "\x1b[93m",
     "function": "\x1b[92m",
@@ -51,7 +52,7 @@ def on_black(line: str) -> str:
 
 def rule_line(width: int = 100, colors: bool = False) -> str:
     """The separator line around tracebacks (bold red in color)."""
-    line = _style("-" * width, "rule", colors)
+    line = _style("─" * width, "rule", colors)
     return on_black(line) if colors else line
 
 
@@ -68,9 +69,12 @@ def metadata_lines(report: dict, date_format: str) -> list:
 
 def _frame_lines(frame: dict, colors: bool) -> list:
     app = bool(frame.get("app"))
+    path = _display_filename(frame.get("filename", ""))
+    name_start = len(path) - len(os.path.basename(path))
     location = (
         "  "
-        + _style(_display_filename(frame.get("filename", "")), "file" if app else "library_file", colors)
+        + _style(path[:name_start], "folder", colors)
+        + _style(path[name_start:], "file" if app else "library_file", colors)
         + _style(":", "gutter", colors)
         + _style(str(frame.get("lineno") or "?"), "lineno", colors)
         + _style(" in ", "gutter", colors)
@@ -83,8 +87,8 @@ def _frame_lines(frame: dict, colors: bool) -> list:
         for number, text in context:
             current = number == frame.get("lineno")
             marker = _style(">", "marker", colors) if current else " "
-            gutter = _style(f"{str(number).rjust(digits)} |", "gutter", colors)
-            lines.append(f"  {marker} {gutter} {_style(text, 'current' if current else 'context', colors)}")
+            gutter = _style(f"{str(number).rjust(digits)} │", "marker" if current else "gutter", colors)
+            lines.append(f"  {marker} {gutter} {_style(text, 'current' if current else 'context', colors)}".rstrip())
     elif frame.get("line"):
         lines.append("      " + _style(frame["line"], "library_code", colors))
     return lines
@@ -97,13 +101,10 @@ def render(
     date_format: str = "%Y-%m-%d %H:%M:%S",
     width: int = 100,
 ) -> list:
-    """Return the report as a list of lines (without newlines)."""
+    """Return the report as a list of lines (without newlines): frames, the error, then metadata."""
     if not report:
         return []
-    rule = _style("-" * width, "rule", colors)
-    lines = [rule]
-    lines += [_style(line, "meta", colors) for line in metadata_lines(report, date_format)]
-    lines.append(rule)
+    lines = [""]  # the caller prints the headline right above
 
     chain = report.get("chain") or []
     if report.get("has_group") or not chain:
@@ -131,7 +132,9 @@ def render(
                     lines.append(_style(name, "error_type", colors) + _style(sep + message, "error", colors))
                 else:
                     lines.append(_style(text, "detail", colors))
-    lines.append(rule)
+    lines.append("")
+    lines += [_style(line, "meta", colors) for line in metadata_lines(report, date_format)]
+    lines.append(_style("─" * width, "rule", colors))
     if colors:
         # Keep the black background through every color change and to the end of each row.
         lines = [on_black(line) for line in lines]
