@@ -12,8 +12,8 @@ permissions:
 
 jobs:
   tests:
-    # Apps made from the template inherit this file; the job only runs in the template itself.
-    if: github.repository == 'FlorianLindinger/PyApp-Template'
+    # Runs in the template and its forks. Apps made from the template have another repository name, so they skip it.
+    if: endsWith(github.repository, '/PyApp-Template')
     runs-on: windows-latest
     timeout-minutes: 30
     steps:
