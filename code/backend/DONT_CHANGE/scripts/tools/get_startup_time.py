@@ -162,7 +162,7 @@ def main() -> int:
         if not arguments.keep:
             shutil.rmtree(copy_root, ignore_errors=True)
 
-    _ui.heading(f"Until main.py runs (ms, {arguments.runs} runs)")
+    _ui.heading(f"Until main.py runs (ms, {arguments.runs} run{'s' if arguments.runs > 1 else ''})")
     _ui.table(
         ("median", "min", "max", "target"),
         [
@@ -189,4 +189,4 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    raise SystemExit(_ui.run(main))

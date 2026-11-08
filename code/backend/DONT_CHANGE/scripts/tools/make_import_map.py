@@ -81,6 +81,10 @@ IDENTIFIER = re.compile(r"[A-Za-z_][A-Za-z0-9_]*\Z")
 MODULE_SUFFIXES = (".py", ".pyi", ".pyd", ".so", ".pyc")
 
 
+# A mostly failed download must not replace the existing map with a nearly empty one.
+MINIMUM_COMPLETE = 0.9
+
+
 def normalized(name: str) -> str:
     """PEP 503 form, also used to compare import names with project names."""
     return re.sub(r"[-_.]+", "-", name).lower()
@@ -222,7 +226,7 @@ def top_projects(count: int) -> List[str]:
     for url in RANKING_URLS:
         try:
             rows = json.loads(fetch(url))["rows"]
-        except (urllib.error.URLError, KeyError, ValueError):
+        except (OSError, KeyError, ValueError):
             continue
         return [row["project"] for row in rows[:count]]
     raise RuntimeError("Could not download the PyPI download ranking.")
@@ -245,6 +249,7 @@ def build(projects: List[str], workers: int, cache_path: Path) -> Dict[str, List
     todo = [p for p in projects if p not in cache]
     _ui.fields([("Projects", len(projects)), ("Cached", len(projects) - len(todo)), ("To fetch", len(todo))])
     failures = 0
+    cache_path.parent.mkdir(parents=True, exist_ok=True)  # also needed by the checkpoints below
     with ThreadPoolExecutor(workers) as pool:
         futures = {pool.submit(project_import_names, project): project for project in todo}
         for done, future in enumerate(as_completed(futures), 1):
@@ -258,7 +263,6 @@ def build(projects: List[str], workers: int, cache_path: Path) -> Dict[str, List
             _ui.progress(f"{done}/{len(todo)} fetched, {failures} skipped")
             if done % 250 == 0:
                 cache_path.write_text(json.dumps(cache), encoding="utf-8")
-    cache_path.parent.mkdir(parents=True, exist_ok=True)
     cache_path.write_text(json.dumps(cache), encoding="utf-8")
     _ui.step(f"Fetched; {failures} skipped.")
     return {cache[p]["name"]: cache[p]["imports"] for p in projects if p in cache}
@@ -306,12 +310,14 @@ def main() -> int:
 
     _ui.heading("Import name map")
     _ui.step(f"Getting the {args.count} most-downloaded PyPI projects ...")
-    try:
-        ranking = top_projects(args.count)
-    except RuntimeError as error:
-        _ui.error(error)
-        return 1
+    ranking = top_projects(args.count)
     results = build(ranking, args.workers, args.cache)
+    if len(results) < len(ranking) * MINIMUM_COMPLETE:
+        _ui.error(
+            f"Only {len(results)} of {len(ranking)} projects could be read (no internet?). "
+            f"The existing map was kept; what was fetched is cached, so run this again."
+        )
+        return 1
     lines = mapping_lines(results)
     header = [
         '# Import name -> PyPI project name, one "import:project" pair per line.',
@@ -332,4 +338,4 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    raise SystemExit(_ui.run(main))

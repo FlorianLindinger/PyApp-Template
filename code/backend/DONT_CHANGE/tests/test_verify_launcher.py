@@ -59,5 +59,27 @@ class VerifyLauncherTests(unittest.TestCase):
         self.assertIn("The launcher failed verification.", output.getvalue())
 
 
+class ToolRunTests(unittest.TestCase):
+    def outcome(self, problem: BaseException):
+        def main() -> int:
+            raise problem
+
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output):
+            return verify_launcher._ui.run(main), output.getvalue()
+
+    def test_expected_problems_are_a_short_message(self):
+        code, text = self.outcome(TimeoutError("too slow"))
+        self.assertEqual(code, 1)
+        self.assertIn("too slow", text)
+
+    def test_ctrl_c_is_reported(self):
+        self.assertEqual(self.outcome(KeyboardInterrupt())[0], 130)
+
+    def test_programming_errors_keep_their_traceback(self):
+        with self.assertRaises(KeyError):
+            self.outcome(KeyError("bug"))
+
+
 if __name__ == "__main__":
     unittest.main()

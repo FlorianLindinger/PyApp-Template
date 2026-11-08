@@ -10,6 +10,8 @@ The first versioned release; it contains every change below.
 ### 2026-11-08 - clearer development tools
 
 - The tools in `tools/` use the launcher's headings, badges and aligned tables; `verify_launcher` ends with a summary of its checks and names the configuration files it uses.
+- New `tools/check_git_leaks.bat` looks for secrets and personal data in the current files and the Git history.
+- The tools show a short message instead of a traceback for expected problems and Ctrl+C; `make_import_map` keeps the existing map when most of a download fails.
 
 ### 2026-11-08 - launcher fixes
 

@@ -68,6 +68,8 @@ def main() -> int:
     parser.add_argument("modules", nargs="*")
     parser.add_argument("--runs", type=int, default=10)
     arguments = parser.parse_args()
+    if arguments.runs < 1:
+        parser.error("--runs must be positive")
     if arguments.interpreter == "launcher":
         python = [sys.executable, "-I", "-S"]
         modules = arguments.modules or list(LAUNCHER_MODULES)
@@ -78,23 +80,37 @@ def main() -> int:
         python = [str(VENV_PYTHON)]
         modules = arguments.modules or app_modules()
 
+    if not modules:
+        _ui.info("There is nothing to measure: no modules were named and no packages are declared.")
+        return 0
+
     _ui.heading(f"Import times: {arguments.interpreter}")
     _ui.fields([("Interpreter", " ".join(python)), ("Runs", f"{arguments.runs} per module")])
     _ui.step("Measuring an empty interpreter start ...")
     baseline = statistics.median(run_once(python, "") for _ in range(arguments.runs))
     _ui.fields([("Empty start", f"{baseline:.1f} ms (median)")])
     rows = []
+    failed = []
     for index, module in enumerate(modules, 1):
         _ui.progress(f"{index}/{len(modules)}  {module}")
-        values = [run_once(python, module) for _ in range(arguments.runs)]
+        try:
+            values = [run_once(python, module) for _ in range(arguments.runs)]
+        except RuntimeError as error:
+            failed.append(f"{module}: {str(error).strip().splitlines()[-1]}")
+            continue
         rows.append((statistics.median(values) - baseline, statistics.mean(values) - baseline, module))
-    _ui.heading("Added by each import (ms, slowest first)")
-    _ui.table(
-        ("median", "mean", "module"),
-        [(f"{median:.1f}", f"{mean:.1f}", module) for median, mean, module in sorted(rows, reverse=True)],
-    )
+    if rows:
+        _ui.heading("Added by each import (ms, slowest first)")
+        _ui.table(
+            ("median", "mean", "module"),
+            [(f"{median:.1f}", f"{mean:.1f}", module) for median, mean, module in sorted(rows, reverse=True)],
+        )
+    if failed:
+        _ui.blank_line()
+        _ui.error("Could not be imported:\n" + "\n".join(failed))
+        return 1
     return 0
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    raise SystemExit(_ui.run(main))

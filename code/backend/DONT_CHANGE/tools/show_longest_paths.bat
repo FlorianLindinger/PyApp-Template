@@ -12,8 +12,8 @@ set "PYAPP_LP_COUNT=30"
 if not "%~1"=="" set "PYAPP_LP_COUNT=%~1"
 powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File "%~dp0..\scripts\tools\show_longest_paths.ps1"
 echo.
-echo Press any key to remeasure 
-pause > nul
+:: Not set /p or pause: without a keyboard (no more input) this must end instead of repeating forever.
+powershell.exe -NoLogo -NoProfile -Command "Write-Host -NoNewline 'Press Enter to run again (close this window to stop). '; if ($null -eq [Console]::In.ReadLine()) { exit 1 }"
+if errorlevel 1 exit /b 0
 cls
 goto :start
-exit /b

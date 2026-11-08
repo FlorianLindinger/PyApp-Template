@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import os
 import sys
-from typing import Iterable, Sequence, Tuple
+from typing import Callable, Iterable, Optional, Sequence, Tuple
 
 HEADING = "\x1b[1;36m"  # bold cyan
 GOOD = "\x1b[1;37;42m"  # white on green
@@ -24,6 +24,18 @@ for _stream in (sys.stdout, sys.stderr):
 
 _console_prepared = False
 _progress_shown = False
+
+
+def run(main: Callable[[], Optional[int]]) -> Optional[int]:
+    """Run a tool: problems it expects become a short message, programming errors keep their traceback."""
+    try:
+        return main()
+    except KeyboardInterrupt:
+        warn("Stopped with Ctrl+C.")
+        return 130
+    except (OSError, RuntimeError) as problem:  # includes timeouts and missing files
+        error(problem)
+        return 1
 
 
 def _interactive() -> bool:

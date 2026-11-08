@@ -1,10 +1,12 @@
 """Import-map downloads accept expected HTTPS sources and reject unsafe redirects."""
 
 import sys
+import tempfile
 import unittest
 import urllib.request
 from http.client import HTTPMessage
 from io import BytesIO
+from pathlib import Path
 from unittest import mock
 
 from project_location import DONT_CHANGE
@@ -61,6 +63,19 @@ class ImportMapDownloadTests(unittest.TestCase):
         request = opener.open.call_args[0][0]
         self.assertEqual(request.get_header("Range"), "bytes=0-9")
         self.assertEqual(opener.open.call_args[1]["timeout"], 5)
+
+
+class ImportMapOutputTests(unittest.TestCase):
+    def test_a_mostly_failed_download_keeps_the_existing_map(self):
+        with tempfile.TemporaryDirectory() as folder:
+            output = Path(folder) / "map.txt"
+            output.write_text("existing", encoding="utf-8")
+            arguments = ["make_import_map.py", "--output", str(output), "--cache", str(Path(folder) / "c.json")]
+            with mock.patch.object(sys, "argv", arguments), mock.patch.object(
+                make_import_map, "top_projects", return_value=["a", "b", "c"]
+            ), mock.patch.object(make_import_map, "build", return_value={"a": ["x"]}), mock.patch("builtins.print"):
+                self.assertEqual(make_import_map.main(), 1)
+            self.assertEqual(output.read_text(encoding="utf-8"), "existing")
 
 
 if __name__ == "__main__":
