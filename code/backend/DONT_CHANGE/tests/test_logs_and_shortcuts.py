@@ -72,10 +72,11 @@ class ShortcutTests(unittest.TestCase):
             Path(record).write_text(
                 json.dumps({"version": 2, "shortcuts": [], "targets": {"logs": "D:/old"}}), encoding="utf-8"
             )
-            targets = {"logs": "D:/new", "main_py": "D:/m.py"}
-            with mock.patch.object(shortcuts, "CREATED_SHORTCUTS_LIST_PATH", record):
-                with mock.patch.object(shortcuts, "shortcut_targets", return_value=targets):
-                    self.assertEqual(shortcuts.outdated_shortcut_targets(object()), ["logs"])
+            targets = {"logs": "D:/new", "open_code": "D:/m.py"}
+            with mock.patch.object(shortcuts, "CREATED_SHORTCUTS_LIST_PATH", record), mock.patch.object(
+                shortcuts, "shortcut_targets", return_value=targets
+            ):
+                self.assertEqual(shortcuts.outdated_shortcut_targets(object()), ["logs"])
 
 
 if __name__ == "__main__":

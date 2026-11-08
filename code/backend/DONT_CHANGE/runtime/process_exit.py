@@ -33,7 +33,7 @@ try:
         ExitMode,
         exit_code_is_success,
     )
-    from backend.DONT_CHANGE.scripts.config import settings
+    from backend.DONT_CHANGE.scripts.config import main_script_path, settings
     from backend.DONT_CHANGE.scripts.console_tools import (
         ask,
         enable_ansi,
@@ -170,8 +170,10 @@ def restart_program(app_id, new_terminal_was_created):
 
 def local_module_exists(name):
     """True when the missing import is a module/package of the project itself (do not install)."""
-    root = paths.PYTHON_SCRIPTS_DIR
-    return os.path.isfile(os.path.join(root, name + ".py")) or os.path.isdir(os.path.join(root, name))
+    roots = (paths.PYTHON_SCRIPTS_DIR, os.path.dirname(main_script_path()))
+    return any(
+        os.path.isfile(os.path.join(root, name + ".py")) or os.path.isdir(os.path.join(root, name)) for root in roots
+    )
 
 
 def handle_missing_module(missing, app_id, new_terminal_was_created):

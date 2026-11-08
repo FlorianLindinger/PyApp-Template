@@ -32,15 +32,9 @@ class GenIconsTests(unittest.TestCase):
             gen_icons, "GENERATED_ICONS_RECORD_PATH", os.path.join(folder, "record", "icons.json")
         ), mock.patch.object(gen_icons, "generate_ico_from_png", fake), mock.patch.object(
             gen_icons, "_pick_png", return_value="base.png"
-        ), mock.patch.object(
-            gen_icons, "validate"
-        ), mock.patch.object(
-            gen_icons, "load_settings"
-        ), mock.patch.object(
+        ), mock.patch.object(gen_icons, "validate"), mock.patch.object(gen_icons, "load_settings"), mock.patch.object(
             gen_icons, "ask", side_effect=list(answers)
-        ) as ask, mock.patch(
-            "builtins.print"
-        ):
+        ) as ask, mock.patch("builtins.print"):
             gen_icons.main()
         return overlays, ask.call_count
 

@@ -21,6 +21,7 @@ from backend.DONT_CHANGE.runtime._pyapp import (
     exit_code_is_success,
     save_report,
 )
+from backend.DONT_CHANGE.scripts.config import main_script_path
 from backend.DONT_CHANGE.scripts.config import settings as load_settings
 from backend.DONT_CHANGE.scripts.console_tools import (
     print_info,
@@ -136,7 +137,7 @@ def main():
         create_own_job()
     except Exception:
         note_ignored("create_own_job (Stop falls back to the process tree)")
-    script = paths.MAIN_PY_SCRIPT_PATH
+    script = main_script_path(settings)
     log_path = ""
     registered = False
     exit_handled = False

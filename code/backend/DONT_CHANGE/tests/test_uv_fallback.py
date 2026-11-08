@@ -17,13 +17,9 @@ class InstallPythonTests(unittest.TestCase):
             pythons, "install_newer_uv", return_value=newer_uv
         ) as install_newer_uv, mock.patch.object(pythons, "invalidate_runtime_cache"), mock.patch.object(
             pythons, "find_python", return_value="python.exe"
-        ), mock.patch.object(
-            pythons, "show_setup_window"
-        ), mock.patch.object(
+        ), mock.patch.object(pythons, "show_setup_window"), mock.patch.object(
             pythons, "available_summary", return_value=""
-        ), mock.patch.object(
-            pythons, "settings"
-        ):
+        ), mock.patch.object(pythons, "settings"):
             try:
                 return pythons.install_python("3.99"), run_uv.call_count, install_newer_uv.call_count
             except SetupError:

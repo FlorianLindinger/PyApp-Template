@@ -35,7 +35,15 @@ def uv_exe() -> str:
 
 def install_newer_uv() -> bool:
     """Fetch the newest uv into the per-user folder; True when this process now uses a newer uv."""
-    arguments = ["-NoLogo", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", RESOLVE_RUNTIME_PATH]
+    arguments = [
+        "-NoLogo",
+        "-NoProfile",
+        "-NonInteractive",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        RESOLVE_RUNTIME_PATH,
+    ]
     code = subprocess.run(["powershell.exe", *arguments, "-InstallNewerThan", uv_exe()], check=False).returncode
     if code:
         return False

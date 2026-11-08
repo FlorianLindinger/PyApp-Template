@@ -111,7 +111,9 @@ def _write_record(record: dict) -> None:
 
 def _may_replace(output_path: str) -> bool:
     """Ask before overwriting an ICO the generator did not make."""
-    question = f"{os.path.basename(output_path)} was not made by the generator, so it may be your own. Replace it? [y/N]"
+    question = (
+        f"{os.path.basename(output_path)} was not made by the generator, so it may be your own. Replace it? [y/N]"
+    )
     try:
         return ask(question).strip().lower() in ("y", "yes", "j", "ja")
     except EOFError:

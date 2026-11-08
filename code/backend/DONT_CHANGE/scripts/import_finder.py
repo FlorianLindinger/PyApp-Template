@@ -69,14 +69,20 @@ def python_files(root: str = PYTHON_SCRIPTS_DIR):
 
 
 def local_module_names(root: str = PYTHON_SCRIPTS_DIR) -> set:
-    """Names importable from the code folder itself (sys.path[0] when main.py runs)."""
+    """Names importable from the code folder itself and the main script's folder (sys.path[0])."""
+    folders = {root}
+    if root == PYTHON_SCRIPTS_DIR:
+        from backend.DONT_CHANGE.scripts.config import main_script_path
+
+        folders.add(os.path.dirname(main_script_path()))
     names = set()
-    for entry in os.listdir(root):
-        path = os.path.join(root, entry)
-        if entry.endswith((".py", ".pyw")):
-            names.add(entry.rsplit(".", 1)[0])
-        elif os.path.isdir(path) and not _excluded(entry) and any(f.endswith(".py") for f in os.listdir(path)):
-            names.add(entry)
+    for folder in folders:
+        for entry in os.listdir(folder):
+            path = os.path.join(folder, entry)
+            if entry.endswith((".py", ".pyw")):
+                names.add(entry.rsplit(".", 1)[0])
+            elif os.path.isdir(path) and not _excluded(entry) and any(f.endswith(".py") for f in os.listdir(path)):
+                names.add(entry)
     return names
 
 

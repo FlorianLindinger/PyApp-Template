@@ -72,7 +72,6 @@ MINIMUM_PYTHON = (3, 8)                             # oldest Python the launcher
 
 ENTRYPOINT_PATH = SCRIPTS_DIR + "\\entrypoint.py"        # runs every tool: entrypoint.py <tool.py> [args]
 START_PROGRAM_PATH = APP_ACTIONS_DIR + "\\start_program.py"
-MAIN_PY_SCRIPT_PATH = PYTHON_SCRIPTS_DIR + "\\main.py"
 WATCHDOG_PATH = DONT_CHANGE_DIR + "\\runtime\\background_watchdog.py"
 PROCESS_EXIT_PATH = DONT_CHANGE_DIR + "\\runtime\\process_exit.py"
 SCRIPT_WRAPPER_PATH = DONT_CHANGE_DIR + "\\runtime\\script_wrapper.py"
@@ -88,7 +87,7 @@ LAUNCHER_NO_TERMINAL = ENTRY_BATCHES_DIR + "\\N.bat"
 LAUNCHER_STOP = ENTRY_BATCHES_DIR + "\\Q.bat"
 LAUNCHER_OPEN_LOG_DIR = ENTRY_BATCHES_DIR + "\\L.bat"
 LAUNCHER_OPEN_CRASH_LOG_DIR = ENTRY_BATCHES_DIR + "\\C.bat"
-LAUNCHER_OPEN_MAIN_PY = ENTRY_BATCHES_DIR + "\\M.bat"
+LAUNCHER_OPEN_CODE = ENTRY_BATCHES_DIR + "\\M.bat"
 # Machine-specific list of every generated .lnk, used to remove stale shortcuts.
 CREATED_SHORTCUTS_LIST_PATH = GENERATED_DIR + "\\shortcuts_created_by_setup.json"
 # Every generated shortcut's arguments contain this fragment; stale-shortcut removal

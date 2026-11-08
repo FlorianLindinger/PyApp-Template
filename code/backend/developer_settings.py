@@ -99,6 +99,10 @@ terminal_bg_color: str | None = "9"
 terminal_text_color: str | None = "F"
 
 # --- Starting and stopping ---
+# The Python file the launcher runs. It must be inside the code folder, but not in code/backend.
+# Imports start from its folder, like `python main.py`. Run Setup again after changing it (for the Edit Code shortcut).
+main_script_path = "..\\main.py"
+
 # Arguments passed to main.py:
 args_for_main_py: list[str] = []
 
@@ -106,7 +110,7 @@ args_for_main_py: list[str] = []
 # PYTHON* variables have no effect on main.py itself, because it runs with -E.
 environment_for_main_py: dict[str, str] = {}
 
-# Working folder of the program. False: the folder of main.py. True: the folder of the starting shortcut.
+# Working folder of the program. False: the folder of the main script. True: the folder of the starting shortcut.
 start_in_shortcut_folder = False
 
 # Stop shortcut and instance_policy "replace": seconds a running instance gets to close by itself
@@ -128,7 +132,7 @@ user_settings_path: str | None = "..\\settings.py"
 # The project folder always gets all enabled shortcuts. Setup removes earlier ones that are no longer wanted.
 # Start Menu: a folder named after program_name with all enabled shortcuts:
 start_menu_shortcuts = True
-# Desktop: a list of "terminal", "no_terminal", "stop", "settings", "logs", "crash_logs", "main_py". Example: ["no_terminal"]
+# Desktop: a list of "terminal", "no_terminal", "stop", "settings", "logs", "crash_logs", "open_code". Example: ["no_terminal"]
 desktop_shortcuts: list[str] = []
 
 # --- Log files ---
@@ -163,7 +167,7 @@ open_settings_shortcut_name: str | None = f"{program_name} - Settings"
 stop_running_shortcut_name: str | None = f"Stop {program_name}"
 open_log_folder_shortcut_name: str | None = f"{program_name} - Logs"
 open_crash_log_folder_shortcut_name: str | None = f"{program_name} - Crash Logs"
-open_main_py_shortcut_name: str | None = f"{program_name} - Edit Code"
+open_code_shortcut_name: str | None = f"{program_name} - Edit Code"
 
 # --- Startup ---
 # Start with the window minimized:

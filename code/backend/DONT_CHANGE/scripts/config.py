@@ -8,7 +8,12 @@ import os
 import re
 import sys
 
-from backend.DONT_CHANGE.backend_settings import DEFAULT_SETTINGS_PATH, DEV_SETTINGS_PATH
+from backend.DONT_CHANGE.backend_settings import (
+    BACKEND_DIR,
+    DEFAULT_SETTINGS_PATH,
+    DEV_SETTINGS_PATH,
+    PYTHON_SCRIPTS_DIR,
+)
 from backend.DONT_CHANGE.scripts.errors import SettingsError
 
 # Read by bootstrap/resolve_runtime.ps1 before Python exists; must stay one-line literals.
@@ -37,7 +42,7 @@ SHORTCUT_KINDS = (
     "settings",
     "logs",
     "crash_logs",
-    "main_py",
+    "open_code",
 )
 BOOLEANS = (
     "uv_user_python_visible_globally",
@@ -65,7 +70,7 @@ SHORTCUT_NAME_SETTINGS = (
     "stop_running_shortcut_name",
     "open_log_folder_shortcut_name",
     "open_crash_log_folder_shortcut_name",
-    "open_main_py_shortcut_name",
+    "open_code_shortcut_name",
 )
 
 
@@ -86,6 +91,27 @@ def _strftime_problem(value: str) -> str | None:
 
 # A requirement starts with a distribution name (PEP 508); uv checks the rest (versions, extras, markers).
 REQUIREMENT_START = re.compile(r"\s*[A-Za-z0-9][A-Za-z0-9._-]*\s*($|[\[(<>=!~;@ ])")
+
+
+def main_script_path(s=None) -> str:
+    """Absolute path of the file the launcher runs (main_script_path in developer_settings.py)."""
+    return _resolve_main_script((s or settings()).main_script_path)
+
+
+def _resolve_main_script(value: str) -> str:
+    return value if os.path.isabs(value) else os.path.normpath(os.path.join(BACKEND_DIR, value))
+
+
+def _main_script_problem(value: str) -> str | None:
+    """Tracebacks, the import finder and the launcher's own folders all assume this location."""
+    path = _resolve_main_script(value)
+    if not os.path.isfile(path):
+        return f'main_script_path: "{path}" does not exist.'
+    root = os.path.normcase(os.path.abspath(PYTHON_SCRIPTS_DIR)) + os.sep
+    full = os.path.normcase(os.path.abspath(path))
+    if not full.startswith(root) or full[len(root) :].split(os.sep, 1)[0] == "backend":
+        return f'main_script_path: "{path}" must be inside the code folder and not in code\\backend.'
+    return None
 
 
 def parse_requirements(text: str) -> list:
@@ -111,8 +137,9 @@ def settings():
             raise
         raise SettingsError(problem) from None
     fill_missing_settings(module)
-    if isinstance(getattr(module, "packages", None), str):
-        module.packages = parse_requirements(module.packages)
+    packages = getattr(module, "packages", None)
+    if isinstance(packages, str):
+        vars(module)["packages"] = parse_requirements(packages)
     return module
 
 
@@ -277,6 +304,16 @@ def validate(module=None) -> None:
         "use a list of strings",
     )
     need(
+        "main_script_path",
+        lambda v: isinstance(v, str) and v.lower().endswith((".py", ".pyw")),
+        'use the path of a Python file, relative to developer_settings.py, such as "..\\\\main.py"',
+    )
+    main_script = get("main_script_path")
+    if isinstance(main_script, str) and main_script.lower().endswith((".py", ".pyw")):
+        problem = _main_script_problem(main_script)
+        if problem:
+            problems.append(problem)
+    need(
         "environment_for_main_py",
         lambda v: isinstance(v, dict) and all(isinstance(k, str) and k and isinstance(x, str) for k, x in v.items()),
         'use a dict of text values such as {"MY_SETTING": "1"}',
@@ -285,7 +322,7 @@ def validate(module=None) -> None:
     entries = parse_requirements(packages) if isinstance(packages, str) else packages
     if isinstance(entries, (list, tuple)):
         problems.extend(
-            f"packages: {entry!r} is not a package requirement such as \"numpy>=2\" (options such as -r or -e are not supported)."
+            f'packages: {entry!r} is not a package requirement such as "numpy>=2" (options such as -r or -e are not supported).'
             for entry in entries
             if not (isinstance(entry, str) and REQUIREMENT_START.match(entry))
         )

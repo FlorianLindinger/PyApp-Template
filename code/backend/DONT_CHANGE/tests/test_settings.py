@@ -1,8 +1,10 @@
 """developer_settings.py: validation, friendly errors, and editing without damaging the file."""
 
 import re
+import tempfile
 import types
 import unittest
+from pathlib import Path
 from unittest import mock
 
 import support
@@ -31,6 +33,7 @@ class ValidationTests(unittest.TestCase):
             'terminal_shortcut_name = "  "',
             "stop_timeout_seconds = -1",
             'instance_policy = "sometimes"',
+            'main_script_path = "notes.txt"',
             'environment_for_main_py = {"A": 1}',
             'packages = ["requests", "  "]',
             "error_date_format = 5",
@@ -127,6 +130,41 @@ class DefaultsTests(unittest.TestCase):
             self.assertEqual(expressions[name].value, expected, f"default of {name} in resolve_runtime.ps1")
 
 
+class MainScriptTests(unittest.TestCase):
+    def check(self, relative):
+        """Validate main_script_path pointing at a file below a temporary code folder."""
+        with tempfile.TemporaryDirectory() as folder:
+            code = Path(folder) / "code"
+            script = code / relative
+            script.parent.mkdir(parents=True)
+            script.write_text("", encoding="utf-8")
+            (code / "backend").mkdir(exist_ok=True)
+            with support.temporary_settings(append([f'main_script_path = r"{script}"'])) as (
+                _,
+                load,
+            ), mock.patch.object(config, "PYTHON_SCRIPTS_DIR", str(code)), mock.patch.object(
+                config, "BACKEND_DIR", str(code / "backend")
+            ):
+                config.validate(load())
+
+    def test_any_file_in_the_code_folder_is_allowed(self):
+        self.check("start.py")
+        self.check("app/gui/run.pyw")
+
+    def test_the_backend_folder_is_refused(self):
+        with self.assertRaises(SettingsError) as raised:
+            self.check("backend/run.py")
+        self.assertIn("main_script_path", str(raised.exception))
+
+    def test_a_missing_file_is_refused(self):
+        with support.temporary_settings(append(['main_script_path = "..\\\\no_such_file.py"'])) as (
+            _,
+            load,
+        ), self.assertRaises(SettingsError) as raised:
+            config.validate(load())
+        self.assertIn("does not exist", str(raised.exception))
+
+
 class EditingTests(unittest.TestCase):
     def test_edit_keeps_crlf_comments_and_writes_safe_literals(self):
         value = 'Flo\'s "App" C:\\x'
@@ -154,7 +192,9 @@ class EditingTests(unittest.TestCase):
 
     def test_pasted_requirements_block(self):
         text = "# pasted\nrequests>=2  # via x\n\nnumpy==2.1 --hash=sha256:ab --hash=sha256:cd\npkg @ https://x.org/a#egg=pkg\n"
-        self.assertEqual(config.parse_requirements(text), ["requests>=2", "numpy==2.1", "pkg @ https://x.org/a#egg=pkg"])
+        self.assertEqual(
+            config.parse_requirements(text), ["requests>=2", "numpy==2.1", "pkg @ https://x.org/a#egg=pkg"]
+        )
         block = ['packages = """', "requests>=2  # via x", "numpy==2.1", '"""']
         with support.temporary_settings(append(block)) as (_, load):
             config.validate(load())

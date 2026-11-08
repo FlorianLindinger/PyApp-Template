@@ -22,14 +22,13 @@ from backend.DONT_CHANGE.backend_settings import (
     ENTRY_BATCHES_DIR,
     ICON_PATH,
     LAUNCHER_NO_TERMINAL,
+    LAUNCHER_OPEN_CODE,
     LAUNCHER_OPEN_CRASH_LOG_DIR,
     LAUNCHER_OPEN_LOG_DIR,
-    LAUNCHER_OPEN_MAIN_PY,
     LAUNCHER_OPEN_SETTINGS,
     LAUNCHER_STOP,
     LAUNCHER_TERMINAL,
     LOG_ICON_PATH,
-    MAIN_PY_SCRIPT_PATH,
     NO_TERMINAL_APP_ID_SUFFIX,
     OPEN_CODE_ICON_PATH,
     SETTINGS_ICON_PATH,
@@ -384,9 +383,10 @@ def shortcut_targets(s) -> dict:
     "" means the target can only be resolved at click time (a path relative to the start folder
     or with date codes in the folder part); the B\\*.bat then runs the Python action instead.
     """
+    from backend.DONT_CHANGE.scripts.config import main_script_path
     from backend.DONT_CHANGE.scripts.launcher_ui import get_log_folder_path
 
-    targets = {"main_py": MAIN_PY_SCRIPT_PATH, "settings": ""}
+    targets = {"open_code": main_script_path(s), "settings": ""}
     for kind, path, relative in (
         ("logs", s.log_path, s.log_path_is_relative_to_start_folder_if_relative),
         ("crash_logs", s.crash_log_path, s.crash_log_path_is_relative_to_start_folder_if_relative),
@@ -440,13 +440,13 @@ def shortcut_definitions(s, app_id: str, targets: dict) -> list:
             f"Open the {name} crash log folder",
         ),
         (
-            "main_py",
-            s.open_main_py_shortcut_name,
+            "open_code",
+            s.open_code_shortcut_name,
             OPEN_CODE_ICON_PATH,
-            LAUNCHER_OPEN_MAIN_PY,
-            targets["main_py"],
+            LAUNCHER_OPEN_CODE,
+            targets["open_code"],
             None,
-            f"Open the {name} main.py file",
+            f"Open the {name} main script",
         ),
     ]
     if s.user_settings_path:

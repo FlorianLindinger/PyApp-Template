@@ -32,9 +32,12 @@ The first versioned release; it contains every change below.
 - `install_environment_when_generating_shortcuts` moved to `backend_settings.py`.
 - `packages` can also be a pasted requirements.txt in a `"""` block (comments and `--hash` are ignored).
 - Added `environment_for_main_py`: environment variables set for `main.py`.
+- The development tools moved in from the separate helpers repository: `tools/`, with their code in `scripts/tools/`.
+- Added `main_script_path`: which file the launcher runs (default `..\\main.py`); it must be inside the code folder and not in `code/backend`.
 - `main.py` runs in UTF-8 mode (`-X utf8`): `open()` without an `encoding` and `subprocess` text use UTF-8.
 - The ignore rules for `code/backend` moved from the root `.gitignore` to `code/backend/.gitignore`.
 - `open_main_py.ico` is now `open_code.ico`, and its overlay says OPEN CODE. Run Setup so existing shortcuts use it.
+- `open_main_py_shortcut_name` is now `open_code_shortcut_name`, and the `desktop_shortcuts` kind `"main_py"` is now `"open_code"`.
 - `shortcuts_created_by_setup.json` moved to `code/backend/generated`.
 - Overlay images are always the bundled ones (the overlay PNGs in `code/backend/icons` are gone). `regenerate icons.cmd` updates the icons it made and asks, per icon, before replacing any other `.ico` (`generated/auto_generated_icons.json`).
 - `pyproject.toml`, `uv.lock`, `.python-version`, `.venv` and the local `uv`, `pythons` and `uv-cache` moved to `code/backend/generated`, which the launcher
@@ -102,7 +105,7 @@ Windows-only paths (batch files, job objects, COM, Stop, real consoles) still ne
 
 #### Dev Helpers
 - New layout: `tools/` (verify_launcher, measure_startup_time, measure_import_times,
-  build_import_mapping, print_longest_paths), `future/` (ideas only), `archive/old_launcher/`
+  build_import_mapping, show_longest_paths), `future/` (ideas only), `archive/old_launcher/`
   (pre-uv files), `tmp/` (was `temporary/`). New tests: `test_banner.py`.
 - Startup benchmark rewritten for the new launcher (temporary project copy with a probe main.py).
 
@@ -186,7 +189,7 @@ The 13 `.bat` + 13 `.py` package tools were replaced by one module (`scripts/dev
   `open_crash.py`, `open_log_folder.py` -> `open_log.py`), `scripts/runtime` -> `runtime` (`_pyapp_protocol.py` ->
   `protocol.py`), `scripts/setup` -> `setup`, `scripts/bootstrap` -> `bootstrap`, `temporary` -> `tmp`.
 - `code/backend/shortcuts.manifest.json` -> `code/backend/shortcuts_created_by_setup.json`.
-- Dev Helpers: `print_longest_paths.bat` lists the 30 longest paths in the template checkout and flags those over the Windows path limit.
+- Dev Helpers: `show_longest_paths.bat` lists the 30 longest paths in the template checkout and flags those over the Windows path limit.
 
 #### Fixes from the 2026-11-05 review
 

@@ -27,9 +27,10 @@ class RunFileTests(unittest.TestCase):
 
     def run_tool(self, source, arguments=()):
         prompts = []
-        with mock.patch.object(entrypoint, "acknowledge", prompts.append):
-            with mock.patch.object(entrypoint, "_show_console"):
-                code = entrypoint.run_file(self.tool(source), arguments)
+        with mock.patch.object(entrypoint, "acknowledge", prompts.append), mock.patch.object(
+            entrypoint, "_show_console"
+        ):
+            code = entrypoint.run_file(self.tool(source), arguments)
         return code, prompts
 
     def test_exit_codes(self):
