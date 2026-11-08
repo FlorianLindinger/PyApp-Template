@@ -37,7 +37,7 @@ python_version = "3.14"
 
 # Packages the app needs: PyPI names with optional version limits, e.g. ["requests", "numpy>=2", "pillow==11.*"].
 # Or paste a requirements.txt as a block: packages = """, then one package per line (# comments are fine), then """.
-# The launcher installs exactly these, with the versions recorded in backend/environment/uv.lock (commit that file).
+# The launcher installs exactly these, with the versions recorded in backend/env/uv.lock (commit that file).
 # A package removed here stays installed until you run the dev tool sync_packages.
 # The dev tools add_packages, remove_packages and find_imports edit this list for you.
 packages: list[str] | str = []
@@ -118,7 +118,7 @@ stop_timeout_seconds: float = 3
 
 # --- Python location ---
 # [bootstrap] Where the app's Python comes from:
-#   "local"    uv installs it inside this project (code/backend/pythons). Portable.
+#   "local"    uv installs it inside this project (code/backend/env/pythons). Portable.
 #   "uv_user"  uv installs it in its per-user folder, shared by projects.
 python_source = "uv_user"
 
@@ -173,7 +173,7 @@ start_minimized = False
 
 # --- uv ---
 # [bootstrap] Which uv is used and how it gets installed:
-#   uv_prefer: which uv to use when both a global (on PATH) and a local (code/backend/uv) uv exist: "global" | "local"
+#   uv_prefer: which uv to use when both a global (on PATH) and a local (code/backend/env/uv) uv exist: "global" | "local"
 #   uv_install_if_missing: "global" (Astral's installer, adds uv to your user PATH) | "local" | "never"
 #   uv_version: "" for the latest, an exact version like "0.11.32", or a range like ">=0.9,<1"
 #   A global uv that does not satisfy uv_version is not changed; a local uv is installed instead.
@@ -187,7 +187,7 @@ uv_version = ""
 # [bootstrap] For python_source = "uv_user": also register the Python in Windows (py launcher) and put python3.x.exe on PATH:
 uv_user_python_visible_globally = True
 
-# [bootstrap] uv download cache: "global" (uv's per-user cache) or "local" (code/backend/uv-cache, grows over time):
+# [bootstrap] uv download cache: "global" (uv's per-user cache) or "local" (code/backend/env/uv-cache, grows over time):
 uv_cache = "global"
 
 # [bootstrap] Use Windows' certificate store for downloads (needed behind some company proxies):

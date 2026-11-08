@@ -69,7 +69,7 @@ def main() -> None:
 
         print_heading("Environment")
         app = ensure_environment(interactive=True)
-        where = "backend\\environment\\.venv"
+        where = "backend\\env\\.venv"
         print(
             f"  {styled('ready', ANSI_GOOD)}  Python {version_text(interpreter_version(app.exe))}  {styled(where, ANSI_DIM)}"
         )

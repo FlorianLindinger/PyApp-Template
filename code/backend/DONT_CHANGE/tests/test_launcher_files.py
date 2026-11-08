@@ -34,11 +34,11 @@ class LauncherFileTests(unittest.TestCase):
 
     def test_bootstrap_and_launcher_agree_on_the_environment_folder(self):
         settings = (DONT_CHANGE / "backend_settings.py").read_text(encoding="utf-8")
-        self.assertIn('PROJECT_DIR = BACKEND_DIR + "\\\\environment"', settings)
+        self.assertIn('ENV_DIR = BACKEND_DIR + "\\\\env"', settings)
         script = (DONT_CHANGE / "bootstrap" / "resolve_runtime.ps1").read_text(encoding="utf-8")
-        self.assertIn("$environmentDir = Join-Path $backendDir 'environment'", script)
+        self.assertIn("$envDir = Join-Path $backendDir 'env'", script)
         batch = (DONT_CHANGE / "bootstrap" / "ensure_runtime.bat").read_text(encoding="utf-8")
-        self.assertIn("..\\..\\environment\\.python-version", batch)
+        self.assertIn("..\\..\\env\\.python-version", batch)
 
     def test_the_app_runs_in_utf8_mode(self):
         source = (DONT_CHANGE / "scripts" / "env" / "venv.py").read_text(encoding="utf-8")

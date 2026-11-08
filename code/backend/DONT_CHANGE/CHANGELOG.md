@@ -34,7 +34,7 @@ The first versioned release; it contains every change below.
 - Added `environment_for_main_py`: environment variables set for `main.py`.
 - `main.py` runs in UTF-8 mode (`-X utf8`): `open()` without an `encoding` and `subprocess` text use UTF-8.
 - The ignore rules for `code/backend` moved from the root `.gitignore` to `code/backend/.gitignore`.
-- `pyproject.toml`, `uv.lock`, `.python-version` and `.venv` moved to `code/backend/environment`, which the launcher
+- `pyproject.toml`, `uv.lock`, `.python-version`, `.venv` and the local `uv`, `pythons` and `uv-cache` moved to `code/backend/env`, which the launcher
   creates; files in the old location are moved on the next launch. The `.gitignore` of older projects needs the new paths.
 
 ### 2026-11-07 - tracebacks, simpler icons and colors, tests and docs in DONT_CHANGE

@@ -63,7 +63,7 @@ def cmd_change_python(arguments):
             "python_version is now empty (newest stable, chosen once). Use update_python to move to a newer Python."
         )
         return
-    prepare()  # offers the migration menu because the setting now differs from backend/environment/.python-version
+    prepare()  # offers the migration menu because the setting now differs from backend/env/.python-version
 
 
 def cmd_update_python(arguments):

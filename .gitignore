@@ -14,12 +14,9 @@
 .spyderproject
 .spyproject
 .ropeproject
-# Virtual environments and package environments:
+# Virtual environments and package environments.
 .venv/
 venv/
-env/
-ENV/
-env.bak/
 venv.bak/
 .conda/
 .direnv/
@@ -48,25 +45,11 @@ nuitka-crash-report.xml
 *.trace
 
 # ===========================================
-# ==== App framework specific gitignores ====
+# ==== App launcher specific gitignores ====
 # ===========================================
 
 # shortcuts in this folder:
 /*.lnk
-# uv project in the backend folder: commit uv.lock and .python-version; pyproject.toml is
-# generated from developer_settings.py and .venv is the app environment:
-/code/backend/pyproject.toml
-/code/backend/.venv/
-/code/backend/.venv.*/
-# uv, Pythons and the uv cache when installed into the project:
-/code/backend/uv/
-/code/backend/uv.*/
-/code/backend/pythons/
-/code/backend/uv-cache/
-# machine-specific list of generated shortcuts:
-/code/backend/shortcuts_created_by_setup.json
-# whitelist ".gitkeep" files anywhere:
-!.gitkeep
 
 # =================================
 # ==== App specific gitignores ====

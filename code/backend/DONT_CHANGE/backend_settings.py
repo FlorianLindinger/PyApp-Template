@@ -42,16 +42,17 @@ WINDOWS_DIR = os.environ.get("WINDIR", "C:\\Windows")
 # ------------------------
 # uv, Python and the application environment
 
-LOCAL_UV_DIR = BACKEND_DIR + "\\uv"                 # uv.exe when installed locally
+# Everything uv-related, created by the launcher. UPDATE bootstrap/*.bat, *.ps1 and code/backend/.gitignore too.
+ENV_DIR = BACKEND_DIR + "\\env"
+LOCAL_UV_DIR = ENV_DIR + "\\uv"                 # uv.exe when installed locally
 LOCAL_UV_EXE = LOCAL_UV_DIR + "\\uv.exe"
 # Per-user uv, not on PATH: fetched when the usual uv is too old for a Python. UPDATE resolve_runtime.ps1 too.
 SHARED_UV_EXE = (os.environ.get("LOCALAPPDATA") or os.path.expanduser("~\\AppData\\Local")) + "\\PyApp-Template\\uv\\uv.exe"
-LOCAL_PYTHONS_DIR = BACKEND_DIR + "\\pythons"       # uv-managed Pythons when python_source = "local"
-LOCAL_UV_CACHE_DIR = BACKEND_DIR + "\\uv-cache"     # only used when uv_cache = "local"
-# The uv project has its own folder, created by the launcher. pyproject.toml is generated from
-# developer_settings.py (packages, python_version); uv.lock and .python-version are committed;
-# .venv is the app environment. UPDATE bootstrap/*.bat, *.ps1 and .gitignore too.
-PROJECT_DIR = BACKEND_DIR + "\\environment"
+LOCAL_PYTHONS_DIR = ENV_DIR + "\\pythons"       # uv-managed Pythons when python_source = "local"
+LOCAL_UV_CACHE_DIR = ENV_DIR + "\\uv-cache"     # only used when uv_cache = "local"
+# pyproject.toml is generated from developer_settings.py (packages, python_version);
+# uv.lock and .python-version are committed; .venv is the app environment.
+PROJECT_DIR = ENV_DIR
 PYPROJECT_PATH = PROJECT_DIR + "\\pyproject.toml"
 UV_LOCK_PATH = PROJECT_DIR + "\\uv.lock"
 PYTHON_VERSION_FILE = PROJECT_DIR + "\\.python-version"

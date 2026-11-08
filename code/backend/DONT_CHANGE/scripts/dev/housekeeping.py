@@ -124,7 +124,7 @@ def cmd_status(arguments):
             ("Launcher Python", f"{version_text(sys.version_info[:3])} at {sys.executable}"),
             ("python_version", describe_python_request(s.python_version)),
             ("python_source", s.python_source),
-            ("backend/environment/.python-version", read_python_version_file() or "(missing)"),
+            ("backend/env/.python-version", read_python_version_file() or "(missing)"),
             ("requires-python", current_requires_python() or "(missing)"),
         ],
         "Packages": [

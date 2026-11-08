@@ -6,10 +6,10 @@ shortcuts, logging and completion behavior.
 
 This folder is also the app's uv project. Generated on the first run:
 
-- `environment/uv.lock` and `environment/.python-version`: the exact package and Python versions. **Commit them.**
-- `environment/pyproject.toml`: generated from `packages` and `python_version` for uv. Do not edit it;
+- `env/uv.lock` and `env/.python-version`: the exact package and Python versions. **Commit them.**
+- `env/pyproject.toml`: generated from `packages` and `python_version` for uv. Do not edit it;
   changes made to it anyway (e.g. `uv add`) are copied into `packages`. Ignored by Git.
-- `environment/.venv/`: the app environment. Ignored by Git.
+- `env/.venv/`: the app environment. Ignored by Git.
 
 Change packages and the Python version in `developer_settings.py` or with the tools in
 [dev_tools](dev_tools/README.md).
