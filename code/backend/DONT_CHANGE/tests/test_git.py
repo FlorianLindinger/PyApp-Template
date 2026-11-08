@@ -4,6 +4,8 @@ Asks Git itself (``git check-ignore``) which files in DONT_CHANGE are ignored. C
 runtime folder are excluded on purpose; everything else must be trackable.
 """
 
+from __future__ import annotations
+
 import shutil
 import subprocess
 import unittest
@@ -14,9 +16,15 @@ from project_location import DONT_CHANGE, PROJECT_ROOT
 EXCLUDED_PARTS = {"tmp", "__pycache__", ".ruff_cache"}
 
 
-def git(*args, stdin=None):
-    return subprocess.run(
-        ["git", *args], cwd=str(PROJECT_ROOT), input=stdin, capture_output=True, text=True, check=False
+def git(*args: str, stdin: str | None = None):
+    # Test subprocesses execute fixed fixture/helper code using the local interpreter or Git.
+    return subprocess.run(  # noqa: S603
+        ["git", *args],  # noqa: S607 - Git is intentionally selected from the developer's local PATH.
+        cwd=str(PROJECT_ROOT),
+        input=stdin,
+        capture_output=True,
+        text=True,
+        check=False,
     )
 
 

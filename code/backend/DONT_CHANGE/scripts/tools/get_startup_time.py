@@ -40,7 +40,7 @@ def copy_project(destination: Path) -> None:
     """Copy the project without logs, shortcuts, caches and the launcher's runtime state."""
     dont_change = PROJECT_ROOT / "code" / "backend" / "DONT_CHANGE"
 
-    def ignore(folder, names):
+    def ignore(folder: str, names: list[str]):
         here = Path(folder).resolve()
         left_out = {name for name in names if name == "__pycache__" or name.lower().endswith(".lnk")}
         if here == PROJECT_ROOT:
@@ -69,7 +69,7 @@ def main_script_in(copy_root: Path) -> Path:
     return copy_root / "code" / Path(main_script_path()).relative_to(CODE_DIR)
 
 
-def commands(copy_root: Path, app_id: str, script: Path) -> dict:
+def commands(copy_root: Path, app_id: str, script: Path) -> dict[str, list[str]]:
     code = copy_root / "code"
     entry_batches = code / "backend" / "DONT_CHANGE" / "B"
     return {
@@ -79,13 +79,15 @@ def commands(copy_root: Path, app_id: str, script: Path) -> dict:
     }
 
 
-def stop_tree(process: subprocess.Popen, wait_seconds: float) -> None:
+def stop_tree(process: subprocess.Popen[bytes], wait_seconds: float) -> None:
     """Let the launch finish on its own, else end the whole process tree."""
     try:
         process.wait(wait_seconds)
     except subprocess.TimeoutExpired:
-        subprocess.run(
-            ["taskkill.exe", "/T", "/F", "/PID", str(process.pid)],
+        # Run the benchmark command or terminate only its recorded child PID.
+        subprocess.run(  # noqa: S603
+            # Run the benchmark command or terminate only its recorded child PID.
+            ["taskkill.exe", "/T", "/F", "/PID", str(process.pid)],  # noqa: S607
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
             check=False,
@@ -93,12 +95,13 @@ def stop_tree(process: subprocess.Popen, wait_seconds: float) -> None:
         process.wait()
 
 
-def run_once(command: list, marker: Path, timeout: float, cwd: Path) -> float:
+def run_once(command: list[str], marker: Path, timeout: float, cwd: Path) -> float:
     """Seconds from starting the command until the probe wrote its marker."""
     if marker.exists():
         marker.unlink()
     start = time.perf_counter()
-    process = subprocess.Popen(command, cwd=str(cwd), creationflags=subprocess.CREATE_NEW_CONSOLE)
+    # Run the benchmark command or terminate only its recorded child PID.
+    process = subprocess.Popen(command, cwd=str(cwd), creationflags=subprocess.CREATE_NEW_CONSOLE)  # noqa: S603
     try:
         while not marker.exists():
             if time.perf_counter() - start > timeout:
@@ -133,7 +136,7 @@ def main() -> int:
     script.write_text(PROBE.format(marker=str(marker)), encoding="utf-8")
     all_commands = commands(copy_root, app_id_for(copy_root), script)
 
-    results = {}
+    results: dict[str, list[float]] = {}
     try:
         for target in arguments.targets:
             command = all_commands[target]

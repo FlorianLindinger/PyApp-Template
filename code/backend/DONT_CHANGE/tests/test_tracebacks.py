@@ -1,5 +1,7 @@
 """Traceback reports (runtime/_pyapp.py) and their rendering (scripts/traceback_render.py)."""
 
+from __future__ import annotations
+
 import runpy
 import sys
 import tempfile
@@ -15,7 +17,7 @@ from backend.DONT_CHANGE.runtime import _pyapp
 from backend.DONT_CHANGE.scripts.traceback_render import render
 
 
-def report_for(source, extra_lines=2):
+def report_for(source: str, extra_lines: int = 2):
     """Run source as an app file and return the report of the exception it raises."""
     with tempfile.TemporaryDirectory() as folder:
         path = Path(folder) / "main.py"

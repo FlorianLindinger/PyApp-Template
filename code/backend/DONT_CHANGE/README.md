@@ -361,7 +361,12 @@ releases are tagged `v<version>` on GitHub. Setup and the `status` dev tool show
   `test_windows.py` runs on Windows only. See `tests/README.md` for what each file covers.
 - `ruff.toml` and `pyrefly.toml` apply to this folder only (the app's own code keeps the
   developer's settings). Run `ruff check`, `ruff format --check` and `pyrefly check` here; the
-  only deliberate exception is `BLE001` (catch-all excepts around cosmetic steps).
+  `BLE001` permits catch-all excepts around cosmetic steps; other reviewed exceptions
+  are documented beside narrow `noqa` directives, including Windows path behavior on Python 3.8.
+
+Pyrefly uses its strict preset and targets Python 3.8. Existing overrides have
+individual `missing-override-decorator` suppressions because `typing.override`
+requires Python 3.12; the launcher keeps its standard-library-only runtime.
 
 ## Licensing
 

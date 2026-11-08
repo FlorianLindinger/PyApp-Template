@@ -6,7 +6,9 @@ target-version = "py38"
 line-length = 120
 
 [lint]
-# Ruff's default rules, minus deliberate patterns of this code base:
+# Include pathlib and security diagnostics in verification, alongside Ruff's defaults.
+extend-select = ["PTH", "S"]
+# Deliberate patterns of this code base:
 ignore = [
     # Catch-all excepts are intentional: cosmetic steps (window icon, colors, focus, ...) must
     # never stop the app. They are recorded with diagnostics.note_ignored() instead.

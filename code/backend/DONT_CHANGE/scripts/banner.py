@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import shutil
 import unicodedata
+from pathlib import Path
 
 from backend.DONT_CHANGE.backend_settings import BANNER_FONT_PATH
 from backend.DONT_CHANGE.scripts.config import settings
@@ -18,7 +19,7 @@ HARD_BLANK = "\x7f"  # how the font marks a space that belongs to a character
 
 def load_font():
     """Return {character: rows} of the banner font (a TOIlet file)."""
-    with open(BANNER_FONT_PATH, encoding="utf-8", errors="replace") as stream:
+    with Path(BANNER_FONT_PATH).open(encoding="utf-8", errors="replace") as stream:
         lines = stream.read().splitlines()
     fields = lines[0][6:].split()
     height, comment_lines = int(fields[0]), int(fields[4])
@@ -58,7 +59,7 @@ def load_font():
     return glyphs
 
 
-def render(text: str) -> list:
+def render(text: str) -> list[str]:
     """The rows of text in the banner font; characters the font lacks are left out."""
     glyphs = load_font()
     height = len(next(iter(glyphs.values())))

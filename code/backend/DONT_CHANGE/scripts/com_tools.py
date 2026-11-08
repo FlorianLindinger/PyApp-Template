@@ -103,7 +103,7 @@ def co_uninitialize(needed: bool) -> None:
         ctypes.WinDLL("ole32", use_last_error=True).CoUninitialize()
 
 
-def set_app_user_model_id(store, app_id: str) -> None:
+def set_app_user_model_id(store: ctypes._Pointer[IPropertyStore], app_id: str) -> None:
     """Write System.AppUserModel.ID into a property store, commit it and release the store."""
     try:
         value = PROPVARIANT()

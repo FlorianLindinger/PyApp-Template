@@ -16,6 +16,7 @@ import os
 import sys
 import sysconfig
 from collections import namedtuple
+from pathlib import Path
 
 from backend.DONT_CHANGE.backend_settings import (
     BACKEND_DIR,
@@ -29,29 +30,29 @@ Requirement = namedtuple("Requirement", "distribution imports source files optio
 """source: "installed" (from package metadata), "mapping" (bundled list) or "guess" (same as import name)."""
 
 
-def standard_library_names() -> set:
+def standard_library_names() -> set[str]:
     """Top-level standard-library module names for the running Python."""
     names = set(sys.builtin_module_names) | {"__future__", "__main__"}
     if hasattr(sys, "stdlib_module_names"):  # Python 3.10+
         return names | set(sys.stdlib_module_names)
     paths = sysconfig.get_paths()
-    folders = {paths.get("stdlib"), paths.get("platstdlib"), os.path.join(sys.base_prefix, "DLLs")}
+    folders = {paths.get("stdlib"), paths.get("platstdlib"), str(Path(sys.base_prefix) / "DLLs")}
     for folder in filter(None, folders):
         try:
-            entries = os.listdir(folder)
+            entries = [entry.name for entry in Path(folder).iterdir()]
         except OSError:
             continue
         for entry in entries:
             if entry in ("site-packages", "dist-packages", "__pycache__"):
                 continue
             base = entry.split(".")[0]
-            if entry.endswith((".py", ".pyd", ".pyc")) or os.path.isdir(os.path.join(folder, entry)):
+            if entry.endswith((".py", ".pyd", ".pyc")) or (Path(folder) / entry).is_dir():
                 names.add(base)
     return names
 
 
 # The launcher (code/backend) is skipped only directly below the code folder.
-LAUNCHER_FOLDER = os.path.basename(BACKEND_DIR)
+LAUNCHER_FOLDER = Path(BACKEND_DIR).name
 
 
 def _excluded(folder_name: str) -> bool:
@@ -59,34 +60,38 @@ def _excluded(folder_name: str) -> bool:
 
 
 def python_files(root: str = PYTHON_SCRIPTS_DIR):
-    root_key = os.path.normcase(os.path.abspath(root))
+    root_key = os.path.normcase(os.path.normpath(str(Path(root).absolute())))
     for current, folders, files in os.walk(root):
-        at_root = os.path.normcase(os.path.abspath(current)) == root_key
+        at_root = os.path.normcase(os.path.normpath(str(Path(current).absolute()))) == root_key
         folders[:] = [f for f in folders if not _excluded(f) and not (at_root and f == LAUNCHER_FOLDER)]
         for name in files:
             if name.endswith((".py", ".pyw")):
-                yield os.path.join(current, name)
+                yield str(Path(current) / name)
 
 
-def local_module_names(root: str = PYTHON_SCRIPTS_DIR) -> set:
+def local_module_names(root: str = PYTHON_SCRIPTS_DIR) -> set[str]:
     """Names importable from the code folder itself and the main script's folder (sys.path[0])."""
     folders = {root}
     if root == PYTHON_SCRIPTS_DIR:
         from backend.DONT_CHANGE.scripts.config import main_script_path
 
-        folders.add(os.path.dirname(main_script_path()))
+        folders.add(str(Path(main_script_path()).parent))
     names = set()
     for folder in folders:
-        for entry in os.listdir(folder):
-            path = os.path.join(folder, entry)
+        for entry in [entry.name for entry in Path(folder).iterdir()]:
+            path = str(Path(folder) / entry)
             if entry.endswith((".py", ".pyw")):
                 names.add(entry.rsplit(".", 1)[0])
-            elif os.path.isdir(path) and not _excluded(entry) and any(f.endswith(".py") for f in os.listdir(path)):
+            elif (
+                Path(path).is_dir()
+                and not _excluded(entry)
+                and any(f.endswith(".py") for f in [entry.name for entry in Path(path).iterdir()])
+            ):
                 names.add(entry)
     return names
 
 
-def _handler_names(handler: ast.ExceptHandler) -> list:
+def _handler_names(handler: ast.ExceptHandler) -> list[str]:
     """Exception class names an except clause catches ([] for a bare "except:")."""
     if handler.type is None:
         return []
@@ -100,7 +105,7 @@ def _handler_names(handler: ast.ExceptHandler) -> list:
     return names
 
 
-def _only_imports(body) -> bool:
+def _only_imports(body: list[ast.stmt]) -> bool:
     """True for a try body that just imports (optionally setting simple flags like HAS_X = True)."""
     for statement in body:
         if isinstance(statement, (ast.Import, ast.ImportFrom, ast.Pass)):
@@ -111,7 +116,7 @@ def _only_imports(body) -> bool:
     return True
 
 
-def _is_import_error_guard(node) -> bool:
+def _is_import_error_guard(node: ast.Try) -> bool:
     """Is this try statement an optional-import guard?
 
     "except ImportError/ModuleNotFoundError" always is. A broad "except:", "except Exception" or
@@ -137,7 +142,8 @@ class _ImportVisitor(ast.NodeVisitor):
         self.optional = set()
         self._guard = 0
 
-    def visit_Try(self, node):
+    # typing.override requires Python 3.12; keep this override dependency-free on 3.8.
+    def visit_Try(self, node: ast.Try):  # pyrefly: ignore[missing-override-decorator]
         guarded = _is_import_error_guard(node)
         if guarded:
             self._guard += 1
@@ -150,15 +156,17 @@ class _ImportVisitor(ast.NodeVisitor):
 
     visit_TryStar = visit_Try  # Python 3.11+ "except*"
 
-    def _add(self, name):
+    def _add(self, name: str | None):
         if name:
             (self.optional if self._guard else self.required).add(name.split(".")[0])
 
-    def visit_Import(self, node):
+    # typing.override requires Python 3.12; keep this override dependency-free on 3.8.
+    def visit_Import(self, node: ast.Import):  # pyrefly: ignore[missing-override-decorator]
         for alias in node.names:
             self._add(alias.name)
 
-    def visit_ImportFrom(self, node):
+    # typing.override requires Python 3.12; keep this override dependency-free on 3.8.
+    def visit_ImportFrom(self, node: ast.ImportFrom):  # pyrefly: ignore[missing-override-decorator]
         if node.level == 0:
             self._add(node.module)
 
@@ -169,7 +177,7 @@ def imports_in_project(root: str = PYTHON_SCRIPTS_DIR):
     problems = []
     for path in python_files(root):
         try:
-            with open(path, "rb") as stream:
+            with Path(path).open("rb") as stream:
                 tree = ast.parse(stream.read(), path)
         except (SyntaxError, ValueError, OSError) as error:
             problems.append(f"{os.path.relpath(path, root)}: {error}")
@@ -184,14 +192,14 @@ def imports_in_project(root: str = PYTHON_SCRIPTS_DIR):
     return {name: value for name, value in found.items() if name not in excluded}, problems
 
 
-def installed_import_map(site_packages: str | None = None) -> dict:
+def installed_import_map(site_packages: str | None = None) -> dict[str, str]:
     """{top-level import name: distribution} from installed metadata (top_level.txt or RECORD)."""
     from importlib import metadata
 
     if site_packages is None:
-        site_packages = os.path.join(VENV_DIR, "Lib", "site-packages")
+        site_packages = str(Path(VENV_DIR) / "Lib" / "site-packages")
     result = {}
-    if not os.path.isdir(site_packages):
+    if not Path(site_packages).is_dir():
         return result
     for dist in metadata.distributions(path=[site_packages]):
         name = dist.metadata["Name"]
@@ -213,10 +221,10 @@ def installed_import_map(site_packages: str | None = None) -> dict:
     return result
 
 
-def bundled_mapping(path: str = IMPORT_MAPPING_PATH) -> dict:
+def bundled_mapping(path: str = IMPORT_MAPPING_PATH) -> dict[str, str]:
     mapping = {}
     try:
-        with open(path, encoding="utf-8") as stream:
+        with Path(path).open(encoding="utf-8") as stream:
             for line in stream:
                 line = line.strip()
                 if line and not line.startswith("#") and ":" in line:

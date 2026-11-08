@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import json
-import os
 import re
 import subprocess
 import tempfile
+from pathlib import Path
+from types import ModuleType, SimpleNamespace
 
 from backend.DONT_CHANGE.backend_settings import MINIMUM_PYTHON, PYTHON_VERSION_FILE, RUNTIME_CACHE_PATH
 from backend.DONT_CHANGE.scripts.banner import show_setup_window
@@ -16,9 +17,10 @@ from backend.DONT_CHANGE.scripts.env.uv import install_newer_uv, run_uv, run_uv_
 from backend.DONT_CHANGE.scripts.errors import SetupError
 
 
-def interpreter_version(exe: str) -> tuple:
+def interpreter_version(exe: str) -> tuple[int, ...]:
     """Return (major, minor, micro) of an interpreter without running site or user code."""
-    output = subprocess.check_output(
+    # Probe the configured Python interpreter with fixed isolated Python source.
+    output = subprocess.check_output(  # noqa: S603
         [exe, "-I", "-S", "-c", "import sys; print('%d.%d.%d' % sys.version_info[:3])"],
         universal_newlines=True,
         timeout=30,
@@ -26,11 +28,11 @@ def interpreter_version(exe: str) -> tuple:
     return tuple(int(part) for part in output.strip().split("."))
 
 
-def version_text(version: tuple) -> str:
+def version_text(version: tuple[int, ...]) -> str:
     return ".".join(str(part) for part in version)
 
 
-def find_python(request: str, s=None) -> str | None:
+def find_python(request: str, s: ModuleType | SimpleNamespace | None = None) -> str | None:
     """Return the interpreter uv would use for a request ("" = system default), or None."""
     arguments = ["python", "find", "--no-project"] + ([request] if request else [])
     # Run outside the project, otherwise uv returns the project .venv's interpreter.
@@ -39,7 +41,7 @@ def find_python(request: str, s=None) -> str | None:
     return lines[-1] if code == 0 and lines else None
 
 
-def python_downloads(all_versions=False, s=None) -> list:
+def python_downloads(all_versions: bool = False, s: ModuleType | SimpleNamespace | None = None) -> list[dict[str, str]]:
     """Downloadable CPython builds for this PC as uv reports them."""
     arguments = ["python", "list", "--only-downloads", "--output-format", "json"]
     if all_versions:
@@ -54,11 +56,11 @@ def python_downloads(all_versions=False, s=None) -> list:
     return [e for e in entries if e.get("implementation") == "cpython" and e.get("variant") == "default"]
 
 
-def version_key(text: str) -> tuple:
+def version_key(text: str) -> tuple[int, ...]:
     return tuple(int(n) for n in re.findall(r"\d+", text)[:3])
 
 
-def newest_stable_minor(s=None) -> str:
+def newest_stable_minor(s: ModuleType | SimpleNamespace | None = None) -> str:
     """Return "X.Y" of the newest stable CPython uv offers."""
     stable = [e["version"] for e in python_downloads(s=s) if re.fullmatch(r"\d+\.\d+\.\d+", e.get("version", ""))]
     if not stable:
@@ -69,7 +71,7 @@ def newest_stable_minor(s=None) -> str:
     return ".".join(newest.split(".")[:2])
 
 
-def available_summary(s=None) -> str:
+def available_summary(s: ModuleType | SimpleNamespace | None = None) -> str:
     """One line describing which Python versions uv can install here."""
     versions = sorted({e["version"] for e in python_downloads(True, s)}, key=version_key)
     if not versions:
@@ -82,7 +84,7 @@ def available_summary(s=None) -> str:
     return f"uv offers {versions[0]} to {versions[-1]} for this PC (minor versions: {', '.join(minors)})."
 
 
-def install_python(request: str, s=None) -> str:
+def install_python(request: str, s: ModuleType | SimpleNamespace | None = None) -> str:
     """Install a Python with uv (location per python_source) and return its executable."""
     s = s or settings()
     show_setup_window()
@@ -103,7 +105,7 @@ def install_python(request: str, s=None) -> str:
     return exe
 
 
-def find_or_install_python(request: str, s=None) -> str:
+def find_or_install_python(request: str, s: ModuleType | SimpleNamespace | None = None) -> str:
     """Return a usable interpreter for request, installing it if needed, and check the 3.8 minimum."""
     exe = find_python(request, s) or install_python(request, s)
     version = interpreter_version(exe)
@@ -117,7 +119,7 @@ def find_or_install_python(request: str, s=None) -> str:
 def read_python_version_file() -> str | None:
     """Return the request stored in backend/generated/.python-version, or None."""
     try:
-        with open(PYTHON_VERSION_FILE, encoding="utf-8") as stream:
+        with Path(PYTHON_VERSION_FILE).open(encoding="utf-8") as stream:
             for line in stream:
                 line = line.strip()
                 if line and not line.startswith("#"):
@@ -128,7 +130,7 @@ def read_python_version_file() -> str | None:
 
 
 def write_python_version_file(request: str) -> None:
-    with open(PYTHON_VERSION_FILE, "w", encoding="utf-8", newline="\n") as stream:
+    with Path(PYTHON_VERSION_FILE).open("w", encoding="utf-8", newline="\n") as stream:
         stream.write(request + "\n")
 
 
@@ -144,6 +146,6 @@ def request_matches(setting_value: str, file_value: str | None) -> bool:
 def invalidate_runtime_cache() -> None:
     """Make the next batch bootstrap look up uv and Python again."""
     try:
-        os.remove(RUNTIME_CACHE_PATH)
+        Path(RUNTIME_CACHE_PATH).unlink()
     except OSError:
         pass

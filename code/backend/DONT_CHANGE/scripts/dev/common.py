@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from types import ModuleType, SimpleNamespace
 
 from backend.DONT_CHANGE.scripts.config import settings, validate
 from backend.DONT_CHANGE.scripts.console_tools import ask
@@ -25,12 +26,12 @@ def requirement_name(requirement: str) -> str:
     return normalized(match.group(1)) if match else normalized(requirement)
 
 
-def prepare(s=None):
+def prepare(s: ModuleType | SimpleNamespace | None = None):
     """Validate settings and make sure the environment exists before changing it."""
     s = s or settings()
     validate(s)
     return ensure_environment(interactive=True)
 
 
-def ask_package_names(prompt: str) -> list:
+def ask_package_names(prompt: str) -> list[str]:
     return ask(prompt).replace(",", " ").split()

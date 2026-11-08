@@ -11,6 +11,7 @@ import threading
 import time
 import uuid
 from pathlib import Path
+from typing import Any, Callable
 
 _local_locks = threading.local()
 
@@ -18,7 +19,7 @@ _local_locks = threading.local()
 class FileLock:
     """A reentrant, process-shared lock; Windows releases it after a crash."""
 
-    def __init__(self, path, timeout=120):
+    def __init__(self, path: str | Path, timeout: float = 120):
         """Store the normalized lock path and acquisition timeout."""
         self.path = str(Path(path).resolve())
         self.timeout = timeout
@@ -27,14 +28,15 @@ class FileLock:
         """Acquire or reenter the checkout's file lock, waiting up to the configured timeout."""
         import msvcrt
 
-        held = getattr(_local_locks, "held", None)
+        held: dict[str, list[Any]] | None = getattr(_local_locks, "held", None)
         if held is None:
-            held = _local_locks.held = {}
+            held = {}
+            _local_locks.held = held
         if self.path in held:
             held[self.path][1] += 1
             return self
         Path(self.path).parent.mkdir(parents=True, exist_ok=True)
-        stream = open(self.path, "a+b")
+        stream = Path(self.path).open("a+b")
         if stream.seek(0, 2) == 0:
             stream.write(b"\0")
             stream.flush()
@@ -51,7 +53,7 @@ class FileLock:
                     raise TimeoutError("Another launcher is busy: " + self.path)
                 time.sleep(0.05)
 
-    def __exit__(self, *exc):
+    def __exit__(self, *exc: object):
         """Release one acquisition and close the file lock when the final nested context exits."""
         import msvcrt
 
@@ -65,14 +67,14 @@ class FileLock:
             del _local_locks.held[self.path]
 
 
-def atomic_json(path, payload):
+def atomic_json(path: str | Path, payload: object):
     """Write JSON through a unique sibling file and atomically replace the destination."""
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     temp = path.with_name(path.name + "." + uuid.uuid4().hex + ".tmp")
     try:
         temp.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
-        os.replace(temp, path)
+        Path(temp).replace(path)
     finally:
         temp.unlink(missing_ok=True)
 
@@ -86,7 +88,7 @@ def clean_python_environment():
 
 
 @contextlib.contextmanager
-def process_identity(pid):
+def process_identity(pid: int):
     """Keep the process handle open while its creation time and image are checked."""
     from ctypes import wintypes
 
@@ -140,12 +142,12 @@ def process_identity(pid):
 class ProcessRegistry:
     """One atomic identity record per running launcher (watchdog)."""
 
-    def __init__(self, directory):
+    def __init__(self, directory: str | Path):
         """directory holds one <pid>.json record per running watchdog."""
         self.directory = Path(directory)
 
     @contextlib.contextmanager
-    def lock(self, timeout=120):
+    def lock(self, timeout: float = 120):
         """Serialize registry changes without leaving a lock file on disk."""
         from ctypes import wintypes
 
@@ -180,7 +182,7 @@ class ProcessRegistry:
                 kernel.ReleaseMutex(handle)
             kernel.CloseHandle(handle)
 
-    def register(self, child_pid=None):
+    def register(self, child_pid: int | None = None):
         """Atomically record this launcher's verified identity, its console window and optional app child."""
         with self.lock(), process_identity(os.getpid()) as identity:
             if identity is None:
@@ -227,7 +229,8 @@ class ProcessRegistry:
 
     def _records(self):
         """Validate stored identities and discard stale records, excluding this process from live results."""
-        records, stale = [], 0
+        records: list[dict[str, Any]] = []
+        stale = 0
         for path in self.directory.glob("*.json"):
             try:
                 record = json.loads(path.read_text(encoding="utf-8"))
@@ -242,7 +245,7 @@ class ProcessRegistry:
             path.unlink(missing_ok=True)
         return records, stale
 
-    def stop(self, timeout=0.0, report=None):
+    def stop(self, timeout: float = 0.0, report: Callable[[str], object] | None = None) -> tuple[int, int, list[str]]:
         """Stop the running instances; returns (stopped, stale, failures).
 
         With timeout > 0 each instance is first asked to close (WM_CLOSE to its windows, or
@@ -262,7 +265,8 @@ class ProcessRegistry:
             deadline = time.monotonic() + timeout
             while time.monotonic() < deadline and any(_still_running(r) for r in records):
                 time.sleep(0.1)
-        stopped, failures = 0, []
+        stopped = 0
+        failures: list[str] = []
         with self.lock():
             for record in records:
                 path = self.directory / (str(record["pid"]) + ".json")
@@ -288,17 +292,17 @@ class ProcessRegistry:
         return stopped, stale, failures
 
 
-def _still_running(record) -> bool:
+def _still_running(record: dict[str, Any]) -> bool:
     with process_identity(record["pid"]) as current:
         return matches_identity(record, current)
 
 
-def _write_stop_request(record) -> None:
+def _write_stop_request(record: dict[str, Any]) -> None:
     """Tell the instance's watchdog that its end was requested (no completion actions)."""
     from backend.DONT_CHANGE.backend_settings import STOP_REQUEST_FILE_NAME
 
     run_dir = record.get("run_dir")
-    if run_dir and os.path.isdir(run_dir):
+    if run_dir and Path(run_dir).is_dir():
         try:
             Path(run_dir, STOP_REQUEST_FILE_NAME).write_text("stop", encoding="utf-8")
         except OSError:
@@ -307,7 +311,7 @@ def _write_stop_request(record) -> None:
             note_ignored("write stop request")
 
 
-def request_close(record) -> None:
+def request_close(record: dict[str, Any]) -> None:
     """Ask one instance to end by itself: WM_CLOSE to its app windows, else Ctrl+C to its console."""
     import subprocess
     import sys
@@ -336,7 +340,8 @@ def request_close(record) -> None:
             return
         # No window: a console app. Ctrl+C reaches every process of the instance's console; its
         # watchdog ignores it while the app runs. DETACHED_PROCESS: the helper has no console yet.
-        subprocess.run(
+        # Run the bundled Ctrl+C helper with the current interpreter and a numeric process ID.
+        subprocess.run(  # noqa: S603
             [sys.executable, "-I", "-S", CTRL_C_HELPER_PATH, str(child_pid or record["pid"])],
             creationflags=0x00000008,
             timeout=10,
@@ -426,7 +431,7 @@ def create_own_job() -> str:
     return name
 
 
-def terminate_job(name) -> bool:
+def terminate_job(name: str | None) -> bool:
     """End every process of the named job; False if there is no such job (anymore)."""
     if not name:
         return False
@@ -442,7 +447,7 @@ def terminate_job(name) -> bool:
         kernel.CloseHandle(handle)
 
 
-def job_process_ids(name) -> set:
+def job_process_ids(name: str | None) -> set[int]:
     """IDs of the processes currently in the named job (empty if it does not exist)."""
     if not name:
         return set()
@@ -470,7 +475,7 @@ def job_process_ids(name) -> set:
         kernel.CloseHandle(handle)
 
 
-def terminate_tree(root_pid):
+def terminate_tree(root_pid: int):
     """Fallback without a job: force-terminate a process and its descendants via the Win32 API.
 
     Deliberately avoids taskkill/WMI, which fail on PCs with a broken WMI service.
@@ -499,12 +504,12 @@ def terminate_tree(root_pid):
         raise RuntimeError("; ".join(failures))
 
 
-def matches_identity(record, current):
+def matches_identity(record: dict[str, Any], current: dict[str, Any] | None):
     """Compare PID, creation time and executable path to reject stale or reused process IDs."""
     return current is not None and all(record.get(key) == current.get(key) for key in ("pid", "created", "image"))
 
 
-def unique_log_path(path, run_id=None):
+def unique_log_path(path: str | None, run_id: str | None = None):
     """Append a compact 12-character run suffix, preserving an empty disabled path."""
     if not path:
         return ""

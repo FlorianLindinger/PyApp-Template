@@ -28,7 +28,13 @@ def tool_command(tool: str) -> list[str]:
 
 def run_check(label: str, command: list[str]) -> bool:
     print(f"\n[Info] {label}", flush=True)
-    return subprocess.run(command, cwd=DONT_CHANGE_DIR, check=False).returncode == 0
+    # Execute the Ruff/Pyrefly command resolved from local PATH or uvx.
+    code = subprocess.run(command, cwd=DONT_CHANGE_DIR, check=False).returncode  # noqa: S603
+    if code == 1:
+        print(f"[Warning] {label} reported problems; see the diagnostics above.", flush=True)
+    elif code != 0:
+        print(f"[Error] {label} could not complete (exit code {code}).", flush=True)
+    return code == 0
 
 
 def main() -> int:

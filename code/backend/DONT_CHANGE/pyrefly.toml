@@ -1,6 +1,7 @@
 # Pyrefly settings for the launcher (this DONT_CHANGE folder only). Pyrefly uses the closest
 # configuration file, so the app's own code keeps the developer's settings.
 
+preset = "strict"
 project-includes = ["**/*.py"]
 # The launcher imports itself as "backend.DONT_CHANGE...", from the code folder.
 # runtime: script_wrapper.py imports "_pyapp" from its own folder; tests and scripts/tools: their shared helper modules.

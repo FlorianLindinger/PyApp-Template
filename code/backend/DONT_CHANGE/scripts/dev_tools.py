@@ -56,7 +56,7 @@ COMMANDS = {
 }
 
 
-def cmd_menu(arguments):
+def cmd_menu(arguments: list[str]):
     """Interactive menu of all commands."""
     names = list(COMMANDS)
     while True:

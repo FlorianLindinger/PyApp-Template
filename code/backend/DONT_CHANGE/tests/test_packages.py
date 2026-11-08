@@ -1,6 +1,5 @@
 """Generated pyproject.toml: round trip of the package list and copying `uv add` changes back."""
 
-import os
 import unittest
 from pathlib import Path
 
@@ -73,7 +72,7 @@ class FingerprintTests(unittest.TestCase):
             self.assertEqual(first, venv.environment_fingerprint(settings))
             Path(venv.UV_LOCK_PATH).write_text("changed", encoding="utf-8")
             self.assertNotEqual(first, venv.environment_fingerprint(settings))
-            os.remove(venv.UV_LOCK_PATH)
+            Path(venv.UV_LOCK_PATH).unlink()
 
 
 if __name__ == "__main__":

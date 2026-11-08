@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import ctypes
 from ctypes import wintypes
+from typing import Any, Iterable
 
 TH32CS_SNAPPROCESS = 0x00000002
 SW_RESTORE = 9
@@ -30,7 +31,7 @@ class _ProcessEntry(ctypes.Structure):
     ]
 
 
-def process_tree(root_pids) -> set:
+def process_tree(root_pids: Iterable[int | None]) -> set[int]:
     """The given processes and all their descendants."""
     kernel = ctypes.WinDLL("kernel32", use_last_error=True)
     kernel.CreateToolhelp32Snapshot.restype = wintypes.HANDLE
@@ -58,13 +59,13 @@ def process_tree(root_pids) -> set:
     return result
 
 
-def app_windows(pids) -> list:
+def app_windows(pids: set[int]) -> list[int]:
     """Visible top-level application windows (not consoles) owned by these processes."""
     user32 = ctypes.WinDLL("user32", use_last_error=True)
     found = []
     callback_type = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
 
-    def callback(hwnd, _):
+    def callback(hwnd: int, _: int):
         if not user32.IsWindowVisible(hwnd) or user32.GetWindow(hwnd, GW_OWNER):
             return True
         if user32.GetWindowLongW(hwnd, GWL_EXSTYLE) & WS_EX_TOOLWINDOW:
@@ -82,7 +83,7 @@ def app_windows(pids) -> list:
     return found
 
 
-def focus_window(hwnd) -> bool:
+def focus_window(hwnd: int) -> bool:
     """Restore and activate a window; Windows may only flash its taskbar button."""
     user32 = ctypes.WinDLL("user32", use_last_error=True)
     if not hwnd or not user32.IsWindow(hwnd):
@@ -101,7 +102,7 @@ def focus_window(hwnd) -> bool:
     return True
 
 
-def focus_instance(record: dict) -> str:
+def focus_instance(record: dict[str, Any]) -> str:
     """Return "focused", or "no_window" when the instance has neither app nor console window."""
     child = (record.get("child") or {}).get("pid") if isinstance(record.get("child"), dict) else None
     windows = app_windows(process_tree([record.get("pid"), child]))

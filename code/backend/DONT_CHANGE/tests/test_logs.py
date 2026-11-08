@@ -1,5 +1,7 @@
 """Log paths, the diagnostics log, and shortcut names, targets and taskbar identity."""
 
+from __future__ import annotations
+
 import contextlib
 import io
 import json
@@ -8,6 +10,7 @@ import tempfile
 import types
 import unittest
 from pathlib import Path
+from typing import Any
 from unittest import mock
 
 from project_location import CODE  # noqa: F401 - makes "backend" importable
@@ -22,15 +25,15 @@ class LogTests(unittest.TestCase):
     def test_log_path_resolution(self):
         with tempfile.TemporaryDirectory() as folder:
             self.assertEqual(
-                launcher_ui.get_log_path(os.path.join(folder, "a.txt"), False),
-                os.path.normpath(os.path.join(folder, "a.txt")),
+                launcher_ui.get_log_path(str(Path(folder) / "a.txt"), False),
+                os.path.normpath(str(Path(folder) / "a.txt")),
             )
             with mock.patch.dict(os.environ, {"PYAPP_START_DIR": folder}):
                 self.assertEqual(
-                    launcher_ui.get_log_path("logs/a.txt", True), os.path.normpath(os.path.join(folder, "logs/a.txt"))
+                    launcher_ui.get_log_path("logs/a.txt", True), os.path.normpath(str(Path(folder) / "logs/a.txt"))
                 )
         self.assertEqual(launcher_ui.get_log_path(None, False), "")
-        self.assertNotIn("%", launcher_ui.get_log_path(os.path.abspath("log_%Y.txt"), False))
+        self.assertNotIn("%", launcher_ui.get_log_path(os.path.normpath(str(Path("log_%Y.txt").absolute())), False))
 
     def test_unique_log_names(self):
         first = runtime_state.unique_log_path("C:/logs/log.txt")
@@ -41,7 +44,7 @@ class LogTests(unittest.TestCase):
 
     def test_ignored_errors_are_recorded(self):
         with tempfile.TemporaryDirectory() as folder:
-            log = os.path.join(folder, "diagnostics.log")
+            log = str(Path(folder) / "diagnostics.log")
             with mock.patch.object(diagnostics, "DIAGNOSTICS_LOG_PATH", log):
                 try:
                     raise ZeroDivisionError("test")
@@ -53,7 +56,7 @@ class LogTests(unittest.TestCase):
 
 
 class FinishedRunFolderTests(unittest.TestCase):
-    def cleanup(self, running):
+    def cleanup(self, running: list[dict[str, Any]]):
         """Run the cleanup on one old and one recent run folder; return which ones still exist."""
         with tempfile.TemporaryDirectory() as folder:
             old, recent = Path(folder, "old"), Path(folder, "recent")
@@ -75,16 +78,16 @@ class FinishedRunFolderTests(unittest.TestCase):
         self.assertEqual(self.cleanup([{"pid": 1}]), (True, True))
 
     def test_a_missing_runs_folder_is_fine(self):
-        with mock.patch.object(launcher_ui, "RUNS_DIR", os.path.join(tempfile.gettempdir(), "pyapp-no-such-folder")):
+        with mock.patch.object(launcher_ui, "RUNS_DIR", str(Path(tempfile.gettempdir()) / "pyapp-no-such-folder")):
             launcher_ui.delete_finished_run_folders()
 
 
 class CleanToolTests(unittest.TestCase):
-    def clean(self, folder, running):
+    def clean(self, folder: str, running: list[dict[str, Any]]):
         runs = Path(folder, "tmp", "runs", "abc")
         runs.mkdir(parents=True)
         settings = types.SimpleNamespace(
-            log_path=os.path.join(folder, "a.txt"),
+            log_path=str(Path(folder) / "a.txt"),
             log_path_is_relative_to_start_folder_if_relative=False,
             crash_log_path=None,
             crash_log_path_is_relative_to_start_folder_if_relative=False,
@@ -109,14 +112,14 @@ class CleanToolTests(unittest.TestCase):
             free, busy = Path(folder, "free.txt"), Path(folder, "busy.txt")
             free.touch()
             busy.touch()
-            real_remove = os.remove
+            real_unlink = Path.unlink
 
-            def remove(path):
-                if os.path.basename(path) == "busy.txt":
+            def remove(path: Path):
+                if Path(path).name == "busy.txt":
                     raise PermissionError(32, "in use", path)
-                real_remove(path)
+                real_unlink(path)
 
-            with mock.patch.object(housekeeping.os, "remove", side_effect=remove):
+            with mock.patch.object(Path, "unlink", autospec=True, side_effect=remove):
                 self.clean(folder, [])
             self.assertFalse(free.exists())
             self.assertTrue(busy.exists())
@@ -150,7 +153,7 @@ class ShortcutTests(unittest.TestCase):
 
     def test_outdated_targets_are_detected(self):
         with tempfile.TemporaryDirectory() as folder:
-            record = os.path.join(folder, "created.json")
+            record = str(Path(folder) / "created.json")
             Path(record).write_text(
                 json.dumps({"version": 2, "shortcuts": [], "targets": {"logs": "D:/old"}}), encoding="utf-8"
             )
@@ -158,7 +161,7 @@ class ShortcutTests(unittest.TestCase):
             with mock.patch.object(shortcuts, "CREATED_SHORTCUTS_LIST_PATH", record), mock.patch.object(
                 shortcuts, "shortcut_targets", return_value=targets
             ):
-                self.assertEqual(shortcuts.outdated_shortcut_targets(object()), ["logs"])
+                self.assertEqual(shortcuts.outdated_shortcut_targets(mock.Mock()), ["logs"])
 
 
 if __name__ == "__main__":

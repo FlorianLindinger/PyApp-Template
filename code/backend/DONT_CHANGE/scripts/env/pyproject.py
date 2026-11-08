@@ -9,9 +9,11 @@ developer_settings.py and copied back into the settings.
 from __future__ import annotations
 
 import json
-import os
 import re
 import sys
+from pathlib import Path
+from types import ModuleType, SimpleNamespace
+from typing import Sequence
 
 from backend.DONT_CHANGE.backend_settings import PYPROJECT_PATH
 from backend.DONT_CHANGE.scripts.config import settings
@@ -35,21 +37,21 @@ package = false
 """
 
 
-def requires_python_for(version: tuple) -> str:
+def requires_python_for(version: tuple[int, ...]) -> str:
     return f"=={version[0]}.{version[1]}.*"
 
 
 def read_pyproject() -> str:
-    with open(PYPROJECT_PATH, encoding="utf-8") as stream:
+    with Path(PYPROJECT_PATH).open(encoding="utf-8") as stream:
         return stream.read()
 
 
 def write_pyproject(text: str) -> None:
-    with open(PYPROJECT_PATH, "w", encoding="utf-8", newline="\n") as stream:
+    with Path(PYPROJECT_PATH).open("w", encoding="utf-8", newline="\n") as stream:
         stream.write(text)
 
 
-def render_pyproject(packages, requires: str) -> str:
+def render_pyproject(packages: Sequence[str], requires: str) -> str:
     """pyproject.toml text for a package list (JSON strings are valid TOML basic strings here)."""
     if packages:
         dependencies = "[\n" + "".join(f"    {json.dumps(p)},\n" for p in packages) + "]"
@@ -72,7 +74,7 @@ def _recorded_packages(text: str):
     return None
 
 
-def reconcile_pyproject(s=None, version: tuple | None = None):
+def reconcile_pyproject(s: ModuleType | SimpleNamespace | None = None, version: tuple[int, ...] | None = None):
     """Generate pyproject.toml from developer_settings.py; copy edits made to the file into the settings.
 
     version: the project's Python, used for requires-python (default: keep the file's value, or the
@@ -83,7 +85,7 @@ def reconcile_pyproject(s=None, version: tuple | None = None):
     s = s or settings()
     wanted = list(s.packages)
     requires = requires_python_for(version) if version else None
-    if os.path.isfile(PYPROJECT_PATH):
+    if Path(PYPROJECT_PATH).is_file():
         text = read_pyproject()
         in_file = declared_dependencies(text)
         recorded = _recorded_packages(text)
@@ -106,17 +108,17 @@ def reconcile_pyproject(s=None, version: tuple | None = None):
         requires = requires or current_requires_python(text)
     requires = requires or requires_python_for(sys.version_info[:2])
     new_text = render_pyproject(wanted, requires)
-    if not os.path.isfile(PYPROJECT_PATH) or read_pyproject() != new_text:
+    if not Path(PYPROJECT_PATH).is_file() or read_pyproject() != new_text:
         write_pyproject(new_text)
     return s
 
 
-def _change_summary(old, new) -> str:
+def _change_summary(old: Sequence[str], new: Sequence[str]) -> str:
     changes = ["+ " + p for p in new if p not in old] + ["- " + p for p in old if p not in new]
     return ", ".join(changes) or "new order"
 
 
-def set_requires_python(version: tuple, s=None):
+def set_requires_python(version: tuple[int, ...], s: ModuleType | SimpleNamespace | None = None):
     """Point requires-python at the interpreter's minor version (and regenerate pyproject.toml)."""
     return reconcile_pyproject(s, version)
 
@@ -130,7 +132,7 @@ def current_requires_python(text: str | None = None) -> str | None:
     return match.group(1) if match else None
 
 
-def version_satisfies_requires(version: tuple, requires: str | None) -> bool:
+def version_satisfies_requires(version: tuple[int, ...], requires: str | None) -> bool:
     """Support the "==X.Y.*" form this launcher writes; other forms are left to uv."""
     if not requires:
         return True
@@ -140,7 +142,7 @@ def version_satisfies_requires(version: tuple, requires: str | None) -> bool:
     return version[:2] == (int(match.group(1)), int(match.group(2)))
 
 
-def declared_dependencies(text: str | None = None) -> list:
+def declared_dependencies(text: str | None = None) -> list[str]:
     """Return the [project] dependencies strings of pyproject.toml (simple parser for uv-written files)."""
     if text is None:
         try:
@@ -157,7 +159,7 @@ def declared_dependencies(text: str | None = None) -> list:
 _TOML_STRING = re.compile(r'"((?:[^"\\\n]|\\.)*)"|\'([^\'\n]*)\'')
 
 
-def _toml_string_value(match) -> str:
+def _toml_string_value(match: re.Match[str]) -> str:
     basic, literal = match.groups()
     if basic is None:
         return literal

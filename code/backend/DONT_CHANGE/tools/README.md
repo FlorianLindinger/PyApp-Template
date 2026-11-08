@@ -6,7 +6,7 @@ Double-click a `.bat`, or run it from a terminal with arguments. Each one uses t
 
 | Tool | What it does |
 | --- | --- |
-| `verify_launcher.bat [--fix]` | Runs Ruff lint, Ruff format and Pyrefly on `DONT_CHANGE` with its own `ruff.toml` and `pyrefly.toml`. `--fix` applies safe fixes and formatting first; `--unsafe-fixes` also applies Ruff's unsafe ones. Needs `ruff` and `pyrefly` on PATH, or `uvx`. |
+| `verify_launcher.bat [--fix]` | Runs Ruff lint (including pathlib `PTH` and security `S` checks), Ruff format and strict Pyrefly on `DONT_CHANGE`, targeting Python 3.8 with its own `ruff.toml` and `pyrefly.toml`. Prints diagnostics and a warning for each check that reports problems; exits nonzero if any check fails. `--fix` applies safe fixes and formatting first; `--unsafe-fixes` also applies Ruff's unsafe ones. Needs `ruff` and `pyrefly` on PATH, or `uvx`. |
 | `get_startup_time.bat` | Measures the time from starting a shortcut's launcher until the main script runs, compared with starting it directly with the `.venv` Python. Works on a temporary copy of the project. Options: `--runs`, `--timeout`, `--targets` (`terminal`, `no_terminal`, `direct`), `--keep`. |
 | `get_import_times.bat launcher` | Shows what importing the launcher's own modules adds to an empty interpreter start. Option: `--runs`. |
 | `get_import_times.bat app [modules]` | The same for the app's packages in `.venv`; without module names it measures everything in `packages`. |

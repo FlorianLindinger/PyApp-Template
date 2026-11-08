@@ -6,6 +6,7 @@ Run by "Setup - run first and after moving folder.cmd".
 from __future__ import annotations
 
 import os
+from pathlib import Path
 
 from backend.DONT_CHANGE.backend_settings import (
     DEV_SETTINGS_PATH,
@@ -44,7 +45,7 @@ pause_on_success = True
 
 def _short(path: str) -> str:
     """A path for display, with the user profile folder as %USERPROFILE%."""
-    home = os.path.expanduser("~")
+    home = str(Path("~").expanduser())
     if os.path.normcase(path).startswith(os.path.normcase(home) + os.sep):
         return "%USERPROFILE%" + path[len(home) :]
     return path
@@ -76,18 +77,18 @@ def main() -> None:
         )
     if s.user_settings_path:
         settings_file = make_abs_path_relative_to_file(s.user_settings_path, DEV_SETTINGS_PATH)
-        if not os.path.exists(settings_file):
+        if not Path(settings_file).exists():
             print()
             print_warn(
                 f'The user settings file does not exist: "{settings_file}". Its shortcut will show an error until the file exists.'
             )
     for kind in ("logs", "crash_logs"):
         if targets_by_kind[kind]:
-            os.makedirs(targets_by_kind[kind], exist_ok=True)  # the shortcut opens it right away
+            Path(targets_by_kind[kind]).mkdir(parents=True, exist_ok=True)  # the shortcut opens it right away
 
     folders_by_label = [("project folder", SHORTCUT_OUTPUT_DIR)]
     if s.start_menu_shortcuts:
-        start_menu = os.path.join(special_folder(CSIDL_PROGRAMS), sanitize_filename(s.program_name))
+        start_menu = str(Path(special_folder(CSIDL_PROGRAMS)) / sanitize_filename(s.program_name))
         folders_by_label.append(("Start Menu", start_menu))
     desktop = special_folder(CSIDL_DESKTOPDIRECTORY) if s.desktop_shortcuts else None
     print_heading("Shortcuts")

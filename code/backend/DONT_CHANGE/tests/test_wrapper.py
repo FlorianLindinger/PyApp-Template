@@ -1,13 +1,19 @@
 """runtime/script_wrapper.py: runs main.py like `python main.py` and reports how it ended."""
 
+from __future__ import annotations
+
+import io
 import json
 import os
+import runpy
 import subprocess
 import sys
 import tempfile
 import textwrap
 import unittest
 from pathlib import Path
+from typing import Sequence
+from unittest import mock
 
 from project_location import DONT_CHANGE
 
@@ -15,7 +21,27 @@ WRAPPER = DONT_CHANGE / "runtime" / "script_wrapper.py"
 
 
 class WrapperTests(unittest.TestCase):
-    def run_app(self, source, args=(), extra_files=None, env=None, stdin=None, **config):
+    def test_text_and_binary_logging_without_a_console(self):
+        with mock.patch.object(sys, "path", [str(WRAPPER.parent), *sys.path]):
+            wrapper = runpy.run_path(str(WRAPPER), run_name="wrapper_no_console_test")
+        log = io.StringIO()
+        stream = wrapper["PipeSplitter"](None, log)
+        self.assertEqual(stream.write("text\n"), 5)
+        self.assertEqual(stream.buffer.write(b"binary\n"), 7)
+        stream.write_input_prompt("prompt: ")
+        stream.complete_input_line("answer")
+        self.assertEqual(log.getvalue(), "text\nbinary\nprompt: answer\n")
+        self.assertFalse(stream.isatty())
+
+    def run_app(
+        self,
+        source: str,
+        args: Sequence[str] = (),
+        extra_files: dict[str, str] | None = None,
+        env: dict[str, str] | None = None,
+        stdin: str | None = None,
+        **config: object,
+    ):
         """Run `source` as main.py through the wrapper; return (exit code, stdout, run folder)."""
         folder = Path(self.temporary_folder())
         app = folder / "app"
@@ -35,7 +61,8 @@ class WrapperTests(unittest.TestCase):
             **config,
         }
         (run / "wrapper.json").write_text(json.dumps(settings), encoding="utf-8")
-        process = subprocess.run(
+        # Test subprocesses execute fixed fixture/helper code using the local interpreter or Git.
+        process = subprocess.run(  # noqa: S603
             [sys.executable, "-E", "-s", str(WRAPPER), "--config", str(run / "wrapper.json")],
             cwd=str(app),
             env={**os.environ, **(env or {})},
@@ -53,7 +80,7 @@ class WrapperTests(unittest.TestCase):
         self.addCleanup(directory.cleanup)
         return directory.name
 
-    def report(self, run):
+    def report(self, run: Path):
         return json.loads((run / "traceback.json").read_text(encoding="utf-8"))
 
     def test_success_writes_result_and_ready(self):

@@ -33,7 +33,7 @@ from backend.DONT_CHANGE.scripts.env.venv import (
 )
 
 
-def cmd_add(arguments):
+def cmd_add(arguments: list[str]):
     """Add packages (recorded in developer_settings.py and uv.lock) and install them."""
     s = settings()
     names = arguments or ask_package_names("Package(s) to add, e.g. requests numpy>=2:")
@@ -46,7 +46,7 @@ def cmd_add(arguments):
     print_info(COMMIT_HINT)
 
 
-def cmd_remove(arguments):
+def cmd_remove(arguments: list[str]):
     """Remove declared packages."""
     s = settings()
     names = list(arguments)
@@ -72,7 +72,7 @@ def cmd_remove(arguments):
     print_info(COMMIT_HINT)
 
 
-def cmd_upgrade(arguments):
+def cmd_upgrade(arguments: list[str]):
     """Upgrade all (or the named) packages within their declared limits."""
     s = settings()
     prepare(s)
@@ -85,7 +85,7 @@ def cmd_upgrade(arguments):
     print_success("Packages upgraded. Test the app, then commit backend/generated/uv.lock.")
 
 
-def cmd_sync(arguments):
+def cmd_sync(arguments: list[str]):
     """Make the environment match uv.lock exactly (removes packages installed by hand)."""
     s = settings()
     prepare(s)
@@ -151,19 +151,19 @@ def find_imports_and_add():
     print_info(COMMIT_HINT)
 
 
-def cmd_find_imports(arguments):
+def cmd_find_imports(arguments: list[str]):
     """Find the packages the code imports and add the missing ones after review."""
     prepare()
     find_imports_and_add()
 
 
-def cmd_terminal(arguments):
+def cmd_terminal(arguments: list[str]):
     """Command prompt with the app environment activated and uv on PATH."""
     prepare()
     open_package_terminal()
 
 
-def cmd_export(arguments):
+def cmd_export(arguments: list[str]):
     """Write backend/requirements.txt from uv.lock (for tools that need that format)."""
     prepare()
     run_uv(

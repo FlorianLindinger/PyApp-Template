@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import hashlib
 import json
-import os
 import shutil
 import tempfile
 import time
 from concurrent.futures import ThreadPoolExecutor
 from functools import lru_cache
+from pathlib import Path
 
 from backend.DONT_CHANGE.backend_settings import (
     CRASH_LOG_ICON_PATH,
@@ -58,9 +58,9 @@ ICON_GENERATION_SETTINGS = [
 def _delete_existing_icon(path: str) -> None:
     """Remove one old icon, retrying transient Windows file locks."""
     deadline = time.monotonic() + ICON_DELETE_TIMEOUT_SECONDS
-    while os.path.exists(path):
+    while Path(path).exists():
         try:
-            os.remove(path)
+            Path(path).unlink()
         except FileNotFoundError:
             return
         except OSError as error:
@@ -77,54 +77,52 @@ def _cached_png_image_id(path: str) -> str:
 
 def _pick_png(filename: str, expected_id: str | None, fallback_filename: str | None) -> str:
     """Use a changed project PNG, otherwise use its bundled replacement image."""
-    project_path = os.path.join(ICON_PNG_DIR, filename)
-    if os.path.isfile(project_path) and (expected_id is None or _cached_png_image_id(project_path) != expected_id):
+    project_path = str(Path(ICON_PNG_DIR) / filename)
+    if Path(project_path).is_file() and (expected_id is None or _cached_png_image_id(project_path) != expected_id):
         return project_path
     if fallback_filename is None:
         raise FileNotFoundError(f'PNG does not exist: "{project_path}"')
-    fallback_path = os.path.join(ICON_FALLBACK_PNG_DIR, fallback_filename)
-    if not os.path.isfile(fallback_path):
+    fallback_path = str(Path(ICON_FALLBACK_PNG_DIR) / fallback_filename)
+    if not Path(fallback_path).is_file():
         raise FileNotFoundError(f'Fallback PNG does not exist: "{fallback_path}"')
     return fallback_path
 
 
 def _file_hash(path: str) -> str:
-    with open(path, "rb") as stream:
+    with Path(path).open("rb") as stream:
         return hashlib.sha256(stream.read()).hexdigest()
 
 
-def _read_record() -> dict:
+def _read_record() -> dict[str, str]:
     """{ICO file name: hash of the file the generator last installed}."""
     try:
-        with open(GENERATED_ICONS_RECORD_PATH, encoding="utf-8") as stream:
+        with Path(GENERATED_ICONS_RECORD_PATH).open(encoding="utf-8") as stream:
             return json.load(stream)
     except (OSError, ValueError):
         return {}
 
 
-def _write_record(record: dict) -> None:
-    os.makedirs(os.path.dirname(GENERATED_ICONS_RECORD_PATH), exist_ok=True)
-    with open(GENERATED_ICONS_RECORD_PATH, "w", encoding="utf-8") as stream:
+def _write_record(record: dict[str, str]) -> None:
+    (Path(GENERATED_ICONS_RECORD_PATH).parent).mkdir(parents=True, exist_ok=True)
+    with Path(GENERATED_ICONS_RECORD_PATH).open("w", encoding="utf-8") as stream:
         json.dump(record, stream, indent=2, sort_keys=True)
         stream.write("\n")
 
 
 def _may_replace(output_path: str) -> bool:
     """Ask before overwriting an ICO the generator did not make."""
-    question = (
-        f"{os.path.basename(output_path)} was not made by the generator, so it may be your own. Replace it? [y/N]"
-    )
+    question = f"{Path(output_path).name} was not made by the generator, so it may be your own. Replace it? [y/N]"
     try:
         return ask(question).strip().lower() in ("y", "yes", "j", "ja")
     except EOFError:
         return False
 
 
-def _install(output_path: str, built_path: str, record: dict) -> None:
+def _install(output_path: str, built_path: str, record: dict[str, str]) -> None:
     """Put a freshly built ICO in place: generated ones update silently, others only when the user agrees."""
-    name = os.path.basename(output_path)
+    name = Path(output_path).name
     built = _file_hash(built_path)
-    if os.path.isfile(output_path):
+    if Path(output_path).is_file():
         current = _file_hash(output_path)
         if current == built:
             record[name] = built
@@ -148,14 +146,14 @@ def main() -> None:
         for output_path, base_name, base_id, base_fallback, overlay_name in ICON_GENERATION_SETTINGS:
             base_path = _pick_png(base_name, base_id, base_fallback)
             # e.g. stop.ico -> SUB_ICONS["stop"]
-            placement = SUB_ICONS.get(os.path.splitext(os.path.basename(output_path))[0])
+            placement = SUB_ICONS.get(Path(output_path).stem)
             overlay_path = None
             if overlay_name is not None and placement is not None:
-                overlay_path = os.path.join(ICON_FALLBACK_PNG_DIR, overlay_name)
-                if not os.path.isfile(overlay_path):
+                overlay_path = str(Path(ICON_FALLBACK_PNG_DIR) / overlay_name)
+                if not Path(overlay_path).is_file():
                     raise FileNotFoundError(f'Bundled overlay PNG does not exist: "{overlay_path}"')
             scale, alignment = placement or (0.35, "bottom right")
-            built_path = os.path.join(folder, os.path.basename(output_path))
+            built_path = str(Path(folder) / Path(output_path).name)
             jobs.append((output_path, built_path, base_path, overlay_path, scale, alignment))
 
         def generate(job: tuple[str, str, str, str | None, float, str]) -> str:

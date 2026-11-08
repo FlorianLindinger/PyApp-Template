@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
 
 
 def remove_tree_inside(path: str, base: str) -> None:
@@ -15,8 +16,8 @@ def remove_tree_inside(path: str, base: str) -> None:
         target
     ) == os.path.normcase(root):
         raise ValueError(f'Refusing to delete "{path}": it is not inside "{base}".')
-    if os.path.islink(path) or _is_junction(path):
-        os.rmdir(path) if os.path.isdir(path) else os.remove(path)
+    if Path(path).is_symlink() or _is_junction(path):
+        Path(path).rmdir() if Path(path).is_dir() else Path(path).unlink()
         return
     shutil.rmtree(target)
 
@@ -43,7 +44,7 @@ def set_hidden_in_explorer(paths: list[str], hidden: bool = True):
     kernel32.SetFileAttributesW.restype = ctypes.c_int
 
     for path in paths:
-        path = os.path.abspath(path)
+        path = os.path.normpath(str(Path(path).absolute()))
 
         attributes = kernel32.GetFileAttributesW(path)
 
@@ -62,8 +63,9 @@ def set_hidden_in_explorer(paths: list[str], hidden: bool = True):
 
 def make_abs_path_relative_to_file(path: str, file: str) -> str:
     """makes a path absolute if relative with respect to the file (as if the file defined it)"""
-    if not os.path.isabs(path):
-        return os.path.normpath(os.path.dirname(file) + "\\" + path)
+    # Keep os.path.isabs: rooted Windows paths have different pathlib semantics on Python 3.8-3.12.
+    if not os.path.isabs(path):  # noqa: PTH117
+        return os.path.normpath(str(Path(file).parent) + "\\" + path)
     else:
         return path
 

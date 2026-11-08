@@ -6,8 +6,8 @@ runs when that file is missing (or the shortcut has no target) and reports why.
 
 from __future__ import annotations
 
-import os
 import sys
+from pathlib import Path
 
 from backend.DONT_CHANGE.backend_settings import DEV_SETTINGS_PATH
 from backend.DONT_CHANGE.scripts.config import main_script_path, settings
@@ -28,6 +28,6 @@ def main() -> None:
         path = make_abs_path_relative_to_file(user_settings_path, DEV_SETTINGS_PATH)
     else:
         path = main_script_path()
-    if not os.path.isfile(path):
+    if not Path(path).is_file():
         raise SettingsError(f'The file does not exist: "{path}"')
     open_in_editor(path)

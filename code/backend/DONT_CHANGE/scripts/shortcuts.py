@@ -14,6 +14,9 @@ import time
 import unicodedata
 import uuid
 from ctypes import wintypes
+from pathlib import Path
+from types import ModuleType, SimpleNamespace
+from typing import Any, Iterable
 
 from backend.DONT_CHANGE.backend_settings import (
     CRASH_LOG_ICON_PATH,
@@ -168,7 +171,7 @@ def generate_shortcut(
         deadline = time.monotonic() + timeout
         while True:
             try:
-                os.replace(temporary_path, output_path)
+                Path(temporary_path).replace(output_path)
                 return
             except OSError as error:
                 if time.monotonic() >= deadline:
@@ -184,19 +187,19 @@ def generate_shortcut(
     _shell_link_class_id = _guid("00021401-0000-0000-C000-000000000046")
     _shell_link_interface_id = _guid("000214F9-0000-0000-C000-000000000046")
     _persist_file_interface_id = _guid("0000010B-0000-0000-C000-000000000046")
-    output_path = os.path.abspath(os.path.join(output_dir, shortcut_filename(os.fspath(shortcut_name))))
+    output_path = os.path.normpath(str((Path(output_dir) / shortcut_filename(os.fspath(shortcut_name))).absolute()))
     launcher_args = [_quote(launcher_path)] if classic_terminal else ["/d", "/c", "call", _quote(launcher_path)]
     if args not in ("", None):
         launcher_args.append(_quote(args))
-    icon_path = os.path.abspath(os.fspath(icon_path)) if icon_path else None
-    if icon_path and (not os.path.exists(icon_path)):
+    icon_path = os.path.normpath(str(Path(os.fspath(icon_path)).absolute())) if icon_path else None
+    if icon_path and (not Path(icon_path).exists()):
         print_warn(f'icon not existing at "{icon_path}"')
         icon_path = None
-    wdir = os.path.abspath(wdir) if wdir else SHORTCUT_OUTPUT_DIR
+    wdir = os.path.normpath(str(Path(wdir).absolute())) if wdir else SHORTCUT_OUTPUT_DIR
     description = "" if description is None else os.fspath(description)
-    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    (Path(output_path).parent).mkdir(parents=True, exist_ok=True)
     # Saved under a temporary name first: an existing shortcut is only replaced by a complete one.
-    temporary_path = os.path.join(os.path.dirname(output_path), f"~{uuid.uuid4().hex[:8]}.tmp.lnk")
+    temporary_path = str((Path(output_path).parent) / (f"~{uuid.uuid4().hex[:8]}.tmp.lnk"))
     ole32 = ctypes.WinDLL("ole32", use_last_error=True)
     ole32.CoCreateInstance.argtypes = [
         ctypes.POINTER(_Guid),
@@ -264,8 +267,8 @@ def generate_shortcut(
         _move_into_place(temporary_path, output_path)
     finally:
         com.co_uninitialize(should_uninitialize)
-        if os.path.exists(temporary_path):
-            os.remove(temporary_path)
+        if Path(temporary_path).exists():
+            Path(temporary_path).unlink()
     return output_path
 
 
@@ -281,7 +284,7 @@ def project_app_id(program_name: str, project_dir: str = SHORTCUT_OUTPUT_DIR) ->
     name = re.sub("[\\s_.]+", "-", name)
     name = re.sub("[^a-z0-9-]", "", name)
     name = re.sub("-+", "-", name).strip("-")[:40] or "pyapp"
-    key = program_name + "|" + os.path.normcase(os.path.abspath(project_dir))
+    key = program_name + "|" + os.path.normcase(os.path.normpath(str(Path(project_dir).absolute())))
     return name + "." + hashlib.sha256(key.encode("utf-8")).hexdigest()[:10]
 
 
@@ -313,71 +316,72 @@ def is_generated_shortcut(path: str) -> bool:
     Shortcuts of another existing copy of the template (e.g. a copied project with the same
     shortcut list) are never deleted.
     """
-    if not path.lower().endswith(".lnk") or not os.path.isfile(path):
+    if not path.lower().endswith(".lnk") or not Path(path).is_file():
         return False
     try:
-        with open(path, "rb") as stream:
+        with Path(path).open("rb") as stream:
             data = stream.read(65536)
     except OSError:
         return False
     text = data.decode("utf-16-le", errors="ignore") + data[1:].decode("utf-16-le", errors="ignore")
     targets = re.findall(r'"([^"]*' + re.escape(SHORTCUT_SIGNATURE) + r'[A-Za-z]\.bat)"', text, flags=re.IGNORECASE)
     for target in targets:
-        if os.path.normcase(os.path.dirname(target)) == os.path.normcase(ENTRY_BATCHES_DIR) or not os.path.exists(
-            target
+        if (
+            os.path.normcase(str(Path(target).parent)) == os.path.normcase(ENTRY_BATCHES_DIR)
+            or not Path(target).exists()
         ):
             return True
     return False
 
 
-def _read_created_shortcuts_file() -> dict:
+def _read_created_shortcuts_file() -> dict[str, Any]:
     try:
-        with open(CREATED_SHORTCUTS_LIST_PATH, encoding="utf-8") as stream:
+        with Path(CREATED_SHORTCUTS_LIST_PATH).open(encoding="utf-8") as stream:
             data = json.load(stream)
         return data if isinstance(data, dict) else {}
     except (OSError, ValueError):
         return {}
 
 
-def read_created_shortcuts() -> list:
+def read_created_shortcuts() -> list[str]:
     return list(_read_created_shortcuts_file().get("shortcuts", []))
 
 
-def write_created_shortcuts(paths: list, targets: dict | None = None) -> None:
+def write_created_shortcuts(paths: list[str], targets: dict[str, str] | None = None) -> None:
     """Record the created .lnk files (to remove stale ones later) and the targets they open."""
-    with open(CREATED_SHORTCUTS_LIST_PATH, "w", encoding="utf-8") as stream:
+    with Path(CREATED_SHORTCUTS_LIST_PATH).open("w", encoding="utf-8") as stream:
         json.dump({"version": 2, "shortcuts": sorted(set(paths)), "targets": targets or {}}, stream, indent=2)
 
 
-def remove_shortcuts(paths, keep=()) -> list:
+def remove_shortcuts(paths: Iterable[str], keep: Iterable[str] = ()) -> list[str]:
     """Delete generated shortcuts that are no longer wanted; returns the removed paths."""
-    keep_keys = {os.path.normcase(os.path.abspath(p)) for p in keep}
+    keep_keys = {os.path.normcase(os.path.normpath(str(Path(p).absolute()))) for p in keep}
     removed = []
     for path in paths:
-        if os.path.normcase(os.path.abspath(path)) in keep_keys:
+        if os.path.normcase(os.path.normpath(str(Path(path).absolute()))) in keep_keys:
             continue
         if is_generated_shortcut(path):
             try:
-                os.remove(path)
+                Path(path).unlink()
                 removed.append(path)
             except OSError as error:
                 print_warn(f'Could not remove the old shortcut "{path}": {error}')
-        folder = os.path.dirname(path)
+        folder = str(Path(path).parent)
         try:
             # Remove our now-empty Start Menu folder (never the Start Menu or Desktop itself).
             if (
                 folder
                 not in (special_folder(CSIDL_PROGRAMS), special_folder(CSIDL_DESKTOPDIRECTORY), SHORTCUT_OUTPUT_DIR)
-                and os.path.isdir(folder)
-                and not os.listdir(folder)
+                and Path(folder).is_dir()
+                and not [entry.name for entry in Path(folder).iterdir()]
             ):
-                os.rmdir(folder)
+                Path(folder).rmdir()
         except OSError:
             pass
     return removed
 
 
-def shortcut_targets(s) -> dict:
+def shortcut_targets(s: ModuleType | SimpleNamespace) -> dict[str, str]:
     """Folder/file each "open" shortcut passes to its B\\*.bat, which then opens it without Python.
 
     "" means the target can only be resolved at click time (a path relative to the start folder
@@ -391,14 +395,16 @@ def shortcut_targets(s) -> dict:
         ("logs", s.log_path, s.log_path_is_relative_to_start_folder_if_relative),
         ("crash_logs", s.crash_log_path, s.crash_log_path_is_relative_to_start_folder_if_relative),
     ):
-        fixed_folder = path and not relative and "%" not in os.path.dirname(path)
+        fixed_folder = path and not relative and "%" not in str(Path(path).parent)
         targets[kind] = (get_log_folder_path(path, False) or "") if fixed_folder else ""
     if s.user_settings_path:
         targets["settings"] = make_abs_path_relative_to_file(s.user_settings_path, DEV_SETTINGS_PATH)
     return targets
 
 
-def shortcut_definitions(s, app_id: str, targets: dict) -> list:
+def shortcut_definitions(
+    s: ModuleType | SimpleNamespace, app_id: str, targets: dict[str, str]
+) -> list[tuple[str, str, str, str, str, str | None, str]]:
     """(kind, name, icon, launcher, args, app_id, description) for every enabled shortcut."""
     name = s.program_name
     definitions = [
@@ -461,10 +467,14 @@ def shortcut_definitions(s, app_id: str, targets: dict) -> list:
                 f"Open the {name} settings file",
             )
         )
-    return [d for d in definitions if d[1]]
+    return [
+        (kind, label, icon, launcher, arguments, identity, description)
+        for kind, label, icon, launcher, arguments, identity, description in definitions
+        if label
+    ]
 
 
-def outdated_shortcut_targets(s) -> list:
+def outdated_shortcut_targets(s: ModuleType | SimpleNamespace) -> list[str]:
     """Kinds of "open" shortcuts whose recorded target no longer matches the settings (run Setup)."""
     recorded = _read_created_shortcuts_file().get("targets")
     if not isinstance(recorded, dict):

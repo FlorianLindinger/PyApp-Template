@@ -7,6 +7,9 @@ import importlib
 import os
 import re
 import sys
+from pathlib import Path
+from types import ModuleType, SimpleNamespace
+from typing import Any, Callable, Iterable, Mapping
 
 from backend.DONT_CHANGE.backend_settings import (
     BACKEND_DIR,
@@ -74,7 +77,7 @@ SHORTCUT_NAME_SETTINGS = (
 )
 
 
-def _number(value) -> bool:
+def _number(value: object) -> bool:
     return isinstance(value, (int, float)) and not isinstance(value, bool)
 
 
@@ -93,28 +96,29 @@ def _strftime_problem(value: str) -> str | None:
 REQUIREMENT_START = re.compile(r"\s*[A-Za-z0-9][A-Za-z0-9._-]*\s*($|[\[(<>=!~;@ ])")
 
 
-def main_script_path(s=None) -> str:
+def main_script_path(s: ModuleType | SimpleNamespace | None = None) -> str:
     """Absolute path of the file the launcher runs (main_script_path in developer_settings.py)."""
     return _resolve_main_script((s or settings()).main_script_path)
 
 
 def _resolve_main_script(value: str) -> str:
-    return value if os.path.isabs(value) else os.path.normpath(os.path.join(BACKEND_DIR, value))
+    # Keep os.path.isabs: rooted Windows paths have different pathlib semantics on Python 3.8-3.12.
+    return value if os.path.isabs(value) else os.path.normpath(str(Path(BACKEND_DIR) / value))  # noqa: PTH117
 
 
 def _main_script_problem(value: str) -> str | None:
     """Tracebacks, the import finder and the launcher's own folders all assume this location."""
     path = _resolve_main_script(value)
-    if not os.path.isfile(path):
+    if not Path(path).is_file():
         return f'main_script_path: "{path}" does not exist.'
-    root = os.path.normcase(os.path.abspath(PYTHON_SCRIPTS_DIR)) + os.sep
-    full = os.path.normcase(os.path.abspath(path))
+    root = os.path.normcase(os.path.normpath(str(Path(PYTHON_SCRIPTS_DIR).absolute()))) + os.sep
+    full = os.path.normcase(os.path.normpath(str(Path(path).absolute())))
     if not full.startswith(root) or full[len(root) :].split(os.sep, 1)[0] == "backend":
         return f'main_script_path: "{path}" must be inside the code folder and not in code\\backend.'
     return None
 
 
-def parse_requirements(text: str) -> list:
+def parse_requirements(text: str) -> list[str]:
     """The packages of a pasted requirements.txt: one per line, without comments and --hash options."""
     entries = []
     for line in text.splitlines():
@@ -125,7 +129,7 @@ def parse_requirements(text: str) -> list:
     return entries
 
 
-def settings():
+def settings() -> ModuleType:
     """Import developer_settings, turning any error in the file into a short actionable message."""
     from backend.DONT_CHANGE.scripts.entrypoint import settings_file_problem
 
@@ -143,10 +147,10 @@ def settings():
     return module
 
 
-def default_setting_expressions(path: str | None = None) -> dict:
+def default_setting_expressions(path: str | None = None) -> dict[str, ast.expr]:
     """{name: expression node} of every top-level setting in the defaults file (last one wins)."""
     path = path or DEFAULT_SETTINGS_PATH
-    with open(path, encoding="utf-8") as stream:
+    with Path(path).open(encoding="utf-8") as stream:
         tree = ast.parse(stream.read(), path)
     expressions = {}
     for node in tree.body:
@@ -156,7 +160,7 @@ def default_setting_expressions(path: str | None = None) -> dict:
     return expressions
 
 
-def fill_missing_settings(module) -> list:
+def fill_missing_settings(module: ModuleType | SimpleNamespace) -> list[str]:
     """Give settings that the project's file lacks their default value; return their names.
 
     Defaults may refer to other settings (f"{program_name}"), which then use the project's values.
@@ -167,12 +171,13 @@ def fill_missing_settings(module) -> list:
     try:
         expressions = default_setting_expressions()
     except OSError:
-        expressions = {}
+        expressions: dict[str, ast.expr] = {}
     for name, expression in expressions.items():
         if hasattr(module, name):
             continue
         try:
-            value = eval(compile(ast.Expression(expression), DEFAULT_SETTINGS_PATH, "eval"), vars(module))
+            # Evaluate expressions only from the bundled defaults, including references and f-strings.
+            value = eval(compile(ast.Expression(expression), DEFAULT_SETTINGS_PATH, "eval"), vars(module))  # noqa: S307
         except Exception:
             from backend.DONT_CHANGE.scripts.diagnostics import note_ignored
 
@@ -180,11 +185,11 @@ def fill_missing_settings(module) -> list:
             continue
         setattr(module, name, value)
         filled.append(name)
-    module.MISSING_SETTINGS_FILLED_IN = filled
+    vars(module)["MISSING_SETTINGS_FILLED_IN"] = filled
     return filled
 
 
-def _assigned_names(node) -> list[str]:
+def _assigned_names(node: ast.AST) -> list[str]:
     """Names a plain `name = ...` or `name: type = ...` statement assigns."""
     if isinstance(node, ast.Assign):
         return [t.id for t in node.targets if isinstance(t, ast.Name)]
@@ -200,7 +205,7 @@ def _bootstrap_literal_problems() -> list[str]:
     defined twice, indented (e.g. inside an "if") or not a one-line literal could differ between the two.
     """
     problems = []
-    with open(DEV_SETTINGS_PATH, encoding="utf-8") as stream:
+    with Path(DEV_SETTINGS_PATH).open(encoding="utf-8") as stream:
         tree = ast.parse(stream.read(), DEV_SETTINGS_PATH)
     top_level = {id(node) for node in tree.body}
     definitions: dict[str, list[ast.Assign | ast.AnnAssign]] = {}
@@ -248,7 +253,7 @@ def python_version_problem(value: str) -> str | None:
 _noted_defaults = set()
 
 
-def _note_defaults_once(module) -> None:
+def _note_defaults_once(module: ModuleType | SimpleNamespace) -> None:
     """Tell once per process which settings were missing and use their defaults."""
     names = [n for n in getattr(module, "MISSING_SETTINGS_FILLED_IN", []) if n not in _noted_defaults]
     if not names:
@@ -263,16 +268,16 @@ def _note_defaults_once(module) -> None:
     )
 
 
-def validate(module=None) -> None:
+def validate(module: ModuleType | SimpleNamespace | None = None) -> None:
     """Raise SettingsError listing every unusable setting."""
     s = module or settings()
     problems = list(_bootstrap_literal_problems())
     _note_defaults_once(s)
 
-    def get(name, default=None):
+    def get(name: str, default: object = None) -> Any:
         return getattr(s, name, default)
 
-    def need(name, ok, message):
+    def need(name: str, ok: Callable[[Any], object], message: str):
         if not hasattr(s, name):
             problems.append(f"{name} is missing. Add it again (see the template's developer_settings.py).")
         elif not ok(getattr(s, name)):
@@ -378,26 +383,26 @@ def validate(module=None) -> None:
         )
 
 
-def edit_settings(changes: dict) -> list[str]:
+def edit_settings(changes: Mapping[str, object]) -> list[str]:
     """Set top-level settings in developer_settings.py to new values; return a readable diff.
 
     Only the value is replaced: annotations, trailing comments and line endings are kept.
     """
-    diff = []
+    diff: list[str] = []
     for name, value in changes.items():
         literal = _literal(value)
         diff += _replace_setting_value(name, lambda newline, node, literal=literal: literal)
     return diff
 
 
-def set_list_setting(name: str, values) -> list[str]:
+def set_list_setting(name: str, values: Iterable[str]) -> list[str]:
     """Rewrite the top-level list setting `name` (it may span several lines); return a readable diff.
 
     A setting written as a triple-quoted block stays one, so a pasted requirements list keeps its form.
     """
     values = list(values)
 
-    def body(newline: str, node) -> str:
+    def body(newline: str, node: ast.Assign | ast.AnnAssign | None) -> str:
         was_block = node is not None and isinstance(node.value, ast.Constant) and isinstance(node.value.value, str)
         if was_block and not any("\\" in v or '"""' in v for v in values):
             return '"""' + newline + "".join(v + newline for v in values) + '"""'
@@ -408,13 +413,13 @@ def set_list_setting(name: str, values) -> list[str]:
     return _replace_setting_value(name, body)
 
 
-def _replace_setting_value(name: str, make_value) -> list[str]:
+def _replace_setting_value(name: str, make_value: Callable[[str, ast.Assign | ast.AnnAssign | None], str]) -> list[str]:
     """Replace the value of the last top-level assignment to `name` (the one Python uses).
 
     make_value(newline, node) returns the new value's source text (node: the current assignment or
     None). The file's line endings are kept.
     """
-    with open(DEV_SETTINGS_PATH, encoding="utf-8", newline="") as stream:
+    with Path(DEV_SETTINGS_PATH).open(encoding="utf-8", newline="") as stream:
         source = stream.read()
     newline = "\r\n" if "\r\n" in source else "\n"
     # Split exactly where ast counts lines (str.splitlines also splits at e.g. U+2028).
@@ -428,11 +433,12 @@ def _replace_setting_value(name: str, make_value) -> list[str]:
             raise SettingsError(f"Could not find the setting {name} in developer_settings.py to edit.")
         # A setting that only had its default (added by a newer launcher version): append it.
         addition = f"{name} = {make_value(newline, None)}{newline}"
-        with open(DEV_SETTINGS_PATH, "w", encoding="utf-8", newline="") as stream:
+        with Path(DEV_SETTINGS_PATH).open("w", encoding="utf-8", newline="") as stream:
             stream.write(source + ("" if source.endswith(("\n", "\r")) else newline) + addition)
         sys.modules.pop("backend.developer_settings", None)
         return [f"+ {line}" for line in addition.rstrip().splitlines()]
-    assert isinstance(node, (ast.Assign, ast.AnnAssign)) and node.value is not None
+    if not isinstance(node, (ast.Assign, ast.AnnAssign)) or node.value is None:
+        raise SettingsError(f"The setting {name} has no editable assignment value.")
     # The value's own lines: with parentheses around it, they differ from the assignment's lines.
     first, last = node.value.lineno - 1, (node.value.end_lineno or node.value.lineno) - 1
     # ast offsets count UTF-8 bytes
@@ -443,7 +449,7 @@ def _replace_setting_value(name: str, make_value) -> list[str]:
     if replacement == old:
         return []
     lines[first : last + 1] = [replacement]
-    with open(DEV_SETTINGS_PATH, "w", encoding="utf-8", newline="") as stream:
+    with Path(DEV_SETTINGS_PATH).open("w", encoding="utf-8", newline="") as stream:
         stream.write("".join(lines))
     sys.modules.pop("backend.developer_settings", None)
     return [f"- {line}" for line in old.rstrip().splitlines()] + [
@@ -451,7 +457,7 @@ def _replace_setting_value(name: str, make_value) -> list[str]:
     ]
 
 
-def _literal(value) -> str:
+def _literal(value: object) -> str:
     """Python source text for a setting value."""
     if isinstance(value, str):
         return _quoted(value)

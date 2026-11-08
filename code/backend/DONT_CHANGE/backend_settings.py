@@ -4,24 +4,24 @@ Every launcher script must keep running on Python 3.8+ (the oldest Python uv can
 install on Windows), so this module only uses 3.8-compatible syntax.
 """
 
+# fmt: off
+
 from __future__ import annotations
 
 import os
+from pathlib import Path
 
 
 def make_abs(x: str) -> str:
     """Make a path absolute relative to this file when it is relative."""
-    return os.path.normpath(x if os.path.isabs(x) else os.path.join(os.path.dirname(__file__), x))
-
-
-# fmt: off
+    return os.path.normpath(x if Path(x).is_absolute() else Path(__file__).parent / x)
 
 # Version of this DONT_CHANGE folder (Semantic Versioning, see README.md "Versions"):
 #   PATCH: bug fixes and minor improvements; update by replacing the DONT_CHANGE folder
 #   MINOR: new features, nothing breaks; replace DONT_CHANGE (new settings fall back to their
 #          defaults, new optional files outside it may be copied)
 #   MAJOR: something breaks; replace DONT_CHANGE and follow the steps in CHANGELOG.md
-LAUNCHER_VERSION = "1.0.0"
+LAUNCHER_VERSION = "0.0.1"
 
 # ------------------------
 # folders
@@ -47,7 +47,7 @@ GENERATED_DIR = BACKEND_DIR + "\\generated"
 LOCAL_UV_DIR = GENERATED_DIR + "\\uv"                 # uv.exe when installed locally
 LOCAL_UV_EXE = LOCAL_UV_DIR + "\\uv.exe"
 # Per-user uv, not on PATH: fetched when the usual uv is too old for a Python. UPDATE resolve_runtime.ps1 too.
-SHARED_UV_EXE = (os.environ.get("LOCALAPPDATA") or os.path.expanduser("~\\AppData\\Local")) + "\\PyApp-Template\\uv\\uv.exe"
+SHARED_UV_EXE = (os.environ.get("LOCALAPPDATA") or str(Path("~\\AppData\\Local").expanduser())) + "\\PyApp-Template\\uv\\uv.exe"
 LOCAL_PYTHONS_DIR = GENERATED_DIR + "\\pythons"       # uv-managed Pythons when python_source = "local"
 LOCAL_UV_CACHE_DIR = GENERATED_DIR + "\\uv-cache"     # only used when uv_cache = "local"
 # pyproject.toml is generated from developer_settings.py (packages, python_version);
@@ -177,3 +177,14 @@ EMPTY_ARG_INDICATOR = "__EMPTY__"
 # Taskbar identity suffix of the no-terminal shortcut and of the windows it launches, so a
 # pinned no-terminal shortcut groups its app windows separately from the terminal shortcut.
 NO_TERMINAL_APP_ID_SUFFIX = "W"
+
+# ==================================================================
+
+# open this file if someone runs it directly (e.g. double-clicks it in Explorer) instead of running the launcher:
+if __name__ == "__main__":
+    import shutil
+    import subprocess
+
+    # VS Code if it is on PATH, otherwise Notepad. "code" is a .cmd file, so the command is one quoted string.
+    editor = shutil.which("code") or "notepad.exe"
+    subprocess.Popen(f'"{editor}" "{Path(__file__).resolve()}"')  # noqa: S603 RUF100

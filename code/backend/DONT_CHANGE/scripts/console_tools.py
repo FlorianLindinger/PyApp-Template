@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import os
 import sys
-from typing import Any, TextIO
+from pathlib import Path
+from typing import Any, Iterable, TextIO
 
 from backend.DONT_CHANGE.scripts.diagnostics import note_ignored
 
@@ -110,9 +111,17 @@ def wait_for_enter(message: str = "Press Enter to close this window.") -> None:
         pass
 
 
-def print_fields(rows, indent: int = 2) -> None:
+def print_fields(rows: Iterable[tuple[str, object] | tuple[str, object, bool]], indent: int = 2) -> None:
     """Aligned "label   value" rows; a value whose third item is False is highlighted as a problem."""
-    rows = [row if len(row) == 3 else (*row, True) for row in rows]
+    normalized_rows: list[tuple[str, object, bool]] = []
+    for row in rows:
+        if len(row) == 3:
+            label, value, ok = row
+        else:
+            label, value = row
+            ok = True
+        normalized_rows.append((label, value, ok))
+    rows = normalized_rows
     width = max((len(label) for label, _, _ in rows), default=0)
     for label, value, ok in rows:
         print(
@@ -123,7 +132,7 @@ def print_fields(rows, indent: int = 2) -> None:
         )
 
 
-def print_choices(options) -> None:
+def print_choices(options: Iterable[object]) -> None:
     """A numbered list: "  1  first option"."""
     for index, option in enumerate(options, 1):
         print(f"  {styled(str(index).rjust(2), ANSI_HEADING)}  {option}")
@@ -367,10 +376,15 @@ def enable_unminimize_and_foreground_terminal_on_first_print() -> None:
 def set_terminal_colors(colors: str | None) -> None:
     """colors is in format of windows terminal colors"""
     if colors:
+        import re
+
+        if not isinstance(colors, str) or not re.fullmatch(r"[0-9A-Fa-f]{1,2}", colors):
+            raise ValueError("Terminal colors must contain one or two hexadecimal digits.")
         try:
             import subprocess
 
-            subprocess.run(["cmd.exe", "/c", "color", colors], check=False)
+            # The color argument is restricted to hex digits before reaching cmd.exe.
+            subprocess.run(["cmd.exe", "/c", "color", colors], check=False)  # noqa: S603, S607
         except Exception:
             note_ignored("set_terminal_colors")
 
@@ -391,10 +405,10 @@ def _editor_executable() -> str | None:
     if found.lower().endswith((".cmd", ".bat")):
         # bin\code.cmd sits one folder below Code.exe. Starting the .exe directly avoids
         # cmd.exe parsing the file path (a folder like "R&D" would otherwise break it).
-        install_dir = os.path.dirname(os.path.dirname(os.path.abspath(found)))
+        install_dir = str(Path(os.path.normpath(str(Path(found).absolute()))).parent.parent)
         for name in _VSCODE_EXECUTABLES:
-            candidate = os.path.join(install_dir, name)
-            if os.path.isfile(candidate):
+            candidate = str(Path(install_dir) / name)
+            if Path(candidate).is_file():
                 return candidate
     return found
 
@@ -403,7 +417,7 @@ def open_in_editor(path: str) -> None:
     """Open a file preferably in VS Code with fallback in Windows notepad. Lazily imports subprocess."""
     import subprocess
 
-    if not os.path.exists(path):
+    if not Path(path).exists():
         raise FileNotFoundError(path)
     # The editor keeps running after the launcher; do not hand it the launcher's variables
     # (they would leak into its integrated terminals), or one that makes Code.exe act as Node.
@@ -414,9 +428,12 @@ def open_in_editor(path: str) -> None:
     }
     editor = _editor_executable()
     if editor is None:
-        subprocess.Popen(["notepad.exe", path], env=env)
+        # Launching the local editor or Windows color command is intentional.
+        subprocess.Popen(["notepad.exe", path], env=env)  # noqa: S603, S607
     elif editor.lower().endswith((".cmd", ".bat")):
         # Batch files run through cmd.exe: always quote, so & ( ) ^ in the path stay literal.
-        subprocess.Popen(f'"{editor}" "{path}"', env=env)
+        # Launching the local editor or Windows color command is intentional.
+        subprocess.Popen(f'"{editor}" "{path}"', env=env)  # noqa: S603
     else:
-        subprocess.Popen([editor, path], env=env)
+        # Launching the local editor or Windows color command is intentional.
+        subprocess.Popen([editor, path], env=env)  # noqa: S603

@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-import os
 import sys
 import tempfile
+from pathlib import Path
 
 from backend.DONT_CHANGE.scripts.config import describe_python_request, edit_settings, python_version_problem, settings
 from backend.DONT_CHANGE.scripts.console_tools import (
@@ -36,7 +36,7 @@ from backend.DONT_CHANGE.scripts.env.venv import (
 from backend.DONT_CHANGE.scripts.errors import SettingsError
 
 
-def cmd_change_python(arguments):
+def cmd_change_python(arguments: list[str]):
     """Set a new python_version and migrate the project to it."""
     s = settings()
     current = read_python_version_file()
@@ -66,7 +66,7 @@ def cmd_change_python(arguments):
     prepare()  # offers the migration menu because the setting now differs from backend/generated/.python-version
 
 
-def cmd_update_python(arguments):
+def cmd_update_python(arguments: list[str]):
     """Newest patch release of the project's Python; with python_version = "" also a newer minor version."""
     s = settings()
     prepare(s)
@@ -82,8 +82,8 @@ def cmd_update_python(arguments):
     print_step(f"Updating Python {request} to its newest patch release...")
     run_uv(["python", "install", "--upgrade", request], cwd=tempfile.gettempdir())
     newest_exe = find_python(request, s)
-    in_use = os.path.join(read_venv_config().get("home", ""), "python.exe")
-    current_version = interpreter_version(in_use) if os.path.isfile(in_use) else None
+    in_use = str(Path(read_venv_config().get("home", "")) / "python.exe")
+    current_version = interpreter_version(in_use) if Path(in_use).is_file() else None
     if newest_exe and current_version != interpreter_version(newest_exe):
         refuse_mutation_while_running()
         build_venv(newest_exe, locked=True, s=s)

@@ -25,14 +25,16 @@ from __future__ import annotations
 import argparse
 import datetime
 import json
-import os
 import re
 import struct
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from http.client import HTTPMessage
 from pathlib import Path
+from typing import IO, Any, Callable, Iterable, Mapping, TypedDict
 
 RANKING_URLS = (
     "https://hugovk.github.io/top-pypi-packages/top-pypi-packages.min.json",
@@ -82,12 +84,37 @@ def normalized(name: str) -> str:
     return re.sub(r"[-_.]+", "-", name).lower()
 
 
-def fetch(url: str, headers: dict | None = None, timeout: float = 60) -> bytes:
+def _validate_download_url(url: str) -> None:
+    """Only public HTTPS endpoints used by the ranking and PyPI are download sources."""
+    parsed = urllib.parse.urlsplit(url)
+    if (
+        parsed.scheme != "https"
+        or parsed.hostname not in {"hugovk.github.io", "pypi.org", "files.pythonhosted.org"}
+        or parsed.username is not None
+        or parsed.password is not None
+        or parsed.port not in (None, 443)
+    ):
+        raise ValueError("Import-map downloads must use the approved public HTTPS hosts.")
+
+
+class _DownloadRedirectHandler(urllib.request.HTTPRedirectHandler):
+    # typing.override requires Python 3.12; keep this override dependency-free on 3.8.
+    def redirect_request(  # pyrefly: ignore[missing-override-decorator]
+        self, req: urllib.request.Request, fp: IO[bytes], code: int, msg: str, headers: HTTPMessage, newurl: str
+    ):
+        _validate_download_url(newurl)
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+def fetch(url: str, headers: dict[str, str] | None = None, timeout: float = 60) -> bytes:
     """GET with retries; raises urllib.error.HTTPError for 4xx answers."""
-    request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT, **(headers or {})})
+    _validate_download_url(url)
+    # Both the initial URL and redirects are restricted to approved HTTPS sources.
+    request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT, **(headers or {})})  # noqa: S310
+    opener = urllib.request.build_opener(_DownloadRedirectHandler())
     for attempt in range(4):
         try:
-            with urllib.request.urlopen(request, timeout=timeout) as response:
+            with opener.open(request, timeout=timeout) as response:
                 return response.read()
         except urllib.error.HTTPError as error:
             if error.code < 500 or attempt == 3:
@@ -102,7 +129,7 @@ def fetch(url: str, headers: dict | None = None, timeout: float = 60) -> bytes:
 # ---------------------------------------------------------------- ZIP directory of a remote wheel
 
 
-def zip_member_names(read_range, size: int) -> list[str]:
+def zip_member_names(read_range: Callable[[int, int], bytes], size: int) -> list[str]:
     """File names in a ZIP archive of `size` bytes; read_range(start, end) returns bytes [start, end)."""
     tail_start = max(0, size - (65536 + 22))
     tail = read_range(tail_start, size)
@@ -125,7 +152,8 @@ def zip_member_names(read_range, size: int) -> list[str]:
         directory = tail[cd_offset - tail_start : cd_offset - tail_start + cd_size]
     else:
         directory = read_range(cd_offset, cd_offset + cd_size)
-    names, position = [], 0
+    names: list[str] = []
+    position = 0
     for _ in range(entries):
         if directory[position : position + 4] != b"PK\x01\x02":
             raise ValueError("bad central directory entry")
@@ -137,7 +165,7 @@ def zip_member_names(read_range, size: int) -> list[str]:
     return names
 
 
-def import_names(member_names) -> set:
+def import_names(member_names: Iterable[str]) -> set[str]:
     """Top-level importable names a wheel installs (packages, modules and extension modules)."""
     result = set()
     for name in member_names:
@@ -164,7 +192,7 @@ def import_names(member_names) -> set:
 # ---------------------------------------------------------------- PyPI
 
 
-def pick_wheel(files: list) -> dict | None:
+def pick_wheel(files: list[dict[str, Any]]) -> dict[str, Any] | None:
     """Prefer a pure-Python wheel, then a Windows x64 wheel, then any wheel."""
     wheels = [f for f in files if f.get("packagetype") == "bdist_wheel" and not f.get("yanked")]
     for preferred in ("none-any.whl", "win_amd64.whl", ""):
@@ -174,7 +202,7 @@ def pick_wheel(files: list) -> dict | None:
     return None
 
 
-def project_import_names(project: str) -> tuple[str, set]:
+def project_import_names(project: str) -> tuple[str, set[str]]:
     """(PyPI display name, import names of its newest wheel); empty set if it has no wheel."""
     data = json.loads(fetch(PYPI_JSON_URL.format(project)))
     wheel = pick_wheel(data.get("urls") or [])
@@ -201,12 +229,17 @@ def top_projects(count: int) -> list[str]:
 # ---------------------------------------------------------------- main
 
 
-def build(projects: list[str], workers: int, cache_path: Path) -> dict:
+class _CacheEntry(TypedDict):
+    name: str
+    imports: list[str]
+
+
+def build(projects: list[str], workers: int, cache_path: Path) -> dict[str, list[str]]:
     """{project display name: sorted import names}, using and updating a JSON cache."""
     try:
         cache = json.loads(cache_path.read_text(encoding="utf-8"))
     except (OSError, ValueError):
-        cache = {}
+        cache: dict[str, _CacheEntry] = {}
     todo = [p for p in projects if p not in cache]
     print(f"{len(projects)} projects, {len(projects) - len(todo)} cached, {len(todo)} to fetch")
     failures = 0
@@ -229,7 +262,7 @@ def build(projects: list[str], workers: int, cache_path: Path) -> dict:
     return {cache[p]["name"]: cache[p]["imports"] for p in projects if p in cache}
 
 
-def mapping_lines(results: dict) -> list[str]:
+def mapping_lines(results: Mapping[str, Iterable[str]]) -> list[str]:
     """import:project pairs where the names differ and the import name is unambiguous."""
     providers = {}
     for project, names in results.items():
@@ -283,8 +316,9 @@ def main() -> int:
         "# most-downloaded PyPI projects.",
     ]
     temporary = args.output.with_name(args.output.name + ".tmp")
-    temporary.write_text("\r\n".join(header + lines) + "\r\n", encoding="utf-8", newline="")
-    os.replace(temporary, args.output)
+    with temporary.open("w", encoding="utf-8", newline="") as stream:
+        stream.write("\r\n".join(header + lines) + "\r\n")
+    Path(temporary).replace(args.output)
     print(f'Wrote {len(lines)} pairs to "{args.output}".')
     return 0
 

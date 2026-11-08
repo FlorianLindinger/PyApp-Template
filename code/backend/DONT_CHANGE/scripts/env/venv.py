@@ -13,6 +13,9 @@ import subprocess
 import sys
 import uuid
 from collections import namedtuple
+from pathlib import Path
+from types import ModuleType, SimpleNamespace
+from typing import Mapping
 
 from backend.DONT_CHANGE.backend_settings import (
     DEV_SETTINGS_PATH,
@@ -68,10 +71,10 @@ AppPython = namedtuple("AppPython", "exe flags")
 APP_PYTHON_FLAGS = ["-E", "-s", "-X", "utf8"]
 
 
-def read_venv_config(venv_dir: str = VENV_DIR) -> dict:
+def read_venv_config(venv_dir: str = VENV_DIR) -> dict[str, str]:
     values = {}
     try:
-        with open(os.path.join(venv_dir, "pyvenv.cfg"), encoding="utf-8") as stream:
+        with (Path(venv_dir) / "pyvenv.cfg").open(encoding="utf-8") as stream:
             for line in stream:
                 if "=" in line:
                     key, value = line.split("=", 1)
@@ -81,15 +84,15 @@ def read_venv_config(venv_dir: str = VENV_DIR) -> dict:
     return values
 
 
-def venv_version(config: dict) -> tuple | None:
+def venv_version(config: Mapping[str, str]) -> tuple[int, ...] | None:
     text = config.get("version_info") or config.get("version") or ""
     numbers = re.findall(r"\d+", text)
     return tuple(int(n) for n in numbers[:3]) if len(numbers) >= 2 else None
 
 
-def venv_home_valid(config: dict) -> bool:
+def venv_home_valid(config: Mapping[str, str]) -> bool:
     home = config.get("home", "")
-    return bool(home) and os.path.isfile(os.path.join(home, "python.exe"))
+    return bool(home) and (Path(home) / "python.exe").is_file()
 
 
 def venv_base_executable(venv_dir: str = VENV_DIR) -> str | None:
@@ -98,9 +101,10 @@ def venv_base_executable(venv_dir: str = VENV_DIR) -> str | None:
     uv venvs on Windows can store the base path inside Scripts\\python.exe itself, so
     pyvenv.cfg alone does not show whether a moved project still works.
     """
-    exe = os.path.join(venv_dir, "Scripts", "python.exe")
+    exe = str(Path(venv_dir) / "Scripts" / "python.exe")
     try:
-        output = subprocess.check_output(
+        # Probe the selected interpreter or intentionally open the package command prompt.
+        output = subprocess.check_output(  # noqa: S603
             [
                 exe,
                 "-I",
@@ -118,14 +122,14 @@ def venv_base_executable(venv_dir: str = VENV_DIR) -> str | None:
     except (OSError, subprocess.SubprocessError):
         return None
     base = output.strip()
-    return base if os.path.isfile(base) else None
+    return base if Path(base).is_file() else None
 
 
 def _same_file(first: str, second: str) -> bool:
     return os.path.normcase(os.path.realpath(first)) == os.path.normcase(os.path.realpath(second))
 
 
-def venv_needs_relink(config: dict, base_python: str) -> bool:
+def venv_needs_relink(config: Mapping[str, str], base_python: str) -> bool:
     """True if the venv points at a missing or different base interpreter than the project's Python."""
     if not venv_home_valid(config):
         return True
@@ -133,7 +137,7 @@ def venv_needs_relink(config: dict, base_python: str) -> bool:
     return base is None or not _same_file(base, base_python)
 
 
-def relink_venv(base_python: str, s=None) -> bool:
+def relink_venv(base_python: str, s: ModuleType | SimpleNamespace | None = None) -> bool:
     """Point an existing venv at base_python (moved project, portable copy), keeping its packages."""
     previous = read_venv_config().get("home", "?")
     code = run_uv(
@@ -143,14 +147,14 @@ def relink_venv(base_python: str, s=None) -> bool:
     # change; without a new timestamp uv would keep using the old base and rebuild the venv.
     for name in ("python.exe", "pythonw.exe"):
         try:
-            os.utime(os.path.join(VENV_DIR, "Scripts", name), None)
+            os.utime(str(Path(VENV_DIR) / "Scripts" / name), None)
         except OSError:
             pass
     base = venv_base_executable()
     if code or base is None or not _same_file(base, base_python):
         return False
     print_info(
-        f'Re-linked the environment to "{os.path.dirname(base_python)}" (was "{previous}"), e.g. after moving the project.'
+        f'Re-linked the environment to "{Path(base_python).parent!s}" (was "{previous}"), e.g. after moving the project.'
     )
     return True
 
@@ -164,9 +168,9 @@ def refuse_mutation_while_running() -> None:
         raise SetupError("Close the running app instance(s) first; they use the files in the Python environment.")
 
 
-def ensure_lock(s=None) -> None:
+def ensure_lock(s: ModuleType | SimpleNamespace | None = None) -> None:
     """Create or update uv.lock when pyproject.toml changed (offline first)."""
-    if os.path.isfile(UV_LOCK_PATH) and uv_succeeds(["lock", "--check", "--offline"], s=s):
+    if Path(UV_LOCK_PATH).is_file() and uv_succeeds(["lock", "--check", "--offline"], s=s):
         return
     print_step("Updating uv.lock for the declared dependencies...")
     if uv_succeeds(["lock", "--offline"], s=s):
@@ -174,7 +178,9 @@ def ensure_lock(s=None) -> None:
     run_uv(["lock"], s=s)
 
 
-def sync(python_exe: str, *, venv_dir: str = VENV_DIR, exact: bool = False, s=None) -> None:
+def sync(
+    python_exe: str, *, venv_dir: str = VENV_DIR, exact: bool = False, s: ModuleType | SimpleNamespace | None = None
+) -> None:
     """Install exactly what uv.lock says (offline first, then online)."""
     arguments = ["sync", "--locked", "--python", python_exe]
     if not exact:
@@ -187,7 +193,7 @@ def sync(python_exe: str, *, venv_dir: str = VENV_DIR, exact: bool = False, s=No
     run_uv(arguments, project_environment=project_environment, s=s)
 
 
-def best_effort_install(python_exe: str, s=None) -> None:
+def best_effort_install(python_exe: str, s: ModuleType | SimpleNamespace | None = None) -> None:
     """For a Python outside requires-python: install the declared dependencies without the lock."""
     if not declared_dependencies():
         return
@@ -195,41 +201,41 @@ def best_effort_install(python_exe: str, s=None) -> None:
         run_uv(["pip", "install", "--python", python_exe, "-r", PYPROJECT_PATH], s=s)
 
 
-def create_venv(base_python: str, venv_dir: str, s=None) -> None:
+def create_venv(base_python: str, venv_dir: str, s: ModuleType | SimpleNamespace | None = None) -> None:
     run_uv(["venv", "--relocatable", "--quiet", "--python", base_python, venv_dir], s=s)
 
 
-def build_venv(base_python: str, *, locked: bool = True, s=None) -> None:
+def build_venv(base_python: str, *, locked: bool = True, s: ModuleType | SimpleNamespace | None = None) -> None:
     """Build a new venv beside the old one, fill it, then swap it in (the old one stays until then)."""
     staging = VENV_DIR + ".staging-" + uuid.uuid4().hex[:8]
     try:
         show_setup_window()
         print_step(f"Creating the app environment for Python {version_text(interpreter_version(base_python))}...")
         create_venv(base_python, staging, s)
-        staged_python = os.path.join(staging, "Scripts", "python.exe")
+        staged_python = str(Path(staging) / "Scripts" / "python.exe")
         if locked:
             sync(staged_python, venv_dir=staging, exact=True, s=s)
         else:
             best_effort_install(staged_python, s)
         swap_in_venv(staging)
     finally:
-        if os.path.isdir(staging):
+        if Path(staging).is_dir():
             shutil.rmtree(staging, ignore_errors=True)
 
 
 def swap_in_venv(staging: str) -> None:
     previous = VENV_DIR + ".previous-" + uuid.uuid4().hex[:8]
-    if os.path.isdir(VENV_DIR):
-        os.rename(VENV_DIR, previous)
+    if Path(VENV_DIR).is_dir():
+        Path(VENV_DIR).rename(previous)
     try:
-        os.rename(staging, VENV_DIR)
+        Path(staging).rename(VENV_DIR)
     except OSError:
-        if os.path.isdir(previous):
-            os.rename(previous, VENV_DIR)
+        if Path(previous).is_dir():
+            Path(previous).rename(VENV_DIR)
         raise
-    if os.path.isdir(previous):
+    if Path(previous).is_dir():
         shutil.rmtree(previous, ignore_errors=True)
-        if os.path.isdir(previous):
+        if Path(previous).is_dir():
             print_warn(f'The old environment could not be deleted completely: "{previous}"')
 
 
@@ -237,7 +243,7 @@ def ensure_environment(interactive: bool = True) -> AppPython:
     """Validate settings and make sure the app's interpreter and packages are ready."""
     s = settings()
     validate(s)
-    os.makedirs(PROJECT_DIR, exist_ok=True)
+    Path(PROJECT_DIR).mkdir(parents=True, exist_ok=True)
     base_python = sys.executable
 
     with FileLock(ENVIRONMENT_LOCK_PATH, timeout=600):
@@ -273,7 +279,7 @@ def ensure_environment(interactive: bool = True) -> AppPython:
             ensure_lock(s)
 
         config = read_venv_config()
-        if not os.path.isfile(VENV_PYTHON_EXE) or not config:
+        if not Path(VENV_PYTHON_EXE).is_file() or not config:
             build_venv(base_python, locked=locked, s=s)
         else:
             if (venv_version(config) or ())[:2] == base_version[:2] and venv_needs_relink(config, base_python):
@@ -296,7 +302,7 @@ def ensure_environment(interactive: bool = True) -> AppPython:
     return AppPython(VENV_PYTHON_EXE, APP_PYTHON_FLAGS)
 
 
-def environment_fingerprint(s) -> str:
+def environment_fingerprint(s: ModuleType | SimpleNamespace) -> str:
     """Everything the environment check depends on: files (time and size), paths and settings.
 
     Any change (uv.lock, pyproject.toml, packages added or removed in site-packages, a moved
@@ -319,11 +325,11 @@ def environment_fingerprint(s) -> str:
         UV_LOCK_PATH,
         PYTHON_VERSION_FILE,
         VENV_PYTHON_EXE,
-        os.path.join(VENV_DIR, "pyvenv.cfg"),
-        os.path.join(VENV_DIR, "Lib", "site-packages"),
+        str(Path(VENV_DIR) / "pyvenv.cfg"),
+        str(Path(VENV_DIR) / "Lib" / "site-packages"),
     ):
         try:
-            stat = os.stat(path)
+            stat = Path(path).stat()
             parts.append(f"{path}|{stat.st_mtime_ns}|{stat.st_size}")
         except OSError:
             parts.append(f"{path}|missing")
@@ -332,7 +338,7 @@ def environment_fingerprint(s) -> str:
 
 def _read_stamp() -> str | None:
     try:
-        with open(ENVIRONMENT_STAMP_PATH, encoding="utf-8") as stream:
+        with Path(ENVIRONMENT_STAMP_PATH).open(encoding="utf-8") as stream:
             return stream.read().strip()
     except OSError:
         return None
@@ -342,10 +348,10 @@ def _write_stamp(fingerprint: str | None) -> None:
     """Record a successful check (None forgets it, e.g. before changing the environment)."""
     try:
         if fingerprint is None:
-            if os.path.exists(ENVIRONMENT_STAMP_PATH):
-                os.remove(ENVIRONMENT_STAMP_PATH)
+            if Path(ENVIRONMENT_STAMP_PATH).exists():
+                Path(ENVIRONMENT_STAMP_PATH).unlink()
         else:
-            with open(ENVIRONMENT_STAMP_PATH, "w", encoding="utf-8") as stream:
+            with Path(ENVIRONMENT_STAMP_PATH).open("w", encoding="utf-8") as stream:
                 stream.write(fingerprint)
     except OSError:
         from backend.DONT_CHANGE.scripts.diagnostics import note_ignored
@@ -353,7 +359,7 @@ def _write_stamp(fingerprint: str | None) -> None:
         note_ignored("environment stamp")
 
 
-def handle_version_change(current: str, s, interactive: bool) -> bool:
+def handle_version_change(current: str, s: ModuleType | SimpleNamespace, interactive: bool) -> bool:
     """python_version differs from the Python the project uses. Returns True after a switch."""
     wanted = s.python_version
     show_setup_window()
@@ -401,7 +407,9 @@ def handle_version_change(current: str, s, interactive: bool) -> bool:
     return True
 
 
-def switch_python(request: str, *, upgrade=False, clear=False, s=None) -> None:
+def switch_python(
+    request: str, *, upgrade: bool = False, clear: bool = False, s: ModuleType | SimpleNamespace | None = None
+) -> None:
     """Move the project to another Python; restores all files if anything fails."""
     s = s or settings()
     refuse_mutation_while_running()
@@ -410,7 +418,7 @@ def switch_python(request: str, *, upgrade=False, clear=False, s=None) -> None:
     backups: dict[str, bytes | None] = {}
     for path in (PYPROJECT_PATH, UV_LOCK_PATH, PYTHON_VERSION_FILE, DEV_SETTINGS_PATH):
         try:
-            with open(path, "rb") as stream:
+            with Path(path).open("rb") as stream:
                 backups[path] = stream.read()
         except OSError:
             backups[path] = None
@@ -427,10 +435,10 @@ def switch_python(request: str, *, upgrade=False, clear=False, s=None) -> None:
     except BaseException:
         for path, content in backups.items():
             if content is None:
-                if os.path.exists(path):
-                    os.remove(path)
+                if Path(path).exists():
+                    Path(path).unlink()
             else:
-                with open(path, "wb") as stream:
+                with Path(path).open("wb") as stream:
                     stream.write(content)
         sys.modules.pop("backend.developer_settings", None)
         print_error("Switching Python failed; the previous Python, environment and files were kept.")
@@ -439,32 +447,32 @@ def switch_python(request: str, *, upgrade=False, clear=False, s=None) -> None:
     print_success(f"The project now uses Python {version_text(new_version)}.")
 
 
-def add_packages(names, s=None) -> None:
+def add_packages(names: list[str], s: ModuleType | SimpleNamespace | None = None) -> None:
     """uv add (resolves, locks, installs), then record the result in developer_settings.py."""
     reconcile_pyproject(s)
     run_uv(["add", *names], s=s)
     reconcile_pyproject()
 
 
-def remove_packages(names, s=None) -> None:
+def remove_packages(names: list[str], s: ModuleType | SimpleNamespace | None = None) -> None:
     """uv remove, then record the result in developer_settings.py."""
     reconcile_pyproject(s)
     run_uv(["remove", *names], s=s)
     reconcile_pyproject()
 
 
-def install_without_recording(names, python_exe: str, s=None) -> None:
+def install_without_recording(names: list[str], python_exe: str, s: ModuleType | SimpleNamespace | None = None) -> None:
     """Install into an environment without recording it in developer_settings.py (uv pip install)."""
     run_uv(["pip", "install", "--python", python_exe, *names], s=s)
 
 
-def open_package_terminal(s=None) -> int:
+def open_package_terminal(s: ModuleType | SimpleNamespace | None = None) -> int:
     """Open a command prompt with the app environment activated and uv on PATH; wait for exit."""
     s = s or settings()
     env = uv_environment(s, python_command=False)
     env["VIRTUAL_ENV"] = VENV_DIR
     env["UV_PROJECT"] = PROJECT_DIR  # uv add/remove/lock work from the code folder too
-    env["PATH"] = os.pathsep.join([os.path.join(VENV_DIR, "Scripts"), os.path.dirname(uv_exe()), env.get("PATH", "")])
+    env["PATH"] = os.pathsep.join([str(Path(VENV_DIR) / "Scripts"), str(Path(uv_exe()).parent), env.get("PATH", "")])
     env["PROMPT"] = "(app packages) $P$G"
     # Printed here, not with "echo" inside the cmd command line: paths like "R&D" would break that.
     print_heading("Package terminal")
@@ -481,4 +489,5 @@ def open_package_terminal(s=None) -> int:
         ]
     )
     print(flush=True)
-    return subprocess.run(["cmd.exe", "/d"], cwd=PYTHON_SCRIPTS_DIR, env=env, check=False).returncode
+    # Probe the selected interpreter or intentionally open the package command prompt.
+    return subprocess.run(["cmd.exe", "/d"], cwd=PYTHON_SCRIPTS_DIR, env=env, check=False).returncode  # noqa: S607

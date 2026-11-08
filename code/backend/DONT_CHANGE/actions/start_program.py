@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from types import ModuleType, SimpleNamespace
+
 fail_message = "Failed to start the program: {e}"
 
 import json
@@ -27,7 +29,7 @@ from backend.DONT_CHANGE.scripts.launcher_ui import (
 from backend.DONT_CHANGE.scripts.runtime_state import ProcessRegistry
 
 
-def resolve_mode(s, requested: str) -> str:
+def resolve_mode(s: ModuleType | SimpleNamespace, requested: str) -> str:
     """Map the shortcut's request to conhost / wt / no_terminal (with a Windows Terminal fallback)."""
     mode = requested
     if mode == "terminal":
@@ -40,7 +42,7 @@ def resolve_mode(s, requested: str) -> str:
     return mode
 
 
-def _hint_outdated_shortcuts(s) -> None:
+def _hint_outdated_shortcuts(s: ModuleType | SimpleNamespace) -> None:
     """The "open" shortcuts store their target; tell the user when the settings changed it."""
     try:
         from backend.DONT_CHANGE.scripts.shortcuts import outdated_shortcut_targets
@@ -93,7 +95,7 @@ def main():
         break
     env = os.environ.copy()
     env["PYAPP_RUN_DIR"] = str(run_dir)
-    env["PYAPP_START_DIR"] = env.get("PYAPP_START_DIR", os.getcwd())
+    env["PYAPP_START_DIR"] = env.get("PYAPP_START_DIR", str(Path.cwd()))
     env["PYAPP_APP_PYTHON"] = json.dumps({"exe": app.exe, "flags": list(app.flags)})
     args = [
         sys.executable,
@@ -121,8 +123,9 @@ def main():
         ]
     elif mode == "conhost":
         args = ["conhost.exe", *args]
-    with open(run_dir / "bootstrap.log", "w", encoding="utf-8") as diagnostics:
-        child = subprocess.Popen(
+    with Path(run_dir / "bootstrap.log").open("w", encoding="utf-8") as diagnostics:
+        # The configured launcher/interpreter is intentional; program arguments remain separate.
+        child = subprocess.Popen(  # noqa: S603
             args,
             env=env,
             startupinfo=startup,

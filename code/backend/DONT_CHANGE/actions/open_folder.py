@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import os
 import sys
+from pathlib import Path
 
 from backend.DONT_CHANGE.backend_settings import DEV_SETTINGS_PATH
 from backend.DONT_CHANGE.scripts.config import settings
@@ -30,5 +31,6 @@ def main() -> None:
     folder = get_log_folder_path(getattr(s, setting), getattr(s, setting + "_is_relative_to_start_folder_if_relative"))
     if folder is None:
         raise SettingsError(f'There is no {description}: {setting} is None in "{DEV_SETTINGS_PATH}".')
-    os.makedirs(folder, exist_ok=True)
-    os.startfile(folder)
+    Path(folder).mkdir(parents=True, exist_ok=True)
+    # Open the configured local folder in Explorer, without composing a shell command.
+    os.startfile(folder)  # noqa: S606

@@ -11,6 +11,7 @@ from __future__ import annotations
 import contextlib
 import os
 import sys
+from pathlib import Path
 
 from backend.DONT_CHANGE.backend_settings import DIAGNOSTICS_LOG_PATH
 
@@ -25,21 +26,21 @@ def note_ignored(context: str) -> None:
         import traceback
 
         text = traceback.format_exc().rstrip()
-        entry = f"{time.strftime('%Y-%m-%d %H:%M:%S')}  pid {os.getpid()}  {os.path.basename(sys.argv[0] or '?')}: {context}\n{text}\n\n"
+        entry = f"{time.strftime('%Y-%m-%d %H:%M:%S')}  pid {os.getpid()}  {Path(sys.argv[0] or '?').name}: {context}\n{text}\n\n"
         if os.environ.get("PYAPP_DEBUG") == "1":
             print("[Debug] Ignored error: " + context + "\n" + text, file=sys.stderr)
-        os.makedirs(os.path.dirname(DIAGNOSTICS_LOG_PATH), exist_ok=True)
+        (Path(DIAGNOSTICS_LOG_PATH).parent).mkdir(parents=True, exist_ok=True)
         with contextlib.suppress(OSError):
-            if os.path.getsize(DIAGNOSTICS_LOG_PATH) > _MAX_BYTES:
-                os.replace(DIAGNOSTICS_LOG_PATH, DIAGNOSTICS_LOG_PATH + ".old")
-        with open(DIAGNOSTICS_LOG_PATH, "a", encoding="utf-8") as stream:
+            if Path(DIAGNOSTICS_LOG_PATH).stat().st_size > _MAX_BYTES:
+                Path(DIAGNOSTICS_LOG_PATH).replace(DIAGNOSTICS_LOG_PATH + ".old")
+        with Path(DIAGNOSTICS_LOG_PATH).open("a", encoding="utf-8") as stream:
             stream.write(entry)
 
 
 def diagnostics_summary() -> str | None:
     """Short description of the diagnostics log for the status tool, or None if it is empty."""
     try:
-        with open(DIAGNOSTICS_LOG_PATH, encoding="utf-8", errors="replace") as stream:
+        with Path(DIAGNOSTICS_LOG_PATH).open(encoding="utf-8", errors="replace") as stream:
             entries = [block for block in stream.read().split("\n\n") if block.strip()]
     except OSError:
         return None

@@ -5,6 +5,8 @@ from __future__ import annotations
 import os
 import shutil
 import types
+from pathlib import Path
+from types import ModuleType, SimpleNamespace
 
 from backend.DONT_CHANGE import backend_settings as paths
 from backend.DONT_CHANGE.scripts.config import display_path, edit_settings, settings
@@ -31,7 +33,7 @@ from backend.DONT_CHANGE.scripts.env.venv import (
 from backend.DONT_CHANGE.scripts.errors import SetupError
 
 
-def _settings_copy(s, **overrides):
+def _settings_copy(s: ModuleType | SimpleNamespace, **overrides: object):
     values = {name: getattr(s, name) for name in dir(s) if not name.startswith("_")}
     values.update(overrides)
     return types.SimpleNamespace(**values)
@@ -44,7 +46,7 @@ PORTABLE_SETTINGS = {
 }
 
 
-def cmd_make_portable(arguments):
+def cmd_make_portable(arguments: list[str]):
     """Put uv, Python and all packages inside this folder so it runs offline on other PCs."""
     s = settings()
     # Ask before doing anything: with the old settings the next start would re-link the
@@ -63,24 +65,28 @@ def cmd_make_portable(arguments):
 
     # 1. uv
     current_uv = uv_exe()
-    if os.path.normcase(os.path.dirname(os.path.abspath(current_uv))) != os.path.normcase(paths.LOCAL_UV_DIR):
+    if os.path.normcase(str(Path(os.path.normpath(str(Path(current_uv).absolute()))).parent)) != os.path.normcase(
+        paths.LOCAL_UV_DIR
+    ):
         staging = paths.LOCAL_UV_DIR + ".staging"
         shutil.rmtree(staging, ignore_errors=True)
-        os.makedirs(staging)
+        Path(staging).mkdir(parents=True)
         for name in ("uv.exe", "uvx.exe", "uvw.exe"):
-            source = os.path.join(os.path.dirname(current_uv), name)
-            if os.path.isfile(source):
+            source = str((Path(current_uv).parent) / name)
+            if Path(source).is_file():
                 shutil.copy2(source, staging)
-        if os.path.isdir(paths.LOCAL_UV_DIR):
+        if Path(paths.LOCAL_UV_DIR).is_dir():
             shutil.rmtree(paths.LOCAL_UV_DIR)
-        os.rename(staging, paths.LOCAL_UV_DIR)
+        Path(staging).rename(paths.LOCAL_UV_DIR)
         print_step(f"Copied uv {uv_version()} into {display_path(paths.LOCAL_UV_DIR)}")
     os.environ["PYAPP_UV"] = paths.LOCAL_UV_EXE
 
     # 2. Python
     request = read_python_version_file() or s.python_version or newest_stable_minor(local)
     python = find_python(request, local) or install_python(request, local)
-    if not os.path.normcase(os.path.abspath(python)).startswith(os.path.normcase(paths.LOCAL_PYTHONS_DIR)):
+    if not os.path.normcase(os.path.normpath(str(Path(python).absolute()))).startswith(
+        os.path.normcase(paths.LOCAL_PYTHONS_DIR)
+    ):
         raise SetupError(f"uv did not install Python {request} into {paths.LOCAL_PYTHONS_DIR}.")
     print_step(f"Local Python: {display_path(python)}")
 

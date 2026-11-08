@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import os
 from datetime import datetime
+from pathlib import Path
+from typing import Any
 
 RESET = "\x1b[0m"
 BLACK_BACKGROUND = "\x1b[40m"
@@ -41,7 +43,7 @@ def _display_filename(filename: str) -> str:
     """The full path: editors and Windows Terminal recognize "path:line" for jumping there."""
     if not filename or filename.startswith("<"):
         return filename or "?"
-    return os.path.abspath(filename)
+    return os.path.normpath(str(Path(filename).absolute()))
 
 
 def on_black(line: str) -> str:
@@ -55,10 +57,10 @@ def rule_line(width: int = 100, colors: bool = False) -> str:
     return on_black(line) if colors else line
 
 
-def metadata_lines(report: dict, date_format: str) -> list:
+def metadata_lines(report: dict[str, Any], date_format: str) -> list[str]:
     lines = []
     if report.get("script_path"):
-        lines.append("Script  " + os.path.abspath(str(report["script_path"])))
+        lines.append("Script  " + os.path.normpath(str(Path(str(report["script_path"])).absolute())))
     lines.append("Time    " + datetime.now().astimezone().strftime(date_format))
     if report.get("python_version"):
         executable = report.get("python_executable")
@@ -66,10 +68,10 @@ def metadata_lines(report: dict, date_format: str) -> list:
     return lines
 
 
-def _frame_lines(frame: dict, colors: bool) -> list:
+def _frame_lines(frame: dict[str, Any], colors: bool) -> list[str]:
     app = bool(frame.get("app"))
     path = _display_filename(frame.get("filename", ""))
-    name_start = len(path) - len(os.path.basename(path))
+    name_start = len(path) - len(Path(path).name)
     location = (
         "  "
         + _style(path[:name_start], "folder", colors)
@@ -94,12 +96,12 @@ def _frame_lines(frame: dict, colors: bool) -> list:
 
 
 def render(
-    report: dict | None,
+    report: dict[str, Any] | None,
     *,
     colors: bool = False,
     date_format: str = "%Y-%m-%d %H:%M:%S",
     width: int = 100,
-) -> list:
+) -> list[str]:
     """Return the report as a list of lines (without newlines): frames, the error, then metadata."""
     if not report:
         return []

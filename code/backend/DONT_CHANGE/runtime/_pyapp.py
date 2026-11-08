@@ -6,11 +6,15 @@ top-level module, so its name must not collide with the app's modules or package
 (a plain "protocol" would shadow the app's own protocol.py).
 """
 
+from __future__ import annotations
+
 import json
 import linecache
 import os
 import sys
 import traceback
+from pathlib import Path
+from types import TracebackType
 
 
 class WrapperExit:
@@ -50,13 +54,13 @@ def _launcher_files():
         names.add(os.path.normcase(os.path.realpath(runpy.__file__)))
     except (ImportError, AttributeError, TypeError):
         pass  # no runpy file (e.g. a frozen build): its frames are filtered by name only
-    here = os.path.dirname(os.path.realpath(__file__))
+    here = str(Path(os.path.realpath(__file__)).parent)
     for name in ("script_wrapper.py", "_pyapp.py"):
-        names.add(os.path.normcase(os.path.join(here, name)))
+        names.add(os.path.normcase(str(Path(here) / name)))
     return names
 
 
-def strip_launcher_frames(tb):
+def strip_launcher_frames(tb: TracebackType | None):
     """Drop the leading wrapper/runpy frames so the report looks like `python main.py`."""
     skip = _launcher_files()
     while tb is not None:
@@ -68,11 +72,11 @@ def strip_launcher_frames(tb):
     return tb
 
 
-def _is_app_file(filename, app_root):
+def _is_app_file(filename: str, app_root: str | None):
     if not app_root or not filename or filename.startswith("<"):
         return False
-    path = os.path.normcase(os.path.abspath(filename))
-    root = os.path.normcase(os.path.abspath(app_root))
+    path = os.path.normcase(os.path.normpath(str(Path(filename).absolute())))
+    root = os.path.normcase(os.path.normpath(str(Path(app_root).absolute())))
     if not path.startswith(root + os.sep):
         return False
     relative = path[len(root) + 1 :]
@@ -80,7 +84,7 @@ def _is_app_file(filename, app_root):
     return first not in ("backend", ".venv") and not first.startswith(".venv")
 
 
-def _frames(te, app_root, context_lines):
+def _frames(te: traceback.TracebackException, app_root: str | None, context_lines: tuple[int, int]):
     frames = []
     for frame in te.stack:
         is_app = _is_app_file(frame.filename, app_root)
@@ -104,7 +108,7 @@ def _frames(te, app_root, context_lines):
     return frames
 
 
-def _chain(te, app_root, context_lines):
+def _chain(te: traceback.TracebackException, app_root: str | None, context_lines: tuple[int, int]):
     """Exception chain oldest first, like CPython prints it.
 
     Each entry's "relation" is the sentence printed between the previous entry and it.
@@ -112,7 +116,7 @@ def _chain(te, app_root, context_lines):
     entries = []
     seen = set()
 
-    def add(current):
+    def add(current: traceback.TracebackException | None):
         if current is None or id(current) in seen:
             return
         seen.add(id(current))
@@ -136,7 +140,9 @@ def _chain(te, app_root, context_lines):
     return entries
 
 
-def build_report(error, script_path, app_root=None, context_lines=(3, 3)):
+def build_report(
+    error: BaseException, script_path: str, app_root: str | None = None, context_lines: tuple[int, int] = (3, 3)
+):
     """Serializable report of an exception as if main.py had been run directly.
 
     context_lines: (lines before, lines after) the failing line shown for the app's own files.
@@ -161,16 +167,22 @@ def build_report(error, script_path, app_root=None, context_lines=(3, 3)):
     }
 
 
-def save_report(error, script_path, output_path, app_root=None, context_lines=(3, 3)):
+def save_report(
+    error: BaseException,
+    script_path: str,
+    output_path: str,
+    app_root: str | None = None,
+    context_lines: tuple[int, int] = (3, 3),
+):
     """Write the report atomically (temporary file + replace)."""
     report = build_report(error, script_path, app_root, context_lines)
     temporary = output_path + ".tmp"
-    with open(temporary, "w", encoding="utf-8") as stream:
+    with Path(temporary).open("w", encoding="utf-8") as stream:
         json.dump(report, stream)
-    os.replace(temporary, output_path)
+    Path(temporary).replace(output_path)
     return report
 
 
-def exit_code_is_success(code):
+def exit_code_is_success(code: object):
     """Only None and integer zero (including False) count as a successful SystemExit."""
     return code is None or (isinstance(code, int) and code == 0)

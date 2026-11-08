@@ -1,5 +1,7 @@
 """Windows-only: file lock, process registry, job objects and graceful Stop with real processes."""
 
+from __future__ import annotations
+
 import os
 import subprocess
 import sys
@@ -8,6 +10,7 @@ import textwrap
 import time
 import unittest
 from pathlib import Path
+from typing import Callable
 
 from project_location import CODE
 
@@ -38,7 +41,7 @@ except KeyboardInterrupt:
 """
 
 
-def wait_for(condition, seconds=20.0):
+def wait_for(condition: Callable[[], bool], seconds: float = 20.0):
     deadline = time.monotonic() + seconds
     while time.monotonic() < deadline:
         if condition():
@@ -47,20 +50,21 @@ def wait_for(condition, seconds=20.0):
     return False
 
 
-def running(pid):
+def running(pid: int):
     with runtime_state.process_identity(pid) as identity:
         return identity is not None
 
 
 @unittest.skipUnless(os.name == "nt", "Windows only")
 class WindowsProcessTests(unittest.TestCase):
-    def setUp(self):
+    # typing.override requires Python 3.12; keep this override dependency-free on 3.8.
+    def setUp(self):  # pyrefly: ignore[missing-override-decorator]
         directory = tempfile.TemporaryDirectory()
         self.addCleanup(directory.cleanup)
         self.folder = Path(directory.name)
         self.registry = runtime_state.ProcessRegistry(self.folder / "running")
 
-    def start_instance(self, new_console=False):
+    def start_instance(self, new_console: bool = False):
         ready, marker = self.folder / "ready", self.folder / "marker"
         script = self.folder / "instance.py"
         script.write_text(
@@ -69,7 +73,8 @@ class WindowsProcessTests(unittest.TestCase):
             ),
             encoding="utf-8",
         )
-        process = subprocess.Popen(
+        # Test subprocesses execute fixed fixture/helper code using the local interpreter or Git.
+        process = subprocess.Popen(  # noqa: S603
             [PYTHON, "-E", "-s", str(script)], creationflags=CREATE_NEW_CONSOLE if new_console else 0
         )
         self.addCleanup(lambda: process.kill() if process.poll() is None else None)
@@ -102,7 +107,8 @@ class WindowsProcessTests(unittest.TestCase):
 
     def test_file_lock_is_reentrant_and_exclusive(self):
         path = self.folder / "test.lock"
-        holder = subprocess.Popen(
+        # Test subprocesses execute fixed fixture/helper code using the local interpreter or Git.
+        holder = subprocess.Popen(  # noqa: S603
             [
                 sys.executable,
                 "-c",

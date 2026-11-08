@@ -16,4 +16,4 @@ if str(CODE) not in sys.path:
 
 # Errors the launcher ignores on purpose go to a temporary log, never into the project's
 # tmp/diagnostics.log (also for the launcher processes the tests start).
-os.environ["PYAPP_DIAGNOSTICS_LOG"] = os.path.join(tempfile.mkdtemp(prefix="pyapp-tests-"), "diagnostics.log")
+os.environ["PYAPP_DIAGNOSTICS_LOG"] = str(Path(tempfile.mkdtemp(prefix="pyapp-tests-")) / "diagnostics.log")

@@ -12,6 +12,7 @@ import threading
 import time
 import traceback
 from pathlib import Path
+from types import ModuleType, SimpleNamespace
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 from backend.DONT_CHANGE import backend_settings as paths
@@ -45,12 +46,12 @@ from backend.DONT_CHANGE.scripts.runtime_state import (
 )
 
 
-def acknowledge(run_dir, **payload):
+def acknowledge(run_dir: Path, **payload: object):
     """Atomically publish watchdog startup status for the waiting launcher."""
     atomic_json(run_dir / "startup.json", payload)
 
 
-def successful_application_exit(mode, run_dir):
+def successful_application_exit(mode: int, run_dir: Path):
     """Normal return, or SystemExit with None/integer zero."""
     if mode == ExitMode.SUCCESS:
         return True
@@ -63,7 +64,16 @@ def successful_application_exit(mode, run_dir):
     return False
 
 
-def handle_exit(settings, mode, app_id, has_terminal, log_path, script, run_dir, native_code=None):
+def handle_exit(
+    settings: ModuleType | SimpleNamespace,
+    mode: int,
+    app_id: str,
+    has_terminal: bool,
+    log_path: str,
+    script: str,
+    run_dir: Path,
+    native_code: int | None = None,
+):
     """Run completion handling in the current, a hidden, or a new console as needed."""
     env = os.environ.copy()
     env["PYAPP_RUN_DIR"] = str(run_dir)
@@ -76,7 +86,7 @@ def handle_exit(settings, mode, app_id, has_terminal, log_path, script, run_dir,
         "-X",
         "utf8",
         paths.PROCESS_EXIT_PATH,
-        str(int(mode)),
+        str(mode),
         app_id,
         "false" if has_terminal else "true",
         log_path,
@@ -85,19 +95,23 @@ def handle_exit(settings, mode, app_id, has_terminal, log_path, script, run_dir,
     success = successful_application_exit(mode, run_dir)
     if not has_terminal and success and settings.close_after_success:
         # Successful hidden runs perform their completion actions without a console.
-        subprocess.run(args, env=env, check=False, creationflags=subprocess.CREATE_NO_WINDOW)
+        # Run the launcher helper or configured app interpreter with a controlled argument list.
+        subprocess.run(args, env=env, check=False, creationflags=subprocess.CREATE_NO_WINDOW)  # noqa: S603
     elif has_terminal:
-        subprocess.run(args, env=env, check=False)
+        # Run the launcher helper or configured app interpreter with a controlled argument list.
+        subprocess.run(args, env=env, check=False)  # noqa: S603
     else:
-        subprocess.run(
-            ["conhost.exe", *args],
+        # Run the launcher helper or configured app interpreter with a controlled argument list.
+        subprocess.run(  # noqa: S603
+            # Run the launcher helper or configured app interpreter with a controlled argument list.
+            ["conhost.exe", *args],  # noqa: S607
             env=env,
             check=False,
             creationflags=subprocess.CREATE_NEW_CONSOLE,
         )
 
 
-def register_with_policy(settings, registry, run_dir):
+def register_with_policy(settings: ModuleType | SimpleNamespace, registry: ProcessRegistry, run_dir: Path):
     """Apply instance_policy and register.
 
     Dialogs and stopping other instances happen without holding the registry lock (a stopping
@@ -167,7 +181,7 @@ def main():
                 run_dir.name,
             )
         cwd = (
-            os.environ.get("PYAPP_START_DIR", os.getcwd())
+            os.environ.get("PYAPP_START_DIR", str(Path.cwd()))
             if settings.start_in_shortcut_folder
             else str(Path(script).parent)
         )
@@ -205,11 +219,12 @@ def main():
         pump = None
         if log_path:
             Path(log_path).parent.mkdir(parents=True, exist_ok=True)
-            raw_stream = open(log_path + OUTPUT_LOG_SUFFIX, "wb")  # noqa: SIM115 - closed by the output pump
+            raw_stream = Path(log_path + OUTPUT_LOG_SUFFIX).open("wb")  # noqa: SIM115 - closed by the output pump
         try:
             # From before the app exists: a Ctrl+C during its start-up must not end this watchdog.
             previous = signal.signal(signal.SIGINT, signal.SIG_IGN)
-            child = subprocess.Popen(
+            # Run the launcher helper or configured app interpreter with a controlled argument list.
+            child = subprocess.Popen(  # noqa: S603
                 [
                     app_python["exe"],
                     *app_python["flags"],
@@ -227,7 +242,8 @@ def main():
             registry.register(child.pid)
             if raw_stream:
                 output = child.stdout
-                assert isinstance(output, io.BufferedReader)
+                if not isinstance(output, io.BufferedReader):
+                    raise RuntimeError("The child process did not provide a buffered output pipe.")
 
                 def copy_output():
                     """Copy combined child output to the raw log and the terminal."""

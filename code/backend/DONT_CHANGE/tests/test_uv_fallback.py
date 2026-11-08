@@ -1,5 +1,7 @@
 """Installing a Python with a uv that is too old: one retry with a newer uv."""
 
+from __future__ import annotations
+
 import unittest
 from unittest import mock
 
@@ -12,7 +14,7 @@ from backend.DONT_CHANGE.scripts.errors import SetupError
 
 
 class InstallPythonTests(unittest.TestCase):
-    def install(self, exit_codes, newer_uv):
+    def install(self, exit_codes: list[int], newer_uv: bool):
         with mock.patch.object(pythons, "run_uv", side_effect=exit_codes) as run_uv, mock.patch.object(
             pythons, "install_newer_uv", return_value=newer_uv
         ) as install_newer_uv, mock.patch.object(pythons, "invalidate_runtime_cache"), mock.patch.object(

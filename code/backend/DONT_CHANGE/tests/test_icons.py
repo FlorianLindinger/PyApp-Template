@@ -1,10 +1,12 @@
 """actions/gen_icons.py: bundled overlays; generated icons update silently, others only after a question."""
 
+from __future__ import annotations
+
 import json
-import os
 import tempfile
 import unittest
 from pathlib import Path
+from typing import Iterable
 from unittest import mock
 
 from project_location import DONT_CHANGE
@@ -15,21 +17,23 @@ from backend.DONT_CHANGE.actions import gen_icons
 
 
 class GenIconsTests(unittest.TestCase):
-    def regenerate(self, folder, answers=(), content=b"generated"):
+    def regenerate(self, folder: str, answers: Iterable[str | BaseException] = (), content: bytes = b"generated"):
         """Run the generator for two icons with a stand-in that writes content; return (overlays, questions)."""
         overlays = []
 
-        def fake(output, base, overlay, sub_icon_area_scale_factor, sub_icon_alignment):
+        def fake(
+            output: str, base: str, overlay: str | None, sub_icon_area_scale_factor: float, sub_icon_alignment: str
+        ):
             overlays.append(overlay)
             Path(output).write_bytes(content)
             return output
 
         table = [
-            (os.path.join(folder, name), "icon.png", None, "default_icon.png", "default_failure.png")
+            (str(Path(folder) / name), "icon.png", None, "default_icon.png", "default_failure.png")
             for name in ("failure.ico", "success.ico")
         ]
         with mock.patch.object(gen_icons, "ICON_GENERATION_SETTINGS", table), mock.patch.object(
-            gen_icons, "GENERATED_ICONS_RECORD_PATH", os.path.join(folder, "record", "icons.json")
+            gen_icons, "GENERATED_ICONS_RECORD_PATH", str(Path(folder) / "record" / "icons.json")
         ), mock.patch.object(gen_icons, "generate_ico_from_png", fake), mock.patch.object(
             gen_icons, "_pick_png", return_value="base.png"
         ), mock.patch.object(gen_icons, "validate"), mock.patch.object(gen_icons, "load_settings"), mock.patch.object(

@@ -1,10 +1,14 @@
 """developer_settings.py: validation, friendly errors, and editing without damaging the file."""
 
+from __future__ import annotations
+
+import ast
 import re
 import tempfile
 import types
 import unittest
 from pathlib import Path
+from typing import Callable, Iterable
 from unittest import mock
 
 import support
@@ -16,7 +20,7 @@ from backend.DONT_CHANGE.scripts import config, entrypoint
 from backend.DONT_CHANGE.scripts.errors import SettingsError
 
 
-def append(lines):
+def append(lines: Iterable[str]) -> Callable[[str], str]:
     return lambda text: text + "".join(line + "\r\n" for line in lines)
 
 
@@ -52,7 +56,7 @@ class ValidationTests(unittest.TestCase):
         self.assertTrue(any(p.startswith("uv_prefer (line") for p in problems), problems)
 
     def test_errors_in_the_file_get_a_line_number_instead_of_a_traceback(self):
-        def typo(text):
+        def typo(text: str):
             return text.replace("start_menu_shortcuts = True", "start_menu_shortcuts = Ture")
 
         with support.temporary_settings(typo) as (_, load):
@@ -82,7 +86,7 @@ class DefaultsTests(unittest.TestCase):
             config.validate(load())
 
     @staticmethod
-    def settings_part(path):
+    def settings_part(path: Path):
         """The file without its header and without the block that opens it when run directly."""
         text = path.read_text(encoding="utf-8")
         text = text[text.index("from __future__ import annotations\n") :]
@@ -101,7 +105,7 @@ class DefaultsTests(unittest.TestCase):
         )
 
     def test_missing_settings_get_their_defaults(self):
-        def drop(text):
+        def drop(text: str):
             text = re.sub(r"(?m)^start_minimized\b.*\n", "", text)
             text = re.sub(r"(?m)^terminal_shortcut_name\b.*\n", "", text)
             return text.replace('program_name = "PyApp-Template"', 'program_name = "Other App"')
@@ -127,11 +131,14 @@ class DefaultsTests(unittest.TestCase):
         expressions = config.default_setting_expressions(str(self.DEFAULTS))
         for name, literal in found:
             expected = {"$true": True, "$false": False}.get(literal, literal.strip("'"))
-            self.assertEqual(expressions[name].value, expected, f"default of {name} in resolve_runtime.ps1")
+            expression = expressions[name]
+            if not isinstance(expression, ast.Constant):
+                self.fail(f"The bootstrap default of {name} must be a literal.")
+            self.assertEqual(expression.value, expected, f"default of {name} in resolve_runtime.ps1")
 
 
 class MainScriptTests(unittest.TestCase):
-    def check(self, relative):
+    def check(self, relative: str):
         """Validate main_script_path pointing at a file below a temporary code folder."""
         with tempfile.TemporaryDirectory() as folder:
             code = Path(folder) / "code"
@@ -169,7 +176,7 @@ class EditingTests(unittest.TestCase):
     def test_edit_keeps_crlf_comments_and_writes_safe_literals(self):
         value = 'Flo\'s "App" C:\\x'
 
-        def with_comment(text):
+        def with_comment(text: str):
             return text + 'uv_cache = "global"  # trailing comment\r\n'
 
         with support.temporary_settings(with_comment) as (path, load):
@@ -183,7 +190,7 @@ class EditingTests(unittest.TestCase):
         self.assertIn(b'uv_cache = "local"  # trailing comment', raw)
 
     def test_edit_keeps_parentheses_around_a_value_on_its_own_lines(self):
-        def parenthesized(text):
+        def parenthesized(text: str):
             return text + '\r\nuv_version = (\r\n    "0.1.0"\r\n)  # note\r\nlast_line = 1\r\n'
 
         with support.temporary_settings(parenthesized) as (path, load):

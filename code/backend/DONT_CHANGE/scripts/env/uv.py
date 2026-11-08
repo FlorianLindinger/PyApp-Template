@@ -5,6 +5,8 @@ from __future__ import annotations
 import os
 import shutil
 import subprocess
+from pathlib import Path
+from types import ModuleType, SimpleNamespace
 
 from backend.DONT_CHANGE.backend_settings import (
     LOCAL_PYTHONS_DIR,
@@ -21,9 +23,9 @@ from backend.DONT_CHANGE.scripts.errors import SetupError
 def uv_exe() -> str:
     """Return the uv chosen by the bootstrap, or the best available fallback."""
     path = os.environ.get("PYAPP_UV", "")
-    if path and os.path.isfile(path):
+    if path and Path(path).is_file():
         return path
-    if os.path.isfile(LOCAL_UV_EXE):
+    if Path(LOCAL_UV_EXE).is_file():
         return LOCAL_UV_EXE
     found = shutil.which("uv")
     if found:
@@ -44,7 +46,8 @@ def install_newer_uv() -> bool:
         "-File",
         RESOLVE_RUNTIME_PATH,
     ]
-    code = subprocess.run(["powershell.exe", *arguments, "-InstallNewerThan", uv_exe()], check=False).returncode
+    # Run the selected local uv executable or the bundled bootstrap script.
+    code = subprocess.run(["powershell.exe", *arguments, "-InstallNewerThan", uv_exe()], check=False).returncode  # noqa: S603, S607
     if code:
         return False
     os.environ["PYAPP_UV"] = SHARED_UV_EXE
@@ -71,7 +74,9 @@ _OWN_UV_VARIABLES = (
 )
 
 
-def uv_environment(s=None, project_environment: str | None = None, python_command: bool = True) -> dict:
+def uv_environment(
+    s: ModuleType | SimpleNamespace | None = None, project_environment: str | None = None, python_command: bool = True
+) -> dict[str, str]:
     """Environment for uv calls. Mirrors Set-UvEnvironment in bootstrap/resolve_runtime.ps1.
 
     The user's other UV_* settings (index URLs, proxies, ...) are kept on purpose.
@@ -110,10 +115,18 @@ def uv_environment(s=None, project_environment: str | None = None, python_comman
     return env
 
 
-def _run(arguments, capture: bool, check: bool, cwd, project_environment, s) -> subprocess.CompletedProcess:
+def _run(
+    arguments: list[str],
+    capture: bool,
+    check: bool,
+    cwd: str | None,
+    project_environment: str | None,
+    s: ModuleType | SimpleNamespace | None,
+) -> subprocess.CompletedProcess[str]:
     if not cwd:
-        os.makedirs(PROJECT_DIR, exist_ok=True)
-    result = subprocess.run(
+        Path(PROJECT_DIR).mkdir(parents=True, exist_ok=True)
+    # Run the selected local uv executable or the bundled bootstrap script.
+    result = subprocess.run(  # noqa: S603
         [uv_exe(), *arguments],
         check=False,
         cwd=cwd or PROJECT_DIR,
@@ -135,12 +148,26 @@ def _run(arguments, capture: bool, check: bool, cwd, project_environment, s) -> 
     return result
 
 
-def run_uv(arguments, *, check=True, cwd=None, project_environment=None, s=None) -> int:
+def run_uv(
+    arguments: list[str],
+    *,
+    check: bool = True,
+    cwd: str | None = None,
+    project_environment: str | None = None,
+    s: ModuleType | SimpleNamespace | None = None,
+) -> int:
     """Run uv with its output shown; return the exit code (check=True raises SetupError on failure)."""
     return _run(arguments, False, check, cwd, project_environment, s).returncode
 
 
-def run_uv_captured(arguments, *, check=True, cwd=None, project_environment=None, s=None) -> tuple[int, str, str]:
+def run_uv_captured(
+    arguments: list[str],
+    *,
+    check: bool = True,
+    cwd: str | None = None,
+    project_environment: str | None = None,
+    s: ModuleType | SimpleNamespace | None = None,
+) -> tuple[int, str, str]:
     """Run uv quietly; return (exit code, stdout, stderr)."""
     result = _run(arguments, True, check, cwd, project_environment, s)
     return result.returncode, result.stdout or "", result.stderr or ""
@@ -153,7 +180,9 @@ def uv_version() -> str:
     return parts[1] if len(parts) > 1 else "?"
 
 
-def uv_succeeds(arguments, project_environment=None, s=None) -> bool:
+def uv_succeeds(
+    arguments: list[str], project_environment: str | None = None, s: ModuleType | SimpleNamespace | None = None
+) -> bool:
     """Try a uv command without printing anything (used for offline-first attempts)."""
     code, _, _ = run_uv_captured(arguments, check=False, project_environment=project_environment, s=s)
     return code == 0

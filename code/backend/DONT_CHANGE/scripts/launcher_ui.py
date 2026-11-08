@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import os
 import sys
+from pathlib import Path
+from typing import Callable
 
 from backend.DONT_CHANGE.backend_settings import (
     DEV_SETTINGS_DIR,
@@ -46,7 +48,7 @@ def set_hidden_in_explorer() -> None:
     """Apply the configured hidden attribute in the project root and the code folder."""
     _set_hidden_in_explorer(
         [
-            os.path.join(base_dir, path)
+            str(Path(base_dir) / path)
             for base_dir in (PYTHON_SCRIPTS_DIR, SHORTCUT_OUTPUT_DIR)
             for path in FOLDERS_TO_MAKE_HIDDEN_IN_SHORTCUT_AND_ROOT_FOLDERS
         ]
@@ -82,7 +84,7 @@ def set_settings_colors() -> None:
     _set_terminal_colors((s.terminal_bg_color or "") + (s.terminal_text_color or ""))
 
 
-def get_log_path(log_path, is_relative_to_start_folder_if_relative: bool) -> str:
+def get_log_path(log_path: str | None, is_relative_to_start_folder_if_relative: bool) -> str:
     """Resolve a configured log path ("" when disabled).
 
     Date placeholders are filled in the configured text only, so a "%" in the
@@ -93,21 +95,24 @@ def get_log_path(log_path, is_relative_to_start_folder_if_relative: bool) -> str
     from datetime import datetime
 
     configured = datetime.now().astimezone().strftime(log_path) if "%" in log_path else log_path
-    if os.path.isabs(configured):
+    # Keep os.path.isabs: rooted Windows paths have different pathlib semantics on Python 3.8-3.12.
+    if os.path.isabs(configured):  # noqa: PTH117
         return os.path.normpath(configured)
     base = (
-        os.environ.get("PYAPP_START_DIR", os.getcwd()) if is_relative_to_start_folder_if_relative else DEV_SETTINGS_DIR
+        os.environ.get("PYAPP_START_DIR", str(Path.cwd()))
+        if is_relative_to_start_folder_if_relative
+        else DEV_SETTINGS_DIR
     )
-    return os.path.normpath(os.path.join(base, configured))
+    return os.path.normpath(str(Path(base) / configured))
 
 
-def get_log_folder_path(log_path, is_relative_to_start_folder_if_relative: bool) -> str | None:
+def get_log_folder_path(log_path: str | None, is_relative_to_start_folder_if_relative: bool) -> str | None:
     """Folder of the resolved log path, or None when logging is disabled."""
     resolved = get_log_path(log_path, is_relative_to_start_folder_if_relative)
-    return os.path.dirname(resolved) if resolved else None
+    return str(Path(resolved).parent) if resolved else None
 
 
-def stop_running_instances(timeout: float = 0.0, report=None):
+def stop_running_instances(timeout: float = 0.0, report: Callable[[str], object] | None = None):
     """Stop verified application instances (graceful first, see ProcessRegistry.stop)."""
     from backend.DONT_CHANGE.scripts.runtime_state import ProcessRegistry
 
@@ -121,7 +126,7 @@ def delete_finished_run_folders() -> None:
     from backend.DONT_CHANGE.scripts.runtime_state import ProcessRegistry
 
     try:
-        if not os.path.isdir(RUNS_DIR) or ProcessRegistry(PROCESS_REGISTRY_DIR).records()[0]:
+        if not Path(RUNS_DIR).is_dir() or ProcessRegistry(PROCESS_REGISTRY_DIR).records()[0]:
             return
         newest_allowed = time.time() - RUN_FOLDER_IN_USE_SECONDS
         with os.scandir(RUNS_DIR) as entries:

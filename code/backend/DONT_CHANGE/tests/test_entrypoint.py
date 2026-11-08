@@ -1,5 +1,7 @@
 """scripts/entrypoint.py: how every launcher tool is run (exit codes, prompts, error messages)."""
 
+from __future__ import annotations
+
 import os
 import subprocess
 import sys
@@ -7,6 +9,7 @@ import tempfile
 import textwrap
 import unittest
 from pathlib import Path
+from typing import Sequence
 from unittest import mock
 
 from project_location import DONT_CHANGE
@@ -18,15 +21,15 @@ from backend.DONT_CHANGE.scripts.errors import SetupError
 
 
 class RunFileTests(unittest.TestCase):
-    def tool(self, source):
+    def tool(self, source: str):
         directory = tempfile.TemporaryDirectory()
         self.addCleanup(directory.cleanup)
         path = Path(directory.name, "tool.py")
         path.write_text(textwrap.dedent(source), encoding="utf-8")
         return path
 
-    def run_tool(self, source, arguments=()):
-        prompts = []
+    def run_tool(self, source: str, arguments: Sequence[str] = ()):
+        prompts: list[str] = []
         with mock.patch.object(entrypoint, "acknowledge", prompts.append), mock.patch.object(
             entrypoint, "_show_console"
         ):
@@ -76,12 +79,14 @@ class RunnerProcessTests(unittest.TestCase):
             )
             command = [sys.executable, "-I", "-S", str(DONT_CHANGE / "scripts" / "entrypoint.py"), str(tool)]
             env = {**os.environ, "PYAPP_ENTRYPOINT_NO_PAUSE": "1"}
-            good = subprocess.run(
+            # Test subprocesses execute fixed fixture/helper code using the local interpreter or Git.
+            good = subprocess.run(  # noqa: S603
                 command + ["a", "b c"], capture_output=True, text=True, env=env, timeout=60, check=False
             )
             self.assertEqual(good.returncode, 0, good.stderr)
             self.assertIn("argv ['a', 'b c']", good.stdout)
-            bad = subprocess.run(command + ["bad"], capture_output=True, text=True, env=env, timeout=60, check=False)
+            # Test subprocesses execute fixed fixture/helper code using the local interpreter or Git.
+            bad = subprocess.run(command + ["bad"], capture_output=True, text=True, env=env, timeout=60, check=False)  # noqa: S603
             self.assertEqual(bad.returncode, 1)
             self.assertIn("ERROR  python_version is wrong", bad.stderr)
             self.assertNotIn("Traceback", bad.stderr)

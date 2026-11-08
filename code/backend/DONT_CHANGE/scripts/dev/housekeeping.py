@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import sys
+from pathlib import Path
 
 from backend.DONT_CHANGE import backend_settings as paths
 from backend.DONT_CHANGE.scripts.config import describe_python_request, display_path, settings, validate
@@ -26,7 +27,7 @@ from backend.DONT_CHANGE.scripts.errors import SettingsError, SetupError
 from backend.DONT_CHANGE.scripts.runtime_state import ProcessRegistry
 
 
-def cmd_clean(arguments):
+def cmd_clean(arguments: list[str]):
     """Delete logs or run diagnostics."""
     from backend.DONT_CHANGE.scripts.file_tools import remove_tree_inside
     from backend.DONT_CHANGE.scripts.launcher_ui import get_log_folder_path
@@ -53,17 +54,17 @@ def cmd_clean(arguments):
         return
     in_use = 0
     for key, folder in (("logs", log_folder), ("crash", crash_folder)):
-        if key in keys and folder and os.path.isdir(folder):
-            for name in os.listdir(folder):
-                path = os.path.join(folder, name)
-                if os.path.isfile(path) and name != ".gitkeep":
+        if key in keys and folder and Path(folder).is_dir():
+            for name in [entry.name for entry in Path(folder).iterdir()]:
+                path = str(Path(folder) / name)
+                if Path(path).is_file() and name != ".gitkeep":
                     try:
-                        os.remove(path)
+                        Path(path).unlink()
                     except PermissionError:  # the log of an instance that is still running
                         in_use += 1
     if in_use:
         print_warn(f"Kept {in_use} file(s) that are in use, e.g. by a running instance.")
-    if "runs" in keys and os.path.isdir(paths.RUNS_DIR):
+    if "runs" in keys and Path(paths.RUNS_DIR).is_dir():
         # A running instance still writes its completion report into its run folder.
         if ProcessRegistry(paths.PROCESS_REGISTRY_DIR).records()[0]:
             print_warn("Kept the per-run diagnostics: close the running app instance(s) first.")
@@ -72,7 +73,7 @@ def cmd_clean(arguments):
     print_success("Cleaned.")
 
 
-def cmd_remove_shortcuts(arguments):
+def cmd_remove_shortcuts(arguments: list[str]):
     """Remove every shortcut Setup created (project folder, Start Menu, Desktop)."""
     from backend.DONT_CHANGE.scripts.shortcuts import (
         read_created_shortcuts,
@@ -87,7 +88,7 @@ def cmd_remove_shortcuts(arguments):
     print_success(f"Removed {len(removed)} shortcut(s). Run Setup to create them again.")
 
 
-def cmd_status(arguments):
+def cmd_status(arguments: list[str]):
     """Show uv, Python, environment and shortcut state."""
     s = settings()
     try:
@@ -104,10 +105,10 @@ def cmd_status(arguments):
         uv = None
         uv_state = "missing (Setup or the next start installs it)"
     config = read_venv_config()
-    lock_state = ("(missing - created on the next start)", False)
-    if os.path.isfile(paths.UV_LOCK_PATH) and uv is None:
+    lock_state: tuple[str, bool] = ("(missing - created on the next start)", False)
+    if Path(paths.UV_LOCK_PATH).is_file() and uv is None:
         lock_state = ("present (not checked: uv is missing)", False)
-    elif os.path.isfile(paths.UV_LOCK_PATH):
+    elif Path(paths.UV_LOCK_PATH).is_file():
         up_to_date = uv_succeeds(["lock", "--check", "--offline"])
         lock_state = ("up to date", True) if up_to_date else ("needs an update (next start or sync)", False)
     try:
@@ -119,7 +120,7 @@ def cmd_status(arguments):
         shortcut_count = "?"
     ignored = diagnostics_summary()
     in_sync = declared_dependencies() == list(s.packages)
-    sections: dict[str, list[tuple]] = {
+    sections: dict[str, list[tuple[str, object] | tuple[str, object, bool]]] = {
         "Project": [
             ("Program", s.program_name),
             ("Launcher version", paths.LAUNCHER_VERSION),
@@ -146,7 +147,7 @@ def cmd_status(arguments):
                 "matches developer_settings.py" if in_sync else "differs (updated on the next start or dev tool)",
                 in_sync,
             ),
-            ("uv.lock", *lock_state),
+            ("uv.lock", lock_state[0], lock_state[1]),
         ],
         "Environment": [("Folder", display_path(paths.VENV_DIR) if config else "(not created)", bool(config))],
     }
@@ -166,16 +167,17 @@ def cmd_status(arguments):
         print_fields(rows)
 
 
-def cmd_test(arguments):
+def cmd_test(arguments: list[str]):
     """Run the launcher's regression tests (DONT_CHANGE/tests); optional file pattern."""
     import subprocess
 
-    script = os.path.join(paths.DONT_CHANGE_DIR, "tests", "run_regressions.py")
-    if not os.path.isfile(script):
+    script = str(Path(paths.DONT_CHANGE_DIR) / "tests" / "run_regressions.py")
+    if not Path(script).is_file():
         print_info("The tests folder DONT_CHANGE/tests was removed; nothing to run.")
         return
     print_heading("Launcher tests")
-    code = subprocess.run([sys.executable, "-B", script, "-q", *arguments], check=False).returncode
+    # Run this checkout's test runner with the current Python interpreter.
+    code = subprocess.run([sys.executable, "-B", script, "-q", *arguments], check=False).returncode  # noqa: S603
     print()
     if code:
         raise SetupError("Some launcher tests failed (see above).")

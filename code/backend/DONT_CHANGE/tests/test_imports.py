@@ -1,6 +1,7 @@
 """scripts/import_finder.py: which PyPI packages does the app import?"""
 
-import os
+from __future__ import annotations
+
 import tempfile
 import textwrap
 import unittest
@@ -13,14 +14,15 @@ from project_location import DONT_CHANGE
 from backend.DONT_CHANGE.scripts import import_finder
 
 
-def write(root, relative, text=""):
+def write(root: str | Path, relative: str, text: str = ""):
     path = Path(root, relative)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(textwrap.dedent(text), encoding="utf-8")
 
 
 class ScanTests(unittest.TestCase):
-    def setUp(self):
+    # typing.override requires Python 3.12; keep this override dependency-free on 3.8.
+    def setUp(self):  # pyrefly: ignore[missing-override-decorator]
         directory = tempfile.TemporaryDirectory()
         self.addCleanup(directory.cleanup)
         self.root = directory.name
@@ -88,7 +90,7 @@ class MappingFileTests(unittest.TestCase):
 
     def test_later_lines_win(self):
         with tempfile.TemporaryDirectory() as folder:
-            path = os.path.join(folder, "map.txt")
+            path = str(Path(folder) / "map.txt")
             Path(path).write_text("# comment\nfoo:first\nfoo:second\n", encoding="utf-8")
             self.assertEqual(import_finder.bundled_mapping(path), {"foo": "second"})
 

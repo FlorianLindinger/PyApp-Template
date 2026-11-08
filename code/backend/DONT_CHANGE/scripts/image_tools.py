@@ -19,8 +19,10 @@ def _run_wpf_powershell(script: str, **extra_env: str) -> str:
 
     environment = os.environ.copy()
     environment.update(extra_env)
-    completed = subprocess.run(
-        ["powershell.exe", "-NoProfile", "-NonInteractive", "-STA", "-Command", script],
+    # PowerShell source is bundled; image inputs are passed through environment variables.
+    completed = subprocess.run(  # noqa: S603
+        # PowerShell source is bundled; image inputs are passed through environment variables.
+        ["powershell.exe", "-NoProfile", "-NonInteractive", "-STA", "-Command", script],  # noqa: S607
         capture_output=True,
         text=True,
         check=False,
@@ -42,8 +44,8 @@ def get_png_image_id(path: str) -> str:
     import json
     import zlib
 
-    if not os.path.isfile(path):
-        raise FileNotFoundError(f'PNG does not exist: "{os.path.abspath(path)}"')
+    if not Path(path).is_file():
+        raise FileNotFoundError(f'PNG does not exist: "{os.path.normpath(str(Path(path).absolute()))}"')
     script = r"""
 Add-Type -AssemblyName PresentationCore
 $bitmap = [System.Windows.Media.Imaging.BitmapImage]::new()
@@ -83,14 +85,14 @@ def generate_ico_from_png(
     import struct
 
     output_path, base_png_path = (
-        os.path.abspath(output_path),
-        os.path.abspath(base_png_path),
+        os.path.normpath(str(Path(output_path).absolute())),
+        os.path.normpath(str(Path(base_png_path).absolute())),
     )
-    sub_png_path = os.path.abspath(sub_png_path) if sub_png_path else None
+    sub_png_path = os.path.normpath(str(Path(sub_png_path).absolute())) if sub_png_path else None
     sizes = tuple(icon_sizes)
-    if not os.path.isfile(base_png_path):
+    if not Path(base_png_path).is_file():
         raise FileNotFoundError(f'Base PNG does not exist: "{base_png_path}"')
-    if sub_png_path and not os.path.isfile(sub_png_path):
+    if sub_png_path and not Path(sub_png_path).is_file():
         raise FileNotFoundError(f'Sub PNG does not exist: "{sub_png_path}"')
     if not 0 < sub_icon_area_scale_factor <= 1:
         raise ValueError("sub_icon_area_scale_factor must be greater than 0 and at most 1.")
@@ -104,11 +106,11 @@ def generate_ico_from_png(
         raise ValueError(f"Unsupported sub_icon_alignment: {sub_icon_alignment!r}")
     vertical = next((token for token in tokens if token in {"top", "bottom"}), "center")
     horizontal = next((token for token in tokens if token in {"left", "right"}), "center")
-    if os.path.exists(output_path) and not override:
+    if Path(output_path).exists() and not override:
         return output_path
-    output_folder = os.path.dirname(output_path)
+    output_folder = str(Path(output_path).parent)
     if output_folder:
-        os.makedirs(output_folder, exist_ok=True)
+        Path(output_folder).mkdir(parents=True, exist_ok=True)
 
     script = r"""
 Add-Type -AssemblyName PresentationCore
@@ -174,6 +176,6 @@ if ($env:ICO_OVERLAY_URI) {
         )
         data.extend(png)
         offset += len(png)
-    with open(output_path, "wb") as file:
+    with Path(output_path).open("wb") as file:
         file.write(struct.pack("<HHH", 0, 1, len(layers)) + b"".join(entries) + data)
     return output_path

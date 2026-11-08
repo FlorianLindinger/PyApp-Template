@@ -5,6 +5,8 @@ launcher supports (3.8+): standard library only, no "X | Y" types at runtime, no
 match statements, no parenthesized context managers.
 """
 
+from __future__ import annotations
+
 import codecs
 import io
 import os
@@ -13,6 +15,8 @@ import runpy
 import sys
 import threading
 from datetime import datetime
+from pathlib import Path
+from typing import TextIO
 
 # The protocol module lives next to this file; import it before sys.path[0]
 # is switched to the application's folder. It stays in sys.modules as "_pyapp",
@@ -34,7 +38,7 @@ result_path = None
 _ANSI_ESCAPE = re.compile(r"\x1b(?:\[[0-?]*[ -/]*[@-~]|\][^\x07]*(?:\x07|\x1b\\)|[@-Z\\-_])")
 
 
-def _format_prepend(fmt):
+def _format_prepend(fmt: str | None):
     """Current local time in the configured prefix format, or ""."""
     return datetime.now().astimezone().strftime(fmt) if fmt else ""
 
@@ -42,17 +46,17 @@ def _format_prepend(fmt):
 class _BinarySplitter:
     """Mirror binary writes to the original stream and an incrementally decoded text log."""
 
-    def __init__(self, owner):
+    def __init__(self, owner: PipeSplitter):
         self.owner = owner
         self.decoder = codecs.getincrementaldecoder(owner.encoding or "utf-8")("replace")
 
-    def write(self, data):
+    def write(self, data: bytes | bytearray):
         with self.owner._lock:
             target = getattr(self.owner.print_stream, "buffer", None)
             if target is not None:
                 target.write(data)
             else:
-                self.owner.print_stream.write(data.decode(self.owner.encoding or "utf-8", "replace"))
+                self.owner._write_console(data.decode(self.owner.encoding or "utf-8", "replace"))
             if self.owner.log_stream is not None:
                 self.owner.log_stream.write(self.decoder.decode(data))
             self.owner.flush()
@@ -61,8 +65,11 @@ class _BinarySplitter:
     def flush(self):
         self.owner.flush()
 
-    def __getattr__(self, name):
-        return getattr(self.owner.print_stream.buffer, name)
+    def __getattr__(self, name: str):
+        stream = self.owner.print_stream
+        if stream is None:
+            raise AttributeError(name)
+        return getattr(stream.buffer, name)
 
 
 class PipeSplitter:
@@ -70,13 +77,13 @@ class PipeSplitter:
 
     def __init__(
         self,
-        print_stream,
-        log_stream=None,
-        print_timestamp_format="",
-        log_timestamp_format="",
-        input_timestamp_format="",
-        log_input_timestamp_format="",
-        print_red=False,
+        print_stream: TextIO | None,
+        log_stream: TextIO | None = None,
+        print_timestamp_format: str | None = "",
+        log_timestamp_format: str | None = "",
+        input_timestamp_format: str | None = "",
+        log_input_timestamp_format: str | None = "",
+        print_red: bool = False,
     ):
         self.print_stream = print_stream
         self.log_stream = log_stream
@@ -89,10 +96,15 @@ class PipeSplitter:
         self._at_line_start = True
         self._lock = threading.RLock()
 
+    def _write_console(self, text: str) -> None:
+        """A hidden/pythonw launch can have no original console stream."""
+        if self.print_stream is not None:
+            self.print_stream.write(text)
+
     def _supports_color(self):
         return bool(getattr(self.print_stream, "isatty", lambda: False)())
 
-    def write(self, data):
+    def write(self, data: object):
         if data is None:
             data = ""
         if not isinstance(data, str):
@@ -104,34 +116,34 @@ class PipeSplitter:
                 if self._at_line_start:
                     prefix = _format_prepend(self.print_timestamp_format)
                     if prefix:
-                        self.print_stream.write(prefix)
+                        self._write_console(prefix)
                     log_prefix = _format_prepend(self.log_timestamp_format)
                     if self.log_stream is not None and log_prefix:
                         self.log_stream.write(log_prefix)
                     if self.print_red and self._supports_color():
-                        self.print_stream.write("\x1b[31m")
-                self.print_stream.write(part)
+                        self._write_console("\x1b[31m")
+                self._write_console(part)
                 if self.log_stream is not None:
                     self.log_stream.write(_ANSI_ESCAPE.sub("", part))
                 if part.endswith("\n"):
                     if self.print_red and self._supports_color():
-                        self.print_stream.write("\x1b[0m")
+                        self._write_console("\x1b[0m")
                     self._at_line_start = True
                 else:
                     self._at_line_start = False
             self.flush()
         return len(data)
 
-    def write_input_prompt(self, prompt):
+    def write_input_prompt(self, prompt: object):
         prompt = "" if prompt is None else str(prompt)
         with self._lock:
-            self.print_stream.write(_format_prepend(self.input_timestamp_format) + prompt)
+            self._write_console(_format_prepend(self.input_timestamp_format) + prompt)
             if self.log_stream is not None:
                 self.log_stream.write(_format_prepend(self.log_input_timestamp_format) + _ANSI_ESCAPE.sub("", prompt))
             self._at_line_start = prompt.endswith("\n")
             self.flush()
 
-    def complete_input_line(self, text):
+    def complete_input_line(self, text: str):
         with self._lock:
             if self.log_stream is not None:
                 self.log_stream.write(text + "\n")
@@ -160,16 +172,16 @@ class PipeSplitter:
     def encoding(self):
         return getattr(self.print_stream, "encoding", None)
 
-    def __getattr__(self, name):
+    def __getattr__(self, name: str):
         return getattr(self.print_stream, name)
 
 
 def setup_log_prints(
-    log_path,
-    print_prepend,
-    log_print_prepend,
-    input_prepend,
-    log_input_prepend,
+    log_path: str | None,
+    print_prepend: str | None,
+    log_print_prepend: str | None,
+    input_prepend: str | None,
+    log_input_prepend: str | None,
 ):
     """Install stdout/stderr splitters and point faulthandler at the log."""
     import atexit
@@ -177,12 +189,11 @@ def setup_log_prints(
 
     global log_file
     if log_path:
-        folder = os.path.dirname(log_path)
+        folder = str(Path(log_path).parent)
         if folder:
-            os.makedirs(folder, exist_ok=True)
-        log_file = open(  # noqa: SIM115 - open for the whole run, closed by _finish_logging
-            log_path, "w", encoding="utf-8", buffering=1
-        )
+            Path(folder).mkdir(parents=True, exist_ok=True)
+        # The application-wide log stream is closed by _finish_logging after all exit callbacks.
+        log_file = Path(log_path).open("w", encoding="utf-8", buffering=1)  # noqa: SIM115
     # Registered before the application's callbacks, so it runs after them.
     atexit.register(_finish_logging)
     common = {
@@ -213,13 +224,13 @@ def _finish_logging():
             log_file.close()
 
 
-def install_input_prefix(input_prepend):
+def install_input_prefix(input_prepend: str | None):
     """input() bypasses sys.stdout's prefixing, so wrap it."""
     import builtins
 
     original_input = builtins.input
 
-    def input_with_prepend(prompt=""):
+    def input_with_prepend(prompt: object = ""):
         if hasattr(sys.stdout, "write_input_prompt"):
             sys.stdout.write_input_prompt(prompt)
             text = original_input("")
@@ -235,23 +246,23 @@ def install_input_prefix(input_prepend):
 # ------------------------------------------------------------ reports
 
 
-def save_result(code):
+def save_result(code: int):
     """Atomic completion marker; its absence tells the watchdog the interpreter died abruptly."""
     if result_path:
         import json
 
-        with open(result_path + ".tmp", "w", encoding="utf-8") as stream:
+        with Path(result_path + ".tmp").open("w", encoding="utf-8") as stream:
             json.dump({"wrapper_exit_code": code}, stream)
-        os.replace(result_path + ".tmp", result_path)
+        Path(result_path + ".tmp").replace(result_path)
 
 
-def capture_background_errors(script_path, output_path, app_root, context_lines):
+def capture_background_errors(script_path: str, output_path: str, app_root: str | None, context_lines: tuple[int, int]):
     """Record the first unhandled worker-thread error and Tkinter callback error."""
-    first_error = [None]
+    first_error: list[BaseException | None] = [None]
     lock = threading.Lock()
     previous_last = getattr(sys, "last_exc", getattr(sys, "last_value", None))
 
-    def record(error):
+    def record(error: BaseException):
         if isinstance(error, SystemExit) and protocol.exit_code_is_success(error.code):
             return
         with lock:
@@ -263,9 +274,10 @@ def capture_background_errors(script_path, output_path, app_root, context_lines)
     previous_hook = getattr(threading, "excepthook", None)
     if previous_hook is not None:
 
-        def thread_hook(args):
+        def thread_hook(args: threading.ExceptHookArgs):
             try:
-                record(args.exc_value)
+                if args.exc_value is not None:
+                    record(args.exc_value)
             finally:
                 previous_hook(args)
 
@@ -291,13 +303,13 @@ def main():
 
     if len(sys.argv) != 3 or sys.argv[1] != "--config":
         raise SystemExit("script_wrapper.py is started by the launcher with --config <file>.")
-    with open(sys.argv[2], encoding="utf-8") as stream:
+    with Path(sys.argv[2]).open(encoding="utf-8") as stream:
         config = json.load(stream)
     script_path = config["script"]
     report_path = config["traceback"]
     result_path = config["result"]
     ready_path = config.get("ready")
-    app_root = config.get("app_root") or os.path.dirname(script_path)
+    app_root = config.get("app_root") or str(Path(script_path).parent)
     context_lines = (int(config.get("traceback_lines_before", 3)), int(config.get("traceback_lines_after", 3)))
     print_prepend = config.get("print_prepend") or ""
     input_prepend = config.get("input_prepend") or ""
@@ -338,13 +350,13 @@ def main():
 
     # Make the application's folder sys.path[0], exactly like `python main.py`,
     # instead of this launcher folder.
-    sys.path[0] = os.path.dirname(os.path.abspath(script_path))
+    sys.path[0] = str(Path(os.path.normpath(str(Path(script_path).absolute()))).parent)
 
     pending_background_error = capture_background_errors(
         script_path, report_path + ".background", app_root, context_lines
     )
     if ready_path:
-        with open(ready_path, "w", encoding="utf-8") as stream:
+        with Path(ready_path).open("w", encoding="utf-8") as stream:
             stream.write("ready")
     try:
         runpy.run_path(script_path, run_name="__main__")
@@ -367,6 +379,6 @@ if __name__ == "__main__":
         main()
     except Exception as wrapper_error:
         if report_path:
-            protocol.save_report(wrapper_error, os.path.abspath(__file__), report_path)
+            protocol.save_report(wrapper_error, os.path.normpath(str(Path(__file__).absolute())), report_path)
         save_result(protocol.WrapperExit.WRAPPER_FAILED)
         sys.exit(protocol.WrapperExit.WRAPPER_FAILED)

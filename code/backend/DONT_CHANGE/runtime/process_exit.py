@@ -10,12 +10,13 @@ import os
 import shutil
 import subprocess
 import sys
-from typing import NoReturn
+from pathlib import Path
+from typing import Any, NoReturn
 
 fail_message = "Failed while processing program exit: {e}"
 
 
-def _fail_while_loading(error) -> NoReturn:
+def _fail_while_loading(error: BaseException) -> NoReturn:
     """This window may be the only place the problem is visible: show it and wait."""
     import traceback
 
@@ -26,7 +27,7 @@ def _fail_while_loading(error) -> NoReturn:
     os._exit(1)
 
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..")))
+sys.path.insert(0, os.path.normpath(str((Path(__file__).parent / ".." / ".." / "..").absolute())))
 try:
     from backend.DONT_CHANGE import backend_settings as paths
     from backend.DONT_CHANGE.runtime._pyapp import (
@@ -60,7 +61,7 @@ try:
 except Exception as import_error:
     _fail_while_loading(import_error)
 
-REPORT_PATH = os.path.join(os.environ.get("PYAPP_RUN_DIR", paths.TEMPORARY_DIR), "traceback.json")
+REPORT_PATH = str(Path(os.environ.get("PYAPP_RUN_DIR", paths.TEMPORARY_DIR)) / "traceback.json")
 
 # Failures: black background (bright white text) so the colored traceback stays readable.
 FAILURE_COLORS = "0F"
@@ -90,7 +91,7 @@ OUTCOMES = {
 def load_report():
     """Return (report, problem description)."""
     try:
-        with open(REPORT_PATH, encoding="utf-8") as stream:
+        with Path(REPORT_PATH).open(encoding="utf-8") as stream:
             report = json.load(stream)
     except FileNotFoundError:
         return None, f'The traceback report was not created at "{REPORT_PATH}".'
@@ -109,7 +110,7 @@ def _report_style():
     return colors, max(40, min(120, shutil.get_terminal_size((100, 30)).columns - 1))
 
 
-def error_summary(report, limit=200):
+def error_summary(report: dict[str, Any], limit: int = 200):
     """The last exception's own line, e.g. "ZeroDivisionError: division by zero" (shortened)."""
     chain = report.get("chain") or []
     lines = (chain[-1].get("exception_only") or []) if chain else []
@@ -119,13 +120,13 @@ def error_summary(report, limit=200):
     return text if len(text) <= limit else text[: limit - 3] + "..."
 
 
-def print_report(report):
+def print_report(report: dict[str, Any] | None):
     if report:
         colors, width = _report_style()
         print("\n".join(render(report, colors=colors, date_format=settings().error_date_format, width=width)))
 
 
-def write_crash_log(report, message):
+def write_crash_log(report: dict[str, Any] | None, message: str | None):
     """Write a uniquely named plain-text crash report and return its path (None if none was written)."""
     s = settings()
     if not s.enable_crash_log:
@@ -133,15 +134,15 @@ def write_crash_log(report, message):
     path = get_log_path(s.crash_log_path, s.crash_log_path_is_relative_to_start_folder_if_relative)
     if not path or (report is None and message is None):
         return None
-    path = unique_log_path(path, os.path.basename(os.environ.get("PYAPP_RUN_DIR", "")) or None)
-    lines = ["=" * 30]
+    path = unique_log_path(path, Path(os.environ.get("PYAPP_RUN_DIR", "")).name or None)
+    lines: list[str] = ["=" * 30]
     if message:
         lines.append(message)
     if report:
         lines += render(report, colors=False, date_format=s.error_date_format)
     lines.append("=" * 30)
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, "w", encoding="utf-8") as stream:
+    (Path(path).parent).mkdir(parents=True, exist_ok=True)
+    with Path(path).open("w", encoding="utf-8") as stream:
         stream.write("\n".join(lines) + "\n")
     return path
 
@@ -149,11 +150,12 @@ def write_crash_log(report, message):
 # ------------------------------------------------------------ recovery
 
 
-def restart_program(app_id, new_terminal_was_created):
+def restart_program(app_id: str, new_terminal_was_created: bool):
     """Start the program again with the same terminal behavior."""
     env = os.environ.copy()
     env["PYAPP_LAUNCH_MODE"] = "no_terminal" if new_terminal_was_created else "terminal"
-    subprocess.Popen(
+    # Run the launcher restart helper or open the configured local log file.
+    subprocess.Popen(  # noqa: S603
         [
             sys.executable,
             "-I",
@@ -168,15 +170,13 @@ def restart_program(app_id, new_terminal_was_created):
     )
 
 
-def local_module_exists(name):
+def local_module_exists(name: str):
     """True when the missing import is a module/package of the project itself (do not install)."""
-    roots = (paths.PYTHON_SCRIPTS_DIR, os.path.dirname(main_script_path()))
-    return any(
-        os.path.isfile(os.path.join(root, name + ".py")) or os.path.isdir(os.path.join(root, name)) for root in roots
-    )
+    roots = (paths.PYTHON_SCRIPTS_DIR, str(Path(main_script_path()).parent))
+    return any((Path(root) / (name + ".py")).is_file() or (Path(root) / name).is_dir() for root in roots)
 
 
-def handle_missing_module(missing, app_id, new_terminal_was_created):
+def handle_missing_module(missing: str, app_id: str, new_terminal_was_created: bool):
     """Offer to install the distribution behind a ModuleNotFoundError, then restart."""
     from backend.DONT_CHANGE.scripts.env import venv
     from backend.DONT_CHANGE.scripts.import_finder import distribution_for_import
@@ -232,7 +232,7 @@ def handle_missing_module(missing, app_id, new_terminal_was_created):
 # ------------------------------------------------------------ completion
 
 
-def play_sound(wav, wait=True):
+def play_sound(wav: str, wait: bool = True):
     try:
         import winsound
 
@@ -242,13 +242,20 @@ def play_sound(wav, wait=True):
         print_error(f"Failed to play .wav file: {error}")
 
 
-def complete(outcome, log_path, report=None, message=None, keep_open=False):
+def complete(
+    outcome: str,
+    log_path: str | None,
+    report: dict[str, Any] | None = None,
+    message: str | None = None,
+    keep_open: bool = False,
+):
     """Run the configured actions for success/failure/crash/keyboard_interrupt."""
     s = settings()
     close = getattr(s, "close_after_" + outcome)
     if log_path and getattr(s, "open_log_file_after_" + outcome):
         try:
-            os.startfile(log_path)
+            # Run the launcher restart helper or open the configured local log file.
+            os.startfile(log_path)  # noqa: S606
         except Exception as error:
             print_error(f"Failed to open log: {error}")
     stays_open = close is False or keep_open
@@ -268,7 +275,8 @@ def complete(outcome, log_path, report=None, message=None, keep_open=False):
         crash_log = write_crash_log(report, message)
         if crash_log and outcome == "failure" and s.open_crash_log_after_failure:
             try:
-                os.startfile(crash_log)
+                # Run the launcher restart helper or open the configured local log file.
+                os.startfile(crash_log)  # noqa: S606
             except Exception as error:
                 print_error(f"Failed to open crash log: {error}")
     print_report(report)
@@ -283,7 +291,7 @@ def main():
     _, exit_mode, app_id, new_terminal_was_created, log_path, script_path = sys.argv
     exit_mode = int(exit_mode)
     new_terminal_was_created = new_terminal_was_created.lower() == "true"
-    script_name = os.path.basename(script_path)
+    script_name = Path(script_path).name
     if new_terminal_was_created and app_id:
         # Started by the "(no Terminal)" shortcut: group this window with that shortcut.
         set_terminal_app_id(app_id + paths.NO_TERMINAL_APP_ID_SUFFIX)

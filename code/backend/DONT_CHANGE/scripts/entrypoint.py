@@ -11,16 +11,18 @@ import os
 import runpy
 import sys
 import traceback
+from pathlib import Path
+from typing import Sequence
 
 if __name__ == "__main__":
     # -I leaves the script folder off sys.path; make "backend...." importable (the code folder).
-    sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..")))
+    sys.path.insert(0, os.path.normpath(str((Path(__file__).parent / ".." / ".." / "..").absolute())))
 
 from backend.DONT_CHANGE.scripts.diagnostics import note_ignored
 from backend.DONT_CHANGE.scripts.errors import LaunchCancelled, SettingsError, SetupError
 
 
-def normalize_exit_code(value):
+def normalize_exit_code(value: object):
     """Convert a return or SystemExit value to a process code, printing nonnumeric errors."""
     if value is None:
         return 0
@@ -30,7 +32,7 @@ def normalize_exit_code(value):
     return 1
 
 
-def acknowledge(message):
+def acknowledge(message: str):
     """Wait for interactive acknowledgement unless an outer launcher owns the prompt."""
     # An outer launcher can own the final prompt and preserve native-crash output.
     if os.environ.get("PYAPP_ENTRYPOINT_NO_PAUSE") == "1":
@@ -42,7 +44,7 @@ def acknowledge(message):
             pass
 
 
-def run_file(path, arguments=()):
+def run_file(path: str | Path, arguments: Sequence[str] = ()):
     """Load the tool, run its main() under the shared failure policy, with at most one prompt."""
     namespace = {}
     sys.argv = [str(path), *arguments]
@@ -85,7 +87,7 @@ def run_file(path, arguments=()):
         return 1
 
 
-def expected_problem(error):
+def expected_problem(error: BaseException):
     """Return a message for user-fixable errors (no traceback needed), else None."""
     if isinstance(error, (SettingsError, SetupError)):
         return str(error)
@@ -95,7 +97,7 @@ def expected_problem(error):
 SETTINGS_FILE_NAME = "developer_settings.py"
 
 
-def settings_file_problem(error):
+def settings_file_problem(error: BaseException):
     """A short message if the error comes from running developer_settings.py itself, else None.
 
     Catches syntax errors and mistakes such as `Ture` (NameError) or `"a" + 1` (TypeError).
@@ -119,7 +121,7 @@ def settings_file_problem(error):
     return f'{SETTINGS_FILE_NAME} line {line}: {type(error).__name__}: {error}{hint}\n  "{filename}"'
 
 
-def _print_error(message):
+def _print_error(message: str):
     try:
         from backend.DONT_CHANGE.scripts.console_tools import print_error
 

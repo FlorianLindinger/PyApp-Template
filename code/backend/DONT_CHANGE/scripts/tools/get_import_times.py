@@ -29,9 +29,10 @@ LAUNCHER_MODULES = (
 IMPORT = "import importlib, sys; sys.path.insert(0, sys.argv[1]); sys.argv[2] and importlib.import_module(sys.argv[2])"
 
 
-def run_once(python: list, module: str) -> float:
+def run_once(python: list[str], module: str) -> float:
     start = time.perf_counter()
-    result = subprocess.run(
+    # Run the selected local interpreter; module names are arguments to fixed source.
+    result = subprocess.run(  # noqa: S603
         [*python, "-c", IMPORT, str(CODE_DIR), module],
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
@@ -44,7 +45,7 @@ def run_once(python: list, module: str) -> float:
     return elapsed
 
 
-def app_modules() -> list:
+def app_modules() -> list[str]:
     """Top-level import names of the declared packages, read from the installed metadata in .venv."""
     sys.path.insert(0, str(CODE_DIR))
     from backend.DONT_CHANGE.scripts.config import settings
