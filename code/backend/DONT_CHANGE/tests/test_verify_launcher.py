@@ -54,6 +54,7 @@ class VerifyLauncherTests(unittest.TestCase):
             run.side_effect = [subprocess.CompletedProcess([], code) for code in (1, 0, 0)]
             self.assertEqual(verify_launcher.main(), 1)
         self.assertEqual(run.call_count, 3)
+        self.assertIn(str(DONT_CHANGE / "ruff.toml"), output.getvalue())
         self.assertIn("[Warning] Ruff lint", output.getvalue())
         self.assertIn("[Error] The launcher failed verification.", output.getvalue())
 

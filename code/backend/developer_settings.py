@@ -218,4 +218,4 @@ if __name__ == "__main__":
 
     # VS Code if it is on PATH, otherwise Notepad. "code" is a .cmd file, so the command is one quoted string.
     editor = shutil.which("code") or "notepad.exe"
-    subprocess.Popen(f'"{editor}" "{os.path.abspath(__file__)}"')  # type:ignore # noqa:PTH100 S603 PGH003
+    subprocess.Popen(f'"{editor}" "{os.path.abspath(__file__)}"')  # type:ignore # noqa:PTH100 S603 PGH003 RUF100

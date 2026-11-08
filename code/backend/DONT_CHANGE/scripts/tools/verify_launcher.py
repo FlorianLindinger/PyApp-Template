@@ -59,6 +59,7 @@ def main() -> int:
         ("Ruff format", [*ruff, "format", *([] if fix else ["--check"]), "."]),
         ("Pyrefly", [*pyrefly, "check"]),
     ]
+    print(f"[Info] Ruff uses {DONT_CHANGE_DIR / 'ruff.toml'}", flush=True)  # the closest one to the checked folder
     results = [run_check(label, command) for label, command in checks]
     if all(results):
         print("\n[Success] The launcher passed verification.")
