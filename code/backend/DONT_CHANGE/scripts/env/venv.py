@@ -39,6 +39,7 @@ from backend.DONT_CHANGE.scripts.console_tools import (
     print_fields,
     print_heading,
     print_info,
+    print_settings_diff,
     print_step,
     print_success,
     print_warn,
@@ -401,8 +402,7 @@ def handle_version_change(current: str, s: Union[ModuleType, SimpleNamespace], i
     if answer == 4:
         return False
     if answer == 5:
-        for line in edit_settings({"python_version": current}):
-            print(line)
+        print_settings_diff(edit_settings({"python_version": current}))
         return False
     if (
         answer == 3

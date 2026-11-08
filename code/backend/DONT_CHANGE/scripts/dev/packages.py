@@ -40,6 +40,7 @@ def cmd_add(arguments: List[str]):
     s = settings()
     names = arguments or ask_package_names("Package(s) to add, e.g. requests numpy>=2:")
     if not names:
+        print_info("Nothing was changed.")
         return
     prepare(s)
     refuse_mutation_while_running()
@@ -66,6 +67,7 @@ def cmd_remove(arguments: List[str]):
             elif item:
                 names.append(item)
     if not names:
+        print_info("Nothing was changed.")
         return
     prepare(s)
     refuse_mutation_while_running()

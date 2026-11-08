@@ -13,6 +13,7 @@ from backend.DONT_CHANGE.scripts.console_tools import (
     print_fields,
     print_heading,
     print_info,
+    print_settings_diff,
     print_step,
     print_success,
 )
@@ -57,8 +58,7 @@ def cmd_change_python(arguments: List[str]):
     problem = python_version_problem(new)
     if problem:
         raise SettingsError(problem)
-    for line in edit_settings({"python_version": new}):
-        print(line)
+    print_settings_diff(edit_settings({"python_version": new}))
     if not new:
         print_info(
             "python_version is now empty (newest stable, chosen once). Use update_python to move to a newer Python."

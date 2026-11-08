@@ -11,6 +11,9 @@ The first versioned release; it contains every change below.
 
 - The tools in `tools/` use the launcher's headings, badges and aligned tables; `verify_launcher` ends with a summary of its checks and names the configuration files it uses.
 - New `tools/check_git_leaks.bat` looks for secrets and personal data in the current files and the Git history.
+- The dev tools: a grouped menu that waits before returning, a heading on every tool, a verdict in `status`, file counts in `clean`, and colored settings changes.
+- New `tools/release.bat` bumps the version, finishes the changelog and builds the zip; new `scripts/tools/git_hooks/pre-push` runs the leak check on the commits being pushed.
+- New `tools/fresh_clone_test.bat` checks that a fresh clone of the current commit sets up and starts; new `tools/test_all_pythons.bat` runs the tests on Python 3.8 and the newest Python.
 - The tools show a short message instead of a traceback for expected problems and Ctrl+C; `make_import_map` keeps the existing map when most of a download fails.
 
 ### 2026-11-08 - launcher fixes

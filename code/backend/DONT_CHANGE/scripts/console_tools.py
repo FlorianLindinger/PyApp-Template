@@ -132,10 +132,16 @@ def print_fields(rows: Iterable[Union[Tuple[str, object], Tuple[str, object, boo
         )
 
 
-def print_choices(options: Iterable[object]) -> None:
+def print_choices(options: Iterable[object], start: int = 1) -> None:
     """A numbered list: "  1  first option"."""
-    for index, option in enumerate(options, 1):
+    for index, option in enumerate(options, start):
         print(f"  {styled(str(index).rjust(2), ANSI_HEADING)}  {option}")
+
+
+def print_settings_diff(lines: Iterable[str]) -> None:
+    """The changes edit_settings made: removed lines in red, added lines in green."""
+    for line in lines:
+        print("  " + styled(line, "\x1b[31m" if line.startswith("-") else ANSI_GOOD))
 
 
 def set_terminal_title(title: Optional[str]) -> None:

@@ -11,7 +11,14 @@ from typing import List, Union
 
 from backend.DONT_CHANGE import backend_settings as paths
 from backend.DONT_CHANGE.scripts.config import display_path, edit_settings, settings
-from backend.DONT_CHANGE.scripts.console_tools import print_fields, print_heading, print_info, print_step, print_success
+from backend.DONT_CHANGE.scripts.console_tools import (
+    print_fields,
+    print_heading,
+    print_info,
+    print_settings_diff,
+    print_step,
+    print_success,
+)
 from backend.DONT_CHANGE.scripts.dev.common import confirm, prepare
 from backend.DONT_CHANGE.scripts.env.pyproject import set_requires_python
 from backend.DONT_CHANGE.scripts.env.pythons import (
@@ -53,8 +60,8 @@ def cmd_make_portable(arguments: List[str]):
     # Ask before doing anything: with the old settings the next start would re-link the
     # environment to the non-local Python and the local copies would go unused.
     changes = {name: value for name, value in PORTABLE_SETTINGS.items() if getattr(s, name) != value}
+    print_heading("Make portable")
     if changes:
-        print_heading("Make portable")
         print("These settings in developer_settings.py change:")
         print_fields([(name, f'"{getattr(s, name)}"  ->  "{value}"') for name, value in changes.items()])
         if not confirm("Continue?"):
@@ -105,8 +112,7 @@ def cmd_make_portable(arguments: List[str]):
 
     # 4. settings (accepted above)
     if changes:
-        for line in edit_settings(changes):
-            print(line)
+        print_settings_diff(edit_settings(changes))
     print()
     print_success("uv, Python and all packages are now inside this folder, and developer_settings.py uses them.")
     print_info("Copy the whole project folder. After moving it, run 'Setup - run first and after moving folder.cmd'")

@@ -22,6 +22,7 @@ from backend.DONT_CHANGE.scripts.console_tools import (
     print_error,
     print_heading,
     styled,
+    wait_for_enter,
 )
 from backend.DONT_CHANGE.scripts.dev.housekeeping import cmd_clean, cmd_remove_shortcuts, cmd_status, cmd_test
 from backend.DONT_CHANGE.scripts.dev.packages import (
@@ -58,25 +59,65 @@ COMMANDS = {
 }
 
 
+# Every command, in the order and groups of the menu.
+MENU_GROUPS = (
+    ("Packages", ("add", "remove", "upgrade", "sync", "find-imports", "terminal", "export")),
+    ("Python", ("change-python", "update-python")),
+    ("Project", ("status", "clean", "remove-shortcuts", "make-portable", "test")),
+)
+# For the commands that do not start with a heading of their own.
+HEADINGS = {
+    "add": "Add packages",
+    "remove": "Remove packages",
+    "upgrade": "Upgrade packages",
+    "sync": "Sync packages",
+    "export": "Export requirements",
+    "update-python": "Update Python",
+    "remove-shortcuts": "Remove shortcuts",
+}
+
+
+def run_command(name: str, arguments: List[str]):
+    if name in HEADINGS:
+        print_heading(HEADINGS[name])
+    return COMMANDS[name](arguments)
+
+
 def cmd_menu(arguments: List[str]):
     """Interactive menu of all commands."""
-    names = list(COMMANDS)
+    names = [name for _, group in MENU_GROUPS for name in group]
     while True:
-        print_heading("Dev tools")
-        print_choices(
-            name.ljust(17) + styled((COMMANDS[name].__doc__ or "").strip().splitlines()[0], ANSI_DIM) for name in names
-        )
-        answer = ask("Number (Enter = quit):").strip()
+        number = 1
+        for title, group in MENU_GROUPS:
+            print_heading(title)
+            print_choices(
+                (
+                    name.ljust(17) + styled((COMMANDS[name].__doc__ or "").strip().splitlines()[0], ANSI_DIM)
+                    for name in group
+                ),
+                start=number,
+            )
+            number += len(group)
+        print()
+        try:
+            answer = ask("Number (Enter = quit):").strip()
+        except EOFError:  # no more input: the same as pressing Enter
+            return
         if not answer:
             return
-        if answer.isdigit() and 1 <= int(answer) <= len(names):
-            try:
-                COMMANDS[names[int(answer) - 1]]([])
-            except Exception as error:
-                problem = expected_problem(error)
-                if problem is None:
-                    raise
-                print_error(problem)
+        if not (answer.isdigit() and 1 <= int(answer) <= len(names)):
+            print_error(f"Please enter a number from 1 to {len(names)}.")
+            continue
+        try:
+            run_command(names[int(answer) - 1], [])
+        except Exception as error:
+            problem = expected_problem(error)
+            if problem is None:
+                raise
+            print_error(problem)
+        # The menu would otherwise push the result out of sight.
+        print()
+        wait_for_enter("Press Enter to return to the menu.")
 
 
 def main():
@@ -90,4 +131,4 @@ def main():
         return cmd_menu(sys.argv[2:])
     if command not in COMMANDS:
         raise SystemExit("Unknown command. Use one of: menu, " + ", ".join(COMMANDS))
-    return COMMANDS[command](sys.argv[2:])
+    return run_command(command, sys.argv[2:])

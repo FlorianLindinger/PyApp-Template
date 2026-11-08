@@ -5,6 +5,7 @@ because something deleted later is still readable in the history. Secrets are ma
 
     check_git_leaks.bat                current files and the whole history
     check_git_leaks.bat --no-history   current files only
+    check_git_leaks.py --pushing       used by git_hooks/pre-push: only the commits being pushed
 
 Exit code 1 means secrets were found. Personal data (home folder paths, email addresses, machine
 files) is listed as a warning. Put "leak-check: ignore" on a line to accept it. This finds common
@@ -17,6 +18,7 @@ import argparse
 import fnmatch
 import re
 import subprocess
+import sys
 from pathlib import Path
 from typing import Dict, Iterable, List, NamedTuple, Optional, Set, Tuple
 
@@ -62,19 +64,19 @@ EMAIL = re.compile(
     r"(?<![:/\w.+-])[\w.+-]+@[\w-]+(?:\.[\w-]+)*\.(?!(?:json|py|txt|toml|lock|md|js|css|png|whl)\b)[A-Za-z]{2,}\b"
 )
 HARMLESS_EMAIL = re.compile(
-    r"(?i)@(?:[\w-]+\.)*(?:example\.\w+|noreply\.\w+|users\.noreply\.github\.com)$|^git@|noreply@"
+    r"(?i)@(?:[\w-]+\.)*(?:example\.\w+|noreply\.\w+|users\.noreply\.github\.com)$|^git@|^WIP@|noreply@"
 )
 
 SECRET_FILES = (".env", ".env.*", "*.pem", "*.key", "*.p12", "*.pfx", "id_rsa", "id_ed25519", ".netrc", ".pypirc")
 SAFE_SECRET_FILES = (".env.example", ".env.sample", ".env.template")
 SECRET_FILES += ("credentials.json", "secrets.json")
-MACHINE_FILES = ("*.lnk", "shortcuts_created_by_setup.json", "runtime.cmd", "diagnostics.log")
+MACHINE_FILES = ("*.lnk", "*.pyc", "shortcuts_created_by_setup.json", "runtime.cmd", "diagnostics.log")
 # These name the patterns or example values themselves; license texts and lock files hold other people's addresses.
 SKIPPED_FILES = {
     "code/backend/DONT_CHANGE/scripts/tools/check_git_leaks.py",
     "code/backend/DONT_CHANGE/tests/test_git_leaks.py",
 }
-NO_PERSONAL_CHECK = ("LICENSE*", "*/LICENSES/*", "*.lock")
+NO_PERSONAL_CHECK = ("*LICENSE*", "*/LICENSES/*", "*.lock")
 # Other people's published code, also in old commits: its examples, CA bundles and author addresses are not leaks.
 THIRD_PARTY = (
     "*/site-packages/*",
@@ -85,6 +87,7 @@ THIRD_PARTY = (
     "*/backend_py_pckgs/*",
     "*/ascii_fonts/*",
     "*/data/fonts/*",
+    "*/ruamel/*",
 )
 
 
@@ -223,10 +226,72 @@ def show(title: str, findings: List[Finding]) -> None:
         _ui.info(f"... and {len(rows) - MAX_ROWS} more.")
 
 
+def pushed_revisions(hook_input: str) -> List[List[str]]:
+    """`git log` selections for the lines Git gives a pre-push hook: only what the remote does not have."""
+    revisions: List[List[str]] = []
+    for line in hook_input.splitlines():
+        fields = line.split()
+        if len(fields) != 4 or not fields[1].strip("0"):
+            continue  # a deleted branch publishes nothing
+        local, remote = fields[1], fields[3]
+        if remote.strip("0") and commit_exists(remote):
+            revisions.append([f"{remote}..{local}"])
+        else:
+            revisions.append([local, "--not", "--remotes"])
+    return revisions
+
+
+def commit_exists(name: str) -> bool:
+    try:
+        git("cat-file", "-e", name + "^{commit}")
+    except RuntimeError:
+        return False
+    return True
+
+
+def scan_revisions(revisions: List[List[str]]) -> List[Finding]:
+    """The added lines, file names and commit emails of the selected commits."""
+    found: List[Finding] = []
+    for selection in revisions:
+        found += parse_history(
+            git("log", "-p", "--unified=0", "--no-color", "--no-ext-diff", "--format=commit %h", *selection)
+        )
+        for name in set(git("log", "--format=", "--name-only", *selection).splitlines()):
+            if name:
+                found += file_name_findings(name, f"{name} (in this push)")
+        for email in set(git("log", "--format=%ae%n%ce", *selection).splitlines()):
+            if email and not HARMLESS_EMAIL.search(email):
+                found.append(Finding(PERSONAL, "Commit email", email, "author or committer of a commit", ""))
+    return found
+
+
+def check_push(hook_input: str) -> int:
+    """For the pre-push hook: here personal data stops the push too, because it would become public."""
+    revisions = pushed_revisions(hook_input)
+    if not revisions:
+        return 0
+    _ui.heading("Leak check before this push")
+    findings = scan_revisions(revisions)
+    show("Secrets in this push", [f for f in findings if f.level == SECRET])
+    show("Personal data in this push", [f for f in findings if f.level == PERSONAL])
+    if findings:
+        _ui.blank_line()
+        _ui.error(
+            'Push stopped. Remove these from the commits, or put "leak-check: ignore" on a line that is fine.\n'
+            "To push anyway, once: git push --no-verify"
+        )
+        return 1
+    _ui.success("Nothing found in the commits being pushed.")
+    return 0
+
+
 def main(argv: Optional[List[str]] = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--no-history", action="store_true", help="check the current files only")
+    parser.add_argument("--pushing", action="store_true", help="for the pre-push hook: reads its input")
     arguments = parser.parse_args(argv)
+    if arguments.pushing:
+        return check_push(sys.stdin.read())
 
     _ui.heading("Check Git for leaks")
     _ui.fields([("Repository", PROJECT_ROOT)])

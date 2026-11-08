@@ -93,6 +93,37 @@ class ReportTests(unittest.TestCase):
         self.assertEqual(table.call_args[0][1], [(2, "Flo", "Home folder path", "a:1")])
 
 
+class PushTests(unittest.TestCase):
+    LOCAL = "a" * 40
+    REMOTE = "b" * 40
+    ZERO = "0" * 40
+
+    def revisions(self, local: str, remote: str, known: bool = True):
+        with mock.patch.object(tool, "commit_exists", return_value=known):
+            return tool.pushed_revisions(f"refs/heads/x {local} refs/heads/x {remote}\n")
+
+    def test_only_new_commits_are_selected(self):
+        self.assertEqual(self.revisions(self.LOCAL, self.REMOTE), [[f"{self.REMOTE}..{self.LOCAL}"]])
+
+    def test_a_new_branch_is_compared_with_the_remote(self):
+        self.assertEqual(self.revisions(self.LOCAL, self.ZERO), [[self.LOCAL, "--not", "--remotes"]])
+
+    def test_a_remote_commit_unknown_here_does_not_break_the_check(self):
+        self.assertEqual(self.revisions(self.LOCAL, self.REMOTE, known=False), [[self.LOCAL, "--not", "--remotes"]])
+
+    def test_deleting_a_branch_needs_no_check(self):
+        self.assertEqual(self.revisions(self.ZERO, self.REMOTE), [])
+
+    def test_a_private_commit_email_stops_the_push(self):
+        def fake_git(*arguments: str) -> str:
+            return "bob@company.org\n" if "--format=%ae%n%ce" in arguments else ""
+
+        with mock.patch.object(tool, "git", side_effect=fake_git), mock.patch.object(
+            tool, "pushed_revisions", return_value=[["x"]]
+        ), mock.patch("builtins.print"):
+            self.assertEqual(tool.check_push("input"), 1)
+
+
 class HistoryTests(unittest.TestCase):
     LOG = f"""commit abc1234
 

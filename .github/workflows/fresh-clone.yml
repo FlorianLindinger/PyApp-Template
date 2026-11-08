@@ -1,0 +1,27 @@
+name: Fresh clone
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fresh-clone:
+    # Apps made from the template inherit this file; the job only runs in the template itself.
+    if: github.repository == 'FlorianLindinger/PyApp-Template'
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@v10.3.3
+        with:
+          enable-cache: false
+      - name: Clone, run Setup and start the launcher
+        run: uv run --no-project --python 3.14 python code/backend/DONT_CHANGE/scripts/tools/fresh_clone_test.py

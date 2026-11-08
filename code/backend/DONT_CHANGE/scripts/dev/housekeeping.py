@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 import sys
 from pathlib import Path
-from typing import Dict, List, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 from backend.DONT_CHANGE import backend_settings as paths
 from backend.DONT_CHANGE.scripts.config import describe_python_request, display_path, settings, validate
@@ -28,6 +28,16 @@ from backend.DONT_CHANGE.scripts.errors import SettingsError, SetupError
 from backend.DONT_CHANGE.scripts.runtime_state import ProcessRegistry
 
 
+def _folder_contents(folder: Optional[str]) -> str:
+    """What cleaning a folder would delete, e.g. "12 file(s), 3.4 MB"."""
+    if not folder or not Path(folder).is_dir():
+        return "empty"
+    files = [path for path in Path(folder).rglob("*") if path.is_file() and path.name != ".gitkeep"]
+    if not files:
+        return "empty"
+    return f"{len(files)} file(s), {sum(path.stat().st_size for path in files) / 1_048_576:.1f} MB"
+
+
 def cmd_clean(arguments: List[str]):
     """Delete logs or run diagnostics."""
     from backend.DONT_CHANGE.scripts.file_tools import remove_tree_inside
@@ -39,21 +49,27 @@ def cmd_clean(arguments: List[str]):
     options = [
         (
             "logs",
-            f"Delete all files in the log folder ({display_path(log_folder) if log_folder else 'disabled'})",
+            f"Log files in {display_path(log_folder)}: {_folder_contents(log_folder)}"
+            if log_folder
+            else "Log files: disabled",
         ),
         (
             "crash",
-            f"Delete all files in the crash log folder ({display_path(crash_folder) if crash_folder else 'disabled'})",
+            f"Crash logs in {display_path(crash_folder)}: {_folder_contents(crash_folder)}"
+            if crash_folder
+            else "Crash logs: disabled",
         ),
-        ("runs", "Delete per-run diagnostics (tmp\\runs)"),
+        ("runs", f"Per-run diagnostics in tmp/runs: {_folder_contents(paths.RUNS_DIR)}"),
     ]
     print_heading("Clean")
     print_choices(label for _, label in options)
     chosen = ask("Numbers to clean (space separated), Enter = cancel:").replace(",", " ").split()
     keys = {options[int(c) - 1][0] for c in chosen if c.isdigit() and 1 <= int(c) <= len(options)}
     if not keys or not confirm("Delete permanently?"):
+        print_info("Nothing was deleted.")
         return
     in_use = 0
+    deleted = 0
     for key, folder in (("logs", log_folder), ("crash", crash_folder)):
         if key in keys and folder and Path(folder).is_dir():
             for name in [entry.name for entry in Path(folder).iterdir()]:
@@ -61,6 +77,7 @@ def cmd_clean(arguments: List[str]):
                 if Path(path).is_file() and name != ".gitkeep":
                     try:
                         Path(path).unlink()
+                        deleted += 1
                     except PermissionError:  # the log of an instance that is still running
                         in_use += 1
     if in_use:
@@ -71,7 +88,8 @@ def cmd_clean(arguments: List[str]):
             print_warn("Kept the per-run diagnostics: close the running app instance(s) first.")
         else:
             remove_tree_inside(paths.RUNS_DIR, paths.TEMPORARY_DIR)
-    print_success("Cleaned.")
+    runs = " and the per-run diagnostics" if "runs" in keys else ""
+    print_success(f"Deleted {deleted} log file(s){runs}.")
 
 
 def cmd_remove_shortcuts(arguments: List[str]):
@@ -138,7 +156,7 @@ def cmd_status(arguments: List[str]):
             ("Launcher Python", f"{version_text(sys.version_info[:3])} at {sys.executable}"),
             ("python_version", describe_python_request(s.python_version)),
             ("python_source", s.python_source),
-            ("backend/generated/.python-version", read_python_version_file() or "(missing)"),
+            (".python-version", read_python_version_file() or "(missing)"),
             ("requires-python", current_requires_python() or "(missing)"),
         ],
         "Packages": [
@@ -166,6 +184,12 @@ def cmd_status(arguments: List[str]):
     for title, rows in sections.items():
         print_heading(title)
         print_fields(rows)
+    problems = [str(row[0]) for rows in sections.values() for row in rows if len(row) == 3 and not row[2]]
+    print()
+    if problems:
+        print_warn("Needs attention: " + ", ".join(problems))
+    else:
+        print_success("Everything looks fine.")
 
 
 def cmd_test(arguments: List[str]):

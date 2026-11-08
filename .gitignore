@@ -51,6 +51,9 @@ nuitka-crash-report.xml
 # shortcuts in this folder:
 /*.lnk
 
+# zip files of the launcher, made by DONT_CHANGE/tools/release.bat:
+/dist/
+
 # =================================
 # ==== App specific gitignores ====
 # =================================
