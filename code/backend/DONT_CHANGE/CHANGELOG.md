@@ -7,6 +7,10 @@ README.md ("Versions"); `LAUNCHER_VERSION` in `backend_settings.py` names the cu
 
 The first versioned release; it contains every change below.
 
+### 2026-11-08 - clearer development tools
+
+- The tools in `tools/` use the launcher's headings, badges and aligned tables; `verify_launcher` ends with a summary of its checks and names the configuration files it uses.
+
 ### 2026-11-08 - launcher fixes
 
 - Editing a setting whose value is in parentheses on its own lines no longer damages `developer_settings.py`.

@@ -27,6 +27,7 @@ import time
 from pathlib import Path
 from typing import TYPE_CHECKING, Dict, List
 
+import _ui
 from _paths import CODE_DIR, PROJECT_ROOT, STARTUP_BENCHMARK_WORK_DIR
 
 # Popen became subscriptable in 3.9; runtime inspection on 3.8 uses the public class.
@@ -123,7 +124,7 @@ def run_once(command: List[str], marker: Path, timeout: float, cwd: Path) -> flo
 
 def main() -> int:
     if os.name != "nt":
-        print("[Error] The launcher only runs on Windows.")
+        _ui.error("The launcher only runs on Windows.")
         return 2
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--runs", type=int, default=5)
@@ -137,7 +138,9 @@ def main() -> int:
     STARTUP_BENCHMARK_WORK_DIR.mkdir(parents=True, exist_ok=True)
     copy_root = STARTUP_BENCHMARK_WORK_DIR / f"copy_{os.getpid()}"
     marker = STARTUP_BENCHMARK_WORK_DIR / f"marker_{os.getpid()}.txt"
-    print(f"[Info] Copying {PROJECT_ROOT} to {copy_root} ...")
+    _ui.heading("Launcher start-up time")
+    _ui.fields([("Project", PROJECT_ROOT), ("Temporary copy", copy_root), ("Runs", f"{arguments.runs} per target")])
+    _ui.step("Copying the project ...")
     copy_project(copy_root)
     script = main_script_in(copy_root)
     script.write_text(PROBE.format(marker=str(marker)), encoding="utf-8")
@@ -147,31 +150,41 @@ def main() -> int:
     try:
         for target in arguments.targets:
             command = all_commands[target]
-            print(f"[Info] {target}: warm-up ...", flush=True)
+            _ui.step(f"{target}: warming up ...")
             run_once(command, marker, arguments.timeout * 10, copy_root)
             results[target] = []
             for index in range(arguments.runs):
                 results[target].append(run_once(command, marker, arguments.timeout, copy_root))
-                print(f"  run {index + 1}: {results[target][-1] * 1000:7.0f} ms", flush=True)
+                _ui.progress(f"{target}: run {index + 1}/{arguments.runs}: {results[target][-1] * 1000:.0f} ms")
     finally:
         if marker.exists():
             marker.unlink()
         if not arguments.keep:
             shutil.rmtree(copy_root, ignore_errors=True)
 
-    print()
-    print(f"{'target':<12} {'median':>8} {'min':>8} {'max':>8}   (ms, {arguments.runs} runs)")
-    for target, values in results.items():
-        print(
-            f"{target:<12} {statistics.median(values) * 1000:8.0f} {min(values) * 1000:8.0f} {max(values) * 1000:8.0f}"
-        )
+    _ui.heading(f"Until main.py runs (ms, {arguments.runs} runs)")
+    _ui.table(
+        ("median", "min", "max", "target"),
+        [
+            (
+                f"{statistics.median(values) * 1000:.0f}",
+                f"{min(values) * 1000:.0f}",
+                f"{max(values) * 1000:.0f}",
+                target,
+            )
+            for target, values in results.items()
+        ],
+    )
     if "direct" in results:
         floor = statistics.median(results["direct"])
-        for target in ("terminal", "no_terminal"):
-            if target in results:
-                print(
-                    f"[Info] Launcher overhead ({target}): {(statistics.median(results[target]) - floor) * 1000:.0f} ms"
-                )
+        overheads = [
+            (target, f"{(statistics.median(results[target]) - floor) * 1000:.0f} ms")
+            for target in ("terminal", "no_terminal")
+            if target in results
+        ]
+        if overheads:
+            _ui.heading("Launcher overhead (compared with direct)")
+            _ui.fields(overheads)
     return 0
 
 

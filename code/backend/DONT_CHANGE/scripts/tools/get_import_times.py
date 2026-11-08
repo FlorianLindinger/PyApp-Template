@@ -17,6 +17,7 @@ import sys
 import time
 from typing import List
 
+import _ui
 from _paths import CODE_DIR, VENV_PYTHON
 
 LAUNCHER_MODULES = (
@@ -72,18 +73,26 @@ def main() -> int:
         modules = arguments.modules or list(LAUNCHER_MODULES)
     else:
         if not VENV_PYTHON.is_file():
-            print(f"[Error] {VENV_PYTHON} does not exist yet. Start the app once first.")
+            _ui.error(f"{VENV_PYTHON} does not exist yet. Start the app once first.")
             return 2
         python = [str(VENV_PYTHON)]
         modules = arguments.modules or app_modules()
 
+    _ui.heading(f"Import times: {arguments.interpreter}")
+    _ui.fields([("Interpreter", " ".join(python)), ("Runs", f"{arguments.runs} per module")])
+    _ui.step("Measuring an empty interpreter start ...")
     baseline = statistics.median(run_once(python, "") for _ in range(arguments.runs))
-    print(f"Interpreter: {' '.join(python)}")
-    print(f"Empty interpreter start, median of {arguments.runs}: {baseline:.1f} ms")
-    print(f"{'median':>8} {'mean':>8}  module (ms added by the import)")
-    for module in modules:
+    _ui.fields([("Empty start", f"{baseline:.1f} ms (median)")])
+    rows = []
+    for index, module in enumerate(modules, 1):
+        _ui.progress(f"{index}/{len(modules)}  {module}")
         values = [run_once(python, module) for _ in range(arguments.runs)]
-        print(f"{statistics.median(values) - baseline:8.1f} {statistics.mean(values) - baseline:8.1f}  {module}")
+        rows.append((statistics.median(values) - baseline, statistics.mean(values) - baseline, module))
+    _ui.heading("Added by each import (ms, slowest first)")
+    _ui.table(
+        ("median", "mean", "module"),
+        [(f"{median:.1f}", f"{mean:.1f}", module) for median, mean, module in sorted(rows, reverse=True)],
+    )
     return 0
 
 

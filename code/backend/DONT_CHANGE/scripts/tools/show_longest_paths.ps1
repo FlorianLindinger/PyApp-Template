@@ -6,7 +6,22 @@ $count = [int]$env:PYAPP_LP_COUNT
 # Creating a folder leaves room for an 8.3 file name: a folder path may have at most 247 characters.
 $fileLimit = 259
 $folderLimit = 247
-if (-not [IO.Directory]::Exists($root)) { Write-Host "[Error] Folder not found: $root" -ForegroundColor Red; return }
+
+# Same look as the launcher's other windows. [char] codes: Windows PowerShell 5.1 misreads this file's non-ASCII text.
+function Write-Heading([string]$title) {
+    $rule = [string][char]0x2500
+    Write-Host ''
+    Write-Host ($rule * 2 + ' ' + $title + ' ' + ($rule * [Math]::Max(3, 68 - $title.Length))) -ForegroundColor Cyan
+}
+function Write-Badge([string]$label, [ConsoleColor]$background, [ConsoleColor]$foreground, [string]$text) {
+    Write-Host (' ' + $label + ' ') -BackgroundColor $background -ForegroundColor $foreground -NoNewline
+    Write-Host (' ' + $text)
+}
+function Write-Field([string]$label, [string]$value) {
+    Write-Host ('  ' + $label.PadRight(12) + '  ') -ForegroundColor DarkGray -NoNewline
+    Write-Host $value
+}
+if (-not [IO.Directory]::Exists($root)) { Write-Badge 'ERROR' DarkRed White "Folder not found: $root"; return }
 
 $results = New-Object System.Collections.Generic.List[object]
 $unreadable = New-Object System.Collections.Generic.List[string]
@@ -61,37 +76,40 @@ if ($cacheTag) {
 $longPathsEnabled = $false
 try { $longPathsEnabled = [int](Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem' -Name LongPathsEnabled).LongPathsEnabled -eq 1 } catch { }
 
-Write-Host "Longest paths in $root"
-Write-Host ("{0} files and folders scanned. Windows path limit: files {1} characters, folders {2}." -f $scanned, $fileLimit, $folderLimit)
+Write-Heading 'Longest paths'
+Write-Field 'Folder' $root
+Write-Field 'Scanned' ("{0} files and folders" -f $scanned)
+Write-Field 'Path limit' ("files {0} characters, folders {1}" -f $fileLimit, $folderLimit)
 if ($cacheTag) {
-    Write-Host ("Also counted: {0} __pycache__ paths for {1} that do not exist yet, marked (would appear)." -f ($results.Count - $scanned), $cacheTag)
+    Write-Field 'Also counted' ("{0} __pycache__ paths for {1} that do not exist yet" -f ($results.Count - $scanned), $cacheTag)
 } else {
-    Write-Host "__pycache__ paths that do not exist yet are not counted: this project has no .venv Python to ask for the file names." -ForegroundColor Yellow
+    Write-Field 'Not counted' '__pycache__ paths that do not exist yet (this project has no .venv Python to ask for their names)'
 }
 Write-Host ""
-Write-Host ("{0,6}  {1,-6}  {2,-8}  {3}" -f 'Length', 'Type', 'Status', 'Path')
+Write-Host ("  {0,6}  {1,-6}  {2,-8}  {3}" -f 'Length', 'Type', 'Status', 'Path below the folder') -ForegroundColor DarkGray
 foreach ($r in ($results | Sort-Object Length -Descending | Select-Object -First $count)) {
     $type = if ($r.IsDir) { 'folder' } else { 'file' }
     if ($r.Length -gt $r.Limit) { $status = 'TOO LONG'; $color = 'Red' }
     elseif ($r.Length -gt $r.Limit - 20) { $status = 'close'; $color = 'Yellow' }
     else { $status = 'ok'; $color = 'Gray' }
-    $shown = if ($r.WouldAppear) { $r.Path + '  (would appear)' } else { $r.Path }
-    Write-Host ("{0,6}  {1,-6}  {2,-8}  {3}" -f $r.Length, $type, $status, $shown) -ForegroundColor $color
+    $relative = if ($r.Path.Length -gt $root.Length) { $r.Path.Substring($root.Length + 1) } else { $r.Path }
+    $shown = if ($r.WouldAppear) { $relative + '  (would appear)' } else { $relative }
+    Write-Host ("  {0,6}  {1,-6}  {2,-8}  {3}" -f $r.Length, $type, $status, $shown) -ForegroundColor $color
 }
 
-Write-Host ""
+Write-Heading 'Result'
 $over = @($results | Where-Object { $_.Length -gt $_.Limit })
 if ($over.Count -gt 0) {
-    Write-Host ("{0} path(s) exceed the Windows path limit (by up to {1} characters)." -f $over.Count, (($over | ForEach-Object { $_.Length - $_.Limit } | Measure-Object -Maximum).Maximum)) -ForegroundColor Red
+    Write-Badge 'ERROR' DarkRed White ("{0} path(s) exceed the Windows path limit (by up to {1} characters)." -f $over.Count, (($over | ForEach-Object { $_.Length - $_.Limit } | Measure-Object -Maximum).Maximum))
 } elseif ($results.Count -gt 0) {
     $headroom = ($results | ForEach-Object { $_.Limit - $_.Length } | Measure-Object -Minimum).Minimum
-    Write-Host ("No path exceeds the Windows path limit. The project folder path can grow by {0} more characters (e.g. a deeper or longer folder) before one does." -f $headroom) -ForegroundColor Green
+    Write-Badge 'OK' DarkGreen White ("No path exceeds the Windows path limit. The project folder path can grow by {0} more characters." -f $headroom)
 }
 if ($longPathsEnabled) {
-    Write-Host "Long paths are enabled on this PC (LongPathsEnabled = 1), but Explorer, cmd and many programs still fail beyond the limit."
+    Write-Host "Long paths are enabled on this PC (LongPathsEnabled = 1), but Explorer, cmd and many programs still fail beyond the limit." -ForegroundColor DarkGray
 } else {
-    Write-Host "Long paths are disabled on this PC (LongPathsEnabled = 0): most programs fail on paths beyond the limit."
+    Write-Host "Long paths are disabled on this PC (LongPathsEnabled = 0): most programs fail on paths beyond the limit." -ForegroundColor DarkGray
 }
 if ($unreadable.Count -gt 0) {
-    Write-Host ("{0} folder(s) could not be read and were skipped, e.g. {1}" -f $unreadable.Count, $unreadable[0]) -ForegroundColor Yellow
+    Write-Badge '!' DarkYellow Black ("{0} folder(s) could not be read and were skipped, e.g. {1}" -f $unreadable.Count, $unreadable[0])
 }

@@ -13,6 +13,7 @@ import shutil
 import subprocess
 from typing import List
 
+import _ui
 from _paths import DONT_CHANGE_DIR
 
 
@@ -28,13 +29,13 @@ def tool_command(tool: str) -> List[str]:
 
 
 def run_check(label: str, command: List[str]) -> bool:
-    print(f"\n[Info] {label}", flush=True)
+    _ui.heading(label)
     # Execute the Ruff/Pyrefly command resolved from local PATH or uvx.
     code = subprocess.run(command, cwd=DONT_CHANGE_DIR, check=False).returncode  # noqa: S603
     if code == 1:
-        print(f"[Warning] {label} reported problems; see the diagnostics above.", flush=True)
+        _ui.warn(f"{label} reported problems; see the diagnostics above.")
     elif code != 0:
-        print(f"[Error] {label} could not complete (exit code {code}).", flush=True)
+        _ui.error(f"{label} could not complete (exit code {code}).")
     return code == 0
 
 
@@ -48,7 +49,7 @@ def main() -> int:
         ruff = tool_command("ruff")
         pyrefly = tool_command("pyrefly")
     except FileNotFoundError as error:
-        print(f"[Error] {error}")
+        _ui.error(error)
         return 2
 
     checks = [
@@ -59,12 +60,22 @@ def main() -> int:
         ("Ruff format", [*ruff, "format", *([] if fix else ["--check"]), "."]),
         ("Pyrefly", [*pyrefly, "check"]),
     ]
-    print(f"[Info] Ruff uses {DONT_CHANGE_DIR / 'ruff.toml'}", flush=True)  # the closest one to the checked folder
+    _ui.heading("Verify the launcher")
+    _ui.fields(
+        [
+            ("Folder", DONT_CHANGE_DIR),
+            ("Ruff config", DONT_CHANGE_DIR / "ruff.toml"),  # the closest one to the checked folder
+            ("Pyrefly config", DONT_CHANGE_DIR / "pyrefly.toml"),
+        ]
+    )
     results = [run_check(label, command) for label, command in checks]
+    _ui.heading("Result")
+    _ui.fields((label, "passed" if passed else "FAILED") for (label, _), passed in zip(checks, results))
+    _ui.blank_line()
     if all(results):
-        print("\n[Success] The launcher passed verification.")
+        _ui.success("The launcher passed verification.")
         return 0
-    print("\n[Error] The launcher failed verification.")
+    _ui.error("The launcher failed verification.")
     return 1
 
 

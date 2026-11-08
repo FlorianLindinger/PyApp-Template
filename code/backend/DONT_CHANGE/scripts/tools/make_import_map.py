@@ -36,6 +36,8 @@ from http.client import HTTPMessage
 from pathlib import Path
 from typing import IO, Any, Callable, Dict, Iterable, List, Mapping, Optional, Set, Tuple, TypedDict
 
+import _ui
+
 RANKING_URLS = (
     "https://hugovk.github.io/top-pypi-packages/top-pypi-packages.min.json",
     "https://hugovk.github.io/top-pypi-packages/top-pypi-packages-30-days.min.json",
@@ -241,7 +243,7 @@ def build(projects: List[str], workers: int, cache_path: Path) -> Dict[str, List
     except (OSError, ValueError):
         cache: Dict[str, _CacheEntry] = {}
     todo = [p for p in projects if p not in cache]
-    print(f"{len(projects)} projects, {len(projects) - len(todo)} cached, {len(todo)} to fetch")
+    _ui.fields([("Projects", len(projects)), ("Cached", len(projects) - len(todo)), ("To fetch", len(todo))])
     failures = 0
     with ThreadPoolExecutor(workers) as pool:
         futures = {pool.submit(project_import_names, project): project for project in todo}
@@ -252,13 +254,13 @@ def build(projects: List[str], workers: int, cache_path: Path) -> Dict[str, List
                 cache[project] = {"name": name, "imports": sorted(names)}
             except Exception as error:
                 failures += 1
-                print(f"  skipped {project}: {error}")
+                _ui.info(f"skipped {project}: {error}")
+            _ui.progress(f"{done}/{len(todo)} fetched, {failures} skipped")
             if done % 250 == 0:
-                print(f"  {done}/{len(todo)}")
                 cache_path.write_text(json.dumps(cache), encoding="utf-8")
     cache_path.parent.mkdir(parents=True, exist_ok=True)
     cache_path.write_text(json.dumps(cache), encoding="utf-8")
-    print(f"fetched, {failures} skipped")
+    _ui.step(f"Fetched; {failures} skipped.")
     return {cache[p]["name"]: cache[p]["imports"] for p in projects if p in cache}
 
 
@@ -302,7 +304,13 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    ranking = top_projects(args.count)
+    _ui.heading("Import name map")
+    _ui.step(f"Getting the {args.count} most-downloaded PyPI projects ...")
+    try:
+        ranking = top_projects(args.count)
+    except RuntimeError as error:
+        _ui.error(error)
+        return 1
     results = build(ranking, args.workers, args.cache)
     lines = mapping_lines(results)
     header = [
@@ -319,7 +327,7 @@ def main() -> int:
     with temporary.open("w", encoding="utf-8", newline="") as stream:
         stream.write("\r\n".join(header + lines) + "\r\n")
     Path(temporary).replace(args.output)
-    print(f'Wrote {len(lines)} pairs to "{args.output}".')
+    _ui.success(f'Wrote {len(lines)} pairs to "{args.output}".')
     return 0
 
 

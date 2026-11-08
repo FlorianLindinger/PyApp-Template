@@ -23,23 +23,23 @@ class VerifyLauncherTests(unittest.TestCase):
             run.return_value = subprocess.CompletedProcess(["ruff"], 1)
             self.assertFalse(verify_launcher.run_check("Ruff lint", ["ruff", "check", "."]))
         run.assert_called_once_with(["ruff", "check", "."], cwd=DONT_CHANGE, check=False)
-        self.assertIn("[Warning] Ruff lint reported problems", output.getvalue())
+        self.assertIn("Ruff lint reported problems", output.getvalue())
 
     def test_check_reports_tool_error_separately(self):
         output = io.StringIO()
         with mock.patch.object(verify_launcher.subprocess, "run") as run, contextlib.redirect_stdout(output):
             run.return_value = subprocess.CompletedProcess(["ruff"], 2)
             self.assertFalse(verify_launcher.run_check("Ruff lint", ["ruff"]))
-        self.assertIn("[Error] Ruff lint could not complete (exit code 2)", output.getvalue())
-        self.assertNotIn("[Warning]", output.getvalue())
+        self.assertIn("Ruff lint could not complete (exit code 2)", output.getvalue())
+        self.assertNotIn("reported problems", output.getvalue())
 
     def test_success_does_not_print_a_warning(self):
         output = io.StringIO()
         with mock.patch.object(verify_launcher.subprocess, "run") as run, contextlib.redirect_stdout(output):
             run.return_value = subprocess.CompletedProcess(["ruff"], 0)
             self.assertTrue(verify_launcher.run_check("Ruff lint", ["ruff"]))
-        self.assertNotIn("[Warning]", output.getvalue())
-        self.assertNotIn("[Error]", output.getvalue())
+        self.assertNotIn("reported problems", output.getvalue())
+        self.assertNotIn("could not complete", output.getvalue())
 
     def test_main_runs_remaining_checks_after_a_warning(self):
         def command_for(name: str) -> List[str]:
@@ -55,8 +55,8 @@ class VerifyLauncherTests(unittest.TestCase):
             self.assertEqual(verify_launcher.main(), 1)
         self.assertEqual(run.call_count, 3)
         self.assertIn(str(DONT_CHANGE / "ruff.toml"), output.getvalue())
-        self.assertIn("[Warning] Ruff lint", output.getvalue())
-        self.assertIn("[Error] The launcher failed verification.", output.getvalue())
+        self.assertIn("Ruff lint reported problems", output.getvalue())
+        self.assertIn("The launcher failed verification.", output.getvalue())
 
 
 if __name__ == "__main__":

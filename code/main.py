@@ -13,7 +13,6 @@ def main():
         root.iconbitmap(os.environ["ICON_PATH"])
     root.geometry("360x180")
     ttk.Label(root, text="Example GUI", padding=40).pack(expand=True)
-    1/0
     root.mainloop()
 
 
