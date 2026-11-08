@@ -120,6 +120,7 @@ EXPORTED_REQUIREMENTS_PATH = PROJECT_DIR + "\\requirements.txt"
 IMPORT_MAPPING_PATH = DATA_DIR + "\\import_to_package.txt"
 DEFAULT_SETTINGS_PATH = DATA_DIR + "\\developer_settings_defaults.py"  # defaults for missing settings
 FONTS_DIR = DATA_DIR + "\\fonts"  # ASCII-art fonts of the app name banner (scripts/banner.py)
+DEFAULT_ICON_DIR = DATA_DIR + "\\icons"  # bundled placeholder PNGs, used when the project's own are missing or unchanged
 
 # ------------------------
 # remaining files
