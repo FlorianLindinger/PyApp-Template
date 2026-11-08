@@ -6,7 +6,7 @@ the PyPI name (e.g. "import yaml" -> PyYAML, "import cv2" -> opencv-python).
 
 How it works (standard library only, needs internet):
 1. Takes the most-downloaded PyPI projects (public ranking by Hugo van Kemenade,
-   https://hugovk.github.io/top-pypi-packages/; only the project names are used).
+   https://hugovk.dev/top-pypi-packages/; only the project names are used).
 2. Asks PyPI's JSON API for each project's newest wheel.
 3. Reads only the wheel's ZIP directory (an HTTP range request for its last bytes, not the whole
    download) and derives the top-level import names it installs.
@@ -39,8 +39,8 @@ from typing import IO, Any, Callable, Dict, Iterable, List, Mapping, Optional, S
 import _ui
 
 RANKING_URLS = (
-    "https://hugovk.github.io/top-pypi-packages/top-pypi-packages.min.json",
-    "https://hugovk.github.io/top-pypi-packages/top-pypi-packages-30-days.min.json",
+    "https://hugovk.dev/top-pypi-packages/top-pypi-packages.min.json",
+    "https://hugovk.dev/top-pypi-packages/top-pypi-packages-30-days.min.json",
 )
 PYPI_JSON_URL = "https://pypi.org/pypi/{}/json"
 USER_AGENT = "PyApp-Template-import-mapping-builder (+https://github.com/FlorianLindinger/PyApp-Template)"
@@ -95,7 +95,7 @@ def _validate_download_url(url: str) -> None:
     parsed = urllib.parse.urlsplit(url)
     if (
         parsed.scheme != "https"
-        or parsed.hostname not in {"hugovk.github.io", "pypi.org", "files.pythonhosted.org"}
+        or parsed.hostname not in {"hugovk.dev", "pypi.org", "files.pythonhosted.org"}
         or parsed.username is not None
         or parsed.password is not None
         or parsed.port not in (None, 443)

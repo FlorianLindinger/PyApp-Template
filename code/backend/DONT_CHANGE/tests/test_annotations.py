@@ -14,6 +14,7 @@ from project_location import DONT_CHANGE
 class AnnotationTests(unittest.TestCase):
     def test_runtime_type_hints(self):
         modules = (
+            "backend.developer_settings",
             "backend.DONT_CHANGE.scripts.banner",
             "backend.DONT_CHANGE.scripts.config",
             "backend.DONT_CHANGE.scripts.com_tools",
@@ -52,8 +53,6 @@ class AnnotationTests(unittest.TestCase):
 
     def test_annotations_avoid_syntax_that_cannot_be_evaluated_on_3_8(self):
         for path in DONT_CHANGE.rglob("*.py"):
-            if path.name == "dev_settings_default.py":
-                continue  # like developer_settings.py: postponed annotations, never evaluated
             tree = ast.parse(path.read_text(encoding="utf-8"))
             for node in ast.walk(tree):
                 annotation = None

@@ -15,6 +15,7 @@ The first versioned release; it contains every change below.
 - The bootstrap no longer runs a downloaded install script, uses `certutil` or compiles code at runtime, which antivirus programs distrust. A global uv now comes from the checksum-verified download.
 - Setup no longer runs a PowerShell script, so company policies that block those no longer stop it: `resolve_runtime.bat` gets uv with Windows' own `curl` and `tar`, and `resolve_runtime.py` does the rest. Company-policy and firewall problems now get a clear message.
 - New `python_source = "system"` uses a Python already installed on the PC and downloads none.
+- New weekly GitHub Action for the template catches problems with the newest uv and Python. New tests guard the repository name in the Actions and the paths older projects rely on.
 - New setting `github_actions`: with `"leaks"` in it, Setup adds a GitHub Action to the app that looks for secrets and personal data.
 - Crash logs also contain everything the app printed, when logging is on. The raw `.output.log` is deleted after a normal end.
 - The launcher no longer marks files and folders such as `.git` or `.gitignore` as hidden in Explorer.

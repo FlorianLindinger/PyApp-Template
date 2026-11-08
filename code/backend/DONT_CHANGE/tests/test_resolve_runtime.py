@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import sys
 import unittest
+from typing import List
 from unittest import mock
 
 from project_location import DONT_CHANGE
@@ -69,8 +70,9 @@ class CompanyPcTests(unittest.TestCase):
     def test_a_program_that_cannot_start_is_remembered(self):
         error = OSError()
         error.winerror = 1260
+        problems: List[str] = []
         with mock.patch.object(tool.subprocess, "run", side_effect=error), mock.patch.object(
-            tool, "_start_problems", new=list[str]()
+            tool, "_start_problems", problems
         ):
             self.assertIsNone(tool.uv_version_of("uv.exe"))
             self.assertIn("company policy", tool._start_problems[0])
