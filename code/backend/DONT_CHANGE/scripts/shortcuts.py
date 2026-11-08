@@ -16,7 +16,7 @@ import uuid
 from ctypes import wintypes
 from pathlib import Path
 from types import ModuleType, SimpleNamespace
-from typing import Any, Iterable
+from typing import Any, Dict, Iterable, List, Optional, Protocol, Tuple, Union
 
 from backend.DONT_CHANGE.backend_settings import (
     CRASH_LOG_ICON_PATH,
@@ -47,16 +47,22 @@ from backend.DONT_CHANGE.scripts.file_tools import (
 )
 
 
+class TextPathLike(Protocol):
+    """A filesystem path returning text, including os.PathLike implementations on 3.8."""
+
+    def __fspath__(self) -> str: ...
+
+
 def generate_shortcut(
     shortcut_name: str,
-    icon_path: str | os.PathLike[str] | None,
-    launcher_path: str | os.PathLike[str],
-    args: str | os.PathLike[str] | None = "",
-    app_id: str | None = None,
-    description: str | os.PathLike[str] | None = "",
+    icon_path: Optional[Union[str, TextPathLike]],
+    launcher_path: Union[str, TextPathLike],
+    args: Optional[Union[str, TextPathLike]] = "",
+    app_id: Optional[str] = None,
+    description: Optional[Union[str, TextPathLike]] = "",
     start_minimized: bool = False,
     classic_terminal: bool = True,
-    wdir: str | os.PathLike[str] = "",
+    wdir: Union[str, TextPathLike] = "",
     output_dir: str = SHORTCUT_OUTPUT_DIR,
 ) -> str:
     """Create one configured Windows ``.lnk`` shortcut.
@@ -180,7 +186,7 @@ def generate_shortcut(
                     ) from error
                 time.sleep(0.1)
 
-    def _quote(value: str | os.PathLike[str]) -> str:
+    def _quote(value: Union[str, TextPathLike]) -> str:
         """Quote one filesystem argument for the command string stored in a shortcut."""
         return '"' + os.fspath(value).replace('"', '""') + '"'
 
@@ -334,7 +340,7 @@ def is_generated_shortcut(path: str) -> bool:
     return False
 
 
-def _read_created_shortcuts_file() -> dict[str, Any]:
+def _read_created_shortcuts_file() -> Dict[str, Any]:
     try:
         with Path(CREATED_SHORTCUTS_LIST_PATH).open(encoding="utf-8") as stream:
             data = json.load(stream)
@@ -343,17 +349,17 @@ def _read_created_shortcuts_file() -> dict[str, Any]:
         return {}
 
 
-def read_created_shortcuts() -> list[str]:
+def read_created_shortcuts() -> List[str]:
     return list(_read_created_shortcuts_file().get("shortcuts", []))
 
 
-def write_created_shortcuts(paths: list[str], targets: dict[str, str] | None = None) -> None:
+def write_created_shortcuts(paths: List[str], targets: Optional[Dict[str, str]] = None) -> None:
     """Record the created .lnk files (to remove stale ones later) and the targets they open."""
     with Path(CREATED_SHORTCUTS_LIST_PATH).open("w", encoding="utf-8") as stream:
         json.dump({"version": 2, "shortcuts": sorted(set(paths)), "targets": targets or {}}, stream, indent=2)
 
 
-def remove_shortcuts(paths: Iterable[str], keep: Iterable[str] = ()) -> list[str]:
+def remove_shortcuts(paths: Iterable[str], keep: Iterable[str] = ()) -> List[str]:
     """Delete generated shortcuts that are no longer wanted; returns the removed paths."""
     keep_keys = {os.path.normcase(os.path.normpath(str(Path(p).absolute()))) for p in keep}
     removed = []
@@ -381,7 +387,7 @@ def remove_shortcuts(paths: Iterable[str], keep: Iterable[str] = ()) -> list[str
     return removed
 
 
-def shortcut_targets(s: ModuleType | SimpleNamespace) -> dict[str, str]:
+def shortcut_targets(s: Union[ModuleType, SimpleNamespace]) -> Dict[str, str]:
     """Folder/file each "open" shortcut passes to its B\\*.bat, which then opens it without Python.
 
     "" means the target can only be resolved at click time (a path relative to the start folder
@@ -403,8 +409,8 @@ def shortcut_targets(s: ModuleType | SimpleNamespace) -> dict[str, str]:
 
 
 def shortcut_definitions(
-    s: ModuleType | SimpleNamespace, app_id: str, targets: dict[str, str]
-) -> list[tuple[str, str, str, str, str, str | None, str]]:
+    s: Union[ModuleType, SimpleNamespace], app_id: str, targets: Dict[str, str]
+) -> List[Tuple[str, str, str, str, str, Optional[str], str]]:
     """(kind, name, icon, launcher, args, app_id, description) for every enabled shortcut."""
     name = s.program_name
     definitions = [
@@ -474,7 +480,7 @@ def shortcut_definitions(
     ]
 
 
-def outdated_shortcut_targets(s: ModuleType | SimpleNamespace) -> list[str]:
+def outdated_shortcut_targets(s: Union[ModuleType, SimpleNamespace]) -> List[str]:
     """Kinds of "open" shortcuts whose recorded target no longer matches the settings (run Setup)."""
     recorded = _read_created_shortcuts_file().get("targets")
     if not isinstance(recorded, dict):

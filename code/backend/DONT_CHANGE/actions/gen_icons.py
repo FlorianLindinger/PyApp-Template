@@ -10,6 +10,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from functools import lru_cache
 from pathlib import Path
+from typing import Dict, List, Optional, Tuple
 
 from backend.DONT_CHANGE.backend_settings import (
     CRASH_LOG_ICON_PATH,
@@ -75,7 +76,7 @@ def _cached_png_image_id(path: str) -> str:
     return get_png_image_id(path)
 
 
-def _pick_png(filename: str, expected_id: str | None, fallback_filename: str | None) -> str:
+def _pick_png(filename: str, expected_id: Optional[str], fallback_filename: Optional[str]) -> str:
     """Use a changed project PNG, otherwise use its bundled replacement image."""
     project_path = str(Path(ICON_PNG_DIR) / filename)
     if Path(project_path).is_file() and (expected_id is None or _cached_png_image_id(project_path) != expected_id):
@@ -93,7 +94,7 @@ def _file_hash(path: str) -> str:
         return hashlib.sha256(stream.read()).hexdigest()
 
 
-def _read_record() -> dict[str, str]:
+def _read_record() -> Dict[str, str]:
     """{ICO file name: hash of the file the generator last installed}."""
     try:
         with Path(GENERATED_ICONS_RECORD_PATH).open(encoding="utf-8") as stream:
@@ -102,7 +103,7 @@ def _read_record() -> dict[str, str]:
         return {}
 
 
-def _write_record(record: dict[str, str]) -> None:
+def _write_record(record: Dict[str, str]) -> None:
     (Path(GENERATED_ICONS_RECORD_PATH).parent).mkdir(parents=True, exist_ok=True)
     with Path(GENERATED_ICONS_RECORD_PATH).open("w", encoding="utf-8") as stream:
         json.dump(record, stream, indent=2, sort_keys=True)
@@ -118,7 +119,7 @@ def _may_replace(output_path: str) -> bool:
         return False
 
 
-def _install(output_path: str, built_path: str, record: dict[str, str]) -> None:
+def _install(output_path: str, built_path: str, record: Dict[str, str]) -> None:
     """Put a freshly built ICO in place: generated ones update silently, others only when the user agrees."""
     name = Path(output_path).name
     built = _file_hash(built_path)
@@ -142,7 +143,7 @@ def main() -> None:
     validate(load_settings())
     record = _read_record()
     with tempfile.TemporaryDirectory() as folder:
-        jobs: list[tuple[str, str, str, str | None, float, str]] = []
+        jobs: List[Tuple[str, str, str, Optional[str], float, str]] = []
         for output_path, base_name, base_id, base_fallback, overlay_name in ICON_GENERATION_SETTINGS:
             base_path = _pick_png(base_name, base_id, base_fallback)
             # e.g. stop.ico -> SUB_ICONS["stop"]
@@ -156,7 +157,7 @@ def main() -> None:
             built_path = str(Path(folder) / Path(output_path).name)
             jobs.append((output_path, built_path, base_path, overlay_path, scale, alignment))
 
-        def generate(job: tuple[str, str, str, str | None, float, str]) -> str:
+        def generate(job: Tuple[str, str, str, Optional[str], float, str]) -> str:
             """Build one ICO from the resolved base image, overlay and placement settings."""
             _, built_path, base_path, overlay_path, scale, alignment = job
             return generate_ico_from_png(

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import unittest
+from typing import List
 from unittest import mock
 
 from project_location import CODE  # noqa: F401 - makes "backend" importable
@@ -14,7 +15,7 @@ from backend.DONT_CHANGE.scripts.errors import SetupError
 
 
 class InstallPythonTests(unittest.TestCase):
-    def install(self, exit_codes: list[int], newer_uv: bool):
+    def install(self, exit_codes: List[int], newer_uv: bool):
         with mock.patch.object(pythons, "run_uv", side_effect=exit_codes) as run_uv, mock.patch.object(
             pythons, "install_newer_uv", return_value=newer_uv
         ) as install_newer_uv, mock.patch.object(pythons, "invalidate_runtime_cache"), mock.patch.object(

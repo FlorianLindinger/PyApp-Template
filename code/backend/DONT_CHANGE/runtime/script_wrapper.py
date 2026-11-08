@@ -16,7 +16,7 @@ import sys
 import threading
 from datetime import datetime
 from pathlib import Path
-from typing import TextIO
+from typing import List, Optional, TextIO, Tuple, Union
 
 # The protocol module lives next to this file; import it before sys.path[0]
 # is switched to the application's folder. It stays in sys.modules as "_pyapp",
@@ -38,7 +38,7 @@ result_path = None
 _ANSI_ESCAPE = re.compile(r"\x1b(?:\[[0-?]*[ -/]*[@-~]|\][^\x07]*(?:\x07|\x1b\\)|[@-Z\\-_])")
 
 
-def _format_prepend(fmt: str | None):
+def _format_prepend(fmt: Optional[str]):
     """Current local time in the configured prefix format, or ""."""
     return datetime.now().astimezone().strftime(fmt) if fmt else ""
 
@@ -50,7 +50,7 @@ class _BinarySplitter:
         self.owner = owner
         self.decoder = codecs.getincrementaldecoder(owner.encoding or "utf-8")("replace")
 
-    def write(self, data: bytes | bytearray):
+    def write(self, data: Union[bytes, bytearray]):
         with self.owner._lock:
             target = getattr(self.owner.print_stream, "buffer", None)
             if target is not None:
@@ -77,12 +77,12 @@ class PipeSplitter:
 
     def __init__(
         self,
-        print_stream: TextIO | None,
-        log_stream: TextIO | None = None,
-        print_timestamp_format: str | None = "",
-        log_timestamp_format: str | None = "",
-        input_timestamp_format: str | None = "",
-        log_input_timestamp_format: str | None = "",
+        print_stream: Optional[TextIO],
+        log_stream: Optional[TextIO] = None,
+        print_timestamp_format: Optional[str] = "",
+        log_timestamp_format: Optional[str] = "",
+        input_timestamp_format: Optional[str] = "",
+        log_input_timestamp_format: Optional[str] = "",
         print_red: bool = False,
     ):
         self.print_stream = print_stream
@@ -177,11 +177,11 @@ class PipeSplitter:
 
 
 def setup_log_prints(
-    log_path: str | None,
-    print_prepend: str | None,
-    log_print_prepend: str | None,
-    input_prepend: str | None,
-    log_input_prepend: str | None,
+    log_path: Optional[str],
+    print_prepend: Optional[str],
+    log_print_prepend: Optional[str],
+    input_prepend: Optional[str],
+    log_input_prepend: Optional[str],
 ):
     """Install stdout/stderr splitters and point faulthandler at the log."""
     import atexit
@@ -224,7 +224,7 @@ def _finish_logging():
             log_file.close()
 
 
-def install_input_prefix(input_prepend: str | None):
+def install_input_prefix(input_prepend: Optional[str]):
     """input() bypasses sys.stdout's prefixing, so wrap it."""
     import builtins
 
@@ -256,9 +256,11 @@ def save_result(code: int):
         Path(result_path + ".tmp").replace(result_path)
 
 
-def capture_background_errors(script_path: str, output_path: str, app_root: str | None, context_lines: tuple[int, int]):
+def capture_background_errors(
+    script_path: str, output_path: str, app_root: Optional[str], context_lines: Tuple[int, int]
+):
     """Record the first unhandled worker-thread error and Tkinter callback error."""
-    first_error: list[BaseException | None] = [None]
+    first_error: List[Optional[BaseException]] = [None]
     lock = threading.Lock()
     previous_last = getattr(sys, "last_exc", getattr(sys, "last_value", None))
 

@@ -12,7 +12,7 @@ import tempfile
 import textwrap
 import unittest
 from pathlib import Path
-from typing import Sequence
+from typing import Dict, Optional, Sequence
 from unittest import mock
 
 from project_location import DONT_CHANGE
@@ -37,9 +37,9 @@ class WrapperTests(unittest.TestCase):
         self,
         source: str,
         args: Sequence[str] = (),
-        extra_files: dict[str, str] | None = None,
-        env: dict[str, str] | None = None,
-        stdin: str | None = None,
+        extra_files: Optional[Dict[str, str]] = None,
+        env: Optional[Dict[str, str]] = None,
+        stdin: Optional[str] = None,
         **config: object,
     ):
         """Run `source` as main.py through the wrapper; return (exit code, stdout, run folder)."""

@@ -6,6 +6,8 @@ live in scripts/dev/.
 
 from __future__ import annotations
 
+from typing import List
+
 fail_message = "Dev tool failed: {e}"
 pause_on_success = True
 
@@ -56,7 +58,7 @@ COMMANDS = {
 }
 
 
-def cmd_menu(arguments: list[str]):
+def cmd_menu(arguments: List[str]):
     """Interactive menu of all commands."""
     names = list(COMMANDS)
     while True:

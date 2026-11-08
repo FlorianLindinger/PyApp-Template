@@ -9,6 +9,7 @@ from __future__ import annotations
 import ctypes
 import uuid
 from ctypes import wintypes
+from typing import Protocol
 
 HRESULT = ctypes.c_long
 # COM method pointer type (stdcall); CFUNCTYPE only so the module imports on non-Windows tools.
@@ -54,6 +55,13 @@ class IPropertyStore(ctypes.Structure):
 
 
 PropertyStorePointer = ctypes.POINTER(IPropertyStore)
+
+
+class PropertyStoreReference(Protocol):
+    """Public structural type for a pointer exposing an IPropertyStore."""
+
+    @property
+    def contents(self) -> IPropertyStore: ...
 
 
 class _IPropertyStoreVTable(ctypes.Structure):
@@ -103,7 +111,7 @@ def co_uninitialize(needed: bool) -> None:
         ctypes.WinDLL("ole32", use_last_error=True).CoUninitialize()
 
 
-def set_app_user_model_id(store: ctypes._Pointer[IPropertyStore], app_id: str) -> None:
+def set_app_user_model_id(store: PropertyStoreReference, app_id: str) -> None:
     """Write System.AppUserModel.ID into a property store, commit it and release the store."""
     try:
         value = PROPVARIANT()

@@ -9,7 +9,7 @@ import tempfile
 import textwrap
 import unittest
 from pathlib import Path
-from typing import Sequence
+from typing import List, Sequence
 from unittest import mock
 
 from project_location import DONT_CHANGE
@@ -29,7 +29,7 @@ class RunFileTests(unittest.TestCase):
         return path
 
     def run_tool(self, source: str, arguments: Sequence[str] = ()):
-        prompts: list[str] = []
+        prompts: List[str] = []
         with mock.patch.object(entrypoint, "acknowledge", prompts.append), mock.patch.object(
             entrypoint, "_show_console"
         ):

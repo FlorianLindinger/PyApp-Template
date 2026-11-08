@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import sys
 from pathlib import Path
+from typing import Dict, List, Tuple, Union
 
 from backend.DONT_CHANGE import backend_settings as paths
 from backend.DONT_CHANGE.scripts.config import describe_python_request, display_path, settings, validate
@@ -27,7 +28,7 @@ from backend.DONT_CHANGE.scripts.errors import SettingsError, SetupError
 from backend.DONT_CHANGE.scripts.runtime_state import ProcessRegistry
 
 
-def cmd_clean(arguments: list[str]):
+def cmd_clean(arguments: List[str]):
     """Delete logs or run diagnostics."""
     from backend.DONT_CHANGE.scripts.file_tools import remove_tree_inside
     from backend.DONT_CHANGE.scripts.launcher_ui import get_log_folder_path
@@ -73,7 +74,7 @@ def cmd_clean(arguments: list[str]):
     print_success("Cleaned.")
 
 
-def cmd_remove_shortcuts(arguments: list[str]):
+def cmd_remove_shortcuts(arguments: List[str]):
     """Remove every shortcut Setup created (project folder, Start Menu, Desktop)."""
     from backend.DONT_CHANGE.scripts.shortcuts import (
         read_created_shortcuts,
@@ -88,7 +89,7 @@ def cmd_remove_shortcuts(arguments: list[str]):
     print_success(f"Removed {len(removed)} shortcut(s). Run Setup to create them again.")
 
 
-def cmd_status(arguments: list[str]):
+def cmd_status(arguments: List[str]):
     """Show uv, Python, environment and shortcut state."""
     s = settings()
     try:
@@ -105,7 +106,7 @@ def cmd_status(arguments: list[str]):
         uv = None
         uv_state = "missing (Setup or the next start installs it)"
     config = read_venv_config()
-    lock_state: tuple[str, bool] = ("(missing - created on the next start)", False)
+    lock_state: Tuple[str, bool] = ("(missing - created on the next start)", False)
     if Path(paths.UV_LOCK_PATH).is_file() and uv is None:
         lock_state = ("present (not checked: uv is missing)", False)
     elif Path(paths.UV_LOCK_PATH).is_file():
@@ -120,7 +121,7 @@ def cmd_status(arguments: list[str]):
         shortcut_count = "?"
     ignored = diagnostics_summary()
     in_sync = declared_dependencies() == list(s.packages)
-    sections: dict[str, list[tuple[str, object] | tuple[str, object, bool]]] = {
+    sections: Dict[str, List[Union[Tuple[str, object], Tuple[str, object, bool]]]] = {
         "Project": [
             ("Program", s.program_name),
             ("Launcher version", paths.LAUNCHER_VERSION),
@@ -167,7 +168,7 @@ def cmd_status(arguments: list[str]):
         print_fields(rows)
 
 
-def cmd_test(arguments: list[str]):
+def cmd_test(arguments: List[str]):
     """Run the launcher's regression tests (DONT_CHANGE/tests); optional file pattern."""
     import subprocess
 

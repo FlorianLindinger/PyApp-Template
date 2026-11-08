@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 from collections.abc import Iterable
 from pathlib import Path
+from typing import List, Optional
 
 
 def _run_wpf_powershell(script: str, **extra_env: str) -> str:
@@ -66,7 +67,7 @@ $image.CopyPixels($bytes, $image.PixelWidth * 4, 0)
 def generate_ico_from_png(
     output_path: str,
     base_png_path: str,
-    sub_png_path: str | None = None,
+    sub_png_path: Optional[str] = None,
     sub_icon_area_scale_factor: float = 0.35,
     sub_icon_alignment: str = "bottom right",
     override: bool = True,
@@ -158,7 +159,7 @@ if ($env:ICO_OVERLAY_URI) {
         payload = [payload]
     layers = [(int(entry["size"]), base64.b64decode(entry["png"])) for entry in payload]
     offset = 6 + 16 * len(layers)
-    entries: list[bytes] = []
+    entries: List[bytes] = []
     data = bytearray()
     for size, png in layers:
         entries.append(

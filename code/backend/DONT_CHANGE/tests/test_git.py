@@ -9,6 +9,7 @@ from __future__ import annotations
 import shutil
 import subprocess
 import unittest
+from typing import Optional
 
 from project_location import DONT_CHANGE, PROJECT_ROOT
 
@@ -16,7 +17,7 @@ from project_location import DONT_CHANGE, PROJECT_ROOT
 EXCLUDED_PARTS = {"tmp", "__pycache__", ".ruff_cache"}
 
 
-def git(*args: str, stdin: str | None = None):
+def git(*args: str, stdin: Optional[str] = None):
     # Test subprocesses execute fixed fixture/helper code using the local interpreter or Git.
     return subprocess.run(  # noqa: S603
         ["git", *args],  # noqa: S607 - Git is intentionally selected from the developer's local PATH.

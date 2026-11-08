@@ -13,7 +13,7 @@ import re
 import sys
 from pathlib import Path
 from types import ModuleType, SimpleNamespace
-from typing import Sequence
+from typing import List, Match, Optional, Sequence, Tuple, Union
 
 from backend.DONT_CHANGE.backend_settings import PYPROJECT_PATH
 from backend.DONT_CHANGE.scripts.config import settings
@@ -37,7 +37,7 @@ package = false
 """
 
 
-def requires_python_for(version: tuple[int, ...]) -> str:
+def requires_python_for(version: Tuple[int, ...]) -> str:
     return f"=={version[0]}.{version[1]}.*"
 
 
@@ -74,7 +74,9 @@ def _recorded_packages(text: str):
     return None
 
 
-def reconcile_pyproject(s: ModuleType | SimpleNamespace | None = None, version: tuple[int, ...] | None = None):
+def reconcile_pyproject(
+    s: Optional[Union[ModuleType, SimpleNamespace]] = None, version: Optional[Tuple[int, ...]] = None
+):
     """Generate pyproject.toml from developer_settings.py; copy edits made to the file into the settings.
 
     version: the project's Python, used for requires-python (default: keep the file's value, or the
@@ -118,12 +120,12 @@ def _change_summary(old: Sequence[str], new: Sequence[str]) -> str:
     return ", ".join(changes) or "new order"
 
 
-def set_requires_python(version: tuple[int, ...], s: ModuleType | SimpleNamespace | None = None):
+def set_requires_python(version: Tuple[int, ...], s: Optional[Union[ModuleType, SimpleNamespace]] = None):
     """Point requires-python at the interpreter's minor version (and regenerate pyproject.toml)."""
     return reconcile_pyproject(s, version)
 
 
-def current_requires_python(text: str | None = None) -> str | None:
+def current_requires_python(text: Optional[str] = None) -> Optional[str]:
     try:
         text = read_pyproject() if text is None else text
     except OSError:
@@ -132,7 +134,7 @@ def current_requires_python(text: str | None = None) -> str | None:
     return match.group(1) if match else None
 
 
-def version_satisfies_requires(version: tuple[int, ...], requires: str | None) -> bool:
+def version_satisfies_requires(version: Tuple[int, ...], requires: Optional[str]) -> bool:
     """Support the "==X.Y.*" form this launcher writes; other forms are left to uv."""
     if not requires:
         return True
@@ -142,7 +144,7 @@ def version_satisfies_requires(version: tuple[int, ...], requires: str | None) -
     return version[:2] == (int(match.group(1)), int(match.group(2)))
 
 
-def declared_dependencies(text: str | None = None) -> list[str]:
+def declared_dependencies(text: Optional[str] = None) -> List[str]:
     """Return the [project] dependencies strings of pyproject.toml (simple parser for uv-written files)."""
     if text is None:
         try:
@@ -159,7 +161,7 @@ def declared_dependencies(text: str | None = None) -> list[str]:
 _TOML_STRING = re.compile(r'"((?:[^"\\\n]|\\.)*)"|\'([^\'\n]*)\'')
 
 
-def _toml_string_value(match: re.Match[str]) -> str:
+def _toml_string_value(match: Match[str]) -> str:
     basic, literal = match.groups()
     if basic is None:
         return literal

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
+from typing import List
 
 
 def remove_tree_inside(path: str, base: str) -> None:
@@ -30,7 +31,7 @@ def _is_junction(path: str) -> bool:
         return False
 
 
-def set_hidden_in_explorer(paths: list[str], hidden: bool = True):
+def set_hidden_in_explorer(paths: List[str], hidden: bool = True):
     """Hide (or unhide) existing files and folders in Explorer; missing paths and failures are skipped."""
 
     import ctypes

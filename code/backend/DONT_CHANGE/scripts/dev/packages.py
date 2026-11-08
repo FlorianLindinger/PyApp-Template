@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import List
+
 from backend.DONT_CHANGE import backend_settings as paths
 from backend.DONT_CHANGE.scripts.config import display_path, settings
 from backend.DONT_CHANGE.scripts.console_tools import (
@@ -33,7 +35,7 @@ from backend.DONT_CHANGE.scripts.env.venv import (
 )
 
 
-def cmd_add(arguments: list[str]):
+def cmd_add(arguments: List[str]):
     """Add packages (recorded in developer_settings.py and uv.lock) and install them."""
     s = settings()
     names = arguments or ask_package_names("Package(s) to add, e.g. requests numpy>=2:")
@@ -46,7 +48,7 @@ def cmd_add(arguments: list[str]):
     print_info(COMMIT_HINT)
 
 
-def cmd_remove(arguments: list[str]):
+def cmd_remove(arguments: List[str]):
     """Remove declared packages."""
     s = settings()
     names = list(arguments)
@@ -72,7 +74,7 @@ def cmd_remove(arguments: list[str]):
     print_info(COMMIT_HINT)
 
 
-def cmd_upgrade(arguments: list[str]):
+def cmd_upgrade(arguments: List[str]):
     """Upgrade all (or the named) packages within their declared limits."""
     s = settings()
     prepare(s)
@@ -85,7 +87,7 @@ def cmd_upgrade(arguments: list[str]):
     print_success("Packages upgraded. Test the app, then commit backend/generated/uv.lock.")
 
 
-def cmd_sync(arguments: list[str]):
+def cmd_sync(arguments: List[str]):
     """Make the environment match uv.lock exactly (removes packages installed by hand)."""
     s = settings()
     prepare(s)
@@ -151,19 +153,19 @@ def find_imports_and_add():
     print_info(COMMIT_HINT)
 
 
-def cmd_find_imports(arguments: list[str]):
+def cmd_find_imports(arguments: List[str]):
     """Find the packages the code imports and add the missing ones after review."""
     prepare()
     find_imports_and_add()
 
 
-def cmd_terminal(arguments: list[str]):
+def cmd_terminal(arguments: List[str]):
     """Command prompt with the app environment activated and uv on PATH."""
     prepare()
     open_package_terminal()
 
 
-def cmd_export(arguments: list[str]):
+def cmd_export(arguments: List[str]):
     """Write backend/requirements.txt from uv.lock (for tools that need that format)."""
     prepare()
     run_uv(

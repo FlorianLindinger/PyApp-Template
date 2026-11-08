@@ -6,7 +6,7 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
-from typing import Iterable
+from typing import Iterable, Optional, Union
 from unittest import mock
 
 from project_location import DONT_CHANGE
@@ -17,12 +17,12 @@ from backend.DONT_CHANGE.actions import gen_icons
 
 
 class GenIconsTests(unittest.TestCase):
-    def regenerate(self, folder: str, answers: Iterable[str | BaseException] = (), content: bytes = b"generated"):
+    def regenerate(self, folder: str, answers: Iterable[Union[str, BaseException]] = (), content: bytes = b"generated"):
         """Run the generator for two icons with a stand-in that writes content; return (overlays, questions)."""
         overlays = []
 
         def fake(
-            output: str, base: str, overlay: str | None, sub_icon_area_scale_factor: float, sub_icon_alignment: str
+            output: str, base: str, overlay: Optional[str], sub_icon_area_scale_factor: float, sub_icon_alignment: str
         ):
             overlays.append(overlay)
             Path(output).write_bytes(content)

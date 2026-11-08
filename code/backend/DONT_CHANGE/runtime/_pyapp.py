@@ -15,6 +15,7 @@ import sys
 import traceback
 from pathlib import Path
 from types import TracebackType
+from typing import Optional, Tuple
 
 
 class WrapperExit:
@@ -60,7 +61,7 @@ def _launcher_files():
     return names
 
 
-def strip_launcher_frames(tb: TracebackType | None):
+def strip_launcher_frames(tb: Optional[TracebackType]):
     """Drop the leading wrapper/runpy frames so the report looks like `python main.py`."""
     skip = _launcher_files()
     while tb is not None:
@@ -72,7 +73,7 @@ def strip_launcher_frames(tb: TracebackType | None):
     return tb
 
 
-def _is_app_file(filename: str, app_root: str | None):
+def _is_app_file(filename: str, app_root: Optional[str]):
     if not app_root or not filename or filename.startswith("<"):
         return False
     path = os.path.normcase(os.path.normpath(str(Path(filename).absolute())))
@@ -84,7 +85,7 @@ def _is_app_file(filename: str, app_root: str | None):
     return first not in ("backend", ".venv") and not first.startswith(".venv")
 
 
-def _frames(te: traceback.TracebackException, app_root: str | None, context_lines: tuple[int, int]):
+def _frames(te: traceback.TracebackException, app_root: Optional[str], context_lines: Tuple[int, int]):
     frames = []
     for frame in te.stack:
         is_app = _is_app_file(frame.filename, app_root)
@@ -108,7 +109,7 @@ def _frames(te: traceback.TracebackException, app_root: str | None, context_line
     return frames
 
 
-def _chain(te: traceback.TracebackException, app_root: str | None, context_lines: tuple[int, int]):
+def _chain(te: traceback.TracebackException, app_root: Optional[str], context_lines: Tuple[int, int]):
     """Exception chain oldest first, like CPython prints it.
 
     Each entry's "relation" is the sentence printed between the previous entry and it.
@@ -116,7 +117,7 @@ def _chain(te: traceback.TracebackException, app_root: str | None, context_lines
     entries = []
     seen = set()
 
-    def add(current: traceback.TracebackException | None):
+    def add(current: Optional[traceback.TracebackException]):
         if current is None or id(current) in seen:
             return
         seen.add(id(current))
@@ -141,7 +142,7 @@ def _chain(te: traceback.TracebackException, app_root: str | None, context_lines
 
 
 def build_report(
-    error: BaseException, script_path: str, app_root: str | None = None, context_lines: tuple[int, int] = (3, 3)
+    error: BaseException, script_path: str, app_root: Optional[str] = None, context_lines: Tuple[int, int] = (3, 3)
 ):
     """Serializable report of an exception as if main.py had been run directly.
 
@@ -171,8 +172,8 @@ def save_report(
     error: BaseException,
     script_path: str,
     output_path: str,
-    app_root: str | None = None,
-    context_lines: tuple[int, int] = (3, 3),
+    app_root: Optional[str] = None,
+    context_lines: Tuple[int, int] = (3, 3),
 ):
     """Write the report atomically (temporary file + replace)."""
     report = build_report(error, script_path, app_root, context_lines)

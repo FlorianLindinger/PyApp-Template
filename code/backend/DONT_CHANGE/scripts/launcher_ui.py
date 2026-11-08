@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 import sys
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Optional
 
 from backend.DONT_CHANGE.backend_settings import (
     DEV_SETTINGS_DIR,
@@ -84,7 +84,7 @@ def set_settings_colors() -> None:
     _set_terminal_colors((s.terminal_bg_color or "") + (s.terminal_text_color or ""))
 
 
-def get_log_path(log_path: str | None, is_relative_to_start_folder_if_relative: bool) -> str:
+def get_log_path(log_path: Optional[str], is_relative_to_start_folder_if_relative: bool) -> str:
     """Resolve a configured log path ("" when disabled).
 
     Date placeholders are filled in the configured text only, so a "%" in the
@@ -106,13 +106,13 @@ def get_log_path(log_path: str | None, is_relative_to_start_folder_if_relative: 
     return os.path.normpath(str(Path(base) / configured))
 
 
-def get_log_folder_path(log_path: str | None, is_relative_to_start_folder_if_relative: bool) -> str | None:
+def get_log_folder_path(log_path: Optional[str], is_relative_to_start_folder_if_relative: bool) -> Optional[str]:
     """Folder of the resolved log path, or None when logging is disabled."""
     resolved = get_log_path(log_path, is_relative_to_start_folder_if_relative)
     return str(Path(resolved).parent) if resolved else None
 
 
-def stop_running_instances(timeout: float = 0.0, report: Callable[[str], object] | None = None):
+def stop_running_instances(timeout: float = 0.0, report: Optional[Callable[[str], object]] = None):
     """Stop verified application instances (graceful first, see ProcessRegistry.stop)."""
     from backend.DONT_CHANGE.scripts.runtime_state import ProcessRegistry
 

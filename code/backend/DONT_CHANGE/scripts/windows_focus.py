@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import ctypes
 from ctypes import wintypes
-from typing import Any, Iterable
+from typing import Any, Dict, Iterable, List, Optional, Set
 
 TH32CS_SNAPPROCESS = 0x00000002
 SW_RESTORE = 9
@@ -31,7 +31,7 @@ class _ProcessEntry(ctypes.Structure):
     ]
 
 
-def process_tree(root_pids: Iterable[int | None]) -> set[int]:
+def process_tree(root_pids: Iterable[Optional[int]]) -> Set[int]:
     """The given processes and all their descendants."""
     kernel = ctypes.WinDLL("kernel32", use_last_error=True)
     kernel.CreateToolhelp32Snapshot.restype = wintypes.HANDLE
@@ -59,7 +59,7 @@ def process_tree(root_pids: Iterable[int | None]) -> set[int]:
     return result
 
 
-def app_windows(pids: set[int]) -> list[int]:
+def app_windows(pids: Set[int]) -> List[int]:
     """Visible top-level application windows (not consoles) owned by these processes."""
     user32 = ctypes.WinDLL("user32", use_last_error=True)
     found = []
@@ -102,7 +102,7 @@ def focus_window(hwnd: int) -> bool:
     return True
 
 
-def focus_instance(record: dict[str, Any]) -> str:
+def focus_instance(record: Dict[str, Any]) -> str:
     """Return "focused", or "no_window" when the instance has neither app nor console window."""
     child = (record.get("child") or {}).get("pid") if isinstance(record.get("child"), dict) else None
     windows = app_windows(process_tree([record.get("pid"), child]))

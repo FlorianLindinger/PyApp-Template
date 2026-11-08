@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 from types import ModuleType, SimpleNamespace
+from typing import List, Optional, Union
 
 from backend.DONT_CHANGE.scripts.config import settings, validate
 from backend.DONT_CHANGE.scripts.console_tools import ask
@@ -26,12 +27,12 @@ def requirement_name(requirement: str) -> str:
     return normalized(match.group(1)) if match else normalized(requirement)
 
 
-def prepare(s: ModuleType | SimpleNamespace | None = None):
+def prepare(s: Optional[Union[ModuleType, SimpleNamespace]] = None):
     """Validate settings and make sure the environment exists before changing it."""
     s = s or settings()
     validate(s)
     return ensure_environment(interactive=True)
 
 
-def ask_package_names(prompt: str) -> list[str]:
+def ask_package_names(prompt: str) -> List[str]:
     return ask(prompt).replace(",", " ").split()

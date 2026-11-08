@@ -7,6 +7,7 @@ import shutil
 import types
 from pathlib import Path
 from types import ModuleType, SimpleNamespace
+from typing import List, Union
 
 from backend.DONT_CHANGE import backend_settings as paths
 from backend.DONT_CHANGE.scripts.config import display_path, edit_settings, settings
@@ -33,7 +34,7 @@ from backend.DONT_CHANGE.scripts.env.venv import (
 from backend.DONT_CHANGE.scripts.errors import SetupError
 
 
-def _settings_copy(s: ModuleType | SimpleNamespace, **overrides: object):
+def _settings_copy(s: Union[ModuleType, SimpleNamespace], **overrides: object):
     values = {name: getattr(s, name) for name in dir(s) if not name.startswith("_")}
     values.update(overrides)
     return types.SimpleNamespace(**values)
@@ -46,7 +47,7 @@ PORTABLE_SETTINGS = {
 }
 
 
-def cmd_make_portable(arguments: list[str]):
+def cmd_make_portable(arguments: List[str]):
     """Put uv, Python and all packages inside this folder so it runs offline on other PCs."""
     s = settings()
     # Ask before doing anything: with the old settings the next start would re-link the

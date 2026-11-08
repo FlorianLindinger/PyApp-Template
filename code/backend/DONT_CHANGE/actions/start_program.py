@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from types import ModuleType, SimpleNamespace
+from typing import Union
 
 fail_message = "Failed to start the program: {e}"
 
@@ -29,7 +30,7 @@ from backend.DONT_CHANGE.scripts.launcher_ui import (
 from backend.DONT_CHANGE.scripts.runtime_state import ProcessRegistry
 
 
-def resolve_mode(s: ModuleType | SimpleNamespace, requested: str) -> str:
+def resolve_mode(s: Union[ModuleType, SimpleNamespace], requested: str) -> str:
     """Map the shortcut's request to conhost / wt / no_terminal (with a Windows Terminal fallback)."""
     mode = requested
     if mode == "terminal":
@@ -42,7 +43,7 @@ def resolve_mode(s: ModuleType | SimpleNamespace, requested: str) -> str:
     return mode
 
 
-def _hint_outdated_shortcuts(s: ModuleType | SimpleNamespace) -> None:
+def _hint_outdated_shortcuts(s: Union[ModuleType, SimpleNamespace]) -> None:
     """The "open" shortcuts store their target; tell the user when the settings changed it."""
     try:
         from backend.DONT_CHANGE.scripts.shortcuts import outdated_shortcut_targets

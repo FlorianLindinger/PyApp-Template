@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 import sys
 from pathlib import Path
-from typing import Any, Iterable, TextIO
+from typing import Any, Iterable, List, Optional, TextIO, Tuple, Union
 
 from backend.DONT_CHANGE.scripts.diagnostics import note_ignored
 
@@ -93,7 +93,7 @@ def print_warn(msg: Any) -> None:
     print(_badge_lines("!", ANSI_WARNING, msg), flush=True)
 
 
-def print_error(msg: Any, file: TextIO | None = None) -> None:
+def print_error(msg: Any, file: Optional[TextIO] = None) -> None:
     """The task failed."""
     print(_badge_lines("ERROR", ANSI_ERROR, msg), file=file or sys.stdout, flush=True)
 
@@ -111,9 +111,9 @@ def wait_for_enter(message: str = "Press Enter to close this window.") -> None:
         pass
 
 
-def print_fields(rows: Iterable[tuple[str, object] | tuple[str, object, bool]], indent: int = 2) -> None:
+def print_fields(rows: Iterable[Union[Tuple[str, object], Tuple[str, object, bool]]], indent: int = 2) -> None:
     """Aligned "label   value" rows; a value whose third item is False is highlighted as a problem."""
-    normalized_rows: list[tuple[str, object, bool]] = []
+    normalized_rows: List[Tuple[str, object, bool]] = []
     for row in rows:
         if len(row) == 3:
             label, value, ok = row
@@ -138,7 +138,7 @@ def print_choices(options: Iterable[object]) -> None:
         print(f"  {styled(str(index).rjust(2), ANSI_HEADING)}  {option}")
 
 
-def set_terminal_title(title: str | None) -> None:
+def set_terminal_title(title: Optional[str]) -> None:
     """Set the Windows console title when supplied, ignoring unavailable console APIs."""
     if title is None:
         return
@@ -152,7 +152,7 @@ def set_terminal_title(title: str | None) -> None:
         note_ignored("set_terminal_title")
 
 
-def set_terminal_icon(icon_path: str | None) -> None:
+def set_terminal_icon(icon_path: Optional[str]) -> None:
     """Best-effort icon update of the current Windows terminal icon"""
     if icon_path in ("", None):
         return
@@ -373,7 +373,7 @@ def enable_unminimize_and_foreground_terminal_on_first_print() -> None:
     sys.stderr = unminimize_plus_foreground_terminal_on_first_output(sys.stderr)  # type:ignore
 
 
-def set_terminal_colors(colors: str | None) -> None:
+def set_terminal_colors(colors: Optional[str]) -> None:
     """colors is in format of windows terminal colors"""
     if colors:
         import re
@@ -395,7 +395,7 @@ def set_terminal_colors(colors: str | None) -> None:
 _VSCODE_EXECUTABLES = ("Code.exe", "Code - Insiders.exe", "VSCodium.exe", "Cursor.exe")
 
 
-def _editor_executable() -> str | None:
+def _editor_executable() -> Optional[str]:
     """VS Code (or a fork) found via the "code" command, preferring the .exe over bin\\code.cmd."""
     import shutil
 

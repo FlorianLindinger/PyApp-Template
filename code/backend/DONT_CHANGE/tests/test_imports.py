@@ -6,6 +6,7 @@ import tempfile
 import textwrap
 import unittest
 from pathlib import Path
+from typing import Union
 
 from project_location import DONT_CHANGE
 
@@ -14,7 +15,7 @@ from project_location import DONT_CHANGE
 from backend.DONT_CHANGE.scripts import import_finder
 
 
-def write(root: str | Path, relative: str, text: str = ""):
+def write(root: Union[str, Path], relative: str, text: str = ""):
     path = Path(root, relative)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(textwrap.dedent(text), encoding="utf-8")

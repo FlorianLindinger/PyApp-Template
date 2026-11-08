@@ -7,6 +7,7 @@ import shutil
 import subprocess
 from pathlib import Path
 from types import ModuleType, SimpleNamespace
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Union
 
 from backend.DONT_CHANGE.backend_settings import (
     LOCAL_PYTHONS_DIR,
@@ -18,6 +19,13 @@ from backend.DONT_CHANGE.backend_settings import (
 )
 from backend.DONT_CHANGE.scripts.config import settings
 from backend.DONT_CHANGE.scripts.errors import SetupError
+
+# subprocess classes became subscriptable in 3.9. Keep precise static types while
+# exposing the public class to runtime annotation inspection on Python 3.8.
+if TYPE_CHECKING:
+    TextCompletedProcess = subprocess.CompletedProcess[str]
+else:
+    TextCompletedProcess = subprocess.CompletedProcess
 
 
 def uv_exe() -> str:
@@ -75,8 +83,10 @@ _OWN_UV_VARIABLES = (
 
 
 def uv_environment(
-    s: ModuleType | SimpleNamespace | None = None, project_environment: str | None = None, python_command: bool = True
-) -> dict[str, str]:
+    s: Optional[Union[ModuleType, SimpleNamespace]] = None,
+    project_environment: Optional[str] = None,
+    python_command: bool = True,
+) -> Dict[str, str]:
     """Environment for uv calls. Mirrors Set-UvEnvironment in bootstrap/resolve_runtime.ps1.
 
     The user's other UV_* settings (index URLs, proxies, ...) are kept on purpose.
@@ -116,13 +126,13 @@ def uv_environment(
 
 
 def _run(
-    arguments: list[str],
+    arguments: List[str],
     capture: bool,
     check: bool,
-    cwd: str | None,
-    project_environment: str | None,
-    s: ModuleType | SimpleNamespace | None,
-) -> subprocess.CompletedProcess[str]:
+    cwd: Optional[str],
+    project_environment: Optional[str],
+    s: Optional[Union[ModuleType, SimpleNamespace]],
+) -> TextCompletedProcess:
     if not cwd:
         Path(PROJECT_DIR).mkdir(parents=True, exist_ok=True)
     # Run the selected local uv executable or the bundled bootstrap script.
@@ -149,25 +159,25 @@ def _run(
 
 
 def run_uv(
-    arguments: list[str],
+    arguments: List[str],
     *,
     check: bool = True,
-    cwd: str | None = None,
-    project_environment: str | None = None,
-    s: ModuleType | SimpleNamespace | None = None,
+    cwd: Optional[str] = None,
+    project_environment: Optional[str] = None,
+    s: Optional[Union[ModuleType, SimpleNamespace]] = None,
 ) -> int:
     """Run uv with its output shown; return the exit code (check=True raises SetupError on failure)."""
     return _run(arguments, False, check, cwd, project_environment, s).returncode
 
 
 def run_uv_captured(
-    arguments: list[str],
+    arguments: List[str],
     *,
     check: bool = True,
-    cwd: str | None = None,
-    project_environment: str | None = None,
-    s: ModuleType | SimpleNamespace | None = None,
-) -> tuple[int, str, str]:
+    cwd: Optional[str] = None,
+    project_environment: Optional[str] = None,
+    s: Optional[Union[ModuleType, SimpleNamespace]] = None,
+) -> Tuple[int, str, str]:
     """Run uv quietly; return (exit code, stdout, stderr)."""
     result = _run(arguments, True, check, cwd, project_environment, s)
     return result.returncode, result.stdout or "", result.stderr or ""
@@ -181,7 +191,9 @@ def uv_version() -> str:
 
 
 def uv_succeeds(
-    arguments: list[str], project_environment: str | None = None, s: ModuleType | SimpleNamespace | None = None
+    arguments: List[str],
+    project_environment: Optional[str] = None,
+    s: Optional[Union[ModuleType, SimpleNamespace]] = None,
 ) -> bool:
     """Try a uv command without printing anything (used for offline-first attempts)."""
     code, _, _ = run_uv_captured(arguments, check=False, project_environment=project_environment, s=s)

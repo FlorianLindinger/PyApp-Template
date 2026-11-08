@@ -15,6 +15,7 @@ import statistics
 import subprocess
 import sys
 import time
+from typing import List
 
 from _paths import CODE_DIR, VENV_PYTHON
 
@@ -29,7 +30,7 @@ LAUNCHER_MODULES = (
 IMPORT = "import importlib, sys; sys.path.insert(0, sys.argv[1]); sys.argv[2] and importlib.import_module(sys.argv[2])"
 
 
-def run_once(python: list[str], module: str) -> float:
+def run_once(python: List[str], module: str) -> float:
     start = time.perf_counter()
     # Run the selected local interpreter; module names are arguments to fixed source.
     result = subprocess.run(  # noqa: S603
@@ -45,7 +46,7 @@ def run_once(python: list[str], module: str) -> float:
     return elapsed
 
 
-def app_modules() -> list[str]:
+def app_modules() -> List[str]:
     """Top-level import names of the declared packages, read from the installed metadata in .venv."""
     sys.path.insert(0, str(CODE_DIR))
     from backend.DONT_CHANGE.scripts.config import settings

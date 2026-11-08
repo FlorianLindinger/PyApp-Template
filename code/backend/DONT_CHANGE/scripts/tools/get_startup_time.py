@@ -25,8 +25,15 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+from typing import TYPE_CHECKING, Dict, List
 
 from _paths import CODE_DIR, PROJECT_ROOT, STARTUP_BENCHMARK_WORK_DIR
+
+# Popen became subscriptable in 3.9; runtime inspection on 3.8 uses the public class.
+if TYPE_CHECKING:
+    BinaryProcess = subprocess.Popen[bytes]
+else:
+    BinaryProcess = subprocess.Popen
 
 TARGETS = ("terminal", "no_terminal", "direct")
 LEFT_OUT_IN_PROJECT_ROOT = {"logs", "crash logs", ".git"}
@@ -40,7 +47,7 @@ def copy_project(destination: Path) -> None:
     """Copy the project without logs, shortcuts, caches and the launcher's runtime state."""
     dont_change = PROJECT_ROOT / "code" / "backend" / "DONT_CHANGE"
 
-    def ignore(folder: str, names: list[str]):
+    def ignore(folder: str, names: List[str]):
         here = Path(folder).resolve()
         left_out = {name for name in names if name == "__pycache__" or name.lower().endswith(".lnk")}
         if here == PROJECT_ROOT:
@@ -69,7 +76,7 @@ def main_script_in(copy_root: Path) -> Path:
     return copy_root / "code" / Path(main_script_path()).relative_to(CODE_DIR)
 
 
-def commands(copy_root: Path, app_id: str, script: Path) -> dict[str, list[str]]:
+def commands(copy_root: Path, app_id: str, script: Path) -> Dict[str, List[str]]:
     code = copy_root / "code"
     entry_batches = code / "backend" / "DONT_CHANGE" / "B"
     return {
@@ -79,7 +86,7 @@ def commands(copy_root: Path, app_id: str, script: Path) -> dict[str, list[str]]
     }
 
 
-def stop_tree(process: subprocess.Popen[bytes], wait_seconds: float) -> None:
+def stop_tree(process: BinaryProcess, wait_seconds: float) -> None:
     """Let the launch finish on its own, else end the whole process tree."""
     try:
         process.wait(wait_seconds)
@@ -95,7 +102,7 @@ def stop_tree(process: subprocess.Popen[bytes], wait_seconds: float) -> None:
         process.wait()
 
 
-def run_once(command: list[str], marker: Path, timeout: float, cwd: Path) -> float:
+def run_once(command: List[str], marker: Path, timeout: float, cwd: Path) -> float:
     """Seconds from starting the command until the probe wrote its marker."""
     if marker.exists():
         marker.unlink()
@@ -136,7 +143,7 @@ def main() -> int:
     script.write_text(PROBE.format(marker=str(marker)), encoding="utf-8")
     all_commands = commands(copy_root, app_id_for(copy_root), script)
 
-    results: dict[str, list[float]] = {}
+    results: Dict[str, List[float]] = {}
     try:
         for target in arguments.targets:
             command = all_commands[target]

@@ -9,6 +9,7 @@ from __future__ import annotations
 import shutil
 import unicodedata
 from pathlib import Path
+from typing import List
 
 from backend.DONT_CHANGE.backend_settings import BANNER_FONT_PATH
 from backend.DONT_CHANGE.scripts.config import settings
@@ -59,7 +60,7 @@ def load_font():
     return glyphs
 
 
-def render(text: str) -> list[str]:
+def render(text: str) -> List[str]:
     """The rows of text in the banner font; characters the font lacks are left out."""
     glyphs = load_font()
     height = len(next(iter(glyphs.values())))

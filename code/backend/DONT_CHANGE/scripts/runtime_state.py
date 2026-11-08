@@ -11,7 +11,7 @@ import threading
 import time
 import uuid
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
 
 _local_locks = threading.local()
 
@@ -19,7 +19,7 @@ _local_locks = threading.local()
 class FileLock:
     """A reentrant, process-shared lock; Windows releases it after a crash."""
 
-    def __init__(self, path: str | Path, timeout: float = 120):
+    def __init__(self, path: Union[str, Path], timeout: float = 120):
         """Store the normalized lock path and acquisition timeout."""
         self.path = str(Path(path).resolve())
         self.timeout = timeout
@@ -28,7 +28,7 @@ class FileLock:
         """Acquire or reenter the checkout's file lock, waiting up to the configured timeout."""
         import msvcrt
 
-        held: dict[str, list[Any]] | None = getattr(_local_locks, "held", None)
+        held: Optional[Dict[str, List[Any]]] = getattr(_local_locks, "held", None)
         if held is None:
             held = {}
             _local_locks.held = held
@@ -67,7 +67,7 @@ class FileLock:
             del _local_locks.held[self.path]
 
 
-def atomic_json(path: str | Path, payload: object):
+def atomic_json(path: Union[str, Path], payload: object):
     """Write JSON through a unique sibling file and atomically replace the destination."""
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -142,7 +142,7 @@ def process_identity(pid: int):
 class ProcessRegistry:
     """One atomic identity record per running launcher (watchdog)."""
 
-    def __init__(self, directory: str | Path):
+    def __init__(self, directory: Union[str, Path]):
         """directory holds one <pid>.json record per running watchdog."""
         self.directory = Path(directory)
 
@@ -182,7 +182,7 @@ class ProcessRegistry:
                 kernel.ReleaseMutex(handle)
             kernel.CloseHandle(handle)
 
-    def register(self, child_pid: int | None = None):
+    def register(self, child_pid: Optional[int] = None):
         """Atomically record this launcher's verified identity, its console window and optional app child."""
         with self.lock(), process_identity(os.getpid()) as identity:
             if identity is None:
@@ -229,7 +229,7 @@ class ProcessRegistry:
 
     def _records(self):
         """Validate stored identities and discard stale records, excluding this process from live results."""
-        records: list[dict[str, Any]] = []
+        records: List[Dict[str, Any]] = []
         stale = 0
         for path in self.directory.glob("*.json"):
             try:
@@ -245,7 +245,9 @@ class ProcessRegistry:
             path.unlink(missing_ok=True)
         return records, stale
 
-    def stop(self, timeout: float = 0.0, report: Callable[[str], object] | None = None) -> tuple[int, int, list[str]]:
+    def stop(
+        self, timeout: float = 0.0, report: Optional[Callable[[str], object]] = None
+    ) -> Tuple[int, int, List[str]]:
         """Stop the running instances; returns (stopped, stale, failures).
 
         With timeout > 0 each instance is first asked to close (WM_CLOSE to its windows, or
@@ -266,7 +268,7 @@ class ProcessRegistry:
             while time.monotonic() < deadline and any(_still_running(r) for r in records):
                 time.sleep(0.1)
         stopped = 0
-        failures: list[str] = []
+        failures: List[str] = []
         with self.lock():
             for record in records:
                 path = self.directory / (str(record["pid"]) + ".json")
@@ -292,12 +294,12 @@ class ProcessRegistry:
         return stopped, stale, failures
 
 
-def _still_running(record: dict[str, Any]) -> bool:
+def _still_running(record: Dict[str, Any]) -> bool:
     with process_identity(record["pid"]) as current:
         return matches_identity(record, current)
 
 
-def _write_stop_request(record: dict[str, Any]) -> None:
+def _write_stop_request(record: Dict[str, Any]) -> None:
     """Tell the instance's watchdog that its end was requested (no completion actions)."""
     from backend.DONT_CHANGE.backend_settings import STOP_REQUEST_FILE_NAME
 
@@ -311,7 +313,7 @@ def _write_stop_request(record: dict[str, Any]) -> None:
             note_ignored("write stop request")
 
 
-def request_close(record: dict[str, Any]) -> None:
+def request_close(record: Dict[str, Any]) -> None:
     """Ask one instance to end by itself: WM_CLOSE to its app windows, else Ctrl+C to its console."""
     import subprocess
     import sys
@@ -431,7 +433,7 @@ def create_own_job() -> str:
     return name
 
 
-def terminate_job(name: str | None) -> bool:
+def terminate_job(name: Optional[str]) -> bool:
     """End every process of the named job; False if there is no such job (anymore)."""
     if not name:
         return False
@@ -447,7 +449,7 @@ def terminate_job(name: str | None) -> bool:
         kernel.CloseHandle(handle)
 
 
-def job_process_ids(name: str | None) -> set[int]:
+def job_process_ids(name: Optional[str]) -> Set[int]:
     """IDs of the processes currently in the named job (empty if it does not exist)."""
     if not name:
         return set()
@@ -504,12 +506,12 @@ def terminate_tree(root_pid: int):
         raise RuntimeError("; ".join(failures))
 
 
-def matches_identity(record: dict[str, Any], current: dict[str, Any] | None):
+def matches_identity(record: Dict[str, Any], current: Optional[Dict[str, Any]]):
     """Compare PID, creation time and executable path to reject stale or reused process IDs."""
     return current is not None and all(record.get(key) == current.get(key) for key in ("pid", "created", "image"))
 
 
-def unique_log_path(path: str | None, run_id: str | None = None):
+def unique_log_path(path: Optional[str], run_id: Optional[str] = None):
     """Append a compact 12-character run suffix, preserving an empty disabled path."""
     if not path:
         return ""

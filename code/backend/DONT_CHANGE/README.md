@@ -49,7 +49,9 @@ Three Pythons can be involved, but usually they are the same installation:
 
 - **Standard library only, Python 3.8+.** Every `.py` file here runs on any Python uv can
   install, without packages: the app's packages can never break the launcher. Use
-  `from __future__ import annotations`; no `match`, no parenthesized `with`, no
+  `from __future__ import annotations` with `typing.List`, `Optional`, and `Union`
+  so `typing.get_type_hints()` also works on 3.8 (Ruff preserves runtime typing).
+  Use public protocols for structural types; no `match`, no parenthesized `with`, no
   `str.removeprefix`, no `functools.cache` (`tests/test_files.py` checks this).
 - **Settings are read when needed, never at import time** (`config.settings()`), so a mistake
   in `developer_settings.py` becomes a short message with a line number instead of a traceback.

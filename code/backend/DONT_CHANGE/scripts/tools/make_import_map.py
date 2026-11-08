@@ -34,7 +34,7 @@ import urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from http.client import HTTPMessage
 from pathlib import Path
-from typing import IO, Any, Callable, Iterable, Mapping, TypedDict
+from typing import IO, Any, Callable, Dict, Iterable, List, Mapping, Optional, Set, Tuple, TypedDict
 
 RANKING_URLS = (
     "https://hugovk.github.io/top-pypi-packages/top-pypi-packages.min.json",
@@ -106,7 +106,7 @@ class _DownloadRedirectHandler(urllib.request.HTTPRedirectHandler):
         return super().redirect_request(req, fp, code, msg, headers, newurl)
 
 
-def fetch(url: str, headers: dict[str, str] | None = None, timeout: float = 60) -> bytes:
+def fetch(url: str, headers: Optional[Dict[str, str]] = None, timeout: float = 60) -> bytes:
     """GET with retries; raises urllib.error.HTTPError for 4xx answers."""
     _validate_download_url(url)
     # Both the initial URL and redirects are restricted to approved HTTPS sources.
@@ -129,7 +129,7 @@ def fetch(url: str, headers: dict[str, str] | None = None, timeout: float = 60) 
 # ---------------------------------------------------------------- ZIP directory of a remote wheel
 
 
-def zip_member_names(read_range: Callable[[int, int], bytes], size: int) -> list[str]:
+def zip_member_names(read_range: Callable[[int, int], bytes], size: int) -> List[str]:
     """File names in a ZIP archive of `size` bytes; read_range(start, end) returns bytes [start, end)."""
     tail_start = max(0, size - (65536 + 22))
     tail = read_range(tail_start, size)
@@ -152,7 +152,7 @@ def zip_member_names(read_range: Callable[[int, int], bytes], size: int) -> list
         directory = tail[cd_offset - tail_start : cd_offset - tail_start + cd_size]
     else:
         directory = read_range(cd_offset, cd_offset + cd_size)
-    names: list[str] = []
+    names: List[str] = []
     position = 0
     for _ in range(entries):
         if directory[position : position + 4] != b"PK\x01\x02":
@@ -165,7 +165,7 @@ def zip_member_names(read_range: Callable[[int, int], bytes], size: int) -> list
     return names
 
 
-def import_names(member_names: Iterable[str]) -> set[str]:
+def import_names(member_names: Iterable[str]) -> Set[str]:
     """Top-level importable names a wheel installs (packages, modules and extension modules)."""
     result = set()
     for name in member_names:
@@ -192,7 +192,7 @@ def import_names(member_names: Iterable[str]) -> set[str]:
 # ---------------------------------------------------------------- PyPI
 
 
-def pick_wheel(files: list[dict[str, Any]]) -> dict[str, Any] | None:
+def pick_wheel(files: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
     """Prefer a pure-Python wheel, then a Windows x64 wheel, then any wheel."""
     wheels = [f for f in files if f.get("packagetype") == "bdist_wheel" and not f.get("yanked")]
     for preferred in ("none-any.whl", "win_amd64.whl", ""):
@@ -202,7 +202,7 @@ def pick_wheel(files: list[dict[str, Any]]) -> dict[str, Any] | None:
     return None
 
 
-def project_import_names(project: str) -> tuple[str, set[str]]:
+def project_import_names(project: str) -> Tuple[str, Set[str]]:
     """(PyPI display name, import names of its newest wheel); empty set if it has no wheel."""
     data = json.loads(fetch(PYPI_JSON_URL.format(project)))
     wheel = pick_wheel(data.get("urls") or [])
@@ -216,7 +216,7 @@ def project_import_names(project: str) -> tuple[str, set[str]]:
     return display_name, import_names(zip_member_names(read_range, int(wheel["size"])))
 
 
-def top_projects(count: int) -> list[str]:
+def top_projects(count: int) -> List[str]:
     for url in RANKING_URLS:
         try:
             rows = json.loads(fetch(url))["rows"]
@@ -231,15 +231,15 @@ def top_projects(count: int) -> list[str]:
 
 class _CacheEntry(TypedDict):
     name: str
-    imports: list[str]
+    imports: List[str]
 
 
-def build(projects: list[str], workers: int, cache_path: Path) -> dict[str, list[str]]:
+def build(projects: List[str], workers: int, cache_path: Path) -> Dict[str, List[str]]:
     """{project display name: sorted import names}, using and updating a JSON cache."""
     try:
         cache = json.loads(cache_path.read_text(encoding="utf-8"))
     except (OSError, ValueError):
-        cache: dict[str, _CacheEntry] = {}
+        cache: Dict[str, _CacheEntry] = {}
     todo = [p for p in projects if p not in cache]
     print(f"{len(projects)} projects, {len(projects) - len(todo)} cached, {len(todo)} to fetch")
     failures = 0
@@ -262,7 +262,7 @@ def build(projects: list[str], workers: int, cache_path: Path) -> dict[str, list
     return {cache[p]["name"]: cache[p]["imports"] for p in projects if p in cache}
 
 
-def mapping_lines(results: Mapping[str, Iterable[str]]) -> list[str]:
+def mapping_lines(results: Mapping[str, Iterable[str]]) -> List[str]:
     """import:project pairs where the names differ and the import name is unambiguous."""
     providers = {}
     for project, names in results.items():

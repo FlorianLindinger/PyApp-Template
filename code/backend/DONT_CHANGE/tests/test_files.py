@@ -22,6 +22,8 @@ class LauncherFileTests(unittest.TestCase):
         checked = 0
         for path in batch_files():
             for relative in pattern.findall(path.read_text(encoding="utf-8", errors="replace")):
+                if "tmp" in relative.replace("\\", "/").split("/"):
+                    continue  # created at runtime
                 target = (path.parent / relative.replace("\\", "/")).resolve()
                 self.assertTrue(target.is_file(), f'{path.name} refers to missing "{relative}"')
                 checked += 1

@@ -9,7 +9,7 @@ import re
 import sys
 from pathlib import Path
 from types import ModuleType, SimpleNamespace
-from typing import Any, Callable, Iterable, Mapping
+from typing import Any, Callable, Dict, Iterable, List, Mapping, Optional, Union
 
 from backend.DONT_CHANGE.backend_settings import (
     BACKEND_DIR,
@@ -81,7 +81,7 @@ def _number(value: object) -> bool:
     return isinstance(value, (int, float)) and not isinstance(value, bool)
 
 
-def _strftime_problem(value: str) -> str | None:
+def _strftime_problem(value: str) -> Optional[str]:
     """Explain a date format Windows' strftime rejects (e.g. "%Q" or a trailing "%")."""
     from datetime import datetime
 
@@ -96,7 +96,7 @@ def _strftime_problem(value: str) -> str | None:
 REQUIREMENT_START = re.compile(r"\s*[A-Za-z0-9][A-Za-z0-9._-]*\s*($|[\[(<>=!~;@ ])")
 
 
-def main_script_path(s: ModuleType | SimpleNamespace | None = None) -> str:
+def main_script_path(s: Optional[Union[ModuleType, SimpleNamespace]] = None) -> str:
     """Absolute path of the file the launcher runs (main_script_path in developer_settings.py)."""
     return _resolve_main_script((s or settings()).main_script_path)
 
@@ -106,7 +106,7 @@ def _resolve_main_script(value: str) -> str:
     return value if os.path.isabs(value) else os.path.normpath(str(Path(BACKEND_DIR) / value))  # noqa: PTH117
 
 
-def _main_script_problem(value: str) -> str | None:
+def _main_script_problem(value: str) -> Optional[str]:
     """Tracebacks, the import finder and the launcher's own folders all assume this location."""
     path = _resolve_main_script(value)
     if not Path(path).is_file():
@@ -118,7 +118,7 @@ def _main_script_problem(value: str) -> str | None:
     return None
 
 
-def parse_requirements(text: str) -> list[str]:
+def parse_requirements(text: str) -> List[str]:
     """The packages of a pasted requirements.txt: one per line, without comments and --hash options."""
     entries = []
     for line in text.splitlines():
@@ -147,7 +147,7 @@ def settings() -> ModuleType:
     return module
 
 
-def default_setting_expressions(path: str | None = None) -> dict[str, ast.expr]:
+def default_setting_expressions(path: Optional[str] = None) -> Dict[str, ast.expr]:
     """{name: expression node} of every top-level setting in the defaults file (last one wins)."""
     path = path or DEFAULT_SETTINGS_PATH
     with Path(path).open(encoding="utf-8") as stream:
@@ -160,7 +160,7 @@ def default_setting_expressions(path: str | None = None) -> dict[str, ast.expr]:
     return expressions
 
 
-def fill_missing_settings(module: ModuleType | SimpleNamespace) -> list[str]:
+def fill_missing_settings(module: Union[ModuleType, SimpleNamespace]) -> List[str]:
     """Give settings that the project's file lacks their default value; return their names.
 
     Defaults may refer to other settings (f"{program_name}"), which then use the project's values.
@@ -171,7 +171,7 @@ def fill_missing_settings(module: ModuleType | SimpleNamespace) -> list[str]:
     try:
         expressions = default_setting_expressions()
     except OSError:
-        expressions: dict[str, ast.expr] = {}
+        expressions: Dict[str, ast.expr] = {}
     for name, expression in expressions.items():
         if hasattr(module, name):
             continue
@@ -189,7 +189,7 @@ def fill_missing_settings(module: ModuleType | SimpleNamespace) -> list[str]:
     return filled
 
 
-def _assigned_names(node: ast.AST) -> list[str]:
+def _assigned_names(node: ast.AST) -> List[str]:
     """Names a plain `name = ...` or `name: type = ...` statement assigns."""
     if isinstance(node, ast.Assign):
         return [t.id for t in node.targets if isinstance(t, ast.Name)]
@@ -198,7 +198,7 @@ def _assigned_names(node: ast.AST) -> list[str]:
     return []
 
 
-def _bootstrap_literal_problems() -> list[str]:
+def _bootstrap_literal_problems() -> List[str]:
     """The batch bootstrap reads some settings with a line-based parser; keep them simple and unique.
 
     It reads only unindented lines and takes the last definition, like Python; a setting that is
@@ -208,7 +208,7 @@ def _bootstrap_literal_problems() -> list[str]:
     with Path(DEV_SETTINGS_PATH).open(encoding="utf-8") as stream:
         tree = ast.parse(stream.read(), DEV_SETTINGS_PATH)
     top_level = {id(node) for node in tree.body}
-    definitions: dict[str, list[ast.Assign | ast.AnnAssign]] = {}
+    definitions: Dict[str, List[Union[ast.Assign, ast.AnnAssign]]] = {}
     for node in ast.walk(tree):
         for name in _assigned_names(node):
             if name in BOOTSTRAP_SETTINGS and isinstance(node, (ast.Assign, ast.AnnAssign)):
@@ -234,7 +234,7 @@ def _bootstrap_literal_problems() -> list[str]:
     return problems
 
 
-def python_version_problem(value: str) -> str | None:
+def python_version_problem(value: str) -> Optional[str]:
     """Explain an obviously unsupported python_version; uv validates exotic request strings itself."""
     if not value:
         return None
@@ -253,7 +253,7 @@ def python_version_problem(value: str) -> str | None:
 _noted_defaults = set()
 
 
-def _note_defaults_once(module: ModuleType | SimpleNamespace) -> None:
+def _note_defaults_once(module: Union[ModuleType, SimpleNamespace]) -> None:
     """Tell once per process which settings were missing and use their defaults."""
     names = [n for n in getattr(module, "MISSING_SETTINGS_FILLED_IN", []) if n not in _noted_defaults]
     if not names:
@@ -268,7 +268,7 @@ def _note_defaults_once(module: ModuleType | SimpleNamespace) -> None:
     )
 
 
-def validate(module: ModuleType | SimpleNamespace | None = None) -> None:
+def validate(module: Optional[Union[ModuleType, SimpleNamespace]] = None) -> None:
     """Raise SettingsError listing every unusable setting."""
     s = module or settings()
     problems = list(_bootstrap_literal_problems())
@@ -383,26 +383,26 @@ def validate(module: ModuleType | SimpleNamespace | None = None) -> None:
         )
 
 
-def edit_settings(changes: Mapping[str, object]) -> list[str]:
+def edit_settings(changes: Mapping[str, object]) -> List[str]:
     """Set top-level settings in developer_settings.py to new values; return a readable diff.
 
     Only the value is replaced: annotations, trailing comments and line endings are kept.
     """
-    diff: list[str] = []
+    diff: List[str] = []
     for name, value in changes.items():
         literal = _literal(value)
         diff += _replace_setting_value(name, lambda newline, node, literal=literal: literal)
     return diff
 
 
-def set_list_setting(name: str, values: Iterable[str]) -> list[str]:
+def set_list_setting(name: str, values: Iterable[str]) -> List[str]:
     """Rewrite the top-level list setting `name` (it may span several lines); return a readable diff.
 
     A setting written as a triple-quoted block stays one, so a pasted requirements list keeps its form.
     """
     values = list(values)
 
-    def body(newline: str, node: ast.Assign | ast.AnnAssign | None) -> str:
+    def body(newline: str, node: Optional[Union[ast.Assign, ast.AnnAssign]]) -> str:
         was_block = node is not None and isinstance(node.value, ast.Constant) and isinstance(node.value.value, str)
         if was_block and not any("\\" in v or '"""' in v for v in values):
             return '"""' + newline + "".join(v + newline for v in values) + '"""'
@@ -413,7 +413,9 @@ def set_list_setting(name: str, values: Iterable[str]) -> list[str]:
     return _replace_setting_value(name, body)
 
 
-def _replace_setting_value(name: str, make_value: Callable[[str, ast.Assign | ast.AnnAssign | None], str]) -> list[str]:
+def _replace_setting_value(
+    name: str, make_value: Callable[[str, Optional[Union[ast.Assign, ast.AnnAssign]]], str]
+) -> List[str]:
     """Replace the value of the last top-level assignment to `name` (the one Python uses).
 
     make_value(newline, node) returns the new value's source text (node: the current assignment or

@@ -7,7 +7,7 @@ import importlib.util
 import shutil
 import tempfile
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Optional
 from unittest import mock
 
 from project_location import CODE, DONT_CHANGE
@@ -29,7 +29,7 @@ def load_settings_file(path: Path):
 
 
 @contextlib.contextmanager
-def temporary_settings(transform: Callable[[str], str] | None = None):
+def temporary_settings(transform: Optional[Callable[[str], str]] = None):
     """Yield (settings path, loader) for a temporary copy that config and scripts/environment read and write.
 
     transform(text) -> text changes the copy first. pyproject.toml and uv.lock also point into the

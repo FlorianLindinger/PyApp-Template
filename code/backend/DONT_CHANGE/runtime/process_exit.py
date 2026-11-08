@@ -11,7 +11,7 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any, NoReturn
+from typing import Any, Dict, List, NoReturn, Optional
 
 fail_message = "Failed while processing program exit: {e}"
 
@@ -110,7 +110,7 @@ def _report_style():
     return colors, max(40, min(120, shutil.get_terminal_size((100, 30)).columns - 1))
 
 
-def error_summary(report: dict[str, Any], limit: int = 200):
+def error_summary(report: Dict[str, Any], limit: int = 200):
     """The last exception's own line, e.g. "ZeroDivisionError: division by zero" (shortened)."""
     chain = report.get("chain") or []
     lines = (chain[-1].get("exception_only") or []) if chain else []
@@ -120,13 +120,13 @@ def error_summary(report: dict[str, Any], limit: int = 200):
     return text if len(text) <= limit else text[: limit - 3] + "..."
 
 
-def print_report(report: dict[str, Any] | None):
+def print_report(report: Optional[Dict[str, Any]]):
     if report:
         colors, width = _report_style()
         print("\n".join(render(report, colors=colors, date_format=settings().error_date_format, width=width)))
 
 
-def write_crash_log(report: dict[str, Any] | None, message: str | None):
+def write_crash_log(report: Optional[Dict[str, Any]], message: Optional[str]):
     """Write a uniquely named plain-text crash report and return its path (None if none was written)."""
     s = settings()
     if not s.enable_crash_log:
@@ -135,7 +135,7 @@ def write_crash_log(report: dict[str, Any] | None, message: str | None):
     if not path or (report is None and message is None):
         return None
     path = unique_log_path(path, Path(os.environ.get("PYAPP_RUN_DIR", "")).name or None)
-    lines: list[str] = ["=" * 30]
+    lines: List[str] = ["=" * 30]
     if message:
         lines.append(message)
     if report:
@@ -244,9 +244,9 @@ def play_sound(wav: str, wait: bool = True):
 
 def complete(
     outcome: str,
-    log_path: str | None,
-    report: dict[str, Any] | None = None,
-    message: str | None = None,
+    log_path: Optional[str],
+    report: Optional[Dict[str, Any]] = None,
+    message: Optional[str] = None,
     keep_open: bool = False,
 ):
     """Run the configured actions for success/failure/crash/keyboard_interrupt."""

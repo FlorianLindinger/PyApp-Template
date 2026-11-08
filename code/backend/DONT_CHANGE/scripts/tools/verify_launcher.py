@@ -11,11 +11,12 @@ from __future__ import annotations
 import argparse
 import shutil
 import subprocess
+from typing import List
 
 from _paths import DONT_CHANGE_DIR
 
 
-def tool_command(tool: str) -> list[str]:
+def tool_command(tool: str) -> List[str]:
     """The tool from PATH, else run it through uvx."""
     installed = shutil.which(tool)
     if installed:
@@ -26,7 +27,7 @@ def tool_command(tool: str) -> list[str]:
     raise FileNotFoundError(f'Neither "{tool}" nor "uvx" was found on PATH.')
 
 
-def run_check(label: str, command: list[str]) -> bool:
+def run_check(label: str, command: List[str]) -> bool:
     print(f"\n[Info] {label}", flush=True)
     # Execute the Ruff/Pyrefly command resolved from local PATH or uvx.
     code = subprocess.run(command, cwd=DONT_CHANGE_DIR, check=False).returncode  # noqa: S603

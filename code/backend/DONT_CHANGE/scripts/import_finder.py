@@ -17,6 +17,7 @@ import sys
 import sysconfig
 from collections import namedtuple
 from pathlib import Path
+from typing import Dict, List, Optional, Set, Tuple
 
 from backend.DONT_CHANGE.backend_settings import (
     BACKEND_DIR,
@@ -30,7 +31,7 @@ Requirement = namedtuple("Requirement", "distribution imports source files optio
 """source: "installed" (from package metadata), "mapping" (bundled list) or "guess" (same as import name)."""
 
 
-def standard_library_names() -> set[str]:
+def standard_library_names() -> Set[str]:
     """Top-level standard-library module names for the running Python."""
     names = set(sys.builtin_module_names) | {"__future__", "__main__"}
     if hasattr(sys, "stdlib_module_names"):  # Python 3.10+
@@ -69,7 +70,7 @@ def python_files(root: str = PYTHON_SCRIPTS_DIR):
                 yield str(Path(current) / name)
 
 
-def local_module_names(root: str = PYTHON_SCRIPTS_DIR) -> set[str]:
+def local_module_names(root: str = PYTHON_SCRIPTS_DIR) -> Set[str]:
     """Names importable from the code folder itself and the main script's folder (sys.path[0])."""
     folders = {root}
     if root == PYTHON_SCRIPTS_DIR:
@@ -91,7 +92,7 @@ def local_module_names(root: str = PYTHON_SCRIPTS_DIR) -> set[str]:
     return names
 
 
-def _handler_names(handler: ast.ExceptHandler) -> list[str]:
+def _handler_names(handler: ast.ExceptHandler) -> List[str]:
     """Exception class names an except clause catches ([] for a bare "except:")."""
     if handler.type is None:
         return []
@@ -105,7 +106,7 @@ def _handler_names(handler: ast.ExceptHandler) -> list[str]:
     return names
 
 
-def _only_imports(body: list[ast.stmt]) -> bool:
+def _only_imports(body: List[ast.stmt]) -> bool:
     """True for a try body that just imports (optionally setting simple flags like HAS_X = True)."""
     for statement in body:
         if isinstance(statement, (ast.Import, ast.ImportFrom, ast.Pass)):
@@ -156,7 +157,7 @@ class _ImportVisitor(ast.NodeVisitor):
 
     visit_TryStar = visit_Try  # Python 3.11+ "except*"
 
-    def _add(self, name: str | None):
+    def _add(self, name: Optional[str]):
         if name:
             (self.optional if self._guard else self.required).add(name.split(".")[0])
 
@@ -192,7 +193,7 @@ def imports_in_project(root: str = PYTHON_SCRIPTS_DIR):
     return {name: value for name, value in found.items() if name not in excluded}, problems
 
 
-def installed_import_map(site_packages: str | None = None) -> dict[str, str]:
+def installed_import_map(site_packages: Optional[str] = None) -> Dict[str, str]:
     """{top-level import name: distribution} from installed metadata (top_level.txt or RECORD)."""
     from importlib import metadata
 
@@ -221,7 +222,7 @@ def installed_import_map(site_packages: str | None = None) -> dict[str, str]:
     return result
 
 
-def bundled_mapping(path: str = IMPORT_MAPPING_PATH) -> dict[str, str]:
+def bundled_mapping(path: str = IMPORT_MAPPING_PATH) -> Dict[str, str]:
     mapping = {}
     try:
         with Path(path).open(encoding="utf-8") as stream:
@@ -235,15 +236,15 @@ def bundled_mapping(path: str = IMPORT_MAPPING_PATH) -> dict[str, str]:
     return mapping
 
 
-def find_requirements(root: str = PYTHON_SCRIPTS_DIR, site_packages: str | None = None):
+def find_requirements(root: str = PYTHON_SCRIPTS_DIR, site_packages: Optional[str] = None):
     """Return (list of Requirement sorted by distribution, list of unparsable-file messages)."""
     imports, problems = imports_in_project(root)
     installed = installed_import_map(site_packages)
     mapping = bundled_mapping()
-    distributions: dict[str, tuple[str, str]] = {}  # lowercase name -> (distribution, source)
-    import_names: dict[str, set[str]] = {}
-    files_by_distribution: dict[str, set[str]] = {}
-    all_optional: dict[str, bool] = {}
+    distributions: Dict[str, Tuple[str, str]] = {}  # lowercase name -> (distribution, source)
+    import_names: Dict[str, Set[str]] = {}
+    files_by_distribution: Dict[str, Set[str]] = {}
+    all_optional: Dict[str, bool] = {}
     for name, (files, optional) in imports.items():
         if name in installed:
             distribution, source = installed[name], "installed"
@@ -265,7 +266,7 @@ def find_requirements(root: str = PYTHON_SCRIPTS_DIR, site_packages: str | None 
     return sorted(requirements, key=lambda r: r.distribution.lower()), problems
 
 
-def distribution_for_import(import_name: str, site_packages: str | None = None) -> str:
+def distribution_for_import(import_name: str, site_packages: Optional[str] = None) -> str:
     """Best distribution name for one missing import (used by the missing-package menu)."""
     top = import_name.split(".")[0]
     return installed_import_map(site_packages).get(top) or bundled_mapping().get(top) or top

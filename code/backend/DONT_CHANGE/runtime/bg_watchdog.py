@@ -13,6 +13,7 @@ import time
 import traceback
 from pathlib import Path
 from types import ModuleType, SimpleNamespace
+from typing import Optional, Union
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 from backend.DONT_CHANGE import backend_settings as paths
@@ -65,14 +66,14 @@ def successful_application_exit(mode: int, run_dir: Path):
 
 
 def handle_exit(
-    settings: ModuleType | SimpleNamespace,
+    settings: Union[ModuleType, SimpleNamespace],
     mode: int,
     app_id: str,
     has_terminal: bool,
     log_path: str,
     script: str,
     run_dir: Path,
-    native_code: int | None = None,
+    native_code: Optional[int] = None,
 ):
     """Run completion handling in the current, a hidden, or a new console as needed."""
     env = os.environ.copy()
@@ -111,7 +112,7 @@ def handle_exit(
         )
 
 
-def register_with_policy(settings: ModuleType | SimpleNamespace, registry: ProcessRegistry, run_dir: Path):
+def register_with_policy(settings: Union[ModuleType, SimpleNamespace], registry: ProcessRegistry, run_dir: Path):
     """Apply instance_policy and register.
 
     Dialogs and stopping other instances happen without holding the registry lock (a stopping

@@ -10,7 +10,7 @@ import tempfile
 import types
 import unittest
 from pathlib import Path
-from typing import Any
+from typing import Any, Dict, List
 from unittest import mock
 
 from project_location import CODE  # noqa: F401 - makes "backend" importable
@@ -56,7 +56,7 @@ class LogTests(unittest.TestCase):
 
 
 class FinishedRunFolderTests(unittest.TestCase):
-    def cleanup(self, running: list[dict[str, Any]]):
+    def cleanup(self, running: List[Dict[str, Any]]):
         """Run the cleanup on one old and one recent run folder; return which ones still exist."""
         with tempfile.TemporaryDirectory() as folder:
             old, recent = Path(folder, "old"), Path(folder, "recent")
@@ -83,7 +83,7 @@ class FinishedRunFolderTests(unittest.TestCase):
 
 
 class CleanToolTests(unittest.TestCase):
-    def clean(self, folder: str, running: list[dict[str, Any]]):
+    def clean(self, folder: str, running: List[Dict[str, Any]]):
         runs = Path(folder, "tmp", "runs", "abc")
         runs.mkdir(parents=True)
         settings = types.SimpleNamespace(

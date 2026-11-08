@@ -12,7 +12,7 @@ import runpy
 import sys
 import traceback
 from pathlib import Path
-from typing import Sequence
+from typing import Sequence, Union
 
 if __name__ == "__main__":
     # -I leaves the script folder off sys.path; make "backend...." importable (the code folder).
@@ -44,7 +44,7 @@ def acknowledge(message: str):
             pass
 
 
-def run_file(path: str | Path, arguments: Sequence[str] = ()):
+def run_file(path: Union[str, Path], arguments: Sequence[str] = ()):
     """Load the tool, run its main() under the shared failure policy, with at most one prompt."""
     namespace = {}
     sys.argv = [str(path), *arguments]

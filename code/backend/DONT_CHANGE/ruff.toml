@@ -5,6 +5,10 @@
 target-version = "py38"
 line-length = 120
 
+[lint.pyupgrade]
+# Annotations must also be evaluable by typing.get_type_hints() on Python 3.8.
+keep-runtime-typing = true
+
 [lint]
 # Include pathlib and security diagnostics in verification, alongside Ruff's defaults.
 extend-select = ["PTH", "S"]

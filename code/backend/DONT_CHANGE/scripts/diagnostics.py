@@ -12,6 +12,7 @@ import contextlib
 import os
 import sys
 from pathlib import Path
+from typing import Optional
 
 from backend.DONT_CHANGE.backend_settings import DIAGNOSTICS_LOG_PATH
 
@@ -37,7 +38,7 @@ def note_ignored(context: str) -> None:
             stream.write(entry)
 
 
-def diagnostics_summary() -> str | None:
+def diagnostics_summary() -> Optional[str]:
     """Short description of the diagnostics log for the status tool, or None if it is empty."""
     try:
         with Path(DIAGNOSTICS_LOG_PATH).open(encoding="utf-8", errors="replace") as stream:

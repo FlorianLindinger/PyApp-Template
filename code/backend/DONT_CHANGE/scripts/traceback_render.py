@@ -10,7 +10,7 @@ from __future__ import annotations
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Dict, List, Optional
 
 RESET = "\x1b[0m"
 BLACK_BACKGROUND = "\x1b[40m"
@@ -57,7 +57,7 @@ def rule_line(width: int = 100, colors: bool = False) -> str:
     return on_black(line) if colors else line
 
 
-def metadata_lines(report: dict[str, Any], date_format: str) -> list[str]:
+def metadata_lines(report: Dict[str, Any], date_format: str) -> List[str]:
     lines = []
     if report.get("script_path"):
         lines.append("Script  " + os.path.normpath(str(Path(str(report["script_path"])).absolute())))
@@ -68,7 +68,7 @@ def metadata_lines(report: dict[str, Any], date_format: str) -> list[str]:
     return lines
 
 
-def _frame_lines(frame: dict[str, Any], colors: bool) -> list[str]:
+def _frame_lines(frame: Dict[str, Any], colors: bool) -> List[str]:
     app = bool(frame.get("app"))
     path = _display_filename(frame.get("filename", ""))
     name_start = len(path) - len(Path(path).name)
@@ -96,12 +96,12 @@ def _frame_lines(frame: dict[str, Any], colors: bool) -> list[str]:
 
 
 def render(
-    report: dict[str, Any] | None,
+    report: Optional[Dict[str, Any]],
     *,
     colors: bool = False,
     date_format: str = "%Y-%m-%d %H:%M:%S",
     width: int = 100,
-) -> list[str]:
+) -> List[str]:
     """Return the report as a list of lines (without newlines): frames, the error, then metadata."""
     if not report:
         return []

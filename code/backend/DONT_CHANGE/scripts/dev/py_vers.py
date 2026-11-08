@@ -5,6 +5,7 @@ from __future__ import annotations
 import sys
 import tempfile
 from pathlib import Path
+from typing import List
 
 from backend.DONT_CHANGE.scripts.config import describe_python_request, edit_settings, python_version_problem, settings
 from backend.DONT_CHANGE.scripts.console_tools import (
@@ -36,7 +37,7 @@ from backend.DONT_CHANGE.scripts.env.venv import (
 from backend.DONT_CHANGE.scripts.errors import SettingsError
 
 
-def cmd_change_python(arguments: list[str]):
+def cmd_change_python(arguments: List[str]):
     """Set a new python_version and migrate the project to it."""
     s = settings()
     current = read_python_version_file()
@@ -66,7 +67,7 @@ def cmd_change_python(arguments: list[str]):
     prepare()  # offers the migration menu because the setting now differs from backend/generated/.python-version
 
 
-def cmd_update_python(arguments: list[str]):
+def cmd_update_python(arguments: List[str]):
     """Newest patch release of the project's Python; with python_version = "" also a newer minor version."""
     s = settings()
     prepare(s)

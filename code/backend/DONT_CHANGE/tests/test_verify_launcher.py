@@ -7,6 +7,7 @@ import io
 import subprocess
 import sys
 import unittest
+from typing import List
 from unittest import mock
 
 from project_location import DONT_CHANGE
@@ -41,7 +42,7 @@ class VerifyLauncherTests(unittest.TestCase):
         self.assertNotIn("[Error]", output.getvalue())
 
     def test_main_runs_remaining_checks_after_a_warning(self):
-        def command_for(name: str) -> list[str]:
+        def command_for(name: str) -> List[str]:
             return [name]
 
         output = io.StringIO()

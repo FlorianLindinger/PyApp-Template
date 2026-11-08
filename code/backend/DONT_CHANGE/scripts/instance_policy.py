@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import ctypes
-from typing import Any
+from typing import Any, Dict, List
 
 from backend.DONT_CHANGE.scripts.diagnostics import note_ignored
 
@@ -24,7 +24,7 @@ def ask_yes_no(text: str, title: str) -> bool:
     return message_box(text, title, MB_YESNO | MB_ICONQUESTION) == IDYES
 
 
-def decide(policy: str, records: list[dict[str, Any]], program_name: str) -> str:
+def decide(policy: str, records: List[Dict[str, Any]], program_name: str) -> str:
     """Return "start", "cancel" or "replace" for the given running instances (may show a dialog).
 
     Never called while holding the process-registry lock, so other launchers are not blocked
