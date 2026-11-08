@@ -26,7 +26,7 @@ LAUNCHER_VERSION = "1.0.0"
 # ------------------------
 # folders
 # The batch bootstrap (DONT_CHANGE/bootstrap/*.bat, *.ps1) uses the same fixed
-# relative locations. UPDATE those files and the root .gitignore when moving one.
+# relative locations. UPDATE those files and code/backend/.gitignore when moving one.
 
 DONT_CHANGE_DIR = make_abs(".")
 BACKEND_DIR = make_abs("..")
@@ -48,10 +48,10 @@ LOCAL_UV_EXE = LOCAL_UV_DIR + "\\uv.exe"
 SHARED_UV_EXE = (os.environ.get("LOCALAPPDATA") or os.path.expanduser("~\\AppData\\Local")) + "\\PyApp-Template\\uv\\uv.exe"
 LOCAL_PYTHONS_DIR = BACKEND_DIR + "\\pythons"       # uv-managed Pythons when python_source = "local"
 LOCAL_UV_CACHE_DIR = BACKEND_DIR + "\\uv-cache"     # only used when uv_cache = "local"
-# The uv project lives in the backend folder next to developer_settings.py. pyproject.toml is
-# generated from developer_settings.py (packages, python_version); uv.lock and .python-version
-# are committed; .venv is the app environment. UPDATE bootstrap/*.bat, *.ps1 and .gitignore too.
-PROJECT_DIR = BACKEND_DIR
+# The uv project has its own folder, created by the launcher. pyproject.toml is generated from
+# developer_settings.py (packages, python_version); uv.lock and .python-version are committed;
+# .venv is the app environment. UPDATE bootstrap/*.bat, *.ps1 and .gitignore too.
+PROJECT_DIR = BACKEND_DIR + "\\environment"
 PYPROJECT_PATH = PROJECT_DIR + "\\pyproject.toml"
 UV_LOCK_PATH = PROJECT_DIR + "\\uv.lock"
 PYTHON_VERSION_FILE = PROJECT_DIR + "\\.python-version"
@@ -119,7 +119,7 @@ STOP_REQUEST_FILE_NAME = "stop-requested"
 # ------------------------
 # dev tools and data
 
-EXPORTED_REQUIREMENTS_PATH = PROJECT_DIR + "\\requirements.txt"
+EXPORTED_REQUIREMENTS_PATH = BACKEND_DIR + "\\requirements.txt"
 IMPORT_MAPPING_PATH = DATA_DIR + "\\import_to_package.txt"
 DEFAULT_SETTINGS_PATH = DATA_DIR + "\\developer_settings_defaults.py"  # defaults for missing settings
 BANNER_FONT_PATH = DATA_DIR + "\\fonts\\future.tlf"  # ASCII-art font of the app name banner (scripts/banner.py)

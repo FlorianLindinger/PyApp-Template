@@ -1,4 +1,4 @@
-"""The generated backend/pyproject.toml.
+"""The generated backend/environment/pyproject.toml.
 
 developer_settings.py ("packages", python_version) is the only place people edit. pyproject.toml
 is generated from it for uv. Its header records the package list it was generated from, so a

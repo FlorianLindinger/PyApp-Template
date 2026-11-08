@@ -1,4 +1,4 @@
-"""The app environment (backend/.venv): checked on every launch, built, re-linked, synced.
+"""The app environment (backend/environment/.venv): checked on every launch, built, re-linked, synced.
 
 ensure_environment() is the entry point; it also handles a changed python_version and offers
 the package actions used by the dev tools and the missing-package menu.
@@ -63,6 +63,9 @@ from backend.DONT_CHANGE.scripts.runtime_state import FileLock
 
 AppPython = namedtuple("AppPython", "exe flags")
 """exe: interpreter that runs main.py; flags: extra interpreter options."""
+
+# -E: ignore PYTHON* variables. -s: no per-user packages. -X utf8: UTF-8 is the default text encoding.
+APP_PYTHON_FLAGS = ["-E", "-s", "-X", "utf8"]
 
 
 def read_venv_config(venv_dir: str = VENV_DIR) -> dict:
@@ -234,6 +237,7 @@ def ensure_environment(interactive: bool = True) -> AppPython:
     """Validate settings and make sure the app's interpreter and packages are ready."""
     s = settings()
     validate(s)
+    os.makedirs(PROJECT_DIR, exist_ok=True)
     base_python = sys.executable
 
     with FileLock(ENVIRONMENT_LOCK_PATH, timeout=600):
@@ -248,7 +252,7 @@ def ensure_environment(interactive: bool = True) -> AppPython:
         elif not request_matches(s.python_version, file_request):
             switched = handle_version_change(file_request, s, interactive)
             if switched:
-                return AppPython(VENV_PYTHON_EXE, ["-E", "-s"])
+                return AppPython(VENV_PYTHON_EXE, APP_PYTHON_FLAGS)
         # pyproject.toml follows developer_settings.py ("packages"); requires-python follows the project's Python.
         s = reconcile_pyproject(s, None if current_requires_python() else base_version)
 
@@ -256,7 +260,7 @@ def ensure_environment(interactive: bool = True) -> AppPython:
         # lock check, the sync and the venv check (each starts a process).
         fingerprint = environment_fingerprint(s)
         if _read_stamp() == fingerprint:
-            return AppPython(VENV_PYTHON_EXE, ["-E", "-s"])
+            return AppPython(VENV_PYTHON_EXE, APP_PYTHON_FLAGS)
         _write_stamp(None)
 
         locked = version_satisfies_requires(base_version, current_requires_python())
@@ -289,7 +293,7 @@ def ensure_environment(interactive: bool = True) -> AppPython:
                 best_effort_install(VENV_PYTHON_EXE, s)
         if locked:
             _write_stamp(environment_fingerprint(s))
-    return AppPython(VENV_PYTHON_EXE, ["-E", "-s"])
+    return AppPython(VENV_PYTHON_EXE, APP_PYTHON_FLAGS)
 
 
 def environment_fingerprint(s) -> str:
@@ -355,7 +359,7 @@ def handle_version_change(current: str, s, interactive: bool) -> bool:
     show_setup_window()
     print()
     print_warn(
-        f"python_version in developer_settings.py is {describe_python_request(wanted)}, but this project uses Python {current} (backend\\.python-version)."
+        f"python_version in developer_settings.py is {describe_python_request(wanted)}, but this project uses Python {current} (backend\\environment\\.python-version)."
     )
     choices = [
         f"Switch to Python {wanted}; re-lock, keeping package versions where possible",

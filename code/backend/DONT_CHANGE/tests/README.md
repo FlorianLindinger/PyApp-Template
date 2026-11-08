@@ -14,7 +14,7 @@ Run them after changing anything in `DONT_CHANGE`, or after updating the templat
 
 | File | Covers |
 | --- | --- |
-| `test_settings.py` | validation of every setting, friendly errors for mistakes in `developer_settings.py`, `[bootstrap]` rules, editing settings (quotes, comments, CRLF, last definition) |
+| `test_settings.py` | validation of every setting, friendly errors for mistakes in `developer_settings.py`, `[bootstrap]` rules, the defaults file matching the template's `developer_settings.py`, editing settings (quotes, comments, CRLF, last definition) |
 | `test_packages.py` | generated `pyproject.toml` round trip (markers, quotes, comments), copying `uv add` back, settings win on conflict, `requires-python`, the launch fast-path fingerprint |
 | `test_wrapper.py` | `script_wrapper.py` in a real interpreter: arguments, hidden launcher variables, no shadowing of the app's `protocol.py`, reports for exceptions, `SystemExit`, missing modules, `os._exit`, late worker-thread errors, log and print prefixes |
 | `test_tracebacks.py` | exception chains, suppressed context, notes and groups (3.11+), success rules, the explicit exit-code mapping, rendering |

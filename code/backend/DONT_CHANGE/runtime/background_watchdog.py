@@ -191,6 +191,7 @@ def main():
         for key in list(env):
             if key.startswith("PYAPP_"):
                 env.pop(key)
+        env.update(settings.environment_for_main_py)
         env["PROGRAM_NAME"] = settings.program_name
         env["ICON_PATH"] = paths.ICON_PATH
         env["PROGRAM_HAS_TERMINAL"] = "1" if has_terminal else "0"

@@ -31,6 +31,7 @@ class ValidationTests(unittest.TestCase):
             'terminal_shortcut_name = "  "',
             "stop_timeout_seconds = -1",
             'instance_policy = "sometimes"',
+            'environment_for_main_py = {"A": 1}',
             'packages = ["requests", "  "]',
             "error_date_format = 5",
         ]
@@ -76,6 +77,25 @@ class DefaultsTests(unittest.TestCase):
         defaults = self.DEFAULTS.read_text(encoding="utf-8")
         with support.temporary_settings(lambda text: defaults) as (_, load):
             config.validate(load())
+
+    @staticmethod
+    def settings_part(path):
+        """The file without its header and without the block that opens it when run directly."""
+        text = path.read_text(encoding="utf-8")
+        text = text[text.index("from __future__ import annotations\n") :]
+        end = text.find("# open this file if someone runs it")
+        return re.sub(r"\s*# =+\s*$", "", (text if end < 0 else text[:end]).rstrip())
+
+    def test_defaults_file_is_identical_to_the_shipped_settings(self):
+        project = CODE / "backend" / "developer_settings.py"
+        if not re.search(r'(?m)^program_name = "PyApp-Template"', project.read_text(encoding="utf-8")):
+            self.skipTest("a project made from the template has its own settings")
+        self.maxDiff = None
+        self.assertEqual(
+            self.settings_part(project).splitlines(),
+            self.settings_part(self.DEFAULTS).splitlines(),
+            "data/developer_settings_defaults.py must match developer_settings.py (settings, values and comments)",
+        )
 
     def test_missing_settings_get_their_defaults(self):
         def drop(text):

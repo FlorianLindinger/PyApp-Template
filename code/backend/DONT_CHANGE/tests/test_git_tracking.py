@@ -46,7 +46,7 @@ class LauncherGitTrackingTests(unittest.TestCase):
             ignored,
             [],
             "these DONT_CHANGE files are hidden by an ignore rule; move the rule or add a "
-            "negation after it in the root .gitignore:\n" + "\n".join(ignored),
+            "negation for it in code/backend/.gitignore:\n" + "\n".join(ignored),
         )
 
 

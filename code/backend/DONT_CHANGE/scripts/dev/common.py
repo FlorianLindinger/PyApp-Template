@@ -8,7 +8,7 @@ from backend.DONT_CHANGE.scripts.config import settings, validate
 from backend.DONT_CHANGE.scripts.console_tools import ask
 from backend.DONT_CHANGE.scripts.env.venv import ensure_environment
 
-COMMIT_HINT = "Commit developer_settings.py and backend/uv.lock."
+COMMIT_HINT = "Commit developer_settings.py and backend/environment/uv.lock."
 
 
 def confirm(question: str) -> bool:

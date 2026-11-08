@@ -26,7 +26,8 @@ $sharedUvDir = Join-Path $userData 'PyApp-Template\uv'
 $sharedUvExe = Join-Path $sharedUvDir 'uv.exe'
 $localPythons = Join-Path $backendDir 'pythons'
 $localCache = Join-Path $backendDir 'uv-cache'
-$versionFile = Join-Path $backendDir '.python-version'
+$environmentDir = Join-Path $backendDir 'environment'
+$versionFile = Join-Path $environmentDir '.python-version'
 $minimumPython = [version]'3.8'
 
 function Fail([string]$message) { throw [System.Exception]::new($message) }
@@ -384,7 +385,7 @@ function Resolve-Python($settings, [string]$uv) {
     Set-UvEnvironment $settings $source
     Remove-BrokenPythonLinks
 
-    # The project's current Python (backend\.python-version) runs the launcher; the launcher
+    # The project's current Python (backend\environment\.python-version) runs the launcher; the launcher
     # itself offers the migration when python_version in the settings differs from it.
     $request = ''
     if (Test-Path -LiteralPath $versionFile) {
@@ -392,7 +393,7 @@ function Resolve-Python($settings, [string]$uv) {
     }
     if (-not $request) { $request = [string](Get-Setting $settings 'python_version' '3.14') }
 
-    # Outside the project: uv would otherwise discover backend\.venv as "the" Python.
+    # Outside the project: uv would otherwise discover backend\environment\.venv as "the" Python.
     Push-Location ([IO.Path]::GetTempPath())
     try {
         if (-not $request) {
@@ -430,6 +431,21 @@ function Resolve-Python($settings, [string]$uv) {
     return $python
 }
 
+# ---------------------------------------------------------------- project folder
+
+function Move-ProjectFilesIntoEnvironment {
+    # Creates code\backend\environment and moves files from where older versions kept them.
+    [IO.Directory]::CreateDirectory($environmentDir) | Out-Null
+    foreach ($name in @('pyproject.toml', 'uv.lock', '.python-version', '.venv')) {
+        $old = Join-Path $backendDir $name
+        $new = Join-Path $environmentDir $name
+        if ((Test-Path -LiteralPath $old) -and -not (Test-Path -LiteralPath $new)) {
+            try { Move-Item -LiteralPath $old -Destination $new }
+            catch { Fail "Could not move '$name' into $environmentDir. Close the running app and programs using it, then start again. ($($_.Exception.Message))" }
+        }
+    }
+}
+
 # ---------------------------------------------------------------- main
 
 $lock = $null
@@ -449,6 +465,7 @@ try {
         if (Install-NewerSharedUv $settings $InstallNewerThan) { exit 0 }
         exit 1
     }
+    Move-ProjectFilesIntoEnvironment
     $script:currentUv = Select-NewestUv $settings (Resolve-Uv $settings)
     $python = Resolve-Python $settings $script:currentUv
     $uv = $script:currentUv

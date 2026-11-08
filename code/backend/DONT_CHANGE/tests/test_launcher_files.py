@@ -32,6 +32,18 @@ class LauncherFileTests(unittest.TestCase):
         for tool in list((DONT_CHANGE / "actions").glob("*.py")) + [DONT_CHANGE / "scripts" / "dev_tools.py"]:
             self.assertRegex(tool.read_text(encoding="utf-8"), r"\ndef main\(", tool.name)
 
+    def test_bootstrap_and_launcher_agree_on_the_environment_folder(self):
+        settings = (DONT_CHANGE / "backend_settings.py").read_text(encoding="utf-8")
+        self.assertIn('PROJECT_DIR = BACKEND_DIR + "\\\\environment"', settings)
+        script = (DONT_CHANGE / "bootstrap" / "resolve_runtime.ps1").read_text(encoding="utf-8")
+        self.assertIn("$environmentDir = Join-Path $backendDir 'environment'", script)
+        batch = (DONT_CHANGE / "bootstrap" / "ensure_runtime.bat").read_text(encoding="utf-8")
+        self.assertIn("..\\..\\environment\\.python-version", batch)
+
+    def test_the_app_runs_in_utf8_mode(self):
+        source = (DONT_CHANGE / "scripts" / "env" / "venv.py").read_text(encoding="utf-8")
+        self.assertIn('APP_PYTHON_FLAGS = ["-E", "-s", "-X", "utf8"]', source)
+
     def test_changelog_names_the_launcher_version(self):
         settings_text = (DONT_CHANGE / "backend_settings.py").read_text(encoding="utf-8")
         version = re.search(r'^LAUNCHER_VERSION = "(\d+\.\d+\.\d+)"', settings_text, re.MULTILINE)

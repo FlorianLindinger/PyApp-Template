@@ -276,6 +276,11 @@ def validate(module=None) -> None:
         lambda v: isinstance(v, (list, tuple)) and all(isinstance(a, str) for a in v),
         "use a list of strings",
     )
+    need(
+        "environment_for_main_py",
+        lambda v: isinstance(v, dict) and all(isinstance(k, str) and k and isinstance(x, str) for k, x in v.items()),
+        'use a dict of text values such as {"MY_SETTING": "1"}',
+    )
     packages = get("packages")
     entries = parse_requirements(packages) if isinstance(packages, str) else packages
     if isinstance(entries, (list, tuple)):

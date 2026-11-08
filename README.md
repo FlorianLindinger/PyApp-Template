@@ -20,7 +20,7 @@ Start with the GUI example in `code/main.py`, then replace it with your own code
    folder and Start Menu).
 4. Start the app with the generated shortcut. Edit `code/main.py`; list the packages it
    needs in `packages` in `developer_settings.py` (or use `dev_tools/add_packages.cmd`).
-5. Commit `code/backend/uv.lock` and `code/backend/.python-version` with your app; they are
+5. Commit `code/backend/environment/uv.lock` and `code/backend/environment/.python-version` with your app; they are
    created on the first run and pin the exact Python and package versions.
 
 Run Setup again after moving or renaming the project folder: it refreshes the shortcuts.
@@ -40,9 +40,9 @@ shortcut ─▶ B\W.bat / B\N.bat ─▶ bootstrap\ensure_runtime.bat
                                       find/install uv, find/install Python with uv
            ─▶ start_program.py  (runs on the project's Python with -I -S: standard library only)
                 │  validates settings, applies instance_policy, generates pyproject.toml from
-                │  developer_settings.py, keeps uv.lock and backend\.venv in sync (uv lock / uv sync;
+                │  developer_settings.py, keeps uv.lock and backend\environment\.venv in sync (uv lock / uv sync;
                 │  skipped while nothing changed since the last successful start)
-                └▶ background_watchdog.py ─▶ script_wrapper.py ─▶ code\main.py (in backend\.venv)
+                └▶ background_watchdog.py ─▶ script_wrapper.py ─▶ code\main.py (in backend\environment\.venv)
                                           └▶ process_exit.py (sounds, crash log, recovery menu)
 ```
 
@@ -82,10 +82,10 @@ launch, and mistakes are reported with the setting name and the allowed values.
 
 The app's packages are the `packages` list in `developer_settings.py`, e.g.
 `packages = ["requests", "numpy>=2"]`. That is the only place to edit them. The exact
-versions are locked in `code/backend/uv.lock` (with hashes); the launcher checks the
+versions are locked in `code/backend/environment/uv.lock` (with hashes); the launcher checks the
 environment with an offline `uv sync` on every start (fast when nothing changed).
 
-uv itself needs a `pyproject.toml`: the launcher generates `code/backend/pyproject.toml`
+uv itself needs a `pyproject.toml`: the launcher generates `code/backend/environment/pyproject.toml`
 from `packages` and `python_version` (ignored by Git, do not edit it). If it is changed
 anyway, e.g. with `uv add` in the package terminal, the change is copied back into
 `packages` on the next start or dev tool run; if both were changed, `developer_settings.py` wins.
@@ -176,9 +176,10 @@ launcher steps (window icon, colors, focus, ...) never stop the app; they are re
 │   ├── settings.py             <<< OPTIONAL END-USER SETTINGS
 │   └── backend/
 │       ├── developer_settings.py   <<< APP / PYTHON / PACKAGE / UV SETTINGS
-│       ├── uv.lock, .python-version  exact package and Python versions (generated, commit)
-│       ├── pyproject.toml      generated from developer_settings.py (ignored)
-│       ├── .venv/              app environment (generated, ignored)
+│       ├── environment/        the uv project (created by the launcher)
+│       │   ├── uv.lock, .python-version  exact package and Python versions (generated, commit)
+│       │   ├── pyproject.toml  generated from developer_settings.py (ignored)
+│       │   └── .venv/          app environment (generated, ignored)
 │       ├── dev_tools/          package and Python tools
 │       ├── icons/              icon sources and regeneration
 │       ├── pythons/, uv/       local Python/uv when installed locally (ignored)

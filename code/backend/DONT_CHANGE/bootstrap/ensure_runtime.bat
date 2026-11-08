@@ -4,7 +4,7 @@ if not exist "%~dp0..\tmp\" mkdir "%~dp0..\tmp" 2>nul
 rem Sets PYAPP_UV (uv.exe) and PYAPP_PYTHON (the Python that runs the launcher) for the caller.
 rem No setlocal on purpose: the variables must reach the calling batch.
 rem Fast path: reuse tmp\runtime.cmd while this project folder, developer_settings.py and
-rem backend\.python-version are unchanged and both executables still exist. Otherwise
+rem backend\environment\.python-version are unchanged and both executables still exist. Otherwise
 rem resolve_runtime.ps1 finds or installs uv and Python.
 rem The stamp contains this folder's path (a copied project must not use the original's uv/Python)
 rem and the SHA-256 of developer_settings.py (file times only have minute resolution here).
@@ -16,8 +16,8 @@ for /f "skip=1 delims=" %%H in ('certutil.exe -hashfile "%~dp0..\..\developer_se
 if not defined PYAPP_STAMP_1 (
     for %%F in ("%~dp0..\..\developer_settings.py") do set "PYAPP_STAMP_1=%%~tF#%%~zF"
 )
-if exist "%~dp0..\..\.python-version" (
-    for %%F in ("%~dp0..\..\.python-version") do set "PYAPP_STAMP_2=%%~tF#%%~zF"
+if exist "%~dp0..\..\environment\.python-version" (
+    for %%F in ("%~dp0..\..\environment\.python-version") do set "PYAPP_STAMP_2=%%~tF#%%~zF"
 ) else (
     set "PYAPP_STAMP_2=none"
 )

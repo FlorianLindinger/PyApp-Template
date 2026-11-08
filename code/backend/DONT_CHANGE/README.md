@@ -31,7 +31,7 @@ or change it.
              ├─ bootstrap\ensure_runtime.bat   finds uv and a Python (cached in tmp\runtime.cmd)
              │    └─ bootstrap\resolve_runtime.ps1   only when the cache is stale: installs uv/Python
              └─ python -I -S scripts\entrypoint.py actions\start_program.py
-                  ├─ scripts\env\venv.py: ensure_environment()   backend\.venv matches uv.lock
+                  ├─ scripts\env\venv.py: ensure_environment()   backend\environment\.venv matches uv.lock
                   └─ runtime\background_watchdog.py   (new console, or hidden)
                        ├─ runtime\script_wrapper.py  ──runs──▶ code\main.py   (app's .venv Python)
                        └─ runtime\process_exit.py    success / failure / crash / Ctrl+C handling
@@ -42,7 +42,7 @@ Three Pythons can be involved, but usually they are the same installation:
 | Name | What it is | Runs |
 | --- | --- | --- |
 | launcher Python | The project's Python, started with `-I -S`: isolated, no `site`, standard library only | everything in this folder except the wrapper |
-| app Python | `code/backend/.venv/Scripts/python.exe` | `script_wrapper.py` and `main.py` |
+| app Python | `code/backend/environment/.venv/Scripts/python.exe` | `script_wrapper.py` and `main.py` |
 | uv's Python downloads | Python builds uv installs (per user, or inside the project with `python_source = "local"`) | the base of both of the above |
 
 ## Design rules
@@ -61,7 +61,7 @@ Three Pythons can be involved, but usually they are the same installation:
 - **Nothing outside the project folder is changed** except what the settings ask for: uv's own
   per-user folders, the Start Menu/Desktop shortcuts and the per-user uv/Python install.
 - **Paths are defined once** in `backend_settings.py`. The batch and PowerShell files cannot
-  import it and repeat a few folder names; change them together (and the root `.gitignore`).
+  import it and repeat a few folder names; change them together (and `code/backend/.gitignore`).
 
 ## What happens when you start the app
 
@@ -75,14 +75,14 @@ Three Pythons can be involved, but usually they are the same installation:
 4. **`bootstrap\ensure_runtime.bat`** creates `tmp\` if needed and loads `tmp\runtime.cmd`
    (the paths of uv and the launcher Python) when its stamp still matches: this folder's path
    (a copied project never uses the original's uv/Python), the SHA-256 of
-   `developer_settings.py` and the time/size of `backend\.python-version`, and both executables
+   `developer_settings.py` and the time/size of `backend\environment\.python-version`, and both executables
    exist. Otherwise it runs `resolve_runtime.ps1`. The cache is UTF-8 and read with code page
    65001 unless its first line is `rem ascii`, so non-ASCII project paths work.
 5. **`bootstrap\resolve_runtime.ps1`** (only when the cache is stale) reads the `[bootstrap]`
    settings from `developer_settings.py` with a line parser (one-line literals; the last
    definition wins, like Python), finds or installs uv (`uv_prefer`, `uv_install_if_missing`,
    `uv_version`; a local uv is downloaded from GitHub and checked against its SHA-256), finds
-   or installs the project's Python with uv (`backend\.python-version`, else `python_version`),
+   or installs the project's Python with uv (`backend\environment\.python-version`, else `python_version`),
    checks the 3.8 minimum and writes the cache. It holds `tmp\bootstrap.lock` so two starts
    do not install at the same time.
 6. **`scripts\entrypoint.py`** puts the `code` folder on `sys.path` and runs
@@ -145,15 +145,15 @@ and `code\backend\icons\*.cmd` run `actions\gen_icons.py`.
 
 `code/backend` is a uv project. `developer_settings.py` is the only file people edit:
 
-- `python_version` is the requested Python; `backend/.python-version` records the one the
+- `python_version` is the requested Python; `backend/environment/.python-version` records the one the
   project actually uses (written on the first start). A different `python_version` opens a
   migration menu (re-lock keeping versions, upgrade all, empty package list, keep, write back).
-- `packages` is the dependency list. `backend/pyproject.toml` is **generated** from it
+- `packages` is the dependency list. `backend/environment/pyproject.toml` is **generated** from it
   (`scripts/env/pyproject.py`) with `requires-python = "==X.Y.*"`. Its header records the list
   it was generated from, so a change made in the file itself (e.g. `uv add` in the package
   terminal) is copied back into `packages` instead of being overwritten.
-- `backend/uv.lock` pins every package with hashes; commit it together with the settings.
-- `backend/.venv` is the app's environment.
+- `backend/environment/uv.lock` pins every package with hashes; commit it together with the settings.
+- `backend/environment/.venv` is the app's environment.
 
 `ensure_environment()` (`scripts/env/venv.py`) runs on every start and by Setup and the dev tools:
 
@@ -170,7 +170,7 @@ Downloads happen only when needed. If the chosen uv cannot install the requested
 newest uv is fetched to `%LOCALAPPDATA%\PyApp-Template\uv` (never on PATH), the install is
 retried, and that uv is used from then on while it is newer. `scripts/env/uv.py: uv_environment()` builds uv's environment
 variables and mirrors `Set-UvEnvironment` in `resolve_runtime.ps1`; keep both in sync. Python
-lookups run from the system temp folder, because uv would otherwise treat `backend/.venv` as
+lookups run from the system temp folder, because uv would otherwise treat `backend/environment/.venv` as
 "the" Python; project commands run in `code/backend`.
 
 Portability (`make_portable` dev tool): uv in `backend/uv`, Python in `backend/pythons`, the
@@ -319,7 +319,7 @@ ASCII art (`scripts/banner.py`). The PowerShell bootstrap and the
 | `dev/portable.py` | make_portable. |
 | `dev/housekeeping.py` | clean, remove_shortcuts, status, test. |
 | `env/uv.py` | Which uv to use, its environment variables, running it. |
-| `env/pythons.py` | Finding and installing Pythons with uv; `backend/.python-version`. |
+| `env/pythons.py` | Finding and installing Pythons with uv; `backend/environment/.python-version`. |
 | `env/pyproject.py` | The generated `pyproject.toml`: render, parse, reconcile with `packages`. |
 | `env/venv.py` | `ensure_environment()`, the fast-path stamp, building/re-linking `.venv`, lock and sync, Python switches, package actions, the package terminal. |
 

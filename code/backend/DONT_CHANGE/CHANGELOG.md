@@ -31,6 +31,11 @@ The first versioned release; it contains every change below.
 - Removed `max_log_files` and `max_run_folder_age_days`: logs and run folders are kept until deleted (dev tool `clean`).
 - `install_environment_when_generating_shortcuts` moved to `backend_settings.py`.
 - `packages` can also be a pasted requirements.txt in a `"""` block (comments and `--hash` are ignored).
+- Added `environment_for_main_py`: environment variables set for `main.py`.
+- `main.py` runs in UTF-8 mode (`-X utf8`): `open()` without an `encoding` and `subprocess` text use UTF-8.
+- The ignore rules for `code/backend` moved from the root `.gitignore` to `code/backend/.gitignore`.
+- `pyproject.toml`, `uv.lock`, `.python-version` and `.venv` moved to `code/backend/environment`, which the launcher
+  creates; files in the old location are moved on the next launch. The `.gitignore` of older projects needs the new paths.
 
 ### 2026-11-07 - tracebacks, simpler icons and colors, tests and docs in DONT_CHANGE
 

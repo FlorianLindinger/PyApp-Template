@@ -103,6 +103,8 @@ def uv_environment(s=None, project_environment: str | None = None, python_comman
 
 
 def _run(arguments, capture: bool, check: bool, cwd, project_environment, s) -> subprocess.CompletedProcess:
+    if not cwd:
+        os.makedirs(PROJECT_DIR, exist_ok=True)
     result = subprocess.run(
         [uv_exe(), *arguments],
         check=False,

@@ -7,10 +7,10 @@ or Python — Windows locks the files they use.
 
 | Tool | What it does |
 | --- | --- |
-| `add_packages.cmd [names]` | `uv add`: resolves and installs the packages, adds them to `packages` in `developer_settings.py` and updates `backend/uv.lock`. Asks for names when none are given. |
+| `add_packages.cmd [names]` | `uv add`: resolves and installs the packages, adds them to `packages` in `developer_settings.py` and updates `backend/environment/uv.lock`. Asks for names when none are given. |
 | `remove_packages.cmd [names]` | `uv remove`: lists `packages` and removes the chosen ones. |
 | `upgrade_packages.cmd [names]` | `uv lock --upgrade` (or `--upgrade-package` for the named ones), then an exact sync. Test the app and commit `uv.lock`. |
-| `sync_packages.cmd` | Makes `backend/.venv` match `uv.lock` exactly; removes packages installed by hand. |
+| `sync_packages.cmd` | Makes `backend/environment/.venv` match `uv.lock` exactly; removes packages installed by hand. |
 | `find_imports.cmd` | Offline import finder: scans the code folder (not `backend/`), drops the standard library and your own modules, maps imports to packages (installed metadata first, then `DONT_CHANGE/data/import_to_package.txt`, else the import name — marked "guess"). Optional imports start unchecked: imports inside `try/except ImportError`, or inside a broad `except`/`except Exception` whose `try` block only imports. Review, then the checked ones are added with `uv add` (and recorded in `packages`). |
 | `package_terminal.cmd` | Command prompt in `code/` with the environment activated and uv on PATH: `uv add`, `uv pip list`, `python ...` (uv commands use the project in `backend/`; `uv add`/`uv remove` are copied into `packages` on the next start). `uv pip install NAME` installs without recording (the next exact sync removes it). |
 | `change_python.cmd [version]` | Writes a new `python_version` into the settings and runs the migration menu (re-lock keeping versions / upgrade / empty package list / keep / write back). |
@@ -23,7 +23,7 @@ or Python — Windows locks the files they use.
 
 ## Typical workflows
 
-- **New dependency:** add it to `packages` in `developer_settings.py` and start the app, or `add_packages.cmd requests` → test → commit `developer_settings.py` and `backend/uv.lock`.
+- **New dependency:** add it to `packages` in `developer_settings.py` and start the app, or `add_packages.cmd requests` → test → commit `developer_settings.py` and `backend/environment/uv.lock`.
 - **Existing code with imports:** `find_imports.cmd` → review → add.
-- **New Python version:** `change_python.cmd 3.13` → option 1 → test → commit `developer_settings.py`, `backend/.python-version` and `backend/uv.lock`.
+- **New Python version:** `change_python.cmd 3.13` → option 1 → test → commit `developer_settings.py`, `backend/environment/.python-version` and `backend/environment/uv.lock`.
 - **Hand over an offline folder:** `make_portable.cmd` → accept → copy the folder → run Setup on the target PC for shortcuts.
