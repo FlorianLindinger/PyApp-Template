@@ -11,6 +11,7 @@ from backend.DONT_CHANGE.backend_settings import (
     ICON_PATH,
     PROCESS_REGISTRY_DIR,
     PYTHON_SCRIPTS_DIR,
+    RUNS_DIR,
     SHORTCUT_OUTPUT_DIR,
 )
 from backend.DONT_CHANGE.scripts.config import settings
@@ -26,6 +27,10 @@ from backend.DONT_CHANGE.scripts.console_tools import (
 from backend.DONT_CHANGE.scripts.console_tools import (
     set_terminal_colors as _set_terminal_colors,
 )
+from backend.DONT_CHANGE.scripts.diagnostics import note_ignored
+from backend.DONT_CHANGE.scripts.file_tools import (
+    remove_tree_inside,
+)
 from backend.DONT_CHANGE.scripts.file_tools import (
     set_hidden_in_explorer as _set_hidden_in_explorer,
 )
@@ -33,6 +38,8 @@ from backend.DONT_CHANGE.scripts.file_tools import (
 _TERMINAL_APPEARANCE_WAS_SET = False
 # Raw-output companion of each log file (written by the watchdog as log_path + this suffix).
 OUTPUT_LOG_SUFFIX = ".output.log"
+# A run that is starting or has just ended is not registered as running but still uses its folder.
+RUN_FOLDER_IN_USE_SECONDS = 300
 
 
 def set_hidden_in_explorer() -> None:
@@ -105,3 +112,26 @@ def stop_running_instances(timeout: float = 0.0, report=None):
     from backend.DONT_CHANGE.scripts.runtime_state import ProcessRegistry
 
     return ProcessRegistry(PROCESS_REGISTRY_DIR).stop(timeout, report)
+
+
+def delete_finished_run_folders() -> None:
+    """Delete the run folders when no instance is running; housekeeping that never stops a launch."""
+    import time
+
+    from backend.DONT_CHANGE.scripts.runtime_state import ProcessRegistry
+
+    try:
+        if not os.path.isdir(RUNS_DIR) or ProcessRegistry(PROCESS_REGISTRY_DIR).records()[0]:
+            return
+        newest_allowed = time.time() - RUN_FOLDER_IN_USE_SECONDS
+        with os.scandir(RUNS_DIR) as entries:
+            folders = [
+                e.path for e in entries if e.is_dir(follow_symlinks=False) and e.stat().st_mtime < newest_allowed
+            ]
+        for folder in folders:
+            try:
+                remove_tree_inside(folder, RUNS_DIR)
+            except OSError:
+                pass  # e.g. a file is open in an editor: tried again next time
+    except Exception:
+        note_ignored("delete_finished_run_folders")

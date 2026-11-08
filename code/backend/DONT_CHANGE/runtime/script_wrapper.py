@@ -133,7 +133,7 @@ class PipeSplitter:
 
     def complete_input_line(self, text):
         with self._lock:
-            if self.log_stream is not None and not self._at_line_start:
+            if self.log_stream is not None:
                 self.log_stream.write(text + "\n")
             self._at_line_start = True
             self.flush()

@@ -91,7 +91,7 @@ Three Pythons can be involved, but usually they are the same installation:
    `wt` or `no_terminal`; Windows Terminal falls back to the classic console when missing),
    gives its own minimized window the app's title, icon and taskbar group, applies
    `instance_policy` (allow / focus the running one / ask / replace / block, see
-   `scripts\instance_policy.py`), prunes old logs, warns about outdated "open" shortcuts and
+   `scripts\instance_policy.py`), deletes old run folders when no instance is running, warns about outdated "open" shortcuts and
    calls `ensure_environment()` (see [The Python environment](#the-python-environment)).
    It then reserves a run folder `tmp\runs\<id>\` and starts the watchdog in a new console
    (`conhost.exe` or `wt.exe`) or hidden, and waits until the watchdog writes
@@ -251,7 +251,7 @@ ASCII art (`scripts/banner.py`). The PowerShell bootstrap and the
 | `backend_settings.py` | Every internal path and constant (`LAUNCHER_VERSION`, folders, icon paths, file names, defaults). Imported by almost everything; changes nothing on import. |
 | `ruff.toml`, `pyrefly.toml` | Lint and type-check settings for this folder only (Python 3.8, Windows, 120 columns). |
 | `.gitignore` | Keeps `tmp/`, caches and `__pycache__` out of Git. |
-| `tmp/` | Created at runtime, never committed: `runtime.cmd` (bootstrap cache), `environment.ok`/`.lock`, `bootstrap.lock`, `running/` (registry), `runs/<id>/` (per-run files: `wrapper.json`, `ready`, `startup.json`, `result.json`, `traceback.json`, `bootstrap.log`, `stop-requested`), `diagnostics.log`. Safe to delete while the app is not running. |
+| `tmp/` | Created at runtime, never committed: `runtime.cmd` (bootstrap cache), `environment.ok`/`.lock`, `bootstrap.lock`, `running/` (registry), `runs/<id>/` (per-run files: `wrapper.json`, `ready`, `startup.json`, `result.json`, `traceback.json`, `bootstrap.log`, `stop-requested`; deleted by a launch, Stop or Setup when no instance is running and the folder is at least 5 minutes old), `diagnostics.log`. Safe to delete while the app is not running. |
 
 ### `B/` – shortcut targets (short names keep the shortcut command line short)
 

@@ -16,8 +16,12 @@ if os.name == "nt":
 
 CREATE_NEW_CONSOLE = 0x00000010
 
+# A venv's python.exe is a stub that starts the real interpreter as a child, with another PID.
+PYTHON = getattr(sys, "_base_executable", sys.executable)
+
 INSTANCE = """
-import os, subprocess, sys, time
+import ctypes, os, subprocess, sys, time
+ctypes.windll.kernel32.SetConsoleCtrlHandler(None, False)  # some shells pass on "ignore Ctrl+C"
 sys.path.insert(0, {code!r})
 from backend.DONT_CHANGE.scripts import runtime_state
 runtime_state.create_own_job()
@@ -66,7 +70,7 @@ class WindowsProcessTests(unittest.TestCase):
             encoding="utf-8",
         )
         process = subprocess.Popen(
-            [sys.executable, "-E", "-s", str(script)], creationflags=CREATE_NEW_CONSOLE if new_console else 0
+            [PYTHON, "-E", "-s", str(script)], creationflags=CREATE_NEW_CONSOLE if new_console else 0
         )
         self.addCleanup(lambda: process.kill() if process.poll() is None else None)
         self.assertTrue(wait_for(ready.exists), "the test instance did not start")

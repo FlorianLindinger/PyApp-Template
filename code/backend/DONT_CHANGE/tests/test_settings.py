@@ -182,6 +182,16 @@ class EditingTests(unittest.TestCase):
         self.assertEqual(module.uv_cache, "local")  # the last definition is the one Python uses
         self.assertIn(b'uv_cache = "local"  # trailing comment', raw)
 
+    def test_edit_keeps_parentheses_around_a_value_on_its_own_lines(self):
+        def parenthesized(text):
+            return text + '\r\nuv_version = (\r\n    "0.1.0"\r\n)  # note\r\nlast_line = 1\r\n'
+
+        with support.temporary_settings(parenthesized) as (path, load):
+            config.edit_settings({"uv_version": "0.2.0"})
+            module = load()
+            self.assertEqual((module.uv_version, module.last_line), ("0.2.0", 1))
+            self.assertIn(")  # note", path.read_bytes().decode("utf-8"))
+
     def test_list_setting_round_trip(self):
         packages = ['pywin32; sys_platform == "win32"', "requests>=2", "a\\b"]
         with support.temporary_settings() as (_, load):

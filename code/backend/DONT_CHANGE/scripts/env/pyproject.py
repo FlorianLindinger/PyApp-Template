@@ -17,10 +17,6 @@ from backend.DONT_CHANGE.backend_settings import PYPROJECT_PATH
 from backend.DONT_CHANGE.scripts.config import settings
 from backend.DONT_CHANGE.scripts.console_tools import print_info, print_warn
 
-# developer_settings.py ("packages", python_version) is the only place people edit. pyproject.toml
-# is generated from it for uv. Its header records the package list it was generated from, so a
-# change made to the file itself (e.g. "uv add" in a terminal) can be told apart from a change in
-# developer_settings.py and copied back into the settings.
 GENERATED_FROM_MARKER = "# generated-from-packages: "
 
 

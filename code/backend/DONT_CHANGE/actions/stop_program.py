@@ -16,6 +16,7 @@ from backend.DONT_CHANGE.scripts.console_tools import (
     styled,
 )
 from backend.DONT_CHANGE.scripts.launcher_ui import (
+    delete_finished_run_folders,
     stop_running_instances,
 )
 
@@ -35,6 +36,7 @@ def main() -> None:
     stopped_count, stale_count, failed_messages = stop_running_instances(s.stop_timeout_seconds, report=print_info)
     if failed_messages:
         raise RuntimeError("Failed to stop these instance(s):\n" + "\n".join(failed_messages))
+    delete_finished_run_folders()
     if stale_count:
         print_info(f"Removed {stale_count} record(s) of instances that had already ended.")
     if stopped_count == 0:

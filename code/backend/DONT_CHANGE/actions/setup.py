@@ -24,6 +24,7 @@ from backend.DONT_CHANGE.scripts.console_tools import (
     styled,
 )
 from backend.DONT_CHANGE.scripts.file_tools import make_abs_path_relative_to_file, sanitize_filename
+from backend.DONT_CHANGE.scripts.launcher_ui import delete_finished_run_folders
 from backend.DONT_CHANGE.scripts.shortcuts import (
     CSIDL_DESKTOPDIRECTORY,
     CSIDL_PROGRAMS,
@@ -118,5 +119,6 @@ def main() -> None:
     write_created_shortcuts(created, targets_by_kind)
     for path in removed:
         print(f"  {styled('-', ANSI_DIM)} {styled('removed ' + _short(path), ANSI_DIM)}")
+    delete_finished_run_folders()
     print()
     print_success(" Setup completed. The shortcuts are ready for this location. ")

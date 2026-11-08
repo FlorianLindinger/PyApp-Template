@@ -7,6 +7,16 @@ README.md ("Versions"); `LAUNCHER_VERSION` in `backend_settings.py` names the cu
 
 The first versioned release; it contains every change below.
 
+### 2026-11-08 - launcher fixes
+
+- Editing a setting whose value is in parentheses on its own lines no longer damages `developer_settings.py`.
+- The log now records what was typed at an `input()` prompt that ends with a line break.
+- The `clean` dev tool keeps log files that are in use and the per-run diagnostics of running instances, instead of failing or breaking their completion report.
+- A Ctrl+C while the app starts no longer ends its watchdog.
+- A launch no longer fails if `startup.json` is briefly locked while the launcher reads it.
+- The Windows regression tests also pass from a virtual environment and from shells that ignore Ctrl+C.
+- `tmp\runs` no longer grows forever: a launch, Stop and Setup delete run folders at least 5 minutes old when no instance is running.
+
 ### 2026-11-08 - calmer error reports
 
 - Error reports are one block between two rules: headline, frames, error, then the script, time

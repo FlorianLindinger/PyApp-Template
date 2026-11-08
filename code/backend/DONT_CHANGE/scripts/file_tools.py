@@ -56,11 +56,8 @@ def set_hidden_in_explorer(paths: list[str], hidden: bool = True):
             new_attributes = attributes & ~FILE_ATTRIBUTE_HIDDEN
 
         # Avoid an unnecessary filesystem operation.
-        if new_attributes == attributes:
-            continue
-
-        if not kernel32.SetFileAttributesW(path, new_attributes):
-            continue
+        if new_attributes != attributes:
+            kernel32.SetFileAttributesW(path, new_attributes)
 
 
 def make_abs_path_relative_to_file(path: str, file: str) -> str:

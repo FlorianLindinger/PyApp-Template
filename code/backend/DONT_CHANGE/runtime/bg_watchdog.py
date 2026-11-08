@@ -207,6 +207,8 @@ def main():
             Path(log_path).parent.mkdir(parents=True, exist_ok=True)
             raw_stream = open(log_path + OUTPUT_LOG_SUFFIX, "wb")  # noqa: SIM115 - closed by the output pump
         try:
+            # From before the app exists: a Ctrl+C during its start-up must not end this watchdog.
+            previous = signal.signal(signal.SIGINT, signal.SIG_IGN)
             child = subprocess.Popen(
                 [
                     app_python["exe"],
@@ -268,7 +270,6 @@ def main():
                     set_terminal_icon(paths.ICON_PATH)
                 except Exception:
                     note_ignored("set_terminal_icon")
-            previous = signal.signal(signal.SIGINT, signal.SIG_IGN)
             try:
                 code = child.wait()
             finally:

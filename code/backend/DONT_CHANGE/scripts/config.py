@@ -432,7 +432,9 @@ def _replace_setting_value(name: str, make_value) -> list[str]:
             stream.write(source + ("" if source.endswith(("\n", "\r")) else newline) + addition)
         sys.modules.pop("backend.developer_settings", None)
         return [f"+ {line}" for line in addition.rstrip().splitlines()]
-    first, last = node.lineno - 1, (node.end_lineno or node.lineno) - 1
+    assert isinstance(node, (ast.Assign, ast.AnnAssign)) and node.value is not None
+    # The value's own lines: with parentheses around it, they differ from the assignment's lines.
+    first, last = node.value.lineno - 1, (node.value.end_lineno or node.value.lineno) - 1
     # ast offsets count UTF-8 bytes
     head = lines[first].encode("utf-8")[: node.value.col_offset].decode("utf-8")  # e.g. "packages: list[str] = "
     tail = lines[last].encode("utf-8")[node.value.end_col_offset :].decode("utf-8").rstrip("\r\n")  # e.g. a comment

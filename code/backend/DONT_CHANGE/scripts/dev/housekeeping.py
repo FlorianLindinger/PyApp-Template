@@ -14,6 +14,7 @@ from backend.DONT_CHANGE.scripts.console_tools import (
     print_heading,
     print_info,
     print_success,
+    print_warn,
 )
 from backend.DONT_CHANGE.scripts.dev.common import confirm
 from backend.DONT_CHANGE.scripts.diagnostics import diagnostics_summary, note_ignored
@@ -22,6 +23,7 @@ from backend.DONT_CHANGE.scripts.env.pythons import read_python_version_file, ve
 from backend.DONT_CHANGE.scripts.env.uv import uv_exe, uv_succeeds, uv_version
 from backend.DONT_CHANGE.scripts.env.venv import read_venv_config, venv_home_valid, venv_version
 from backend.DONT_CHANGE.scripts.errors import SettingsError, SetupError
+from backend.DONT_CHANGE.scripts.runtime_state import ProcessRegistry
 
 
 def cmd_clean(arguments):
@@ -49,14 +51,24 @@ def cmd_clean(arguments):
     keys = {options[int(c) - 1][0] for c in chosen if c.isdigit() and 1 <= int(c) <= len(options)}
     if not keys or not confirm("Delete permanently?"):
         return
+    in_use = 0
     for key, folder in (("logs", log_folder), ("crash", crash_folder)):
         if key in keys and folder and os.path.isdir(folder):
             for name in os.listdir(folder):
                 path = os.path.join(folder, name)
                 if os.path.isfile(path) and name != ".gitkeep":
-                    os.remove(path)
+                    try:
+                        os.remove(path)
+                    except PermissionError:  # the log of an instance that is still running
+                        in_use += 1
+    if in_use:
+        print_warn(f"Kept {in_use} file(s) that are in use, e.g. by a running instance.")
     if "runs" in keys and os.path.isdir(paths.RUNS_DIR):
-        remove_tree_inside(paths.RUNS_DIR, paths.TEMPORARY_DIR)
+        # A running instance still writes its completion report into its run folder.
+        if ProcessRegistry(paths.PROCESS_REGISTRY_DIR).records()[0]:
+            print_warn("Kept the per-run diagnostics: close the running app instance(s) first.")
+        else:
+            remove_tree_inside(paths.RUNS_DIR, paths.TEMPORARY_DIR)
     print_success("Cleaned.")
 
 

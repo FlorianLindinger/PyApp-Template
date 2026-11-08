@@ -20,6 +20,7 @@ from backend.DONT_CHANGE.scripts.diagnostics import note_ignored
 from backend.DONT_CHANGE.scripts.env.venv import ensure_environment
 from backend.DONT_CHANGE.scripts.instance_policy import decide
 from backend.DONT_CHANGE.scripts.launcher_ui import (
+    delete_finished_run_folders,
     set_hidden_in_explorer,
     set_terminal_appearance_once,
 )
@@ -78,6 +79,7 @@ def main():
         if errors:
             raise RuntimeError("Could not stop the running instance(s): " + "; ".join(errors))
 
+    delete_finished_run_folders()
     _hint_outdated_shortcuts(s)
     app = ensure_environment(interactive=True)
 
@@ -132,7 +134,7 @@ def main():
         while time.monotonic() < deadline:
             try:
                 status = json.loads((run_dir / "startup.json").read_text(encoding="utf-8"))
-            except (FileNotFoundError, ValueError):
+            except (OSError, ValueError):  # not written yet, or being replaced right now
                 status = None
             if status:
                 if status["status"] in {"started", "cancelled"}:

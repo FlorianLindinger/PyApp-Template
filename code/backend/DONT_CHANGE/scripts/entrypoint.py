@@ -31,8 +31,8 @@ def normalize_exit_code(value):
 
 
 def acknowledge(message):
-    # An outer launcher can own the final prompt and preserve native-crash output.
     """Wait for interactive acknowledgement unless an outer launcher owns the prompt."""
+    # An outer launcher can own the final prompt and preserve native-crash output.
     if os.environ.get("PYAPP_ENTRYPOINT_NO_PAUSE") == "1":
         return
     if sys.stdin is not None and sys.stdin.isatty():

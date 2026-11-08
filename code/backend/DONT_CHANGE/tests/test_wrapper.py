@@ -15,7 +15,7 @@ WRAPPER = DONT_CHANGE / "runtime" / "script_wrapper.py"
 
 
 class WrapperTests(unittest.TestCase):
-    def run_app(self, source, args=(), extra_files=None, env=None, **config):
+    def run_app(self, source, args=(), extra_files=None, env=None, stdin=None, **config):
         """Run `source` as main.py through the wrapper; return (exit code, stdout, run folder)."""
         folder = Path(self.temporary_folder())
         app = folder / "app"
@@ -39,6 +39,7 @@ class WrapperTests(unittest.TestCase):
             [sys.executable, "-E", "-s", str(WRAPPER), "--config", str(run / "wrapper.json")],
             cwd=str(app),
             env={**os.environ, **(env or {})},
+            input=stdin,
             capture_output=True,
             text=True,
             encoding="utf-8",
@@ -60,6 +61,13 @@ class WrapperTests(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertEqual(json.loads((run / "result.json").read_text())["wrapper_exit_code"], 0)
         self.assertTrue((run / "ready").exists())
+
+    def test_log_records_input_after_every_kind_of_prompt(self):
+        log = Path(self.temporary_folder()) / "app.log"
+        source = "input('Name:\\n')\ninput('Age: ')\ninput()\n"
+        code, _, _ = self.run_app(source, stdin="Flo\n42\nlast\n", log_path=str(log))
+        self.assertEqual(code, 0)
+        self.assertEqual(log.read_text(encoding="utf-8").splitlines(), ["Name:", "Flo", "Age: 42", "last"])
 
     def test_arguments_are_exact_and_launcher_variables_are_hidden(self):
         source = "import os, sys\nprint(repr(sys.argv[1:]), os.environ.get('PYAPP_SECRET'))\n"
