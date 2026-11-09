@@ -24,7 +24,7 @@ jobs:
         with:
           enable-cache: false
       - name: Tests on Python 3.8 and the newest Python
-        run: uv run --no-project --python 3.14 python code/backend/DONT_CHANGE/scripts/tools/test_all_pythons.py
+        run: uv run --no-project --python 3.14 python code/pyapp/DONT_CHANGE/template_tools/src/test_all_pythons.py
       - name: Ruff and Pyrefly
         if: ${{ !cancelled() }}
-        run: uv run --no-project --python 3.14 python code/backend/DONT_CHANGE/scripts/tools/verify_launcher.py
+        run: uv run --no-project --python 3.14 python code/pyapp/DONT_CHANGE/template_tools/src/verify_launcher.py

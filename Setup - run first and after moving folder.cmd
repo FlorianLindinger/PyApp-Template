@@ -2,8 +2,7 @@
 setlocal EnableExtensions DisableDelayedExpansion
 :: This outer window owns the final prompt, even if the child shell exits.
 set "PYAPP_ENTRYPOINT_NO_PAUSE=1"
-set "PYAPP_ENTRY_SCRIPT=%~dp0code\backend\DONT_CHANGE\actions\setup.py"
-"%ComSpec%" /d /s /c ""%~dp0code\backend\DONT_CHANGE\bootstrap\run.bat""
+"%ComSpec%" /d /s /c ^""%~dp0code\pyapp\DONT_CHANGE\run.bat" setup^"
 set "setup_exit_code=%ERRORLEVEL%"
 :: setup.py prints the success message itself; a failure may happen before Python runs.
 for /f %%e in ('echo prompt $E^| cmd /d') do set "esc=%%e"

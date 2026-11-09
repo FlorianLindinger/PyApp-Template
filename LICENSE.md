@@ -16,16 +16,16 @@ Until that placeholder is replaced, no license is granted for those files beyond
 
 ## 2. PyApp-Template backend
 
-The files in **`code/backend/DONT_CHANGE`** are provided by [PyApp-Template](https://github.com/FlorianLindinger/PyApp-Template). You may use the backend under either MIT or Apache-2.0, at your choice (`MIT OR Apache-2.0`). Both license texts are included in **`code/backend/DONT_CHANGE/LICENSES/`**.
+The files in **`code/pyapp/DONT_CHANGE`** are provided by [PyApp-Template](https://github.com/FlorianLindinger/PyApp-Template). You may use the backend under either MIT or Apache-2.0, at your choice (`MIT OR Apache-2.0`). Both license texts are included in **`code/pyapp/DONT_CHANGE/LICENSES/`**.
 
 ## 3. Python distributions and third-party packages
 
 The following directories, including all files and subdirectories within them, are not covered by the licenses described in Sections 1 or 2:
 
-* **`code/backend/generated/.venv`** (the app's virtual environment with third-party packages)
-* **`code/backend/generated/pythons`** (Python distributions installed by uv)
-* **`code/backend/generated/uv`** (the uv executables)
-* **`code/backend/generated/uv-cache`** (downloaded package files)
+* **`code/pyapp/generated/.venv`** (the app's virtual environment with third-party packages)
+* **`code/pyapp/generated/pythons`** (Python distributions installed by uv)
+* **`code/pyapp/generated/uv`** (the uv executables)
+* **`code/pyapp/generated/uv-cache`** (downloaded package files)
 
 Any third-party packages located below a distribution's `Lib/site-packages` directory are also included in this exception because they are descendants of the relevant distribution directory.
 

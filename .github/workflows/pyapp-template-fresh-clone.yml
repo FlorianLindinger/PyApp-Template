@@ -24,4 +24,4 @@ jobs:
         with:
           enable-cache: false
       - name: Clone, run Setup and start the launcher
-        run: uv run --no-project --python 3.14 python code/backend/DONT_CHANGE/scripts/tools/fresh_clone_test.py
+        run: uv run --no-project --python 3.14 python code/pyapp/DONT_CHANGE/template_tools/src/fresh_clone_test.py

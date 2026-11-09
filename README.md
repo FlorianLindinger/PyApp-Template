@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="code/backend/DONT_CHANGE/data/icons/default_icon.png" alt="PyApp-Template logo" width="120">
+<img src="code/pyapp/DONT_CHANGE/data/icons/default_icon.png" alt="PyApp-Template logo" width="120">
 
 # PyApp-Template
 
@@ -33,7 +33,7 @@ You write `main.py` and list your packages. The template uses [uv](https://docs.
 | **Started twice** | Runs twice | Runs twice | You choose: allow, focus, prevent, replace or ask |
 | **Stopping it safely** | Ctrl+C or close it, child processes may survive | Close it, child processes may survive | Stop shortcut asks it to close, then ends the whole process tree |
 
-The launcher is readable Python, batch and PowerShell that uses only the standard library, so your packages can't break it. [Every file is documented](code/backend/DONT_CHANGE/README.md).
+The launcher is readable Python, batch and PowerShell that uses only the standard library, so your packages can't break it. [Every file is documented](code/pyapp/DONT_CHANGE/README.md).
 
 **Compile instead** if you need a single file or don't want to ship readable source code. PyApp-Template ships as a folder containing your source. It runs on Windows only, and the first setup needs internet unless you [make the folder portable](#shipping-your-app).
 
@@ -50,7 +50,7 @@ The **(no Terminal)** shortcut gives you both. No terminal is shown while the ap
 A script started from a batch file can fill the taskbar with separate entries for the batch window, the Python terminal and the app, all with default names and icons. PyApp-Template shows one entry with your app's name and icon. Its windows share a taskbar identity, so they group with the shortcut that started them, including one you pinned.
 
 <p align="center">
-  <img src="code/backend/DONT_CHANGE/data/docs/taskbar-comparison.png" alt="Taskbar comparison. Before: three entries for a batch window, a terminal and an app with a default icon and name. With PyApp-Template: a single entry named My App with its own icon. After a crash: one entry named Failure, with the terminal showing the error." width="620">
+  <img src="code/pyapp/DONT_CHANGE/data/docs/taskbar-comparison.png" alt="Taskbar comparison. Before: three entries for a batch window, a terminal and an app with a default icon and name. With PyApp-Template: a single entry named My App with its own icon. After a crash: one entry named Failure, with the terminal showing the error." width="620">
 </p>
 
 ## Quick start
@@ -58,7 +58,7 @@ A script started from a batch file can fill the taskbar with separate entries fo
 **You need:** Windows x64 and an internet connection for the first setup. Python is not required.
 
 1. Clone or download this repository. Windows may warn you about downloaded scripts ([see below](#troubleshooting)).
-2. Optional: set `program_name` and `python_version` in `code/backend/developer_settings.py`.
+2. Optional: set `program_name` and `python_version` in `code/pyapp/developer_settings.py`.
 3. Run **`Setup - run first and after moving folder.cmd`**.
 4. Start the example app with the new **PyApp-Template** shortcut (named after `program_name`).
 5. Replace `code/main.py` with your own code.
@@ -72,7 +72,7 @@ You normally edit only three files:
 | File | Purpose |
 | --- | --- |
 | `code/main.py` | Your application |
-| `code/backend/developer_settings.py` | Name, Python version, packages, logging and behavior. The file is sorted from important to rarely needed, and every setting is explained in it. |
+| `code/pyapp/developer_settings.py` | Name, Python version, packages, logging and behavior. The file is sorted from important to rarely needed, and every setting is explained in it. |
 | `code/settings.py` | Optional settings for the people using your app. Read them with `import settings`; the Settings shortcut opens this file. |
 
 ### Adding packages
@@ -85,7 +85,7 @@ packages = ["requests", "numpy>=2", "pillow==11.*"]
 
 You can also paste a `requirements.txt` as a triple-quoted string. Other ways to add packages:
 
-- `code/backend/dev_tools/add_packages.cmd` adds packages by name.
+- `code/pyapp/dev_tools/add_packages.cmd` adds packages by name.
 - `find_imports.cmd`, in the same folder, scans existing code offline, lets you review what it found and adds the missing packages.
 - Just start the app. A missing import offers to add the package and restart.
 
@@ -106,7 +106,7 @@ Changing this later is safe. A menu lets you keep your package versions, upgrade
 
 ### Changing the icons
 
-Replace `code/backend/icons/icon.png`, run `regenerate icons.cmd` in that folder, then run Setup again. All shortcut and status icons are generated from that one image.
+Replace `code/pyapp/icons/icon.png`, run `regenerate icons.cmd` in that folder, then run Setup again. All shortcut and status icons are generated from that one image.
 
 ### Connecting your app to the launcher
 
@@ -137,11 +137,11 @@ The taskbar grouping is already set up for you. To pass your own values, use `ar
 
 **With Git or a download.** Commit these generated files along with your code, then have the recipient run Setup. It installs the same Python and package versions you tested.
 
-- `code/backend/generated/uv.lock`
-- `code/backend/generated/.python-version`
-- `code/backend/generated/auto_generated_icons.json`
+- `code/pyapp/generated/uv.lock`
+- `code/pyapp/generated/.python-version`
+- `code/pyapp/generated/auto_generated_icons.json`
 
-**As an offline folder.** Run `code/backend/dev_tools/make_portable.cmd` and accept the settings it shows. Copy the whole folder to the other PC and run Setup there to create the shortcuts. Nothing is downloaded, and the environment re-links itself to the copied Python. The folder now contains Python and third-party packages, so [their licenses apply too](LICENSE.md).
+**As an offline folder.** Run `code/pyapp/dev_tools/make_portable.cmd` and accept the settings it shows. Copy the whole folder to the other PC and run Setup there to create the shortcuts. Nothing is downloaded, and the environment re-links itself to the copied Python. The folder now contains Python and third-party packages, so [their licenses apply too](LICENSE.md).
 
 Before you publish your app, replace the license placeholder in [`LICENSE.md`](LICENSE.md).
 
@@ -202,7 +202,7 @@ Logging turns stdout and stderr into pipes. If your app needs a real console, se
 
 ## Dev tools
 
-Double-click any tool in `code/backend/dev_tools`, or use **`Dev Menu.cmd`** to reach them all.
+Double-click any tool in `code/pyapp/dev_tools`, or use **`Dev Menu.cmd`** to reach them all.
 
 | Tool | Purpose |
 | --- | --- |
@@ -218,7 +218,7 @@ Double-click any tool in `code/backend/dev_tools`, or use **`Dev Menu.cmd`** to 
 | `clean` | Delete logs, crash logs or per-run diagnostics |
 | `remove_shortcuts` | Remove every shortcut Setup created |
 
-See the [dev tools guide](code/backend/dev_tools/README.md) for details and typical workflows.
+See the [dev tools guide](code/pyapp/dev_tools/README.md) for details and typical workflows.
 
 ## What it changes on your PC
 
@@ -234,7 +234,7 @@ To keep uv, Python and its cache inside the project, set `python_source`, `uv_pr
 
 ## Troubleshooting
 
-Start with `code/backend/dev_tools/status.cmd`. It shows the current state and any errors the launcher ignored on purpose.
+Start with `code/pyapp/dev_tools/status.cmd`. It shows the current state and any errors the launcher ignored on purpose.
 
 | Problem | Solution |
 | --- | --- |
@@ -244,7 +244,7 @@ Start with `code/backend/dev_tools/status.cmd`. It shows the current state and a
 | Installing a package fails with long-path errors | Windows limits path length, so move the project to a shorter path such as `C:\Apps\MyApp`. |
 | Downloads fail on a company network | Set `use_system_certificates = True`. |
 | `input()` or a console library misbehaves | Set `enable_log_for_terminal_start = False` to give the app a real console. |
-| The environment seems broken | Delete `code/backend/generated/.venv`. The next start rebuilds it. |
+| The environment seems broken | Delete `code/pyapp/generated/.venv`. The next start rebuilds it. |
 
 ## How it works
 
@@ -261,7 +261,7 @@ shortcut
 
 `pyproject.toml` is generated from `developer_settings.py`, so the settings file stays the one place to edit. If you run `uv add` in the package terminal, the change is copied back into `packages`. If both changed, `developer_settings.py` wins.
 
-The [launcher documentation](code/backend/DONT_CHANGE/README.md) covers each step and every file.
+The [launcher documentation](code/pyapp/DONT_CHANGE/README.md) covers each step and every file.
 
 ```text
 .
@@ -269,7 +269,7 @@ The [launcher documentation](code/backend/DONT_CHANGE/README.md) covers each ste
 ├── code/
 │   ├── main.py                     ◀ your app
 │   ├── settings.py                 ◀ optional settings for your users
-│   └── backend/
+│   └── pyapp/
 │       ├── developer_settings.py   ◀ app, Python and package settings
 │       ├── dev_tools/              package and Python tools
 │       ├── icons/                  icon source and generator
@@ -281,10 +281,10 @@ The [launcher documentation](code/backend/DONT_CHANGE/README.md) covers each ste
 
 ## Updating the template
 
-Replace `code/backend/DONT_CHANGE` with the newer version. Your code and settings are outside that folder, and any new settings use their defaults until you add them. A major version may need extra steps, which are listed in [`CHANGELOG.md`](code/backend/DONT_CHANGE/CHANGELOG.md).
+Replace `code/pyapp/DONT_CHANGE` with the newer version. Your code and settings are outside that folder, and any new settings use their defaults until you add them. A major version may need extra steps, which are listed in [`CHANGELOG.md`](code/pyapp/DONT_CHANGE/CHANGELOG.md).
 
 ## License
 
-The launcher in `code/backend/DONT_CHANGE` is available under `MIT OR Apache-2.0`. uv, Python and third-party packages keep their own licenses. Your project's own license goes in [`LICENSE.md`](LICENSE.md), which explains which terms cover which files.
+The launcher in `code/pyapp/DONT_CHANGE` is available under `MIT OR Apache-2.0`. uv, Python and third-party packages keep their own licenses. Your project's own license goes in [`LICENSE.md`](LICENSE.md), which explains which terms cover which files.
 
 Originally built by [Florian Lindinger](https://github.com/FlorianLindinger/PyApp-Template).
