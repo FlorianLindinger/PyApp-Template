@@ -177,8 +177,9 @@ variables and mirrors `set_uv_environment` in `resolve_runtime.py`; keep both in
 lookups run from the system temp folder, because uv would otherwise treat `pyapp/generated/.venv` as
 "the" Python; project commands use `code/pyapp/generated`.
 
-Portability (`make_portable` dev tool): uv in `pyapp/generated/uv`, Python in `pyapp/generated/pythons`, the
-uv cache optionally in `pyapp/generated/uv-cache`. The `.venv` is relocatable and re-linked after a
+Self-contained folders (`make_self_contained` dev tool): uv in
+`pyapp/generated/uv`, Python in `pyapp/generated/pythons`, the uv cache optionally in
+`pyapp/generated/uv-cache` (not needed: packages are copied into `.venv`, not linked to the cache). The `.venv` is relocatable and re-linked after a
 move, so a copied folder works offline on another PC.
 
 ## Process control and Stop
@@ -322,7 +323,7 @@ ASCII art (`scripts/banner.py`). The batch/Python bootstrap and the
 | `dev/common.py` | Shared helpers of the dev tools (`confirm`, `prepare`, requirement names). |
 | `dev/packages.py` | add, remove, upgrade, sync, find imports, package terminal, export requirements. |
 | `dev/py_vers.py` | change_python, update_python. |
-| `dev/portable.py` | make_portable. |
+| `dev/self_contained.py` | make_self_contained. |
 | `dev/housekeeping.py` | clean, remove_shortcuts, status, test. |
 | `env/uv.py` | Which uv to use, its environment variables, running it. |
 | `env/pythons.py` | Finding and installing Pythons with uv; `pyapp/generated/.python-version`. |

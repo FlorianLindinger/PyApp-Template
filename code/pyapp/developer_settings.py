@@ -131,12 +131,19 @@ start_in_shortcut_folder = False
 # 0 terminates immediately.
 stop_timeout_seconds: float = 3
 
-# --- Python location ---
+# --- Where uv and Python come from ---
+# The dev tool make_self_contained sets these three to "local" and puts uv, Python and all packages into
+# code/pyapp/generated: the folder then runs on other PCs without internet or installing anything.
+# More uv settings: see "uv" further down.
 # [bootstrap] Where the app's Python comes from:
-#   "local"    uv installs it inside this project (code/pyapp/generated/pythons). Portable.
+#   "local"    uv installs it inside this project (code/pyapp/generated/pythons).
 #   "uv_user"  uv installs it in its per-user folder, shared by projects.
 #   "system"   a Python already installed on this PC, e.g. by your IT department. Nothing is downloaded.
 python_source = "uv_user"
+# [bootstrap] Which uv to use when both a global (on PATH) and a local (code/pyapp/generated/uv) uv exist: "global" | "local"
+uv_prefer = "global"
+# [bootstrap] Where uv is installed when none is found: "global" (for your Windows user, added to your user PATH) | "local" | "never"
+uv_install_if_missing = "global"
 
 # --- Settings file and shortcut locations ---
 # File that the Settings shortcut opens, for the people using the app (any file type; None: no such shortcut).
@@ -188,16 +195,12 @@ open_code_shortcut_name: Optional[str] = f"{program_name} - Edit Code"
 start_minimized = False
 
 # --- uv ---
-# [bootstrap] Which uv is used and how it gets installed:
-#   uv_prefer: which uv to use when both a global (on PATH) and a local (code/pyapp/generated/uv) uv exist: "global" | "local"
-#   uv_install_if_missing: "global" (for your Windows user, added to your user PATH) | "local" | "never"
-#   uv_version: "" for the latest, an exact version like "0.11.32", or a range like ">=0.9,<1"
+# uv_prefer and uv_install_if_missing: see "Where uv and Python come from" above.
+# [bootstrap] uv_version: "" for the latest, an exact version like "0.11.32", or a range like ">=0.9,<1"
 #   A global uv that does not satisfy uv_version is not changed; a local uv is installed instead.
 #   If that uv cannot provide python_version, the newest uv is downloaded to %LOCALAPPDATA%\PyApp-Template\uv and used
 #   from then on. It is not put on PATH, so your global uv stays the default. uv_install_if_missing = "never" or an exact
 #   uv_version turns this off.
-uv_prefer = "global"
-uv_install_if_missing = "global"
 uv_version = ""
 
 # [bootstrap] For python_source = "uv_user": also register the Python in Windows (py launcher) and put python3.x.exe on PATH:

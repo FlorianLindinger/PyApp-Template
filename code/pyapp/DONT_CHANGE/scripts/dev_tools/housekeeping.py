@@ -174,6 +174,13 @@ def cmd_status(arguments: List[str]):
     except Exception:
         note_ignored("cmd_status: shortcut list")
         shortcut_count = "?"
+    from pyapp.DONT_CHANGE.scripts.dev_tools.self_contained import is_self_contained
+
+    self_contained = (
+        "yes (uv, Python and packages are inside the folder)"
+        if is_self_contained(s)
+        else "no (uses the shared uv and Python; make_self_contained changes that)"
+    )
     ignored = diagnostics_summary()
     in_sync = declared_dependencies() == list(s.packages)
     sections: Dict[str, List[Union[Tuple[str, object], Tuple[str, object, bool]]]] = {
@@ -182,6 +189,7 @@ def cmd_status(arguments: List[str]):
             ("Launcher version", paths.LAUNCHER_VERSION),
             ("Settings", settings_state, settings_state == "valid"),
             ("Shortcuts", shortcut_count),
+            ("Self-contained", self_contained),
             (
                 "Ignored errors",
                 f"{ignored} (see {display_path(paths.DIAGNOSTICS_LOG_PATH)})" if ignored else "none",

@@ -30,6 +30,7 @@ CHANGELOG_PATH = DONT_CHANGE_DIR / "CHANGELOG.md"
 RUNNER = DONT_CHANGE_DIR / "tests" / "run_regressions.py"
 LAUNCHER_FOLDER = "code/pyapp/DONT_CHANGE/"
 VERSION_LINE = re.compile(r'^LAUNCHER_VERSION = "(\d+\.\d+\.\d+)"', flags=re.MULTILINE)
+# "## unreleased", or "## 1.2.3 - unreleased" while LAUNCHER_VERSION already names that coming version.
 UNRELEASED = re.compile(r"^## (?:(\d+\.\d+\.\d+) - )?unreleased[ \t]*$", flags=re.MULTILINE | re.IGNORECASE)
 RELEASED = re.compile(r"^## (\d+\.\d+\.\d+) - (?!unreleased)", flags=re.MULTILINE | re.IGNORECASE)
 NEXT_HEADING = re.compile(r"^## ", flags=re.MULTILINE)

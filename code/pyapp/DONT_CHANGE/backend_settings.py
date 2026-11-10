@@ -25,7 +25,7 @@ LAUNCHER_VERSION = "0.0.1"
 
 # ------------------------
 # folders
-# The batch bootstrap (DONT_CHANGE/bootstrap/*.bat, *.ps1) uses the same fixed
+# The batch bootstrap (DONT_CHANGE/bootstrap/*.bat) uses the same fixed
 # relative locations. UPDATE those files and code/pyapp/.gitignore when moving one.
 
 DONT_CHANGE_DIR = make_abs(".")
@@ -42,7 +42,7 @@ WINDOWS_DIR = os.environ.get("WINDIR", "C:\\Windows")
 # ------------------------
 # uv, Python and the application environment
 
-# Everything the launcher creates and maintains. UPDATE bootstrap/*.bat, *.ps1 and code/pyapp/.gitignore too.
+# Everything the launcher creates and maintains. UPDATE bootstrap/*.bat and code/pyapp/.gitignore too.
 GENERATED_DIR = BACKEND_DIR + "\\generated"
 LOCAL_UV_DIR = GENERATED_DIR + "\\uv"                 # uv.exe when installed locally
 LOCAL_UV_EXE = LOCAL_UV_DIR + "\\uv.exe"

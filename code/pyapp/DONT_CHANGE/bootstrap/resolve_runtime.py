@@ -240,7 +240,7 @@ def download(url: str, target: Path) -> None:
     except (urllib.error.URLError, OSError) as error:
         raise BootstrapError(
             f"Could not download {url}: {error}. A firewall or proxy may block it. Ask your IT department to allow "
-            "github.com, or copy a folder made with the make_portable dev tool to this PC."
+            "github.com, or copy a folder made with the make_self_contained dev tool to this PC."
         ) from error
 
 
@@ -578,7 +578,7 @@ def resolve_python(settings: Settings, uv: Path) -> Tuple[str, Path]:
                 raise BootstrapError(
                     f"uv could not install Python '{request}'. {available_summary(uv)} The launcher needs Python 3.8 or "
                     "newer. Check python_version in developer_settings.py. On a company network, a firewall may block "
-                    "the download from github.com; a folder made with the make_portable dev tool needs no download."
+                    "the download from github.com; a folder made with the make_self_contained dev tool needs no download."
                 )
             python = find_python(uv, request)
             if not python:
@@ -599,34 +599,11 @@ def resolve_python(settings: Settings, uv: Path) -> Tuple[str, Path]:
 # ---------------------------------------------------------------- project folder
 
 
-def move_project_files_into_generated() -> None:
-    """Creates code/pyapp/generated and moves files from where older versions kept them."""
-    old_env = BACKEND_DIR / "env"
+def create_generated_folder() -> None:
     try:
-        if old_env.exists() and not GENERATED_DIR.exists():
-            old_env.rename(GENERATED_DIR)
         GENERATED_DIR.mkdir(parents=True, exist_ok=True)
-        old_environment = BACKEND_DIR / "environment"
-        names = (
-            "pyproject.toml",
-            "uv.lock",
-            ".python-version",
-            ".venv",
-            "uv",
-            "pythons",
-            "uv-cache",
-            "shortcuts_created_by_setup.json",
-        )
-        for folder in (old_environment, BACKEND_DIR):
-            for name in names:
-                if (folder / name).exists() and not (GENERATED_DIR / name).exists():
-                    (folder / name).rename(GENERATED_DIR / name)
-        if old_environment.is_dir() and not any(old_environment.iterdir()):
-            old_environment.rmdir()
     except OSError as error:
-        raise BootstrapError(
-            f"Could not move the project's files into {GENERATED_DIR}. Close the running app and programs using it, then start again. ({error})"
-        ) from error
+        raise BootstrapError(f"Could not create {GENERATED_DIR}. ({error})") from error
 
 
 def cache_text(uv: object, python: str, stamp: str) -> str:
@@ -666,7 +643,7 @@ def bootstrap_lock() -> Generator[None, None, None]:
 
 def resolve(stamp: str) -> None:
     settings = read_settings(SETTINGS_PATH.read_text(encoding="utf-8"))
-    move_project_files_into_generated()
+    create_generated_folder()
     uv = select_newest_uv(settings, resolve_uv(settings))
     python, uv = resolve_python(settings, uv)
     CACHE_PATH.write_bytes(cache_text(uv, python, stamp).encode("utf-8"))

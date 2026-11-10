@@ -34,8 +34,8 @@ from pyapp.DONT_CHANGE.scripts.dev_tools.packages import (
     cmd_terminal,
     cmd_upgrade,
 )
-from pyapp.DONT_CHANGE.scripts.dev_tools.portable import cmd_make_portable
 from pyapp.DONT_CHANGE.scripts.dev_tools.py_vers import cmd_change_python, cmd_update_python
+from pyapp.DONT_CHANGE.scripts.dev_tools.self_contained import cmd_make_self_contained
 from pyapp.DONT_CHANGE.scripts.entrypoint import expected_problem
 
 # Commands that end on their own (a menu, a terminal); no "Press Enter" afterwards.
@@ -50,7 +50,7 @@ COMMANDS = {
     "terminal": cmd_terminal,
     "change-python": cmd_change_python,
     "update-python": cmd_update_python,
-    "make-portable": cmd_make_portable,
+    "make-self-contained": cmd_make_self_contained,
     "export": cmd_export,
     "clean": cmd_clean,
     "remove-shortcuts": cmd_remove_shortcuts,
@@ -63,7 +63,7 @@ COMMANDS = {
 MENU_GROUPS = (
     ("Packages", ("add", "remove", "upgrade", "sync", "find-imports", "terminal", "export")),
     ("Python", ("change-python", "update-python")),
-    ("Project", ("status", "clean", "remove-shortcuts", "make-portable", "test")),
+    ("Project", ("status", "clean", "remove-shortcuts", "make-self-contained", "test")),
 )
 # For the commands that do not start with a heading of their own.
 HEADINGS = {

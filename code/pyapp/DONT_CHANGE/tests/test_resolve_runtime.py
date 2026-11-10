@@ -100,7 +100,7 @@ class CompanyPcTests(unittest.TestCase):
         ) as raised:
             tool.download("https://github.com/x", DONT_CHANGE / "tmp" / "never-written")
         self.assertIn("firewall", str(raised.exception))
-        self.assertIn("make_portable", str(raised.exception))
+        self.assertIn("make_self_contained", str(raised.exception))
 
 
 class CacheTests(unittest.TestCase):

@@ -27,7 +27,7 @@ DEV_TOOL_COMMANDS = (
     "terminal",
     "change-python",
     "update-python",
-    "make-portable",
+    "make-self-contained",
     "export",
     "clean",
     "remove-shortcuts",

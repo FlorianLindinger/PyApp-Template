@@ -32,4 +32,4 @@ Run them after changing anything in `DONT_CHANGE`, or after updating the templat
 | `test_windows.py` | Windows only: registry records with job names, Stop ends the whole job (incl. grandchildren), graceful Stop via Ctrl+C, file lock |
 
 Manual release check (not automated): Setup, start twice, Stop on the example window, the
-open shortcuts, `status.cmd`, `change_python`, `make_portable`, a moved and a copied folder.
+open shortcuts, `status.cmd`, `change_python`, `make_self_contained`, a moved and a copied folder.

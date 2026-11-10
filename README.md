@@ -141,7 +141,7 @@ The taskbar grouping is already set up for you. To pass your own values, use `ar
 - `code/pyapp/generated/.python-version`
 - `code/pyapp/generated/auto_generated_icons.json`
 
-**As an offline folder.** Run `code/pyapp/dev_tools/make_portable.cmd` and accept the settings it shows. Copy the whole folder to the other PC and run Setup there to create the shortcuts. Nothing is downloaded, and the environment re-links itself to the copied Python. The folder now contains Python and third-party packages, so [their licenses apply too](LICENSE.md).
+**As a self-contained folder.** Run `code/pyapp/dev_tools/make_self_contained.cmd` and accept the settings it shows. Copy the whole folder to the other PC, e.g. as a zip: a Git clone is not enough, because Git ignores the local uv, Python and packages. Run Setup there once to create the shortcuts. Nothing is downloaded or installed, and the environment re-links itself to the copied Python. `status.cmd` shows whether a project is self-contained. The folder now contains Python and third-party packages, so [their licenses apply too](LICENSE.md).
 
 Before you publish your app, replace the license placeholder in [`LICENSE.md`](LICENSE.md).
 
@@ -212,7 +212,7 @@ Double-click any tool in `code/pyapp/dev_tools`, or use **`Dev Menu.cmd`** to re
 | `find_imports` | Find the packages your code imports and add the missing ones |
 | `package_terminal` | Open a command prompt with the environment active and uv on PATH |
 | `change_python` / `update_python` | Switch Python version, or update to the newest patch |
-| `make_portable` | Move uv, Python and packages into this folder |
+| `make_self_contained` | Put uv, Python and packages into this folder, so it runs offline on other PCs |
 | `export_requirements` | Write a pinned `requirements.txt` from `uv.lock` |
 | `status` | Show the state of uv, Python, the environment, the lock file and the shortcuts |
 | `clean` | Delete logs, crash logs or per-run diagnostics |

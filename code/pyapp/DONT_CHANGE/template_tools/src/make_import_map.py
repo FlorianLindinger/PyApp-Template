@@ -239,7 +239,7 @@ def top_projects(count: int) -> List[str]:
 class _CacheEntry(TypedDict, total=False):
     name: str
     imports: List[str]
-    fetched: str  # ISO date the wheel was read; missing in caches of older versions of this tool
+    fetched: str  # ISO date the wheel was read
 
 
 def _today() -> datetime.date:

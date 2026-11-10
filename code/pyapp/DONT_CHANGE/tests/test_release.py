@@ -57,7 +57,7 @@ class ChangelogTests(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             release.unreleased_notes(result)
 
-    def test_the_older_heading_form_works(self):
+    def test_an_unreleased_section_can_already_name_its_version(self):
         text = "## 0.0.1 - unreleased\n\n- x\n"
         self.assertEqual(release.unreleased_notes(text), "- x")
         self.assertIn("## 0.0.2 - 2026-02-02", release.with_released_changelog(text, "0.0.2", "2026-02-02"))

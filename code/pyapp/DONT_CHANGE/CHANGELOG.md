@@ -25,6 +25,7 @@ The first versioned release; it contains every change below.
 - Settings edits by the launcher are never hidden by an outdated cached bytecode file of `developer_settings.py`.
 - A failed `release` puts the version and the changelog back and leaves no half-written zip, so running it again makes the same release.
 - `find_imports` treats folders of the app that are namespace packages (no `__init__.py`) as local, and lists every installed package that provides a shared name such as `google` as "ambiguous" (unchecked) instead of silently picking one. The missing-package menu picks the installed package that contains the missing module.
+- The `make_portable` dev tool is now `make_self_contained`. It explains first what it puts into the folder and how to hand the folder over (copy it, e.g. as a zip, not a Git clone; then run Setup there). `status` shows whether the project is self-contained. In `developer_settings.py`, `python_source`, `uv_prefer` and `uv_install_if_missing` are now together under "Where uv and Python come from".
 - `make_import_map` reads cached projects again after 30 days (`--max-age-days`), or all of them with `--refresh`; the map's header says when the package data was read.
 
 ### 2026-11-08 - clearer development tools
