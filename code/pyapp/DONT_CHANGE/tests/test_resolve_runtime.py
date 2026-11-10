@@ -3,8 +3,12 @@
 from __future__ import annotations
 
 import os
+import shutil
+import subprocess
 import sys
+import tempfile
 import unittest
+from pathlib import Path
 from typing import List
 from unittest import mock
 
@@ -107,6 +111,81 @@ class CacheTests(unittest.TestCase):
 
     def test_non_ascii_paths_are_marked(self):
         self.assertTrue(tool.cache_text("C:\\Müller\\uv.exe", "p", "s").startswith("rem utf-8"))
+
+
+# Stands in for resolve_runtime.bat: counts its runs and writes the cache like resolve_runtime.py.
+FAKE_RESOLVER_BAT = '@echo off\r\n"%PYAPP_TEST_PYTHON%" "%~dp0fake_resolve.py" "%PYAPP_STAMP%"\r\n'
+FAKE_RESOLVER_PY = """
+import sys
+from pathlib import Path
+
+root = Path(__file__).resolve().parent.parent
+with open(root / "resolved.txt", "a") as counter:
+    counter.write("x")
+fake = str(root / "fake.exe")
+stamp = sys.argv[1].replace("%", "%%")
+lines = ["rem ascii", f'set "PYAPP_UV={fake}"', f'set "PYAPP_PYTHON={fake}"', f'set "PYAPP_CACHED_STAMP={stamp}"']
+(root / "tmp" / "runtime.cmd").write_text("\\n".join(lines) + "\\n", encoding="utf-8")
+"""
+SETTINGS = '# settings\npython_version = "3.14"\nuv_version: str = ""  # any\nprogram_name = "x"\n'
+
+
+@unittest.skipUnless(os.name == "nt", "Windows only")
+class RuntimeCacheTests(unittest.TestCase):
+    """bootstrap/ensure_runtime.bat: when the cached uv and Python can be reused."""
+
+    def project(self) -> Path:
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        root = Path(directory.name)
+        bootstrap = root / "DONT_CHANGE" / "bootstrap"
+        bootstrap.mkdir(parents=True)
+        shutil.copyfile(DONT_CHANGE / "bootstrap" / "ensure_runtime.bat", bootstrap / "ensure_runtime.bat")
+        (bootstrap / "resolve_runtime.bat").write_bytes(FAKE_RESOLVER_BAT.encode("ascii"))
+        (bootstrap / "fake_resolve.py").write_text(FAKE_RESOLVER_PY, encoding="utf-8")
+        (root / "DONT_CHANGE" / "fake.exe").touch()
+        (root / "generated").mkdir()
+        (root / "generated" / ".python-version").write_text("3.14\n", encoding="utf-8")
+        (root / "developer_settings.py").write_text(SETTINGS, encoding="utf-8")
+        return root
+
+    def resolutions(self, root: Path) -> int:
+        """Run ensure_runtime.bat; return how often the runtime has been resolved so far."""
+        # Fixed test batch file in a temporary folder.
+        subprocess.run(  # noqa: S603
+            ["cmd.exe", "/d", "/c", str(root / "DONT_CHANGE" / "bootstrap" / "ensure_runtime.bat")],  # noqa: S607
+            env={**os.environ, "PYAPP_TEST_PYTHON": sys.executable},
+            check=True,
+            capture_output=True,
+        )
+        counter = root / "DONT_CHANGE" / "resolved.txt"
+        return len(counter.read_text(encoding="utf-8")) if counter.exists() else 0
+
+    def edit_unnoticeably(self, path: Path, old: str, new: str) -> None:
+        """Same size and modification time: what the old time-and-size stamp could not see."""
+        modified = path.stat().st_mtime
+        path.write_text(path.read_text(encoding="utf-8").replace(old, new), encoding="utf-8")
+        os.utime(str(path), (modified, modified))
+
+    def test_unchanged_projects_reuse_the_cache(self):
+        root = self.project()
+        self.assertEqual(self.resolutions(root), 1)
+        self.assertEqual(self.resolutions(root), 1)
+
+    def test_a_same_size_edit_of_a_bootstrap_setting_resolves_again(self):
+        root = self.project()
+        self.resolutions(root)
+        self.edit_unnoticeably(root / "developer_settings.py", '"3.14"', '"3.13"')
+        self.assertEqual(self.resolutions(root), 2)
+        self.edit_unnoticeably(root / "generated" / ".python-version", "3.14", "3.13")
+        self.assertEqual(self.resolutions(root), 3)
+
+    def test_special_characters_in_values_keep_the_cache_working(self):
+        root = self.project()
+        settings = root / "developer_settings.py"
+        settings.write_text(SETTINGS.replace('""  # any', '">=0.9"  # a & b | c "q" 100% <x> ^up'), encoding="utf-8")
+        self.assertEqual(self.resolutions(root), 1)
+        self.assertEqual(self.resolutions(root), 1)
 
 
 if __name__ == "__main__":

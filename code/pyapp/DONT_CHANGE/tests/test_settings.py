@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import ast
+import importlib.util
+import os
+import py_compile
 import re
 import tempfile
 import types
@@ -208,6 +211,17 @@ class EditingTests(unittest.TestCase):
             module = load()
             self.assertEqual((module.uv_version, module.last_line), ("0.2.0", 1))
             self.assertIn(")  # note", path.read_bytes().decode("utf-8"))
+
+    def test_a_quick_edit_of_the_same_length_is_not_hidden_by_old_bytecode(self):
+        with support.temporary_settings() as (path, load):
+            config.edit_settings({"uv_cache": "local"})
+            py_compile.compile(str(path), cfile=importlib.util.cache_from_source(str(path)))
+            self.assertEqual(load().uv_cache, "local")
+            modified = path.stat().st_mtime
+            config.edit_settings({"uv_cache": "share"})  # same length
+            # Same size and modification time as recorded in the .pyc: it would still look valid.
+            os.utime(str(path), (modified, modified))
+            self.assertEqual(load().uv_cache, "share")
 
     def test_strings_with_line_breaks_and_controls_stay_valid_python(self):
         value = 'a\nb\rc\td\x00e\x7f "q" \\ 名前 😀'

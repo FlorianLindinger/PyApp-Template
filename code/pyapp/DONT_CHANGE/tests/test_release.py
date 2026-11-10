@@ -86,5 +86,34 @@ class ZipTests(unittest.TestCase):
                 release.build_zip("1.2.4", [release.LAUNCHER_FOLDER + "backend_settings.py"])
 
 
+class FailedReleaseTests(unittest.TestCase):
+    def test_a_failed_zip_leaves_version_and_changelog_unchanged(self):
+        with tempfile.TemporaryDirectory() as folder:
+            settings, changelog = Path(folder) / "backend_settings.py", Path(folder) / "CHANGELOG.md"
+            settings.write_bytes(b'LAUNCHER_VERSION = "1.2.3"\r\n')
+            changelog.write_bytes(CHANGELOG.replace("\n", "\r\n").encode("utf-8"))
+            before = (settings.read_bytes(), changelog.read_bytes())
+            with mock.patch.multiple(
+                release,
+                SETTINGS_PATH=settings,
+                CHANGELOG_PATH=changelog,
+                git=mock.Mock(return_value=""),
+                tracked_launcher_files=mock.Mock(return_value=[]),
+                build_zip=mock.Mock(side_effect=OSError("disk full")),
+            ), mock.patch("builtins.print"), self.assertRaises(OSError):
+                release.main(["patch", "--skip-tests"])
+            self.assertEqual((settings.read_bytes(), changelog.read_bytes()), before)
+
+    def test_a_failed_zip_check_leaves_no_temporary_file(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            launcher = root / release.LAUNCHER_FOLDER
+            launcher.mkdir(parents=True)
+            (launcher / "backend_settings.py").write_text('LAUNCHER_VERSION = "1.2.3"\n', encoding="utf-8")
+            with mock.patch.object(release, "PROJECT_ROOT", root), self.assertRaises(RuntimeError):
+                release.build_zip("1.2.4", [release.LAUNCHER_FOLDER + "backend_settings.py"])
+            self.assertEqual(list((root / "dist").iterdir()), [])
+
+
 if __name__ == "__main__":
     unittest.main()

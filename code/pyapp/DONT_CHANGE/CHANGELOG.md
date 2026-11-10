@@ -21,6 +21,10 @@ The first versioned release; it contains every change below.
 - If the watchdog fails after starting the app, it ends the app and its child processes instead of leaving them running unregistered.
 - Package changes (dev tools, missing-package recovery, and a launch that has to sync the environment) are refused while the app runs, before anything is changed.
 - A warning says when regenerating `pyproject.toml` drops `[tool.uv.sources]` (e.g. from `uv add --git`), and suggests a direct reference in `packages` instead.
+- A start notices every change of the settings that choose uv and Python, and of `.python-version`, also an edit of the same length within the same minute; the first start after this update looks up uv and Python once more.
+- Settings edits by the launcher are never hidden by an outdated cached bytecode file of `developer_settings.py`.
+- A failed `release` puts the version and the changelog back and leaves no half-written zip, so running it again makes the same release.
+- `find_imports` treats folders of the app that are namespace packages (no `__init__.py`) as local, and lists every installed package that provides a shared name such as `google` as "ambiguous" (unchecked) instead of silently picking one. The missing-package menu picks the installed package that contains the missing module.
 - `make_import_map` reads cached projects again after 30 days (`--max-age-days`), or all of them with `--refresh`; the map's header says when the package data was read.
 
 ### 2026-11-08 - clearer development tools

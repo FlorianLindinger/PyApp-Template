@@ -42,6 +42,12 @@ class LauncherFileTests(unittest.TestCase):
         batch = (DONT_CHANGE / "bootstrap" / "ensure_runtime.bat").read_text(encoding="utf-8")
         self.assertIn("..\\..\\generated\\.python-version", batch)
 
+    def test_the_runtime_cache_stamp_names_every_bootstrap_setting(self):
+        from pyapp.DONT_CHANGE.scripts.config import BOOTSTRAP_SETTINGS
+
+        batch = (DONT_CHANGE / "bootstrap" / "ensure_runtime.bat").read_text(encoding="utf-8")
+        self.assertEqual(sorted(re.findall(r'if "%%A"=="(\w+)"', batch)), sorted(BOOTSTRAP_SETTINGS))
+
     def test_the_bootstrap_avoids_what_antivirus_programs_distrust(self):
         for name in ("resolve_runtime.py", "ensure_runtime.bat", "run.bat"):
             text = (DONT_CHANGE / "bootstrap" / name).read_text(encoding="utf-8").lower()

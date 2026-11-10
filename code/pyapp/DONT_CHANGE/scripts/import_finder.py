@@ -28,7 +28,8 @@ from pyapp.DONT_CHANGE.backend_settings import (
 )
 
 Requirement = namedtuple("Requirement", "distribution imports source files optional")
-"""source: "installed" (from package metadata), "mapping" (bundled list) or "guess" (same as import name)."""
+"""source: "installed" (from package metadata), "ambiguous" (one of several installed packages that provide
+the import name), "mapping" (bundled list) or "guess" (same as import name)."""
 
 
 def standard_library_names() -> Set[str]:
@@ -79,17 +80,21 @@ def local_module_names(root: str = PYTHON_SCRIPTS_DIR) -> Set[str]:
         folders.add(str(Path(main_script_path()).parent))
     names = set()
     for folder in folders:
-        for entry in [entry.name for entry in Path(folder).iterdir()]:
-            path = str(Path(folder) / entry)
-            if entry.endswith((".py", ".pyw")):
-                names.add(entry.rsplit(".", 1)[0])
-            elif (
-                Path(path).is_dir()
-                and not _excluded(entry)
-                and any(f.endswith(".py") for f in [entry.name for entry in Path(path).iterdir()])
-            ):
-                names.add(entry)
+        for entry in Path(folder).iterdir():
+            if entry.name.endswith((".py", ".pyw")):
+                names.add(entry.name.rsplit(".", 1)[0])
+            elif entry.is_dir() and entry.name.isidentifier() and not _excluded(entry.name) and _has_python(entry):
+                names.add(entry.name)
     return names
+
+
+def _has_python(folder: Path) -> bool:
+    """A Python file anywhere below: a namespace package (no __init__.py) may hold them only in subfolders."""
+    for _, subfolders, files in os.walk(str(folder)):
+        if any(name.endswith(".py") for name in files):
+            return True
+        subfolders[:] = [name for name in subfolders if not _excluded(name)]
+    return False
 
 
 def _handler_names(handler: ast.ExceptHandler) -> List[str]:
@@ -194,14 +199,26 @@ def imports_in_project(root: str = PYTHON_SCRIPTS_DIR):
 
 
 def installed_import_map(site_packages: Optional[str] = None) -> Dict[str, str]:
-    """{top-level import name: distribution} from installed metadata (top_level.txt or RECORD)."""
+    """{top-level import name: distribution} from installed metadata, for names exactly one distribution provides.
+
+    A namespace (e.g. "google") shared by several distributions has no single answer; see
+    installed_providers() and provider_of_module().
+    """
+    return {top: names[0] for top, names in installed_providers(site_packages).items() if len(names) == 1}
+
+
+def _site_packages(site_packages: Optional[str]) -> str:
+    return str(Path(VENV_DIR) / "Lib" / "site-packages") if site_packages is None else site_packages
+
+
+def installed_providers(site_packages: Optional[str] = None) -> Dict[str, List[str]]:
+    """{top-level import name: sorted distributions providing it} from metadata (top_level.txt or RECORD)."""
     from importlib import metadata
 
-    if site_packages is None:
-        site_packages = str(Path(VENV_DIR) / "Lib" / "site-packages")
-    result = {}
+    site_packages = _site_packages(site_packages)
+    result: Dict[str, Set[str]] = {}
     if not Path(site_packages).is_dir():
-        return result
+        return {}
     for dist in metadata.distributions(path=[site_packages]):
         name = dist.metadata["Name"]
         if not name:
@@ -218,8 +235,21 @@ def installed_import_map(site_packages: Optional[str] = None) -> Dict[str, str]:
                     continue
                 tops.append(first[:-3] if first.endswith(".py") else first.split(".")[0])
         for top in tops:
-            result.setdefault(top, name)
-    return result
+            result.setdefault(top, set()).add(name)
+    return {top: sorted(names) for top, names in result.items()}
+
+
+def provider_of_module(import_name: str, site_packages: Optional[str] = None) -> Optional[str]:
+    """The installed distribution whose files contain a dotted module, e.g. "google.cloud.storage"."""
+    from importlib import metadata
+
+    module = import_name.replace(".", "/")
+    # A package folder ("google/cloud/storage/...") or a module file (".py", ".pyd", ".cp314-win_amd64.pyd").
+    wanted = (module + "/", module + ".")
+    for dist in metadata.distributions(path=[_site_packages(site_packages)]):
+        if any("/".join(file.parts).startswith(wanted) for file in dist.files or []):
+            return dist.metadata["Name"] or None
+    return None
 
 
 def bundled_mapping(path: str = IMPORT_MAPPING_PATH) -> Dict[str, str]:
@@ -239,24 +269,28 @@ def bundled_mapping(path: str = IMPORT_MAPPING_PATH) -> Dict[str, str]:
 def find_requirements(root: str = PYTHON_SCRIPTS_DIR, site_packages: Optional[str] = None):
     """Return (list of Requirement sorted by distribution, list of unparsable-file messages)."""
     imports, problems = imports_in_project(root)
-    installed = installed_import_map(site_packages)
+    providers = installed_providers(site_packages)
     mapping = bundled_mapping()
     distributions: Dict[str, Tuple[str, str]] = {}  # lowercase name -> (distribution, source)
     import_names: Dict[str, Set[str]] = {}
     files_by_distribution: Dict[str, Set[str]] = {}
     all_optional: Dict[str, bool] = {}
     for name, (files, optional) in imports.items():
-        if name in installed:
-            distribution, source = installed[name], "installed"
+        if len(providers.get(name, [])) > 1:
+            # Several installed packages share this name: offer each, and let the user choose.
+            candidates = [(distribution, "ambiguous") for distribution in providers[name]]
+        elif name in providers:
+            candidates = [(providers[name][0], "installed")]
         elif name in mapping:
-            distribution, source = mapping[name], "mapping"
+            candidates = [(mapping[name], "mapping")]
         else:
-            distribution, source = name, "guess"
-        key = distribution.lower()
-        distributions.setdefault(key, (distribution, source))
-        import_names.setdefault(key, set()).add(name)
-        files_by_distribution.setdefault(key, set()).update(files)
-        all_optional[key] = all_optional.get(key, True) and optional
+            candidates = [(name, "guess")]
+        for distribution, source in candidates:
+            key = distribution.lower()
+            distributions.setdefault(key, (distribution, source))
+            import_names.setdefault(key, set()).add(name)
+            files_by_distribution.setdefault(key, set()).update(files)
+            all_optional[key] = all_optional.get(key, True) and optional
     requirements = [
         Requirement(
             distribution, sorted(import_names[key]), source, sorted(files_by_distribution[key]), all_optional[key]
@@ -269,4 +303,8 @@ def find_requirements(root: str = PYTHON_SCRIPTS_DIR, site_packages: Optional[st
 def distribution_for_import(import_name: str, site_packages: Optional[str] = None) -> str:
     """Best distribution name for one missing import (used by the missing-package menu)."""
     top = import_name.split(".")[0]
-    return installed_import_map(site_packages).get(top) or bundled_mapping().get(top) or top
+    providers = installed_providers(site_packages).get(top, [])
+    if len(providers) > 1:
+        # A shared namespace: only the distribution that contains this very module is the answer.
+        return provider_of_module(import_name, site_packages) or top
+    return (providers[0] if providers else None) or bundled_mapping().get(top) or top

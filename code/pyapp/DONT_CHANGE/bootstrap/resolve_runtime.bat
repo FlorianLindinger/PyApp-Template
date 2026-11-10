@@ -4,7 +4,8 @@ rem Gets any working uv and Python, then lets resolve_runtime.py do the real wor
 rem ensure_runtime.bat when the cache is missing or stale. Only batch and programs built into Windows
 rem (curl, tar), because company policies often block PowerShell scripts. No parenthesized blocks with
 rem paths in them: a folder such as "Program Files (x86)" would end the block early.
-set "stamp=%~1"
+rem PYAPP_STAMP comes from ensure_runtime.bat (see there).
+set "stamp=%PYAPP_STAMP%"
 set "bootstrap=%~dp0"
 set "pyapp=%~dp0..\.."
 set "settings=%pyapp%\developer_settings.py"

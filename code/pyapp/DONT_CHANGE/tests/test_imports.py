@@ -80,6 +80,43 @@ class ScanTests(unittest.TestCase):
         self.assertEqual(mapping.get("yaml"), "PyYAML")
         self.assertEqual(import_finder.distribution_for_import("yaml.loader", str(site)), "PyYAML")
 
+    def test_local_namespace_packages_are_not_install_candidates(self):
+        write(self.root, "main.py", "from local_ns.sub import module\nimport data_only\n")
+        write(self.root, "local_ns/sub/module.py")  # no __init__.py anywhere, and no .py at its top
+        write(self.root, "data_only/readme.txt")
+        found, _ = import_finder.imports_in_project(self.root)
+        self.assertEqual(sorted(found), ["data_only"])
+
+    def install(self, site: Path, name: str, files: str):
+        info = f"{name}-1.0.dist-info"
+        write(site, f"{info}/METADATA", f"Metadata-Version: 2.1\nName: {name}\nVersion: 1.0\n")
+        write(site, f"{info}/RECORD", "".join(f"{file},,\n" for file in files.split()))
+        for file in files.split():  # newer Pythons list only the RECORD entries that exist
+            write(site, file)
+
+    def test_a_shared_namespace_is_ambiguous_not_guessed(self):
+        site = Path(self.root, "site-packages")
+        self.install(site, "google-auth", "google/auth/__init__.py")
+        self.install(site, "google-cloud-storage", "google/cloud/storage/__init__.py")
+        self.install(site, "PyYAML", "yaml/__init__.py")
+        self.assertEqual(
+            import_finder.installed_providers(str(site))["google"], ["google-auth", "google-cloud-storage"]
+        )
+        self.assertNotIn("google", import_finder.installed_import_map(str(site)))
+        self.assertEqual(import_finder.installed_import_map(str(site))["yaml"], "PyYAML")
+        # A missing module of the namespace: the distribution that contains it, else no false answer.
+        self.assertEqual(
+            import_finder.distribution_for_import("google.cloud.storage", str(site)), "google-cloud-storage"
+        )
+        self.assertEqual(import_finder.distribution_for_import("google.protobuf", str(site)), "google")
+
+        write(self.root, "main.py", "import google.auth\nimport yaml\n")
+        requirements, _ = import_finder.find_requirements(self.root, str(site))
+        self.assertEqual(
+            [(r.distribution, r.source) for r in requirements],
+            [("google-auth", "ambiguous"), ("google-cloud-storage", "ambiguous"), ("PyYAML", "installed")],
+        )
+
 
 class MappingFileTests(unittest.TestCase):
     def test_bundled_mapping_parses_and_maps_common_names(self):

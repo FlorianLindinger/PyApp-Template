@@ -523,6 +523,22 @@ def _write_settings_source(source: str) -> None:
         ) from error
     with Path(DEV_SETTINGS_PATH).open("w", encoding="utf-8", newline="") as stream:
         stream.write(source)
+    _forget_settings_bytecode()
+
+
+def _forget_settings_bytecode() -> None:
+    """Delete the cached bytecode of developer_settings.py after the launcher changed it.
+
+    Python accepts a .pyc whose recorded source size and modification time (whole seconds) still
+    match, so an equally long edit within the same second would otherwise be read as the old
+    value. Every interpreter version's copy goes: the launcher and the app may use different ones.
+    """
+    settings_path = Path(DEV_SETTINGS_PATH)
+    for cached in (settings_path.parent / "__pycache__").glob(settings_path.stem + ".*.pyc"):
+        try:
+            cached.unlink()
+        except OSError:
+            pass  # in use or already gone; Python then compiles the source anyway if it changed
 
 
 def describe_python_request(value: str) -> str:

@@ -130,10 +130,12 @@ def find_imports_and_add():
         print()
         print_success("Every imported package is already declared.")
         return
-    selected = [not r.optional for r in candidates]
+    # An ambiguous name has several candidates; none is checked, so the user picks the right one.
+    selected = [not r.optional and r.source != "ambiguous" for r in candidates]
     print_heading("Packages to add")
     print_info(
-        "installed = found in the environment, mapping = bundled list, guess = same as the import name (check it!)"
+        "installed = found in the environment, ambiguous = one of several installed packages with that name (pick one),"
+        " mapping = bundled list, guess = same as the import name (check it!)"
     )
     while True:
         print()

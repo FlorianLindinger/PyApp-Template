@@ -127,19 +127,22 @@ def build_zip(version: str, files: List[str]) -> Path:
     target = PROJECT_ROOT / "dist" / f"PyApp-Template-launcher-{version}.zip"
     target.parent.mkdir(parents=True, exist_ok=True)
     temporary = target.with_name(target.name + ".tmp")
-    with zipfile.ZipFile(temporary, "w", zipfile.ZIP_DEFLATED) as archive:
-        for name in files:
-            source = PROJECT_ROOT / name
-            if source.is_file():
-                archive.write(source, archive_name(name))
-    with zipfile.ZipFile(temporary) as archive:
-        damaged = archive.testzip()
-        if damaged:
-            raise RuntimeError(f"The zip is damaged at {damaged}.")
-        settings = archive.read("DONT_CHANGE/backend_settings.py").decode("utf-8")
-    if current_version(settings) != version:
-        raise RuntimeError("The zip does not contain the new version.")
-    temporary.replace(target)
+    try:
+        with zipfile.ZipFile(temporary, "w", zipfile.ZIP_DEFLATED) as archive:
+            for name in files:
+                source = PROJECT_ROOT / name
+                if source.is_file():
+                    archive.write(source, archive_name(name))
+        with zipfile.ZipFile(temporary) as archive:
+            damaged = archive.testzip()
+            if damaged:
+                raise RuntimeError(f"The zip is damaged at {damaged}.")
+            settings = archive.read("DONT_CHANGE/backend_settings.py").decode("utf-8")
+        if current_version(settings) != version:
+            raise RuntimeError("The zip does not contain the new version.")
+        temporary.replace(target)
+    finally:
+        temporary.unlink(missing_ok=True)  # a failed attempt leaves no half-written zip
     return target
 
 
@@ -197,11 +200,20 @@ def main(argv: Optional[List[str]] = None) -> int:
         _ui.success("A release is possible. Run this again with patch, minor, major or a version.")
         return 0
 
-    write_text(SETTINGS_PATH, with_version(settings_text, new), settings_crlf)
-    today = datetime.date.today().isoformat()
-    write_text(CHANGELOG_PATH, with_released_changelog(changelog, new, today), changelog_crlf)
-    _ui.step("Building the zip ...")
-    target = build_zip(new, tracked_launcher_files())
+    # The zip is built from the edited files, so they are written first and put back if anything
+    # fails: a retry then makes the same release instead of skipping a version.
+    originals = {path: path.read_bytes() for path in (SETTINGS_PATH, CHANGELOG_PATH)}
+    try:
+        write_text(SETTINGS_PATH, with_version(settings_text, new), settings_crlf)
+        today = datetime.date.today().isoformat()
+        write_text(CHANGELOG_PATH, with_released_changelog(changelog, new, today), changelog_crlf)
+        _ui.step("Building the zip ...")
+        target = build_zip(new, tracked_launcher_files())
+    except BaseException:
+        for path, data in originals.items():
+            path.write_bytes(data)
+        _ui.error(f"The release failed; {SETTINGS_PATH.name} and {CHANGELOG_PATH.name} are unchanged.")
+        raise
     _ui.fields([("Zip", target), ("Size", f"{target.stat().st_size / 1_048_576:.1f} MB")])
     _ui.blank_line()
     _ui.success(f"Launcher {new} is ready. Review the changes, then commit them.")
