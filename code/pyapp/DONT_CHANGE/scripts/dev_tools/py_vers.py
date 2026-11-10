@@ -37,6 +37,8 @@ from pyapp.DONT_CHANGE.scripts.env.venv import (
 )
 from pyapp.DONT_CHANGE.scripts.errors import SettingsError
 
+CANCEL_WORDS = ("q", "quit", "n", "no", "cancel")
+
 
 def cmd_change_python(arguments: List[str]):
     """Set a new python_version and migrate the project to it."""
@@ -53,8 +55,12 @@ def cmd_change_python(arguments: List[str]):
     new = (
         arguments[0]
         if arguments
-        else ask('New python_version (e.g. "3.13", "3.14t", empty = newest stable):').strip().strip('"')
+        else ask('New python_version (e.g. "3.13", "3.14t", empty = newest stable, q = cancel):').strip().strip('"')
     )
+    # Enter already means "newest stable", so cancelling needs a word of its own.
+    if not arguments and new.lower() in CANCEL_WORDS:
+        print_info("Nothing was changed.")
+        return
     problem = python_version_problem(new)
     if problem:
         raise SettingsError(problem)

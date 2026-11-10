@@ -124,6 +124,34 @@ class PushTests(unittest.TestCase):
             self.assertEqual(tool.check_push("input"), 1)
 
 
+class CommitTests(unittest.TestCase):
+    """git_hooks/pre-commit: the staged changes, before they are in any commit."""
+
+    def check(self, staged_diff: str, names: str = "app.py\n") -> int:
+        def fake_git(*arguments: str) -> str:
+            return names if "--name-only" in arguments else staged_diff
+
+        with mock.patch.object(tool, "git", side_effect=fake_git), mock.patch("builtins.print"):
+            return tool.check_commit()
+
+    def diff(self, added: str) -> str:
+        return f"diff --git a/app.py b/app.py\n--- a/app.py\n+++ b/app.py\n@@ -0,0 +1 @@\n+{added}\n"
+
+    def test_a_home_folder_path_stops_the_commit(self):
+        home = "C:" + "\\\\Users\\\\bob\\\\Desktop"  # built in pieces, so this file passes the check itself
+        self.assertEqual(self.check(self.diff(f'path = "{home}"')), 1)
+        found = tool.parse_history(self.diff(f'path = "{home}"'), "staged")
+        self.assertEqual(found[0].where, "app.py (staged)")
+
+    def test_a_secret_stops_the_commit(self):
+        self.assertEqual(self.check(self.diff(f'key = "{AWS_KEY}"')), 1)
+
+    def test_clean_changes_and_accepted_lines_pass(self):
+        self.assertEqual(self.check(self.diff('name = "app"')), 0)
+        self.assertEqual(self.check(self.diff(f'key = "{AWS_KEY}"  # {tool.IGNORE_MARKER}')), 0)
+        self.assertEqual(self.check(""), 0)
+
+
 class HistoryTests(unittest.TestCase):
     LOG = f"""commit abc1234
 

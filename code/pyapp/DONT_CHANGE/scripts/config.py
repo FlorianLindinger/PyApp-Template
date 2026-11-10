@@ -47,6 +47,7 @@ SHORTCUT_KINDS = (
     "logs",
     "crash_logs",
     "open_code",
+    "tools",
 )
 # GitHub Actions an app can choose in github_actions; one data/workflows/<name>.yml each.
 APP_WORKFLOWS = ("leaks",)
@@ -77,6 +78,7 @@ SHORTCUT_NAME_SETTINGS = (
     "open_log_folder_shortcut_name",
     "open_crash_log_folder_shortcut_name",
     "open_code_shortcut_name",
+    "tools_shortcut_name",
 )
 
 
@@ -138,6 +140,38 @@ def parse_requirements(text: str) -> List[str]:
         if line:
             entries.append(line)
     return entries
+
+
+def requirements_file_path(s: Union[ModuleType, SimpleNamespace]) -> Optional[str]:
+    """Absolute path of requirements_path (relative to developer_settings.py), or None."""
+    value = getattr(s, "requirements_path", None)
+    if not isinstance(value, str) or not value:
+        return None  # validate() reports a value that is not a path
+    # Keep os.path.isabs: rooted Windows paths have different pathlib semantics on Python 3.8-3.12.
+    return value if os.path.isabs(value) else os.path.normpath(str(Path(DEV_SETTINGS_PATH).parent / value))  # noqa: PTH117
+
+
+def requirements_file_entries(s: Union[ModuleType, SimpleNamespace]) -> List[str]:
+    """The packages of requirements_path ([] without one)."""
+    path = requirements_file_path(s)
+    if path is None:
+        return []
+    try:
+        text = Path(path).read_text(encoding="utf-8-sig")
+    except OSError as error:
+        raise SettingsError(f'requirements_path: "{path}" cannot be read ({error.strerror or error}).') from None
+    return parse_requirements(text)
+
+
+def all_packages(s: Union[ModuleType, SimpleNamespace]) -> List[str]:
+    """What the environment gets: "packages", then the packages of requirements_path."""
+    return list(s.packages) + requirements_file_entries(s)
+
+
+def requirement_key(requirement: str) -> str:
+    """The normalized project name of a requirement, e.g. "Pillow_SIMD>=9" -> "pillow-simd"."""
+    match = re.match(r"\s*([A-Za-z0-9][A-Za-z0-9._-]*)", requirement)
+    return re.sub(r"[-_.]+", "-", match.group(1) if match else requirement).lower()
 
 
 def settings() -> ModuleType:
@@ -349,6 +383,7 @@ def validate(module: Optional[Union[ModuleType, SimpleNamespace]] = None) -> Non
         )
     else:
         need("packages", lambda v: False, 'use a list such as ["requests", "numpy>=2"] or a triple-quoted block')
+    problems.extend(_requirements_file_problems(s, entries if isinstance(entries, (list, tuple)) else []))
     for name in ("traceback_lines_before", "traceback_lines_after"):
         need(
             name,
@@ -539,6 +574,31 @@ def _forget_settings_bytecode() -> None:
             cached.unlink()
         except OSError:
             pass  # in use or already gone; Python then compiles the source anyway if it changed
+
+
+def _requirements_file_problems(module: Union[ModuleType, SimpleNamespace], packages: Iterable[object]) -> List[str]:
+    value = getattr(module, "requirements_path", None)
+    if value is None:
+        return []
+    if not isinstance(value, str) or not value.strip():
+        return ['requirements_path: use the path of a requirements file, such as "..\\\\requirements.txt", or None']
+    try:
+        entries = requirements_file_entries(module)
+    except SettingsError as error:
+        return [str(error)]
+    problems = [
+        f'requirements_path: {entry!r} is not a package requirement such as "numpy>=2" '
+        "(options such as -r or -e are not supported)."
+        for entry in entries
+        if not REQUIREMENT_START.match(entry)
+    ]
+    in_packages = {requirement_key(p) for p in packages if isinstance(p, str)}
+    problems.extend(
+        f'requirements_path: "{requirement_key(entry)}" is also in "packages"; keep it in one place.'
+        for entry in entries
+        if requirement_key(entry) in in_packages
+    )
+    return problems
 
 
 def describe_python_request(value: str) -> str:

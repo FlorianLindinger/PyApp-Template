@@ -155,6 +155,7 @@ Before you publish your app, replace the license placeholder in [`LICENSE.md`](L
 | **&lt;name&gt; - Settings** | Opens `code/settings.py` |
 | **&lt;name&gt; - Edit Code** | Opens `main.py` in VS Code, or Notepad if VS Code isn't installed |
 | **&lt;name&gt; - Logs** / **Crash Logs** | Opens the matching folder |
+| **&lt;name&gt; - Tools** | A menu for the people using the app: check the setup, repair or add packages, make the folder run offline on other PCs, delete logs, remove the shortcuts |
 
 Set a shortcut's name to `None` in the settings to remove it. To add shortcuts to the desktop, use `desktop_shortcuts`, for example `["no_terminal"]`. Every copy of the project has its own taskbar group, so two apps made from this template never mix their windows.
 
@@ -172,6 +173,7 @@ All of these are in `developer_settings.py`. Mistakes are reported with the sett
 | `log_path`, `crash_log_path` | Log file locations; both accept date codes |
 | `stop_timeout_seconds` | How long the app gets to close before it is terminated |
 | `main_script_path` | Which file to run, if it isn't `main.py` |
+| `packages`, `requirements_path` | The packages the app needs; `requirements_path` adds those of a requirements file, which the launcher only reads |
 
 <details>
 <summary><b>Choosing where uv, Python and the packages live</b></summary>

@@ -9,7 +9,15 @@ from pathlib import Path
 from typing import Dict, List, Optional, Pattern, Tuple, Union
 
 from pyapp.DONT_CHANGE import backend_settings as paths
-from pyapp.DONT_CHANGE.scripts.config import describe_python_request, display_path, settings, validate
+from pyapp.DONT_CHANGE.scripts.config import (
+    all_packages,
+    describe_python_request,
+    display_path,
+    requirements_file_entries,
+    requirements_file_path,
+    settings,
+    validate,
+)
 from pyapp.DONT_CHANGE.scripts.console_tools import (
     ask,
     print_choices,
@@ -182,7 +190,7 @@ def cmd_status(arguments: List[str]):
         else "no (uses the shared uv and Python; make_self_contained changes that)"
     )
     ignored = diagnostics_summary()
-    in_sync = declared_dependencies() == list(s.packages)
+    in_sync = declared_dependencies() == all_packages(s)
     sections: Dict[str, List[Union[Tuple[str, object], Tuple[str, object, bool]]]] = {
         "Project": [
             ("Program", s.program_name),
@@ -206,6 +214,12 @@ def cmd_status(arguments: List[str]):
         ],
         "Packages": [
             ("packages", ", ".join(s.packages) or "(none)"),
+            (
+                "requirements_path",
+                f"{display_path(requirements_file_path(s) or '')}: {', '.join(requirements_file_entries(s)) or '(none)'}"
+                if requirements_file_path(s)
+                else "(none)",
+            ),
             (
                 "pyproject.toml",
                 "matches developer_settings.py" if in_sync else "differs (updated on the next start or dev tool)",

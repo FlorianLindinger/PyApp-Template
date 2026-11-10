@@ -5,6 +5,7 @@ because something deleted later is still readable in the history. Secrets are ma
 
     check_git_leaks.bat                current files and the whole history
     check_git_leaks.bat --no-history   current files only
+    check_git_leaks.py --committing    used by git_hooks/pre-commit: only the staged changes
     check_git_leaks.py --pushing       used by git_hooks/pre-push: only the commits being pushed
 
 Exit code 1 means secrets were found. Personal data (home folder paths, email addresses, machine
@@ -171,8 +172,11 @@ def scan_current_files() -> List[Finding]:
     return found
 
 
-def parse_history(log: str) -> List[Finding]:
-    """Findings in the added lines of a `git log -p --format="commit %h"` output."""
+def parse_history(log: str, place: str = "") -> List[Finding]:
+    """Findings in the added lines of a `git log -p --format="commit %h"` or `git diff` output.
+
+    place names where a finding is, e.g. "staged"; by default the commit of each change.
+    """
     found: List[Finding] = []
     commit = path = previous = ""
     for line in log.splitlines():
@@ -181,7 +185,7 @@ def parse_history(log: str) -> List[Finding]:
         elif previous.startswith("--- ") and line.startswith("+++ "):
             path = line[6:] if line.startswith("+++ b/") else ""
         elif line.startswith("+") and path:
-            found += line_findings(line[1:], path, f"{path} (commit {commit})")
+            found += line_findings(line[1:], path, f"{path} ({place or 'commit ' + commit})")
         previous = line
     return found
 
@@ -285,11 +289,38 @@ def check_push(hook_input: str) -> int:
     return 0
 
 
+def check_commit() -> int:
+    """For the pre-commit hook: the staged changes, so a leak never gets into a commit at all.
+
+    Stopping here is easier to fix than at the push: nothing has to be taken out of a commit. The
+    commit email is left to the pre-push check, as it is not part of the staged changes.
+    """
+    diff = git("diff", "--cached", "-p", "--unified=0", "--no-color", "--no-ext-diff")
+    findings = parse_history(diff, "staged")
+    for name in set(git("diff", "--cached", "--name-only", "--diff-filter=AR").splitlines()):
+        if name:
+            findings += file_name_findings(name, f"{name} (staged)")
+    if not findings:
+        return 0  # silent: this runs on every commit
+    _ui.heading("Leak check before this commit")
+    show("Secrets in the staged changes", [f for f in findings if f.level == SECRET])
+    show("Personal data in the staged changes", [f for f in findings if f.level == PERSONAL])
+    _ui.blank_line()
+    _ui.error(
+        'Commit stopped. Remove these from the files, or put "leak-check: ignore" on a line that is fine.\n'
+        "To commit anyway, once: git commit --no-verify"
+    )
+    return 1
+
+
 def main(argv: Optional[List[str]] = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--no-history", action="store_true", help="check the current files only")
+    parser.add_argument("--committing", action="store_true", help="for the pre-commit hook: the staged changes")
     parser.add_argument("--pushing", action="store_true", help="for the pre-push hook: reads its input")
     arguments = parser.parse_args(argv)
+    if arguments.committing:
+        return check_commit()
     if arguments.pushing:
         return check_push(sys.stdin.read())
 

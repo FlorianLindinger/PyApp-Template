@@ -11,7 +11,7 @@ import tempfile
 import types
 import unittest
 from pathlib import Path
-from typing import Callable, Iterable
+from typing import Callable, Iterable, List, Set
 from unittest import mock
 
 import support
@@ -60,6 +60,20 @@ class ValidationTests(unittest.TestCase):
         finite = append(["stop_timeout_seconds = 0", "stop_timeout_seconds = 2.5"])
         with support.temporary_settings(finite) as (_, load):
             config.validate(load())
+
+    def test_the_bootstrap_tags_name_exactly_the_settings_the_bootstrap_reads(self):
+        # "[bootstrap]" in a setting's comment tells people its extra rules (validated below).
+        tagged: Set[str] = set()
+        comments: List[str] = []
+        for line in (CODE / "pyapp" / "developer_settings.py").read_text(encoding="utf-8").splitlines():
+            if line.startswith("#"):
+                comments.append(line)
+                continue
+            assignment = re.match(r"(\w+)\s*(?::[^=]*)?=", line)
+            if assignment and any("[bootstrap]" in comment for comment in comments):
+                tagged.add(assignment.group(1))
+            comments = []
+        self.assertEqual(sorted(tagged), sorted(config.BOOTSTRAP_SETTINGS))
 
     def test_bootstrap_settings_must_be_unique_and_unindented(self):
         lines = ['uv_cache = "local"', "if True:", '    uv_prefer = "local"']

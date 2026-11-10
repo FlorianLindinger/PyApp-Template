@@ -63,7 +63,7 @@ what files do i want to not sync? how about code/backend/packages/_USE dev_tools
 
 fix gitignore for version indicator of Python when change
 
-
+ask if faster startup possible
 
 
 
@@ -252,6 +252,7 @@ do i want python.bat and pip.bat in portable_python? only if i also add a termin
 open_terminal_with_set_python_and_pip_target.bat
 
 readme mentions:
+mentuion in readme workflows and tools,auto package mapping for missong imports,...
 remove maxi from screenshots and all data? ask AI if anything leaks?
 comparison image: launcher batch,terminal,tkinter base icon and name with just my app on taskbar
 why no compilation: cant inspect and modify code and AV trigger and slow start and hard to git share license and ... ask AI, transfer large file,  slow first run if compile at user end,...

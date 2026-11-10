@@ -217,7 +217,8 @@ def handle_missing_module(missing: str, app_id: str, new_terminal_was_created: b
         print()
         print_warn(f'The package for "{top}" is not installed.')
         print_choices(label for _, label in options)
-        answer = ask(f"What now? [1-{len(options)}]").strip()
+        # Enter: the last option, quit.
+        answer = ask(f"What now? [1-{len(options)}, Enter = quit]").strip() or str(len(options))
         if not answer.isdigit() or not 1 <= int(answer) <= len(options):
             continue
         action = options[int(answer) - 1][0]

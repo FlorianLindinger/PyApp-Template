@@ -31,6 +31,7 @@ from pyapp.DONT_CHANGE.backend_settings import (
     LAUNCHER_OPEN_SETTINGS,
     LAUNCHER_STOP,
     LAUNCHER_TERMINAL,
+    LAUNCHER_TOOLS,
     LOG_ICON_PATH,
     NO_TERMINAL_APP_ID_SUFFIX,
     OPEN_CODE_ICON_PATH,
@@ -459,6 +460,15 @@ def shortcut_definitions(
             targets["open_code"],
             None,
             f"Open the {name} main script",
+        ),
+        (
+            "tools",
+            s.tools_shortcut_name,
+            SETTINGS_ICON_PATH,  # no icon of its own yet
+            LAUNCHER_TOOLS,
+            "",
+            None,
+            f"Tools for {name}: repair, add packages, make the folder self-contained",
         ),
     ]
     if s.user_settings_path:

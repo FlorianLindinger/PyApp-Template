@@ -392,7 +392,8 @@ def handle_version_change(current: str, s: Union[ModuleType, SimpleNamespace], i
         )
     while True:
         try:
-            answer = ask(f"What now? [1-{len(choices)}]").strip()
+            # Enter: the last choice, cancel this launch.
+            answer = ask(f"What now? [1-{len(choices)}, Enter = cancel]").strip() or str(len(choices))
         except EOFError:
             raise SetupError(
                 "python_version changed, but no answer could be read; run the change_python dev tool."

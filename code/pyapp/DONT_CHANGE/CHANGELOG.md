@@ -26,6 +26,10 @@ The first versioned release; it contains every change below.
 - A failed `release` puts the version and the changelog back and leaves no half-written zip, so running it again makes the same release.
 - `find_imports` treats folders of the app that are namespace packages (no `__init__.py`) as local, and lists every installed package that provides a shared name such as `google` as "ambiguous" (unchecked) instead of silently picking one. The missing-package menu picks the installed package that contains the missing module.
 - The `make_portable` dev tool is now `make_self_contained`. It explains first what it puts into the folder and how to hand the folder over (copy it, e.g. as a zip, not a Git clone; then run Setup there). `status` shows whether the project is self-contained. In `developer_settings.py`, `python_source`, `uv_prefer` and `uv_install_if_missing` are now together under "Where uv and Python come from".
+- New **&lt;name&gt; - Tools** shortcut (`tools_shortcut_name`, also for `desktop_shortcuts`): a menu for the people using the app with status, repair, add packages, the package terminal, make self-contained, clean and remove shortcuts, each with a note on what it changes.
+- New setting `requirements_path`: a requirements file whose packages are installed in addition to `packages`. The launcher only reads it; a package may not be in both places.
+- New `git_hooks/pre-commit`: the leak check also runs on the staged changes, so a leak stops the commit instead of the push.
+- Every prompt says how to cancel: `q` for a new python_version, Enter in the other menus.
 - `make_import_map` reads cached projects again after 30 days (`--max-age-days`), or all of them with `--refresh`; the map's header says when the package data was read.
 
 ### 2026-11-08 - clearer development tools

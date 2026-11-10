@@ -92,10 +92,10 @@ def reconcile_pyproject(
     version: the project's Python, used for requires-python (default: keep the file's value, or the
     launcher's own Python on the first run). Returns the settings module, reloaded if it was edited.
     """
-    from pyapp.DONT_CHANGE.scripts.config import set_list_setting
+    from pyapp.DONT_CHANGE.scripts.config import all_packages, requirements_file_entries, set_list_setting
 
     s = s or settings()
-    wanted = list(s.packages)
+    wanted = all_packages(s)
     requires = requires_python_for(version) if version else None
     if Path(PYPROJECT_PATH).is_file():
         text = read_pyproject()
@@ -108,9 +108,17 @@ def reconcile_pyproject(
                 "Copied package changes made in pyproject.toml (e.g. with uv add) into developer_settings.py: "
                 + _change_summary(wanted, in_file)
             )
-            set_list_setting("packages", in_file)
+            # The packages of requirements_path stay in that file, which the launcher never writes.
+            from_file = requirements_file_entries(s)
+            removed_from_file = [p for p in from_file if p not in in_file]
+            if removed_from_file:
+                print_warn(
+                    "Kept because they are in the requirements_path file (remove them there): "
+                    + ", ".join(removed_from_file)
+                )
+            set_list_setting("packages", [p for p in in_file if p not in from_file])
             s = settings()
-            wanted = list(s.packages)
+            wanted = all_packages(s)
         elif in_file != recorded and in_file != wanted:
             ignored = [p for p in in_file if p not in wanted]
             print_warn(
@@ -241,8 +249,10 @@ def _dependencies_span(text: str):
 
 def clear_dependencies() -> None:
     """Empty the package list in developer_settings.py (and pyproject.toml)."""
-    from pyapp.DONT_CHANGE.scripts.config import set_list_setting
+    from pyapp.DONT_CHANGE.scripts.config import requirements_file_entries, set_list_setting
 
     if set_list_setting("packages", []):
         print_info('Emptied "packages" in developer_settings.py.')
+    if requirements_file_entries(settings()):
+        print_info("The packages of the requirements_path file stay; empty that file to remove them too.")
     reconcile_pyproject(settings())

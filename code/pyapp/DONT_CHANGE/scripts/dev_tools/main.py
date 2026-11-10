@@ -6,7 +6,7 @@ live in scripts/dev_tools/.
 
 from __future__ import annotations
 
-from typing import List
+from typing import List, Tuple
 
 fail_message = "Dev tool failed: {e}"
 pause_on_success = True
@@ -39,7 +39,7 @@ from pyapp.DONT_CHANGE.scripts.dev_tools.self_contained import cmd_make_self_con
 from pyapp.DONT_CHANGE.scripts.entrypoint import expected_problem
 
 # Commands that end on their own (a menu, a terminal); no "Press Enter" afterwards.
-NO_PAUSE = {"menu", "terminal"}
+NO_PAUSE = {"menu", "tools", "terminal"}
 
 COMMANDS = {
     "add": cmd_add,
@@ -65,6 +65,39 @@ MENU_GROUPS = (
     ("Python", ("change-python", "update-python")),
     ("Project", ("status", "clean", "remove-shortcuts", "make-self-contained", "test")),
 )
+# The Tools shortcut's menu, for the people using the app rather than its developer:
+# (command, what it does, what to know before using it). The other commands change what the
+# developer recorded for everyone (packages they did not test, another Python), so they are left out.
+USER_TOOLS = (
+    ("status", "Check uv, Python and the packages", "Send this to the developer when the app does not start."),
+    ("sync", "Repair the packages", "Reinstalls exactly the packages the app lists."),
+    (
+        "add",
+        "Add packages for good",
+        (
+            "Recorded in code\\pyapp\\developer_settings.py of this copy. A new version of the app from its developer"
+            " replaces that file: ask them to add it, if it should be in the app for everyone."
+        ),
+    ),
+    (
+        "terminal",
+        "Package command prompt (advanced)",
+        (
+            '"uv pip install" there is only temporary: the next repair or update removes it.'
+            ' To keep a package, use "uv add" there, or "Add packages" here.'
+        ),
+    ),
+    (
+        "make-self-contained",
+        "Make this folder run on other PCs without internet",
+        (
+            "Copies uv, Python and the packages into this folder and changes settings in"
+            " code\\pyapp\\developer_settings.py of this copy."
+        ),
+    ),
+    ("clean", "Delete logs", "Only the app's own log files."),
+    ("remove-shortcuts", "Remove the shortcuts", "In this folder, the Start Menu and on the Desktop."),
+)
 # For the commands that do not start with a heading of their own.
 HEADINGS = {
     "add": "Add packages",
@@ -85,18 +118,33 @@ def run_command(name: str, arguments: List[str]):
 
 def cmd_menu(arguments: List[str]):
     """Interactive menu of all commands."""
-    names = [name for _, group in MENU_GROUPS for name in group]
+    groups = [
+        (
+            title,
+            [
+                (name, name.ljust(17) + styled((COMMANDS[name].__doc__ or "").strip().splitlines()[0], ANSI_DIM))
+                for name in group
+            ],
+        )
+        for title, group in MENU_GROUPS
+    ]
+    _run_menu(groups)
+
+
+def cmd_tools(arguments: List[str]):
+    """The menu of the Tools shortcut (USER_TOOLS)."""
+    lines = [(name, label + "\n       " + styled(note, ANSI_DIM)) for name, label, note in USER_TOOLS]
+    _run_menu([("Tools", lines)])
+
+
+def _run_menu(groups: List[Tuple[str, List[Tuple[str, str]]]]) -> None:
+    """Numbered menu of (title, [(command, line)]) groups; runs the chosen command until Enter."""
+    names = [name for _, group in groups for name, _ in group]
     while True:
         number = 1
-        for title, group in MENU_GROUPS:
+        for title, group in groups:
             print_heading(title)
-            print_choices(
-                (
-                    name.ljust(17) + styled((COMMANDS[name].__doc__ or "").strip().splitlines()[0], ANSI_DIM)
-                    for name in group
-                ),
-                start=number,
-            )
+            print_choices((line for _, line in group), start=number)
             number += len(group)
         print()
         try:
@@ -131,6 +179,8 @@ def main():
         pause_on_success = False
     if command == "menu":
         return cmd_menu(sys.argv[2:])
+    if command == "tools":
+        return cmd_tools(sys.argv[2:])
     if command not in COMMANDS:
         raise SystemExit("Unknown command. Use one of: menu, " + ", ".join(COMMANDS))
     return run_command(command, sys.argv[2:])

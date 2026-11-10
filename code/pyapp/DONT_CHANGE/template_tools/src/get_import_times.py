@@ -50,11 +50,11 @@ def run_once(python: List[str], module: str) -> float:
 def app_modules() -> List[str]:
     """Top-level import names of the declared packages, read from the installed metadata in .venv."""
     sys.path.insert(0, str(CODE_DIR))
-    from pyapp.DONT_CHANGE.scripts.config import settings
+    from pyapp.DONT_CHANGE.scripts.config import all_packages, settings
     from pyapp.DONT_CHANGE.scripts.dev_tools.common import normalized, requirement_name
     from pyapp.DONT_CHANGE.scripts.import_finder import installed_import_map
 
-    declared = {requirement_name(requirement) for requirement in settings().packages}
+    declared = {requirement_name(requirement) for requirement in all_packages(settings())}
     return sorted(
         name
         for name, distribution in installed_import_map().items()

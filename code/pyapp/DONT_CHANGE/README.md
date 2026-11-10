@@ -130,6 +130,7 @@ identity), `PROGRAM_HAS_TERMINAL` (`1`/`0`), `LOG_PATH`, `WDIR_IS_SCRIPT_DIR`,
 | `<name> - Settings` | `B\S.bat <file>` | Opens the user settings file (`user_settings_path`). |
 | `<name> - Edit Code` | `B\M.bat <file>` | Opens the file set in `main_script_path`. |
 | `<name> - Logs` / `- Crash Logs` | `B\L.bat` / `B\C.bat <folder>` | Opens the log / crash-log folder. |
+| `<name> - Tools` | `B\T.bat` → `scripts\dev_tools\main.py tools` | The dev tools that the people using the app may need (`USER_TOOLS` in `main.py`). |
 
 Setup passes each "open" shortcut its resolved target. `bootstrap\open_file.bat` /
 `open_folder.bat` then open it **without starting Python** (VS Code via its `Code.exe`, else
@@ -267,6 +268,7 @@ ASCII art (`scripts/banner.py`). The batch/Python bootstrap and the
 | `Q.bat` | `Stop` shortcut | `stop_program.py` |
 | `S.bat`, `M.bat` | Settings / Edit Code | `open_file.bat <file>`, else `open_file.py` |
 | `L.bat`, `C.bat` | Logs / Crash Logs | `open_folder.bat <folder>`, else `open_folder.py` |
+| `T.bat` | Tools | `dev_tools/main.py tools` |
 
 ### `bootstrap/` – before any Python is known
 

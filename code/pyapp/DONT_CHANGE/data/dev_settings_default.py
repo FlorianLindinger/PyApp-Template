@@ -41,16 +41,21 @@ program_name = "PyApp-Template"
 # The launcher itself needs Python 3.8 or newer. Changing this later offers a migration menu.
 python_version = "3.14"
 
-# Packages the app needs: PyPI names with optional version limits, e.g. ["requests", "numpy>=2", "pillow==11.*"].
-# Or paste a requirements.txt as a block: packages = """, then one package per line (# comments are fine), then """.
+# Packages the app needs, one per line between the triple quotes, like a requirements.txt: PyPI names with optional
+# version limits such as numpy>=2 or pillow==11.*; # comments and --hash options are fine. A list such as
+# ["requests", "numpy>=2"] works too.
 # The launcher installs exactly these, with the versions recorded in pyapp/generated/uv.lock (commit that file).
 # A package removed here stays installed until you run the dev tool sync_packages.
-# The dev tools add_packages, remove_packages and find_imports edit this list for you.
+# The dev tools add_packages, remove_packages and find_imports edit this for you.
 packages: Union[List[str], str] = """
 
 # Copy-paste needed packages here
 
 """
+# A requirements file whose packages are installed in addition to "packages" (relative to this file), e.g.
+# "..\\requirements.txt"; None: none. The launcher only reads it: the dev tools change "packages", so a package
+# from this file is removed in the file itself. A package may not be in both places.
+requirements_path: Optional[str] = None
 
 
 # --- Logging and prints ---
@@ -153,7 +158,7 @@ user_settings_path: Optional[str] = "..\\settings.py"
 # The project folder always gets all enabled shortcuts. Setup removes earlier ones that are no longer wanted.
 # Start Menu: a folder named after program_name with all enabled shortcuts:
 start_menu_shortcuts = True
-# Desktop: a list of "terminal", "no_terminal", "stop", "settings", "logs", "crash_logs", "open_code". Example: ["no_terminal"]
+# Desktop: a list of "terminal", "no_terminal", "stop", "settings", "logs", "crash_logs", "open_code", "tools". Example: ["no_terminal"]
 desktop_shortcuts: List[str] = []
 
 # --- Log files ---
@@ -189,6 +194,8 @@ stop_running_shortcut_name: Optional[str] = f"Stop {program_name}"
 open_log_folder_shortcut_name: Optional[str] = f"{program_name} - Logs"
 open_crash_log_folder_shortcut_name: Optional[str] = f"{program_name} - Crash Logs"
 open_code_shortcut_name: Optional[str] = f"{program_name} - Edit Code"
+# Tools for the people using the app: repair, add packages, make the folder self-contained, delete logs, ...
+tools_shortcut_name: Optional[str] = f"{program_name} - Tools"
 
 # --- Startup ---
 # Start with the window minimized:

@@ -5,7 +5,13 @@ from __future__ import annotations
 from typing import List
 
 from pyapp.DONT_CHANGE import backend_settings as paths
-from pyapp.DONT_CHANGE.scripts.config import display_path, settings
+from pyapp.DONT_CHANGE.scripts.config import (
+    all_packages,
+    display_path,
+    requirement_key,
+    requirements_file_entries,
+    settings,
+)
 from pyapp.DONT_CHANGE.scripts.console_tools import (
     ANSI_DIM,
     ANSI_GOOD,
@@ -33,12 +39,13 @@ from pyapp.DONT_CHANGE.scripts.env.venv import (
     remove_packages,
     sync,
 )
+from pyapp.DONT_CHANGE.scripts.errors import SetupError
 
 
 def cmd_add(arguments: List[str]):
     """Add packages (recorded in developer_settings.py and uv.lock) and install them."""
     s = settings()
-    names = arguments or ask_package_names("Package(s) to add, e.g. requests numpy>=2:")
+    names = arguments or ask_package_names("Package(s) to add, e.g. requests numpy>=2 (Enter = cancel):")
     if not names:
         print_info("Nothing was changed.")
         return
@@ -61,7 +68,7 @@ def cmd_remove(arguments: List[str]):
             return
         print_heading("Declared packages")
         print_choices(declared)
-        chosen = ask("Numbers or names to remove (space separated):").replace(",", " ").split()
+        chosen = ask("Numbers or names to remove (space separated, Enter = cancel):").replace(",", " ").split()
         for item in chosen:
             if item.isdigit() and 1 <= int(item) <= len(declared):
                 names.append(requirement_name(declared[int(item) - 1]))
@@ -70,6 +77,13 @@ def cmd_remove(arguments: List[str]):
     if not names:
         print_info("Nothing was changed.")
         return
+    # The launcher never writes the requirements file, so uv remove could not take those out for good.
+    from_file = {requirement_key(p) for p in requirements_file_entries(s)}
+    in_file = [name for name in names if requirement_key(name) in from_file]
+    if in_file:
+        raise SetupError(
+            f'{", ".join(in_file)}: in the requirements_path file, not in "packages". Remove them in that file.'
+        )
     # Before prepare(), which can already sync the environment.
     refuse_mutation_while_running()
     prepare(s)
@@ -111,7 +125,7 @@ def find_imports_and_add():
     requirements, problems = find_requirements()
     for problem in problems:
         print_warn("Could not parse " + problem)
-    declared = {requirement_name(r) for r in s.packages}
+    declared = {requirement_name(r) for r in all_packages(s)}
     candidates = [r for r in requirements if normalized(r.distribution) not in declared]
     if not requirements:
         print_info("No third-party imports found.")

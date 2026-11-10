@@ -34,7 +34,7 @@ DEV_TOOL_COMMANDS = (
     "status",
 )
 # Shortcuts made by Setup keep pointing at these until Setup runs again.
-SHORTCUT_TARGETS = ("C.bat", "L.bat", "M.bat", "N.bat", "Q.bat", "S.bat", "W.bat")
+SHORTCUT_TARGETS = ("C.bat", "L.bat", "M.bat", "N.bat", "Q.bat", "S.bat", "T.bat", "W.bat")
 # A setting that is renamed or removed silently stops working in existing developer_settings.py files.
 SETTING_NAMES = (
     "args_for_main_py",

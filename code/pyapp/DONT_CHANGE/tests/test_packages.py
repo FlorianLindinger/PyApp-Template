@@ -127,6 +127,66 @@ class TypedPackagesTests(unittest.TestCase):
         self.assertEqual(self.split("  , "), [])
 
 
+class RequirementsFileTests(unittest.TestCase):
+    """requirements_path: packages from a file, in addition to "packages"; the launcher only reads it."""
+
+    def settings_with(self, requirements: str, packages: str = '["requests"]'):
+        def transform(text: str) -> str:
+            return text + f'\r\npackages = {packages}\r\nrequirements_path = "requirements.txt"\r\n'
+
+        context = support.temporary_settings(transform)
+        path, load = context.__enter__()
+        self.addCleanup(context.__exit__, None, None, None)
+        (path.parent / "requirements.txt").write_text(requirements, encoding="utf-8")
+        return path, load
+
+    def test_both_lists_reach_the_environment(self):
+        from pyapp.DONT_CHANGE.scripts import config
+
+        _, load = self.settings_with("# from the file\nnumpy>=2 \\\n    --hash=sha256:aa\n")
+        config.validate(load())
+        self.assertEqual(config.all_packages(load()), ["requests", "numpy>=2"])
+        pyproject.reconcile_pyproject(load(), (3, 14))
+        self.assertEqual(pyproject.declared_dependencies(), ["requests", "numpy>=2"])
+
+    def test_problems_in_the_file_are_named(self):
+        from pyapp.DONT_CHANGE.scripts import config
+        from pyapp.DONT_CHANGE.scripts.errors import SettingsError
+
+        for content, expected in (("-r other.txt\n", "-r other.txt"), ("Requests>=2\n", "also in")):
+            with self.subTest(content=content):
+                _, load = self.settings_with(content)
+                with self.assertRaises(SettingsError) as raised:
+                    config.validate(load())
+                self.assertIn(expected, str(raised.exception))
+        path, load = self.settings_with("numpy\n")
+        (path.parent / "requirements.txt").unlink()
+        with self.assertRaises(SettingsError) as raised:
+            config.validate(load())
+        self.assertIn("cannot be read", str(raised.exception))
+
+    def test_uv_add_is_copied_into_packages_but_never_the_file_packages(self):
+        _, load = self.settings_with("numpy>=2\n")
+        pyproject.reconcile_pyproject(load(), (3, 14))
+        path = Path(pyproject.PYPROJECT_PATH)
+        text = path.read_text(encoding="utf-8").replace('"numpy>=2",', '"numpy>=2",\n    "rich>=13",')
+        path.write_text(text, encoding="utf-8")
+        pyproject.reconcile_pyproject(load(), None)
+        self.assertEqual(load().packages, ["requests", "rich>=13"])
+        self.assertEqual(pyproject.declared_dependencies(), ["requests", "rich>=13", "numpy>=2"])
+
+    def test_a_file_package_is_removed_in_the_file(self):
+        from pyapp.DONT_CHANGE.scripts.dev_tools import packages
+
+        _, load = self.settings_with("numpy>=2\n")
+        with mock.patch.object(packages, "settings", load), mock.patch.object(
+            packages, "prepare"
+        ) as prepare, self.assertRaises(SetupError) as raised:
+            packages.cmd_remove(["NumPy"])
+        self.assertIn("requirements_path", str(raised.exception))
+        prepare.assert_not_called()
+
+
 class RunningInstanceTests(unittest.TestCase):
     """Nothing changes the environment while the app runs (its files are in use)."""
 

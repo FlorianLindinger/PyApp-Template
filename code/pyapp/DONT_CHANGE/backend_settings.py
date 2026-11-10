@@ -88,6 +88,7 @@ LAUNCHER_STOP = ENTRY_BATCHES_DIR + "\\Q.bat"
 LAUNCHER_OPEN_LOG_DIR = ENTRY_BATCHES_DIR + "\\L.bat"
 LAUNCHER_OPEN_CRASH_LOG_DIR = ENTRY_BATCHES_DIR + "\\C.bat"
 LAUNCHER_OPEN_CODE = ENTRY_BATCHES_DIR + "\\M.bat"
+LAUNCHER_TOOLS = ENTRY_BATCHES_DIR + "\\T.bat"
 # Machine-specific list of every generated .lnk, used to remove stale shortcuts.
 CREATED_SHORTCUTS_LIST_PATH = GENERATED_DIR + "\\shortcuts_created_by_setup.json"
 # Every generated shortcut's arguments contain this fragment; stale-shortcut removal
