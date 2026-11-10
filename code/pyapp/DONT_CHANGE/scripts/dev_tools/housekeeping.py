@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import os
+import re
 import sys
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Pattern, Tuple, Union
 
 from pyapp.DONT_CHANGE import backend_settings as paths
 from pyapp.DONT_CHANGE.scripts.config import describe_python_request, display_path, settings, validate
@@ -28,14 +29,50 @@ from pyapp.DONT_CHANGE.scripts.errors import SettingsError, SetupError
 from pyapp.DONT_CHANGE.scripts.runtime_state import ProcessRegistry
 
 
-def _folder_contents(folder: Optional[str]) -> str:
-    """What cleaning a folder would delete, e.g. "12 file(s), 3.4 MB"."""
-    if not folder or not Path(folder).is_dir():
-        return "empty"
-    files = [path for path in Path(folder).rglob("*") if path.is_file() and path.name != ".gitkeep"]
+def _size_text(files: List[Path]) -> str:
+    """e.g. "12 file(s), 3.4 MB"."""
     if not files:
         return "empty"
     return f"{len(files)} file(s), {sum(path.stat().st_size for path in files) / 1_048_576:.1f} MB"
+
+
+def _folder_contents(folder: Optional[str]) -> str:
+    """What cleaning a whole folder would delete."""
+    if not folder or not Path(folder).is_dir():
+        return "empty"
+    return _size_text([path for path in Path(folder).rglob("*") if path.is_file() and path.name != ".gitkeep"])
+
+
+def _log_name_pattern(configured: str) -> Pattern[str]:
+    """Names the launcher gives the logs of a configured log_path.
+
+    A log is named after the configured file name with its date placeholders filled in, then
+    "_" + the 12 hex digits of its run (runtime_state.unique_log_path), optionally followed by the
+    raw-output suffix. Matching this shape keeps Clean away from other files in a shared folder.
+    """
+    from pyapp.DONT_CHANGE.scripts.launcher_ui import OUTPUT_LOG_SUFFIX
+
+    template = Path(configured).name
+    stem, extension = Path(template).stem, Path(template).suffix
+
+    def to_regex(text: str) -> str:
+        parts = re.split(r"(%.)", text)
+        return "".join(
+            "%" if part == "%%" else r"[^\\/]+?" if len(part) == 2 and part[0] == "%" else re.escape(part)
+            for part in parts
+        )
+
+    output_suffix = re.escape(OUTPUT_LOG_SUFFIX)
+    pattern = f"{to_regex(stem)}_[0-9a-f]{{12}}{to_regex(extension)}(?:{output_suffix})?"
+    return re.compile(pattern, re.IGNORECASE)
+
+
+def _owned_logs(folder: Optional[str], configured: Optional[str]) -> List[Path]:
+    """The launcher's own log files directly in a log folder; other files are never included."""
+    if not folder or not configured or not Path(folder).is_dir():
+        return []
+    pattern = _log_name_pattern(configured)
+    return [path for path in Path(folder).iterdir() if path.is_file() and pattern.fullmatch(path.name)]
 
 
 def cmd_clean(arguments: List[str]):
@@ -46,16 +83,17 @@ def cmd_clean(arguments: List[str]):
     s = settings()
     log_folder = get_log_folder_path(s.log_path, s.log_path_is_relative_to_start_folder_if_relative)
     crash_folder = get_log_folder_path(s.crash_log_path, s.crash_log_path_is_relative_to_start_folder_if_relative)
+    owned = {"logs": _owned_logs(log_folder, s.log_path), "crash": _owned_logs(crash_folder, s.crash_log_path)}
     options = [
         (
             "logs",
-            f"Log files in {display_path(log_folder)}: {_folder_contents(log_folder)}"
+            f"Log files in {display_path(log_folder)}: {_size_text(owned['logs'])}"
             if log_folder
             else "Log files: disabled",
         ),
         (
             "crash",
-            f"Crash logs in {display_path(crash_folder)}: {_folder_contents(crash_folder)}"
+            f"Crash logs in {display_path(crash_folder)}: {_size_text(owned['crash'])}"
             if crash_folder
             else "Crash logs: disabled",
         ),
@@ -70,16 +108,15 @@ def cmd_clean(arguments: List[str]):
         return
     in_use = 0
     deleted = 0
-    for key, folder in (("logs", log_folder), ("crash", crash_folder)):
-        if key in keys and folder and Path(folder).is_dir():
-            for name in [entry.name for entry in Path(folder).iterdir()]:
-                path = str(Path(folder) / name)
-                if Path(path).is_file() and name != ".gitkeep":
-                    try:
-                        Path(path).unlink()
-                        deleted += 1
-                    except PermissionError:  # the log of an instance that is still running
-                        in_use += 1
+    # A set, because both log kinds may share one folder and name pattern.
+    for path in {path for key in ("logs", "crash") if key in keys for path in owned[key]}:
+        try:
+            path.unlink()
+            deleted += 1
+        except FileNotFoundError:
+            pass
+        except PermissionError:  # the log of an instance that is still running
+            in_use += 1
     if in_use:
         print_warn(f"Kept {in_use} file(s) that are in use, e.g. by a running instance.")
     if "runs" in keys and Path(paths.RUNS_DIR).is_dir():
@@ -184,7 +221,7 @@ def cmd_status(arguments: List[str]):
     for title, rows in sections.items():
         print_heading(title)
         print_fields(rows)
-    problems = [str(row[0]) for rows in sections.values() for row in rows if len(row) == 3 and not row[2]]
+    problems = [row[0] for rows in sections.values() for row in rows if len(row) == 3 and not row[2]]
     print()
     if problems:
         print_warn("Needs attention: " + ", ".join(problems))

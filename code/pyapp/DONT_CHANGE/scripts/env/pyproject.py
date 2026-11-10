@@ -51,10 +51,20 @@ def write_pyproject(text: str) -> None:
         stream.write(text)
 
 
+def toml_string(value: str) -> str:
+    """A TOML basic string.
+
+    JSON's escapes are TOML's, with two exceptions handled here: ASCII escaping would turn a
+    character beyond U+FFFF into a surrogate pair, which TOML rejects, so non-ASCII text stays as
+    it is; and DEL, which JSON leaves unescaped, is a control character that TOML requires escaped.
+    """
+    return json.dumps(value, ensure_ascii=False).replace("\x7f", "\\u007F")
+
+
 def render_pyproject(packages: Sequence[str], requires: str) -> str:
-    """pyproject.toml text for a package list (JSON strings are valid TOML basic strings here)."""
+    """pyproject.toml text for a package list."""
     if packages:
-        dependencies = "[\n" + "".join(f"    {json.dumps(p)},\n" for p in packages) + "]"
+        dependencies = "[\n" + "".join(f"    {toml_string(p)},\n" for p in packages) + "]"
     else:
         dependencies = "[]"
     return PYPROJECT_TEMPLATE.format(
@@ -111,8 +121,24 @@ def reconcile_pyproject(
     requires = requires or requires_python_for(sys.version_info[:2])
     new_text = render_pyproject(wanted, requires)
     if not Path(PYPROJECT_PATH).is_file() or read_pyproject() != new_text:
+        _warn_about_dropped_sources(read_pyproject() if Path(PYPROJECT_PATH).is_file() else "")
         write_pyproject(new_text)
     return s
+
+
+def _warn_about_dropped_sources(text: str) -> None:
+    """Say so when regenerating drops the sources that e.g. "uv add --git" wrote.
+
+    They are not kept on purpose: pyproject.toml is not committed, so another PC would silently
+    get the packages from PyPI instead. A direct reference in "packages" is committed and works
+    everywhere.
+    """
+    if re.search(r"(?m)^\[tool\.uv\.sources", text):
+        print_warn(
+            "pyproject.toml had package sources ([tool.uv.sources], e.g. from uv add --git); they are not kept. "
+            'Put the package into "packages" as a direct reference instead, e.g. '
+            '"pkg @ git+https://github.com/org/pkg@v1.0".'
+        )
 
 
 def _change_summary(old: Sequence[str], new: Sequence[str]) -> str:

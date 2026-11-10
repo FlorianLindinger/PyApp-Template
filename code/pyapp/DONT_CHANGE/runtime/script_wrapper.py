@@ -51,6 +51,7 @@ class _BinarySplitter:
         self.decoder = codecs.getincrementaldecoder(owner.encoding or "utf-8")("replace")
 
     def write(self, data: Union[bytes, bytearray]):
+        _take_native_output()
         with self.owner._lock:
             target = getattr(self.owner.print_stream, "buffer", None)
             if target is not None:
@@ -111,6 +112,7 @@ class PipeSplitter:
             data = str(data)
         if data == "":
             return 0
+        _take_native_output()
         with self._lock:
             for part in data.splitlines(True) or [data]:
                 if self._at_line_start:
@@ -136,11 +138,27 @@ class PipeSplitter:
 
     def write_input_prompt(self, prompt: object):
         prompt = "" if prompt is None else str(prompt)
+        _take_native_output()
         with self._lock:
             self._write_console(_format_prepend(self.input_timestamp_format) + prompt)
             if self.log_stream is not None:
                 self.log_stream.write(_format_prepend(self.log_input_timestamp_format) + _ANSI_ESCAPE.sub("", prompt))
             self._at_line_start = prompt.endswith("\n")
+            self.flush()
+
+    def write_native(self, data: bytes, log_text: str) -> None:
+        """Output written below Python (see NativeOutput): unchanged to the console, as text to the log."""
+        with self._lock:
+            target = getattr(self.print_stream, "buffer", None)
+            if target is not None:
+                target.write(data)
+            elif data:
+                self._write_console(data.decode(self.encoding or "utf-8", "replace"))
+            if self.log_stream is not None:
+                for part in log_text.splitlines(True):
+                    log_prefix = _format_prepend(self.log_timestamp_format) if self._at_line_start else ""
+                    self.log_stream.write(log_prefix + _ANSI_ESCAPE.sub("", part))
+                    self._at_line_start = part.endswith("\n")
             self.flush()
 
     def complete_input_line(self, text: str):
@@ -176,18 +194,109 @@ class PipeSplitter:
         return getattr(self.print_stream, name)
 
 
+class NativeOutput:
+    """Output that bypasses sys.stdout/sys.stderr: C extensions, os.write, child processes.
+
+    Such output goes to the process's file descriptors 1 and 2 (and the Windows standard handles,
+    which os.dup2 updates), not through the Python streams that write the log. They are pointed at
+    the raw output file next to the log, and new bytes from it are passed on to the console and
+    the log: right before every Python write, so the log keeps the order of both, and every
+    50 ms otherwise. The file is on disk, so it still holds the last output after a hard crash.
+    """
+
+    def __init__(self, raw_path: str):
+        sys.stdout.flush()
+        sys.stderr.flush()
+        # Copies of the console (the watchdog's pipe), for Python's own output and to restore later.
+        self.console_fds = (os.dup(1), os.dup(2))
+        with Path(raw_path).open("wb", buffering=0) as raw:
+            os.dup2(raw.fileno(), 1)
+            os.dup2(raw.fileno(), 2)
+        self.reader = Path(raw_path).open("rb")  # noqa: SIM115 - closed by finish()
+        self.target: Optional[PipeSplitter] = None
+        self.pending = b""  # an incomplete last line, held back from the log until it ends
+        self.lock = threading.Lock()
+        self.stopped = threading.Event()
+        self.thread = threading.Thread(target=self._poll, name="pyapp-native-output", daemon=True)
+
+    def console_stream(self, index: int) -> TextIO:
+        """A text stream to the console like the original sys.stdout/sys.stderr (with \\r\\n line ends)."""
+        return io.TextIOWrapper(
+            io.open(self.console_fds[index], "wb", closefd=False),  # noqa: UP020 - a raw descriptor
+            encoding="utf-8",
+            errors="backslashreplace",
+        )
+
+    def start(self, target: PipeSplitter) -> None:
+        self.target = target
+        self.thread.start()
+
+    def _poll(self) -> None:
+        while not self.stopped.wait(0.05):
+            self.take()
+
+    def take(self, final: bool = False) -> None:
+        """Pass on what was written since the last call; final: also an unfinished last line."""
+        with self.lock:
+            if self.reader.closed:  # after finish(): a late write through a kept reference to the splitter
+                return
+            data = self.reader.read()
+            if self.target is None or not (data or (final and self.pending)):
+                return
+            text = self.pending + data
+            end = text.rfind(b"\n") + 1
+            if final:
+                end = len(text)
+            self.pending = text[end:]
+            self.target.write_native(data, _decode_native(text[:end]))
+
+    def finish(self) -> None:
+        """Pass on the rest, then give the console back to the file descriptors."""
+        self.stopped.set()
+        self.take(final=True)
+        self.reader.close()
+        os.dup2(self.console_fds[0], 1)
+        os.dup2(self.console_fds[1], 2)
+
+
+def _decode_native(data: bytes) -> str:
+    """Native output has no declared encoding: UTF-8 if it is valid, else the Windows ANSI code page.
+
+    Line ends become "\\n", like Python's own prints: the log is a text stream that writes each
+    "\\n" as "\\r\\n" itself, so a native "\\r\\n" would otherwise end up as "\\r\\r\\n".
+    """
+    try:
+        text = data.decode("utf-8")
+    except UnicodeDecodeError:
+        text = data.decode("mbcs" if os.name == "nt" else "latin-1", "replace")
+    return text.replace("\r\n", "\n")
+
+
+native_output: Optional[NativeOutput] = None
+
+
+def _take_native_output() -> None:
+    if native_output is not None:
+        native_output.take()
+
+
 def setup_log_prints(
     log_path: Optional[str],
     print_prepend: Optional[str],
     log_print_prepend: Optional[str],
     input_prepend: Optional[str],
     log_input_prepend: Optional[str],
+    native_output_path: Optional[str] = None,
 ):
-    """Install stdout/stderr splitters and point faulthandler at the log."""
+    """Install stdout/stderr splitters and point faulthandler at the log.
+
+    With native_output_path (only together with a log), output that bypasses the Python streams
+    is captured there and merged into the log as well (see NativeOutput).
+    """
     import atexit
     import faulthandler
 
-    global log_file
+    global log_file, native_output
     if log_path:
         folder = str(Path(log_path).parent)
         if folder:
@@ -202,8 +311,15 @@ def setup_log_prints(
         "input_timestamp_format": input_prepend,
         "log_input_timestamp_format": log_input_prepend,
     }
-    sys.stdout = PipeSplitter(sys.__stdout__, log_file, **common)
-    sys.stderr = PipeSplitter(sys.__stderr__, log_file, print_red=True, **common)
+    console_out: Optional[TextIO] = sys.__stdout__
+    console_err: Optional[TextIO] = sys.__stderr__
+    if log_file is not None and native_output_path:
+        native_output = NativeOutput(native_output_path)
+        console_out, console_err = native_output.console_stream(0), native_output.console_stream(1)
+    sys.stdout = PipeSplitter(console_out, log_file, **common)
+    sys.stderr = PipeSplitter(console_err, log_file, print_red=True, **common)
+    if native_output is not None:
+        native_output.start(sys.stdout)
     if log_file is not None:
         faulthandler.enable(file=log_file, all_threads=True)
     else:
@@ -216,6 +332,8 @@ def _finish_logging():
     try:
         sys.stdout.flush()
         sys.stderr.flush()
+        if native_output is not None:
+            native_output.finish()
     finally:
         sys.stdout = sys.__stdout__
         sys.stderr = sys.__stderr__
@@ -259,7 +377,7 @@ def save_result(code: int):
 def capture_background_errors(
     script_path: str, output_path: str, app_root: Optional[str], context_lines: Tuple[int, int]
 ):
-    """Record the first unhandled worker-thread error and Tkinter callback error."""
+    """Record the first unhandled worker-thread, Tkinter callback or atexit callback error."""
     first_error: List[Optional[BaseException]] = [None]
     lock = threading.Lock()
     previous_last = getattr(sys, "last_exc", getattr(sys, "last_value", None))
@@ -284,6 +402,23 @@ def capture_background_errors(
                 previous_hook(args)
 
         threading.excepthook = thread_hook
+
+    # An exception in an atexit callback (e.g. a final save) leaves the exit code at 0. Python 3.10+
+    # passes it to sys.unraisablehook, so it can be recorded like a late worker-thread error, which
+    # the watchdog then reports as a failure. Python 3.8/3.9 only print it. Other ignored errors
+    # (e.g. in __del__) stay non-fatal, as before.
+    previous_unraisable_hook = getattr(sys, "unraisablehook", None)
+    if previous_unraisable_hook is not None:
+
+        def unraisable_hook(unraisable: sys.UnraisableHookArgs):
+            try:
+                in_atexit = (unraisable.err_msg or "").startswith("Exception ignored in atexit callback")
+                if in_atexit and unraisable.exc_value is not None:
+                    record(unraisable.exc_value)
+            finally:
+                previous_unraisable_hook(unraisable)
+
+        sys.unraisablehook = unraisable_hook
 
     def pending_error():
         # Tkinter's default report_callback_exception stores the error in sys.last_*.
@@ -338,6 +473,7 @@ def main():
             log_print_prepend,
             input_prepend,
             log_input_prepend,
+            config.get("native_output") or None,
         )
     if config.get("app_id"):
         # Taskbar grouping of windows created by main.py with the pinned shortcut.

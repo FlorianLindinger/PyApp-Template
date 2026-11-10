@@ -274,6 +274,9 @@ def ensure_environment(interactive: bool = True) -> AppPython:
         fingerprint = environment_fingerprint(s)
         if _read_stamp() == fingerprint:
             return AppPython(VENV_PYTHON_EXE, APP_PYTHON_FLAGS)
+        # From here on the environment may be synced or rebuilt, which a running instance would
+        # see change under it (or block with its open files).
+        refuse_mutation_while_running()
         _write_stamp(None)
 
         locked = version_satisfies_requires(base_version, current_requires_python())
@@ -455,6 +458,7 @@ def switch_python(
 
 def add_packages(names: List[str], s: Optional[Union[ModuleType, SimpleNamespace]] = None) -> None:
     """uv add (resolves, locks, installs), then record the result in developer_settings.py."""
+    refuse_mutation_while_running()
     reconcile_pyproject(s)
     run_uv(["add", *names], s=s)
     reconcile_pyproject()
@@ -462,6 +466,7 @@ def add_packages(names: List[str], s: Optional[Union[ModuleType, SimpleNamespace
 
 def remove_packages(names: List[str], s: Optional[Union[ModuleType, SimpleNamespace]] = None) -> None:
     """uv remove, then record the result in developer_settings.py."""
+    refuse_mutation_while_running()
     reconcile_pyproject(s)
     run_uv(["remove", *names], s=s)
     reconcile_pyproject()
@@ -471,6 +476,7 @@ def install_without_recording(
     names: List[str], python_exe: str, s: Optional[Union[ModuleType, SimpleNamespace]] = None
 ) -> None:
     """Install into an environment without recording it in developer_settings.py (uv pip install)."""
+    refuse_mutation_while_running()
     run_uv(["pip", "install", "--python", python_exe, *names], s=s)
 
 

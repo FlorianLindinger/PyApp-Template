@@ -43,8 +43,25 @@ from pyapp.DONT_CHANGE.scripts.runtime_state import (
     atomic_json,
     clean_python_environment,
     create_own_job,
+    terminate_tree,
     unique_log_path,
 )
+
+
+def end_started_app(child: Optional[subprocess.Popen[bytes]]) -> None:
+    """End an app this watchdog started but can no longer supervise, with its child processes.
+
+    Without this, a watchdog error after the start would leave the app running unregistered, so
+    Stop could not find it and a retry would start a second copy. The process tree is used, not
+    the job: the watchdog is in the job itself and must survive to report the error.
+    """
+    if child is None or child.poll() is not None:
+        return
+    try:
+        terminate_tree(child.pid)
+        child.wait(timeout=10)
+    except Exception:
+        note_ignored("end the app after a watchdog error")
 
 
 def acknowledge(run_dir: Path, **payload: object):
@@ -65,8 +82,26 @@ def successful_application_exit(mode: int, run_dir: Path):
     return False
 
 
+# The last part of what the app printed before its wrapper took over the output (see save_early_output).
+EARLY_OUTPUT_LIMIT = 1_048_576
+
+
+def save_early_output(log_path: str, early_output: bytes) -> None:
+    """Keep what the app printed if its wrapper never set up the raw output file.
+
+    That happens when the interpreter or the wrapper fails right at the start; the wrapper then
+    cannot merge the output into the log, and the console may be gone (no terminal).
+    """
+    raw = Path(log_path + OUTPUT_LOG_SUFFIX)
+    if log_path and early_output and not raw.exists():
+        try:
+            raw.write_bytes(early_output)
+        except OSError:
+            note_ignored("save the early output")
+
+
 def remove_raw_output_after_success(log_path: str, mode: int, run_dir: Path) -> None:
-    """The raw output is evidence for failures; after a normal end the normal log is enough."""
+    """The raw output is evidence for failures; after a normal end the log contains all of it."""
     if log_path and successful_application_exit(mode, run_dir):
         try:
             Path(log_path + OUTPUT_LOG_SUFFIX).unlink(missing_ok=True)
@@ -165,6 +200,7 @@ def main():
     log_path = ""
     registered = False
     exit_handled = False
+    child: Optional[subprocess.Popen[bytes]] = None
     try:
         if launch_mode not in ("wt", "conhost", "no_terminal"):
             raise ValueError("Unknown launch mode: " + launch_mode)
@@ -175,7 +211,7 @@ def main():
         if not register_with_policy(settings, registry, run_dir):
             return
         registered = True
-        # Windows group a window with the pinned shortcut whose System.AppUserModel.ID matches.
+        # Windows groups a window with the pinned shortcut whose System.AppUserModel.ID matches.
         window_app_id = app_id + paths.NO_TERMINAL_APP_ID_SUFFIX if app_id and launch_mode == "no_terminal" else app_id
         app_python = json.loads(os.environ.pop("PYAPP_APP_PYTHON"))
         if not Path(script).is_file():
@@ -207,6 +243,8 @@ def main():
             "log_print_prepend": settings.log_print_prepend,
             "log_input_prepend": settings.log_input_prepend,
             "log_path": log_path,
+            # Output that bypasses Python's streams is captured here and merged into the log.
+            "native_output": log_path + OUTPUT_LOG_SUFFIX if log_path else "",
             "traceback": str(run_dir / "traceback.json"),
             "result": str(run_dir / "result.json"),
             "ready": str(run_dir / "ready"),
@@ -225,113 +263,108 @@ def main():
         env["WDIR_IS_SCRIPT_DIR"] = "0" if settings.start_in_shortcut_folder else "1"
         env["CLOSE_AFTER_FAILURE"] = "1" if settings.close_after_failure else "0"
         env["CLOSE_AFTER_SUCCESS"] = "1" if settings.close_after_success else "0"
-        raw_stream = None
         pump = None
+        early_output = bytearray()
         if log_path:
             Path(log_path).parent.mkdir(parents=True, exist_ok=True)
-            raw_stream = Path(log_path + OUTPUT_LOG_SUFFIX).open("wb")  # noqa: SIM115 - closed by the output pump
-        try:
-            # From before the app exists: a Ctrl+C during its start-up must not end this watchdog.
-            previous = signal.signal(signal.SIGINT, signal.SIG_IGN)
-            # Run the launcher helper or configured app interpreter with a controlled argument list.
-            child = subprocess.Popen(  # noqa: S603
-                [
-                    app_python["exe"],
-                    *app_python["flags"],
-                    "-X",
-                    "faulthandler",
-                    paths.SCRIPT_WRAPPER_PATH,
-                    "--config",
-                    str(run_dir / "wrapper.json"),
-                ],
-                cwd=cwd,
-                env=env,
-                stdout=subprocess.PIPE if raw_stream else None,
-                stderr=subprocess.STDOUT if raw_stream else None,
-            )
-            registry.register(child.pid)
-            if raw_stream:
-                output = child.stdout
-                if not isinstance(output, io.BufferedReader):
-                    raise RuntimeError("The child process did not provide a buffered output pipe.")
+        # From before the app exists: a Ctrl+C during its start-up must not end this watchdog.
+        previous = signal.signal(signal.SIGINT, signal.SIG_IGN)
+        # Run the launcher helper or configured app interpreter with a controlled argument list.
+        child = subprocess.Popen(  # noqa: S603
+            [
+                app_python["exe"],
+                *app_python["flags"],
+                "-X",
+                "faulthandler",
+                paths.SCRIPT_WRAPPER_PATH,
+                "--config",
+                str(run_dir / "wrapper.json"),
+            ],
+            cwd=cwd,
+            env=env,
+            stdout=subprocess.PIPE if log_path else None,
+            stderr=subprocess.STDOUT if log_path else None,
+        )
+        registry.register(child.pid)
+        if log_path:
+            output = child.stdout
+            if not isinstance(output, io.BufferedReader):
+                raise RuntimeError("The child process did not provide a buffered output pipe.")
 
-                def copy_output():
-                    """Copy combined child output to the raw log and the terminal."""
-                    try:
-                        while True:
-                            chunk = output.read1(65536)
-                            if not chunk:
-                                break
-                            raw_stream.write(chunk)
-                            raw_stream.flush()
-                            if has_terminal and sys.stdout is not None:
-                                try:
-                                    sys.stdout.buffer.write(chunk)
-                                    sys.stdout.buffer.flush()
-                                except OSError:
-                                    pass
-                    finally:
-                        output.close()
-                        raw_stream.close()
-
-                pump = threading.Thread(target=copy_output, daemon=True)
-                pump.start()
-            deadline = time.monotonic() + 30
-            while not (run_dir / "ready").exists():
-                if child.poll() is not None:
-                    break  # completion handling shows the wrapper's failure
-                if time.monotonic() >= deadline:
-                    child.terminate()
-                    child.wait(timeout=10)
-                    raise TimeoutError("The application wrapper did not become ready")
-                time.sleep(0.02)
-            acknowledge(
-                run_dir,
-                status="started" if (run_dir / "ready").exists() else "failed",
-                child_pid=child.pid,
-                message="The application wrapper failed before it was ready; see the run logs.",
-            )
-            if has_terminal:
+            def copy_output():
+                """Copy combined child output to the terminal, keeping its last part for save_early_output."""
                 try:
-                    set_terminal_icon(paths.ICON_PATH)
-                except Exception:
-                    note_ignored("set_terminal_icon")
+                    while True:
+                        chunk = output.read1(65536)
+                        if not chunk:
+                            break
+                        early_output.extend(chunk)
+                        del early_output[:-EARLY_OUTPUT_LIMIT]
+                        if has_terminal and sys.stdout is not None:
+                            try:
+                                sys.stdout.buffer.write(chunk)
+                                sys.stdout.buffer.flush()
+                            except OSError:
+                                pass
+                finally:
+                    output.close()
+
+            pump = threading.Thread(target=copy_output, daemon=True)
+            pump.start()
+        deadline = time.monotonic() + 30
+        while not (run_dir / "ready").exists():
+            if child.poll() is not None:
+                break  # completion handling shows the wrapper's failure
+            if time.monotonic() >= deadline:
+                child.terminate()
+                child.wait(timeout=10)
+                raise TimeoutError("The application wrapper did not become ready")
+            time.sleep(0.02)
+        acknowledge(
+            run_dir,
+            status="started" if (run_dir / "ready").exists() else "failed",
+            child_pid=child.pid,
+            message="The application wrapper failed before it was ready; see the run logs.",
+        )
+        if has_terminal:
             try:
-                code = child.wait()
-            finally:
-                signal.signal(signal.SIGINT, previous)
-            if pump:
-                pump.join(timeout=5)
-            native = None
-            try:
-                result = json.loads((run_dir / "result.json").read_text(encoding="utf-8"))
-                if result["wrapper_exit_code"] != code:
-                    raise ValueError("Abrupt exit during shutdown")
-                mode = EXIT_MODE_FOR_WRAPPER_EXIT[code]
-            except (OSError, ValueError, KeyError):
-                # No (matching) completion report: native crash, os._exit, killed, ...
-                mode, native = ExitMode.NO_REPORT, code
-            # Worker threads can fail after main.py returned, while Python waits for them.
-            background = run_dir / "traceback.json.background"
-            if background.is_file() and successful_application_exit(mode, run_dir):
-                atomic_json(
-                    run_dir / "traceback.json",
-                    json.loads(background.read_text(encoding="utf-8")),
-                )
-                mode = ExitMode.APP_EXIT
-            remove_raw_output_after_success(log_path, mode, run_dir)
-            # Remove the registration before recovery can start a new instance.
-            registry.remove()
-            registered = False
-            exit_handled = True
-            if (run_dir / paths.STOP_REQUEST_FILE_NAME).exists():
-                # Stopped by the Stop shortcut or a replacing launch: no sounds, menus or prompts.
-                print_info("Stopped on request.")
-                return
-            handle_exit(settings, mode, app_id, has_terminal, log_path, script, run_dir, native)
+                set_terminal_icon(paths.ICON_PATH)
+            except Exception:
+                note_ignored("set_terminal_icon")
+        try:
+            code = child.wait()
         finally:
-            if raw_stream and pump is None:
-                raw_stream.close()
+            signal.signal(signal.SIGINT, previous)
+        if pump:
+            pump.join(timeout=5)
+        save_early_output(log_path, bytes(early_output))
+        native = None
+        try:
+            result = json.loads((run_dir / "result.json").read_text(encoding="utf-8"))
+            if result["wrapper_exit_code"] != code:
+                raise ValueError("Abrupt exit during shutdown")
+            mode = EXIT_MODE_FOR_WRAPPER_EXIT[code]
+        except (OSError, ValueError, KeyError):
+            # No (matching) completion report: native crash, os._exit, killed, ...
+            mode, native = ExitMode.NO_REPORT, code
+        # Worker threads can fail after main.py returned, while Python waits for them.
+        background = run_dir / "traceback.json.background"
+        if background.is_file() and successful_application_exit(mode, run_dir):
+            atomic_json(
+                run_dir / "traceback.json",
+                json.loads(background.read_text(encoding="utf-8")),
+            )
+            mode = ExitMode.APP_EXIT
+        remove_raw_output_after_success(log_path, mode, run_dir)
+        # Remove the registration before recovery can start a new instance.
+        registry.remove()
+        registered = False
+        exit_handled = True
+        if (run_dir / paths.STOP_REQUEST_FILE_NAME).exists():
+            # Stopped by the Stop shortcut or a replacing launch: no sounds, menus or prompts.
+            print_info("Stopped on request.")
+            return
+        handle_exit(settings, mode, app_id, has_terminal, log_path, script, run_dir, native)
     except Exception as error:
         try:
             save_report(error, __file__, str(run_dir / "traceback.json"))
@@ -340,6 +373,8 @@ def main():
         if not (run_dir / "startup.json").exists():
             acknowledge(run_dir, status="failed", message=str(error))
         (run_dir / "watchdog-error.txt").write_text(traceback.format_exc(), encoding="utf-8")
+        # Before unregistering: until it has ended, the app must stay findable for Stop.
+        end_started_app(child)
         if registered:
             registry.remove()
             registered = False

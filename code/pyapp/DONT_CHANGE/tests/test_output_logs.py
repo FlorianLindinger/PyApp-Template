@@ -61,6 +61,17 @@ class RawOutputTests(unittest.TestCase):
             with self.subTest(mode=mode):
                 self.assertTrue(self.remaining_after(mode))
 
+    def test_output_from_before_the_wrapper_started_is_saved(self):
+        with tempfile.TemporaryDirectory() as folder:
+            log = str(Path(folder) / "log.txt")
+            raw = Path(log + bg_watchdog.OUTPUT_LOG_SUFFIX)
+            bg_watchdog.save_early_output(log, b"Fatal Python error")
+            self.assertEqual(raw.read_bytes(), b"Fatal Python error")
+            # The wrapper's own capture is never replaced.
+            bg_watchdog.save_early_output(log, b"pipe copy")
+            self.assertEqual(raw.read_bytes(), b"Fatal Python error")
+            bg_watchdog.save_early_output("", b"no log")
+
 
 if __name__ == "__main__":
     unittest.main()

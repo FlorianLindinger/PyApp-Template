@@ -67,8 +67,8 @@ def cmd_make_portable(arguments: List[str]):
         if not confirm("Continue?"):
             print_info("Nothing was changed.")
             return
-    prepare(s)
     refuse_mutation_while_running()
+    prepare(s)
     local = _settings_copy(s, python_source="local")
 
     # 1. uv

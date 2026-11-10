@@ -38,6 +38,10 @@ Open items for the launcher and the template. Done items are removed; Longer-ter
 
 ```text
 
+
+The atexit fix only works on Python 3.10 and newer. On 3.8 and 3.9, Python prints those errors without passing them on, so they still count as success.
+
+
 should i clean tmp regualrly like runs?
 
 =========================================

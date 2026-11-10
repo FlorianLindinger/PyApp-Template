@@ -199,7 +199,7 @@ def generate_shortcut(
         launcher_args.append(_quote(args))
     icon_path = os.path.normpath(str(Path(os.fspath(icon_path)).absolute())) if icon_path else None
     if icon_path and (not Path(icon_path).exists()):
-        print_warn(f'icon not existing at "{icon_path}"')
+        print_warn(f'Icon not found at "{icon_path}"')
         icon_path = None
     wdir = os.path.normpath(str(Path(wdir).absolute())) if wdir else SHORTCUT_OUTPUT_DIR
     description = "" if description is None else os.fspath(description)

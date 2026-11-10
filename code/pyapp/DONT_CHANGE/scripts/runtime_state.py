@@ -6,6 +6,7 @@ import contextlib
 import ctypes
 import hashlib
 import json
+import math
 import os
 import threading
 import time
@@ -252,21 +253,46 @@ class ProcessRegistry:
 
         With timeout > 0 each instance is first asked to close (WM_CLOSE to its windows, or
         Ctrl+C for a console app) and gets that many seconds to end by itself, so it can save
-        its state. Whatever still runs afterwards is terminated with its process tree.
-        The registry lock is not held while waiting: an ending watchdog needs it to unregister.
+        its state. Whatever still runs afterwards is terminated with its process tree, including
+        processes of an instance whose watchdog did close in time. The registry lock is not held while waiting: an ending watchdog needs it to unregister.
         report(text) receives progress messages.
         """
+        if not math.isfinite(timeout):
+            raise ValueError(f"The stop timeout must be a finite number of seconds, not {timeout!r}.")
         records, stale = self.records()
         if not records:
             return 0, stale, []
-        if timeout and timeout > 0:
-            if report:
-                report(f"Asking {len(records)} instance(s) to close (up to {timeout:g} s) ...")
-            for record in records:
-                request_close(record)
-            deadline = time.monotonic() + timeout
-            while time.monotonic() < deadline and any(_still_running(r) for r in records):
-                time.sleep(0.1)
+        # A job loses its name when its watchdog ends, and it does not kill on close. Holding a
+        # handle from before the close request keeps it reachable, so processes that outlive a
+        # watchdog which closed by itself can still be ended.
+        held_jobs: Dict[int, int] = {}
+        try:
+            if timeout > 0:
+                for record in records:
+                    handle = open_job(record.get("job"))
+                    if handle:
+                        held_jobs[record["pid"]] = handle
+                if report:
+                    report(f"Asking {len(records)} instance(s) to close (up to {timeout:g} s) ...")
+                for record in records:
+                    request_close(record)
+                deadline = time.monotonic() + timeout
+                while time.monotonic() < deadline and any(_still_running(r) for r in records):
+                    time.sleep(0.1)
+            return self._finish(records, held_jobs, timeout, report, stale)
+        finally:
+            for handle in held_jobs.values():
+                close_job(handle)
+
+    def _finish(
+        self,
+        records: List[Dict[str, Any]],
+        held_jobs: Dict[int, int],
+        timeout: float,
+        report: Optional[Callable[[str], object]],
+        stale: int,
+    ) -> Tuple[int, int, List[str]]:
+        """The end of stop(): terminate what is left, under the registry lock."""
         stopped = 0
         failures: List[str] = []
         with self.lock():
@@ -274,10 +300,17 @@ class ProcessRegistry:
                 path = self.directory / (str(record["pid"]) + ".json")
                 with process_identity(record["pid"]) as current:
                     if not matches_identity(record, current):
-                        stopped += 1  # it closed by itself
+                        # It closed by itself; end what it left running in its job.
+                        held = held_jobs.get(record["pid"])
+                        try:
+                            if held:
+                                terminate_job_handle(held)
+                        except OSError as error:
+                            failures.append(f"PID {record['pid']}: its remaining processes: {error}")
+                        stopped += 1
                         path.unlink(missing_ok=True)
                         continue
-                    if report and timeout and timeout > 0:
+                    if report and timeout > 0:
                         report(f"PID {record['pid']} did not close in time; ending it.")
                     _write_stop_request(record)
                     try:
@@ -447,6 +480,24 @@ def terminate_job(name: Optional[str]) -> bool:
         return True
     finally:
         kernel.CloseHandle(handle)
+
+
+def open_job(name: Optional[str]) -> int:
+    """A handle that can end the named job, or 0 if there is no such job; close it with close_job()."""
+    if not name:
+        return 0
+    return _job_api().OpenJobObjectW(JOB_OBJECT_TERMINATE, False, name) or 0
+
+
+def terminate_job_handle(handle: int) -> None:
+    """End every process still in a job opened with open_job() (nothing to do for an empty job)."""
+    kernel = _job_api()
+    if not kernel.TerminateJobObject(handle, 1):
+        raise ctypes.WinError(ctypes.get_last_error())
+
+
+def close_job(handle: int) -> None:
+    _job_api().CloseHandle(handle)
 
 
 def job_process_ids(name: Optional[str]) -> Set[int]:

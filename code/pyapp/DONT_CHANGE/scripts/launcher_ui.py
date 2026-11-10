@@ -32,7 +32,8 @@ from pyapp.DONT_CHANGE.scripts.file_tools import (
 )
 
 _TERMINAL_APPEARANCE_WAS_SET = False
-# Raw-output companion of each log file (written by the watchdog as log_path + this suffix).
+# Raw-output companion of each log file (log_path + this suffix): output that bypasses Python's
+# streams, written there by the app process itself (script_wrapper.NativeOutput).
 OUTPUT_LOG_SUFFIX = ".output.log"
 # A run that is starting or has just ended is not registered as running but still uses its folder.
 RUN_FOLDER_IN_USE_SECONDS = 300

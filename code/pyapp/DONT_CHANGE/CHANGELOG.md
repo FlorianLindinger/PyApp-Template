@@ -7,12 +7,28 @@ README.md ("Versions"); `LAUNCHER_VERSION` in `backend_settings.py` names the cu
 
 The first versioned release; it contains every change below.
 
+### 2026-11-10 - audit fixes
+
+- `fresh_clone_test` no longer overwrites the real app when `main_script_path` is absolute: the probe goes to the clone's copy, and a path that leads outside the clone is refused.
+- The `clean` dev tool deletes only the launcher's own log files (named after `log_path` / `crash_log_path` plus a run ID), so other files in a shared log folder are kept.
+- Stop with a timeout also ends the processes an instance left running in its job when the instance itself closed in time.
+- An exception in an `atexit` callback of the app now counts as a failure (Python 3.10 and newer).
+- Typing several packages at the add prompt keeps version ranges, extras, markers and URLs whole, e.g. `numpy>=1,<2 requests[socks,security]`. Pasted requirements with `\` continuation lines and `--hash` options are read correctly.
+- Settings edits escape line breaks and control characters, refuse `inf`/`nan`, and never write a `developer_settings.py` that is not valid Python. `stop_timeout_seconds` must be finite.
+- The generated `pyproject.toml` stays valid with emoji and other characters beyond U+FFFF in a dependency.
+- Corrected outdated paths and descriptions in the READMEs.
+- The log now also contains the output of native code and child processes, in order with the prints. `.output.log` only holds that output, is written by the app process itself (so it survives a hard crash), and is still deleted after a normal end.
+- If the watchdog fails after starting the app, it ends the app and its child processes instead of leaving them running unregistered.
+- Package changes (dev tools, missing-package recovery, and a launch that has to sync the environment) are refused while the app runs, before anything is changed.
+- A warning says when regenerating `pyproject.toml` drops `[tool.uv.sources]` (e.g. from `uv add --git`), and suggests a direct reference in `packages` instead.
+- `make_import_map` reads cached projects again after 30 days (`--max-age-days`), or all of them with `--refresh`; the map's header says when the package data was read.
+
 ### 2026-11-08 - clearer development tools
 
 - The tools in `tools/` use the launcher's headings, badges and aligned tables; `verify_launcher` ends with a summary of its checks and names the configuration files it uses.
 - New `tools/check_git_leaks.bat` looks for secrets and personal data in the current files and the Git history.
 - The dev tools: a grouped menu that waits before returning, a heading on every tool, a verdict in `status`, file counts in `clean`, and colored settings changes.
-- The bootstrap no longer runs a downloaded install script, uses `certutil` or compiles code at runtime, which antivirus programs distrust. A global uv now comes from the checksum-verified download.
+- The bootstrap no longer runs a downloaded install script or compiles code at runtime, which antivirus programs distrust. It checks downloads with Get-FileHash and falls back to `certutil` only where PowerShell is blocked. A global uv now comes from the checksum-verified download.
 - Setup no longer runs a PowerShell script, so company policies that block those no longer stop it: `resolve_runtime.bat` gets uv with Windows' own `curl` and `tar`, and `resolve_runtime.py` does the rest. Company-policy and firewall problems now get a clear message.
 - New `python_source = "system"` uses a Python already installed on the PC and downloads none.
 - Renamed `code/backend` to `code/pyapp`, so that apps can have their own `backend` package. Run Setup once to renew the shortcuts.

@@ -105,12 +105,40 @@ def main_script_value(settings_text: str) -> str:
     return value
 
 
-def prepare_clone(clone: Path, marker: Path) -> None:
+def clone_main_script(clone: Path, value: str, project: Path = PROJECT_ROOT) -> Path:
+    """The clone's copy of main_script_path; never a file outside the clone's code folder.
+
+    An absolute setting names a file of the original project (the launcher accepts any path inside
+    its code folder), so it is mapped to the same place in the clone. Writing the probe to it
+    directly would overwrite the real app.
+    """
+    clone_code = (clone / "code").resolve()
+    # Keep os.path.isabs: it matches the launcher's own check in config._resolve_main_script.
+    if os.path.isabs(value):  # noqa: PTH117
+        try:
+            relative = Path(value).resolve().relative_to((project / "code").resolve())
+        except ValueError:
+            raise RuntimeError(f'main_script_path "{value}" is not inside the project\'s code folder.') from None
+        script = clone_code / relative
+    else:
+        script = clone / "code" / "pyapp" / value
+    # resolve() also follows links, so a link that leads out of the clone is caught here.
+    script = script.resolve()
+    try:
+        script.relative_to(clone_code)
+    except ValueError:
+        raise RuntimeError(f'main_script_path "{value}" leads outside the clone; the test would change it.') from None
+    return script
+
+
+def prepare_clone(clone: Path, marker: Path, project: Path = PROJECT_ROOT) -> None:
     settings = clone / "code" / "pyapp" / "developer_settings.py"
     text = settings.read_text(encoding="utf-8")
-    script = (settings.parent / main_script_value(text)).resolve()
+    script = clone_main_script(clone, main_script_value(text), project)
     script.write_text(PROBE.format(marker=str(marker)), encoding="utf-8")
-    settings.write_text(text + TEST_SETTINGS, encoding="utf-8")
+    # The clone must run its probe, also when the setting is an absolute path into the original project.
+    relative = os.path.relpath(str(script), str(settings.parent.resolve()))
+    settings.write_text(text + TEST_SETTINGS + f"main_script_path = {relative!r}\n", encoding="utf-8")
 
 
 def run_quietly(command: str, env: Dict[str, str], cwd: Path, log: Path, timeout: float) -> bool:

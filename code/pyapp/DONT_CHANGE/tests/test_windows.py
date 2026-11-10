@@ -10,7 +10,8 @@ import textwrap
 import time
 import unittest
 from pathlib import Path
-from typing import Callable
+from typing import Any, Callable, Dict
+from unittest import mock
 
 from project_location import CODE
 
@@ -34,7 +35,11 @@ registry.register(grandchild.pid)
 with open({ready!r}, "w") as stream:
     stream.write(str(grandchild.pid))
 try:
-    time.sleep(120)
+    # Ends by itself (without its child) once the test creates the exit file.
+    for _ in range(1200):
+        if os.path.exists({exit_file!r}):
+            sys.exit(0)
+        time.sleep(0.1)
 except KeyboardInterrupt:
     with open({marker!r}, "w") as stream:
         stream.write("interrupted")
@@ -63,13 +68,18 @@ class WindowsProcessTests(unittest.TestCase):
         self.addCleanup(directory.cleanup)
         self.folder = Path(directory.name)
         self.registry = runtime_state.ProcessRegistry(self.folder / "running")
+        self.exit_file = self.folder / "exit"
 
     def start_instance(self, new_console: bool = False):
         ready, marker = self.folder / "ready", self.folder / "marker"
         script = self.folder / "instance.py"
         script.write_text(
             INSTANCE.format(
-                code=str(CODE), registry=str(self.registry.directory), ready=str(ready), marker=str(marker)
+                code=str(CODE),
+                registry=str(self.registry.directory),
+                ready=str(ready),
+                marker=str(marker),
+                exit_file=str(self.exit_file),
             ),
             encoding="utf-8",
         )
@@ -104,6 +114,45 @@ class WindowsProcessTests(unittest.TestCase):
         self.assertEqual((stopped, failures), (1, []))
         self.assertTrue(wait_for(lambda: process.poll() is not None))
         self.assertTrue(marker.exists(), "the app did not get Ctrl+C before it was terminated")
+
+    def test_graceful_stop_also_ends_what_a_closed_instance_left_running(self):
+        process, grandchild, _ = self.start_instance()
+
+        # Only the instance itself reacts to the close request; its child keeps running.
+        def close_only_the_instance(record: Dict[str, Any]) -> None:
+            self.exit_file.touch()
+
+        with mock.patch.object(runtime_state, "request_close", side_effect=close_only_the_instance):
+            stopped, _, failures = self.registry.stop(10)
+        self.assertEqual((stopped, failures), (1, []))
+        self.assertTrue(wait_for(lambda: process.poll() is not None))
+        self.assertTrue(wait_for(lambda: not running(grandchild)), "a child of the app survived Stop")
+        self.assertEqual(self.registry.records()[0], [])
+
+    def test_a_watchdog_error_ends_the_app_it_started(self):
+        from pyapp.DONT_CHANGE.runtime import bg_watchdog
+
+        ready = self.folder / "grandchild"
+        app_source = (
+            "import subprocess, sys, time\n"
+            "child = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(120)'])\n"
+            f"open({str(ready)!r}, 'w').write(str(child.pid))\n"
+            "time.sleep(120)\n"
+        )
+        # Test subprocesses execute fixed fixture code using the local interpreter.
+        app = subprocess.Popen([PYTHON, "-c", app_source], stdout=subprocess.PIPE)  # noqa: S603
+        self.addCleanup(lambda: app.kill() if app.poll() is None else None)
+        self.assertTrue(wait_for(ready.exists), "the test app did not start")
+        grandchild = int(ready.read_text())
+        bg_watchdog.end_started_app(app)
+        self.assertIsNotNone(app.poll())
+        self.assertTrue(wait_for(lambda: not running(grandchild)), "a child of the app survived")
+        bg_watchdog.end_started_app(app)  # an ended app is fine
+        bg_watchdog.end_started_app(None)  # so is none
+
+    def test_stop_refuses_an_endless_timeout(self):
+        with self.assertRaises(ValueError):
+            self.registry.stop(float("inf"))
 
     def test_file_lock_is_reentrant_and_exclusive(self):
         path = self.folder / "test.lock"

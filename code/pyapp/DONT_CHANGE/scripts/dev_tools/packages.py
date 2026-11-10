@@ -42,8 +42,9 @@ def cmd_add(arguments: List[str]):
     if not names:
         print_info("Nothing was changed.")
         return
-    prepare(s)
+    # Before prepare(), which can already sync the environment.
     refuse_mutation_while_running()
+    prepare(s)
     add_packages(names)
     print_success("Added: " + " ".join(names))
     print_info(COMMIT_HINT)
@@ -69,8 +70,9 @@ def cmd_remove(arguments: List[str]):
     if not names:
         print_info("Nothing was changed.")
         return
-    prepare(s)
+    # Before prepare(), which can already sync the environment.
     refuse_mutation_while_running()
+    prepare(s)
     remove_packages(names)
     print_success("Removed: " + " ".join(names))
     print_info(COMMIT_HINT)
@@ -79,8 +81,9 @@ def cmd_remove(arguments: List[str]):
 def cmd_upgrade(arguments: List[str]):
     """Upgrade all (or the named) packages within their declared limits."""
     s = settings()
-    prepare(s)
+    # Before prepare(), which can already sync the environment.
     refuse_mutation_while_running()
+    prepare(s)
     lock_arguments = ["lock"] + (
         [item for name in arguments for item in ("--upgrade-package", name)] if arguments else ["--upgrade"]
     )
@@ -92,8 +95,9 @@ def cmd_upgrade(arguments: List[str]):
 def cmd_sync(arguments: List[str]):
     """Make the environment match uv.lock exactly (removes packages installed by hand)."""
     s = settings()
-    prepare(s)
+    # Before prepare(), which can already sync the environment.
     refuse_mutation_while_running()
+    prepare(s)
     ensure_lock(s)
     sync(paths.VENV_PYTHON_EXE, exact=True)
     print_success("The environment matches uv.lock.")

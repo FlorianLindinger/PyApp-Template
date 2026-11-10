@@ -1,5 +1,6 @@
 """Import-map downloads accept expected HTTPS sources and reject unsafe redirects."""
 
+import json
 import sys
 import tempfile
 import unittest
@@ -7,11 +8,13 @@ import urllib.request
 from http.client import HTTPMessage
 from io import BytesIO
 from pathlib import Path
+from typing import Dict, List, Mapping, Optional
 from unittest import mock
 
 from project_location import DONT_CHANGE
 
 with mock.patch.object(sys, "path", [str(DONT_CHANGE / "template_tools" / "src"), *sys.path]):
+    import _paths  # noqa: F401 - main() imports it later, when the tools folder is no longer on sys.path
     import make_import_map
 
 
@@ -63,6 +66,36 @@ class ImportMapDownloadTests(unittest.TestCase):
         request = opener.open.call_args[0][0]
         self.assertEqual(request.get_header("Range"), "bytes=0-9")
         self.assertEqual(opener.open.call_args[1]["timeout"], 5)
+
+
+class ImportMapCacheTests(unittest.TestCase):
+    def build(self, cache: Mapping[str, object], fetch: mock.Mock, max_age_days: Optional[float]):
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "cache.json"
+            path.write_text(json.dumps(cache), encoding="utf-8")
+            with mock.patch.object(make_import_map, "project_import_names", fetch), mock.patch("builtins.print"):
+                result: Dict[str, List[str]] = make_import_map.build(["a"], 1, path, max_age_days)
+                return result
+
+    def test_recent_entries_are_reused(self):
+        today = make_import_map._today().isoformat()
+        fetch = mock.Mock()
+        result = self.build({"a": {"name": "A", "imports": ["old"], "fetched": today}}, fetch, 30)
+        self.assertEqual(result, {"A": ["old"]})
+        fetch.assert_not_called()
+
+    def test_old_or_undated_entries_are_read_again(self):
+        for entry in ({"name": "A", "imports": ["old"], "fetched": "2000-01-01"}, {"name": "A", "imports": ["old"]}):
+            with self.subTest(entry=entry):
+                fetch = mock.Mock(return_value=("A", {"new"}))
+                self.assertEqual(self.build({"a": entry}, fetch, 30), {"A": ["new"]})
+
+    def test_refresh_reads_everything_and_a_failure_keeps_the_old_data(self):
+        today = make_import_map._today().isoformat()
+        fetch = mock.Mock(side_effect=OSError("offline"))
+        result = self.build({"a": {"name": "A", "imports": ["old"], "fetched": today}}, fetch, 0)
+        fetch.assert_called_once()
+        self.assertEqual(result, {"A": ["old"]})
 
 
 class ImportMapOutputTests(unittest.TestCase):

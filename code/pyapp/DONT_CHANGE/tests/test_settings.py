@@ -48,6 +48,16 @@ class ValidationTests(unittest.TestCase):
         for line in bad:
             self.assertIn(line.split(" =")[0], message)
 
+    def test_stop_timeout_must_be_finite(self):
+        for value in ('float("inf")', 'float("nan")', "-0.5"):
+            with self.subTest(value=value):
+                line = f"stop_timeout_seconds = {value}"
+                with support.temporary_settings(append([line])) as (_, load), self.assertRaises(SettingsError):
+                    config.validate(load())
+        finite = append(["stop_timeout_seconds = 0", "stop_timeout_seconds = 2.5"])
+        with support.temporary_settings(finite) as (_, load):
+            config.validate(load())
+
     def test_bootstrap_settings_must_be_unique_and_unindented(self):
         lines = ['uv_cache = "local"', "if True:", '    uv_prefer = "local"']
         with support.temporary_settings(append(lines)):
@@ -199,6 +209,27 @@ class EditingTests(unittest.TestCase):
             self.assertEqual((module.uv_version, module.last_line), ("0.2.0", 1))
             self.assertIn(")  # note", path.read_bytes().decode("utf-8"))
 
+    def test_strings_with_line_breaks_and_controls_stay_valid_python(self):
+        value = 'a\nb\rc\td\x00e\x7f "q" \\ 名前 😀'
+        with support.temporary_settings() as (path, load):
+            config.edit_settings({"program_name": value})
+            ast.parse(path.read_text(encoding="utf-8"))
+            self.assertEqual(load().program_name, value)
+
+    def test_values_that_cannot_be_written_leave_the_file_unchanged(self):
+        with support.temporary_settings() as (path, _):
+            before = path.read_bytes()
+            for value in (float("inf"), float("nan")):
+                with self.assertRaises(SettingsError):
+                    config.edit_settings({"stop_timeout_seconds": value})
+            self.assertEqual(path.read_bytes(), before)
+
+    def test_list_entries_with_line_breaks_are_not_split(self):
+        block = ['packages = """', "requests", '"""']
+        with support.temporary_settings(append(block)) as (_, load):
+            config.set_list_setting("packages", ["a\nb", "c"])
+            self.assertEqual(load().packages, ["a\nb", "c"])
+
     def test_list_setting_round_trip(self):
         packages = ['pywin32; sys_platform == "win32"', "requests>=2", "a\\b"]
         with support.temporary_settings() as (_, load):
@@ -206,6 +237,14 @@ class EditingTests(unittest.TestCase):
             self.assertEqual(load().packages, packages)
             config.set_list_setting("packages", [])
             self.assertEqual(load().packages, [])
+
+    def test_pasted_requirements_with_hash_continuation_lines(self):
+        text = (
+            "numpy==1.0 \\\n    --hash=sha256:aa \\\n    --hash=sha256:bb\n"
+            "    # via app\nrequests>=2,<3 \\\n    --hash=sha256:cc\n"
+        )
+        self.assertEqual(config.parse_requirements(text), ["numpy==1.0", "requests>=2,<3"])
+        self.assertEqual(config.parse_requirements("last==1 \\\n  --hash=sha256:dd \\"), ["last==1"])
 
     def test_pasted_requirements_block(self):
         text = "# pasted\nrequests>=2  # via x\n\nnumpy==2.1 --hash=sha256:ab --hash=sha256:cd\npkg @ https://x.org/a#egg=pkg\n"

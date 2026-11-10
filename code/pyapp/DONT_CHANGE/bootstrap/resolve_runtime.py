@@ -26,7 +26,7 @@ import uuid
 import winreg
 import zipfile
 from pathlib import Path
-from typing import Dict, Iterator, List, Optional, Tuple
+from typing import Dict, Generator, List, Optional, Tuple
 
 BOOTSTRAP_DIR = Path(__file__).resolve().parent
 DONT_CHANGE_DIR = BOOTSTRAP_DIR.parent
@@ -643,7 +643,7 @@ def cache_text(uv: object, python: str, stamp: str) -> str:
 
 
 @contextlib.contextmanager
-def bootstrap_lock() -> Iterator[None]:
+def bootstrap_lock() -> Generator[None, None, None]:
     """Only one launcher at a time prepares uv and Python; Windows releases the lock after a crash."""
     TEMPORARY_DIR.mkdir(parents=True, exist_ok=True)
     with (TEMPORARY_DIR / "bootstrap.lock").open("a+b") as stream:

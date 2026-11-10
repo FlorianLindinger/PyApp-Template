@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import ast
 import importlib
+import math
 import os
 import re
 import sys
@@ -123,9 +124,17 @@ def _main_script_problem(value: str) -> Optional[str]:
 def parse_requirements(text: str) -> List[str]:
     """The packages of a pasted requirements.txt: one per line, without comments and --hash options."""
     entries = []
-    for line in text.splitlines():
+    pending = ""
+    # The extra "" ends a continuation on the last line.
+    for line in [*text.splitlines(), ""]:
+        # Like pip, join a line ending in a backslash with the next one first, so the --hash
+        # options that tools like pip-compile put on their own lines are removed with them.
+        if line.rstrip().endswith("\\"):
+            pending += line.rstrip()[:-1] + " "
+            continue
+        line, pending = pending + line, ""
         line = re.sub(r"(^|\s)#.*$", "", line)  # pip's rule: "#" starts a comment only after whitespace
-        line = re.sub(r"\s--hash=\S+", "", line).strip()
+        line = re.sub(r"(^|\s)--hash=\S+", "", line).strip()
         if line:
             entries.append(line)
     return entries
@@ -359,7 +368,11 @@ def validate(module: Optional[Union[ModuleType, SimpleNamespace]] = None) -> Non
         lambda v: v is None or (isinstance(v, str) and re.fullmatch(r"#[0-9A-Fa-f]{6}", v)),
         'use a color like "#3B78FF" or None',
     )
-    need("stop_timeout_seconds", lambda v: _number(v) and v >= 0, "use 0 (stop immediately) or a number of seconds")
+    need(
+        "stop_timeout_seconds",
+        lambda v: _number(v) and math.isfinite(v) and v >= 0,
+        "use 0 (stop immediately) or a finite number of seconds",
+    )
 
     for name in SHORTCUT_NAME_SETTINGS:
         need(name, lambda v: v is None or (isinstance(v, str) and v.strip()), "use a non-empty text or None")
@@ -411,7 +424,8 @@ def set_list_setting(name: str, values: Iterable[str]) -> List[str]:
 
     def body(newline: str, node: Optional[Union[ast.Assign, ast.AnnAssign]]) -> str:
         was_block = node is not None and isinstance(node.value, ast.Constant) and isinstance(node.value.value, str)
-        if was_block and not any("\\" in v or '"""' in v for v in values):
+        # A block holds one entry per line, so entries with line breaks need the list form.
+        if was_block and not any(c in v for v in values for c in ("\\", '"""', "\n", "\r")):
             return '"""' + newline + "".join(v + newline for v in values) + '"""'
         if not values:
             return "[]"
@@ -442,8 +456,7 @@ def _replace_setting_value(
             raise SettingsError(f"Could not find the setting {name} in developer_settings.py to edit.")
         # A setting that only had its default (added by a newer launcher version): append it.
         addition = f"{name} = {make_value(newline, None)}{newline}"
-        with Path(DEV_SETTINGS_PATH).open("w", encoding="utf-8", newline="") as stream:
-            stream.write(source + ("" if source.endswith(("\n", "\r")) else newline) + addition)
+        _write_settings_source(source + ("" if source.endswith(("\n", "\r")) else newline) + addition)
         sys.modules.pop("pyapp.developer_settings", None)
         return [f"+ {line}" for line in addition.rstrip().splitlines()]
     if not isinstance(node, (ast.Assign, ast.AnnAssign)) or node.value is None:
@@ -458,8 +471,7 @@ def _replace_setting_value(
     if replacement == old:
         return []
     lines[first : last + 1] = [replacement]
-    with Path(DEV_SETTINGS_PATH).open("w", encoding="utf-8", newline="") as stream:
-        stream.write("".join(lines))
+    _write_settings_source("".join(lines))
     sys.modules.pop("pyapp.developer_settings", None)
     return [f"- {line}" for line in old.rstrip().splitlines()] + [
         f"+ {line}" for line in replacement.rstrip().splitlines()
@@ -470,14 +482,47 @@ def _literal(value: object) -> str:
     """Python source text for a setting value."""
     if isinstance(value, str):
         return _quoted(value)
+    # repr() of inf/nan is a bare name that would fail when the settings are imported.
+    if isinstance(value, float) and not math.isfinite(value):
+        raise SettingsError(f"Cannot write the value {value!r} into developer_settings.py.")
     if value is None or isinstance(value, (bool, int, float)):
         return repr(value)
     raise SettingsError(f"Cannot write the value {value!r} into developer_settings.py.")
 
 
+_STRING_ESCAPES = {"\\": "\\\\", '"': '\\"', "\n": "\\n", "\r": "\\r", "\t": "\\t"}
+
+
 def _quoted(value: str) -> str:
-    """Double-quoted Python string literal (the style used in developer_settings.py)."""
-    return '"' + value.replace("\\", "\\\\").replace('"', '\\"') + '"'
+    """Double-quoted Python string literal (the style used in developer_settings.py).
+
+    Other control characters and lone surrogates are escaped too: a raw line break would end the
+    literal, and a surrogate cannot be written as UTF-8. Other text is kept readable.
+    """
+
+    def escape(character: str) -> str:
+        if character in _STRING_ESCAPES:
+            return _STRING_ESCAPES[character]
+        code = ord(character)
+        if code < 0x20 or code == 0x7F:
+            return f"\\x{code:02x}"
+        if 0xD800 <= code <= 0xDFFF:
+            return f"\\u{code:04x}"
+        return character
+
+    return '"' + "".join(escape(character) for character in value) + '"'
+
+
+def _write_settings_source(source: str) -> None:
+    """Write developer_settings.py only if it is still valid Python, so a bad edit cannot break it."""
+    try:
+        ast.parse(source, DEV_SETTINGS_PATH)
+    except SyntaxError as error:
+        raise SettingsError(
+            f"The edit would make developer_settings.py invalid ({error.msg}); nothing was changed."
+        ) from error
+    with Path(DEV_SETTINGS_PATH).open("w", encoding="utf-8", newline="") as stream:
+        stream.write(source)
 
 
 def describe_python_request(value: str) -> str:

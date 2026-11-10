@@ -15,7 +15,7 @@ Double-click a `.bat`, or run it from a terminal with arguments. Each one uses t
 | `get_startup_time.bat` | Measures the time from starting a shortcut's launcher until the main script runs, compared with starting it directly with the `.venv` Python. Works on a temporary copy of the project. Options: `--runs`, `--timeout`, `--targets` (`terminal`, `no_terminal`, `direct`), `--keep`. |
 | `get_import_times.bat launcher` | Shows what importing the launcher's own modules adds to an empty interpreter start. Option: `--runs`. |
 | `get_import_times.bat app [modules]` | The same for the app's packages in `.venv`; without module names it measures everything in `packages`. |
-| `make_import_map.bat` | Regenerates `data/import_to_package.txt`, the import name to PyPI project list that `find_imports` uses for packages that aren't installed yet. Needs internet and takes a few minutes; progress is cached in `DONT_CHANGE/tmp`, so an interrupted run continues. Options: `--count` (default 8000), `--workers`, `--output`, `--cache`. |
+| `make_import_map.bat` | Regenerates `data/import_to_package.txt`, the import name to PyPI project list that `find_imports` uses for packages that aren't installed yet. Needs internet and takes a few minutes; progress is cached in `DONT_CHANGE/tmp`, so an interrupted run continues. Cached projects older than 30 days are read again. Options: `--count` (default 8000), `--workers`, `--output`, `--cache`, `--max-age-days`, `--refresh` (read every project again). |
 | `show_longest_paths.bat [count] [folder]` | Lists the longest paths in the project, including ignored ones such as `.venv` and `__pycache__` files that don't exist yet, and whether they exceed the Windows path limit. |
 
 The code these files run is in `src`.

@@ -58,7 +58,7 @@ UV_LOCK_PATH = PROJECT_DIR + "\\uv.lock"
 PYTHON_VERSION_FILE = PROJECT_DIR + "\\.python-version"
 VENV_DIR = PROJECT_DIR + "\\.venv"
 VENV_PYTHON_EXE = VENV_DIR + "\\Scripts\\python.exe"
-RUNTIME_CACHE_PATH = TEMPORARY_DIR + "\\runtime.cmd"   # written by bootstrap/resolve_runtime.ps1
+RUNTIME_CACHE_PATH = TEMPORARY_DIR + "\\runtime.cmd"   # written by bootstrap/resolve_runtime.py
 ENVIRONMENT_LOCK_PATH = TEMPORARY_DIR + "\\environment.lock"
 # Written after a successful environment check; while it matches, launches skip the uv checks.
 ENVIRONMENT_STAMP_PATH = TEMPORARY_DIR + "\\environment.ok"

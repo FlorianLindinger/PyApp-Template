@@ -18,6 +18,7 @@ The result is generated from the packages themselves, so it contains no third-pa
 
 Usage (any Python 3.8+):
     python template_tools/src/make_import_map.py [--count 8000] [--workers 16] [--output FILE]
+                                                 [--max-age-days 30] [--refresh]
 """
 
 from __future__ import annotations
@@ -235,18 +236,50 @@ def top_projects(count: int) -> List[str]:
 # ---------------------------------------------------------------- main
 
 
-class _CacheEntry(TypedDict):
+class _CacheEntry(TypedDict, total=False):
     name: str
     imports: List[str]
+    fetched: str  # ISO date the wheel was read; missing in caches of older versions of this tool
 
 
-def build(projects: List[str], workers: int, cache_path: Path) -> Dict[str, List[str]]:
-    """{project display name: sorted import names}, using and updating a JSON cache."""
+def _today() -> datetime.date:
+    return datetime.datetime.now(datetime.timezone.utc).date()
+
+
+def _is_fresh(entry: _CacheEntry, max_age_days: Optional[float]) -> bool:
+    """Cached data is reused until it is max_age_days old (None: forever); it lets an interrupted run continue."""
+    if max_age_days is None:
+        return True
+    try:
+        fetched = datetime.date.fromisoformat(entry.get("fetched", ""))
+    except ValueError:
+        return False
+    return (_today() - fetched).days < max_age_days
+
+
+def fetch_dates(cache_path: Path, projects: Iterable[str]) -> Tuple[Optional[str], Optional[str]]:
+    """Oldest and newest date at which the wheels of these projects were read."""
+    try:
+        cache = json.loads(cache_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None, None
+    dates = sorted(cache[p]["fetched"] for p in projects if p in cache and "fetched" in cache[p])
+    return (dates[0], dates[-1]) if dates else (None, None)
+
+
+def build(
+    projects: List[str], workers: int, cache_path: Path, max_age_days: Optional[float] = None
+) -> Dict[str, List[str]]:
+    """{project display name: sorted import names}, using and updating a JSON cache.
+
+    Entries older than max_age_days are fetched again. If that fails, the old entry is kept: older
+    data is better than a gap in the map.
+    """
     try:
         cache = json.loads(cache_path.read_text(encoding="utf-8"))
     except (OSError, ValueError):
         cache: Dict[str, _CacheEntry] = {}
-    todo = [p for p in projects if p not in cache]
+    todo = [p for p in projects if p not in cache or not _is_fresh(cache[p], max_age_days)]
     _ui.fields([("Projects", len(projects)), ("Cached", len(projects) - len(todo)), ("To fetch", len(todo))])
     failures = 0
     cache_path.parent.mkdir(parents=True, exist_ok=True)  # also needed by the checkpoints below
@@ -256,7 +289,7 @@ def build(projects: List[str], workers: int, cache_path: Path) -> Dict[str, List
             project = futures[future]
             try:
                 name, names = future.result()
-                cache[project] = {"name": name, "imports": sorted(names)}
+                cache[project] = {"name": name, "imports": sorted(names), "fetched": _today().isoformat()}
             except Exception as error:
                 failures += 1
                 _ui.info(f"skipped {project}: {error}")
@@ -306,12 +339,19 @@ def main() -> int:
         type=Path,
         default=DONT_CHANGE_DIR / "tmp/import_mapping_cache.json",
     )
+    parser.add_argument(
+        "--max-age-days",
+        type=float,
+        default=30.0,
+        help="fetch projects again whose cached data is this old (default 30)",
+    )
+    parser.add_argument("--refresh", action="store_true", help="fetch every project again, ignoring the cache")
     args = parser.parse_args()
 
     _ui.heading("Import name map")
     _ui.step(f"Getting the {args.count} most-downloaded PyPI projects ...")
     ranking = top_projects(args.count)
-    results = build(ranking, args.workers, args.cache)
+    results = build(ranking, args.workers, args.cache, 0.0 if args.refresh else args.max_age_days)
     if len(results) < len(ranking) * MINIMUM_COMPLETE:
         _ui.error(
             f"Only {len(results)} of {len(ranking)} projects could be read (no internet?). "
@@ -319,6 +359,12 @@ def main() -> int:
         )
         return 1
     lines = mapping_lines(results)
+    oldest, newest = fetch_dates(args.cache, ranking)
+    read = (
+        f"between {oldest} and {newest}"
+        if oldest and newest and oldest != newest
+        else f"on {oldest or 'unknown dates'}"
+    )
     header = [
         '# Import name -> PyPI project name, one "import:project" pair per line.',
         "# Used by the offline import finder when a package is not installed yet; names that equal",
@@ -328,6 +374,7 @@ def main() -> int:
         f"# Generated {datetime.datetime.now(datetime.timezone.utc).date().isoformat()} by",
         f"# DONT_CHANGE/template_tools/src/make_import_map.py from the wheel file lists of the {len(ranking)}",
         "# most-downloaded PyPI projects.",
+        f"# The wheel file lists were read {read}.",
     ]
     temporary = args.output.with_name(args.output.name + ".tmp")
     with temporary.open("w", encoding="utf-8", newline="") as stream:

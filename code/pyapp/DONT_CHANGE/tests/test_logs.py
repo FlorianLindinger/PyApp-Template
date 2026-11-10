@@ -109,13 +109,13 @@ class CleanToolTests(unittest.TestCase):
 
     def test_files_in_use_are_kept_and_the_rest_is_deleted(self):
         with tempfile.TemporaryDirectory() as folder:
-            free, busy = Path(folder, "free.txt"), Path(folder, "busy.txt")
+            free, busy = Path(folder, "a_0123456789ab.txt"), Path(folder, "a_ba9876543210.txt")
             free.touch()
             busy.touch()
             real_unlink = Path.unlink
 
             def remove(path: Path):
-                if Path(path).name == "busy.txt":
+                if Path(path).name == busy.name:
                     raise PermissionError(32, "in use", path)
                 real_unlink(path)
 
@@ -123,6 +123,28 @@ class CleanToolTests(unittest.TestCase):
                 self.clean(folder, [])
             self.assertFalse(free.exists())
             self.assertTrue(busy.exists())
+
+    def test_only_the_launchers_own_logs_are_deleted(self):
+        # A log folder may be shared with the app's files (e.g. log_path = "run.txt").
+        with tempfile.TemporaryDirectory() as folder:
+            logs = [Path(folder, "a_0123456789ab.txt"), Path(folder, "a_0123456789ab.txt.output.log")]
+            others = [Path(folder, name) for name in ("valuable.csv", "a.txt", "a_notes.txt", "settings.py", ".env")]
+            for path in logs + others:
+                path.write_text("x", encoding="utf-8")
+            Path(folder, "subfolder").mkdir()
+            self.clean(folder, [])
+            self.assertEqual([path for path in logs if path.exists()], [])
+            self.assertEqual([path for path in others if not path.exists()], [])
+            self.assertTrue(Path(folder, "subfolder").is_dir())
+
+    def test_log_names_follow_the_date_template(self):
+        pattern = housekeeping._log_name_pattern("..\\logs\\log_%Y-%m-%d_%H-%M-%S.txt")
+        self.assertTrue(pattern.fullmatch("log_2026-11-10_20-29-45_0123456789ab.txt"))
+        self.assertTrue(pattern.fullmatch("LOG_2026-11-10_20-29-45_0123456789AB.TXT"))
+        self.assertTrue(pattern.fullmatch("log_2026-11-10_20-29-45_0123456789ab.txt.output.log"))
+        self.assertFalse(pattern.fullmatch("log_2026-11-10_20-29-45.txt"))
+        self.assertFalse(pattern.fullmatch("notes.txt"))
+        self.assertTrue(housekeeping._log_name_pattern("100%%_%H.txt").fullmatch("100%_07_0123456789ab.txt"))
 
     def test_run_folders_are_kept_while_an_instance_runs(self):
         with tempfile.TemporaryDirectory() as folder:

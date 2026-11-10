@@ -135,7 +135,7 @@ The taskbar grouping is already set up for you. To pass your own values, use `ar
 
 ## Shipping your app
 
-**With Git or a download.** Commit these generated files along with your code, then have the recipient run Setup. It installs the same Python and package versions you tested.
+**With Git or a download.** Commit these generated files along with your code, then have the recipient run Setup. It installs the locked package versions and a Python matching the recorded version request. Set an exact `python_version` (e.g. `3.14.2`) if the patch version must match too.
 
 - `code/pyapp/generated/uv.lock`
 - `code/pyapp/generated/.python-version`
@@ -192,8 +192,8 @@ Settings marked `[bootstrap]` are read before any Python exists, so keep them on
 
 ## Logs and crash reports
 
-- **Normal log:** a UTF-8 file with your prints and inputs, with optional timestamps.
-- **`.output.log`:** the raw output next to it, including native code and child processes. Kept only when the app does not end normally.
+- **Normal log:** a UTF-8 file with your prints and inputs, with optional timestamps, and the output of native code and child processes.
+- **`.output.log`:** the raw output of native code and child processes next to it, including the last moments before a hard crash. Kept only when the app does not end normally.
 - **Crash log:** the error report, written after every failure and Ctrl+C.
 
 Errors are reported however they happen, including unhandled exceptions, `sys.exit(1)`, errors in worker threads, and hard interpreter crashes. Exception chains, notes and exception groups are all shown, with the launcher's own frames removed.

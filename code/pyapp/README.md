@@ -6,7 +6,7 @@ shortcuts, logging and completion behavior.
 
 The app's uv project is in [generated](generated/README.md). Generated on the first run:
 
-- `generated/uv.lock` and `generated/.python-version`: the exact package and Python versions. **Commit them.**
+- `generated/uv.lock` and `generated/.python-version`: the locked package versions and the recorded Python version request. **Commit them.**
 - `generated/pyproject.toml`: generated from `packages` and `python_version` for uv. Do not edit it;
   changes made to it anyway (e.g. `uv add`) are copied into `packages`. Ignored by Git.
 - `generated/.venv/`: the app environment. Ignored by Git.

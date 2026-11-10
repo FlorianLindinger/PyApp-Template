@@ -102,8 +102,10 @@ Three Pythons can be involved, but usually they are the same installation:
    every process the app starts, see [Process control](#process-control-and-stop)), registers
    the run in `tmp\running\` under the instance policy, sets the console's title, icon, colors
    and taskbar identity, opens the log file, and starts the app Python with
-   `script_wrapper.py --config tmp\runs\<id>\wrapper.json`. It copies the app's output to the
-   console and to the log (`<log>.output.log` keeps the raw bytes, and is deleted after a normal end), waits for the app to end,
+   `script_wrapper.py --config tmp\runs\<id>\wrapper.json`. It shows the app's output in the
+   console; the wrapper writes the log. Output that bypasses Python's streams (native code, child
+   processes) goes to `<log>.output.log` first, which the wrapper merges into the log as it
+   arrives; the file is deleted after a normal end and kept as evidence otherwise. It waits for the app to end,
    unregisters, and calls `process_exit.py` with the outcome. In no-terminal mode a completion
    window only appears when something needs to be shown.
 9. **`runtime\script_wrapper.py`** runs inside the app Python. It removes the launcher's
@@ -126,7 +128,7 @@ identity), `PROGRAM_HAS_TERMINAL` (`1`/`0`), `LOG_PATH`, `WDIR_IS_SCRIPT_DIR`,
 | --- | --- | --- |
 | `Stop <name>` | `B\Q.bat` → `actions\stop_program.py` | Stops every running instance of this project copy (see below) and closes after a short countdown. |
 | `<name> - Settings` | `B\S.bat <file>` | Opens the user settings file (`user_settings_path`). |
-| `<name> - Edit main.py` | `B\M.bat <file>` | Opens `main.py`. |
+| `<name> - Edit Code` | `B\M.bat <file>` | Opens the file set in `main_script_path`. |
 | `<name> - Logs` / `- Crash Logs` | `B\L.bat` / `B\C.bat <folder>` | Opens the log / crash-log folder. |
 
 Setup passes each "open" shortcut its resolved target. `bootstrap\open_file.bat` /
@@ -145,7 +147,7 @@ and `code\pyapp\icons\*.cmd` run `actions\gen_icons.py`.
 
 ## The Python environment
 
-`code/pyapp` is a uv project. `developer_settings.py` is the only file people edit:
+`code/pyapp/generated` is the uv project directory. `developer_settings.py` is the only file people edit:
 
 - `python_version` is the requested Python; `pyapp/generated/.python-version` records the one the
   project actually uses (written on the first start). A different `python_version` opens a
@@ -173,7 +175,7 @@ newest uv is fetched to `%LOCALAPPDATA%\PyApp-Template\uv` (never on PATH), the 
 retried, and that uv is used from then on while it is newer. `scripts/env/uv.py: uv_environment()` builds uv's environment
 variables and mirrors `set_uv_environment` in `resolve_runtime.py`; keep both in sync. Python
 lookups run from the system temp folder, because uv would otherwise treat `pyapp/generated/.venv` as
-"the" Python; project commands run in `code/pyapp`.
+"the" Python; project commands use `code/pyapp/generated`.
 
 Portability (`make_portable` dev tool): uv in `pyapp/generated/uv`, Python in `pyapp/generated/pythons`, the
 uv cache optionally in `pyapp/generated/uv-cache`. The `.venv` is relocatable and re-linked after a
@@ -184,7 +186,7 @@ move, so a copied folder works offline on another PC.
 - **Registry.** `tmp/running/` holds one record per running watchdog
   (`scripts/runtime_state.py: ProcessRegistry`): PID, process creation time and executable (so a
   reused PID is never mistaken for the app), console window, app process, run folder and job
-  name. `tmp/running.lock` (`FileLock`) serializes changes; it is never held while waiting.
+  name. A project-specific named Windows mutex serializes changes; it is never held while waiting.
 - **Job objects.** The watchdog creates a Windows job and puts itself in it before starting the
   app, so every process the app starts (also grandchildren) belongs to the job.
 - **Stop** (`actions/stop_program.py`, and `instance_policy = "replace"`) first asks each
@@ -237,7 +239,7 @@ All launcher windows share one look (`scripts/console_tools.py`): `print_heading
 `wait_for_enter`, `print_choices` (numbered menus) and `print_fields` (aligned values). Colors
 appear only on a real console, never in redirected output or log files. Windows that stay open
 for a while (Setup, dev tools, installing Python or packages) start with the program name in
-ASCII art (`scripts/banner.py`). The PowerShell bootstrap and the
+ASCII art (`scripts/banner.py`). The batch/Python bootstrap and the
 `.cmd` files use the same badges.
 
 ## Every file
@@ -262,7 +264,7 @@ ASCII art (`scripts/banner.py`). The PowerShell bootstrap and the
 | `W.bat` | the main shortcut | `start_program.py` with a terminal |
 | `N.bat` | `(no Terminal)` shortcut | `start_program.py` without a terminal |
 | `Q.bat` | `Stop` shortcut | `stop_program.py` |
-| `S.bat`, `M.bat` | Settings / Edit main.py | `open_file.bat <file>`, else `open_file.py` |
+| `S.bat`, `M.bat` | Settings / Edit Code | `open_file.bat <file>`, else `open_file.py` |
 | `L.bat`, `C.bat` | Logs / Crash Logs | `open_folder.bat <folder>`, else `open_folder.py` |
 
 ### `bootstrap/` – before any Python is known

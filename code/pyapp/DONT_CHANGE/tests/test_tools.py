@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import ast
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -42,6 +43,51 @@ class FreshCloneTests(unittest.TestCase):
         self.assertEqual(clone_tool.main_script_value(text), "..\\main.py")
         with self.assertRaises(RuntimeError):
             clone_tool.main_script_value("other = 1\n")
+
+    def make_project(self, root: Path, main_script: str) -> Path:
+        settings = root / "code" / "pyapp" / "developer_settings.py"
+        settings.parent.mkdir(parents=True)
+        settings.write_text(f"main_script_path = {main_script!r}\n", encoding="utf-8")
+        (root / "code" / "main.py").write_text("real app", encoding="utf-8")
+        return settings
+
+    def test_an_absolute_main_script_is_replaced_in_the_clone_only(self):
+        with tempfile.TemporaryDirectory() as folder:
+            project, clone = Path(folder) / "project", Path(folder) / "clone"
+            original = project / "code" / "main.py"
+            self.make_project(project, str(original.parent.resolve() / "main.py"))
+            clone_settings = self.make_project(clone, str(original.parent.resolve() / "main.py"))
+
+            clone_tool.prepare_clone(clone, Path(folder) / "marker.txt", project)
+
+            self.assertEqual(original.read_text(encoding="utf-8"), "real app")
+            self.assertIn("marker.txt", (clone / "code" / "main.py").read_text(encoding="utf-8"))
+            # The clone's launcher must run the clone's probe, not the original app.
+            self.assertEqual(
+                assigned_values(clone_settings.read_text(encoding="utf-8"))["main_script_path"], "..\\main.py"
+            )
+
+    def test_a_relative_main_script_stays_relative(self):
+        with tempfile.TemporaryDirectory() as folder:
+            project, clone = Path(folder) / "project", Path(folder) / "clone"
+            self.make_project(project, "..\\main.py")
+            self.make_project(clone, "..\\main.py")
+            clone_tool.prepare_clone(clone, Path(folder) / "marker.txt", project)
+            self.assertEqual((project / "code" / "main.py").read_text(encoding="utf-8"), "real app")
+            self.assertIn("marker.txt", (clone / "code" / "main.py").read_text(encoding="utf-8"))
+
+    def test_a_main_script_outside_the_clone_is_refused(self):
+        with tempfile.TemporaryDirectory() as folder:
+            project, clone = Path(folder) / "project", Path(folder) / "clone"
+            outside = Path(folder) / "elsewhere.py"
+            outside.write_text("keep", encoding="utf-8")
+            self.make_project(project, "..\\main.py")
+            self.make_project(clone, "..\\..\\..\\elsewhere.py")
+            with self.assertRaises(RuntimeError):
+                clone_tool.prepare_clone(clone, Path(folder) / "marker.txt", project)
+            self.assertEqual(outside.read_text(encoding="utf-8"), "keep")
+            with self.assertRaises(RuntimeError):
+                clone_tool.clone_main_script(clone, str(outside), project)
 
     def test_batch_command_quotes_paths_with_spaces(self):
         command = clone_tool.batch_command(Path("C:/a b/x.cmd"), "arg")
