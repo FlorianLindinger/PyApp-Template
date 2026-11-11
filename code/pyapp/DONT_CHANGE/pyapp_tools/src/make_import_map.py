@@ -236,9 +236,13 @@ def top_projects(count: int) -> List[str]:
 # ---------------------------------------------------------------- main
 
 
-class _CacheEntry(TypedDict, total=False):
+class _CacheEntryRequired(TypedDict):
     name: str
     imports: List[str]
+
+
+# Only fetched may be missing (older cache files); NotRequired needs Python 3.11.
+class _CacheEntry(_CacheEntryRequired, total=False):
     fetched: str  # ISO date the wheel was read
 
 

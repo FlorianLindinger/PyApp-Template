@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="code/pyapp/DONT_CHANGE/data/icons/default_icon.png" alt="PyApp-Template logo" width="120">
+<img src="code/pyapp/icons/icon.ico" alt="App icon" width="120">
 
 # PyApp-Template
 

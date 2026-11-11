@@ -11,3 +11,11 @@ search-path = ["../..", "bootstrap", "runtime", "tests", "pyapp_tools/src"]
 python-version = "3.8"
 python-platform = "windows"
 skip-interpreter-query = true
+
+# On top of "strict": the checks of the "all" preset that find real problems in this code.
+# The rest of "all" mostly flags deliberate patterns (if items:, ignored call results, Any
+# for JSON and Windows API values) and would add noise, not safety.
+[errors]
+unused-type-ignore = "error"       # a suppression comment that no longer suppresses anything
+untyped-namedtuple = "error"       # namedtuple fields without types (use typing.NamedTuple)
+not-required-key-access = "error"  # reading an optional TypedDict key without checking it

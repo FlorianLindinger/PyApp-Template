@@ -15,9 +15,8 @@ import ast
 import os
 import sys
 import sysconfig
-from collections import namedtuple
 from pathlib import Path
-from typing import Dict, Iterator, List, Optional, Set, Tuple
+from typing import Dict, Iterator, List, NamedTuple, Optional, Set, Tuple
 
 from pyapp.DONT_CHANGE.backend_settings import (
     BACKEND_DIR,
@@ -27,9 +26,19 @@ from pyapp.DONT_CHANGE.backend_settings import (
     VENV_DIR,
 )
 
-Requirement = namedtuple("Requirement", "distribution imports source files optional")
-"""source: "installed" (from package metadata), "ambiguous" (one of several installed packages that provide
-the import name), "mapping" (bundled list) or "guess" (same as import name)."""
+
+class Requirement(NamedTuple):
+    """A package the project imports.
+
+    source: "installed" (from package metadata), "ambiguous" (one of several installed packages that
+    provide the import name), "mapping" (bundled list) or "guess" (same as import name).
+    """
+
+    distribution: str
+    imports: List[str]
+    source: str
+    files: List[str]
+    optional: bool
 
 
 def standard_library_names() -> Set[str]:

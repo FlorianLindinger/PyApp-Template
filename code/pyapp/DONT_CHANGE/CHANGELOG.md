@@ -31,6 +31,7 @@ The first versioned release; it contains every change below.
 - New `git_hooks/pre-commit`: the leak check also runs on the staged changes, so a leak stops the commit instead of the push.
 - The PyApp tools no longer crash when their output goes to the NUL device (e.g. `> nul`), which Windows reports as a terminal.
 - Stricter Ruff rules (bugs, simplifications, unused arguments, Pylint, return types; see `ruff.toml` for the deliberate exceptions), with the launcher code fixed to pass them.
+- Pyrefly also reports unused type-ignore comments, namedtuples without field types and unchecked optional TypedDict keys (on top of `strict`).
 - Release zips go to `pyapp_tools/zip_releases`, which Git keeps empty except for its `.gitkeep`.
 - `run_regressions.py -j 0` runs the test files in parallel (about 5 s instead of 10); the file lock test no longer waits 5 s.
 - The pre-commit hook also runs Ruff's lint and format check on the staged launcher files; the pre-push hook also runs `verify_launcher` and the regression tests.

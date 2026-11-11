@@ -13,10 +13,9 @@ import shutil
 import subprocess
 import sys
 import uuid
-from collections import namedtuple
 from pathlib import Path
 from types import ModuleType, SimpleNamespace
-from typing import Dict, List, Mapping, Optional, Tuple, Union
+from typing import Dict, List, Mapping, NamedTuple, Optional, Tuple, Union
 
 from pyapp.DONT_CHANGE.backend_settings import (
     DEV_SETTINGS_PATH,
@@ -66,8 +65,13 @@ from pyapp.DONT_CHANGE.scripts.env.uv import run_uv, uv_environment, uv_exe, uv_
 from pyapp.DONT_CHANGE.scripts.errors import LaunchCancelled, SetupError
 from pyapp.DONT_CHANGE.scripts.runtime_state import FileLock
 
-AppPython = namedtuple("AppPython", "exe flags")
-"""exe: interpreter that runs main.py; flags: extra interpreter options."""
+
+class AppPython(NamedTuple):
+    """The interpreter that runs main.py and its extra interpreter options."""
+
+    exe: str
+    flags: List[str]
+
 
 # -E: ignore PYTHON* variables. -s: no per-user packages. -X utf8: UTF-8 is the default text encoding.
 APP_PYTHON_FLAGS = ["-E", "-s", "-X", "utf8"]

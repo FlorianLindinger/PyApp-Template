@@ -167,7 +167,7 @@ def set_terminal_icon(icon_path: Optional[str]) -> None:
     from ctypes import wintypes
 
     try:
-        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)  # type:ignore
+        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
         hwnd = int(kernel32.GetConsoleWindow() or 0)
         if not hwnd:
             return
@@ -373,8 +373,8 @@ def enable_unminimize_and_foreground_terminal_on_first_print() -> None:
             return getattr(self.stream, name)
 
     # this will unminimize and foreground on first print/error
-    sys.stdout = unminimize_plus_foreground_terminal_on_first_output(sys.stdout)  # type:ignore
-    sys.stderr = unminimize_plus_foreground_terminal_on_first_output(sys.stderr)  # type:ignore
+    sys.stdout = unminimize_plus_foreground_terminal_on_first_output(sys.stdout)
+    sys.stderr = unminimize_plus_foreground_terminal_on_first_output(sys.stderr)
 
 
 def set_terminal_colors(colors: Optional[str]) -> None:
