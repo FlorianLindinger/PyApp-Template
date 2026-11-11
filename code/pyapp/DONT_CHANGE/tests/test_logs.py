@@ -33,7 +33,7 @@ class LogTests(unittest.TestCase):
                 self.assertEqual(
                     launcher_ui.get_log_path("logs/a.txt", True), os.path.normpath(str(Path(folder) / "logs/a.txt"))
                 )
-        self.assertEqual(launcher_ui.get_log_path(None, False), "")
+        self.assertEqual(launcher_ui.get_log_path("", False), "")
         self.assertNotIn("%", launcher_ui.get_log_path(os.path.normpath(str(Path("log_%Y.txt").absolute())), False))
 
     def test_unique_log_names(self):
@@ -126,7 +126,7 @@ class CleanToolTests(unittest.TestCase):
         settings = types.SimpleNamespace(
             log_path=str(Path(folder) / "a.txt"),
             log_path_is_relative_to_start_folder_if_relative=False,
-            crash_log_path=None,
+            crash_log_path="",
             crash_log_path_is_relative_to_start_folder_if_relative=False,
         )
         registry = mock.Mock()
@@ -198,9 +198,9 @@ class CleanMessageTests(unittest.TestCase):
             runs = Path(folder, "tmp", "runs")
             runs.mkdir(parents=True)
             settings = types.SimpleNamespace(
-                log_path=None,
+                log_path="",
                 log_path_is_relative_to_start_folder_if_relative=False,
-                crash_log_path=None,
+                crash_log_path="",
                 crash_log_path_is_relative_to_start_folder_if_relative=False,
             )
             registry = mock.Mock()

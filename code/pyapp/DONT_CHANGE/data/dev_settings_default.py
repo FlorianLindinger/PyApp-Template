@@ -4,7 +4,7 @@ Start at IMPORTANT; most projects never need to go further.
 Relative paths in this file are interpreted as relative to this file.
 
 Settings marked [bootstrap] are also read by the Windows bootstrap before any Python
-exists. Keep each of them on ONE line as a plain literal ("text", True, False, None):
+exists. Keep each of them on ONE line as a plain literal ("text", True, False):
 no expressions, f-strings or line continuations.
 """
 
@@ -12,7 +12,7 @@ no expressions, f-strings or line continuations.
 # ruff: noqa: I001,UP006,UP007,UP035,UP045,S603,PTH100,RUF100
 # For backward compatibility down to Python 3.8:
 from __future__ import annotations
-from typing import Dict, List, Optional, Union
+from typing import Dict, List
 # fmt:on
 # ==================================================================
 
@@ -42,20 +42,20 @@ program_name = "PyApp-Template"
 python_version = "3.14"
 
 # Packages the app needs, one per line between the triple quotes, like a requirements.txt: PyPI names with optional
-# version limits such as numpy>=2 or pillow==11.*; # comments and --hash options are fine. A list such as
-# ["requests", "numpy>=2"] works too.
+# version limits such as numpy>=2 or pillow==11.*; # comments and --hash options are fine.
+# Only strings are accepted; use "" for no packages.
 # The launcher installs exactly these, with the versions recorded in pyapp/generated/uv.lock (commit that file).
 # A package removed here stays installed until you run the dev tool sync_packages.
 # The dev tools add_packages, remove_packages and find_imports edit this for you.
-packages: Union[List[str], str] = """
+packages = """
 
 # Copy-paste needed packages here
 
 """
 # A requirements file whose packages are installed in addition to "packages" (relative to this file), e.g.
-# "..\\requirements.txt"; None: none. The launcher only reads it: the dev tools change "packages", so a package
-# from this file is removed in the file itself. A package may not be in both places.
-requirements_path: Optional[str] = None
+# "..\\requirements.txt"; The launcher only reads it: the dev tools change "packages", so a package
+# from this file is removed in the file itself. A package may not be in both places. "" to disable.
+requirements_path = ""
 
 
 # --- Logging and prints ---
@@ -65,9 +65,9 @@ enable_log_for_terminal_start = True
 # Without a terminal, the log is the only place where prints end up:
 enable_log_for_no_terminal_start = True
 
-# Text added before each print and input in the window. Accepts strftime codes, e.g. "%H:%M:%S | ". None: no text.
-print_prepend: Optional[str] = "%H:%M:%S | "
-input_prepend: Optional[str] = "%H:%M:%S > "
+# Text added before each print and input in the window. Accepts strftime codes, e.g. "%H:%M:%S | ". "" to disable.
+print_prepend = "%H:%M:%S | "
+input_prepend = "%H:%M:%S > "
 
 # --- Started while already running ---
 #   "allow"    start another instance
@@ -111,17 +111,17 @@ play_sound_after_failure = True
 #        Falls back to the classic console with a warning if Windows Terminal is not installed.
 use_classic_terminal = True
 
-# Background color: 0=Black,1=Blue,2=Green,3=Aqua,4=Red,5=Purple,6=Yellow,7=White,8=Gray,9=LightBlue:
-terminal_bg_color: Optional[str] = "9"
-# Text color: A=LightGreen,B=LightAqua,C=LightRed,D=LightPurple,E=LightYellow,F=BrightWhite:
-terminal_text_color: Optional[str] = "F"
+# Background color: 0=Black,1=Blue,2=Green,3=Aqua,4=Red,5=Purple,6=Yellow,7=White,8=Gray,9=LightBlue. "" for default:
+terminal_bg_color = "9"
+# Text color: A=LightGreen,B=LightAqua,C=LightRed,D=LightPurple,E=LightYellow,F=BrightWhite. "" for default:
+terminal_text_color = "F"
 
 # --- Starting and stopping ---
 # The Python file the launcher runs. It must be inside the code folder, but not in code/pyapp.
 # Imports start from its folder, like `python main.py`. Run Setup again after changing it (for the Edit Code shortcut).
 main_script_path = "..\\main.py"
 
-# Arguments passed to main.py:
+# String arguments passed to main.py:
 args_for_main_py: List[str] = []
 
 # Environment variables set for main.py, e.g. {"MY_SETTING": "1"}.
@@ -151,9 +151,9 @@ uv_prefer = "global"
 uv_install_if_missing = "global"
 
 # --- Settings file and shortcut locations ---
-# File that the Settings shortcut opens, for the people using the app (any file type; None: no such shortcut).
+# File that the Settings shortcut opens, for the people using the app (any file type; "" to disable).
 # Run Setup again after changing it:
-user_settings_path: Optional[str] = "..\\settings.py"
+user_settings_path = "..\\settings.py"
 
 # The project folder always gets all enabled shortcuts. Setup removes earlier ones that are no longer wanted.
 # Start Menu: a folder named after program_name with all enabled shortcuts:
@@ -162,22 +162,22 @@ start_menu_shortcuts = True
 desktop_shortcuts: List[str] = []
 
 # --- Log files ---
-# Accepts strftime codes, e.g. "log_%Y-%m-%d_%H-%M-%S.txt". None: no log file.
+# Accepts strftime codes, e.g. "log_%Y-%m-%d_%H-%M-%S.txt". "" to disable.
 # After changing the folder, run Setup again (the Logs shortcut opens it) and update the root .gitignore's /logs/* rule.
-log_path: Optional[str] = "..\\..\\logs\\log_%Y-%m-%d_%H-%M-%S.txt"
+log_path = "..\\..\\logs\\log_%Y-%m-%d_%H-%M-%S.txt"
 # A relative log_path starts at: False = this file, True = the folder of the starting shortcut.
 log_path_is_relative_to_start_folder_if_relative = False
 
 # Text added before each print and input in the log file (same format as print_prepend):
-log_print_prepend: Optional[str] = "%H:%M:%S | "
-log_input_prepend: Optional[str] = "%H:%M:%S > "
+log_print_prepend = "%H:%M:%S | "
+log_input_prepend = "%H:%M:%S > "
 
 # --- Crash logs ---
 # A text file with the error report, written after every failure and after Ctrl+C. It also has everything the app printed, if logging is on.
 enable_crash_log = True
-# Accepts strftime codes, e.g. "crash_log_%Y-%m-%d_%H-%M-%S.txt". None: no crash log.
+# Accepts strftime codes, e.g. "crash_log_%Y-%m-%d_%H-%M-%S.txt". "" to disable.
 # After changing the folder, run Setup again (the Crash Logs shortcut opens it) and update the root .gitignore's /crash logs/* rule.
-crash_log_path: Optional[str] = "..\\..\\crash logs\\crash_log_%Y-%m-%d_%H-%M-%S.txt"
+crash_log_path = "..\\..\\crash logs\\crash_log_%Y-%m-%d_%H-%M-%S.txt"
 # A relative crash_log_path starts at: False = this file, True = the folder of the starting shortcut.
 crash_log_path_is_relative_to_start_folder_if_relative = False
 
@@ -186,16 +186,16 @@ crash_log_path_is_relative_to_start_folder_if_relative = False
 # ==================================================================
 
 # --- Shortcut names ---
-# None: that shortcut is not created. The first one starts the app with a terminal (see use_classic_terminal).
-terminal_shortcut_name: Optional[str] = f"{program_name}"
-no_terminal_shortcut_name: Optional[str] = f"{program_name} (no Terminal)"
-open_settings_shortcut_name: Optional[str] = f"{program_name} - Settings"
-stop_running_shortcut_name: Optional[str] = f"Stop {program_name}"
-open_log_folder_shortcut_name: Optional[str] = f"{program_name} - Logs"
-open_crash_log_folder_shortcut_name: Optional[str] = f"{program_name} - Crash Logs"
-open_code_shortcut_name: Optional[str] = f"{program_name} - Edit Code"
+# Shortcut names. "" to disable.
+terminal_shortcut_name = f"{program_name}"
+no_terminal_shortcut_name = f"{program_name} (no Terminal)"
+open_settings_shortcut_name = f"{program_name} - Settings"
+stop_running_shortcut_name = f"Stop {program_name}"
+open_log_folder_shortcut_name = f"{program_name} - Logs"
+open_crash_log_folder_shortcut_name = f"{program_name} - Crash Logs"
+open_code_shortcut_name = f"{program_name} - Edit Code"
 # Tools for the people using the app: repair, add packages, make the folder self-contained, delete logs, ...
-tools_shortcut_name: Optional[str] = f"{program_name} - Tools"
+tools_shortcut_name = f"{program_name} - Tools"
 
 # --- Startup ---
 # Start with the window minimized:
@@ -228,14 +228,9 @@ github_actions: List[str] = []
 # Date format in crash reports:
 error_date_format = "%Y-%m-%d %H:%M:%S"
 
-# Source lines of your own code shown before and after each failing line (0: none).
-# Library code always shows just the failing line, like Python does.
-traceback_lines_before: int = 3
-traceback_lines_after: int = 3
-
 # --- Windows Terminal only (use_classic_terminal = False) ---
-# Tab bar color, e.g. "#3B78FF". None: the Windows Terminal profile's default.
-tab_bar_color: Optional[str] = "#3B78FF"
+# Tab bar color, e.g. "#3B78FF". "" for Windows default.
+tab_bar_color = "#3B78FF"
 
 # ==================================================================
 

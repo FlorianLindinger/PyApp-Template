@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import io
 import sys
 import unittest
 from typing import Dict, List, Tuple
@@ -15,12 +16,49 @@ with mock.patch.object(sys, "path", [str(DONT_CHANGE / "pyapp_tools" / "src"), *
 
 
 class CheckAllTests(unittest.TestCase):
+    def test_real_child_output_is_buffered_behind_the_push_summary(self):
+        step = tool.Step("Fixture", [sys.executable, "-c", "print('fixture.py:12:3: broken'); raise SystemExit(1)"])
+        output = io.StringIO()
+        with mock.patch("sys.stdout", output):
+            self.assertEqual(tool.run_step(step, "", hook=True), 1)
+        self.assertTrue(output.getvalue().startswith("Push blocked: Fixture failed"))
+        self.assertIn("fixture.py:12:3: broken", output.getvalue())
+
+    def test_push_failure_is_the_first_line_and_keeps_full_diagnostics(self):
+        output = io.StringIO()
+        with mock.patch.object(tool.subprocess, "run") as run, mock.patch("sys.stdout", output):
+            run.return_value = mock.Mock(returncode=1, stdout=b"Heading\napp.py:12:3: error\n")
+            self.assertEqual(tool.run_step(tool.STEPS[2], "", hook=True), 1)
+        self.assertTrue(output.getvalue().startswith("Push blocked: Verify launcher"))
+        self.assertIn('Click "Show Command Output" for details.', output.getvalue().splitlines()[0])
+        self.assertIn("app.py:12:3: error", output.getvalue())
+        self.assertEqual(run.call_args.kwargs["stderr"], tool.subprocess.STDOUT)
+
+    def test_successful_push_steps_are_quiet_and_skips_are_not_failures(self):
+        output = io.StringIO()
+        with mock.patch.object(tool.subprocess, "run") as run, mock.patch("sys.stdout", output):
+            for step, code in ((tool.STEPS[0], 0), (tool.STEPS[2], tool.SKIPPED)):
+                run.return_value = mock.Mock(returncode=code, stdout=b"Heading\nMore output\n")
+                self.assertEqual(tool.run_step(step, "refs", hook=True), code)
+        self.assertEqual(output.getvalue(), "")
+        self.assertIsNone(run.call_args.kwargs["input"])
+
+    def test_leak_summary_is_kept_without_another_summary_in_front(self):
+        output = io.StringIO()
+        message = b"Push blocked: secret at app.py:12\nDetails\n"
+        with mock.patch.object(tool.subprocess, "run") as run, mock.patch("sys.stdout", output):
+            run.return_value = mock.Mock(returncode=1, stdout=message)
+            self.assertEqual(tool.run_step(tool.STEPS[0], "refs", hook=True), 1)
+        self.assertEqual(output.getvalue(), message.decode())
+        self.assertEqual(run.call_args.kwargs["input"], b"refs")
+
     def run_main(self, codes: Dict[str, int], argv: List[str]) -> Tuple[int, List[str]]:
         """main() with fake step results; returns (exit code, labels of the steps that ran)."""
         ran: List[str] = []
 
-        def fake_run(step: tool.Step, refs: str) -> int:
+        def fake_run(step: tool.Step, refs: str, *, hook: bool = False) -> int:
             ran.append(step.label)
+            self.assertEqual(hook, "--pushing" in argv)
             if step.reads_refs:
                 self.assertTrue(refs.startswith("refs/heads/"))
             return codes.get(step.label, 0)

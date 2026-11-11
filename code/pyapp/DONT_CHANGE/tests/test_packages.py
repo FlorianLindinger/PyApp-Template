@@ -12,6 +12,7 @@ import support  # first: makes the template importable
 
 # isort: split
 
+from pyapp.DONT_CHANGE.scripts import config
 from pyapp.DONT_CHANGE.scripts.env import pyproject, venv
 from pyapp.DONT_CHANGE.scripts.errors import SetupError
 
@@ -25,7 +26,7 @@ class PyprojectTests(unittest.TestCase):
             config.set_list_setting("packages", packages)
             for _ in range(3):
                 pyproject.reconcile_pyproject(load(), (3, 14))
-            self.assertEqual(load().packages, packages)
+            self.assertEqual(config.package_entries(load()), packages)
             self.assertEqual(pyproject.declared_dependencies(), packages)
 
     def test_parser_handles_comments_literal_and_escaped_strings(self):
@@ -56,7 +57,7 @@ class PyprojectTests(unittest.TestCase):
             )
             path.write_text(text, encoding="utf-8")
             pyproject.reconcile_pyproject(load(), None)
-            self.assertEqual(load().packages, ["requests>=2.32"])
+            self.assertEqual(config.package_entries(load()), ["requests>=2.32"])
 
     def test_dropped_package_sources_are_reported(self):
         with support.temporary_settings() as (_, load):
@@ -96,7 +97,7 @@ class PyprojectTests(unittest.TestCase):
             )
             config.set_list_setting("packages", ["requests"])
             pyproject.reconcile_pyproject(load(), None)
-            self.assertEqual(load().packages, ["requests"])
+            self.assertEqual(config.package_entries(load()), ["requests"])
             self.assertEqual(pyproject.declared_dependencies(), ["requests"])
 
     def test_requires_python_follows_the_project_python(self):
@@ -143,7 +144,7 @@ class TypedPackagesTests(unittest.TestCase):
 class RequirementsFileTests(unittest.TestCase):
     """requirements_path: packages from a file, in addition to "packages"; the launcher only reads it."""
 
-    def settings_with(self, requirements: str, packages: str = '["requests"]'):
+    def settings_with(self, requirements: str, packages: str = '"requests"'):
         def transform(text: str) -> str:
             return text + f'\r\npackages = {packages}\r\nrequirements_path = "requirements.txt"\r\n'
 
@@ -185,7 +186,7 @@ class RequirementsFileTests(unittest.TestCase):
         text = path.read_text(encoding="utf-8").replace('"numpy>=2",', '"numpy>=2",\n    "rich>=13",')
         path.write_text(text, encoding="utf-8")
         pyproject.reconcile_pyproject(load(), None)
-        self.assertEqual(load().packages, ["requests", "rich>=13"])
+        self.assertEqual(config.package_entries(load()), ["requests", "rich>=13"])
         self.assertEqual(pyproject.declared_dependencies(), ["requests", "rich>=13", "numpy>=2"])
 
     def test_a_file_package_is_removed_in_the_file(self):

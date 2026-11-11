@@ -54,13 +54,25 @@ def refs_of_current_branch() -> str:
     return f"refs/heads/{branch} {local} refs/heads/{branch} {remote}\n"
 
 
-def run_step(step: Step, refs: str) -> int:
-    # The tools of this folder, run with this interpreter; their output goes straight to the console.
-    return subprocess.run(  # noqa: S603
+def run_step(step: Step, refs: str, *, hook: bool = False) -> int:
+    """Stream manual checks; buffer hook checks so a later failure gets the first output line."""
+    completed = subprocess.run(  # noqa: S603
         step.command,
         input=refs.encode("utf-8") if step.reads_refs else None,
+        stdout=subprocess.PIPE if hook else None,
+        stderr=subprocess.STDOUT if hook else None,
         check=False,
-    ).returncode
+    )
+    if hook and completed.returncode and not (step.can_skip and completed.returncode == SKIPPED):
+        output = completed.stdout.decode("utf-8", "replace").strip()
+        if not output.startswith("Push blocked:"):
+            _ui.info(
+                f"Push blocked: {step.label} failed (exit code {completed.returncode}). "
+                'Click "Show Command Output" for details.'
+            )
+        if output:
+            _ui.info(output)
+    return completed.returncode
 
 
 def main(argv: Optional[List[str]] = None) -> int:
@@ -72,7 +84,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     failed = False
     for step in STEPS:
         started = time.monotonic()
-        code = run_step(step, refs)
+        code = run_step(step, refs, hook=arguments.pushing)
         status = "skipped" if step.can_skip and code == SKIPPED else "passed" if code == 0 else "FAILED"
         results.append([step.label, status, f"{time.monotonic() - started:.1f} s"])
         if status == "FAILED":

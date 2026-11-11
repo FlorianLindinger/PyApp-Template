@@ -80,16 +80,20 @@ You normally edit only three files:
 List them in `developer_settings.py`. The next start installs them:
 
 ```python
-packages = ["requests", "numpy>=2", "pillow==11.*"]
+packages = """
+requests
+numpy>=2
+pillow==11.*
+"""
 ```
 
-You can also paste a `requirements.txt` as a triple-quoted string. Other ways to add packages:
+Only strings are accepted; use `""` for no packages. You can paste a `requirements.txt` into the string. Other ways to add packages:
 
 - `code/pyapp/dev_tools/add_packages.cmd` adds packages by name.
 - `find_imports.cmd`, in the same folder, scans existing code offline, lets you review what it found and adds the missing packages.
 - Just start the app. A missing import offers to add the package and restart.
 
-A package you remove from the list stays installed until you run `sync_packages.cmd`.
+A package you remove from the block stays installed until you run `sync_packages.cmd`.
 
 ### Using a different Python
 
@@ -157,7 +161,7 @@ Before you publish your app, replace the license placeholder in [`LICENSE.md`](L
 | **&lt;name&gt; - Logs** / **Crash Logs** | Opens the matching folder |
 | **&lt;name&gt; - Tools** | A menu for the people using the app: check the setup, repair or add packages, make the folder run offline on other PCs, delete logs, remove the shortcuts |
 
-Set a shortcut's name to `None` in the settings to remove it. To add shortcuts to the desktop, use `desktop_shortcuts`, for example `["no_terminal"]`. Every copy of the project has its own taskbar group, so two apps made from this template never mix their windows.
+Set a shortcut's name to `""` in the settings to remove it. To add shortcuts to the desktop, use `desktop_shortcuts`, for example `["no_terminal"]`. Every copy of the project has its own taskbar group, so two apps made from this template never mix their windows.
 
 ## Common settings
 
@@ -288,7 +292,7 @@ None of these is needed to run your app. Delete whatever you don't use:
 | Delete | What it is, and what still works without it |
 | --- | --- |
 | `.github/workflows/pyapp-template-*.yml` | The template's own test workflows. They only run in the PyApp-Template repository itself, so in your app they do nothing. Setup deletes them in an app if they are unchanged and `.github` holds nothing else; otherwise it leaves `.github` alone. |
-| `code/main.py`, `code/settings.py` | The example app and its user settings. Replace them with your own; point `main_script_path` at your main file, and set `user_settings_path = None` if your app has no settings file. |
+| `code/main.py`, `code/settings.py` | The example app and its user settings. Replace them with your own; point `main_script_path` at your main file, and set `user_settings_path = ""` if your app has no settings file. |
 | Single tools in `code/pyapp/dev_tools` | Each `.cmd` there is optional. `Dev Menu.cmd` still offers every command. |
 | `code/pyapp/icons/*.cmd` | Helpers for changing the icons. The existing icons keep working; to regenerate them after changing `icon.png`, run `code\pyapp\DONT_CHANGE\run.bat icons`. |
 | `code/pyapp/DONT_CHANGE/tests` | The launcher's own tests. The `test` dev tool then says there is nothing to run. |

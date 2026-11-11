@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import io
 import sys
 import unittest
 from typing import List, Tuple
@@ -17,6 +18,51 @@ PREFIX = "code/pyapp/DONT_CHANGE/"
 
 
 class StagedRuffTests(unittest.TestCase):
+    def test_lint_diagnostics_include_the_actual_staged_source_line(self):
+        diagnostic = PREFIX + "a.py:2:8: F401 unused import"
+        with mock.patch.object(tool, "run_ruff", side_effect=[(1, diagnostic), (0, "")]):
+            self.assertEqual(
+                tool.problems_in(["ruff"], PREFIX + "a.py", b"# staged version\nimport os\n"),
+                [diagnostic + "\n    | import os"],
+            )
+
+    def test_a_secret_in_a_lint_source_line_is_masked(self):
+        secret = "gh" + "p_" + "a1B2" * 10
+        diagnostic = PREFIX + "a.py:1:1: F821 undefined name"
+        with mock.patch.object(tool, "run_ruff", side_effect=[(1, diagnostic), (0, "")]):
+            problems = tool.problems_in(["ruff"], PREFIX + "a.py", f'unknown("{secret}")\n'.encode())
+        self.assertIn('    | unknown("ghp_****")', problems[0])
+        self.assertNotIn(secret, problems[0])
+
+    def test_popup_starts_with_the_first_diagnostic(self):
+        output = io.StringIO()
+        diagnostic = PREFIX + "a.py:12:3: F401 unused import"
+        with mock.patch.object(tool, "staged_python_files", return_value=[PREFIX + "a.py"]), mock.patch.object(
+            tool, "git", return_value=b"import os\n"
+        ), mock.patch.object(tool, "problems_in", return_value=[diagnostic]), mock.patch("sys.stdout", output):
+            self.assertEqual(tool.main(["ruff"]), 1)
+        self.assertEqual(
+            output.getvalue().splitlines()[0],
+            "Commit blocked: Ruff: " + diagnostic + '. Click "Show Command Output" for details.',
+        )
+        self.assertIn("stage the corrected files", output.getvalue())
+
+    def test_formatter_failure_without_output_has_a_useful_message(self):
+        with mock.patch.object(tool, "run_ruff", side_effect=[(0, ""), (2, "")]):
+            self.assertEqual(
+                tool.problems_in(["ruff"], PREFIX + "a.py", b""),
+                [PREFIX + "a.py: Ruff format could not complete (exit code 2)"],
+            )
+
+    def test_formatter_details_are_kept_with_secrets_masked(self):
+        secret = "gh" + "p_" + "a1B2" * 10
+        diff = f'@@ -1 +1 @@\n-token="{secret}"\n+token = "{secret}"'
+        with mock.patch.object(tool, "run_ruff", side_effect=[(0, ""), (1, diff)]):
+            problems = tool.problems_in(["ruff"], PREFIX + "a.py", b"")
+        self.assertIn("@@ -1 +1 @@", problems[0])
+        self.assertIn('+token = "ghp_****"', problems[0])
+        self.assertNotIn(secret, problems[0])
+
     def run_main(self, names: List[str], lint: int = 0, form: int = 0) -> Tuple[int, List[List[str]]]:
         """main() with fake staged files and a fake Ruff; returns (exit code, Ruff calls)."""
         calls: List[List[str]] = []

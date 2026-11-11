@@ -28,6 +28,74 @@ def append(lines: Iterable[str]) -> Callable[[str], str]:
 
 
 class ValidationTests(unittest.TestCase):
+    def test_packages_accepts_only_strings(self):
+        empty_list: List[str] = []
+        for value in (["requests", "numpy>=2"], empty_list, ("requests",), None, 42):
+            with self.subTest(value=value), support.temporary_settings(append([f"packages = {value!r}"])) as (_, load):
+                module = load()
+                with self.assertRaises(SettingsError) as raised:
+                    config.validate(module)
+                self.assertIn("packages", str(raised.exception))
+                self.assertIn("requirements string", str(raised.exception))
+                with self.assertRaises(SettingsError):
+                    config.all_packages(module)
+        for value in ("", "requests", "requests\nnumpy>=2\n"):
+            with self.subTest(value=value), support.temporary_settings(append([f"packages = {value!r}"])) as (_, load):
+                module = load()
+                config.validate(module)
+                self.assertEqual(module.packages, value)
+                self.assertEqual(config.all_packages(module), value.splitlines())
+
+    DISABLED_TEXT_SETTINGS = (
+        "requirements_path",
+        "user_settings_path",
+        "log_path",
+        "crash_log_path",
+        "print_prepend",
+        "input_prepend",
+        "log_print_prepend",
+        "log_input_prepend",
+        "terminal_bg_color",
+        "terminal_text_color",
+        "tab_bar_color",
+        *config.SHORTCUT_NAME_SETTINGS,
+    )
+
+    def test_empty_strings_disable_optional_text_settings(self):
+        with support.temporary_settings(append(f'{name} = ""' for name in self.DISABLED_TEXT_SETTINGS)) as (_, load):
+            module = load()
+            config.validate(module)
+            self.assertEqual(config.requirements_file_entries(module), [])
+            self.assertIsNone(config.requirements_file_path(module))
+            for name in self.DISABLED_TEXT_SETTINGS:
+                self.assertEqual(getattr(module, name), "", name)
+
+    def test_empty_user_settings_path_reports_that_the_feature_is_disabled(self):
+        from pyapp.DONT_CHANGE.actions import open_file
+
+        with support.temporary_settings(append(['user_settings_path = ""'])) as (_, load), mock.patch.object(
+            open_file, "settings", load
+        ), mock.patch.object(open_file.sys, "argv", ["open_file.py", "settings"]), self.assertRaises(
+            SettingsError
+        ) as raised:
+            open_file.main()
+        self.assertIn('user_settings_path is ""', str(raised.exception))
+
+    def test_none_is_rejected_with_the_empty_string_alternative(self):
+        with support.temporary_settings(append(f"{name} = None" for name in self.DISABLED_TEXT_SETTINGS)) as (
+            _,
+            load,
+        ), self.assertRaises(SettingsError) as raised:
+            config.validate(load())
+        message = str(raised.exception)
+        for name in self.DISABLED_TEXT_SETTINGS:
+            with self.subTest(name=name):
+                diagnostic = next(
+                    line for line in message.splitlines() if re.match(re.escape(name) + r"(?:\s*=|:)", line.strip())
+                )
+                self.assertIn('""', diagnostic)
+                self.assertNotIn("or None", diagnostic)
+
     def test_shipped_settings_are_valid(self):
         with support.temporary_settings() as (_, load):
             config.validate(load())
@@ -69,10 +137,10 @@ class ValidationTests(unittest.TestCase):
     def test_terminal_colors(self):
         code = config.terminal_color_code
         # `color 9` would make the text light blue: a missing half is the console default instead.
-        self.assertEqual((code("9", None), code(None, "F"), code("9", "F"), code(None, None)), ("97", "0F", "9F", ""))
+        self.assertEqual((code("9", ""), code("", "F"), code("9", "F"), code("", "")), ("97", "0F", "9F", ""))
         for lines in (
             ['terminal_bg_color = "9"', 'terminal_text_color = "9"'],
-            ['terminal_bg_color = "7"', "terminal_text_color = None"],
+            ['terminal_bg_color = "7"', 'terminal_text_color = ""'],
         ):
             with self.subTest(lines=lines), support.temporary_settings(append(lines)) as (_, load):
                 with self.assertRaises(SettingsError) as raised:
@@ -142,9 +210,10 @@ class DefaultsTests(unittest.TestCase):
 
     @staticmethod
     def settings_part(path: Path):
-        """The file without its header and without the block that opens it when run directly."""
+        """Compare values and comments; internal defaults may annotate otherwise untyped empty containers."""
         text = path.read_text(encoding="utf-8")
-        text = text[text.index("from __future__ import annotations\n") :]
+        text = text[text.index("# IMPORTANT:\n") :]
+        text = re.sub(r"(?m)^(\w+): [^=\n]+ =", r"\1 =", text)
         end = text.find("# open this file if someone runs it")
         return re.sub(r"\s*# =+\s*$", "", (text if end < 0 else text[:end]).rstrip())
 
@@ -280,19 +349,23 @@ class EditingTests(unittest.TestCase):
                     config.edit_settings({"stop_timeout_seconds": value})
             self.assertEqual(path.read_bytes(), before)
 
-    def test_list_entries_with_line_breaks_are_not_split(self):
+    def test_package_entries_with_line_breaks_are_rejected_without_writing(self):
         block = ['packages = """', "requests", '"""']
-        with support.temporary_settings(append(block)) as (_, load):
-            config.set_list_setting("packages", ["a\nb", "c"])
-            self.assertEqual(load().packages, ["a\nb", "c"])
+        with support.temporary_settings(append(block)) as (path, _):
+            before = path.read_bytes()
+            with self.assertRaises(SettingsError):
+                config.set_list_setting("packages", ["a\nb", "c"])
+            self.assertEqual(path.read_bytes(), before)
 
-    def test_list_setting_round_trip(self):
+    def test_package_string_round_trip_preserves_quotes_and_backslashes(self):
         packages = ['pywin32; sys_platform == "win32"', "requests>=2", "a\\b"]
         with support.temporary_settings() as (_, load):
             config.set_list_setting("packages", packages)
-            self.assertEqual(load().packages, packages)
+            self.assertIsInstance(load().packages, str)
+            self.assertEqual(config.package_entries(load()), packages)
             config.set_list_setting("packages", [])
-            self.assertEqual(load().packages, [])
+            self.assertIsInstance(load().packages, str)
+            self.assertEqual(config.package_entries(load()), [])
 
     def test_pasted_requirements_with_hash_continuation_lines(self):
         text = (
@@ -328,7 +401,7 @@ class EditingTests(unittest.TestCase):
         with support.temporary_settings(append(block)) as (path, load):
             # Kept, upgraded (same package), removed and added entries at once.
             config.set_list_setting("packages", ["requests>=2", "numpy>=2.1", "scipy==1.0", "pillow"])
-            self.assertEqual(load().packages, ["requests>=2", "numpy>=2.1", "scipy==1.0", "pillow"])
+            self.assertEqual(config.package_entries(load()), ["requests>=2", "numpy>=2.1", "scipy==1.0", "pillow"])
             text = path.read_text(encoding="utf-8")
             expected = [
                 "# GUI",
@@ -345,9 +418,9 @@ class EditingTests(unittest.TestCase):
             # Upgrading an entry keeps the comment that explains it.
             config.set_list_setting("packages", ["requests>=2.32", "numpy>=2.1", "scipy==1.0", "pillow"])
             self.assertIn("requests>=2.32  # pinned because of the proxy bug\n", path.read_text(encoding="utf-8"))
-            # Emptying the list keeps the notes, so they are there when packages come back.
+            # Removing every package keeps the notes, so they are there when packages come back.
             config.set_list_setting("packages", [])
-            self.assertEqual(load().packages, [])
+            self.assertEqual(config.package_entries(load()), [])
             self.assertIn("# numerics", path.read_text(encoding="utf-8"))
 
     def test_a_block_with_backslashes_is_regenerated(self):
@@ -356,12 +429,13 @@ class EditingTests(unittest.TestCase):
         block = ['packages = r"""', r"# built from C:\temp\new", "numpy", '"""']
         with support.temporary_settings(append(block)) as (_, load):
             config.set_list_setting("packages", ["requests"])
-            self.assertEqual(load().packages, ["requests"])
+            self.assertEqual(config.package_entries(load()), ["requests"])
 
-    def test_settings_turn_a_block_into_a_list(self):
+    def test_settings_keep_the_packages_string(self):
         module = types.SimpleNamespace(packages="requests\nnumpy>=2\n", MISSING_SETTINGS_FILLED_IN=[])
         with mock.patch.object(config.importlib, "import_module", return_value=module):
-            self.assertEqual(config.settings().packages, ["requests", "numpy>=2"])
+            self.assertEqual(config.settings().packages, "requests\nnumpy>=2\n")
+            self.assertEqual(config.package_entries(config.settings()), ["requests", "numpy>=2"])
 
     def test_bad_line_in_a_block_is_named(self):
         block = ['packages = """', "requests", "-r base.txt", '"""']

@@ -219,7 +219,8 @@ move, so a copied folder works offline on another PC.
 - **Traceback reports.** The wrapper removes its own and `runpy`'s frames, so a report looks
   like `python main.py`. It stores CPython's formatting (used for exception groups) and a
   structured chain (cause/context, notes) with `traceback_lines_before` / `_after` source lines
-  for the app's own files. `scripts/traceback_render.py` renders it: full paths as
+  for the app's own files. These counts are configured in `backend_settings.py`.
+  `scripts/traceback_render.py` renders it: full paths as
   `path:line in function`, a `>` at the failing line, then the error and the script, time and
   Python details; in color on black so it stays readable on any window color, plain in crash
   logs.

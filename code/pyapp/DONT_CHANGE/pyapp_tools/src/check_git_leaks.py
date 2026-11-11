@@ -98,6 +98,7 @@ class Finding(NamedTuple):
     value: str
     where: str
     path: str
+    source: str = ""
 
 
 def mask(value: str) -> str:
@@ -107,6 +108,23 @@ def mask(value: str) -> str:
 
 def _matches(name: str, patterns: Iterable[str]) -> bool:
     return any(fnmatch.fnmatch(name, pattern) for pattern in patterns)
+
+
+def redacted_source(line: str) -> str:
+    """Keep the source readable without printing any recognized secret, including overlapping matches."""
+    spans = sorted(
+        match.span(match.lastindex or 0) for _, pattern in SECRET_PATTERNS for match in pattern.finditer(line)
+    )
+    merged: List[Tuple[int, int]] = []
+    for start, end in spans:
+        if merged and start < merged[-1][1]:
+            merged[-1] = (merged[-1][0], max(merged[-1][1], end))
+        else:
+            merged.append((start, end))
+    # Replace from right to left so the original character positions stay valid.
+    for start, end in reversed(merged):
+        line = line[:start] + mask(line[start:end]) + line[end:]
+    return line
 
 
 def line_findings(line: str, path: str, where: str) -> List[Finding]:
@@ -129,7 +147,10 @@ def line_findings(line: str, path: str, where: str) -> List[Finding]:
             for match in EMAIL.finditer(line)
             if not HARMLESS_EMAIL.search(match.group(0))
         )
-    return found
+    if found:
+        source = redacted_source(line)
+        return [finding._replace(source=source) for finding in found]
+    return []
 
 
 def file_name_findings(path: str, where: str) -> List[Finding]:
@@ -195,14 +216,31 @@ def parse_history(log: Union[str, Iterable[str]], place: str = "") -> List[Findi
     """
     found: List[Finding] = []
     commit = path = previous = ""
+    new_line: Optional[int] = None
     for raw_line in log.splitlines() if isinstance(log, str) else log:
         line = raw_line.rstrip("\r\n")
         if line.startswith("commit "):
             commit = line[7:].strip()
+            path = ""
+            new_line = None
+        elif line.startswith("diff --git "):
+            path = ""
+            new_line = None
         elif previous.startswith("--- ") and line.startswith("+++ "):
             path = line[6:] if line.startswith("+++ b/") else ""
+            new_line = None
+        elif line.startswith("@@ "):
+            hunk = re.match(r"@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@", line)
+            new_line = int(hunk.group(1)) if hunk else None
         elif line.startswith("+") and path:
-            found += line_findings(line[1:], path, f"{path} ({place or 'commit ' + commit})")
+            location = f"{path}:{new_line}" if new_line is not None else path
+            found += line_findings(line[1:], path, f"{location} ({place or 'commit ' + commit})")
+            if new_line is not None:
+                new_line += 1
+        elif line.startswith(" ") and new_line is not None:
+            # Context exists in both versions; removed lines and Git's no-newline marker do not
+            # advance the line number in the staged file (or the file at the reported commit).
+            new_line += 1
         previous = line
     return found
 
@@ -241,7 +279,7 @@ def only_new_history(current: List[Finding], history: List[Finding]) -> List[Fin
 
 
 def show(title: str, findings: List[Finding]) -> None:
-    """One row per distinct value, with the number of files and the first place it appears."""
+    """Group values and show every distinct location with its source line, masking recognized secrets."""
     if not findings:
         return
     groups: Dict[Tuple[str, str], List[Finding]] = {}
@@ -250,9 +288,20 @@ def show(title: str, findings: List[Finding]) -> None:
     # Names and addresses first: old shortcut files are many, and would push them off the list.
     rows = sorted(groups.values(), key=lambda g: (g[0].kind == "Machine-specific file", g[0].kind, g[0].value.lower()))
     _ui.heading(f"{title} ({len(rows)})")
+    table_rows: List[Tuple[Union[int, str], str, str, str]] = []
+    for group in rows[:MAX_ROWS]:
+        locations = {finding.where: finding.source for finding in group}
+        for index, (location, source) in enumerate(locations.items()):
+            table_rows.append(
+                (len({f.path for f in group}), group[0].value, group[0].kind, location)
+                if index == 0
+                else ("", "", "", location)
+            )
+            if source:
+                table_rows.append(("", "", "", "    | " + source))
     _ui.table(
-        ("files", "value", "kind", "first place"),
-        [(len({f.path for f in group}), group[0].value, group[0].kind, group[0].where) for group in rows[:MAX_ROWS]],
+        ("files", "value", "kind", "place"),
+        table_rows,
     )
     if len(rows) > MAX_ROWS:
         _ui.info(f"... and {len(rows) - MAX_ROWS} more.")
@@ -302,19 +351,31 @@ def check_push(hook_input: str) -> int:
     revisions = pushed_revisions(hook_input)
     if not revisions:
         return 0
-    _ui.heading("Leak check before this push")
     findings = scan_revisions(revisions)
+    if findings:
+        hook_summary("Push", findings)
     show("Secrets in this push", [f for f in findings if f.level == SECRET])
     show("Personal data in this push", [f for f in findings if f.level == PERSONAL])
     if findings:
         _ui.blank_line()
         _ui.error(
-            'Push stopped. Remove these from the commits, or put "leak-check: ignore" on a line that is fine.\n'
+            "Fix the reported commits before pushing. A working-file edit alone does not remove a leak from history.\n"
+            'For an intentional value, put "leak-check: ignore" on that line in the affected commit.\n'
             "To push anyway, once: git push --no-verify"
         )
         return 1
     _ui.success("Nothing found in the commits being pushed.")
     return 0
+
+
+def hook_summary(action: str, findings: List[Finding]) -> None:
+    """Lead with an actionable line: Git clients may show only the first output line in a popup."""
+    first = findings[0]
+    more = f" (+{len(findings) - 1} more)" if len(findings) > 1 else ""
+    _ui.info(
+        f"{action} blocked: {first.kind} {first.value!r} at {first.where}{more}. "
+        'Click "Show Command Output" for details.'
+    )
 
 
 def check_commit() -> int:
@@ -330,12 +391,14 @@ def check_commit() -> int:
             findings += file_name_findings(name, f"{name} (staged)")
     if not findings:
         return 0  # silent: this runs on every commit
-    _ui.heading("Leak check before this commit")
+    hook_summary("Commit", findings)
     show("Secrets in the staged changes", [f for f in findings if f.level == SECRET])
     show("Personal data in the staged changes", [f for f in findings if f.level == PERSONAL])
     _ui.blank_line()
     _ui.error(
-        'Commit stopped. Remove these from the files, or put "leak-check: ignore" on a line that is fine.\n'
+        "Edit the reported lines, stage the corrected files, then commit again.\n"
+        'For an intentional value, put "leak-check: ignore" on that line and stage it again.\n'
+        "Locations refer to the staged version; unstaged edits can shift editor line numbers.\n"
         "To commit anyway, once: git commit --no-verify"
     )
     return 1

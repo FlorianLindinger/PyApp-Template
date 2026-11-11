@@ -7,9 +7,10 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
-from typing import List
+from typing import Dict, List, Tuple
 from unittest import mock
 
 from project_location import DONT_CHANGE
@@ -52,12 +53,136 @@ class VersionTests(unittest.TestCase):
     def test_a_clause_that_makes_no_sense_is_reported(self):
         with self.assertRaises(tool.BootstrapError):
             tool.version_satisfies("1.0.0", "about 1")
+        # Empty version parts: a message, not "invalid literal for int()".
+        for spec in (">=0..9", "1.", ".5"):
+            with self.subTest(spec=spec), self.assertRaises(tool.BootstrapError):
+                tool.version_satisfies("1.0.0", spec)
 
     def test_exact_versions(self):
         self.assertEqual(tool.exact_version("0.11.32"), "0.11.32")
         self.assertEqual(tool.exact_version("==0.11.32"), "0.11.32")
         self.assertIsNone(tool.exact_version(">=0.11.32"))
         self.assertIsNone(tool.exact_version(""))
+
+
+class FetchUvTests(unittest.TestCase):
+    def test_the_bootstrap_uv_is_taken_without_its_archive(self):
+        with tempfile.TemporaryDirectory() as folder:
+            boot = Path(folder, "uv-bootstrap-1234")
+            boot.mkdir()
+            for name in ("uv.exe", "uvx.exe", "uv-x86_64-pc-windows-msvc.zip", "uv-x86_64-pc-windows-msvc.zip.sha256"):
+                Path(boot, name).write_bytes(b"x")
+            stage = Path(folder, "stage")
+            stage.mkdir()
+            with mock.patch.object(tool, "BOOTSTRAP_UV_PARENT", Path(folder)), mock.patch.object(
+                tool, "uv_version_of", return_value="0.11.32"
+            ), mock.patch.dict(os.environ, {"PYAPP_BOOT_UV": str(boot / "uv.exe")}):
+                extracted = tool.fetch_uv_folder("", stage)
+            self.assertEqual(sorted(p.name for p in extracted.iterdir()), ["uv.exe", "uvx.exe"])
+
+
+class UserPathTests(unittest.TestCase):
+    def test_the_same_folder_in_other_spelling_is_not_added_again(self):
+        stored = {"value": "%USERPROFILE%\\.local\\bin\\;C:\\Tools", "type": 1}  # REG_SZ
+        key = mock.MagicMock()
+        fake = mock.MagicMock(KEY_READ=1, KEY_SET_VALUE=2, HKEY_CURRENT_USER=3, REG_EXPAND_SZ=2)
+        fake.CreateKeyEx.return_value.__enter__.return_value = key
+
+        def query_value(*_arguments: object) -> Tuple[object, object]:
+            return stored["value"], stored["type"]
+
+        fake.QueryValueEx.side_effect = query_value
+
+        def set_value(_key: object, _name: str, _reserved: int, kind: int, value: str) -> None:
+            stored.update(value=value, type=kind)
+
+        fake.SetValueEx.side_effect = set_value
+        profile = os.environ.get("USERPROFILE", "C:\\Users\\user")
+        with mock.patch.object(tool, "winreg", fake):
+            tool.add_to_user_path(Path(profile.upper()) / ".local" / "bin")
+            fake.SetValueEx.assert_not_called()
+            tool.add_to_user_path(Path("C:\\New"))
+        self.assertEqual(stored, {"value": "%USERPROFILE%\\.local\\bin\\;C:\\Tools;C:\\New", "type": 1})
+
+
+class UnusableGlobalUvTests(unittest.TestCase):
+    def test_a_global_uv_that_does_not_start_is_not_called_outdated(self):
+        settings: Dict[str, object] = {"uv_install_if_missing": "never"}
+        with mock.patch.object(tool, "find_global_uv", return_value=Path("C:\\uv.exe")), mock.patch.object(
+            tool, "uv_version_of", return_value=None
+        ), mock.patch.object(tool, "_start_problems", ["uv.exe was blocked by a policy."]), mock.patch.object(
+            tool, "LOCAL_UV_EXE", Path("C:\\missing\\uv.exe")
+        ), self.assertRaises(tool.BootstrapError) as raised:
+            tool.resolve_uv(settings)
+        message = str(raised.exception)
+        self.assertIn("could not be started (uv.exe was blocked by a policy.)", message)
+        self.assertNotIn("None", message)
+
+
+class ConcurrentFirstStartTests(unittest.TestCase):
+    """Two first starts at the same time (two projects, or one started twice) share no folder."""
+
+    def test_only_a_download_folder_of_this_run_counts_as_its_own(self):
+        parent = Path("C:\\Users\\user\\AppData\\Local\\PyApp-Template")
+        with mock.patch.object(tool, "BOOTSTRAP_UV_PARENT", parent):
+            for boot_uv, expected in (
+                (parent / "uv-bootstrap-123" / "uv.exe", parent / "uv-bootstrap-123"),
+                (parent / "uv" / "uv.exe", None),  # the shared uv, never removed
+                (Path("C:\\tools\\uv-bootstrap-1\\uv.exe"), None),
+                ("", None),
+            ):
+                with self.subTest(boot_uv=str(boot_uv)), mock.patch.dict(os.environ, {"PYAPP_BOOT_UV": str(boot_uv)}):
+                    self.assertEqual(tool.own_bootstrap_folder(), expected)
+
+    def test_a_run_removes_its_own_folder_and_old_leftovers_but_not_another_runs(self):
+        with tempfile.TemporaryDirectory() as folder:
+            parent = Path(folder)
+            own, other, old, legacy = (
+                parent / name for name in ("uv-bootstrap-1", "uv-bootstrap-2", "uv-bootstrap-3", "uv-bootstrap")
+            )
+            for path in (own, other, old, legacy):
+                path.mkdir()
+                (path / "uv.exe").write_bytes(b"x")
+            hours_ago = time.time() - 2 * tool.STALE_BOOTSTRAP_SECONDS
+            for path in (old, legacy):
+                os.utime(path, (hours_ago, hours_ago))
+            with mock.patch.object(tool, "BOOTSTRAP_UV_PARENT", parent), mock.patch.dict(
+                os.environ, {"PYAPP_BOOT_UV": str(own / "uv.exe")}
+            ):
+                tool.remove_bootstrap_folders()
+            self.assertEqual(sorted(p.name for p in parent.iterdir()), ["uv-bootstrap-2"])
+
+    def test_the_shared_lock_is_exclusive_across_processes(self):
+        with tempfile.TemporaryDirectory() as folder:
+            lock = Path(folder, "uv.lock")
+            holder = "import sys, time; sys.path.insert(0, sys.argv[1]); import resolve_runtime as r\n"
+            holder += "from pathlib import Path\nwith r.file_lock(Path(sys.argv[2]), 'busy'):\n"
+            holder += "    print('locked', flush=True); time.sleep(3)\n"
+            # Test subprocesses execute fixed fixture/helper code using the local interpreter or Git.
+            process = subprocess.Popen(  # noqa: S603
+                [sys.executable, "-I", "-c", holder, str(DONT_CHANGE / "bootstrap"), str(lock)],
+                stdout=subprocess.PIPE,
+                text=True,
+            )
+            try:
+                self.assertEqual(process.stdout.readline().strip() if process.stdout else "", "locked")
+                started = time.monotonic()
+                with tool.file_lock(lock, "busy"):
+                    waited = time.monotonic() - started
+            finally:
+                process.wait(timeout=30)
+                if process.stdout:
+                    process.stdout.close()
+            self.assertGreater(waited, 1.5, "the second start did not wait for the first one")
+
+    def test_a_global_uv_installed_meanwhile_is_used_instead_of_copied_over(self):
+        with tempfile.TemporaryDirectory() as folder, mock.patch.object(
+            tool, "SHARED_UV_LOCK", Path(folder, "uv.lock")
+        ), mock.patch.object(tool, "find_global_uv", return_value=Path("C:\\bin\\uv.exe")), mock.patch.object(
+            tool, "uv_version_of", return_value="0.11.32"
+        ), mock.patch.object(tool, "_install_global_uv") as install:
+            self.assertEqual(tool.install_global_uv(""), Path("C:\\bin\\uv.exe"))
+        install.assert_not_called()
 
 
 class CompanyPcTests(unittest.TestCase):

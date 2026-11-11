@@ -10,11 +10,13 @@ Usage: check_staged_ruff.py   (exit code 1: problems found)
 
 from __future__ import annotations
 
+import re
 import subprocess
 from typing import List, Optional, Tuple
 
 import _ui
 from _paths import PROJECT_ROOT
+from check_git_leaks import redacted_source
 from verify_launcher import tool_command
 
 LAUNCHER_PREFIX = "code/pyapp/DONT_CHANGE/"
@@ -56,10 +58,22 @@ def problems_in(ruff: List[str], name: str, content: bytes) -> List[str]:
     found: List[str] = []
     code, output = run_ruff(ruff, ["check", "--no-fix", "--output-format", "concise"], name, content)
     if code:
-        found.append(output or f"{name}: Ruff lint failed (exit code {code})")
+        source_lines = content.decode("utf-8", "replace").splitlines()
+        details: List[str] = []
+        for diagnostic in output.splitlines():
+            details.append(diagnostic)
+            location = re.match(r"^.+:(\d+):\d+: ", diagnostic)
+            if location and 1 <= int(location.group(1)) <= len(source_lines):
+                details.append("    | " + redacted_source(source_lines[int(location.group(1)) - 1]))
+        found.append("\n".join(details) or f"{name}: Ruff lint failed (exit code {code})")
     code, output = run_ruff(ruff, ["format", "--check"], name, content)
     if code:
-        found.append(f"{name}: not formatted (run verify_launcher.bat --fix)" if code == 1 else output)
+        format_details = "\n".join(redacted_source(line) for line in output.splitlines())
+        found.append(
+            f"{name}: not formatted (run verify_launcher.bat --fix)" + ("\n" + format_details if format_details else "")
+            if code == 1
+            else output or f"{name}: Ruff format could not complete (exit code {code})"
+        )
     return found
 
 
@@ -76,13 +90,17 @@ def main(ruff: Optional[List[str]] = None) -> int:
     problems = [problem for name in names for problem in problems_in(ruff, name, git("show", ":" + name))]
     if not problems:
         return 0  # silent: this runs on every commit
-    _ui.heading("Ruff check before this commit")
+    # Keep the first diagnostic in the first line for Git clients that truncate hook output.
+    _ui.info(f'Commit blocked: Ruff: {problems[0].splitlines()[0]}. Click "Show Command Output" for details.')
+    _ui.info("Locations refer to the staged files; unstaged edits can shift editor line numbers.")
+    _ui.heading("Ruff diagnostics in staged launcher files")
     for problem in problems:
         _ui.info(problem)
     _ui.blank_line()
     _ui.error(
-        "Commit stopped: Ruff found problems in the staged launcher files. Fix them (verify_launcher.bat --fix\n"
-        "fixes most), stage them again and commit. To commit anyway, once: git commit --no-verify"
+        "Fix the diagnostics, stage the corrected files, then commit again.\n"
+        "verify_launcher.bat --fix applies safe Ruff fixes and formatting to working files.\n"
+        "To commit anyway, once: git commit --no-verify"
     )
     return 1
 

@@ -82,8 +82,6 @@ SETTING_NAMES = (
     "terminal_bg_color",
     "terminal_shortcut_name",
     "terminal_text_color",
-    "traceback_lines_after",
-    "traceback_lines_before",
     "use_classic_terminal",
     "use_system_certificates",
     "user_settings_path",

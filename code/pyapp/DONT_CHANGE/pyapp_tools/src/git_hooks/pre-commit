@@ -16,7 +16,9 @@ if [ -z "$python" ] || [ ! -x "$python" ]; then
     python="$(command -v python3 || command -v python || command -v py)"
 fi
 if [ -z "$python" ]; then
-    echo "Leak check: no Python found, so the commit was stopped. Run Setup, or commit with --no-verify." >&2
+    echo 'Commit blocked: Python was not found. Click "Show Command Output" for details.' >&2
+    echo "Run Setup, then restart VS Code and try again." >&2
+    echo "To bypass all commit checks once: git commit --no-verify" >&2
     exit 1
 fi
 

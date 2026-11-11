@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import io
 import sys
 import unittest
 from unittest import mock
@@ -86,17 +87,62 @@ class LeakPatternTests(unittest.TestCase):
 
 
 class ReportTests(unittest.TestCase):
-    def test_one_row_per_value_counts_its_files(self):
+    def test_source_lines_are_printed_with_recognized_secrets_masked(self):
+        line = f'    api_key = "{GITHUB_TOKEN}"; backup = "{AWS_KEY}"'
+        findings = tool.line_findings(line, "app.py", "app.py:100 (staged)")
+        output = io.StringIO()
+        with mock.patch("sys.stdout", output):
+            tool.show("Secrets", findings)
+        self.assertIn('    |     api_key = "ghp_****"; backup = "AKIA****"', output.getvalue())
+        self.assertIn("app.py:100 (staged)", output.getvalue())
+        self.assertNotIn(GITHUB_TOKEN, output.getvalue())
+        self.assertNotIn(AWS_KEY, output.getvalue())
+
+    def test_personal_source_lines_are_preserved_exactly(self):
+        line = '    profile = "C:' + '\\\\Users\\\\Alice"'
+        findings = tool.line_findings(line, "app.py", "app.py:100 (staged)")
+        self.assertEqual(findings[0].source, line)
+        with mock.patch.object(tool._ui, "table") as table, mock.patch.object(tool._ui, "heading"):
+            tool.show("Personal", findings + findings)
+        self.assertEqual(
+            table.call_args[0][1],
+            [(1, "Alice", "Home folder path", "app.py:100 (staged)"), ("", "", "", "    | " + line)],
+        )
+
+    def test_a_group_counts_its_files_and_lists_their_locations(self):
         findings = [tool.Finding(tool.PERSONAL, "Home folder path", "Flo", p + ":1", p) for p in ("a", "b", "a")]
         with mock.patch.object(tool._ui, "table") as table, mock.patch.object(tool._ui, "heading"):
             tool.show("Personal", findings)
-        self.assertEqual(table.call_args[0][1], [(2, "Flo", "Home folder path", "a:1")])
+        self.assertEqual(table.call_args[0][1], [(2, "Flo", "Home folder path", "a:1"), ("", "", "", "b:1")])
+
+    def test_each_distinct_location_is_shown_for_a_repeated_value(self):
+        findings = [
+            tool.Finding(tool.PERSONAL, "Home folder path", "Flo", where, "app.py")
+            for where in ("app.py:100 (staged)", "app.py:126 (staged)", "app.py:100 (staged)")
+        ]
+        with mock.patch.object(tool._ui, "table") as table, mock.patch.object(tool._ui, "heading"):
+            tool.show("Personal", findings)
+        self.assertEqual(
+            table.call_args[0][1],
+            [(1, "Flo", "Home folder path", "app.py:100 (staged)"), ("", "", "", "app.py:126 (staged)")],
+        )
 
 
 class PushTests(unittest.TestCase):
     LOCAL = "a" * 40
     REMOTE = "b" * 40
     ZERO = "0" * 40
+
+    def test_push_popup_starts_with_the_location_and_masks_secrets(self):
+        findings = tool.line_findings(f"token: {GITHUB_TOKEN}", "app.py", "app.py:12 (commit abc1234)")
+        output = io.StringIO()
+        with mock.patch.object(tool, "pushed_revisions", return_value=[["x"]]), mock.patch.object(
+            tool, "scan_revisions", return_value=findings
+        ), mock.patch("sys.stdout", output):
+            self.assertEqual(tool.check_push("refs"), 1)
+        self.assertTrue(output.getvalue().startswith("Push blocked:"))
+        self.assertIn("app.py:12 (commit abc1234)", output.getvalue().splitlines()[0])
+        self.assertNotIn(GITHUB_TOKEN, output.getvalue())
 
     def revisions(self, local: str, remote: str, known: bool = True):
         with mock.patch.object(tool, "commit_exists", return_value=known):
@@ -127,6 +173,24 @@ class PushTests(unittest.TestCase):
 class CommitTests(unittest.TestCase):
     """git_hooks/pre-commit: the staged changes, before they are in any commit."""
 
+    def test_popup_starts_with_the_reason_value_and_exact_location(self):
+        output = io.StringIO()
+        with mock.patch("sys.stdout", output):
+            tool.hook_summary("Commit", tool.line_findings(f"key = {AWS_KEY}", "app.py", "app.py:100 (staged)"))
+        first_line = output.getvalue().splitlines()[0]
+        self.assertTrue(first_line.startswith("Commit blocked: AWS access key"))
+        self.assertIn("app.py:100 (staged)", first_line)
+        self.assertNotIn(AWS_KEY, output.getvalue())
+        self.assertIn('Click "Show Command Output" for details.', first_line)
+
+    def test_commit_prints_the_source_from_the_staged_diff(self):
+        line = '    profile = "C:' + '\\\\Users\\\\Alice"'
+        output = io.StringIO()
+        with mock.patch.object(tool, "git", side_effect=[self.diff(line), ""]), mock.patch("sys.stdout", output):
+            self.assertEqual(tool.check_commit(), 1)
+        self.assertIn("app.py:1 (staged)", output.getvalue())
+        self.assertIn("    | " + line, output.getvalue())
+
     def check(self, staged_diff: str, names: str = "app.py\n") -> int:
         def fake_git(*arguments: str) -> str:
             return names if "--name-only" in arguments else staged_diff
@@ -141,7 +205,7 @@ class CommitTests(unittest.TestCase):
         home = "C:" + "\\\\Users\\\\bob\\\\Desktop"  # built in pieces, so this file passes the check itself
         self.assertEqual(self.check(self.diff(f'path = "{home}"')), 1)
         found = tool.parse_history(self.diff(f'path = "{home}"'), "staged")
-        self.assertEqual(found[0].where, "app.py (staged)")
+        self.assertEqual(found[0].where, "app.py:1 (staged)")
 
     def test_a_secret_stops_the_commit(self):
         self.assertEqual(self.check(self.diff(f'key = "{AWS_KEY}"')), 1)
@@ -166,7 +230,33 @@ diff --git a/app.py b/app.py
     def test_only_added_lines_count_and_name_their_commit(self):
         found = tool.parse_history(self.LOG)
         self.assertEqual([f.kind for f in found], ["AWS access key"])
-        self.assertEqual(found[0].where, "app.py (commit abc1234)")
+        self.assertEqual(found[0].where, "app.py:1 (commit abc1234)")
+
+    def test_line_numbers_follow_hunks_context_and_replacements(self):
+        diff = (
+            "diff --git a/app.py b/app.py\n--- a/app.py\n+++ b/app.py\n"
+            "@@ -90,3 +100,4 @@\n"
+            " context\n-removed\n"
+            f'+key = "{AWS_KEY}"\n'
+            "\\ No newline at end of file\n"
+            f'+key = "{AWS_KEY}"\n'
+            " context\n"
+            "@@ -115 +126 @@\n-removed\n"
+            f'+key = "{AWS_KEY}"\n'
+            "diff --git a/other.py b/other.py\n--- a/other.py\n+++ b/other.py\n"
+            "@@ -0,0 +1 @@\n"
+            f'+key = "{AWS_KEY}"\n'
+        )
+        self.assertEqual(
+            [f.where for f in tool.parse_history(diff, "staged")],
+            ["app.py:101 (staged)", "app.py:102 (staged)", "app.py:126 (staged)", "other.py:1 (staged)"],
+        )
+
+    def test_line_numbers_reset_for_each_commit(self):
+        self.assertEqual(
+            [f.where for f in tool.parse_history(self.LOG + self.LOG.replace("abc1234", "def5678"))],
+            ["app.py:1 (commit abc1234)", "app.py:1 (commit def5678)"],
+        )
 
     def test_history_is_read_line_by_line_too(self):
         """scan_history streams git log; parse_history gets the lines with their line breaks."""

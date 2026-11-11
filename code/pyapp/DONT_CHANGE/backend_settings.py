@@ -188,6 +188,11 @@ WRAPPER_READY_TIMEOUT_SECONDS = 120
 # pinned no-terminal shortcut groups its app windows separately from the terminal shortcut.
 NO_TERMINAL_APP_ID_SUFFIX = "W"
 
+# Source lines of your own code shown before and after each failing line (0: none).
+# Library code always shows just the failing line, like Python does.
+traceback_lines_before: int = 3
+traceback_lines_after: int = 3
+
 # ==================================================================
 
 # open this file if someone runs it directly (e.g. double-clicks it in Explorer) instead of running the launcher:

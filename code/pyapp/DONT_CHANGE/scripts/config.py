@@ -145,7 +145,7 @@ def parse_requirements(text: str) -> List[str]:
 
 def requirements_file_path(s: Union[ModuleType, SimpleNamespace]) -> Optional[str]:
     """Absolute path of requirements_path (relative to developer_settings.py), or None."""
-    value = getattr(s, "requirements_path", None)
+    value = getattr(s, "requirements_path", "")
     if not isinstance(value, str) or not value:
         return None  # validate() reports a value that is not a path
     # Keep os.path.isabs: rooted Windows paths have different pathlib semantics on Python 3.8-3.12.
@@ -164,9 +164,17 @@ def requirements_file_entries(s: Union[ModuleType, SimpleNamespace]) -> List[str
     return parse_requirements(text)
 
 
+def package_entries(s: Union[ModuleType, SimpleNamespace]) -> List[str]:
+    """Parse the packages setting without changing its string value in the settings module."""
+    value = getattr(s, "packages", None)
+    if not isinstance(value, str):
+        raise SettingsError('packages: use a requirements string, one package per line; use "" for no packages.')
+    return parse_requirements(value)
+
+
 def all_packages(s: Union[ModuleType, SimpleNamespace]) -> List[str]:
     """What the environment gets: "packages", then the packages of requirements_path."""
-    return list(s.packages) + requirements_file_entries(s)
+    return package_entries(s) + requirements_file_entries(s)
 
 
 def requirement_key(requirement: str) -> str:
@@ -187,9 +195,6 @@ def settings() -> ModuleType:
             raise
         raise SettingsError(problem) from None
     fill_missing_settings(module)
-    packages = getattr(module, "packages", None)
-    if isinstance(packages, str):
-        vars(module)["packages"] = parse_requirements(packages)
     return module
 
 
@@ -395,41 +400,35 @@ def validate(module: Optional[Union[ModuleType, SimpleNamespace]] = None) -> Non
         'use a dict of text values such as {"MY_SETTING": "1"}',
     )
     packages = get("packages")
-    entries = parse_requirements(packages) if isinstance(packages, str) else packages
-    if isinstance(entries, (list, tuple)):
+    entries = parse_requirements(packages) if isinstance(packages, str) else []
+    if isinstance(packages, str):
         problems.extend(
             f'packages: {entry!r} is not a package requirement such as "numpy>=2" (options such as -r or -e are not supported).'
             for entry in entries
-            if not (isinstance(entry, str) and REQUIREMENT_START.match(entry))
+            if not REQUIREMENT_START.match(entry)
         )
     else:
-        need("packages", lambda _v: False, 'use a list such as ["requests", "numpy>=2"] or a triple-quoted block')
-    problems.extend(_requirements_file_problems(s, entries if isinstance(entries, (list, tuple)) else []))
-    for name in ("traceback_lines_before", "traceback_lines_after"):
-        need(
-            name,
-            lambda v: isinstance(v, int) and not isinstance(v, bool) and v >= 0,
-            "use 0 or a positive whole number",
-        )
+        need("packages", lambda _v: False, 'use a requirements string, one package per line; use "" for no packages')
+    problems.extend(_requirements_file_problems(s, entries))
     for name in ("log_path", "crash_log_path", "user_settings_path"):
-        need(name, lambda v: v is None or isinstance(v, str), "use a path text or None")
+        need(name, lambda v: isinstance(v, str), 'use a path text or "" to disable')
     for name in ("terminal_bg_color", "terminal_text_color"):
         need(
             name,
-            lambda v: v in (None, "") or (isinstance(v, str) and re.fullmatch(r"[0-9A-Fa-f]", v)),
-            "use one hex digit 0-9/A-F or None",
+            lambda v: isinstance(v, str) and (v == "" or re.fullmatch(r"[0-9A-Fa-f]", v)),
+            'use one hex digit 0-9/A-F or "" for the default',
         )
     colors = terminal_color_code(get("terminal_bg_color"), get("terminal_text_color"))
     if len(colors) == 2 and colors[0].lower() == colors[1].lower():
         # `color` refuses equal colors and leaves the window as it is.
         problems.append(
             f"terminal_bg_color and terminal_text_color: {colors[0]!r} for both would make the text invisible; "
-            "use two different colors (None means black background or white text)."
+            'use two different colors ("" means black background or white text).'
         )
     need(
         "tab_bar_color",
-        lambda v: v is None or (isinstance(v, str) and re.fullmatch(r"#[0-9A-Fa-f]{6}", v)),
-        'use a color like "#3B78FF" or None',
+        lambda v: isinstance(v, str) and (v == "" or re.fullmatch(r"#[0-9A-Fa-f]{6}", v)),
+        'use a color like "#3B78FF" or "" for the default',
     )
     need(
         "stop_timeout_seconds",
@@ -438,7 +437,7 @@ def validate(module: Optional[Union[ModuleType, SimpleNamespace]] = None) -> Non
     )
 
     for name in SHORTCUT_NAME_SETTINGS:
-        need(name, lambda v: v is None or (isinstance(v, str) and v.strip()), "use a non-empty text or None")
+        need(name, lambda v: isinstance(v, str) and (v == "" or v.strip()), 'use a name or "" to disable')
     for outcome in OUTCOMES:
         for prefix in ("close_after_", "open_log_file_after_"):
             need(prefix + outcome, lambda v: isinstance(v, bool), "use True or False")
@@ -457,7 +456,7 @@ def validate(module: Optional[Union[ModuleType, SimpleNamespace]] = None) -> Non
             if problem:
                 problems.append(f"{name} = {value!r}: {problem}")
     for name in ("print_prepend", "input_prepend", "log_print_prepend", "log_input_prepend"):
-        need(name, lambda v: v is None or isinstance(v, str), 'use a text such as "%H:%M:%S | " or None')
+        need(name, lambda v: isinstance(v, str), 'use a text such as "%H:%M:%S | " or "" to disable')
     need("error_date_format", lambda v: isinstance(v, str), 'use a date format such as "%Y-%m-%d %H:%M:%S"')
 
     if problems:
@@ -479,18 +478,22 @@ def edit_settings(changes: Mapping[str, object]) -> List[str]:
 
 
 def set_list_setting(name: str, values: Iterable[str]) -> List[str]:
-    """Rewrite the top-level list setting `name` (it may span several lines); return a readable diff.
+    """Rewrite entries in a requirements-string or list setting; return a readable diff.
 
-    A setting written as a triple-quoted block stays one, so a pasted requirements list keeps its form,
-    including its comments and blank lines (see _edited_block).
+    For packages, always write a string. Preserve comments and blank lines in requirements blocks
+    where possible (see _edited_block); use an escaped string when triple quotes would change values.
     """
     values = list(values)
+    if name == "packages" and any("\n" in value or "\r" in value for value in values):
+        raise SettingsError("packages: each package requirement must fit on one line; nothing was changed.")
 
     def body(newline: str, node: Optional[Union[ast.Assign, ast.AnnAssign]]) -> str:
         old = node.value.value if node is not None and isinstance(node.value, ast.Constant) else None
-        # A block holds one entry per line, so entries with line breaks need the list form.
+        # A plain triple-quoted block must not reinterpret escapes or close inside an entry.
         if isinstance(old, str) and not any(c in v for v in values for c in ("\\", '"""', "\n", "\r")):
             return '"""' + newline + "".join(line + newline for line in _edited_block(old, values)) + '"""'
+        if name == "packages":
+            return _quoted("\n".join(values))
         if not values:
             return "[]"
         return "[" + newline + "".join("    " + _quoted(v) + "," + newline for v in values) + "]"
@@ -657,11 +660,13 @@ def _forget_settings_bytecode() -> None:
 
 
 def _requirements_file_problems(module: Union[ModuleType, SimpleNamespace], packages: Iterable[object]) -> List[str]:
-    value = getattr(module, "requirements_path", None)
-    if value is None:
+    value = getattr(module, "requirements_path", "")
+    if value == "":
         return []
     if not isinstance(value, str) or not value.strip():
-        return ['requirements_path: use the path of a requirements file, such as "..\\\\requirements.txt", or None']
+        return [
+            'requirements_path: use the path of a requirements file, such as "..\\\\requirements.txt", or "" to disable'
+        ]
     try:
         entries = requirements_file_entries(module)
     except SettingsError as error:

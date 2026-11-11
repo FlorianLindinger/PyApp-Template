@@ -10,6 +10,7 @@ from pyapp.DONT_CHANGE import backend_settings as paths
 from pyapp.DONT_CHANGE.scripts.config import (
     all_packages,
     display_path,
+    package_entries,
     requirement_key,
     requirements_file_entries,
     requirements_file_path,
@@ -65,7 +66,7 @@ def cmd_remove(arguments: List[str]) -> None:
     s = settings()
     names = list(arguments)
     if not names:
-        declared = list(settings().packages)
+        declared = package_entries(s)
         if not declared:
             print_info('"packages" in developer_settings.py is empty.')
             return

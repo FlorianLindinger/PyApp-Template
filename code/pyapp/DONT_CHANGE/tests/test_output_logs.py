@@ -126,7 +126,7 @@ class WindowsTerminalTests(unittest.TestCase):
             command,
             ["wt.exe", "--title", "A\\; B", "--tabColor", "#3B78FF", "python.exe", "C:\\R\\;D\\watchdog.py"],
         )
-        self.assertEqual(wt_command("App", None, ["x"]), ["wt.exe", "--title", "App", "x"])
+        self.assertEqual(wt_command("App", "", ["x"]), ["wt.exe", "--title", "App", "x"])
 
 
 class RawOutputTests(unittest.TestCase):

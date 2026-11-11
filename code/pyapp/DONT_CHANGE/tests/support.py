@@ -43,11 +43,7 @@ def temporary_settings(transform: Optional[Callable[[str], str]] = None):
             path.write_bytes(transform(text).encode("utf-8"))
 
         def load():
-            module = load_settings_file(path)
-            packages = getattr(module, "packages", None)
-            if isinstance(packages, str):  # like config.settings(), which the launcher uses
-                vars(module)["packages"] = config.parse_requirements(packages)
-            return module
+            return load_settings_file(path)
 
         replacements = {
             "DEV_SETTINGS_PATH": str(path),

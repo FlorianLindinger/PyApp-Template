@@ -24,7 +24,7 @@ def main() -> None:
     if kind == "settings":
         user_settings_path = settings().user_settings_path
         if not user_settings_path:
-            raise SettingsError(f'There is no settings file: user_settings_path is None in "{DEV_SETTINGS_PATH}".')
+            raise SettingsError(f'There is no settings file: user_settings_path is "" in "{DEV_SETTINGS_PATH}".')
         path = make_abs_path_relative_to_file(user_settings_path, DEV_SETTINGS_PATH)
     else:
         path = main_script_path()

@@ -13,6 +13,7 @@ from pyapp.DONT_CHANGE.scripts.config import (
     all_packages,
     describe_python_request,
     display_path,
+    package_entries,
     requirements_file_entries,
     requirements_file_path,
     settings,
@@ -227,7 +228,7 @@ def cmd_status(_arguments: List[str]) -> None:
             ("requires-python", current_requires_python() or "(missing)"),
         ],
         "Packages": [
-            ("packages", ", ".join(s.packages) or "(none)"),
+            ("packages", ", ".join(package_entries(s)) or "(none)"),
             (
                 "requirements_path",
                 file_problem

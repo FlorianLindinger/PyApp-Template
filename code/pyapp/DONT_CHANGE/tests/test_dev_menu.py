@@ -4,7 +4,6 @@ import tempfile
 import types
 import unittest
 from pathlib import Path
-from typing import Optional
 from unittest import mock
 
 import project_location  # noqa: F401 - make this checkout's code importable
@@ -48,17 +47,17 @@ class ToolsMenuTests(unittest.TestCase):
     def test_the_shortcut_runs_the_tools_menu(self):
         from pyapp.DONT_CHANGE.scripts import shortcuts
 
-        def kinds(name: Optional[str]):
+        def kinds(name: str):
             s = types.SimpleNamespace(
                 program_name="App",
-                terminal_shortcut_name=None,
-                no_terminal_shortcut_name=None,
-                stop_running_shortcut_name=None,
-                open_log_folder_shortcut_name=None,
-                open_crash_log_folder_shortcut_name=None,
-                open_code_shortcut_name=None,
+                terminal_shortcut_name="",
+                no_terminal_shortcut_name="",
+                stop_running_shortcut_name="",
+                open_log_folder_shortcut_name="",
+                open_crash_log_folder_shortcut_name="",
+                open_code_shortcut_name="",
                 tools_shortcut_name=name,
-                user_settings_path=None,
+                user_settings_path="",
             )
             targets = {"logs": "", "crash_logs": "", "open_code": "", "settings": ""}
             return shortcuts.shortcut_definitions(s, "app", targets)
@@ -66,7 +65,7 @@ class ToolsMenuTests(unittest.TestCase):
         (tools,) = kinds("App - Tools")
         self.assertEqual((tools[0], tools[1]), ("tools", "App - Tools"))
         self.assertTrue(tools[3].endswith("T.bat"))
-        self.assertEqual(kinds(None), [])
+        self.assertEqual(kinds(""), [])
 
 
 class CancelTests(unittest.TestCase):
