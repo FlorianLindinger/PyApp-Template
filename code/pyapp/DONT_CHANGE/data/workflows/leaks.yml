@@ -22,4 +22,4 @@ jobs:
           fetch-depth: 0  # the whole history: something deleted later is still readable there
           persist-credentials: false
       - name: Look for secrets and personal data
-        run: python3 code/pyapp/DONT_CHANGE/template_tools/src/check_git_leaks.py
+        run: python3 code/pyapp/DONT_CHANGE/pyapp_tools/src/check_git_leaks.py

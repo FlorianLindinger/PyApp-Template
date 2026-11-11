@@ -6,8 +6,8 @@
 
 The notes come from the "## unreleased" section of CHANGELOG.md, which becomes "## <version> - <date>";
 a new empty section is added above it. The zip holds the files of DONT_CHANGE that Git tracks, in a
-top-level DONT_CHANGE folder, and is written to dist/ in the project. Nothing is committed or
-tagged: review the result, then commit it.
+top-level DONT_CHANGE folder, and is written to DONT_CHANGE/pyapp_tools/zip_releases (Git keeps only its
+.gitkeep, so the zips stay on this PC). Nothing is committed or tagged: review the result, then commit it.
 """
 
 from __future__ import annotations
@@ -29,6 +29,8 @@ SETTINGS_PATH = DONT_CHANGE_DIR / "backend_settings.py"
 CHANGELOG_PATH = DONT_CHANGE_DIR / "CHANGELOG.md"
 RUNNER = DONT_CHANGE_DIR / "tests" / "run_regressions.py"
 LAUNCHER_FOLDER = "code/pyapp/DONT_CHANGE/"
+# Inside the launcher, but ignored by Git (DONT_CHANGE/.gitignore), so a zip never contains older zips.
+RELEASES_FOLDER = "pyapp_tools/zip_releases"
 VERSION_LINE = re.compile(r'^LAUNCHER_VERSION = "(\d+\.\d+\.\d+)"', flags=re.MULTILINE)
 # "## unreleased", or "## 1.2.3 - unreleased" while LAUNCHER_VERSION already names that coming version.
 UNRELEASED = re.compile(r"^## (?:(\d+\.\d+\.\d+) - )?unreleased[ \t]*$", flags=re.MULTILINE | re.IGNORECASE)
@@ -125,7 +127,7 @@ def archive_name(path: str) -> str:
 
 
 def build_zip(version: str, files: List[str]) -> Path:
-    target = PROJECT_ROOT / "dist" / f"PyApp-Template-launcher-{version}.zip"
+    target = PROJECT_ROOT / LAUNCHER_FOLDER / RELEASES_FOLDER / f"PyApp-Template-launcher-{version}.zip"
     target.parent.mkdir(parents=True, exist_ok=True)
     temporary = target.with_name(target.name + ".tmp")
     try:

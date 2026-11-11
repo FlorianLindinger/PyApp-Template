@@ -9,23 +9,36 @@ from __future__ import annotations
 import shutil
 import subprocess
 import unittest
-from typing import Optional
+from typing import Optional, Tuple
 
 from project_location import DONT_CHANGE, PROJECT_ROOT
 
 # Generated or runtime folders that DONT_CHANGE/.gitignore is meant to hide.
 EXCLUDED_PARTS = {"tmp", "__pycache__", ".ruff_cache"}
+# Release zips stay on the PC; only the folder's .gitkeep is tracked.
+RELEASES = ("pyapp_tools", "zip_releases")
 
 
-def git(*args: str, stdin: Optional[str] = None):
+def is_release_zip(relative: Tuple[str, ...]) -> bool:
+    return relative[:2] == RELEASES and relative[-1] != ".gitkeep"
+
+
+def git(*args: str, stdin: Optional[str] = None) -> subprocess.CompletedProcess[str]:
+    # Bytes in, so Windows does not turn each line end into CR LF: Git would read the CR as part of
+    # the file name, which a negation such as "!.gitkeep" then no longer matches.
     # Test subprocesses execute fixed fixture/helper code using the local interpreter or Git.
-    return subprocess.run(  # noqa: S603
+    completed = subprocess.run(  # noqa: S603
         ["git", *args],  # noqa: S607 - Git is intentionally selected from the developer's local PATH.
         cwd=str(PROJECT_ROOT),
-        input=stdin,
+        input=None if stdin is None else stdin.encode("utf-8"),
         capture_output=True,
-        text=True,
         check=False,
+    )
+    return subprocess.CompletedProcess(
+        completed.args,
+        completed.returncode,
+        completed.stdout.decode("utf-8", "replace"),
+        completed.stderr.decode("utf-8", "replace"),
     )
 
 
@@ -44,6 +57,7 @@ class LauncherGitTrackingTests(unittest.TestCase):
             for path in DONT_CHANGE.rglob("*")
             if path.is_file()
             and not EXCLUDED_PARTS.intersection(path.relative_to(DONT_CHANGE).parts)
+            and not is_release_zip(path.relative_to(DONT_CHANGE).parts)
             and path.suffix != ".pyc"
         ]
         self.assertGreater(len(files), 50)

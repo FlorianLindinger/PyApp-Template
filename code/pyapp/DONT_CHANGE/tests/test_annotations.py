@@ -21,13 +21,13 @@ class AnnotationTests(unittest.TestCase):
             "pyapp.DONT_CHANGE.scripts.shortcuts",
             "pyapp.DONT_CHANGE.scripts.env.pyproject",
             "pyapp.DONT_CHANGE.scripts.env.uv",
-            "pyapp.DONT_CHANGE.template_tools.src.make_import_map",
-            "pyapp.DONT_CHANGE.template_tools.src.get_startup_time",
+            "pyapp.DONT_CHANGE.pyapp_tools.src.make_import_map",
+            "pyapp.DONT_CHANGE.pyapp_tools.src.get_startup_time",
             "pyapp.DONT_CHANGE.runtime._pyapp",
             "pyapp.DONT_CHANGE.runtime.script_wrapper",
         )
         # Standalone tools and the wrapper also import helpers from their own folders.
-        paths = [str(DONT_CHANGE / "template_tools" / "src"), str(DONT_CHANGE / "runtime"), *sys.path]
+        paths = [str(DONT_CHANGE / "pyapp_tools" / "src"), str(DONT_CHANGE / "runtime"), *sys.path]
         with mock.patch.object(sys, "path", paths):
             for name in modules:
                 module = importlib.import_module(name)

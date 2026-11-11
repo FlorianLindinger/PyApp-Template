@@ -11,7 +11,7 @@ from unittest import mock
 
 from project_location import DONT_CHANGE
 
-with mock.patch.object(sys, "path", [str(DONT_CHANGE / "template_tools" / "src"), *sys.path]):
+with mock.patch.object(sys, "path", [str(DONT_CHANGE / "pyapp_tools" / "src"), *sys.path]):
     import _ui
     import fresh_clone_test as clone_tool
     import test_all_pythons as python_tool

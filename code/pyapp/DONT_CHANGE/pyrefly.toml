@@ -4,8 +4,8 @@
 preset = "strict"
 project-includes = ["**/*.py"]
 # The launcher imports itself as "pyapp.DONT_CHANGE...", from the code folder.
-# runtime: script_wrapper.py imports "_pyapp" from its own folder; tests and template_tools/src: their shared helper modules.
-search-path = ["../..", "bootstrap", "runtime", "tests", "template_tools/src"]
+# runtime: script_wrapper.py imports "_pyapp" from its own folder; tests and pyapp_tools/src: their shared helper modules.
+search-path = ["../..", "bootstrap", "runtime", "tests", "pyapp_tools/src"]
 # It runs on every Python uv can install on Windows, from 3.8 on, with the standard library only
 # (no packages of the app's environment), so check against 3.8 without querying an interpreter.
 python-version = "3.8"

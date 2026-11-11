@@ -11,7 +11,7 @@ from unittest import mock
 
 from project_location import DONT_CHANGE
 
-with mock.patch.object(sys, "path", [str(DONT_CHANGE / "template_tools" / "src"), *sys.path]):
+with mock.patch.object(sys, "path", [str(DONT_CHANGE / "pyapp_tools" / "src"), *sys.path]):
     import release
 
 CHANGELOG = "# Log\n\n## unreleased\n\n- A change.\n\n## 1.2.3 - 2026-01-01\n\n- Old.\n"
@@ -112,7 +112,7 @@ class FailedReleaseTests(unittest.TestCase):
             (launcher / "backend_settings.py").write_text('LAUNCHER_VERSION = "1.2.3"\n', encoding="utf-8")
             with mock.patch.object(release, "PROJECT_ROOT", root), self.assertRaises(RuntimeError):
                 release.build_zip("1.2.4", [release.LAUNCHER_FOLDER + "backend_settings.py"])
-            self.assertEqual(list((root / "dist").iterdir()), [])
+            self.assertEqual(list((root / release.LAUNCHER_FOLDER / release.RELEASES_FOLDER).iterdir()), [])
 
 
 if __name__ == "__main__":

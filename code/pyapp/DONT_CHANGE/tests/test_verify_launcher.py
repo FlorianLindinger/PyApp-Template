@@ -12,7 +12,7 @@ from unittest import mock
 
 from project_location import DONT_CHANGE
 
-with mock.patch.object(sys, "path", [str(DONT_CHANGE / "template_tools" / "src"), *sys.path]):
+with mock.patch.object(sys, "path", [str(DONT_CHANGE / "pyapp_tools" / "src"), *sys.path]):
     import verify_launcher
 
 

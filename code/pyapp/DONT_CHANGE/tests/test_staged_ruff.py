@@ -1,4 +1,4 @@
-"""template_tools/check_staged_ruff (git_hooks/pre-commit): Ruff on the staged launcher files."""
+"""pyapp_tools/check_staged_ruff (git_hooks/pre-commit): Ruff on the staged launcher files."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from unittest import mock
 
 from project_location import DONT_CHANGE
 
-with mock.patch.object(sys, "path", [str(DONT_CHANGE / "template_tools" / "src"), *sys.path]):
+with mock.patch.object(sys, "path", [str(DONT_CHANGE / "pyapp_tools" / "src"), *sys.path]):
     import _paths  # noqa: F401 - imported by the tool; the tools folder is only on sys.path here
     import check_staged_ruff as tool
 

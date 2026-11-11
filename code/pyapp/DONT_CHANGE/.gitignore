@@ -1,3 +1,7 @@
 /tmp/
 .ruff_cache/
 __pycache__/
+
+# zip files of the launcher, made by pyapp_tools/release.bat; the folder itself stays:
+/pyapp_tools/zip_releases/*
+!/pyapp_tools/zip_releases/.gitkeep

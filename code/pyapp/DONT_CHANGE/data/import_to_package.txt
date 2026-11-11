@@ -4,7 +4,7 @@
 # Add your own pairs at the end of this file.
 #
 # Generated 2026-11-08 by
-# DONT_CHANGE/template_tools/src/make_import_map.py from the wheel file lists of the 8000
+# DONT_CHANGE/pyapp_tools/src/make_import_map.py from the wheel file lists of the 8000
 # most-downloaded PyPI projects.
 a11y_pygments:accessible-pygments
 a2a:a2a-sdk

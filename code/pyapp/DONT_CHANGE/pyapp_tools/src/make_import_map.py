@@ -17,7 +17,7 @@ How it works (standard library only, needs internet):
 The result is generated from the packages themselves, so it contains no third-party mapping data.
 
 Usage (any Python 3.8+):
-    python template_tools/src/make_import_map.py [--count 8000] [--workers 16] [--output FILE]
+    python pyapp_tools/src/make_import_map.py [--count 8000] [--workers 16] [--output FILE]
                                                  [--max-age-days 30] [--refresh]
 """
 
@@ -372,7 +372,7 @@ def main() -> int:
         "# Add your own pairs at the end of this file.",
         "#",
         f"# Generated {datetime.datetime.now(datetime.timezone.utc).date().isoformat()} by",
-        f"# DONT_CHANGE/template_tools/src/make_import_map.py from the wheel file lists of the {len(ranking)}",
+        f"# DONT_CHANGE/pyapp_tools/src/make_import_map.py from the wheel file lists of the {len(ranking)}",
         "# most-downloaded PyPI projects.",
         f"# The wheel file lists were read {read}.",
     ]

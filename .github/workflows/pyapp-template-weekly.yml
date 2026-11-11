@@ -23,7 +23,7 @@ jobs:
           version: latest
           enable-cache: false
       - name: Tests on Python 3.8 and the newest Python
-        run: uv run --no-project --python 3.14 python code/pyapp/DONT_CHANGE/template_tools/src/test_all_pythons.py
+        run: uv run --no-project --python 3.14 python code/pyapp/DONT_CHANGE/pyapp_tools/src/test_all_pythons.py
 
   fresh-clone:
     if: endsWith(github.repository, '/PyApp-Template')
@@ -38,7 +38,7 @@ jobs:
           version: latest
           enable-cache: false
       - name: Clone, run Setup and start the launcher
-        run: uv run --no-project --python 3.14 python code/pyapp/DONT_CHANGE/template_tools/src/fresh_clone_test.py
+        run: uv run --no-project --python 3.14 python code/pyapp/DONT_CHANGE/pyapp_tools/src/fresh_clone_test.py
 
   # GitHub pauses scheduled workflows after 60 days without activity in the repository.
   keepalive:

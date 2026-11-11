@@ -13,7 +13,7 @@ from unittest import mock
 
 from project_location import DONT_CHANGE
 
-with mock.patch.object(sys, "path", [str(DONT_CHANGE / "template_tools" / "src"), *sys.path]):
+with mock.patch.object(sys, "path", [str(DONT_CHANGE / "pyapp_tools" / "src"), *sys.path]):
     import _paths  # noqa: F401 - main() imports it later, when the tools folder is no longer on sys.path
     import make_import_map
 

@@ -1,4 +1,4 @@
-# Prints the longest paths below PYAPP_LP_ROOT; started by template_tools\show_longest_paths.bat.
+# Prints the longest paths below PYAPP_LP_ROOT; started by pyapp_tools\show_longest_paths.bat.
 $ErrorActionPreference = 'Stop'
 $root = [IO.Path]::GetFullPath($env:PYAPP_LP_ROOT).TrimEnd('\')
 $count = [int]$env:PYAPP_LP_COUNT

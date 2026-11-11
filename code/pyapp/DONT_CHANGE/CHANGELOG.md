@@ -29,7 +29,7 @@ The first versioned release; it contains every change below.
 - New **&lt;name&gt; - Tools** shortcut (`tools_shortcut_name`, also for `desktop_shortcuts`): a menu for the people using the app with status, repair, add packages, the package terminal, make self-contained, clean and remove shortcuts, each with a note on what it changes.
 - New setting `requirements_path`: a requirements file whose packages are installed in addition to `packages`. The launcher only reads it; a package may not be in both places.
 - New `git_hooks/pre-commit`: the leak check also runs on the staged changes, so a leak stops the commit instead of the push.
-- The template tools no longer crash when their output goes to the NUL device (e.g. `> nul`), which Windows reports as a terminal.
+- The PyApp tools no longer crash when their output goes to the NUL device (e.g. `> nul`), which Windows reports as a terminal.
 - `run_regressions.py -j 0` runs the test files in parallel (about 5 s instead of 10); the file lock test no longer waits 5 s.
 - The pre-commit hook also runs Ruff's lint and format check on the staged launcher files; the pre-push hook also runs `verify_launcher` and the regression tests.
 - Setup turns on these Git hooks in a clone of the PyApp-Template repository itself (never in an app built from it), so a maintainer gets them on every PC.

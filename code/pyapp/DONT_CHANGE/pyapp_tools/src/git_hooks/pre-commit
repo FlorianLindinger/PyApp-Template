@@ -2,7 +2,7 @@
 # Stops a commit when the staged changes contain secrets or personal data, so nothing has to be
 # taken out of a commit later (git_hooks/pre-push checks again before publishing), or when the
 # staged launcher files fail Ruff's lint or format check.
-# To use it in a clone: git config core.hooksPath code/pyapp/DONT_CHANGE/template_tools/src/git_hooks
+# To use it in a clone: git config core.hooksPath code/pyapp/DONT_CHANGE/pyapp_tools/src/git_hooks
 # To commit anyway, once: git commit --no-verify
 
 root="$(git rev-parse --show-toplevel)" || exit 1
@@ -20,5 +20,5 @@ if [ -z "$python" ]; then
     exit 1
 fi
 
-"$python" -B "$launcher/template_tools/src/check_git_leaks.py" --committing || exit 1
-exec "$python" -B "$launcher/template_tools/src/check_staged_ruff.py"
+"$python" -B "$launcher/pyapp_tools/src/check_git_leaks.py" --committing || exit 1
+exec "$python" -B "$launcher/pyapp_tools/src/check_staged_ruff.py"

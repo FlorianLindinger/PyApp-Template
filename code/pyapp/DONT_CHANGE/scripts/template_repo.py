@@ -17,7 +17,7 @@ from typing import Callable, List, Optional
 from pyapp.DONT_CHANGE.backend_settings import SHORTCUT_OUTPUT_DIR
 
 # Relative to the repository root, so the setting keeps working when the folder moves.
-HOOKS_PATH = "code/pyapp/DONT_CHANGE/template_tools/src/git_hooks"
+HOOKS_PATH = "code/pyapp/DONT_CHANGE/pyapp_tools/src/git_hooks"
 # The same test as the template's GitHub Actions: a repository named PyApp-Template (any owner).
 TEMPLATE_REMOTE = re.compile(r"[/:]PyApp-Template(?:\.git)?/?$", re.IGNORECASE)
 

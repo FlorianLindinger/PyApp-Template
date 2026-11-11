@@ -74,7 +74,7 @@ SECRET_FILES += ("credentials.json", "secrets.json")
 MACHINE_FILES = ("*.lnk", "*.pyc", "shortcuts_created_by_setup.json", "runtime.cmd", "diagnostics.log")
 # These name the patterns or example values themselves; license texts and lock files hold other people's addresses.
 SKIPPED_FILES = {
-    "code/pyapp/DONT_CHANGE/template_tools/src/check_git_leaks.py",
+    "code/pyapp/DONT_CHANGE/pyapp_tools/src/check_git_leaks.py",
     "code/pyapp/DONT_CHANGE/tests/test_git_leaks.py",
 }
 NO_PERSONAL_CHECK = ("*LICENSE*", "*/LICENSES/*", "*.lock")
