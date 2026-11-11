@@ -1,14 +1,18 @@
 """Check that a fresh clone of the last commit works: finds files that are missing from Git.
 
-Clones the current commit into a temporary folder, runs Setup there, starts the launcher without a
-terminal and runs a dev tool. main.py in the clone is replaced by a probe that only writes a marker
-file, so this tests the launcher and not the app. The project itself is never touched, and the
-clone's settings keep Setup away from your Start Menu and Desktop.
+Clones the current commit into a temporary folder whose path has spaces, runs Setup there, starts
+the launcher without a terminal and runs a dev tool. Then the smoke tests: the log without a
+terminal (prints and native output), a Python error (crash log), a hard interpreter crash (crash
+log and the last output kept), a start without internet, a start after moving the folder, and Setup
+updating the shortcuts for the new place. main.py in the clone is replaced by a probe that writes a
+marker file and does what the current scenario needs, so this tests the launcher and not the app.
+The project itself is never touched, and the clone's settings keep Setup away from your Start Menu
+and Desktop. A missing package is not tested here: its recovery menu waits for an answer.
 
 Only committed files are tested. The tool lists what is not committed, because a new file that was
 never added to Git is exactly what breaks a fresh clone.
 
-Usage: fresh_clone_test.bat [--timeout 900] [--keep]
+Usage: fresh_clone_test.bat [--timeout 900] [--keep]   (takes a few minutes: two Setups, six starts)
 """
 
 from __future__ import annotations
@@ -33,9 +37,25 @@ SETUP_FILE = "Setup - run first and after moving folder.cmd"
 START_TIMEOUT_SECONDS = 180
 SHOWN_LOG_LINES = 40
 SHOWN_NEW_FILES = 15
-PROBE = """with open({marker!r}, "w") as marker:
-    marker.write("started")
+# The probe's scenario comes from a file next to the marker: ok, error or hard_crash.
+PROBE = """import os
+
+mode = "ok"
+if os.path.exists({mode!r}):
+    with open({mode!r}) as stream:
+        mode = stream.read().strip()
+print("probe print")
+os.write(1, b"probe native\\n")
+with open({marker!r}, "w") as marker:
+    marker.write(mode)
+if mode == "error":
+    raise RuntimeError("probe error")
+if mode == "hard_crash":
+    os.write(1, b"probe last words\\n")
+    os._exit(3)
 """
+# A port nothing listens on: every download fails at once, as without internet.
+NO_INTERNET = {"UV_OFFLINE": "1", "HTTP_PROXY": "http://127.0.0.1:9", "HTTPS_PROXY": "http://127.0.0.1:9"}
 # Added to the end of the clone's settings; Python uses the last assignment.
 TEST_SETTINGS = """
 
@@ -136,10 +156,25 @@ def prepare_clone(clone: Path, marker: Path, project: Path = PROJECT_ROOT) -> No
     settings = clone / "code" / "pyapp" / "developer_settings.py"
     text = settings.read_text(encoding="utf-8")
     script = clone_main_script(clone, main_script_value(text), project)
-    script.write_text(PROBE.format(marker=str(marker)), encoding="utf-8")
+    script.write_text(PROBE.format(marker=str(marker), mode=str(mode_file(marker))), encoding="utf-8")
     # The clone must run its probe, also when the setting is an absolute path into the original project.
     relative = os.path.relpath(str(script), str(settings.parent.resolve()))
     settings.write_text(text + TEST_SETTINGS + f"main_script_path = {relative!r}\n", encoding="utf-8")
+
+
+def mode_file(marker: Path) -> Path:
+    """Where the probe reads its scenario."""
+    return marker.with_suffix(".mode")
+
+
+def files_in(folder: Path, pattern: str) -> List[Path]:
+    """Matching files, oldest first."""
+    return sorted(folder.glob(pattern), key=lambda path: path.stat().st_mtime) if folder.is_dir() else []
+
+
+def newest_text(folder: Path, pattern: str) -> str:
+    found = files_in(folder, pattern)
+    return found[-1].read_text(encoding="utf-8", errors="replace") if found else ""
 
 
 def run_quietly(command: str, env: Dict[str, str], cwd: Path, log: Path, timeout: float) -> bool:
@@ -197,6 +232,23 @@ def start_without_terminal(clone: Path, marker: Path, env: Dict[str, str], log: 
                 process.kill()
 
 
+def move_when_free(source: Path, target: Path, seconds: float = 30) -> bool:
+    """Rename a folder; True once it worked.
+
+    The launcher's completion step still runs for a moment after the app unregistered, and Windows
+    cannot rename a folder while a process uses a file in it (or has it as its working folder).
+    """
+
+    def attempt() -> bool:
+        try:
+            source.rename(target)
+        except OSError:
+            return False
+        return True
+
+    return wait_until(attempt, seconds)
+
+
 def no_instance_left(clone: Path) -> bool:
     return not any((clone / "code" / "pyapp" / "DONT_CHANGE" / "tmp" / "running").glob("*.json"))
 
@@ -210,8 +262,11 @@ def remove_clone(clone: Path) -> None:
     shutil.rmtree(clone, ignore_errors=True)
 
 
-def run_checks(clone: Path, marker: Path, log: Path, timeout: float) -> List[Tuple[str, bool]]:
-    """The checks in order; stops at the first failure, because the later ones build on it."""
+def run_checks(clone: Path, marker: Path, log: Path, timeout: float, moved: Path) -> List[Tuple[str, bool]]:
+    """The checks in order; stops at the first failure, because the later ones build on it.
+
+    The clone is moved to `moved` for the last checks.
+    """
     env = clean_environment()
     results: List[Tuple[str, bool]] = []
 
@@ -232,9 +287,59 @@ def run_checks(clone: Path, marker: Path, log: Path, timeout: float) -> List[Tup
         return results
     if not check("App ended cleanly", wait_until(lambda: no_instance_left(clone), 30)):
         return results
+    logs, crash_logs = clone / "logs", clone / "crash logs"
+    log_text = newest_text(logs, "log_*.txt")
+    if not check("Log without a terminal", "probe print" in log_text and "probe native" in log_text):
+        return results
     _ui.step("Running a dev tool ...")
     status_tool = clone / "code" / "pyapp" / "dev_tools" / "status.cmd"
-    check("Dev tool (status)", run_quietly(batch_command(status_tool), env, clone, log, 120))
+    if not check("Dev tool (status)", run_quietly(batch_command(status_tool), env, clone, log, 120)):
+        return results
+
+    def run_app(mode: str, folder: Path, start_env: Dict[str, str]) -> bool:
+        """Start the probe in a scenario; True once it ran and its instance has ended."""
+        mode_file(marker).write_text(mode, encoding="utf-8")
+        if marker.exists():
+            marker.unlink()
+        return start_without_terminal(folder, marker, start_env, log) and wait_until(
+            lambda: no_instance_left(folder), 60
+        )
+
+    def crash_log_after(mode: str) -> str:
+        """Run a failing scenario; the text of the crash log it wrote ("" if none appeared)."""
+        before = len(files_in(crash_logs, "*.txt"))
+        if not run_app(mode, clone, env):
+            return ""
+        wait_until(lambda: len(files_in(crash_logs, "*.txt")) > before, 60)
+        return newest_text(crash_logs, "*.txt") if len(files_in(crash_logs, "*.txt")) > before else ""
+
+    _ui.step("Smoke tests: a Python error and a hard crash ...")
+    if not check("Python error: crash log", "probe error" in crash_log_after("error")):
+        return results
+    hard_crash = crash_log_after("hard_crash")
+    raw_output = newest_text(logs, "*.output.log")
+    if not check("Hard crash: last output kept", bool(hard_crash) and "probe last words" in raw_output):
+        return results
+    _ui.step("Smoke tests: starting without internet ...")
+    if not check("Starts without internet", run_app("ok", clone, {**env, **NO_INTERNET})):
+        return results
+    _ui.step("Smoke tests: moving the folder ...")
+    if not check("Folder moved", move_when_free(clone, moved)):
+        return results
+    if not check("Starts after moving the folder", run_app("ok", moved, env)):
+        return results
+    _ui.step("Running Setup again for the new place ...")
+    if not check("Setup after moving", run_quietly(batch_command(moved / SETUP_FILE), env, moved, log, timeout)):
+        return results
+    # A shortcut stores its target folder as UTF-16 text.
+    shortcuts = [path.read_bytes() for path in moved.glob("*.lnk")]
+    check(
+        "Shortcuts point to the new place",
+        bool(shortcuts)
+        and all(
+            moved.name.encode("utf-16-le") in data and clone.name.encode("utf-16-le") not in data for data in shortcuts
+        ),
+    )
     return results
 
 
@@ -245,7 +350,9 @@ def main() -> int:
     arguments = parser.parse_args()
 
     WORK_DIR.mkdir(parents=True, exist_ok=True)
-    clone = WORK_DIR / f"clone_{os.getpid()}"
+    # Spaces in both folder names: the launcher must quote every path it builds.
+    clone = WORK_DIR / f"fresh clone {os.getpid()}"
+    moved = WORK_DIR / f"moved clone {os.getpid()}"
     marker = WORK_DIR / f"marker_{os.getpid()}.txt"
     log = WORK_DIR / f"log_{os.getpid()}.txt"
     _ui.heading("Fresh clone test")
@@ -263,7 +370,7 @@ def main() -> int:
         _ui.step("Cloning the current commit ...")
         git("clone", "--quiet", "--no-local", "--depth", "1", str(PROJECT_ROOT), str(clone))
         prepare_clone(clone, marker)
-        results = run_checks(clone, marker, log, arguments.timeout)
+        results = run_checks(clone, marker, log, arguments.timeout, moved)
         _ui.heading("Result")
         _ui.fields((name, "passed" if ok else "FAILED") for name, ok in results)
         passed = all(ok for _, ok in results)
@@ -272,12 +379,12 @@ def main() -> int:
             for line in log.read_text(encoding="utf-8", errors="replace").splitlines()[-SHOWN_LOG_LINES:]:
                 _ui.info(line)
     finally:
-        if marker.exists():
-            marker.unlink()
-        if log.exists():
-            log.unlink()
+        for path in (marker, mode_file(marker), log):
+            if path.exists():
+                path.unlink()
         if not arguments.keep:
             remove_clone(clone)
+            remove_clone(moved)
 
     _ui.blank_line()
     if passed:

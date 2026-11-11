@@ -30,6 +30,10 @@ The first versioned release; it contains every change below.
 - New setting `requirements_path`: a requirements file whose packages are installed in addition to `packages`. The launcher only reads it; a package may not be in both places.
 - New `git_hooks/pre-commit`: the leak check also runs on the staged changes, so a leak stops the commit instead of the push.
 - The PyApp tools no longer crash when their output goes to the NUL device (e.g. `> nul`), which Windows reports as a terminal.
+- New `pyapp_tools/check_repository.bat` (also run by the pre-push hook): tracked files that are ignored, `.gitignore` exceptions without effect, mixed line endings, case-only path differences, names and path lengths Windows cannot handle, large files, tracked caches and environments, nested Git repositories.
+- `check_repository.bat --why PATH` shows which ignore rule decides a path; `--ignored` lists what Git ignores, by size.
+- New `pyapp_tools/check_all.bat`: leak check, repository check, `verify_launcher` and tests at once, with a summary; the pre-push hook now runs it.
+- `fresh_clone_test` also runs smoke tests: a clone path with spaces, the log without a terminal, a Python error, a hard crash, a start without internet, a moved folder and Setup updating the shortcuts.
 - Stricter Ruff rules (bugs, simplifications, unused arguments, Pylint, return types; see `ruff.toml` for the deliberate exceptions), with the launcher code fixed to pass them.
 - Pyrefly also reports unused type-ignore comments, namedtuples without field types and unchecked optional TypedDict keys (on top of `strict`).
 - Release zips go to `pyapp_tools/zip_releases`, which Git keeps empty except for its `.gitkeep`.

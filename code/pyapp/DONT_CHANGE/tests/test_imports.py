@@ -29,7 +29,11 @@ class ScanTests(unittest.TestCase):
         self.root = directory.name
 
     def test_stdlib_local_and_launcher_imports_are_excluded(self):
-        write(self.root, "main.py", "import os, json, helper, requests\nfrom mypkg import x\n")
+        write(
+            self.root,
+            "main.py",
+            "import os, json, helper, requests\nfrom mypkg import x\n",
+        )
         write(self.root, "helper.py")
         write(self.root, "mypkg/__init__.py")
         write(self.root, "pyapp/x/launcher.py", "import launcheronly\n")
@@ -60,7 +64,10 @@ class ScanTests(unittest.TestCase):
             """,
         )
         found, _ = import_finder.imports_in_project(self.root)
-        self.assertFalse(found["numpy"][1], "a program wrapped in try/except still requires its imports")
+        self.assertFalse(
+            found["numpy"][1],
+            "a program wrapped in try/except still requires its imports",
+        )
         self.assertTrue(found["yaml"][1])
         self.assertTrue(found["ujson"][1])
 
@@ -73,7 +80,11 @@ class ScanTests(unittest.TestCase):
 
     def test_installed_metadata_maps_import_to_distribution(self):
         site = Path(self.root, "site-packages")
-        write(site, "PyYAML-6.0.dist-info/METADATA", "Metadata-Version: 2.1\nName: PyYAML\nVersion: 6.0\n")
+        write(
+            site,
+            "PyYAML-6.0.dist-info/METADATA",
+            "Metadata-Version: 2.1\nName: PyYAML\nVersion: 6.0\n",
+        )
         write(site, "PyYAML-6.0.dist-info/top_level.txt", "yaml\n_yaml\n")
         write(site, "yaml/__init__.py")
         mapping = import_finder.installed_import_map(str(site))
@@ -89,7 +100,11 @@ class ScanTests(unittest.TestCase):
 
     def install(self, site: Path, name: str, files: str):
         info = f"{name}-1.0.dist-info"
-        write(site, f"{info}/METADATA", f"Metadata-Version: 2.1\nName: {name}\nVersion: 1.0\n")
+        write(
+            site,
+            f"{info}/METADATA",
+            f"Metadata-Version: 2.1\nName: {name}\nVersion: 1.0\n",
+        )
         write(site, f"{info}/RECORD", "".join(f"{file},,\n" for file in files.split()))
         for file in files.split():  # newer Pythons list only the RECORD entries that exist
             write(site, file)
@@ -100,21 +115,30 @@ class ScanTests(unittest.TestCase):
         self.install(site, "google-cloud-storage", "google/cloud/storage/__init__.py")
         self.install(site, "PyYAML", "yaml/__init__.py")
         self.assertEqual(
-            import_finder.installed_providers(str(site))["google"], ["google-auth", "google-cloud-storage"]
+            import_finder.installed_providers(str(site))["google"],
+            ["google-auth", "google-cloud-storage"],
         )
         self.assertNotIn("google", import_finder.installed_import_map(str(site)))
         self.assertEqual(import_finder.installed_import_map(str(site))["yaml"], "PyYAML")
         # A missing module of the namespace: the distribution that contains it, else no false answer.
         self.assertEqual(
-            import_finder.distribution_for_import("google.cloud.storage", str(site)), "google-cloud-storage"
+            import_finder.distribution_for_import("google.cloud.storage", str(site)),
+            "google-cloud-storage",
         )
-        self.assertEqual(import_finder.distribution_for_import("google.protobuf", str(site)), "google")
+        self.assertEqual(
+            import_finder.distribution_for_import("google.protobuf", str(site)),
+            "google",
+        )
 
         write(self.root, "main.py", "import google.auth\nimport yaml\n")
         requirements, _ = import_finder.find_requirements(self.root, str(site))
         self.assertEqual(
             [(r.distribution, r.source) for r in requirements],
-            [("google-auth", "ambiguous"), ("google-cloud-storage", "ambiguous"), ("PyYAML", "installed")],
+            [
+                ("google-auth", "ambiguous"),
+                ("google-cloud-storage", "ambiguous"),
+                ("PyYAML", "installed"),
+            ],
         )
 
 

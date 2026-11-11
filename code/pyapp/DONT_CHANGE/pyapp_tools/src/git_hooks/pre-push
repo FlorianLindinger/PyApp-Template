@@ -1,7 +1,7 @@
 #!/bin/sh
-# Before a push: the leak check over the commits being pushed, then verify_launcher (Ruff and
-# Pyrefly) and the launcher's regression tests. verify_launcher and the tests check the files on
-# disk, so changes that are not committed count too.
+# Before a push: the leak check over the commits being pushed, the repository check, then
+# verify_launcher (Ruff and Pyrefly) and the launcher's regression tests. verify_launcher and
+# the tests check the files on disk, so changes that are not committed count too.
 # To use it in a clone: git config core.hooksPath code/pyapp/DONT_CHANGE/pyapp_tools/src/git_hooks
 # To push anyway, once: git push --no-verify
 
@@ -20,19 +20,6 @@ if [ -z "$python" ]; then
     exit 1
 fi
 
-# Reads the refs being pushed from stdin, as Git gives them to this hook.
-"$python" -B "$launcher/pyapp_tools/src/check_git_leaks.py" --pushing || exit 1
-
-"$python" -B "$launcher/pyapp_tools/src/verify_launcher.py"
-code=$?
-if [ "$code" -eq 2 ]; then
-    echo "verify_launcher skipped: Ruff or Pyrefly not found (put them on PATH, or install uv for uvx)." >&2
-elif [ "$code" -ne 0 ]; then
-    echo "Push stopped: the launcher failed verification (see above). To push anyway, once: git push --no-verify" >&2
-    exit 1
-fi
-
-if ! "$python" -B -X utf8 "$launcher/tests/run_regressions.py" -q -j 0; then
-    echo "Push stopped: launcher tests failed (see above). To push anyway, once: git push --no-verify" >&2
-    exit 1
-fi
+# The same steps as check_all.bat (leak check, repository check, verify_launcher, tests),
+# stopping at the first failure. The refs being pushed arrive on stdin, as Git gives them.
+exec "$python" -B "$launcher/pyapp_tools/src/check_all.py" --pushing
