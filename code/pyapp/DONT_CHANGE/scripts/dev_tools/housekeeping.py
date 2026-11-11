@@ -110,7 +110,7 @@ def cmd_clean(_arguments: List[str]) -> None:
     print_heading("Clean")
     print_choices(label for _, label in options)
     chosen = ask("Numbers to clean (space separated), Enter = cancel:").replace(",", " ").split()
-    keys = {options[int(c) - 1][0] for c in chosen if c.isdigit() and 1 <= int(c) <= len(options)}
+    keys = {options[int(c) - 1][0] for c in chosen if c.isdecimal() and 1 <= int(c) <= len(options)}
     if not keys or not confirm("Delete permanently?"):
         print_info("Nothing was deleted.")
         return
@@ -127,26 +127,31 @@ def cmd_clean(_arguments: List[str]) -> None:
             in_use += 1
     if in_use:
         print_warn(f"Kept {in_use} file(s) that are in use, e.g. by a running instance.")
+    runs_deleted = False
     if "runs" in keys and Path(paths.RUNS_DIR).is_dir():
         # A running instance still writes its completion report into its run folder.
         if ProcessRegistry(paths.PROCESS_REGISTRY_DIR).records()[0]:
             print_warn("Kept the per-run diagnostics: close the running app instance(s) first.")
         else:
             remove_tree_inside(paths.RUNS_DIR, paths.TEMPORARY_DIR)
-    runs = " and the per-run diagnostics" if "runs" in keys else ""
+            runs_deleted = True
+    runs = " and the per-run diagnostics" if runs_deleted else ""
     print_success(f"Deleted {deleted} log file(s){runs}.")
 
 
 def cmd_remove_shortcuts(_arguments: List[str]) -> None:
     """Remove every shortcut Setup created (project folder, Start Menu, Desktop)."""
     from pyapp.DONT_CHANGE.scripts.shortcuts import (
+        leftover_shortcuts,
         read_created_shortcuts,
         remove_shortcuts,
         write_created_shortcuts,
     )
 
-    removed = remove_shortcuts(read_created_shortcuts())
-    write_created_shortcuts([])
+    previous = read_created_shortcuts()
+    removed = remove_shortcuts(previous)
+    # Shortcuts that could not be deleted (e.g. open in Explorer) stay recorded for the next try.
+    write_created_shortcuts(leftover_shortcuts(previous, removed))
     for path in removed:
         print_info("Removed: " + path)
     print_success(f"Removed {len(removed)} shortcut(s). Run Setup to create them again.")
@@ -162,9 +167,11 @@ def cmd_status(_arguments: List[str]) -> None:
         settings_state = str(error)
     try:
         uv = uv_exe()
-        uv_state = f"{uv_version()} at {uv}" + (
-            " (local)" if os.path.normcase(uv).startswith(os.path.normcase(paths.LOCAL_UV_DIR)) else " (global)"
-        )
+        where = {
+            os.path.normcase(paths.LOCAL_UV_EXE): " (local)",
+            os.path.normcase(paths.SHARED_UV_EXE): " (shared by PyApp projects of this user)",
+        }.get(os.path.normcase(os.path.normpath(uv)), " (global)")
+        uv_state = f"{uv_version()} at {uv}{where}"
     except SetupError:
         uv = None
         uv_state = "missing (Setup or the next start installs it)"
@@ -190,7 +197,14 @@ def cmd_status(_arguments: List[str]) -> None:
         else "no (uses the shared uv and Python; make_self_contained changes that)"
     )
     ignored = diagnostics_summary()
-    in_sync = declared_dependencies() == all_packages(s)
+    # status is what the README says to run when something is wrong: a requirements_path file
+    # that cannot be read is shown in its row (and under Settings), not raised.
+    try:
+        from_file: Optional[List[str]] = requirements_file_entries(s)
+        in_sync = declared_dependencies() == all_packages(s)
+        file_problem = ""
+    except SettingsError as error:
+        from_file, in_sync, file_problem = None, False, str(error)
     sections: Dict[str, List[Union[Tuple[str, object], Tuple[str, object, bool]]]] = {
         "Project": [
             ("Program", s.program_name),
@@ -216,9 +230,13 @@ def cmd_status(_arguments: List[str]) -> None:
             ("packages", ", ".join(s.packages) or "(none)"),
             (
                 "requirements_path",
-                f"{display_path(requirements_file_path(s) or '')}: {', '.join(requirements_file_entries(s)) or '(none)'}"
-                if requirements_file_path(s)
-                else "(none)",
+                file_problem
+                or (
+                    f"{display_path(requirements_file_path(s) or '')}: {', '.join(from_file or []) or '(none)'}"
+                    if requirements_file_path(s)
+                    else "(none)"
+                ),
+                not file_problem,
             ),
             (
                 "pyproject.toml",

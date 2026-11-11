@@ -13,18 +13,20 @@ from project_location import DONT_CHANGE
 
 class AnnotationTests(unittest.TestCase):
     def test_runtime_type_hints(self):
+        # Every launcher module (found by walking the folders, so a new one cannot be forgotten),
+        # plus the settings and the standalone tools whose annotations are inspected too.
+        launcher = sorted(
+            "pyapp.DONT_CHANGE." + ".".join(path.relative_to(DONT_CHANGE).with_suffix("").parts)
+            for folder in ("scripts", "runtime", "actions")
+            for path in (DONT_CHANGE / folder).rglob("*.py")
+            if path.name != "__init__.py" and "__pycache__" not in path.parts
+        )
         modules = (
             "pyapp.developer_settings",
-            "pyapp.DONT_CHANGE.scripts.banner",
-            "pyapp.DONT_CHANGE.scripts.config",
-            "pyapp.DONT_CHANGE.scripts.com_tools",
-            "pyapp.DONT_CHANGE.scripts.shortcuts",
-            "pyapp.DONT_CHANGE.scripts.env.pyproject",
-            "pyapp.DONT_CHANGE.scripts.env.uv",
+            "pyapp.DONT_CHANGE.backend_settings",
+            *launcher,
             "pyapp.DONT_CHANGE.pyapp_tools.src.make_import_map",
             "pyapp.DONT_CHANGE.pyapp_tools.src.get_startup_time",
-            "pyapp.DONT_CHANGE.runtime._pyapp",
-            "pyapp.DONT_CHANGE.runtime.script_wrapper",
         )
         # Standalone tools and the wrapper also import helpers from their own folders.
         paths = [str(DONT_CHANGE / "pyapp_tools" / "src"), str(DONT_CHANGE / "runtime"), *sys.path]
@@ -48,7 +50,8 @@ class AnnotationTests(unittest.TestCase):
                                 method = attribute.__func__
                             elif isinstance(attribute, property):
                                 method = attribute.fget
-                            if inspect.isfunction(method):
+                            # Not the methods Python generates, e.g. a NamedTuple's __new__.
+                            if inspect.isfunction(method) and method.__module__ == name:
                                 with self.subTest(module=name, member=member_name, method=method_name):
                                     typing.get_type_hints(method)
 

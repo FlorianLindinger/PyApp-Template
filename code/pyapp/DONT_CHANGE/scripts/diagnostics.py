@@ -40,12 +40,16 @@ def note_ignored(context: str) -> None:
 
 def diagnostics_summary() -> Optional[str]:
     """Short description of the diagnostics log for the status tool, or None if it is empty."""
+    import re
+
     try:
         with Path(DIAGNOSTICS_LOG_PATH).open(encoding="utf-8", errors="replace") as stream:
-            entries = [block for block in stream.read().split("\n\n") if block.strip()]
+            text = stream.read()
     except OSError:
         return None
-    if not entries:
+    # One header line per entry, as note_ignored writes it. Not blank lines: a chained traceback
+    # has them around "During handling of the above exception, another exception occurred:".
+    headers = re.findall(r"(?m)^\d{4}-\d\d-\d\d \d\d:\d\d:\d\d  pid \d+  .*$", text)
+    if not headers:
         return None
-    last = entries[-1].splitlines()[0]
-    return f"{len(entries)} ignored error(s), last: {last}"
+    return f"{len(headers)} ignored error(s), last: {headers[-1]}"

@@ -42,6 +42,14 @@ class ScanTests(unittest.TestCase):
         self.assertEqual(problems, [])
         self.assertEqual(sorted(found), ["flask", "requests"])
 
+    def test_virtual_environments_under_any_name_are_skipped(self):
+        write(self.root, "main.py", "import requests\n")
+        write(self.root, "venv/pyvenv.cfg", "home = C:\\Python\n")
+        write(self.root, "venv/Lib/site-packages/numpy/__init__.py", "import scipy\n")
+        write(self.root, "tools/site-packages/x.py", "import pandas\n")
+        found, _ = import_finder.imports_in_project(self.root)
+        self.assertEqual(sorted(found), ["requests"])
+
     def test_optional_import_guards(self):
         write(
             self.root,

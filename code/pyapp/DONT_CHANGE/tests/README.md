@@ -30,6 +30,19 @@ Run them after changing anything in `DONT_CHANGE`, or after updating the templat
 | `test_entrypoint.py` | exit codes, prompts (`pause_on_success`), class-based expected problems, the `entrypoint.py <tool>` runner |
 | `test_logs.py` | log paths, unique names, diagnostics log, taskbar identity per folder, shortcut file names, outdated shortcut targets |
 | `test_files.py` | CRLF batch files, every referenced script exists, every tool has `main()`, lint configs, Python 3.8 compatibility of the launcher |
+| `test_output_logs.py` | crash logs contain the app's prints; the raw output file is only kept after failures; the hidden completion handler never waits |
+| `test_resolve_runtime.py` | `bootstrap/resolve_runtime.py`: settings, `uv_version` rules, messages for company PCs, the uv download folder |
+| `test_dev_menu.py` | the dev tools menu offers every command exactly once; missing-package recovery |
+| `test_template_workflows.py` | Setup deletes the template's own workflows only in an app, only unchanged and alone; every template workflow job is skipped outside PyApp-Template |
+| `test_app_workflows.py` | `github_actions`: Setup creates, updates and removes only its own workflow files |
+| `test_template_contract.py` | what must stay stable: the repository name in the Actions, what existing projects expect in `DONT_CHANGE` |
+| `test_git.py` | no ignore rule hides a launcher file |
+| `test_git_leaks.py` | `pyapp_tools/check_git_leaks`: what counts as a leak; secrets are never printed in full |
+| `test_staged_ruff.py` | `pyapp_tools/check_staged_ruff` (pre-commit hook): Ruff on the staged launcher files |
+| `test_check_all.py` | `pyapp_tools/check_all` (pre-push hook): every check at once, with a summary |
+| `test_repository_check.py` | `pyapp_tools/check_repository`: problems that break clones, other PCs or Windows |
+| `test_release.py` | `pyapp_tools/release`: version numbers, the changelog and the zip |
+| `test_tools.py` | `pyapp_tools/fresh_clone_test` and `test_all_pythons`: the parts that can be checked without a clone |
 | `test_windows.py` | Windows only: registry records with job names, Stop ends the whole job (incl. grandchildren), graceful Stop via Ctrl+C, file lock |
 
 Manual release check (not automated): Setup, start twice, Stop on the example window, the

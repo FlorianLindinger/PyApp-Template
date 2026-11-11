@@ -14,7 +14,7 @@ from pyapp.DONT_CHANGE.backend_settings import (
     PROCESS_REGISTRY_DIR,
     RUNS_DIR,
 )
-from pyapp.DONT_CHANGE.scripts.config import settings
+from pyapp.DONT_CHANGE.scripts.config import settings, terminal_color_code
 from pyapp.DONT_CHANGE.scripts.console_tools import (
     ANSI_DIM,
     enable_ansi,
@@ -66,7 +66,7 @@ def set_terminal_appearance_once(app_id: str) -> None:
 def set_settings_colors() -> None:
     """Apply terminal_bg_color + terminal_text_color from developer_settings.py (both empty: unchanged)."""
     s = settings()
-    _set_terminal_colors((s.terminal_bg_color or "") + (s.terminal_text_color or ""))
+    _set_terminal_colors(terminal_color_code(s.terminal_bg_color, s.terminal_text_color))
 
 
 def get_log_path(log_path: Optional[str], is_relative_to_start_folder_if_relative: bool) -> str:

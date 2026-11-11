@@ -7,6 +7,46 @@ README.md ("Versions"); `LAUNCHER_VERSION` in `backend_settings.py` names the cu
 
 The first versioned release; it contains every change below.
 
+### 2026-11-11 - audit fixes
+
+- App modules named like standard-library modules (`code/random.py`, `code/signal.py`, ...) no longer break the launcher: the code folder comes last on the launcher's own `sys.path`.
+- The second start after Setup or a package change takes the fast path again; it no longer repeats the uv checks, or refuses to start while the first instance runs, because Python wrote `site-packages\__pycache__`.
+- Setup no longer turns on the template's Git hooks; they are opt-in (see `pyapp_tools/README.md`), so app authors who clone the template are never affected.
+- A failing completion handler after a successful run without a terminal no longer waits invisibly for Enter; it is shown again in a window.
+- The error report is shown before the crash log is written, so a crash log that cannot be written (missing drive, invalid name) no longer hides it.
+- The dev tools keep comments and blank lines in a triple-quoted `packages` block, and the comment of a package whose version changed.
+- `terminal_bg_color` without `terminal_text_color` (or the reverse) now sets that color, with the console default for the other one; equal colors are reported by the settings check.
+- Run-folder clean-up removes a link to a folder outside `tmp/runs` (only the link) instead of stopping with an error.
+- `status` counts a chained traceback in the diagnostics log as one ignored error and shows its header line.
+- `uv_version` values with empty version parts such as `">=0..9"` are reported with a message instead of crashing the bootstrap.
+- The bootstrap's error messages name the `make_self_contained` dev tool instead of the removed `make_portable`.
+- A local uv folder no longer contains the downloaded uv archive and its checksum (about 20 MB).
+- New `pyapp_tools/enable_git_hooks.bat [--off]` turns the Git hooks on for this clone and every later clone of the same repository on this PC.
+- A registry record that antivirus or an indexer holds open is no longer deleted as stale, so the running instance stays visible to Stop.
+- The Windows `PROPVARIANT` structure has its full size (24 bytes on x64).
+- `uv add --dev`, `--group` and `--optional` packages, which are not kept, are now reported; the package terminal says so too.
+- `export_requirements` refuses to overwrite the file `requirements_path` reads.
+- `clean` no longer says it deleted the per-run diagnostics when it kept them; `remove_shortcuts` and an interrupted Setup keep shortcuts they could not delete (or had created) in the record.
+- `status` shows an unreadable `requirements_path` file in its row instead of stopping, and labels the shared uv as such.
+- A launch cancelled by `instance_policy` is no longer misreported as a watchdog that exited before startup.
+- `;` in the program name or project path no longer splits the Windows Terminal command line.
+- Removed the unused `classic_terminal` option of shortcut creation; the README and `get_startup_time` describe and measure the real shortcut target (`conhost.exe`).
+- Documentation: file tables follow the `dev_tools` folder and list every test file and tool; a test keeps the tables in step with the files.
+- Annotations of `image_tools.py` are evaluable on Python 3.8; the annotation test now covers every launcher module.
+- The tests remove their temporary diagnostics folder.
+- A global uv that cannot be started is reported as such, not as outdated. PATH entries that name the same folder in another spelling are not added twice, and the value's registry type is kept.
+- Failing cleanups of broken Python links no longer stop the bootstrap; a Python that does not start gives a message instead of a traceback; settings that break while a launch waits are reported to it.
+- The leak check scans UTF-16 text files and reads the history line by line.
+- Menu answers such as `²` are asked again instead of ending the menu.
+- `cmd.exe`, `conhost.exe`, `notepad.exe` and `powershell.exe` are started by their full path in System32.
+- Restoring the console after an error no longer un-maximizes it; line breaks are removed from window titles.
+- More Windows crash codes are recognized (heap corruption, division by zero, missing DLLs, C++ exceptions).
+- `find_imports` skips virtual environments under any name (folders with `pyvenv.cfg`) and `site-packages` folders.
+- The start-up waits are longer (wrapper ready: 120 s, acknowledgement: 180 s) and named in `backend_settings.py`.
+- The `pyapp_tools` `.bat` wrappers share `src/_run_tool.bat`.
+- Two first starts at the same time on a PC without uv (two projects, or one started twice) no longer fail with a checksum or unpack error: each downloads uv into a folder of its own (`%LOCALAPPDATA%\PyApp-Template\uv-bootstrap-<number>`) and removes only that one, and installing the uv shared by all projects (`PyApp-Template\uv`, or the global one) is locked across projects.
+- Setup deletes the template's own workflows (`.github/workflows/pyapp-template-*.yml`, which never run in an app) from an app, but only when they are unchanged and `.github` holds nothing else.
+
 ### 2026-11-10 - audit fixes
 
 - `fresh_clone_test` no longer overwrites the real app when `main_script_path` is absolute: the probe goes to the clone's copy, and a path that leads outside the clone is refused.
@@ -39,7 +79,6 @@ The first versioned release; it contains every change below.
 - Release zips go to `pyapp_tools/zip_releases`, which Git keeps empty except for its `.gitkeep`.
 - `run_regressions.py -j 0` runs the test files in parallel (about 5 s instead of 10); the file lock test no longer waits 5 s.
 - The pre-commit hook also runs Ruff's lint and format check on the staged launcher files; the pre-push hook also runs `verify_launcher` and the regression tests.
-- Setup turns on these Git hooks in a clone of the PyApp-Template repository itself (never in an app built from it), so a maintainer gets them on every PC.
 - Every prompt says how to cancel: `q` for a new python_version, Enter in the other menus.
 - `make_import_map` reads cached projects again after 30 days (`--max-age-days`), or all of them with `--refresh`; the map's header says when the package data was read.
 

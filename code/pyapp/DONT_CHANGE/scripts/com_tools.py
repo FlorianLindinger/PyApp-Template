@@ -47,6 +47,9 @@ class PROPVARIANT(ctypes.Structure):
         ("reserved2", ctypes.c_ushort),
         ("reserved3", ctypes.c_ushort),
         ("string_value", ctypes.c_wchar_p),
+        # The union in the Windows structure is two pointers wide (24 bytes on x64, 16 on x86);
+        # without this, SetValue may read past the end of a shorter buffer.
+        ("padding", ctypes.c_void_p),
     )
 
 

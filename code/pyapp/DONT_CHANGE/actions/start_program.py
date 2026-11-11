@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from types import ModuleType, SimpleNamespace
-from typing import Union
+from typing import List, Optional, Union
 
 fail_message = "Failed to start the program: {e}"
 
@@ -56,6 +56,16 @@ def _hint_outdated_shortcuts(s: Union[ModuleType, SimpleNamespace]) -> None:
             )
     except Exception:
         note_ignored("outdated shortcut check")
+
+
+def wt_command(title: str, tab_color: Optional[str], command: List[str]) -> List[str]:
+    """The wt.exe command line that runs `command` in a new Windows Terminal tab.
+
+    wt.exe splits its own command line at ";" into several subcommands, so a ";" in the title or
+    in a path (e.g. a project folder "R;D") is escaped as "\\;", which wt.exe passes on as ";".
+    """
+    arguments = [title, *(["--tabColor", tab_color] if tab_color else []), *command]
+    return ["wt.exe", "--title", *(argument.replace(";", "\\;") for argument in arguments)]
 
 
 def main() -> int:
@@ -113,15 +123,9 @@ def main() -> int:
         startup.dwFlags |= subprocess.STARTF_USESHOWWINDOW
         startup.wShowWindow = 7
     if mode == "wt":
-        args = [
-            "wt.exe",
-            "--title",
-            s.program_name,
-            *(["--tabColor", s.tab_bar_color] if s.tab_bar_color else []),
-            *args,
-        ]
+        args = wt_command(s.program_name, s.tab_bar_color, args)
     elif mode == "conhost":
-        args = ["conhost.exe", *args]
+        args = [paths.CONHOST_EXE, *args]
     with Path(run_dir / "bootstrap.log").open("w", encoding="utf-8") as diagnostics:
         # The configured launcher/interpreter is intentional; program arguments remain separate.
         child = subprocess.Popen(  # noqa: S603
@@ -132,8 +136,12 @@ def main() -> int:
             stdout=diagnostics if mode == "no_terminal" else None,
             stderr=diagnostics if mode == "no_terminal" else None,
         )
-        deadline = time.monotonic() + 120
+        deadline = time.monotonic() + paths.STARTUP_ACKNOWLEDGEMENT_TIMEOUT_SECONDS
         while time.monotonic() < deadline:
+            # Before reading the status: a watchdog that cancels the launch writes "cancelled" and
+            # exits at once, which must not look like an exit before startup.
+            # wt.exe may exit after handing its command to an existing terminal window.
+            exited = mode != "wt" and child.poll() is not None
             try:
                 status = json.loads((run_dir / "startup.json").read_text(encoding="utf-8"))
             except (OSError, ValueError):  # not written yet, or being replaced right now
@@ -142,8 +150,7 @@ def main() -> int:
                 if status["status"] in {"started", "cancelled"}:
                     return 0
                 raise RuntimeError(status.get("message", "Watchdog startup failed"))
-            # wt.exe may exit after handing its command to an existing terminal window.
-            if mode != "wt" and child.poll() is not None:
+            if exited:
                 raise RuntimeError("The watchdog exited before startup. See " + str(run_dir / "bootstrap.log"))
             time.sleep(0.05)
     raise TimeoutError("No startup acknowledgement. See " + str(run_dir))

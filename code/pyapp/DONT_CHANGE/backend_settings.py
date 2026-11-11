@@ -38,6 +38,12 @@ APP_ACTIONS_DIR = DONT_CHANGE_DIR + "\\actions"
 ENTRY_BATCHES_DIR = DONT_CHANGE_DIR + "\\B"        # short shortcut targets
 DATA_DIR = DONT_CHANGE_DIR + "\\data"
 WINDOWS_DIR = os.environ.get("WINDIR", "C:\\Windows")
+# Windows' own programs by full path: started by bare name, Windows looks in the current folder
+# (often the project folder) before System32.
+CMD_EXE = WINDOWS_DIR + "\\System32\\cmd.exe"
+CONHOST_EXE = WINDOWS_DIR + "\\System32\\conhost.exe"
+NOTEPAD_EXE = WINDOWS_DIR + "\\System32\\notepad.exe"
+POWERSHELL_EXE = WINDOWS_DIR + "\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
 
 # ------------------------
 # uv, Python and the application environment
@@ -166,10 +172,18 @@ EXCLUDED_FOLDERS_FOR_IMPORT_SEARCH = [
     ".hg",
     ".svn",
     "node_modules",
+    # Installed packages, not the app's own code. Virtual environments under any name are
+    # recognized by their pyvenv.cfg. Not "build" or "dist": those can be app packages.
+    "site-packages",
 ]
 # Setup prepares uv, Python and packages, so the first start does not have to.
 INSTALL_ENVIRONMENT_WHEN_GENERATING_SHORTCUTS = True
 EMPTY_ARG_INDICATOR = "__EMPTY__"
+# Seconds a start waits for the watchdog's acknowledgement, and the watchdog for the app's
+# interpreter to load the wrapper. Generous: the first start of a fresh environment on a slow
+# disk with real-time scanning can take long, and both waits end early when the process exits.
+STARTUP_ACKNOWLEDGEMENT_TIMEOUT_SECONDS = 180
+WRAPPER_READY_TIMEOUT_SECONDS = 120
 # Taskbar identity suffix of the no-terminal shortcut and of the windows it launches, so a
 # pinned no-terminal shortcut groups its app windows separately from the terminal shortcut.
 NO_TERMINAL_APP_ID_SUFFIX = "W"

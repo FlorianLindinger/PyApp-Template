@@ -21,7 +21,7 @@ import re
 import subprocess
 import sys
 from pathlib import Path
-from typing import Dict, Iterable, List, NamedTuple, Optional, Set, Tuple
+from typing import Dict, Iterable, List, NamedTuple, Optional, Set, Tuple, Union
 
 import _ui
 from _paths import PROJECT_ROOT
@@ -154,6 +154,19 @@ def git(*arguments: str) -> str:
     return completed.stdout.decode("utf-8", "replace")
 
 
+def decoded_text(data: bytes) -> Optional[str]:
+    """The text of a file, or None for a binary one.
+
+    UTF-16 text (PowerShell 5.1 redirections, some exports) is full of NUL bytes, so it is
+    recognized by its byte-order mark before the NUL test that marks binary files.
+    """
+    if data.startswith((b"\xff\xfe", b"\xfe\xff")):
+        return data.decode("utf-16", "replace")
+    if b"\0" in data[:8192]:
+        return None
+    return data.decode("utf-8", "replace")
+
+
 def scan_current_files() -> List[Finding]:
     """The files Git would publish: tracked ones, and new ones that are not ignored."""
     found: List[Finding] = []
@@ -167,21 +180,23 @@ def scan_current_files() -> List[Finding]:
             data = path.read_bytes()
         except OSError:
             continue
-        if b"\0" in data[:8192]:
+        text = decoded_text(data)
+        if text is None:
             continue  # binary
-        for number, line in enumerate(data.decode("utf-8", "replace").splitlines(), 1):
+        for number, line in enumerate(text.splitlines(), 1):
             found += line_findings(line, name, f"{name}:{number}")
     return found
 
 
-def parse_history(log: str, place: str = "") -> List[Finding]:
+def parse_history(log: Union[str, Iterable[str]], place: str = "") -> List[Finding]:
     """Findings in the added lines of a `git log -p --format="commit %h"` or `git diff` output.
 
     place names where a finding is, e.g. "staged"; by default the commit of each change.
     """
     found: List[Finding] = []
     commit = path = previous = ""
-    for line in log.splitlines():
+    for raw_line in log.splitlines() if isinstance(log, str) else log:
+        line = raw_line.rstrip("\r\n")
         if line.startswith("commit "):
             commit = line[7:].strip()
         elif previous.startswith("--- ") and line.startswith("+++ "):
@@ -194,8 +209,19 @@ def parse_history(log: str, place: str = "") -> List[Finding]:
 
 def scan_history() -> List[Finding]:
     """Every commit on every branch and tag, including what was deleted later."""
-    log = git("log", "--all", "-p", "--unified=0", "--no-color", "--no-ext-diff", "--format=commit %h")
-    found = parse_history(log)
+    # Read line by line: the whole history of a large repository can be gigabytes as one string.
+    command = [
+        *("git", "-C", str(PROJECT_ROOT), "-c", "core.quotepath=off", "log", "--all", "-p", "--unified=0"),
+        *("--no-color", "--no-ext-diff", "--format=commit %h"),
+    ]
+    # A fixed Git command; its output is only read. stderr is discarded: an unread second pipe
+    # could fill up and block Git while the history is still being read.
+    with subprocess.Popen(  # noqa: S603
+        command, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, encoding="utf-8", errors="replace"
+    ) as process:
+        found = parse_history(process.stdout) if process.stdout is not None else []
+    if process.returncode:
+        raise RuntimeError(f"git log failed (exit code {process.returncode})")
     for name in set(git("log", "--all", "--format=", "--name-only").splitlines()):
         if name:
             found += file_name_findings(name, f"{name} (in history)")

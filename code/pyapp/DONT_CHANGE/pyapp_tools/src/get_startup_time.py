@@ -81,8 +81,9 @@ def commands(copy_root: Path, app_id: str, script: Path) -> Dict[str, List[str]]
     code = copy_root / "code"
     entry_batches = code / "pyapp" / "DONT_CHANGE" / "B"
     return {
-        "terminal": ["cmd.exe", "/d", "/c", "call", str(entry_batches / "W.bat"), app_id],
-        "no_terminal": ["cmd.exe", "/d", "/c", "call", str(entry_batches / "N.bat"), app_id],
+        # The same targets as the shortcuts Setup creates.
+        "terminal": ["conhost.exe", str(entry_batches / "W.bat"), app_id],
+        "no_terminal": ["conhost.exe", str(entry_batches / "N.bat"), app_id],
         "direct": [str(code / "pyapp" / "generated" / ".venv" / "Scripts" / "python.exe"), str(script)],
     }
 

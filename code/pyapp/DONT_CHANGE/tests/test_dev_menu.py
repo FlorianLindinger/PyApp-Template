@@ -122,6 +122,35 @@ class CancelTests(unittest.TestCase):
             process_exit.handle_missing_module("requests", "", False)
         add.assert_not_called()
 
+    def test_digits_int_cannot_read_are_asked_again(self):
+        """ "²".isdigit() is True, but int("²") fails: the menu must ask again, not crash."""
+        from pyapp.DONT_CHANGE.runtime import process_exit
+
+        with mock.patch.multiple(
+            process_exit,
+            local_module_exists=mock.Mock(return_value=False),
+            ask=mock.Mock(side_effect=["\u00b2", ""]),
+        ), mock.patch(
+            "pyapp.DONT_CHANGE.scripts.import_finder.distribution_for_import", return_value="requests"
+        ), mock.patch("builtins.print"):
+            process_exit.handle_missing_module("requests", "", False)
+
+
+class ExportTests(unittest.TestCase):
+    def test_the_export_never_overwrites_the_requirements_path_file(self):
+        from pyapp.DONT_CHANGE.scripts.dev_tools import packages
+        from pyapp.DONT_CHANGE.scripts.errors import SetupError
+
+        exported = packages.paths.EXPORTED_REQUIREMENTS_PATH
+        with mock.patch.object(packages, "requirements_file_path", return_value=exported.upper()), mock.patch.object(
+            packages, "settings"
+        ), mock.patch.object(packages, "prepare") as prepare, mock.patch.object(
+            packages, "run_uv"
+        ) as run_uv, self.assertRaises(SetupError):
+            packages.cmd_export([])
+        prepare.assert_not_called()
+        run_uv.assert_not_called()
+
 
 class SelfContainedTests(unittest.TestCase):
     def test_status_tells_whether_everything_is_inside_the_folder(self):

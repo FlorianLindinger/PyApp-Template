@@ -168,6 +168,17 @@ diff --git a/app.py b/app.py
         self.assertEqual([f.kind for f in found], ["AWS access key"])
         self.assertEqual(found[0].where, "app.py (commit abc1234)")
 
+    def test_history_is_read_line_by_line_too(self):
+        """scan_history streams git log; parse_history gets the lines with their line breaks."""
+        lines = [line + "\n" for line in self.LOG.splitlines()]
+        self.assertEqual([f.kind for f in tool.parse_history(iter(lines))], ["AWS access key"])
+
+    def test_utf16_text_is_scanned_and_binary_is_not(self):
+        text = f'key = "{AWS_KEY}"\r\n'
+        self.assertIn(AWS_KEY, tool.decoded_text(text.encode("utf-16")) or "")  # with byte-order mark
+        self.assertIsNone(tool.decoded_text(b"\x89PNG\0\0" + AWS_KEY.encode()))
+        self.assertEqual(tool.decoded_text(b"plain"), "plain")
+
     def test_a_leak_still_in_the_files_is_listed_once(self):
         history = tool.parse_history(self.LOG)
         current = tool.line_findings(f'key = "{AWS_KEY}"', "app.py", "app.py:1")

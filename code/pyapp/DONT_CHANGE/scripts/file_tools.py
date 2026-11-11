@@ -7,19 +7,32 @@ from pathlib import Path
 
 
 def remove_tree_inside(path: str, base: str) -> None:
-    """Delete a folder tree only if it lies strictly inside base and is not a link."""
+    """Delete a folder tree only if it lies strictly inside base; a link is removed, never followed."""
     import shutil
 
-    target = os.path.realpath(path)
     root = os.path.realpath(base)
-    if os.path.normcase(os.path.commonpath([target, root])) != os.path.normcase(root) or os.path.normcase(
-        target
-    ) == os.path.normcase(root):
-        raise ValueError(f'Refusing to delete "{path}": it is not inside "{base}".')
     if Path(path).is_symlink() or _is_junction(path):
+        # Only the link itself goes, so where it leads does not matter (realpath would follow it and
+        # refuse a link to a folder outside base); the place of the link must be inside base.
+        link = Path(path).absolute()
+        location = str(Path(os.path.realpath(link.parent)) / link.name)
+        if not _strictly_inside(location, root):
+            raise ValueError(f'Refusing to delete "{path}": it is not inside "{base}".')
         Path(path).rmdir() if Path(path).is_dir() else Path(path).unlink()
         return
+    target = os.path.realpath(path)
+    if not _strictly_inside(target, root):
+        raise ValueError(f'Refusing to delete "{path}": it is not inside "{base}".')
     shutil.rmtree(target)
+
+
+def _strictly_inside(path: str, root: str) -> bool:
+    """True if path is below root (both absolute and resolved), not root itself."""
+    try:
+        common = os.path.commonpath([path, root])
+    except ValueError:  # different drives
+        return False
+    return os.path.normcase(common) == os.path.normcase(root) and os.path.normcase(path) != os.path.normcase(root)
 
 
 def _is_junction(path: str) -> bool:

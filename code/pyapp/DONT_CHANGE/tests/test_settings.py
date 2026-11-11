@@ -51,6 +51,34 @@ class ValidationTests(unittest.TestCase):
         for line in bad:
             self.assertIn(line.split(" =")[0], message)
 
+    def test_uv_version_must_be_readable_by_the_bootstrap(self):
+        def with_uv_version(value: str) -> Callable[[str], str]:
+            # Replaced, not appended: a [bootstrap] setting may be defined only once.
+            return lambda text: re.sub(r"(?m)^uv_version = .*$", f'uv_version = "{value}"', text)
+
+        for value in (">=0..9", "1.", "0.11.32,,>="):
+            with self.subTest(value=value), support.temporary_settings(with_uv_version(value)) as (_, load):
+                with self.assertRaises(SettingsError) as raised:
+                    config.validate(load())
+                self.assertIn("uv_version", str(raised.exception))
+        for value in ("", "0.11.32", ">=0.9,<1", "~=0.11", "==0.11.32, !=0.11.31"):
+            with self.subTest(value=value), support.temporary_settings(with_uv_version(value)) as (_, load):
+                self.assertEqual(load().uv_version, value)
+                config.validate(load())
+
+    def test_terminal_colors(self):
+        code = config.terminal_color_code
+        # `color 9` would make the text light blue: a missing half is the console default instead.
+        self.assertEqual((code("9", None), code(None, "F"), code("9", "F"), code(None, None)), ("97", "0F", "9F", ""))
+        for lines in (
+            ['terminal_bg_color = "9"', 'terminal_text_color = "9"'],
+            ['terminal_bg_color = "7"', "terminal_text_color = None"],
+        ):
+            with self.subTest(lines=lines), support.temporary_settings(append(lines)) as (_, load):
+                with self.assertRaises(SettingsError) as raised:
+                    config.validate(load())
+                self.assertIn("terminal_bg_color and terminal_text_color", str(raised.exception))
+
     def test_stop_timeout_must_be_finite(self):
         for value in ('float("inf")', 'float("nan")', "-0.5"):
             with self.subTest(value=value):
@@ -284,6 +312,51 @@ class EditingTests(unittest.TestCase):
             config.validate(load())
             config.set_list_setting("packages", ["a", "b>=1"])
             self.assertEqual(support.load_settings_file(path).packages.split(), ["a", "b>=1"])  # still a block
+
+    def test_comments_in_a_requirements_block_survive_edits(self):
+        block = [
+            'packages = """',
+            "# GUI",
+            "requests>=2  # pinned because of the proxy bug",
+            "",
+            "# numerics",
+            "numpy>=2",
+            "scipy==1.0 --hash=sha256:aa",
+            "six  # only for py2 code",
+            '"""',
+        ]
+        with support.temporary_settings(append(block)) as (path, load):
+            # Kept, upgraded (same package), removed and added entries at once.
+            config.set_list_setting("packages", ["requests>=2", "numpy>=2.1", "scipy==1.0", "pillow"])
+            self.assertEqual(load().packages, ["requests>=2", "numpy>=2.1", "scipy==1.0", "pillow"])
+            text = path.read_text(encoding="utf-8")
+            expected = [
+                "# GUI",
+                "requests>=2  # pinned because of the proxy bug",
+                "",
+                "# numerics",
+                "numpy>=2.1",
+                "scipy==1.0 --hash=sha256:aa",
+                "pillow",
+                '"""',
+            ]
+            self.assertIn("\n".join(expected), text)
+            self.assertNotIn("six", text)
+            # Upgrading an entry keeps the comment that explains it.
+            config.set_list_setting("packages", ["requests>=2.32", "numpy>=2.1", "scipy==1.0", "pillow"])
+            self.assertIn("requests>=2.32  # pinned because of the proxy bug\n", path.read_text(encoding="utf-8"))
+            # Emptying the list keeps the notes, so they are there when packages come back.
+            config.set_list_setting("packages", [])
+            self.assertEqual(load().packages, [])
+            self.assertIn("# numerics", path.read_text(encoding="utf-8"))
+
+    def test_a_block_with_backslashes_is_regenerated(self):
+        """Written back between plain triple quotes, a backslash from an escape would change the value."""
+        # Kept as is, the comment's "\t" and "\n" would become a tab and a line break: "ew" a package.
+        block = ['packages = r"""', r"# built from C:\temp\new", "numpy", '"""']
+        with support.temporary_settings(append(block)) as (_, load):
+            config.set_list_setting("packages", ["requests"])
+            self.assertEqual(load().packages, ["requests"])
 
     def test_settings_turn_a_block_into_a_list(self):
         module = types.SimpleNamespace(packages="requests\nnumpy>=2\n", MISSING_SETTINGS_FILLED_IN=[])

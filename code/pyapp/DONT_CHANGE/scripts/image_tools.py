@@ -3,9 +3,8 @@
 from __future__ import annotations
 
 import os
-from collections.abc import Iterable
 from pathlib import Path
-from typing import List, Optional
+from typing import Iterable, List, Optional  # typing: annotations stay evaluable on Python 3.8
 
 
 def _run_wpf_powershell(script: str, **extra_env: str) -> str:
@@ -18,12 +17,14 @@ def _run_wpf_powershell(script: str, **extra_env: str) -> str:
     import os
     import subprocess
 
+    from pyapp.DONT_CHANGE.backend_settings import POWERSHELL_EXE
+
     environment = os.environ.copy()
     environment.update(extra_env)
     # PowerShell source is bundled; image inputs are passed through environment variables.
     completed = subprocess.run(  # noqa: S603
         # PowerShell source is bundled; image inputs are passed through environment variables.
-        ["powershell.exe", "-NoProfile", "-NonInteractive", "-STA", "-Command", script],  # noqa: S607
+        [POWERSHELL_EXE, "-NoProfile", "-NonInteractive", "-STA", "-Command", script],
         capture_output=True,
         text=True,
         check=False,

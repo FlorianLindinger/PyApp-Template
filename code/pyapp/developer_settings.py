@@ -10,7 +10,7 @@ no expressions, f-strings or line continuations.
 
 # fmt:off
 # ruff: noqa: I001,UP006,UP007,UP035,UP045,S603,PTH100,RUF100
-# For backwards compatibitly down to Python 3.8:
+# For backward compatibility down to Python 3.8:
 from __future__ import annotations
 from typing import Dict, List, Optional, Union
 # fmt:on

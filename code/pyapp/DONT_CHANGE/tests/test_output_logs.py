@@ -2,13 +2,17 @@
 
 from __future__ import annotations
 
+import os
+import subprocess
+import sys
 import tempfile
 import types
 import unittest
 from pathlib import Path
+from typing import Dict, List, Tuple
 from unittest import mock
 
-import project_location  # noqa: F401 - make this checkout's code importable
+import project_location  # also makes this checkout's code importable
 from pyapp.DONT_CHANGE.runtime import bg_watchdog, process_exit
 from pyapp.DONT_CHANGE.runtime._pyapp import ExitMode
 
@@ -42,6 +46,87 @@ class CrashLogTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             self.assertIn("It failed.", self.write(folder, ""))
             self.assertIn("It failed.", self.write(folder, str(Path(folder) / "missing.txt")))
+
+    def test_a_crash_log_that_cannot_be_written_does_not_hide_the_report(self):
+        settings = types.SimpleNamespace(
+            **vars(SETTINGS),
+            close_after_failure=True,
+            open_log_file_after_failure=False,
+            open_crash_log_after_failure=True,
+            play_sound_after_failure=False,
+        )
+        report: Dict[str, object] = {"chain": []}
+        with tempfile.TemporaryDirectory() as folder:
+            blocker = Path(folder) / "a file"
+            blocker.write_text("", encoding="utf-8")
+            with mock.patch.object(process_exit, "settings", return_value=settings), mock.patch.object(
+                process_exit, "get_log_path", return_value=str(blocker / "crash.txt")
+            ), mock.patch.object(process_exit, "print_report") as print_report, mock.patch.object(
+                process_exit, "print_error"
+            ) as print_error, mock.patch.object(process_exit.os, "startfile", create=True) as startfile:
+                process_exit.complete("failure", None, report)
+        print_report.assert_called_once_with(report)
+        self.assertIn("Failed to write the crash log", print_error.call_args_list[-1][0][0])
+        startfile.assert_not_called()
+
+
+class HiddenCompletionTests(unittest.TestCase):
+    """After a successful run without a terminal, the completion handler runs in a hidden console."""
+
+    def handle(self, returncodes: List[int]) -> List[Tuple[List[str], Dict[str, object]]]:
+        calls: List[Tuple[List[str], Dict[str, object]]] = []
+
+        def run(args: List[str], **kwargs: object) -> types.SimpleNamespace:
+            calls.append((args, kwargs))
+            return types.SimpleNamespace(returncode=returncodes[len(calls) - 1])
+
+        settings = types.SimpleNamespace(close_after_success=True)
+        with tempfile.TemporaryDirectory() as folder, mock.patch.object(bg_watchdog.subprocess, "run", run):
+            bg_watchdog.handle_exit(settings, ExitMode.SUCCESS, "app", False, "", "main.py", Path(folder))
+        return calls
+
+    def test_the_hidden_handler_can_never_wait_for_input(self):
+        calls = self.handle([0])
+        self.assertEqual(len(calls), 1)
+        self.assertIs(calls[0][1]["stdin"], bg_watchdog.subprocess.DEVNULL)
+
+    def test_a_failing_hidden_handler_is_shown_in_a_window(self):
+        calls = self.handle([1, 0])
+        self.assertEqual(len(calls), 2)
+        self.assertEqual(calls[1][0][0], bg_watchdog.paths.CONHOST_EXE)
+
+    def test_the_handler_ends_when_its_prompt_cannot_be_answered(self):
+        with tempfile.TemporaryDirectory() as folder:
+            # Test subprocesses execute fixed fixture/helper code using the local interpreter or Git.
+            completed = subprocess.run(  # noqa: S603
+                [
+                    sys.executable,
+                    "-I",
+                    "-S",
+                    str(project_location.DONT_CHANGE / "runtime" / "process_exit.py"),
+                    *("99", "", "true", "", "main.py"),  # an exit mode the handler does not know: it fails
+                ],
+                stdin=subprocess.DEVNULL,
+                capture_output=True,
+                text=True,
+                env={**os.environ, "PYAPP_RUN_DIR": folder},
+                timeout=60,
+                check=False,
+            )
+        self.assertEqual(completed.returncode, 1, completed.stdout + completed.stderr)
+        self.assertIn("Unknown exit mode 99", completed.stdout)
+
+
+class WindowsTerminalTests(unittest.TestCase):
+    def test_semicolons_do_not_split_the_wt_command_line(self):
+        from pyapp.DONT_CHANGE.actions.start_program import wt_command
+
+        command = wt_command("A; B", "#3B78FF", ["python.exe", "C:\\R;D\\watchdog.py"])
+        self.assertEqual(
+            command,
+            ["wt.exe", "--title", "A\\; B", "--tabColor", "#3B78FF", "python.exe", "C:\\R\\;D\\watchdog.py"],
+        )
+        self.assertEqual(wt_command("App", None, ["x"]), ["wt.exe", "--title", "App", "x"])
 
 
 class RawOutputTests(unittest.TestCase):

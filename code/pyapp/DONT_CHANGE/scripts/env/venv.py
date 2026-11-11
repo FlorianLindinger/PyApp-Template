@@ -323,7 +323,7 @@ def environment_fingerprint(s: Union[ModuleType, SimpleNamespace]) -> str:
     import hashlib
 
     parts = [
-        "v1",
+        "v2",
         PROJECT_DIR,
         sys.executable,
         ".".join(map(str, sys.version_info)),
@@ -338,14 +338,32 @@ def environment_fingerprint(s: Union[ModuleType, SimpleNamespace]) -> str:
         PYTHON_VERSION_FILE,
         VENV_PYTHON_EXE,
         str(Path(VENV_DIR) / "pyvenv.cfg"),
-        str(Path(VENV_DIR) / "Lib" / "site-packages"),
     ):
         try:
             stat = Path(path).stat()
             parts.append(f"{path}|{stat.st_mtime_ns}|{stat.st_size}")
         except OSError:
             parts.append(f"{path}|missing")
+    parts.append(_site_packages_entries())
     return hashlib.sha256("\n".join(parts).encode("utf-8")).hexdigest()
+
+
+def _site_packages_entries() -> str:
+    """The names in site-packages, without __pycache__, as one line for the fingerprint.
+
+    Not the folder's modification time: uv does not compile bytecode, so the app's first import
+    of a top-level module (six.py, typing_extensions.py, ...) creates site-packages\\__pycache__ and
+    changes that time. The stamp written by Setup would then never match on the second start, which
+    repeats the uv checks and refuses to start while the first instance runs. Installing, removing
+    or upgrading a package always adds, removes or renames a *.dist-info folder, so the names
+    still see every change uv or pip makes.
+    """
+    site_packages = Path(VENV_DIR) / "Lib" / "site-packages"
+    try:
+        names = sorted(entry.name for entry in os.scandir(site_packages) if entry.name != "__pycache__")
+    except OSError:
+        return f"{site_packages}|missing"
+    return f"{site_packages}|" + "|".join(names)
 
 
 def _read_stamp() -> Optional[str]:
@@ -497,6 +515,7 @@ def open_package_terminal(s: Optional[Union[ModuleType, SimpleNamespace]] = None
     print_fields(
         [
             ("uv add NAME", "add a package and install it (copied into developer_settings.py on the next start)"),
+            ("", "only plain uv add is kept: --dev, --group and --optional packages are dropped"),
             ("uv remove NAME", "remove a package"),
             ("uv lock --upgrade", "upgrade all packages, then: uv sync"),
             ("uv pip list", "show installed packages"),
@@ -507,4 +526,6 @@ def open_package_terminal(s: Optional[Union[ModuleType, SimpleNamespace]] = None
     )
     print(flush=True)
     # Probe the selected interpreter or intentionally open the package command prompt.
-    return subprocess.run(["cmd.exe", "/d"], cwd=PYTHON_SCRIPTS_DIR, env=env, check=False).returncode  # noqa: S607
+    from pyapp.DONT_CHANGE.backend_settings import CMD_EXE
+
+    return subprocess.run([CMD_EXE, "/d"], cwd=PYTHON_SCRIPTS_DIR, env=env, check=False).returncode  # noqa: S603

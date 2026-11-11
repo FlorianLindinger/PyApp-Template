@@ -15,7 +15,8 @@ from pathlib import Path
 from types import ModuleType, SimpleNamespace
 from typing import Optional, Union
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
+# Last, so app modules named like standard-library modules (code/random.py, ...) cannot shadow them.
+sys.path.append(str(Path(__file__).resolve().parents[3]))
 from pyapp.DONT_CHANGE import backend_settings as paths
 from pyapp.DONT_CHANGE.runtime._pyapp import (
     EXIT_MODE_FOR_WRAPPER_EXIT,
@@ -139,17 +140,25 @@ def handle_exit(
     ]
     success = successful_application_exit(mode, run_dir)
     if not has_terminal and success and settings.close_after_success:
-        # Successful hidden runs perform their completion actions without a console.
+        # Successful hidden runs perform their completion actions without a console. Nobody can
+        # type into that console, so stdin is NUL: a prompt (e.g. after an error in the handler)
+        # ends at once instead of keeping both processes alive, invisible to Stop.
         # Run the launcher helper or configured app interpreter with a controlled argument list.
-        subprocess.run(args, env=env, check=False, creationflags=subprocess.CREATE_NO_WINDOW)  # noqa: S603
-    elif has_terminal:
+        hidden = subprocess.run(  # noqa: S603
+            args, env=env, check=False, stdin=subprocess.DEVNULL, creationflags=subprocess.CREATE_NO_WINDOW
+        )
+        if hidden.returncode == 0:
+            return
+        # The handler itself failed (e.g. developer_settings.py was broken while the app ran):
+        # run it again in a window below, so the error is seen.
+    if has_terminal:
         # Run the launcher helper or configured app interpreter with a controlled argument list.
         subprocess.run(args, env=env, check=False)  # noqa: S603
     else:
         # Run the launcher helper or configured app interpreter with a controlled argument list.
         subprocess.run(  # noqa: S603
             # Run the launcher helper or configured app interpreter with a controlled argument list.
-            ["conhost.exe", *args],  # noqa: S607
+            [paths.CONHOST_EXE, *args],
             env=env,
             check=False,
             creationflags=subprocess.CREATE_NEW_CONSOLE,
@@ -185,12 +194,17 @@ def register_with_policy(
 
 def main() -> None:
     """Own registration, launch, logging and completion handling for one application run."""
-    # developer_settings, loaded here (not at import time); start_program.py validated it.
-    settings = load_settings()
     app_id, launch_mode = sys.argv[1:3]
     if app_id == paths.EMPTY_ARG_INDICATOR:
         app_id = ""
     run_dir = Path(os.environ["PYAPP_RUN_DIR"])
+    # developer_settings, loaded here (not at import time); start_program.py validated it, but it
+    # can change in between. The waiting launcher then shows why instead of a bare timeout.
+    try:
+        settings = load_settings()
+    except Exception as error:
+        acknowledge(run_dir, status="failed", message=f"developer_settings.py could not be loaded: {error}")
+        raise
     has_terminal = launch_mode in ("wt", "conhost")
     registry = ProcessRegistry(paths.PROCESS_REGISTRY_DIR)
     try:
@@ -198,7 +212,7 @@ def main() -> None:
         create_own_job()
     except Exception:
         note_ignored("create_own_job (Stop falls back to the process tree)")
-    script = main_script_path(settings)
+    script = ""
     log_path = ""
     registered = False
     exit_handled = False
@@ -206,6 +220,7 @@ def main() -> None:
     try:
         if launch_mode not in ("wt", "conhost", "no_terminal"):
             raise ValueError("Unknown launch mode: " + launch_mode)
+        script = main_script_path(settings)
         if has_terminal:
             set_settings_colors()
             set_terminal_title(settings.program_name)
@@ -313,7 +328,7 @@ def main() -> None:
 
             pump = threading.Thread(target=copy_output, daemon=True)
             pump.start()
-        deadline = time.monotonic() + 30
+        deadline = time.monotonic() + paths.WRAPPER_READY_TIMEOUT_SECONDS
         while not (run_dir / "ready").exists():
             if child.poll() is not None:
                 break  # completion handling shows the wrapper's failure

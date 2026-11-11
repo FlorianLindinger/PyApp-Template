@@ -6,6 +6,7 @@ import contextlib
 import io
 import json
 import os
+import subprocess
 import tempfile
 import types
 import unittest
@@ -53,6 +54,42 @@ class LogTests(unittest.TestCase):
                 summary = diagnostics.diagnostics_summary()
             self.assertIn("1 ignored error", summary or "")
             self.assertIn("ZeroDivisionError", Path(log).read_text(encoding="utf-8"))
+
+    def test_a_chained_traceback_is_one_entry(self):
+        """Its blank lines ("During handling of the above exception ...") do not split it."""
+        with tempfile.TemporaryDirectory() as folder:
+            log = str(Path(folder) / "diagnostics.log")
+            with mock.patch.object(diagnostics, "DIAGNOSTICS_LOG_PATH", log):
+                try:
+                    try:
+                        raise KeyError("first")
+                    except KeyError:
+                        raise ValueError("second")  # noqa: B904 - the implicit chain is the point
+                except ValueError:
+                    diagnostics.note_ignored("chained step")
+                summary = diagnostics.diagnostics_summary() or ""
+            self.assertTrue(summary.startswith("1 ignored error(s), last: "), summary)
+            self.assertTrue(summary.endswith(": chained step"), summary)
+
+
+class RemoveTreeTests(unittest.TestCase):
+    @unittest.skipUnless(os.name == "nt", "junctions are a Windows feature")
+    def test_a_junction_to_a_folder_outside_is_removed_without_its_target(self):
+        from pyapp.DONT_CHANGE.scripts.file_tools import remove_tree_inside
+
+        with tempfile.TemporaryDirectory() as folder:
+            base, outside = Path(folder, "base"), Path(folder, "outside")
+            base.mkdir()
+            outside.mkdir()
+            (outside / "keep.txt").write_text("x", encoding="utf-8")
+            link = base / "link"
+            # Test subprocesses execute fixed fixture/helper code using the local interpreter or Git.
+            subprocess.run(["cmd.exe", "/c", "mklink", "/J", str(link), str(outside)], capture_output=True, check=True)  # noqa: S603, S607
+            remove_tree_inside(str(link), str(base))
+            self.assertFalse(os.path.lexists(link))
+            self.assertTrue((outside / "keep.txt").is_file())
+            with self.assertRaises(ValueError):
+                remove_tree_inside(str(outside), str(base))
 
 
 class FinishedRunFolderTests(unittest.TestCase):
@@ -153,6 +190,83 @@ class CleanToolTests(unittest.TestCase):
     def test_run_folders_are_deleted_when_nothing_runs(self):
         with tempfile.TemporaryDirectory() as folder:
             self.assertFalse(self.clean(folder, []).exists())
+
+
+class CleanMessageTests(unittest.TestCase):
+    def test_kept_run_folders_are_not_reported_as_deleted(self):
+        with tempfile.TemporaryDirectory() as folder:
+            runs = Path(folder, "tmp", "runs")
+            runs.mkdir(parents=True)
+            settings = types.SimpleNamespace(
+                log_path=None,
+                log_path_is_relative_to_start_folder_if_relative=False,
+                crash_log_path=None,
+                crash_log_path_is_relative_to_start_folder_if_relative=False,
+            )
+            registry = mock.Mock()
+            registry.records.return_value = ([{"pid": 1}], 0)
+            tool = {
+                "settings": mock.Mock(return_value=settings),
+                "ask": mock.Mock(return_value="3"),
+                "confirm": mock.Mock(return_value=True),
+                "ProcessRegistry": mock.Mock(return_value=registry),
+                "print_success": mock.DEFAULT,
+            }
+            folders = {"RUNS_DIR": str(runs), "TEMPORARY_DIR": str(runs.parent)}
+            with mock.patch.multiple(housekeeping, **tool) as mocks, mock.patch.multiple(
+                housekeeping.paths, **folders
+            ), contextlib.redirect_stdout(io.StringIO()):
+                housekeeping.cmd_clean([])
+            self.assertNotIn("per-run diagnostics", mocks["print_success"].call_args[0][0])
+
+
+class CrashCodeTests(unittest.TestCase):
+    def test_common_crash_codes_are_recognized(self):
+        for code in (0xC0000005, 0xC0000374, 0xC0000094, 0xC0000135, 0xC0000142, 0xE06D7363, -1073740940):
+            with self.subTest(code=hex(code & 0xFFFFFFFF)):
+                self.assertTrue(runtime_state.exit_code_looks_like_interpreter_crash(code))
+        # Ctrl+C and sys.exit(-1) (0xFFFFFFFF) are ordinary ends.
+        for code in (0xC000013A, -1, 1, 0):
+            with self.subTest(code=code):
+                self.assertFalse(runtime_state.exit_code_looks_like_interpreter_crash(code))
+
+
+class RegistryReadTests(unittest.TestCase):
+    def test_a_record_that_cannot_be_read_right_now_is_kept(self):
+        with tempfile.TemporaryDirectory() as folder:
+            registry = runtime_state.ProcessRegistry(folder)
+            record = Path(folder, "123.json")
+            record.write_text('{"pid": 123}', encoding="utf-8")
+            real_read = Path.read_text
+
+            def locked(path: Path, *args: Any, **kwargs: Any) -> str:
+                if Path(path).name == record.name:
+                    raise PermissionError(32, "in use by another process", str(path))
+                return real_read(path, *args, **kwargs)
+
+            with mock.patch.object(Path, "read_text", locked):
+                self.assertEqual(registry.records(), ([], 0))
+            self.assertTrue(record.exists())
+
+
+class RemoveShortcutsTests(unittest.TestCase):
+    def test_shortcuts_that_could_not_be_removed_stay_recorded(self):
+        from pyapp.DONT_CHANGE.scripts import shortcuts as shortcut_module
+
+        written: List[List[str]] = []
+
+        def record(paths: List[str], *_arguments: object) -> None:
+            written.append(list(paths))
+
+        with mock.patch.object(
+            shortcut_module, "read_created_shortcuts", return_value=["a.lnk", "b.lnk"]
+        ), mock.patch.object(shortcut_module, "remove_shortcuts", return_value=["a.lnk"]), mock.patch.object(
+            shortcut_module, "is_generated_shortcut", return_value=True
+        ), mock.patch.object(
+            shortcut_module, "write_created_shortcuts", side_effect=record
+        ), contextlib.redirect_stdout(io.StringIO()):
+            housekeeping.cmd_remove_shortcuts([])
+        self.assertEqual(written, [["b.lnk"]])
 
 
 class ShortcutTests(unittest.TestCase):

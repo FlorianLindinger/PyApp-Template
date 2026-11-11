@@ -28,6 +28,16 @@ class InstallPythonTests(unittest.TestCase):
             except SetupError:
                 return None, run_uv.call_count, install_newer_uv.call_count
 
+    def test_a_python_that_does_not_start_gives_a_message(self):
+        import subprocess
+
+        for error in (OSError(1260, "blocked by group policy"), subprocess.TimeoutExpired("python", 30)):
+            with self.subTest(error=type(error).__name__), mock.patch.object(
+                pythons.subprocess, "check_output", side_effect=error
+            ), self.assertRaises(SetupError) as raised:
+                pythons.interpreter_version("C:\\x\\python.exe")
+            self.assertIn("C:\\x\\python.exe", str(raised.exception))
+
     def test_first_try_needs_no_newer_uv(self):
         self.assertEqual(self.install([0], True), ("python.exe", 1, 0))
 

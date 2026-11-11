@@ -144,6 +144,19 @@ def _warn_about_dropped_sources(text: str) -> None:
             'Put the package into "packages" as a direct reference instead, e.g. '
             '"pkg @ git+https://github.com/org/pkg@v1.0".'
         )
+    # uv add --dev / --group / --optional write these; only [project] dependencies are copied back.
+    groups = [
+        table
+        for table in ("dependency-groups", "project.optional-dependencies")
+        if re.search(rf"(?m)^\[{re.escape(table)}\]", text)
+    ]
+    if groups:
+        print_warn(
+            "pyproject.toml had "
+            + " and ".join(f"[{table}]" for table in groups)
+            + " (e.g. from uv add --dev or --optional); they are not kept, and their packages are removed by the "
+            'next sync. Put the packages into "packages" (plain uv add) instead.'
+        )
 
 
 def _change_summary(old: Sequence[str], new: Sequence[str]) -> str:

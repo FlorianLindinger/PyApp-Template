@@ -62,7 +62,6 @@ def generate_shortcut(
     app_id: Optional[str] = None,
     description: Optional[Union[str, TextPathLike]] = "",
     start_minimized: bool = False,
-    classic_terminal: bool = True,
     wdir: Union[str, TextPathLike] = "",
     output_dir: str = SHORTCUT_OUTPUT_DIR,
 ) -> str:
@@ -79,8 +78,6 @@ def generate_shortcut(
     expose the required Windows COM interfaces directly. This keeps shortcut
     generation dependency-free instead of requiring pywin32 or comtypes.
     """
-    if start_minimized and (not classic_terminal):
-        raise ValueError("A minimized shortcut requires classic_terminal=True")
     _hresult = com.HRESULT
     _method = com.METHOD
     _unused_method = com.UNUSED_METHOD
@@ -195,7 +192,8 @@ def generate_shortcut(
     _shell_link_interface_id = _guid("000214F9-0000-0000-C000-000000000046")
     _persist_file_interface_id = _guid("0000010B-0000-0000-C000-000000000046")
     output_path = os.path.normpath(str((Path(output_dir) / shortcut_filename(os.fspath(shortcut_name))).absolute()))
-    launcher_args = [_quote(launcher_path)] if classic_terminal else ["/d", "/c", "call", _quote(launcher_path)]
+    # conhost.exe opens the classic console for the batch file; that window can start minimized.
+    launcher_args = [_quote(launcher_path)]
     if args not in ("", None):
         launcher_args.append(_quote(args))
     icon_path = os.path.normpath(str(Path(os.fspath(icon_path)).absolute())) if icon_path else None
@@ -230,7 +228,7 @@ def generate_shortcut(
         shell_link = ctypes.cast(shell_link_pointer, _shell_link_pointer)
         try:
             interface = shell_link.contents.vtable.contents
-            target = "conhost.exe" if classic_terminal else "cmd.exe"
+            target = "conhost.exe"
             _check_hresult(interface.SetPath(shell_link, target), f'SetPath("{target}")')
             _check_hresult(
                 interface.SetArguments(shell_link, " ".join(launcher_args)),
@@ -358,6 +356,12 @@ def write_created_shortcuts(paths: List[str], targets: Optional[Dict[str, str]] 
     """Record the created .lnk files (to remove stale ones later) and the targets they open."""
     with Path(CREATED_SHORTCUTS_LIST_PATH).open("w", encoding="utf-8") as stream:
         json.dump({"version": 2, "shortcuts": sorted(set(paths)), "targets": targets or {}}, stream, indent=2)
+
+
+def leftover_shortcuts(paths: Iterable[str], removed: Iterable[str]) -> List[str]:
+    """The recorded shortcuts that remove_shortcuts could not delete and that are still Setup's own."""
+    gone = set(removed)
+    return [path for path in paths if path not in gone and is_generated_shortcut(path)]
 
 
 def remove_shortcuts(paths: Iterable[str], keep: Iterable[str] = ()) -> List[str]:

@@ -66,15 +66,18 @@ def standard_library_names() -> Set[str]:
 LAUNCHER_FOLDER = Path(BACKEND_DIR).name
 
 
-def _excluded(folder_name: str) -> bool:
-    return folder_name in EXCLUDED_FOLDERS_FOR_IMPORT_SEARCH or folder_name.startswith(".")
+def _excluded(folder_name: str, parent: str = "") -> bool:
+    if folder_name in EXCLUDED_FOLDERS_FOR_IMPORT_SEARCH or folder_name.startswith("."):
+        return True
+    # A virtual environment under any name (venv, env, ...): its packages are not the app's imports.
+    return bool(parent) and (Path(parent) / folder_name / "pyvenv.cfg").is_file()
 
 
 def python_files(root: str = PYTHON_SCRIPTS_DIR) -> Iterator[str]:
     root_key = os.path.normcase(os.path.normpath(str(Path(root).absolute())))
     for current, folders, files in os.walk(root):
         at_root = os.path.normcase(os.path.normpath(str(Path(current).absolute()))) == root_key
-        folders[:] = [f for f in folders if not _excluded(f) and not (at_root and f == LAUNCHER_FOLDER)]
+        folders[:] = [f for f in folders if not _excluded(f, current) and not (at_root and f == LAUNCHER_FOLDER)]
         for name in files:
             if name.endswith((".py", ".pyw")):
                 yield str(Path(current) / name)

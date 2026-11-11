@@ -59,6 +59,28 @@ class VerifyLauncherTests(unittest.TestCase):
         self.assertIn("The launcher failed verification.", output.getvalue())
 
 
+class ToolVersionTests(unittest.TestCase):
+    def command(self, version: str, uvx: bool = True) -> List[str]:
+        def which(name: str) -> object:
+            return {"ruff": "C:\\bin\\ruff.exe", "uvx": "C:\\bin\\uvx.exe" if uvx else None}.get(name)
+
+        with mock.patch.object(verify_launcher.shutil, "which", side_effect=which), mock.patch.object(
+            verify_launcher.subprocess, "run", return_value=subprocess.CompletedProcess([], 0, f"ruff {version}\n", "")
+        ):
+            return verify_launcher.tool_command("ruff")
+
+    def test_a_new_enough_tool_on_path_is_used(self):
+        self.assertEqual(self.command("0.17.4"), ["C:\\bin\\ruff.exe"])
+
+    def test_an_older_tool_is_replaced_by_a_new_enough_one_through_uvx(self):
+        self.assertEqual(self.command("0.16.10"), ["C:\\bin\\uvx.exe", "--from", "ruff>=0.17.0", "ruff"])
+
+    def test_an_older_tool_without_uvx_is_an_error_that_names_the_minimum(self):
+        with self.assertRaises(FileNotFoundError) as raised:
+            self.command("0.16.10", uvx=False)
+        self.assertIn("0.17.0 or newer", str(raised.exception))
+
+
 class ToolRunTests(unittest.TestCase):
     def outcome(self, problem: BaseException):
         def main() -> int:

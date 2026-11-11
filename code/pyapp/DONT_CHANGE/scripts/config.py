@@ -314,6 +314,22 @@ def _note_defaults_once(module: Union[ModuleType, SimpleNamespace]) -> None:
     )
 
 
+# Must match the clause pattern of version_satisfies() in bootstrap/resolve_runtime.py, which runs
+# before this validation and cannot import the launcher.
+UV_VERSION_CLAUSE = r"\s*(>=|<=|==|!=|~=|>|<)?\s*[0-9]+(\.[0-9]+)*\s*"
+
+
+def terminal_color_code(bg: object, text: object) -> str:
+    """The argument for Windows' `color` command from the two color settings ("" when both are unset).
+
+    `color` reads a single digit as the *text* color, so a missing half is filled with the console's
+    default (0 = black background, 7 = white text) instead of being left out.
+    """
+    if not bg and not text:
+        return ""
+    return (bg if isinstance(bg, str) and bg else "0") + (text if isinstance(text, str) and text else "7")
+
+
 def validate(module: Optional[Union[ModuleType, SimpleNamespace]] = None) -> None:
     """Raise SettingsError listing every unusable setting."""
     s = module or settings()
@@ -341,7 +357,11 @@ def validate(module: Optional[Union[ModuleType, SimpleNamespace]] = None) -> Non
         problems.append(version_problem)
     need(
         "uv_version",
-        lambda v: isinstance(v, str) and re.fullmatch(r"[0-9.,<>=!~ ]*", v),
+        lambda v: (
+            isinstance(v, str)
+            # Each clause as bootstrap/resolve_runtime.py version_satisfies() reads it (empty clauses are skipped there).
+            and all(re.fullmatch(UV_VERSION_CLAUSE, clause) for clause in v.split(",") if clause.strip())
+        ),
         'use "" or a version like "0.11.32" or ">=0.9,<1"',
     )
     need(
@@ -399,6 +419,13 @@ def validate(module: Optional[Union[ModuleType, SimpleNamespace]] = None) -> Non
             lambda v: v in (None, "") or (isinstance(v, str) and re.fullmatch(r"[0-9A-Fa-f]", v)),
             "use one hex digit 0-9/A-F or None",
         )
+    colors = terminal_color_code(get("terminal_bg_color"), get("terminal_text_color"))
+    if len(colors) == 2 and colors[0].lower() == colors[1].lower():
+        # `color` refuses equal colors and leaves the window as it is.
+        problems.append(
+            f"terminal_bg_color and terminal_text_color: {colors[0]!r} for both would make the text invisible; "
+            "use two different colors (None means black background or white text)."
+        )
     need(
         "tab_bar_color",
         lambda v: v is None or (isinstance(v, str) and re.fullmatch(r"#[0-9A-Fa-f]{6}", v)),
@@ -454,20 +481,73 @@ def edit_settings(changes: Mapping[str, object]) -> List[str]:
 def set_list_setting(name: str, values: Iterable[str]) -> List[str]:
     """Rewrite the top-level list setting `name` (it may span several lines); return a readable diff.
 
-    A setting written as a triple-quoted block stays one, so a pasted requirements list keeps its form.
+    A setting written as a triple-quoted block stays one, so a pasted requirements list keeps its form,
+    including its comments and blank lines (see _edited_block).
     """
     values = list(values)
 
     def body(newline: str, node: Optional[Union[ast.Assign, ast.AnnAssign]]) -> str:
-        was_block = node is not None and isinstance(node.value, ast.Constant) and isinstance(node.value.value, str)
+        old = node.value.value if node is not None and isinstance(node.value, ast.Constant) else None
         # A block holds one entry per line, so entries with line breaks need the list form.
-        if was_block and not any(c in v for v in values for c in ("\\", '"""', "\n", "\r")):
-            return '"""' + newline + "".join(v + newline for v in values) + '"""'
+        if isinstance(old, str) and not any(c in v for v in values for c in ("\\", '"""', "\n", "\r")):
+            return '"""' + newline + "".join(line + newline for line in _edited_block(old, values)) + '"""'
         if not values:
             return "[]"
         return "[" + newline + "".join("    " + _quoted(v) + "," + newline for v in values) + "]"
 
     return _replace_setting_value(name, body)
+
+
+def _requirement_name(requirement: str) -> str:
+    """The normalized distribution name of a requirement ("Typing_Extensions>=4" -> "typing-extensions")."""
+    match = re.match(r"\s*([A-Za-z0-9][A-Za-z0-9._-]*)", requirement)
+    return re.sub(r"[-_.]+", "-", match.group(1) if match else requirement).lower()
+
+
+def _edited_block(old: str, values: List[str]) -> List[str]:
+    """The lines of the requirements block `old` after setting its entries to `values`.
+
+    The block is edited, not regenerated, because it is where developers note why a package is
+    pinned: comment and blank lines stay, an entry that is still wanted keeps its line (with its
+    comment and --hash options), a changed requirement of the same package (e.g. a newer version
+    from uv add) replaces the old one's text but keeps its comment, removed entries lose their
+    line, and new entries are added at the end in the order given.
+
+    `old` is the string's value, not its source text. A backslash in it came from an escape or a
+    raw string and would mean something else written back between plain triple quotes, so such a
+    block is regenerated from `values` instead. (A "\\" at a line end in the file is Python's own
+    line continuation: the two lines are already one in the value, and are written back as one.)
+    """
+    if "\\" in old:
+        return list(values)
+    wanted = list(values)
+    # The value's lines, without the line breaks right after the opening and before the closing quotes.
+    lines = old.split("\n")
+    if lines and not lines[0].strip():
+        lines = lines[1:]
+    if lines and not lines[-1].strip():
+        lines = lines[:-1]
+
+    entries = [next(iter(parse_requirements(line)), None) for line in lines]
+    edited: List[Optional[str]] = []  # None: the line's requirement is no longer wanted
+    for line, entry in zip(lines, entries):
+        if entry is None or entry in wanted:
+            if entry is not None:
+                wanted.remove(entry)
+            edited.append(line)
+        else:
+            edited.append(None)
+    # Second pass, after every exact match was taken, so a pin that is still wanted is never re-used.
+    for index, entry in enumerate(entries):
+        if entry is None or edited[index] is not None:
+            continue
+        replacement = next((v for v in wanted if _requirement_name(v) == _requirement_name(entry)), None)
+        if replacement is not None:
+            wanted.remove(replacement)
+            # pip's rule: "#" starts a comment only after whitespace (URLs may contain "#egg=").
+            comment = re.search(r"\s+#.*$", lines[index])
+            edited[index] = replacement + (comment.group(0) if comment else "")
+    return [line for line in edited if line is not None] + wanted
 
 
 def _replace_setting_value(

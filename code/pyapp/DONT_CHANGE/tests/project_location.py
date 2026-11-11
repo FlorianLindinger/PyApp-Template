@@ -3,7 +3,9 @@
 The tests live in code/pyapp/DONT_CHANGE/tests and always test the checkout they are part of.
 """
 
+import atexit
 import os
+import shutil
 import sys
 import tempfile
 from pathlib import Path
@@ -16,4 +18,9 @@ if str(CODE) not in sys.path:
 
 # Errors the launcher ignores on purpose go to a temporary log, never into the project's
 # tmp/diagnostics.log (also for the launcher processes the tests start).
-os.environ["PYAPP_DIAGNOSTICS_LOG"] = str(Path(tempfile.mkdtemp(prefix="pyapp-tests-")) / "diagnostics.log")
+# Only the process that creates the folder removes it; the launcher processes a test starts inherit
+# the variable and must not delete the folder under the test.
+if "PYAPP_DIAGNOSTICS_LOG" not in os.environ:
+    _diagnostics_folder = tempfile.mkdtemp(prefix="pyapp-tests-")
+    atexit.register(shutil.rmtree, _diagnostics_folder, ignore_errors=True)
+    os.environ["PYAPP_DIAGNOSTICS_LOG"] = str(Path(_diagnostics_folder) / "diagnostics.log")

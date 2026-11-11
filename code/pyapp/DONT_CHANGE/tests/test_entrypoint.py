@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -90,6 +91,32 @@ class RunnerProcessTests(unittest.TestCase):
             self.assertEqual(bad.returncode, 1)
             self.assertIn("ERROR  python_version is wrong", bad.stderr)
             self.assertNotIn("Traceback", bad.stderr)
+
+    def test_app_modules_named_like_stdlib_modules_do_not_shadow_the_launchers(self):
+        """code/random.py etc. belong to the app; the launcher imports most stdlib modules lazily."""
+        with tempfile.TemporaryDirectory() as folder:
+            code = Path(folder, "code")
+            launcher = code / "pyapp" / "DONT_CHANGE"
+            # The entrypoint finds the code folder from its own location, so it must run from a copy.
+            shutil.copytree(DONT_CHANGE / "scripts", launcher / "scripts", ignore=shutil.ignore_patterns("__pycache__"))
+            shutil.copyfile(DONT_CHANGE / "backend_settings.py", launcher / "backend_settings.py")
+            shadowing = ("random", "signal", "json", "uuid")
+            for name in shadowing:
+                (code / f"{name}.py").write_text(
+                    f"raise RuntimeError('app {name}.py was imported')\n", encoding="utf-8"
+                )
+            tool = Path(folder, "tool.py")
+            tool.write_text(f"def main():\n    import {', '.join(shadowing)}\n", encoding="utf-8")
+            # Test subprocesses execute fixed fixture/helper code using the local interpreter or Git.
+            completed = subprocess.run(  # noqa: S603
+                [sys.executable, "-I", "-S", str(launcher / "scripts" / "entrypoint.py"), str(tool)],
+                capture_output=True,
+                text=True,
+                env={**os.environ, "PYAPP_ENTRYPOINT_NO_PAUSE": "1"},
+                timeout=60,
+                check=False,
+            )
+            self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
 
 
 if __name__ == "__main__":

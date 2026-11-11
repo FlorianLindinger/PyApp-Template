@@ -1,14 +1,14 @@
 # TODO
 
-Open items for the launcher and the template. Done items are removed; Longer-term ideas: Dev Helpers `future/TODO.txt`.
+Open items for the launcher and the template. Done items are removed; Longer-term ideas: `future/future_TODO.md`.
 
 ## Before the 1.0.0 release
 
 - Test on Windows: Setup, start twice (second start fast), Stop on the example window (closes
   by itself), Logs/Settings/Edit main.py shortcuts, `status.cmd`, `change_python`,
-  `make_portable`, a failing `main.py` (black window, traceback, "(no Terminal)" grouping).
+  `make_self_contained`, a failing `main.py` (black window, traceback, "(no Terminal)" grouping).
 - Run `DONT_CHANGE/tests/run_launcher_tests.cmd` on Windows (`test_windows.py` and the batch/Stop paths
-  are skipped elsewhere) and `verify_launcher.bat` from the Dev Helpers.
+  are skipped elsewhere) and `pyapp_tools/verify_launcher.bat`.
 - Test a fresh download / new app creation / first use by someone else, and a moved and a
   copied project folder.
 - Spell-check READMEs, comments and messages.

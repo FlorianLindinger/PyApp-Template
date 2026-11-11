@@ -153,7 +153,7 @@ def _run_menu(groups: List[Tuple[str, List[Tuple[str, str]]]]) -> None:
             return
         if not answer:
             return
-        if not (answer.isdigit() and 1 <= int(answer) <= len(names)):
+        if not (answer.isdecimal() and 1 <= int(answer) <= len(names)):
             print_error(f"Please enter a number from 1 to {len(names)}.")
             continue
         try:

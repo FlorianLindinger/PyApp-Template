@@ -237,7 +237,13 @@ class ProcessRegistry:
         stale = 0
         for path in self.directory.glob("*.json"):
             try:
-                record = json.loads(path.read_text(encoding="utf-8"))
+                text = path.read_text(encoding="utf-8")
+            except OSError:
+                # Gone meanwhile, or held open by antivirus or an indexer: neither proves that the
+                # instance ended, so the record is neither listed nor deleted this time.
+                continue
+            try:
+                record = json.loads(text)
                 with process_identity(int(record["pid"])) as current:
                     if current is not None and matches_identity(record, current):
                         if current["pid"] != os.getpid():
@@ -246,7 +252,8 @@ class ProcessRegistry:
             except (OSError, ValueError, KeyError, TypeError):
                 pass
             stale += 1
-            path.unlink(missing_ok=True)
+            with contextlib.suppress(OSError):  # tried again by the next call
+                path.unlink(missing_ok=True)
         return records, stale
 
     def stop(
@@ -587,5 +594,11 @@ def exit_code_looks_like_interpreter_crash(exit_code: object) -> bool:
         0xC000001D,  # illegal instruction
         0xC0000096,  # privileged instruction
         0xC0000409,  # stack buffer overrun
+        0xC0000374,  # heap corruption
+        0xC0000094,  # integer division by zero
+        0xC0000135,  # DLL not found
+        0xC0000142,  # DLL failed to initialize
+        0xE06D7363,  # unhandled C++ exception
     }
+    # Not every code >= 0xC0000000: sys.exit(-1) arrives as 0xFFFFFFFF and is an ordinary exit.
     return (exit_code & 0xFFFFFFFF) in windows_crash_codes

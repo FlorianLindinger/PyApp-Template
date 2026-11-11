@@ -3,6 +3,9 @@
 
 # The launcher runs on every Python uv can install on Windows, from 3.8 on (see README.md).
 target-version = "py38"
+# Older Ruff versions report problems this configuration does not expect (checked down to 0.11).
+# pyapp_tools/src/verify_launcher.py MINIMUM_VERSIONS also requires Pyrefly 1.4.0 or newer.
+required-version = ">=0.17.0"
 line-length = 120
 
 [lint.pyupgrade]

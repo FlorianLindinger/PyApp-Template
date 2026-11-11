@@ -26,7 +26,7 @@ import uuid
 import winreg
 import zipfile
 from pathlib import Path
-from typing import Dict, Generator, List, Optional, Tuple
+from typing import ContextManager, Dict, Generator, List, Optional, Tuple
 
 BOOTSTRAP_DIR = Path(__file__).resolve().parent
 DONT_CHANGE_DIR = BOOTSTRAP_DIR.parent
@@ -41,7 +41,15 @@ LOCAL_UV_EXE = LOCAL_UV_DIR / "uv.exe"
 USER_DATA_DIR = Path(os.environ.get("LOCALAPPDATA") or Path(os.environ.get("USERPROFILE", "~")) / "AppData" / "Local")
 SHARED_UV_DIR = USER_DATA_DIR / "PyApp-Template" / "uv"
 SHARED_UV_EXE = SHARED_UV_DIR / "uv.exe"
-BOOTSTRAP_UV_DIR = USER_DATA_DIR / "PyApp-Template" / "uv-bootstrap"  # from resolve_runtime.bat; removed when done
+# resolve_runtime.bat downloads uv into a folder of its own, uv-bootstrap-<random>, so that two
+# first starts at the same time (two projects, or one started twice) never share one; each run
+# removes its own folder when done. (Older launchers used one folder, uv-bootstrap.)
+BOOTSTRAP_UV_PARENT = USER_DATA_DIR / "PyApp-Template"
+BOOTSTRAP_UV_PREFIX = "uv-bootstrap"
+# Held while the uv shared by all projects of this user (SHARED_UV_DIR, or the global one in
+# ~/.local/bin) is installed: the per-project bootstrap.lock does not protect them.
+SHARED_UV_LOCK = USER_DATA_DIR / "PyApp-Template" / "uv.lock"
+STALE_BOOTSTRAP_SECONDS = 3600
 LOCAL_PYTHONS_DIR = GENERATED_DIR / "pythons"
 LOCAL_CACHE_DIR = GENERATED_DIR / "uv-cache"
 VERSION_FILE = GENERATED_DIR / ".python-version"
@@ -149,7 +157,7 @@ def read_settings(text: str) -> Settings:
 
 
 def setting(settings: Settings, name: str, default: object) -> object:
-    return settings.get(name, default) if name in settings else default
+    return settings.get(name, default)
 
 
 def assert_choice(name: str, value: object, choices: Tuple[str, ...]) -> None:
@@ -182,7 +190,9 @@ def version_satisfies(version: Optional[str], spec: str) -> bool:
         clause = raw_clause.strip()
         if not clause:
             continue
-        match = re.fullmatch(r"(>=|<=|==|!=|~=|>|<)?\s*([0-9][0-9.]*)", clause)
+        # Dot-separated whole numbers only: "0..9" or "1." would reach int("") below.
+        # scripts/config.py UV_VERSION_CLAUSE validates with the same pattern.
+        match = re.fullmatch(r"(>=|<=|==|!=|~=|>|<)?\s*([0-9]+(?:\.[0-9]+)*)", clause)
         if not match:
             raise BootstrapError(f"developer_settings.py: uv_version clause '{clause}' is not understood.")
         operator, text = match.group(1), match.group(2)
@@ -281,16 +291,48 @@ def uv_release_target() -> str:
     return targets[architecture]
 
 
+def own_bootstrap_folder() -> Optional[Path]:
+    """The folder resolve_runtime.bat downloaded uv into for this run (None if it found a uv)."""
+    bootstrap_uv = os.environ.get("PYAPP_BOOT_UV", "")
+    folder = Path(bootstrap_uv).parent if bootstrap_uv else None
+    if (
+        folder is None
+        or os.path.normcase(str(folder.parent)) != os.path.normcase(str(BOOTSTRAP_UV_PARENT))
+        or not folder.name.lower().startswith(BOOTSTRAP_UV_PREFIX + "-")
+    ):
+        return None
+    return folder
+
+
+def remove_bootstrap_folders() -> None:
+    """This run's download folder, and ones that crashed runs left behind (never a recent one in use)."""
+    own = own_bootstrap_folder()
+    if own is not None:
+        shutil.rmtree(own, ignore_errors=True)
+    try:
+        leftovers = list(BOOTSTRAP_UV_PARENT.glob(BOOTSTRAP_UV_PREFIX + "*"))
+    except OSError:
+        return
+    for folder in leftovers:
+        try:
+            if folder.is_dir() and time.time() - folder.stat().st_mtime > STALE_BOOTSTRAP_SECONDS:
+                shutil.rmtree(folder, ignore_errors=True)
+        except OSError:
+            pass
+
+
 def fetch_uv_folder(spec: str, stage: Path) -> Path:
     """A folder with a checked uv.exe: the one the batch stage already fetched if it fits, else a verified download."""
     extracted = stage / "extracted"
     bootstrap_uv = os.environ.get("PYAPP_BOOT_UV", "")
-    if (
-        bootstrap_uv
-        and is_inside(Path(bootstrap_uv), BOOTSTRAP_UV_DIR)
-        and version_satisfies(uv_version_of(bootstrap_uv), spec)
-    ):
-        shutil.copytree(str(Path(bootstrap_uv).parent), str(extracted))
+    if own_bootstrap_folder() is not None and version_satisfies(uv_version_of(bootstrap_uv), spec):
+        # Only the programs (uv.exe, uvx.exe, uvw.exe): an older batch stage left the downloaded
+        # archive and its checksum in that folder, about 20 MB a local uv folder does not need.
+        shutil.copytree(
+            str(Path(bootstrap_uv).parent),
+            str(extracted),
+            ignore=lambda _folder, names: [name for name in names if not name.lower().endswith(".exe")],
+        )
         return extracted
     exact = exact_version(spec)
     file_name = f"uv-{uv_release_target()}.zip"
@@ -353,13 +395,20 @@ def add_to_user_path(folder: Path, key_path: str = "Environment") -> None:
     """Works on the stored value, so that entries such as %USERPROFILE% stay as they are."""
     access = winreg.KEY_READ | winreg.KEY_SET_VALUE
     with winreg.CreateKeyEx(winreg.HKEY_CURRENT_USER, key_path, 0, access) as key:
+        # The value's own type is kept: REG_SZ stays REG_SZ (a new value expands variables).
         try:
-            current = str(winreg.QueryValueEx(key, "Path")[0])
+            stored, value_type = winreg.QueryValueEx(key, "Path")
+            current = str(stored)
         except FileNotFoundError:
-            current = ""
+            current, value_type = "", winreg.REG_EXPAND_SZ
         entries = [entry for entry in current.split(";") if entry]
-        if str(folder) not in entries:
-            winreg.SetValueEx(key, "Path", 0, winreg.REG_EXPAND_SZ, ";".join([*entries, str(folder)]))
+        if same_folder_key(str(folder)) not in {same_folder_key(entry) for entry in entries}:
+            winreg.SetValueEx(key, "Path", 0, value_type, ";".join([*entries, str(folder)]))
+
+
+def same_folder_key(entry: str) -> str:
+    """PATH entries name the same folder despite %VARIABLES%, letter case or a trailing backslash."""
+    return os.path.normcase(os.path.normpath(os.path.expandvars(entry.strip().strip('"'))))
 
 
 def announce_environment_change() -> None:
@@ -374,6 +423,16 @@ def announce_environment_change() -> None:
 
 
 def install_global_uv(spec: str) -> Path:
+    with file_lock(SHARED_UV_LOCK, "Another launcher is still installing uv."):
+        # Another project may have installed it while this one waited: then the copy below
+        # would fail on its uv.exe, which may be running.
+        found = find_global_uv()
+        if found is not None and version_satisfies(uv_version_of(found), spec):
+            return found
+        return _install_global_uv(spec)
+
+
+def _install_global_uv(spec: str) -> Path:
     folder = user_bin_folder()
     folder.mkdir(parents=True, exist_ok=True)
     # Unpacked into a folder of its own: other programs can live in the destination.
@@ -402,7 +461,7 @@ def resolve_uv(settings: Settings) -> Path:
     assert_choice("uv_install_if_missing", install, ("global", "local", "never"))
     global_uv = find_global_uv()
     local_uv = LOCAL_UV_EXE if LOCAL_UV_EXE.is_file() else None
-    outdated = None
+    unusable = None  # why the global uv is not used
     for candidate in [local_uv, global_uv] if prefer == "local" else [global_uv, local_uv]:
         if candidate is None:
             continue
@@ -410,16 +469,20 @@ def resolve_uv(settings: Settings) -> Path:
         if version and version_satisfies(version, spec):
             return candidate
         if candidate == global_uv:
-            outdated = f"{candidate} ({version})"
+            # No version: it did not start (e.g. refused by a policy), which is not "outdated".
+            unusable = (
+                f"global uv {candidate} ({version}) does not satisfy uv_version '{spec}'"
+                if version
+                else f"global uv {candidate} could not be started"
+                + (f" ({_start_problems[-1]})" if _start_problems else "")
+            )
     if install == "never":
-        detail = f" (global uv {outdated} does not satisfy uv_version '{spec}')" if outdated else ""
+        detail = f" ({unusable})" if unusable else ""
         raise BootstrapError(
             f"No usable uv found{detail} and uv_install_if_missing = 'never'. Install uv or change the uv settings in developer_settings.py."
         )
-    if outdated:
-        step(
-            f"The global uv {outdated} does not satisfy uv_version '{spec}'; it is left unchanged and a local uv is installed instead."
-        )
+    if unusable:
+        step(f"The {unusable}; it is left unchanged and a local uv is installed instead.")
         return install_uv(spec, LOCAL_UV_DIR)
     if install == "global":
         return install_global_uv(spec)
@@ -450,7 +513,12 @@ def install_newer_shared_uv(settings: Settings, current_uv: object) -> Optional[
     current = uv_version_of(current_uv)
     step(f"uv {current} cannot provide this Python. Getting the newest uv; the uv on PATH stays as it is.")
     try:
-        new = install_uv(str(setting(settings, "uv_version", "")), SHARED_UV_DIR)
+        with file_lock(SHARED_UV_LOCK, "Another launcher is still installing uv."):
+            installed = uv_version_of(SHARED_UV_EXE) if SHARED_UV_EXE.is_file() else None
+            if (version_tuple(installed or "") or ()) > (version_tuple(current or "") or ()):
+                new = SHARED_UV_EXE  # another project got it while this one waited
+            else:
+                new = install_uv(str(setting(settings, "uv_version", "")), SHARED_UV_DIR)
     except BootstrapError as error:
         step(f"Could not get a newer uv: {error}")
         return None
@@ -493,7 +561,9 @@ def remove_broken_python_links() -> None:
         except OSError:
             continue
         if is_link and not entry.exists():
-            entry.rmdir()  # removes only the link
+            # Removes only the link; a cleanup that fails (e.g. no permission) must not stop the start.
+            with contextlib.suppress(OSError):
+                entry.rmdir()
 
 
 def downloadable_pythons(uv: object, all_versions: bool = False) -> List[Dict[str, str]]:
@@ -619,11 +689,16 @@ def cache_text(uv: object, python: str, stamp: str) -> str:
     return "\r\n".join(lines) + "\r\n"
 
 
+def bootstrap_lock() -> ContextManager[None]:
+    """Only one launcher of this project at a time prepares uv and Python."""
+    return file_lock(TEMPORARY_DIR / "bootstrap.lock", "Another launcher is still preparing uv/Python.")
+
+
 @contextlib.contextmanager
-def bootstrap_lock() -> Generator[None, None, None]:
-    """Only one launcher at a time prepares uv and Python; Windows releases the lock after a crash."""
-    TEMPORARY_DIR.mkdir(parents=True, exist_ok=True)
-    with (TEMPORARY_DIR / "bootstrap.lock").open("a+b") as stream:
+def file_lock(path: Path, busy_message: str) -> Generator[None, None, None]:
+    """An exclusive lock on path, waiting up to 10 minutes; Windows releases it after a crash."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a+b") as stream:
         deadline = time.monotonic() + 600
         while True:
             try:
@@ -632,7 +707,7 @@ def bootstrap_lock() -> Generator[None, None, None]:
                 break
             except OSError as error:
                 if time.monotonic() > deadline:
-                    raise BootstrapError("Another launcher is still preparing uv/Python.") from error
+                    raise BootstrapError(busy_message) from error
                 time.sleep(0.1)
         try:
             yield
@@ -663,7 +738,7 @@ def main(argv: Optional[List[str]] = None) -> int:
                 settings = read_settings(SETTINGS_PATH.read_text(encoding="utf-8"))
                 return 0 if install_newer_shared_uv(settings, arguments.install_newer_than) else 1
             resolve(arguments.stamp)
-        shutil.rmtree(BOOTSTRAP_UV_DIR, ignore_errors=True)
+        remove_bootstrap_folders()
         return 0
     except BootstrapError as error:
         show_error(str(error))

@@ -22,12 +22,16 @@ from pyapp.DONT_CHANGE.scripts.errors import SetupError
 def interpreter_version(exe: str) -> Tuple[int, ...]:
     """Return (major, minor, micro) of an interpreter without running site or user code."""
     # Probe the configured Python interpreter with fixed isolated Python source.
-    output = subprocess.check_output(  # noqa: S603
-        [exe, "-I", "-S", "-c", "import sys; print('%d.%d.%d' % sys.version_info[:3])"],
-        universal_newlines=True,
-        timeout=30,
-    )
-    return tuple(int(part) for part in output.strip().split("."))
+    try:
+        output = subprocess.check_output(  # noqa: S603
+            [exe, "-I", "-S", "-c", "import sys; print('%d.%d.%d' % sys.version_info[:3])"],
+            universal_newlines=True,
+            timeout=30,
+        )
+        return tuple(int(part) for part in output.strip().split("."))
+    except (OSError, subprocess.SubprocessError, ValueError) as error:
+        # Blocked by a policy, crashed, hung, or printed something else: a message, not a traceback.
+        raise SetupError(f'The Python at "{exe}" could not be started or did not report its version: {error}') from None
 
 
 def version_text(version: Tuple[int, ...]) -> str:

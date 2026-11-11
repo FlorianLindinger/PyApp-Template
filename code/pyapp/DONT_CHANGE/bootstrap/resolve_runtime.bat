@@ -75,7 +75,6 @@ if defined XDG_BIN_HOME call :try_uv "%XDG_BIN_HOME%\uv.exe"
 call :try_uv "%USERPROFILE%\.local\bin\uv.exe"
 call :try_uv "%USERPROFILE%\.cargo\bin\uv.exe"
 call :try_uv "%user_data%\PyApp-Template\uv\uv.exe"
-call :try_uv "%user_data%\PyApp-Template\uv-bootstrap\uv.exe"
 exit /b 0
 
 :try_uv
@@ -98,9 +97,17 @@ if /i "%architecture%"=="AMD64" set "target=x86_64-pc-windows-msvc"
 if /i "%architecture%"=="ARM64" set "target=aarch64-pc-windows-msvc"
 if /i "%architecture%"=="x86" set "target=i686-pc-windows-msvc"
 if not defined target goto unknown_architecture
-set "boot_dir=%user_data%\PyApp-Template\uv-bootstrap"
-rmdir /s /q "%boot_dir%" 2>nul
+rem A folder of its own for this run: two first starts at the same time must not download,
+rem check and unpack into the same folder. resolve_runtime.py removes it when done.
+mkdir "%user_data%\PyApp-Template" 2>nul
+set "boot_tries=0"
+:new_boot_dir
+set /a boot_tries+=1
+if %boot_tries% gtr 20 goto no_boot_dir
+set "boot_dir=%user_data%\PyApp-Template\uv-bootstrap-%RANDOM%%RANDOM%"
+if exist "%boot_dir%" goto new_boot_dir
 mkdir "%boot_dir%" 2>nul
+if errorlevel 1 goto new_boot_dir
 set "archive=uv-%target%.zip"
 set "url=https://github.com/astral-sh/uv/releases/latest/download/%archive%"
 echo Downloading uv ...
@@ -121,6 +128,8 @@ set "actual=%actual: =%"
 if /i not "%expected%"=="%actual%" goto checksum_failed
 "%tar%" -xf "%boot_dir%\%archive%" -C "%boot_dir%"
 if errorlevel 1 goto unpack_failed
+rem Only uv.exe and its siblings stay: the archive would be copied into a local uv folder.
+del /f /q "%boot_dir%\%archive%" "%boot_dir%\%archive%.sha256" 2>nul
 set "boot_uv=%boot_dir%\uv.exe"
 "%boot_uv%" --version >nul 2>&1
 if not errorlevel 1 exit /b 0
@@ -129,7 +138,7 @@ set "boot_uv="
 exit /b 1
 
 :no_tools
-call :error "curl.exe or tar.exe is missing from Windows (they are part of Windows 10 version 1803 and newer). Install uv yourself, or copy a folder made with the make_portable dev tool to this PC."
+call :error "curl.exe or tar.exe is missing from Windows (they are part of Windows 10 version 1803 and newer). Install uv yourself, or copy a folder made with the make_self_contained dev tool to this PC."
 exit /b 1
 
 :unknown_architecture
@@ -137,15 +146,19 @@ call :error "Unsupported Windows architecture '%architecture%' for uv."
 exit /b 1
 
 :download_failed
-call :error "Could not download uv from github.com. A firewall or proxy may block it. Set HTTPS_PROXY if your company uses a proxy, ask your IT department to allow github.com, or copy a folder made with the make_portable dev tool to this PC."
+call :error "Could not download uv from github.com. A firewall or proxy may block it. Set HTTPS_PROXY if your company uses a proxy, ask your IT department to allow github.com, or copy a folder made with the make_self_contained dev tool to this PC."
 exit /b 1
 
 :cannot_check
-call :error "The uv download could not be checked: both PowerShell and certutil are blocked on this PC. Install uv yourself, or copy a folder made with the make_portable dev tool to this PC."
+call :error "The uv download could not be checked: both PowerShell and certutil are blocked on this PC. Install uv yourself, or copy a folder made with the make_self_contained dev tool to this PC."
 exit /b 1
 
 :checksum_failed
 call :error "The downloaded uv archive does not match its published SHA-256 checksum."
+exit /b 1
+
+:no_boot_dir
+call :error "Could not create a folder for the uv download in '%user_data%\PyApp-Template'."
 exit /b 1
 
 :unpack_failed
@@ -212,7 +225,7 @@ exit /b 1
 
 :python_install_failed
 popd
-call :error "uv could not install Python '%request%'. A firewall or proxy may block the download from github.com. Ask your IT department to allow it, use a Python they installed with python_source = 'system', or copy a folder made with the make_portable dev tool to this PC."
+call :error "uv could not install Python '%request%'. A firewall or proxy may block the download from github.com. Ask your IT department to allow it, use a Python they installed with python_source = 'system', or copy a folder made with the make_self_contained dev tool to this PC."
 exit /b 1
 
 rem ---------------------------------------------------------------- messages

@@ -16,7 +16,9 @@ from typing import Optional, Sequence, Union
 
 if __name__ == "__main__":
     # -I leaves the script folder off sys.path; make "pyapp...." importable (the code folder).
-    sys.path.insert(0, os.path.normpath(str((Path(__file__).parent / ".." / ".." / "..").absolute())))
+    # Appended, not inserted first: most standard-library imports happen later and lazily, and an
+    # app module such as code/random.py or code/signal.py must not replace them in the launcher.
+    sys.path.append(os.path.normpath(str((Path(__file__).parent / ".." / ".." / "..").absolute())))
 
 import contextlib
 

@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
+from typing import List
 
 from pyapp.DONT_CHANGE.backend_settings import (
     DEV_SETTINGS_PATH,
@@ -32,6 +33,7 @@ from pyapp.DONT_CHANGE.scripts.shortcuts import (
     CSIDL_DESKTOPDIRECTORY,
     CSIDL_PROGRAMS,
     generate_shortcut,
+    leftover_shortcuts,
     project_app_id,
     read_created_shortcuts,
     remove_shortcuts,
@@ -41,7 +43,7 @@ from pyapp.DONT_CHANGE.scripts.shortcuts import (
     special_folder,
     write_created_shortcuts,
 )
-from pyapp.DONT_CHANGE.scripts.template_repo import HOOKS_PATH, enable_template_git_hooks
+from pyapp.DONT_CHANGE.scripts.template_workflows import remove_template_workflows
 
 pause_on_success = True
 
@@ -89,22 +91,23 @@ def main() -> None:
         if targets_by_kind[kind]:
             Path(targets_by_kind[kind]).mkdir(parents=True, exist_ok=True)  # the shortcut opens it right away
 
+    removed_template_workflows: List[str] = []
+    try:
+        # Before the app's own workflows are added, which would count as "something else".
+        removed_template_workflows = remove_template_workflows()
+    except Exception:
+        note_ignored("remove_template_workflows")  # tidying only; the files do nothing in an app
     added, removed_workflows = sync_app_workflows(s.github_actions)
-    if added or removed_workflows:
+    if added or removed_workflows or removed_template_workflows:
         print_heading("GitHub Actions")
+        for name in removed_template_workflows:
+            print(
+                f"  {styled('-', ANSI_DIM)} {styled('removed ' + name + ' (tests of the template itself)', ANSI_DIM)}"
+            )
         for name in added:
             print(f"  {styled('+', ANSI_GOOD)} {name}")
         for name in removed_workflows:
             print(f"  {styled('-', ANSI_DIM)} {styled('removed ' + name, ANSI_DIM)}")
-
-    try:
-        hooks_enabled = enable_template_git_hooks()
-    except Exception:
-        note_ignored("enable_template_git_hooks")  # a convenience for template maintainers only
-        hooks_enabled = False
-    if hooks_enabled:
-        print_heading("Git hooks")
-        print(f"  {styled('+', ANSI_GOOD)} leak check before each commit and push ({HOOKS_PATH})")
 
     folders_by_label = [("project folder", SHORTCUT_OUTPUT_DIR)]
     if s.start_menu_shortcuts:
@@ -115,29 +118,36 @@ def main() -> None:
     for label, folder in folders_by_label + ([("Desktop", desktop)] if desktop else []):
         print(f"  {label:<15} {styled(_short(folder), ANSI_DIM)}")
     print()
-    created = []
+    created: List[str] = []
+    previous = read_created_shortcuts()
     name_width = max(len(d[1]) for d in definitions) if definitions else 0
-    for kind, name, icon, launcher, args, shortcut_app_id, description in definitions:
-        places = list(folders_by_label)
-        if desktop and kind in s.desktop_shortcuts:
-            places.append(("Desktop", desktop))
-        for _, folder in places:
-            created.append(
-                generate_shortcut(
-                    name,
-                    icon,
-                    launcher,
-                    args=args,
-                    app_id=shortcut_app_id,
-                    description=description,
-                    start_minimized=kind != "stop",  # Stop shows a short countdown
-                    output_dir=folder,
+    try:
+        for kind, name, icon, launcher, args, shortcut_app_id, description in definitions:
+            places = list(folders_by_label)
+            if desktop and kind in s.desktop_shortcuts:
+                places.append(("Desktop", desktop))
+            for _, folder in places:
+                created.append(
+                    generate_shortcut(
+                        name,
+                        icon,
+                        launcher,
+                        args=args,
+                        app_id=shortcut_app_id,
+                        description=description,
+                        start_minimized=kind != "stop",  # Stop shows a short countdown
+                        output_dir=folder,
+                    )
                 )
-            )
-        where = ", ".join(label for label, _ in places)
-        print(f"  {styled('+', ANSI_GOOD)} {name:<{name_width}}  {styled(where, ANSI_DIM)}")
-    removed = remove_shortcuts(read_created_shortcuts(), keep=created)
-    write_created_shortcuts(created, targets_by_kind)
+            where = ", ".join(label for label, _ in places)
+            print(f"  {styled('+', ANSI_GOOD)} {name:<{name_width}}  {styled(where, ANSI_DIM)}")
+    except BaseException:
+        # Stopped halfway (e.g. a Desktop write blocked by Controlled Folder Access): record every
+        # shortcut that exists now, so the next Setup or remove_shortcuts still knows about it.
+        write_created_shortcuts(previous + created, targets_by_kind)
+        raise
+    removed = remove_shortcuts(previous, keep=created)
+    write_created_shortcuts(created + leftover_shortcuts(previous, removed + created), targets_by_kind)
     for path in removed:
         print(f"  {styled('-', ANSI_DIM)} {styled('removed ' + _short(path), ANSI_DIM)}")
     delete_finished_run_folders()

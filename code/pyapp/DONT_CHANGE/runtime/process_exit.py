@@ -23,11 +23,16 @@ def _fail_while_loading(error: BaseException) -> NoReturn:
     print()
     print("ERROR  " + fail_message.format(e=error))
     print(traceback.format_exc())
-    input("Press Enter to close this window.")
+    import contextlib
+
+    # EOFError: started without a usable stdin (the watchdog's hidden run); nothing to wait for.
+    with contextlib.suppress(EOFError, KeyboardInterrupt):
+        input("Press Enter to close this window.")
     os._exit(1)
 
 
-sys.path.insert(0, os.path.normpath(str((Path(__file__).parent / ".." / ".." / "..").absolute())))
+# Last, so app modules named like standard-library modules (code/random.py, ...) cannot shadow them.
+sys.path.append(os.path.normpath(str((Path(__file__).parent / ".." / ".." / "..").absolute())))
 try:
     from pyapp.DONT_CHANGE import backend_settings as paths
     from pyapp.DONT_CHANGE.runtime._pyapp import (
@@ -221,7 +226,7 @@ def handle_missing_module(missing: str, app_id: str, new_terminal_was_created: b
         print_choices(label for _, label in options)
         # Enter: the last option, quit.
         answer = ask(f"What now? [1-{len(options)}, Enter = quit]").strip() or str(len(options))
-        if not answer.isdigit() or not 1 <= int(answer) <= len(options):
+        if not answer.isdecimal() or not 1 <= int(answer) <= len(options):
             continue
         action = options[int(answer) - 1][0]
         if action == "quit":
@@ -289,15 +294,21 @@ def complete(
             colors, width = _report_style()
             print(rule_line(width, colors))
         {"success": print_success, "keyboard_interrupt": print_warn}.get(outcome, print_error)(message)
+    # The report first: it is what this window is for, and writing the crash log can fail
+    # (missing drive, full disk, a date code that makes an invalid file name).
+    print_report(report)
     if outcome != "success":
-        crash_log = write_crash_log(report, message, log_path)
+        try:
+            crash_log = write_crash_log(report, message, log_path)
+        except OSError as error:
+            print_error(f"Failed to write the crash log: {error}")
+            crash_log = None
         if crash_log and outcome == "failure" and s.open_crash_log_after_failure:
             try:
                 # Run the launcher restart helper or open the configured local log file.
                 os.startfile(crash_log)  # noqa: S606
             except Exception as error:
                 print_error(f"Failed to open crash log: {error}")
-    print_report(report)
     if OUTCOMES[outcome]["sound"] and getattr(s, "play_sound_after_" + outcome):
         play_sound(OUTCOMES[outcome]["sound"], wait=not keep_open)
     if stays_open and not keep_open:

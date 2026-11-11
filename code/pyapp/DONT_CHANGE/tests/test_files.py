@@ -29,6 +29,26 @@ class LauncherFileTests(unittest.TestCase):
                 checked += 1
         self.assertGreater(checked, 20)
 
+    def test_the_file_tables_name_existing_files(self):
+        """The READMEs describe every file; a rename must not leave them pointing at nothing."""
+        # The tables name files relative to the folder their section is about.
+        bases = [DONT_CHANGE / folder for folder in ("", "scripts", "runtime", "actions", "bootstrap", "B", "data")]
+        missing = []
+        for line in (DONT_CHANGE / "README.md").read_text(encoding="utf-8").splitlines():
+            first_cell = line.split("|")[1] if line.startswith("| `") else ""
+            for quoted in re.findall(r"`([^`]+)`", first_cell):
+                name = quoted.rstrip("/")
+                if not re.fullmatch(r"[\w.-]+(/[\w.-]+)*", name) or ("." not in name and "/" not in name):
+                    continue  # not a path: a shortcut name, a placeholder, ...
+                if name.startswith("tmp"):
+                    continue  # created at runtime
+                if not any((base / name).exists() for base in bases):
+                    missing.append(name)
+        self.assertEqual(missing, [], "named in DONT_CHANGE/README.md, but not found")
+        tests = DONT_CHANGE / "tests"
+        listed = set(re.findall(r"(?m)^\| `(test_\w+\.py)`", (tests / "README.md").read_text(encoding="utf-8")))
+        self.assertEqual(listed, {path.name for path in tests.glob("test_*.py")}, "tests/README.md file table")
+
     def test_runner_and_every_tool_have_a_main(self):
         self.assertIn("scripts\\entrypoint.py", (DONT_CHANGE / "bootstrap" / "run.bat").read_text(encoding="utf-8"))
         for tool in [*list((DONT_CHANGE / "actions").glob("*.py")), DONT_CHANGE / "scripts" / "dev_tools" / "main.py"]:

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import os
+from pathlib import Path
 from typing import List
 
 from pyapp.DONT_CHANGE import backend_settings as paths
@@ -10,6 +12,7 @@ from pyapp.DONT_CHANGE.scripts.config import (
     display_path,
     requirement_key,
     requirements_file_entries,
+    requirements_file_path,
     settings,
 )
 from pyapp.DONT_CHANGE.scripts.console_tools import (
@@ -70,7 +73,7 @@ def cmd_remove(arguments: List[str]) -> None:
         print_choices(declared)
         chosen = ask("Numbers or names to remove (space separated, Enter = cancel):").replace(",", " ").split()
         for item in chosen:
-            if item.isdigit() and 1 <= int(item) <= len(declared):
+            if item.isdecimal() and 1 <= int(item) <= len(declared):
                 names.append(requirement_name(declared[int(item) - 1]))
             elif item:
                 names.append(item)
@@ -164,7 +167,7 @@ def find_imports_and_add() -> None:
         if not answer:
             break
         for item in answer.replace(",", " ").split():
-            if item.isdigit() and 1 <= int(item) <= len(candidates):
+            if item.isdecimal() and 1 <= int(item) <= len(candidates):
                 selected[int(item) - 1] = not selected[int(item) - 1]
     names = [r.distribution for r, chosen in zip(candidates, selected) if chosen]
     if not names:
@@ -187,8 +190,22 @@ def cmd_terminal(_arguments: List[str]) -> None:
     open_package_terminal()
 
 
+def _same_path(first: str, second: str) -> bool:
+    return os.path.normcase(os.path.normpath(str(Path(first).absolute()))) == os.path.normcase(
+        os.path.normpath(str(Path(second).absolute()))
+    )
+
+
 def cmd_export(_arguments: List[str]) -> None:
     """Write pyapp/requirements.txt from uv.lock (for tools that need that format)."""
+    source = requirements_file_path(settings())
+    # The export is fully pinned and includes every dependency of a dependency: written over the
+    # file requirements_path reads, all of them would become direct requirements of the app.
+    if source and _same_path(source, paths.EXPORTED_REQUIREMENTS_PATH):
+        raise SetupError(
+            f'requirements_path is "{display_path(source)}", the file the export writes. '
+            "Rename one of them; the launcher never writes the requirements_path file."
+        )
     prepare()
     run_uv(
         [

@@ -2,6 +2,7 @@
 
 import contextlib
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
@@ -70,6 +71,18 @@ class PyprojectTests(unittest.TestCase):
                 pyproject.reconcile_pyproject(load(), None)  # said once: the table is gone now
             warn.assert_called_once()
             self.assertIn("direct reference", warn.call_args[0][0])
+
+    def test_dropped_dependency_groups_are_reported(self):
+        with support.temporary_settings() as (_, load):
+            pyproject.reconcile_pyproject(load(), (3, 14))
+            path = Path(pyproject.PYPROJECT_PATH)
+            path.write_text(
+                path.read_text(encoding="utf-8") + '\n[dependency-groups]\ndev = ["pytest"]\n', encoding="utf-8"
+            )
+            with mock.patch.object(pyproject, "print_warn") as warn:
+                pyproject.reconcile_pyproject(load(), None)
+            warn.assert_called_once()
+            self.assertIn("[dependency-groups]", warn.call_args[0][0])
 
     def test_settings_win_when_both_changed(self):
         with support.temporary_settings() as (_, load):
@@ -256,6 +269,21 @@ class FingerprintTests(unittest.TestCase):
             Path(venv.UV_LOCK_PATH).write_text("changed", encoding="utf-8")
             self.assertNotEqual(first, venv.environment_fingerprint(settings))
             Path(venv.UV_LOCK_PATH).unlink()
+
+    def test_fingerprint_ignores_bytecode_but_sees_installed_packages(self):
+        """The first import after Setup writes site-packages/__pycache__; that must keep the fast path."""
+        with support.temporary_settings() as (_, load), tempfile.TemporaryDirectory() as venv_dir:
+            site_packages = Path(venv_dir, "Lib", "site-packages")
+            site_packages.mkdir(parents=True)
+            (site_packages / "six.py").write_text("", encoding="utf-8")
+            with mock.patch.object(venv, "VENV_DIR", venv_dir):
+                settings = load()
+                first = venv.environment_fingerprint(settings)
+                (site_packages / "__pycache__").mkdir()
+                (site_packages / "__pycache__" / "six.cpython-314.pyc").write_bytes(b"")
+                self.assertEqual(first, venv.environment_fingerprint(settings))
+                (site_packages / "requests-2.32.0.dist-info").mkdir()
+                self.assertNotEqual(first, venv.environment_fingerprint(settings))
 
 
 if __name__ == "__main__":

@@ -61,6 +61,15 @@ def running(pid: int):
 
 
 @unittest.skipUnless(os.name == "nt", "Windows only")
+class StructureTests(unittest.TestCase):
+    def test_propvariant_has_the_windows_size(self):
+        import ctypes
+
+        from pyapp.DONT_CHANGE.scripts.com_tools import PROPVARIANT
+
+        self.assertEqual(ctypes.sizeof(PROPVARIANT), 24 if ctypes.sizeof(ctypes.c_void_p) == 8 else 16)
+
+
 class WindowsProcessTests(unittest.TestCase):
     # typing.override requires Python 3.12; keep this override dependency-free on 3.8.
     def setUp(self):  # pyrefly: ignore[missing-override-decorator]

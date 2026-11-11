@@ -30,7 +30,7 @@ def load_settings_file(path: Path):
 
 @contextlib.contextmanager
 def temporary_settings(transform: Optional[Callable[[str], str]] = None):
-    """Yield (settings path, loader) for a temporary copy that config and scripts/environment read and write.
+    """Yield (settings path, loader) for a temporary copy that config and scripts/env read and write.
 
     transform(text) -> text changes the copy first. pyproject.toml and uv.lock also point into the
     temporary folder, so nothing in the checkout is touched.

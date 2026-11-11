@@ -151,7 +151,7 @@ def set_terminal_title(title: Optional[str]) -> None:
     try:
         import ctypes
 
-        clean_name = title.replace("\r\n", "").replace("\r", "")
+        clean_name = title.replace("\r", "").replace("\n", "")
         ctypes.windll.kernel32.SetConsoleTitleW(clean_name)
     except Exception:
         note_ignored("set_terminal_title")
@@ -304,7 +304,8 @@ def unminimize_terminal() -> None:
 
         kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
         hwnd = int(kernel32.GetConsoleWindow() or 0)
-        if not hwnd:
+        # Only a minimized window: SW_RESTORE would also shrink a window the user maximized.
+        if not hwnd or not ctypes.windll.user32.IsIconic(hwnd):
             return
         ctypes.windll.user32.ShowWindow(hwnd, 9)  # 9 means unminimized
     except Exception:
@@ -388,7 +389,9 @@ def set_terminal_colors(colors: Optional[str]) -> None:
             import subprocess
 
             # The color argument is restricted to hex digits before reaching cmd.exe.
-            subprocess.run(["cmd.exe", "/c", "color", colors], check=False)  # noqa: S603, S607
+            from pyapp.DONT_CHANGE.backend_settings import CMD_EXE
+
+            subprocess.run([CMD_EXE, "/c", "color", colors], check=False)  # noqa: S603
         except Exception:
             note_ignored("set_terminal_colors")
 
@@ -433,7 +436,9 @@ def open_in_editor(path: str) -> None:
     editor = _editor_executable()
     if editor is None:
         # Launching the local editor or Windows color command is intentional.
-        subprocess.Popen(["notepad.exe", path], env=env)  # noqa: S603, S607
+        from pyapp.DONT_CHANGE.backend_settings import NOTEPAD_EXE
+
+        subprocess.Popen([NOTEPAD_EXE, path], env=env)  # noqa: S603
     elif editor.lower().endswith((".cmd", ".bat")):
         # Batch files run through cmd.exe: always quote, so & ( ) ^ in the path stay literal.
         # Launching the local editor or Windows color command is intentional.

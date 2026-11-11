@@ -31,8 +31,6 @@ dmypy.json
 cython_debug/
 # cache from Python anywhere:
 __pycache__/
-*.pyc
-*.pyo
 *.py[codz]
 *$py.class
 .Python
@@ -44,19 +42,16 @@ nuitka-crash-report.xml
 *.pstats
 *.trace
 
-# ===========================================
-# ==== App launcher specific gitignores ====
-# ===========================================
-
-# shortcuts in this folder:
-/*.lnk
-
 # =================================
 # ==== App specific gitignores ====
 # =================================
 
+
 # ADD THE GIT IGNORE SYNCING RULES FOR YOUR APP HERE
 
+
+# shortcuts in this folder:
+/*.lnk
 # contents of "logs" folder in this folder:
 /logs/*
 # contents of "crash logs" folder in this folder:
