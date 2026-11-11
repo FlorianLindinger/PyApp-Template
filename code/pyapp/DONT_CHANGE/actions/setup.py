@@ -25,6 +25,7 @@ from pyapp.DONT_CHANGE.scripts.console_tools import (
     print_warn,
     styled,
 )
+from pyapp.DONT_CHANGE.scripts.diagnostics import note_ignored
 from pyapp.DONT_CHANGE.scripts.file_tools import make_abs_path_relative_to_file, sanitize_filename
 from pyapp.DONT_CHANGE.scripts.launcher_ui import delete_finished_run_folders
 from pyapp.DONT_CHANGE.scripts.shortcuts import (
@@ -40,6 +41,7 @@ from pyapp.DONT_CHANGE.scripts.shortcuts import (
     special_folder,
     write_created_shortcuts,
 )
+from pyapp.DONT_CHANGE.scripts.template_repo import HOOKS_PATH, enable_template_git_hooks
 
 pause_on_success = True
 
@@ -94,6 +96,15 @@ def main() -> None:
             print(f"  {styled('+', ANSI_GOOD)} {name}")
         for name in removed_workflows:
             print(f"  {styled('-', ANSI_DIM)} {styled('removed ' + name, ANSI_DIM)}")
+
+    try:
+        hooks_enabled = enable_template_git_hooks()
+    except Exception:
+        note_ignored("enable_template_git_hooks")  # a convenience for template maintainers only
+        hooks_enabled = False
+    if hooks_enabled:
+        print_heading("Git hooks")
+        print(f"  {styled('+', ANSI_GOOD)} leak check before each commit and push ({HOOKS_PATH})")
 
     folders_by_label = [("project folder", SHORTCUT_OUTPUT_DIR)]
     if s.start_menu_shortcuts:

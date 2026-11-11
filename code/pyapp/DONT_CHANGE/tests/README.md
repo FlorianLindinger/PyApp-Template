@@ -7,8 +7,9 @@ is a temporary copy, so they are safe to run at any time.
 Run them after changing anything in `DONT_CHANGE`, or after updating the template:
 
 - double-click `run_launcher_tests.cmd` in this folder (uses the launcher's Python), or
-- from a terminal in this folder: `python run_regressions.py` (all, about 10 s) or
-  `python run_regressions.py test_wrapper.py` (one file); `-q` prints one dot per test.
+- from a terminal in this folder: `python run_regressions.py` (all, about 10 s one after another) or
+  `python run_regressions.py test_wrapper.py` (one file); `-q` prints one dot per test, and
+  `-j 0` runs the test files in parallel, one process each (about 5 s; the pre-push hook uses it).
 
 `test_windows.py` runs on Windows only. Deleting this folder does not affect the launcher.
 

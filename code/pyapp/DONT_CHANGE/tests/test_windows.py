@@ -163,12 +163,16 @@ class WindowsProcessTests(unittest.TestCase):
                 "-c",
                 textwrap.dedent(
                     f"""
-                    import sys, time
+                    import os, sys, time
                     sys.path.insert(0, {str(CODE)!r})
                     from pyapp.DONT_CHANGE.scripts.runtime_state import FileLock
                     with FileLock({str(path)!r}):
                         open({str(path) + ".held"!r}, "w").close()
-                        time.sleep(5)
+                        # Held until the test is done with it (at most 30 s), not for a fixed time.
+                        for _ in range(600):
+                            if os.path.exists({str(path) + ".release"!r}):
+                                break
+                            time.sleep(0.05)
                     """
                 ),
             ]
@@ -177,6 +181,7 @@ class WindowsProcessTests(unittest.TestCase):
         self.assertTrue(wait_for(lambda: Path(str(path) + ".held").exists()))
         with self.assertRaises(TimeoutError), runtime_state.FileLock(path, timeout=0.3):
             pass
+        Path(str(path) + ".release").touch()
         holder.wait(timeout=30)
         with runtime_state.FileLock(path, timeout=5), runtime_state.FileLock(path, timeout=0.1):
             pass  # reentrant within one thread

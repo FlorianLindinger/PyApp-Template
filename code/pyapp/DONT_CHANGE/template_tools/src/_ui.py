@@ -17,10 +17,20 @@ ERROR = "\x1b[1;37;41m"  # white on red
 DIM = "\x1b[90m"  # grey
 RESET = "\x1b[0m"
 
+
+def use_utf8(stream: object) -> None:
+    """The rules and markers below do not exist in the legacy code pages used for redirected output.
+
+    Decided by the encoding, not isatty(): Windows reports the NUL device as a terminal, but Python
+    only uses UTF-8 for real consoles, so "> nul" (or /dev/null) would otherwise crash.
+    """
+    reconfigure = getattr(stream, "reconfigure", None)
+    if reconfigure is not None and (getattr(stream, "encoding", "") or "").lower().replace("-", "") != "utf8":
+        reconfigure(encoding="utf-8", errors="replace")
+
+
 for _stream in (sys.stdout, sys.stderr):
-    # The rules and markers below do not exist in the legacy code pages used for redirected output.
-    if hasattr(_stream, "reconfigure") and not _stream.isatty():
-        _stream.reconfigure(encoding="utf-8", errors="replace")
+    use_utf8(_stream)
 
 _console_prepared = False
 _progress_shown = False

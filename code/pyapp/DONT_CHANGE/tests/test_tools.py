@@ -12,6 +12,7 @@ from unittest import mock
 from project_location import DONT_CHANGE
 
 with mock.patch.object(sys, "path", [str(DONT_CHANGE / "template_tools" / "src"), *sys.path]):
+    import _ui
     import fresh_clone_test as clone_tool
     import test_all_pythons as python_tool
 
@@ -103,6 +104,22 @@ class FreshCloneTests(unittest.TestCase):
             env = clone_tool.clean_environment()
         self.assertNotIn("PYAPP_PYTHON", env)
         self.assertEqual(env["OTHER"], "y")
+
+
+class ToolOutputTests(unittest.TestCase):
+    def test_output_to_the_nul_device_is_switched_to_utf8(self):
+        # Windows reports NUL as a terminal, but Python writes to it in the legacy code page.
+        nul = mock.Mock(encoding="cp1252")
+        nul.isatty.return_value = True
+        _ui.use_utf8(nul)
+        nul.reconfigure.assert_called_once_with(encoding="utf-8", errors="replace")
+
+    def test_a_utf8_console_is_left_alone(self):
+        for encoding in ("utf-8", "UTF8"):
+            console = mock.Mock(encoding=encoding)
+            _ui.use_utf8(console)
+            console.reconfigure.assert_not_called()
+        _ui.use_utf8(None)  # a pythonw launch has no stream
 
 
 class AllPythonsTests(unittest.TestCase):
