@@ -42,7 +42,7 @@ from pyapp.DONT_CHANGE.scripts.env.venv import (
 from pyapp.DONT_CHANGE.scripts.errors import SetupError
 
 
-def cmd_add(arguments: List[str]):
+def cmd_add(arguments: List[str]) -> None:
     """Add packages (recorded in developer_settings.py and uv.lock) and install them."""
     s = settings()
     names = arguments or ask_package_names("Package(s) to add, e.g. requests numpy>=2 (Enter = cancel):")
@@ -57,7 +57,7 @@ def cmd_add(arguments: List[str]):
     print_info(COMMIT_HINT)
 
 
-def cmd_remove(arguments: List[str]):
+def cmd_remove(arguments: List[str]) -> None:
     """Remove declared packages."""
     s = settings()
     names = list(arguments)
@@ -92,7 +92,7 @@ def cmd_remove(arguments: List[str]):
     print_info(COMMIT_HINT)
 
 
-def cmd_upgrade(arguments: List[str]):
+def cmd_upgrade(arguments: List[str]) -> None:
     """Upgrade all (or the named) packages within their declared limits."""
     s = settings()
     # Before prepare(), which can already sync the environment.
@@ -106,7 +106,7 @@ def cmd_upgrade(arguments: List[str]):
     print_success("Packages upgraded. Test the app, then commit pyapp/generated/uv.lock.")
 
 
-def cmd_sync(arguments: List[str]):
+def cmd_sync(_arguments: List[str]) -> None:
     """Make the environment match uv.lock exactly (removes packages installed by hand)."""
     s = settings()
     # Before prepare(), which can already sync the environment.
@@ -117,7 +117,7 @@ def cmd_sync(arguments: List[str]):
     print_success("The environment matches uv.lock.")
 
 
-def find_imports_and_add():
+def find_imports_and_add() -> None:
     """Show the imports found in the project, let the user review them, then add the chosen ones."""
     from pyapp.DONT_CHANGE.scripts.import_finder import find_requirements
 
@@ -175,19 +175,19 @@ def find_imports_and_add():
     print_info(COMMIT_HINT)
 
 
-def cmd_find_imports(arguments: List[str]):
+def cmd_find_imports(_arguments: List[str]) -> None:
     """Find the packages the code imports and add the missing ones after review."""
     prepare()
     find_imports_and_add()
 
 
-def cmd_terminal(arguments: List[str]):
+def cmd_terminal(_arguments: List[str]) -> None:
     """Command prompt with the app environment activated and uv on PATH."""
     prepare()
     open_package_terminal()
 
 
-def cmd_export(arguments: List[str]):
+def cmd_export(_arguments: List[str]) -> None:
     """Write pyapp/requirements.txt from uv.lock (for tools that need that format)."""
     prepare()
     run_uv(

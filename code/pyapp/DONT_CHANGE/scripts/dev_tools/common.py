@@ -8,7 +8,7 @@ from typing import List, Optional, Union
 
 from pyapp.DONT_CHANGE.scripts.config import settings, validate
 from pyapp.DONT_CHANGE.scripts.console_tools import ask
-from pyapp.DONT_CHANGE.scripts.env.venv import ensure_environment
+from pyapp.DONT_CHANGE.scripts.env.venv import AppPython, ensure_environment
 
 COMMIT_HINT = "Commit developer_settings.py and pyapp/generated/uv.lock."
 
@@ -27,7 +27,7 @@ def requirement_name(requirement: str) -> str:
     return normalized(match.group(1)) if match else normalized(requirement)
 
 
-def prepare(s: Optional[Union[ModuleType, SimpleNamespace]] = None):
+def prepare(s: Optional[Union[ModuleType, SimpleNamespace]] = None) -> AppPython:
     """Validate settings and make sure the environment exists before changing it."""
     s = s or settings()
     validate(s)

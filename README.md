@@ -106,7 +106,7 @@ Changing this later is safe. A menu lets you keep your package versions, upgrade
 
 ### Changing the icons
 
-Replace `code/pyapp/icons/icon.png`, run `regenerate icons.cmd` in that folder, then run Setup again. All shortcut and status icons are generated from that one image.
+The app's icon is `code/pyapp/icons/icon.ico`: the shortcuts, windows and taskbar use it. To change it, replace `icon.png` in that folder and run `regenerate icons.cmd`, which generates `icon.ico` and all status icons from that one image. Or put your own `icon.ico` there directly; the generator asks before replacing an icon file you placed yourself. Then run Setup again so the shortcuts pick it up.
 
 ### Connecting your app to the launcher
 
@@ -280,6 +280,25 @@ The [launcher documentation](code/pyapp/DONT_CHANGE/README.md) covers each step 
 ├── logs/
 └── crash logs/
 ```
+
+## What you can delete
+
+None of these is needed to run your app. Delete whatever you don't use:
+
+| Delete | What it is, and what still works without it |
+| --- | --- |
+| `.github/workflows/pyapp-template-*.yml` | The template's own test workflows. They only run in the PyApp-Template repository itself, so in your app they do nothing anyway. |
+| `code/main.py`, `code/settings.py` | The example app and its user settings. Replace them with your own; point `main_script_path` at your main file, and set `user_settings_path = None` if your app has no settings file. |
+| Single tools in `code/pyapp/dev_tools` | Each `.cmd` there is optional. `Dev Menu.cmd` still offers every command. |
+| `code/pyapp/icons/*.cmd` | Helpers for changing the icons. The existing icons keep working; to regenerate them after changing `icon.png`, run `code\pyapp\DONT_CHANGE\run.bat icons`. |
+| `code/pyapp/DONT_CHANGE/tests` | The launcher's own tests. The `test` dev tool then says there is nothing to run. |
+| `code/pyapp/DONT_CHANGE/pyapp_tools` | Tools for maintaining the template: release, tests on all Pythons, leak check, Git hooks. Delete `tests` together with it, because the tests use it. Keep it if `github_actions` contains `"leaks"`, which runs its leak check. |
+
+Three things to know:
+
+- GitHub Actions that Setup adds (`.github/workflows/pyapp-app-*.yml`) are turned off by taking them out of `github_actions`. Deleting the file is not enough: the next Setup adds every listed one again.
+- Anything you delete inside `code/pyapp/DONT_CHANGE` comes back when you update the launcher by replacing that folder. Delete it again after an update.
+- Keep `LICENSE.md` (your app's license goes there) and `code/pyapp/DONT_CHANGE/LICENSES` (licenses that must ship with the launcher).
 
 ## Updating the template
 

@@ -10,11 +10,53 @@ line-length = 120
 keep-runtime-typing = true
 
 [lint]
-# Include pathlib and security diagnostics in verification, alongside Ruff's defaults.
-extend-select = ["PTH", "S"]
+# Ruff's defaults plus rule groups that find bugs or simplify code. Not "ALL": its docstring,
+# pytest, copyright, print and exception-message rules contradict this code base on purpose
+# (unittest from the standard library, a console app that prints, short messages at the raise).
+extend-select = [
+    "PTH",  # pathlib instead of os.path
+    "S",    # security
+    "B",    # likely bugs
+    "SIM",  # simpler code
+    "C4",   # comprehensions
+    "PIE",  # unnecessary code
+    "RET",  # return statements
+    "PERF", # performance
+    "ARG",  # unused arguments
+    "UP",   # newer syntax that still runs on Python 3.8
+    "RUF",  # Ruff's own checks, e.g. unused noqa comments
+    "PL",   # Pylint
+    "ANN",  # type annotations on functions
+]
 # Deliberate patterns of this code base:
 ignore = [
     # Catch-all excepts are intentional: cosmetic steps (window icon, colors, focus, ...) must
     # never stop the app. They are recorded with diagnostics.note_ignored() instead.
     "BLE001", # blind-except
+    # Imports inside functions keep the start of the app fast: only what a path needs is loaded.
+    "PLC0415", # import-outside-top-level
+    # Fixed limits on arguments, branches, returns and statements would split readable step-by-step
+    # functions (Setup, the watchdog) without making them clearer.
+    "PLR0911", # too-many-return-statements
+    "PLR0912", # too-many-branches
+    "PLR0913", # too-many-arguments
+    "PLR0915", # too-many-statements
+    "PLR0917", # too-many-positional-arguments
+    # Numbers such as exit codes and Windows constants are named where they are used.
+    "PLR2004", # magic-value-comparison
+    # A few modules keep process-wide state (the log file, the job handle) in module globals.
+    "PLW0603", # global-statement
+    # A try inside a loop handles each item on its own: one locked file must not stop the rest.
+    "PERF203", # try-except-in-loop
+    # Any stands for JSON values and Windows API results, which have no better type here.
+    "ANN401", # any-type
+    # typing.Self needs Python 3.11 (or the typing_extensions package); a bound TypeVar works on 3.8.
+    "PYI019", # custom-type-var-for-self
 ]
+
+[lint.per-file-ignores]
+# Test methods and fakes: annotating every test returning None or every unused fake argument
+# adds noise, not safety. Pyrefly still checks the tests.
+"tests/**" = ["ANN", "ARG"]
+# The banner test uses typographic characters on purpose.
+"tests/test_banner.py" = ["RUF001"]

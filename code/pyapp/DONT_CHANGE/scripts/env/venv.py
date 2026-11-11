@@ -6,6 +6,7 @@ the package actions used by the dev tools and the missing-package menu.
 
 from __future__ import annotations
 
+import contextlib
 import os
 import re
 import shutil
@@ -147,10 +148,8 @@ def relink_venv(base_python: str, s: Optional[Union[ModuleType, SimpleNamespace]
     # uv caches interpreter details keyed on python.exe's timestamp, which the re-link does not
     # change; without a new timestamp uv would keep using the old base and rebuild the venv.
     for name in ("python.exe", "pythonw.exe"):
-        try:
+        with contextlib.suppress(OSError):
             os.utime(str(Path(VENV_DIR) / "Scripts" / name), None)
-        except OSError:
-            pass
     base = venv_base_executable()
     if code or base is None or not _same_file(base, base_python):
         return False
@@ -191,7 +190,7 @@ def sync(
     if not exact:
         arguments.append("--inexact")  # keep packages added by hand (uv pip install) until the next exact sync
     project_environment = None if os.path.normcase(venv_dir) == os.path.normcase(VENV_DIR) else venv_dir
-    if uv_succeeds(arguments + ["--offline"], project_environment=project_environment, s=s):
+    if uv_succeeds([*arguments, "--offline"], project_environment=project_environment, s=s):
         return
     show_setup_window()
     print_step("Installing packages...")
@@ -291,22 +290,21 @@ def ensure_environment(interactive: bool = True) -> AppPython:
         config = read_venv_config()
         if not Path(VENV_PYTHON_EXE).is_file() or not config:
             build_venv(base_python, locked=locked, s=s)
-        else:
-            if (venv_version(config) or ())[:2] == base_version[:2] and venv_needs_relink(config, base_python):
-                # The project (or its Python) moved: re-link instead of reinstalling (works offline).
-                if not relink_venv(base_python, s):
-                    build_venv(base_python, locked=locked, s=s)
-                elif locked:
-                    sync(VENV_PYTHON_EXE, s=s)
-            elif (venv_version(config) or ())[:2] != base_version[:2]:
-                print_info(
-                    f"The environment uses Python {version_text(venv_version(config) or ())}; rebuilding it for Python {version_text(base_version)}."
-                )
+        elif (venv_version(config) or ())[:2] == base_version[:2] and venv_needs_relink(config, base_python):
+            # The project (or its Python) moved: re-link instead of reinstalling (works offline).
+            if not relink_venv(base_python, s):
                 build_venv(base_python, locked=locked, s=s)
             elif locked:
                 sync(VENV_PYTHON_EXE, s=s)
-            else:
-                best_effort_install(VENV_PYTHON_EXE, s)
+        elif (venv_version(config) or ())[:2] != base_version[:2]:
+            print_info(
+                f"The environment uses Python {version_text(venv_version(config) or ())}; rebuilding it for Python {version_text(base_version)}."
+            )
+            build_venv(base_python, locked=locked, s=s)
+        elif locked:
+            sync(VENV_PYTHON_EXE, s=s)
+        else:
+            best_effort_install(VENV_PYTHON_EXE, s)
         if locked:
             _write_stamp(environment_fingerprint(s))
     return AppPython(VENV_PYTHON_EXE, APP_PYTHON_FLAGS)
@@ -439,7 +437,7 @@ def switch_python(
             clear_dependencies()
         print_step(f"Re-locking dependencies for Python {version_text(new_version)}...")
         lock_arguments = ["lock"] + (["--upgrade"] if upgrade else [])
-        if not uv_succeeds(lock_arguments + ["--offline"], s=s):
+        if not uv_succeeds([*lock_arguments, "--offline"], s=s):
             run_uv(lock_arguments, s=s)
         build_venv(new_python, locked=True, s=s)
     except BaseException:

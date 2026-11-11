@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import json
 import re
 import subprocess
@@ -128,8 +129,8 @@ def read_python_version_file() -> Optional[str]:
     """Return the request stored in pyapp/generated/.python-version, or None."""
     try:
         with Path(PYTHON_VERSION_FILE).open(encoding="utf-8") as stream:
-            for line in stream:
-                line = line.strip()
+            for raw_line in stream:
+                line = raw_line.strip()
                 if line and not line.startswith("#"):
                     return line
     except OSError:
@@ -153,7 +154,5 @@ def request_matches(setting_value: str, file_value: Optional[str]) -> bool:
 
 def invalidate_runtime_cache() -> None:
     """Make the next batch bootstrap look up uv and Python again."""
-    try:
+    with contextlib.suppress(OSError):
         Path(RUNTIME_CACHE_PATH).unlink()
-    except OSError:
-        pass

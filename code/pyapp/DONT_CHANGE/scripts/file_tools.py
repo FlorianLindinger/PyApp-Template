@@ -35,8 +35,7 @@ def make_abs_path_relative_to_file(path: str, file: str) -> str:
     # Keep os.path.isabs: rooted Windows paths have different pathlib semantics on Python 3.8-3.12.
     if not os.path.isabs(path):  # noqa: PTH117
         return os.path.normpath(str(Path(file).parent) + "\\" + path)
-    else:
-        return path
+    return path
 
 
 def sanitize_filename(filename: str, replacement: str = "_", *, max_length: int = 255) -> str:

@@ -86,8 +86,9 @@ def newest_stable(downloads: List[Dict[str, str]]) -> str:
 def resolve_requests(uv: str, requests: List[str]) -> List[str]:
     """Replace "newest" with a version number and drop duplicates, keeping the order."""
     resolved: List[str] = []
-    for request in requests:
-        if request == NEWEST:
+    for requested in requests:
+        request = requested
+        if requested == NEWEST:
             listing = uv_output(uv, ["python", "list", "--only-downloads", "--output-format", "json"])
             request = newest_stable(json.loads(listing or "[]"))
         if request not in resolved:

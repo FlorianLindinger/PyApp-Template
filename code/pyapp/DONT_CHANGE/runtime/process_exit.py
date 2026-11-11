@@ -11,7 +11,7 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, NoReturn, Optional
+from typing import Any, Dict, List, NoReturn, Optional, Tuple
 
 fail_message = "Failed while processing program exit: {e}"
 
@@ -89,7 +89,7 @@ OUTCOMES = {
 # ------------------------------------------------------------ reports
 
 
-def load_report():
+def load_report() -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
     """Return (report, problem description)."""
     try:
         with Path(REPORT_PATH).open(encoding="utf-8") as stream:
@@ -103,7 +103,7 @@ def load_report():
     return report, None
 
 
-def _report_style():
+def _report_style() -> Tuple[bool, int]:
     """(colors, width) for tracebacks in this window."""
     colors = sys.stdout is not None and sys.stdout.isatty()
     if colors:
@@ -111,7 +111,7 @@ def _report_style():
     return colors, max(40, min(120, shutil.get_terminal_size((100, 30)).columns - 1))
 
 
-def error_summary(report: Dict[str, Any], limit: int = 200):
+def error_summary(report: Dict[str, Any], limit: int = 200) -> str:
     """The last exception's own line, e.g. "ZeroDivisionError: division by zero" (shortened)."""
     chain = report.get("chain") or []
     lines = (chain[-1].get("exception_only") or []) if chain else []
@@ -121,7 +121,7 @@ def error_summary(report: Dict[str, Any], limit: int = 200):
     return text if len(text) <= limit else text[: limit - 3] + "..."
 
 
-def print_report(report: Optional[Dict[str, Any]]):
+def print_report(report: Optional[Dict[str, Any]]) -> None:
     if report:
         colors, width = _report_style()
         print("\n".join(render(report, colors=colors, date_format=settings().error_date_format, width=width)))
@@ -140,7 +140,9 @@ def append_printed_output(crash_log: str, log_path: Optional[str]) -> None:
         note_ignored("append the printed output to the crash log")  # the report itself is already saved
 
 
-def write_crash_log(report: Optional[Dict[str, Any]], message: Optional[str], log_path: Optional[str] = None):
+def write_crash_log(
+    report: Optional[Dict[str, Any]], message: Optional[str], log_path: Optional[str] = None
+) -> Optional[str]:
     """Write a uniquely named plain-text crash report and return its path (None if none was written)."""
     s = settings()
     if not s.enable_crash_log:
@@ -165,7 +167,7 @@ def write_crash_log(report: Optional[Dict[str, Any]], message: Optional[str], lo
 # ------------------------------------------------------------ recovery
 
 
-def restart_program(app_id: str, new_terminal_was_created: bool):
+def restart_program(app_id: str, new_terminal_was_created: bool) -> None:
     """Start the program again with the same terminal behavior."""
     env = os.environ.copy()
     env["PYAPP_LAUNCH_MODE"] = "no_terminal" if new_terminal_was_created else "terminal"
@@ -185,18 +187,18 @@ def restart_program(app_id: str, new_terminal_was_created: bool):
     )
 
 
-def local_module_exists(name: str):
+def local_module_exists(name: str) -> bool:
     """True when the missing import is a module/package of the project itself (do not install)."""
     roots = (paths.PYTHON_SCRIPTS_DIR, str(Path(main_script_path()).parent))
     return any((Path(root) / (name + ".py")).is_file() or (Path(root) / name).is_dir() for root in roots)
 
 
-def handle_missing_module(missing: str, app_id: str, new_terminal_was_created: bool):
+def handle_missing_module(missing: str, app_id: str, new_terminal_was_created: bool) -> None:
     """Offer to install the distribution behind a ModuleNotFoundError, then restart."""
     from pyapp.DONT_CHANGE.scripts.env import venv
     from pyapp.DONT_CHANGE.scripts.import_finder import distribution_for_import
 
-    top = missing.split(".")[0]
+    top = missing.split(".", maxsplit=1)[0]
     if local_module_exists(top):
         print_warn(
             f'"{top}" is part of your project, not a package to install. Check the file/folder name and the import.'
@@ -248,7 +250,7 @@ def handle_missing_module(missing: str, app_id: str, new_terminal_was_created: b
 # ------------------------------------------------------------ completion
 
 
-def play_sound(wav: str, wait: bool = True):
+def play_sound(wav: str, wait: bool = True) -> None:
     try:
         import winsound
 
@@ -264,7 +266,7 @@ def complete(
     report: Optional[Dict[str, Any]] = None,
     message: Optional[str] = None,
     keep_open: bool = False,
-):
+) -> None:
     """Run the configured actions for success/failure/crash/keyboard_interrupt."""
     s = settings()
     close = getattr(s, "close_after_" + outcome)
@@ -302,7 +304,7 @@ def complete(
         wait_for_enter()
 
 
-def main():
+def main() -> None:
     settings()  # a broken settings file fails here, first; later calls reuse the import
     _, exit_mode, app_id, new_terminal_was_created, log_path, script_path = sys.argv
     exit_mode = int(exit_mode)

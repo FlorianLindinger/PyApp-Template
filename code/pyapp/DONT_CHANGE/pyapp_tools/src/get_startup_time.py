@@ -25,7 +25,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, List
+from typing import TYPE_CHECKING, Dict, List, Set
 
 import _ui
 from _paths import CODE_DIR, PROJECT_ROOT, STARTUP_BENCHMARK_WORK_DIR
@@ -48,7 +48,7 @@ def copy_project(destination: Path) -> None:
     """Copy the project without logs, shortcuts, caches and the launcher's runtime state."""
     dont_change = PROJECT_ROOT / "code" / "pyapp" / "DONT_CHANGE"
 
-    def ignore(folder: str, names: List[str]):
+    def ignore(folder: str, names: List[str]) -> Set[str]:
         here = Path(folder).resolve()
         left_out = {name for name in names if name == "__pycache__" or name.lower().endswith(".lnk")}
         if here == PROJECT_ROOT:

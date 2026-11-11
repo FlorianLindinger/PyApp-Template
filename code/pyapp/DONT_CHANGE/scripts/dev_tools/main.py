@@ -110,13 +110,13 @@ HEADINGS = {
 }
 
 
-def run_command(name: str, arguments: List[str]):
+def run_command(name: str, arguments: List[str]) -> None:
     if name in HEADINGS:
         print_heading(HEADINGS[name])
     return COMMANDS[name](arguments)
 
 
-def cmd_menu(arguments: List[str]):
+def cmd_menu(_arguments: List[str]) -> None:
     """Interactive menu of all commands."""
     groups = [
         (
@@ -131,7 +131,7 @@ def cmd_menu(arguments: List[str]):
     _run_menu(groups)
 
 
-def cmd_tools(arguments: List[str]):
+def cmd_tools(_arguments: List[str]) -> None:
     """The menu of the Tools shortcut (USER_TOOLS)."""
     lines = [(name, label + "\n       " + styled(note, ANSI_DIM)) for name, label, note in USER_TOOLS]
     _run_menu([("Tools", lines)])
@@ -168,7 +168,7 @@ def _run_menu(groups: List[Tuple[str, List[Tuple[str, str]]]]) -> None:
         wait_for_enter("Press Enter to return to the menu.")
 
 
-def main():
+def main() -> None:
     global pause_on_success
     enable_ansi()
     print_banner()

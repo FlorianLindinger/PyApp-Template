@@ -12,20 +12,24 @@ import threading
 import time
 import uuid
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Callable, Dict, Generator, List, Optional, Set, Tuple, TypeVar, Union
 
 _local_locks = threading.local()
+
+
+# The type of FileLock or a subclass, for __enter__ (typing.Self needs Python 3.11).
+_FileLockT = TypeVar("_FileLockT", bound="FileLock")
 
 
 class FileLock:
     """A reentrant, process-shared lock; Windows releases it after a crash."""
 
-    def __init__(self, path: Union[str, Path], timeout: float = 120):
+    def __init__(self, path: Union[str, Path], timeout: float = 120) -> None:
         """Store the normalized lock path and acquisition timeout."""
         self.path = str(Path(path).resolve())
         self.timeout = timeout
 
-    def __enter__(self):
+    def __enter__(self: _FileLockT) -> _FileLockT:
         """Acquire or reenter the checkout's file lock, waiting up to the configured timeout."""
         import msvcrt
 
@@ -51,10 +55,10 @@ class FileLock:
             except OSError:
                 if time.monotonic() >= deadline:
                     stream.close()
-                    raise TimeoutError("Another launcher is busy: " + self.path)
+                    raise TimeoutError("Another launcher is busy: " + self.path) from None
                 time.sleep(0.05)
 
-    def __exit__(self, *exc: object):
+    def __exit__(self, *exc: object) -> None:
         """Release one acquisition and close the file lock when the final nested context exits."""
         import msvcrt
 
@@ -68,7 +72,7 @@ class FileLock:
             del _local_locks.held[self.path]
 
 
-def atomic_json(path: Union[str, Path], payload: object):
+def atomic_json(path: Union[str, Path], payload: object) -> None:
     """Write JSON through a unique sibling file and atomically replace the destination."""
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -80,7 +84,7 @@ def atomic_json(path: Union[str, Path], payload: object):
         temp.unlink(missing_ok=True)
 
 
-def clean_python_environment():
+def clean_python_environment() -> Dict[str, str]:
     """Environment for the application: launcher/package-tool and PYTHON* variables removed."""
     blocked = ("PIP_", "UV_", "VIRTUAL_ENV", "PYTHON")
     env = {k: v for k, v in os.environ.items() if not k.upper().startswith(blocked)}
@@ -89,7 +93,7 @@ def clean_python_environment():
 
 
 @contextlib.contextmanager
-def process_identity(pid: int):
+def process_identity(pid: int) -> Generator[Optional[Dict[str, Any]], None, None]:
     """Keep the process handle open while its creation time and image are checked."""
     from ctypes import wintypes
 
@@ -143,12 +147,12 @@ def process_identity(pid: int):
 class ProcessRegistry:
     """One atomic identity record per running launcher (watchdog)."""
 
-    def __init__(self, directory: Union[str, Path]):
+    def __init__(self, directory: Union[str, Path]) -> None:
         """directory holds one <pid>.json record per running watchdog."""
         self.directory = Path(directory)
 
     @contextlib.contextmanager
-    def lock(self, timeout: float = 120):
+    def lock(self, timeout: float = 120) -> Generator[None, None, None]:
         """Serialize registry changes without leaving a lock file on disk."""
         from ctypes import wintypes
 
@@ -183,7 +187,7 @@ class ProcessRegistry:
                 kernel.ReleaseMutex(handle)
             kernel.CloseHandle(handle)
 
-    def register(self, child_pid: Optional[int] = None):
+    def register(self, child_pid: Optional[int] = None) -> None:
         """Atomically record this launcher's verified identity, its console window and optional app child."""
         with self.lock(), process_identity(os.getpid()) as identity:
             if identity is None:
@@ -204,31 +208,30 @@ class ProcessRegistry:
                 identity["console_hwnd"] = 0
             atomic_json(self.directory / (str(os.getpid()) + ".json"), identity)
 
-    def remove(self):
+    def remove(self) -> None:
         """Remove this launcher's record and prune stale records and empty PID artifacts."""
         with self.lock():
             (self.directory / (str(os.getpid()) + ".json")).unlink(missing_ok=True)
             self.records()
 
-    def _cleanup_empty(self):
+    def _cleanup_empty(self) -> None:
         """Called under the registry mutex; preserve every remaining record."""
         if any(self.directory.glob("*.json")):
             return
         for path in self.directory.glob("*.tmp"):  # abandoned atomic writes
             path.unlink(missing_ok=True)
-        try:
+        # Missing or not empty: never recursively delete unknown files.
+        with contextlib.suppress(OSError):
             self.directory.rmdir()
-        except OSError:
-            pass  # Missing or not empty; never recursively delete unknown files.
 
-    def records(self):
+    def records(self) -> Tuple[List[Dict[str, Any]], int]:
         """Return other live launcher records and a stale count while cleaning empty registry artifacts."""
         with self.lock():
             records, stale = self._records()
             self._cleanup_empty()
             return records, stale
 
-    def _records(self):
+    def _records(self) -> Tuple[List[Dict[str, Any]], int]:
         """Validate stored identities and discard stale records, excluding this process from live results."""
         records: List[Dict[str, Any]] = []
         stale = 0
@@ -405,7 +408,7 @@ JOB_OBJECT_BASIC_LIMIT_INFORMATION_CLASS = 2
 JOB_OBJECT_BASIC_PROCESS_ID_LIST_CLASS = 3
 
 
-def _job_api():
+def _job_api() -> ctypes.WinDLL:
     from ctypes import wintypes
 
     kernel = ctypes.WinDLL("kernel32", use_last_error=True)
@@ -528,7 +531,7 @@ def job_process_ids(name: Optional[str]) -> Set[int]:
         kernel.CloseHandle(handle)
 
 
-def terminate_tree(root_pid: int):
+def terminate_tree(root_pid: int) -> None:
     """Fallback without a job: force-terminate a process and its descendants via the Win32 API.
 
     Deliberately avoids taskkill/WMI, which fail on PCs with a broken WMI service.
@@ -542,7 +545,7 @@ def terminate_tree(root_pid: int):
     pids = process_tree([root_pid])
     failures = []
     # Root first, so the watchdog cannot react to its children ending.
-    for pid in [root_pid] + sorted(pids - {root_pid}):
+    for pid in [root_pid, *sorted(pids - {root_pid})]:
         handle = kernel.OpenProcess(0x0001, False, pid)  # PROCESS_TERMINATE
         if not handle:
             if pid == root_pid:
@@ -557,12 +560,12 @@ def terminate_tree(root_pid: int):
         raise RuntimeError("; ".join(failures))
 
 
-def matches_identity(record: Dict[str, Any], current: Optional[Dict[str, Any]]):
+def matches_identity(record: Dict[str, Any], current: Optional[Dict[str, Any]]) -> bool:
     """Compare PID, creation time and executable path to reject stale or reused process IDs."""
     return current is not None and all(record.get(key) == current.get(key) for key in ("pid", "created", "image"))
 
 
-def unique_log_path(path: Optional[str], run_id: Optional[str] = None):
+def unique_log_path(path: Optional[str], run_id: Optional[str] = None) -> str:
     """Append a compact 12-character run suffix, preserving an empty disabled path."""
     if not path:
         return ""

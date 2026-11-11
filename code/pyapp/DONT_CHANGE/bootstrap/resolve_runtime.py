@@ -178,8 +178,8 @@ def version_satisfies(version: Optional[str], spec: str) -> bool:
     actual = version_tuple(version or "")
     if actual is None:
         return False
-    for clause in spec.split(","):
-        clause = clause.strip()
+    for raw_clause in spec.split(","):
+        clause = raw_clause.strip()
         if not clause:
             continue
         match = re.fullmatch(r"(>=|<=|==|!=|~=|>|<)?\s*([0-9][0-9.]*)", clause)
@@ -537,8 +537,8 @@ def find_python(uv: object, request: str) -> Optional[str]:
 def project_python_request(settings: Settings) -> str:
     """The project's current Python runs the launcher; the launcher itself offers a migration if the setting differs."""
     try:
-        for line in VERSION_FILE.read_text(encoding="utf-8").splitlines():
-            line = line.strip()
+        for raw_line in VERSION_FILE.read_text(encoding="utf-8").splitlines():
+            line = raw_line.strip()
             if line and not line.startswith("#"):
                 return line
     except OSError:

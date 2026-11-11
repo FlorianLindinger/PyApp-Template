@@ -83,7 +83,7 @@ def _owned_logs(folder: Optional[str], configured: Optional[str]) -> List[Path]:
     return [path for path in Path(folder).iterdir() if path.is_file() and pattern.fullmatch(path.name)]
 
 
-def cmd_clean(arguments: List[str]):
+def cmd_clean(_arguments: List[str]) -> None:
     """Delete logs or run diagnostics."""
     from pyapp.DONT_CHANGE.scripts.file_tools import remove_tree_inside
     from pyapp.DONT_CHANGE.scripts.launcher_ui import get_log_folder_path
@@ -137,7 +137,7 @@ def cmd_clean(arguments: List[str]):
     print_success(f"Deleted {deleted} log file(s){runs}.")
 
 
-def cmd_remove_shortcuts(arguments: List[str]):
+def cmd_remove_shortcuts(_arguments: List[str]) -> None:
     """Remove every shortcut Setup created (project folder, Start Menu, Desktop)."""
     from pyapp.DONT_CHANGE.scripts.shortcuts import (
         read_created_shortcuts,
@@ -152,7 +152,7 @@ def cmd_remove_shortcuts(arguments: List[str]):
     print_success(f"Removed {len(removed)} shortcut(s). Run Setup to create them again.")
 
 
-def cmd_status(arguments: List[str]):
+def cmd_status(_arguments: List[str]) -> None:
     """Show uv, Python, environment and shortcut state."""
     s = settings()
     try:
@@ -251,7 +251,7 @@ def cmd_status(arguments: List[str]):
         print_success("Everything looks fine.")
 
 
-def cmd_test(arguments: List[str]):
+def cmd_test(arguments: List[str]) -> None:
     """Run the launcher's regression tests (DONT_CHANGE/tests); optional file pattern."""
     import subprocess
 

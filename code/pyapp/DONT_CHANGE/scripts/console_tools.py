@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import os
 import sys
 from pathlib import Path
@@ -105,10 +106,8 @@ def ask(question: str) -> str:
 
 def wait_for_enter(message: str = "Press Enter to close this window.") -> None:
     """Keep the window open until Enter (no-op without an interactive console)."""
-    try:
+    with contextlib.suppress(EOFError, KeyboardInterrupt):
         input(styled(message, ANSI_DIM))
-    except (EOFError, KeyboardInterrupt):
-        pass
 
 
 def print_fields(rows: Iterable[Union[Tuple[str, object], Tuple[str, object, bool]]], indent: int = 2) -> None:
@@ -162,8 +161,7 @@ def set_terminal_icon(icon_path: Optional[str]) -> None:
     """Best-effort icon update of the current Windows terminal icon"""
     if icon_path in ("", None):
         return
-    else:
-        icon_path = os.path.normpath(icon_path)
+    icon_path = os.path.normpath(icon_path)
 
     import ctypes
     from ctypes import wintypes

@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+import contextlib
 import os
 import sys
 from pathlib import Path
-from typing import Callable, Optional
+from typing import Callable, List, Optional, Tuple
 
 from pyapp.DONT_CHANGE.backend_settings import (
     DEV_SETTINGS_DIR,
@@ -96,7 +97,9 @@ def get_log_folder_path(log_path: Optional[str], is_relative_to_start_folder_if_
     return str(Path(resolved).parent) if resolved else None
 
 
-def stop_running_instances(timeout: float = 0.0, report: Optional[Callable[[str], object]] = None):
+def stop_running_instances(
+    timeout: float = 0.0, report: Optional[Callable[[str], object]] = None
+) -> Tuple[int, int, List[str]]:
     """Stop verified application instances (graceful first, see ProcessRegistry.stop)."""
     from pyapp.DONT_CHANGE.scripts.runtime_state import ProcessRegistry
 
@@ -118,9 +121,8 @@ def delete_finished_run_folders() -> None:
                 e.path for e in entries if e.is_dir(follow_symlinks=False) and e.stat().st_mtime < newest_allowed
             ]
         for folder in folders:
-            try:
+            # e.g. a file is open in an editor: tried again next time
+            with contextlib.suppress(OSError):
                 remove_tree_inside(folder, RUNS_DIR)
-            except OSError:
-                pass  # e.g. a file is open in an editor: tried again next time
     except Exception:
         note_ignored("delete_finished_run_folders")

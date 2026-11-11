@@ -12,17 +12,19 @@ import runpy
 import sys
 import traceback
 from pathlib import Path
-from typing import Sequence, Union
+from typing import Optional, Sequence, Union
 
 if __name__ == "__main__":
     # -I leaves the script folder off sys.path; make "pyapp...." importable (the code folder).
     sys.path.insert(0, os.path.normpath(str((Path(__file__).parent / ".." / ".." / "..").absolute())))
 
+import contextlib
+
 from pyapp.DONT_CHANGE.scripts.diagnostics import note_ignored
 from pyapp.DONT_CHANGE.scripts.errors import LaunchCancelled, SettingsError, SetupError
 
 
-def normalize_exit_code(value: object):
+def normalize_exit_code(value: object) -> int:
     """Convert a return or SystemExit value to a process code, printing nonnumeric errors."""
     if value is None:
         return 0
@@ -32,19 +34,17 @@ def normalize_exit_code(value: object):
     return 1
 
 
-def acknowledge(message: str):
+def acknowledge(message: str) -> None:
     """Wait for interactive acknowledgement unless an outer launcher owns the prompt."""
     # An outer launcher can own the final prompt and preserve native-crash output.
     if os.environ.get("PYAPP_ENTRYPOINT_NO_PAUSE") == "1":
         return
     if sys.stdin is not None and sys.stdin.isatty():
-        try:
+        with contextlib.suppress(EOFError, KeyboardInterrupt):
             input(message)
-        except (EOFError, KeyboardInterrupt):
-            pass
 
 
-def run_file(path: Union[str, Path], arguments: Sequence[str] = ()):
+def run_file(path: Union[str, Path], arguments: Sequence[str] = ()) -> int:
     """Load the tool, run its main() under the shared failure policy, with at most one prompt."""
     namespace = {}
     sys.argv = [str(path), *arguments]
@@ -87,7 +87,7 @@ def run_file(path: Union[str, Path], arguments: Sequence[str] = ()):
         return 1
 
 
-def expected_problem(error: BaseException):
+def expected_problem(error: BaseException) -> Optional[str]:
     """Return a message for user-fixable errors (no traceback needed), else None."""
     if isinstance(error, (SettingsError, SetupError)):
         return str(error)
@@ -97,7 +97,7 @@ def expected_problem(error: BaseException):
 SETTINGS_FILE_NAME = "developer_settings.py"
 
 
-def settings_file_problem(error: BaseException):
+def settings_file_problem(error: BaseException) -> Optional[str]:
     """A short message if the error comes from running developer_settings.py itself, else None.
 
     Catches syntax errors and mistakes such as `Ture` (NameError) or `"a" + 1` (TypeError).
@@ -121,7 +121,7 @@ def settings_file_problem(error: BaseException):
     return f'{SETTINGS_FILE_NAME} line {line}: {type(error).__name__}: {error}{hint}\n  "{filename}"'
 
 
-def _print_error(message: str):
+def _print_error(message: str) -> None:
     try:
         from pyapp.DONT_CHANGE.scripts.console_tools import print_error
 
@@ -130,7 +130,7 @@ def _print_error(message: str):
         print("ERROR  " + message, file=sys.stderr)
 
 
-def _show_console():
+def _show_console() -> None:
     try:
         from pyapp.DONT_CHANGE.scripts.console_tools import show_console
 

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ast
+import contextlib
 import importlib
 import math
 import os
@@ -128,13 +129,13 @@ def parse_requirements(text: str) -> List[str]:
     entries = []
     pending = ""
     # The extra "" ends a continuation on the last line.
-    for line in [*text.splitlines(), ""]:
+    for raw in [*text.splitlines(), ""]:
         # Like pip, join a line ending in a backslash with the next one first, so the --hash
         # options that tools like pip-compile put on their own lines are removed with them.
-        if line.rstrip().endswith("\\"):
-            pending += line.rstrip()[:-1] + " "
+        if raw.rstrip().endswith("\\"):
+            pending += raw.rstrip()[:-1] + " "
             continue
-        line, pending = pending + line, ""
+        line, pending = pending + raw, ""
         line = re.sub(r"(^|\s)#.*$", "", line)  # pip's rule: "#" starts a comment only after whitespace
         line = re.sub(r"(^|\s)--hash=\S+", "", line).strip()
         if line:
@@ -322,7 +323,7 @@ def validate(module: Optional[Union[ModuleType, SimpleNamespace]] = None) -> Non
     def get(name: str, default: object = None) -> Any:
         return getattr(s, name, default)
 
-    def need(name: str, ok: Callable[[Any], object], message: str):
+    def need(name: str, ok: Callable[[Any], object], message: str) -> None:
         if not hasattr(s, name):
             problems.append(f"{name} is missing. Add it again (see the template's developer_settings.py).")
         elif not ok(getattr(s, name)):
@@ -382,7 +383,7 @@ def validate(module: Optional[Union[ModuleType, SimpleNamespace]] = None) -> Non
             if not (isinstance(entry, str) and REQUIREMENT_START.match(entry))
         )
     else:
-        need("packages", lambda v: False, 'use a list such as ["requests", "numpy>=2"] or a triple-quoted block')
+        need("packages", lambda _v: False, 'use a list such as ["requests", "numpy>=2"] or a triple-quoted block')
     problems.extend(_requirements_file_problems(s, entries if isinstance(entries, (list, tuple)) else []))
     for name in ("traceback_lines_before", "traceback_lines_after"):
         need(
@@ -446,7 +447,7 @@ def edit_settings(changes: Mapping[str, object]) -> List[str]:
     diff: List[str] = []
     for name, value in changes.items():
         literal = _literal(value)
-        diff += _replace_setting_value(name, lambda newline, node, literal=literal: literal)
+        diff += _replace_setting_value(name, lambda _newline, _node, literal=literal: literal)
     return diff
 
 
@@ -570,10 +571,9 @@ def _forget_settings_bytecode() -> None:
     """
     settings_path = Path(DEV_SETTINGS_PATH)
     for cached in (settings_path.parent / "__pycache__").glob(settings_path.stem + ".*.pyc"):
-        try:
+        # In use or already gone: Python then compiles the source anyway if it changed.
+        with contextlib.suppress(OSError):
             cached.unlink()
-        except OSError:
-            pass  # in use or already gone; Python then compiles the source anyway if it changed
 
 
 def _requirements_file_problems(module: Union[ModuleType, SimpleNamespace], packages: Iterable[object]) -> List[str]:

@@ -40,7 +40,7 @@ from pyapp.DONT_CHANGE.scripts.errors import SettingsError
 CANCEL_WORDS = ("q", "quit", "n", "no", "cancel")
 
 
-def cmd_change_python(arguments: List[str]):
+def cmd_change_python(arguments: List[str]) -> None:
     """Set a new python_version and migrate the project to it."""
     s = settings()
     current = read_python_version_file()
@@ -73,7 +73,7 @@ def cmd_change_python(arguments: List[str]):
     prepare()  # offers the migration menu because the setting now differs from pyapp/generated/.python-version
 
 
-def cmd_update_python(arguments: List[str]):
+def cmd_update_python(_arguments: List[str]) -> None:
     """Newest patch release of the project's Python; with python_version = "" also a newer minor version."""
     s = settings()
     prepare(s)

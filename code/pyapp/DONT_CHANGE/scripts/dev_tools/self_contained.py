@@ -46,7 +46,7 @@ from pyapp.DONT_CHANGE.scripts.env.venv import (
 from pyapp.DONT_CHANGE.scripts.errors import SetupError
 
 
-def _settings_copy(s: Union[ModuleType, SimpleNamespace], **overrides: object):
+def _settings_copy(s: Union[ModuleType, SimpleNamespace], **overrides: object) -> SimpleNamespace:
     values = {name: getattr(s, name) for name in dir(s) if not name.startswith("_")}
     values.update(overrides)
     return types.SimpleNamespace(**values)
@@ -75,7 +75,7 @@ def is_self_contained(s: Union[ModuleType, SimpleNamespace]) -> bool:
     )
 
 
-def cmd_make_self_contained(arguments: List[str]):
+def cmd_make_self_contained(_arguments: List[str]) -> None:
     """Put uv, Python and all packages inside this folder, so it runs offline on other PCs."""
     s = settings()
     changes = {name: value for name, value in SELF_CONTAINED_SETTINGS.items() if getattr(s, name) != value}

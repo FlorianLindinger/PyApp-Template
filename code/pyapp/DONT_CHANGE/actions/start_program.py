@@ -58,7 +58,7 @@ def _hint_outdated_shortcuts(s: Union[ModuleType, SimpleNamespace]) -> None:
         note_ignored("outdated shortcut check")
 
 
-def main():
+def main() -> int:
     """Apply the instance policy, prepare the environment, start the watchdog and wait for it."""
     app_id = sys.argv[1] if len(sys.argv) > 1 else ""
     requested = os.environ.pop("PYAPP_LAUNCH_MODE", "") or (sys.argv[2] if len(sys.argv) > 2 else "terminal")

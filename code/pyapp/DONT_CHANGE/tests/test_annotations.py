@@ -42,11 +42,12 @@ class AnnotationTests(unittest.TestCase):
                         with self.subTest(module=name, member=member_name):
                             typing.get_type_hints(member)
                     if inspect.isclass(member):
-                        for method_name, method in vars(member).items():
-                            if isinstance(method, (staticmethod, classmethod)):
-                                method = method.__func__
-                            elif isinstance(method, property):
-                                method = method.fget
+                        for method_name, attribute in vars(member).items():
+                            method = attribute
+                            if isinstance(attribute, (staticmethod, classmethod)):
+                                method = attribute.__func__
+                            elif isinstance(attribute, property):
+                                method = attribute.fget
                             if inspect.isfunction(method):
                                 with self.subTest(module=name, member=member_name, method=method_name):
                                     typing.get_type_hints(method)

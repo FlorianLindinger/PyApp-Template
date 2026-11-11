@@ -65,7 +65,7 @@ def app_windows(pids: Set[int]) -> List[int]:
     found = []
     callback_type = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
 
-    def callback(hwnd: int, _: int):
+    def callback(hwnd: int, _: int) -> bool:
         if not user32.IsWindowVisible(hwnd) or user32.GetWindow(hwnd, GW_OWNER):
             return True
         if user32.GetWindowLongW(hwnd, GWL_EXSTYLE) & WS_EX_TOOLWINDOW:

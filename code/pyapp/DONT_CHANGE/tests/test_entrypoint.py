@@ -81,12 +81,12 @@ class RunnerProcessTests(unittest.TestCase):
             env = {**os.environ, "PYAPP_ENTRYPOINT_NO_PAUSE": "1"}
             # Test subprocesses execute fixed fixture/helper code using the local interpreter or Git.
             good = subprocess.run(  # noqa: S603
-                command + ["a", "b c"], capture_output=True, text=True, env=env, timeout=60, check=False
+                [*command, "a", "b c"], capture_output=True, text=True, env=env, timeout=60, check=False
             )
             self.assertEqual(good.returncode, 0, good.stderr)
             self.assertIn("argv ['a', 'b c']", good.stdout)
             # Test subprocesses execute fixed fixture/helper code using the local interpreter or Git.
-            bad = subprocess.run(command + ["bad"], capture_output=True, text=True, env=env, timeout=60, check=False)  # noqa: S603
+            bad = subprocess.run([*command, "bad"], capture_output=True, text=True, env=env, timeout=60, check=False)  # noqa: S603
             self.assertEqual(bad.returncode, 1)
             self.assertIn("ERROR  python_version is wrong", bad.stderr)
             self.assertNotIn("Traceback", bad.stderr)

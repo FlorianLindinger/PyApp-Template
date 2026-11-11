@@ -108,7 +108,7 @@ class _DownloadRedirectHandler(urllib.request.HTTPRedirectHandler):
     # typing.override requires Python 3.12; keep this override dependency-free on 3.8.
     def redirect_request(  # pyrefly: ignore[missing-override-decorator]
         self, req: urllib.request.Request, fp: IO[bytes], code: int, msg: str, headers: HTTPMessage, newurl: str
-    ):
+    ) -> Optional[urllib.request.Request]:
         _validate_download_url(newurl)
         return super().redirect_request(req, fp, code, msg, headers, newurl)
 

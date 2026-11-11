@@ -13,7 +13,7 @@ import re
 import sys
 from pathlib import Path
 from types import ModuleType, SimpleNamespace
-from typing import List, Match, Optional, Sequence, Tuple, Union
+from typing import Iterator, List, Match, Optional, Sequence, Tuple, Union
 
 from pyapp.DONT_CHANGE.backend_settings import PYPROJECT_PATH
 from pyapp.DONT_CHANGE.scripts.config import settings
@@ -63,16 +63,13 @@ def toml_string(value: str) -> str:
 
 def render_pyproject(packages: Sequence[str], requires: str) -> str:
     """pyproject.toml text for a package list."""
-    if packages:
-        dependencies = "[\n" + "".join(f"    {toml_string(p)},\n" for p in packages) + "]"
-    else:
-        dependencies = "[]"
+    dependencies = "[\n" + "".join(f"    {toml_string(p)},\n" for p in packages) + "]" if packages else "[]"
     return PYPROJECT_TEMPLATE.format(
         marker=GENERATED_FROM_MARKER, base=json.dumps(list(packages)), requires=requires, dependencies=dependencies
     )
 
 
-def _recorded_packages(text: str):
+def _recorded_packages(text: str) -> Optional[List[str]]:
     """The package list the file was generated from, or None if the marker line is missing."""
     for line in text.splitlines():
         if line.startswith(GENERATED_FROM_MARKER):
@@ -86,7 +83,7 @@ def _recorded_packages(text: str):
 
 def reconcile_pyproject(
     s: Optional[Union[ModuleType, SimpleNamespace]] = None, version: Optional[Tuple[int, ...]] = None
-):
+) -> Union[ModuleType, SimpleNamespace]:
     """Generate pyproject.toml from developer_settings.py; copy edits made to the file into the settings.
 
     version: the project's Python, used for requires-python (default: keep the file's value, or the
@@ -119,7 +116,7 @@ def reconcile_pyproject(
             set_list_setting("packages", [p for p in in_file if p not in from_file])
             s = settings()
             wanted = all_packages(s)
-        elif in_file != recorded and in_file != wanted:
+        elif in_file not in (recorded, wanted):
             ignored = [p for p in in_file if p not in wanted]
             print_warn(
                 "The packages were changed both in developer_settings.py and in pyproject.toml; "
@@ -154,7 +151,9 @@ def _change_summary(old: Sequence[str], new: Sequence[str]) -> str:
     return ", ".join(changes) or "new order"
 
 
-def set_requires_python(version: Tuple[int, ...], s: Optional[Union[ModuleType, SimpleNamespace]] = None):
+def set_requires_python(
+    version: Tuple[int, ...], s: Optional[Union[ModuleType, SimpleNamespace]] = None
+) -> Union[ModuleType, SimpleNamespace]:
     """Point requires-python at the interpreter's minor version (and regenerate pyproject.toml)."""
     return reconcile_pyproject(s, version)
 
@@ -205,7 +204,7 @@ def _toml_string_value(match: Match[str]) -> str:
         return basic
 
 
-def _toml_tokens(text: str, start: int, end: int):
+def _toml_tokens(text: str, start: int, end: int) -> Iterator[Tuple[str, int, str]]:
     """Yield (kind, position, string value) for "string", "[" and "]" between start and end; skips comments."""
     index = start
     while index < end:
@@ -225,7 +224,7 @@ def _toml_tokens(text: str, start: int, end: int):
         index += 1
 
 
-def _dependencies_span(text: str):
+def _dependencies_span(text: str) -> Optional[Tuple[int, int]]:
     """Locate the value of dependencies = [...] inside [project]."""
     project = re.search(r"(?m)^\[project\]\s*$", text)
     if not project:

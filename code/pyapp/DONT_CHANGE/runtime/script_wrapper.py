@@ -16,7 +16,7 @@ import sys
 import threading
 from datetime import datetime
 from pathlib import Path
-from typing import List, Optional, TextIO, Tuple, Union
+from typing import Any, Callable, List, Optional, TextIO, Tuple, Union
 
 # The protocol module lives next to this file; import it before sys.path[0]
 # is switched to the application's folder. It stays in sys.modules as "_pyapp",
@@ -38,7 +38,7 @@ result_path = None
 _ANSI_ESCAPE = re.compile(r"\x1b(?:\[[0-?]*[ -/]*[@-~]|\][^\x07]*(?:\x07|\x1b\\)|[@-Z\\-_])")
 
 
-def _format_prepend(fmt: Optional[str]):
+def _format_prepend(fmt: Optional[str]) -> str:
     """Current local time in the configured prefix format, or ""."""
     return datetime.now().astimezone().strftime(fmt) if fmt else ""
 
@@ -46,11 +46,11 @@ def _format_prepend(fmt: Optional[str]):
 class _BinarySplitter:
     """Mirror binary writes to the original stream and an incrementally decoded text log."""
 
-    def __init__(self, owner: PipeSplitter):
+    def __init__(self, owner: PipeSplitter) -> None:
         self.owner = owner
         self.decoder = codecs.getincrementaldecoder(owner.encoding or "utf-8")("replace")
 
-    def write(self, data: Union[bytes, bytearray]):
+    def write(self, data: Union[bytes, bytearray]) -> int:
         _take_native_output()
         with self.owner._lock:
             target = getattr(self.owner.print_stream, "buffer", None)
@@ -63,10 +63,10 @@ class _BinarySplitter:
             self.owner.flush()
         return len(data)
 
-    def flush(self):
+    def flush(self) -> None:
         self.owner.flush()
 
-    def __getattr__(self, name: str):
+    def __getattr__(self, name: str) -> Any:
         stream = self.owner.print_stream
         if stream is None:
             raise AttributeError(name)
@@ -85,7 +85,7 @@ class PipeSplitter:
         input_timestamp_format: Optional[str] = "",
         log_input_timestamp_format: Optional[str] = "",
         print_red: bool = False,
-    ):
+    ) -> None:
         self.print_stream = print_stream
         self.log_stream = log_stream
         self.print_timestamp_format = print_timestamp_format
@@ -102,10 +102,10 @@ class PipeSplitter:
         if self.print_stream is not None:
             self.print_stream.write(text)
 
-    def _supports_color(self):
+    def _supports_color(self) -> bool:
         return bool(getattr(self.print_stream, "isatty", lambda: False)())
 
-    def write(self, data: object):
+    def write(self, data: object) -> int:
         if data is None:
             data = ""
         if not isinstance(data, str):
@@ -136,7 +136,7 @@ class PipeSplitter:
             self.flush()
         return len(data)
 
-    def write_input_prompt(self, prompt: object):
+    def write_input_prompt(self, prompt: object) -> None:
         prompt = "" if prompt is None else str(prompt)
         _take_native_output()
         with self._lock:
@@ -161,36 +161,36 @@ class PipeSplitter:
                     self._at_line_start = part.endswith("\n")
             self.flush()
 
-    def complete_input_line(self, text: str):
+    def complete_input_line(self, text: str) -> None:
         with self._lock:
             if self.log_stream is not None:
                 self.log_stream.write(text + "\n")
             self._at_line_start = True
             self.flush()
 
-    def flush(self):
+    def flush(self) -> None:
         with self._lock:
             if hasattr(self.print_stream, "flush"):
                 self.print_stream.flush()
             if self.log_stream is not None:
                 self.log_stream.flush()
 
-    def isatty(self):
+    def isatty(self) -> bool:
         return self._supports_color()
 
-    def writable(self):
+    def writable(self) -> bool:
         return True
 
-    def fileno(self):
+    def fileno(self) -> int:
         if hasattr(self.print_stream, "fileno"):
             return self.print_stream.fileno()
         raise OSError("The underlying stream has no file descriptor")
 
     @property
-    def encoding(self):
+    def encoding(self) -> Optional[str]:
         return getattr(self.print_stream, "encoding", None)
 
-    def __getattr__(self, name: str):
+    def __getattr__(self, name: str) -> Any:
         return getattr(self.print_stream, name)
 
 
@@ -204,7 +204,7 @@ class NativeOutput:
     50 ms otherwise. The file is on disk, so it still holds the last output after a hard crash.
     """
 
-    def __init__(self, raw_path: str):
+    def __init__(self, raw_path: str) -> None:
         sys.stdout.flush()
         sys.stderr.flush()
         # Copies of the console (the watchdog's pipe), for Python's own output and to restore later.
@@ -287,7 +287,7 @@ def setup_log_prints(
     input_prepend: Optional[str],
     log_input_prepend: Optional[str],
     native_output_path: Optional[str] = None,
-):
+) -> None:
     """Install stdout/stderr splitters and point faulthandler at the log.
 
     With native_output_path (only together with a log), output that bypasses the Python streams
@@ -326,7 +326,7 @@ def setup_log_prints(
         faulthandler.enable(all_threads=True)
 
 
-def _finish_logging():
+def _finish_logging() -> None:
     import faulthandler
 
     try:
@@ -342,13 +342,13 @@ def _finish_logging():
             log_file.close()
 
 
-def install_input_prefix(input_prepend: Optional[str]):
+def install_input_prefix(input_prepend: Optional[str]) -> None:
     """input() bypasses sys.stdout's prefixing, so wrap it."""
     import builtins
 
     original_input = builtins.input
 
-    def input_with_prepend(prompt: object = ""):
+    def input_with_prepend(prompt: object = "") -> str:
         if hasattr(sys.stdout, "write_input_prompt"):
             sys.stdout.write_input_prompt(prompt)
             text = original_input("")
@@ -364,7 +364,7 @@ def install_input_prefix(input_prepend: Optional[str]):
 # ------------------------------------------------------------ reports
 
 
-def save_result(code: int):
+def save_result(code: int) -> None:
     """Atomic completion marker; its absence tells the watchdog the interpreter died abruptly."""
     if result_path:
         import json
@@ -376,13 +376,13 @@ def save_result(code: int):
 
 def capture_background_errors(
     script_path: str, output_path: str, app_root: Optional[str], context_lines: Tuple[int, int]
-):
+) -> Callable[[], Optional[BaseException]]:
     """Record the first unhandled worker-thread, Tkinter callback or atexit callback error."""
     first_error: List[Optional[BaseException]] = [None]
     lock = threading.Lock()
     previous_last = getattr(sys, "last_exc", getattr(sys, "last_value", None))
 
-    def record(error: BaseException):
+    def record(error: BaseException) -> None:
         if isinstance(error, SystemExit) and protocol.exit_code_is_success(error.code):
             return
         with lock:
@@ -394,7 +394,7 @@ def capture_background_errors(
     previous_hook = getattr(threading, "excepthook", None)
     if previous_hook is not None:
 
-        def thread_hook(args: threading.ExceptHookArgs):
+        def thread_hook(args: threading.ExceptHookArgs) -> None:
             try:
                 if args.exc_value is not None:
                     record(args.exc_value)
@@ -410,7 +410,7 @@ def capture_background_errors(
     previous_unraisable_hook = getattr(sys, "unraisablehook", None)
     if previous_unraisable_hook is not None:
 
-        def unraisable_hook(unraisable: sys.UnraisableHookArgs):
+        def unraisable_hook(unraisable: sys.UnraisableHookArgs) -> None:
             try:
                 in_atexit = (unraisable.err_msg or "").startswith("Exception ignored in atexit callback")
                 if in_atexit and unraisable.exc_value is not None:
@@ -420,7 +420,7 @@ def capture_background_errors(
 
         sys.unraisablehook = unraisable_hook
 
-    def pending_error():
+    def pending_error() -> Optional[BaseException]:
         # Tkinter's default report_callback_exception stores the error in sys.last_*.
         last = getattr(sys, "last_exc", getattr(sys, "last_value", None))
         if isinstance(last, BaseException) and last is not previous_last:
@@ -433,7 +433,7 @@ def capture_background_errors(
 # ------------------------------------------------------------ main
 
 
-def main():
+def main() -> None:
     """Load the launch configuration, prepare logging and argv, then run main.py as __main__."""
     global report_path, result_path
     import json
@@ -457,7 +457,7 @@ def main():
         if key.startswith("PYAPP_"):
             os.environ.pop(key, None)
 
-    sys.argv = [script_path] + list(config.get("args", []))
+    sys.argv = [script_path, *list(config.get("args", []))]
     # With logging, stdout/stderr are pipes that would use the legacy ANSI code page and fail on
     # characters like "\u65e5"; the watchdog reads them as UTF-8.
     for stream in (sys.stdout, sys.stderr):

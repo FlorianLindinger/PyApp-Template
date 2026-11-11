@@ -31,7 +31,7 @@ class LauncherFileTests(unittest.TestCase):
 
     def test_runner_and_every_tool_have_a_main(self):
         self.assertIn("scripts\\entrypoint.py", (DONT_CHANGE / "bootstrap" / "run.bat").read_text(encoding="utf-8"))
-        for tool in list((DONT_CHANGE / "actions").glob("*.py")) + [DONT_CHANGE / "scripts" / "dev_tools" / "main.py"]:
+        for tool in [*list((DONT_CHANGE / "actions").glob("*.py")), DONT_CHANGE / "scripts" / "dev_tools" / "main.py"]:
             self.assertRegex(tool.read_text(encoding="utf-8"), r"\ndef main\(", tool.name)
 
     def test_bootstrap_and_launcher_agree_on_the_environment_folder(self):

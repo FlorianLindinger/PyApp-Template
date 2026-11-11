@@ -9,7 +9,7 @@ from __future__ import annotations
 import shutil
 import unicodedata
 from pathlib import Path
-from typing import List
+from typing import Dict, List, Optional
 
 from pyapp.DONT_CHANGE.backend_settings import BANNER_FONT_PATH
 from pyapp.DONT_CHANGE.scripts.config import settings
@@ -18,7 +18,7 @@ _shown = False
 HARD_BLANK = "\x7f"  # how the font marks a space that belongs to a character
 
 
-def load_font():
+def load_font() -> Dict[str, List[str]]:
     """Return {character: rows} of the banner font (a TOIlet file)."""
     with Path(BANNER_FONT_PATH).open(encoding="utf-8", errors="replace") as stream:
         lines = stream.read().splitlines()
@@ -27,7 +27,7 @@ def load_font():
     position = 1 + comment_lines
     glyphs = {}
 
-    def read_glyph():
+    def read_glyph() -> Optional[List[str]]:
         nonlocal position
         rows = lines[position : position + height]
         if len(rows) < height:

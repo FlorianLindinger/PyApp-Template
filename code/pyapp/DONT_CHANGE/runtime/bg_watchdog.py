@@ -64,12 +64,12 @@ def end_started_app(child: Optional[subprocess.Popen[bytes]]) -> None:
         note_ignored("end the app after a watchdog error")
 
 
-def acknowledge(run_dir: Path, **payload: object):
+def acknowledge(run_dir: Path, **payload: object) -> None:
     """Atomically publish watchdog startup status for the waiting launcher."""
     atomic_json(run_dir / "startup.json", payload)
 
 
-def successful_application_exit(mode: int, run_dir: Path):
+def successful_application_exit(mode: int, run_dir: Path) -> bool:
     """Normal return, or SystemExit with None/integer zero."""
     if mode == ExitMode.SUCCESS:
         return True
@@ -118,7 +118,7 @@ def handle_exit(
     script: str,
     run_dir: Path,
     native_code: Optional[int] = None,
-):
+) -> None:
     """Run completion handling in the current, a hidden, or a new console as needed."""
     env = os.environ.copy()
     env["PYAPP_RUN_DIR"] = str(run_dir)
@@ -156,7 +156,9 @@ def handle_exit(
         )
 
 
-def register_with_policy(settings: Union[ModuleType, SimpleNamespace], registry: ProcessRegistry, run_dir: Path):
+def register_with_policy(
+    settings: Union[ModuleType, SimpleNamespace], registry: ProcessRegistry, run_dir: Path
+) -> bool:
     """Apply instance_policy and register.
 
     Dialogs and stopping other instances happen without holding the registry lock (a stopping
@@ -181,7 +183,7 @@ def register_with_policy(settings: Union[ModuleType, SimpleNamespace], registry:
     raise RuntimeError("Other instances keep starting; could not replace them.")
 
 
-def main():
+def main() -> None:
     """Own registration, launch, logging and completion handling for one application run."""
     # developer_settings, loaded here (not at import time); start_program.py validated it.
     settings = load_settings()
@@ -291,7 +293,7 @@ def main():
             if not isinstance(output, io.BufferedReader):
                 raise RuntimeError("The child process did not provide a buffered output pipe.")
 
-            def copy_output():
+            def copy_output() -> None:
                 """Copy combined child output to the terminal, keeping its last part for save_early_output."""
                 try:
                     while True:

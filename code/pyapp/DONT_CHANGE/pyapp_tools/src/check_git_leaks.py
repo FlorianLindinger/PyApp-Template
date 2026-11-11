@@ -124,9 +124,11 @@ def line_findings(line: str, path: str, where: str) -> List[Finding]:
             user = match.group(1) or match.group(2)
             if user.lower() not in PLACEHOLDER_USERS:
                 found.append(Finding(PERSONAL, "Home folder path", user, where, path))
-        for match in EMAIL.finditer(line):
-            if not HARMLESS_EMAIL.search(match.group(0)):
-                found.append(Finding(PERSONAL, "Email address", match.group(0), where, path))
+        found.extend(
+            Finding(PERSONAL, "Email address", match.group(0), where, path)
+            for match in EMAIL.finditer(line)
+            if not HARMLESS_EMAIL.search(match.group(0))
+        )
     return found
 
 

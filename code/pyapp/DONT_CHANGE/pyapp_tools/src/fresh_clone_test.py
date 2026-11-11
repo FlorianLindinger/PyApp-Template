@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+import contextlib
 import os
 import shutil
 import stat
@@ -204,10 +205,8 @@ def remove_clone(clone: Path) -> None:
     """Git marks its object files read-only, which would stop the deletion on Windows."""
     for folder, _, names in os.walk(str(clone)):
         for name in names:
-            try:
+            with contextlib.suppress(OSError):
                 (Path(folder) / name).chmod(stat.S_IWRITE | stat.S_IREAD)
-            except OSError:
-                pass
     shutil.rmtree(clone, ignore_errors=True)
 
 

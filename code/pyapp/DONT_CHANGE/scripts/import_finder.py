@@ -17,7 +17,7 @@ import sys
 import sysconfig
 from collections import namedtuple
 from pathlib import Path
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Dict, Iterator, List, Optional, Set, Tuple
 
 from pyapp.DONT_CHANGE.backend_settings import (
     BACKEND_DIR,
@@ -61,7 +61,7 @@ def _excluded(folder_name: str) -> bool:
     return folder_name in EXCLUDED_FOLDERS_FOR_IMPORT_SEARCH or folder_name.startswith(".")
 
 
-def python_files(root: str = PYTHON_SCRIPTS_DIR):
+def python_files(root: str = PYTHON_SCRIPTS_DIR) -> Iterator[str]:
     root_key = os.path.normcase(os.path.normpath(str(Path(root).absolute())))
     for current, folders, files in os.walk(root):
         at_root = os.path.normcase(os.path.normpath(str(Path(current).absolute()))) == root_key
@@ -143,13 +143,13 @@ def _is_import_error_guard(node: ast.Try) -> bool:
 
 
 class _ImportVisitor(ast.NodeVisitor):
-    def __init__(self):
+    def __init__(self) -> None:
         self.required = set()
         self.optional = set()
         self._guard = 0
 
     # typing.override requires Python 3.12; keep this override dependency-free on 3.8.
-    def visit_Try(self, node: ast.Try):  # pyrefly: ignore[missing-override-decorator]
+    def visit_Try(self, node: ast.Try) -> None:  # pyrefly: ignore[missing-override-decorator]
         guarded = _is_import_error_guard(node)
         if guarded:
             self._guard += 1
@@ -162,22 +162,22 @@ class _ImportVisitor(ast.NodeVisitor):
 
     visit_TryStar = visit_Try  # Python 3.11+ "except*"
 
-    def _add(self, name: Optional[str]):
+    def _add(self, name: Optional[str]) -> None:
         if name:
             (self.optional if self._guard else self.required).add(name.split(".")[0])
 
     # typing.override requires Python 3.12; keep this override dependency-free on 3.8.
-    def visit_Import(self, node: ast.Import):  # pyrefly: ignore[missing-override-decorator]
+    def visit_Import(self, node: ast.Import) -> None:  # pyrefly: ignore[missing-override-decorator]
         for alias in node.names:
             self._add(alias.name)
 
     # typing.override requires Python 3.12; keep this override dependency-free on 3.8.
-    def visit_ImportFrom(self, node: ast.ImportFrom):  # pyrefly: ignore[missing-override-decorator]
+    def visit_ImportFrom(self, node: ast.ImportFrom) -> None:  # pyrefly: ignore[missing-override-decorator]
         if node.level == 0:
             self._add(node.module)
 
 
-def imports_in_project(root: str = PYTHON_SCRIPTS_DIR):
+def imports_in_project(root: str = PYTHON_SCRIPTS_DIR) -> Tuple[Dict[str, Tuple[Set[str], bool]], List[str]]:
     """Return {import name: (files, optional)} for third-party candidates."""
     found = {}
     problems = []
@@ -256,8 +256,8 @@ def bundled_mapping(path: str = IMPORT_MAPPING_PATH) -> Dict[str, str]:
     mapping = {}
     try:
         with Path(path).open(encoding="utf-8") as stream:
-            for line in stream:
-                line = line.strip()
+            for raw_line in stream:
+                line = raw_line.strip()
                 if line and not line.startswith("#") and ":" in line:
                     module, distribution = line.split(":", 1)
                     mapping[module.strip()] = distribution.strip()
@@ -266,7 +266,9 @@ def bundled_mapping(path: str = IMPORT_MAPPING_PATH) -> Dict[str, str]:
     return mapping
 
 
-def find_requirements(root: str = PYTHON_SCRIPTS_DIR, site_packages: Optional[str] = None):
+def find_requirements(
+    root: str = PYTHON_SCRIPTS_DIR, site_packages: Optional[str] = None
+) -> Tuple[List[Requirement], List[str]]:
     """Return (list of Requirement sorted by distribution, list of unparsable-file messages)."""
     imports, problems = imports_in_project(root)
     providers = installed_providers(site_packages)
@@ -302,7 +304,7 @@ def find_requirements(root: str = PYTHON_SCRIPTS_DIR, site_packages: Optional[st
 
 def distribution_for_import(import_name: str, site_packages: Optional[str] = None) -> str:
     """Best distribution name for one missing import (used by the missing-package menu)."""
-    top = import_name.split(".")[0]
+    top = import_name.split(".", maxsplit=1)[0]
     providers = installed_providers(site_packages).get(top, [])
     if len(providers) > 1:
         # A shared namespace: only the distribution that contains this very module is the answer.

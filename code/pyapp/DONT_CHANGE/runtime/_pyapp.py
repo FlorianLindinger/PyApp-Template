@@ -15,7 +15,7 @@ import sys
 import traceback
 from pathlib import Path
 from types import TracebackType
-from typing import Optional, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 
 class WrapperExit:
@@ -46,7 +46,7 @@ EXIT_MODE_FOR_WRAPPER_EXIT = {
 }
 
 
-def _launcher_files():
+def _launcher_files() -> Set[str]:
     """Filenames whose frames are launcher plumbing, not the application."""
     names = {"<frozen runpy>"}
     try:
@@ -61,7 +61,7 @@ def _launcher_files():
     return names
 
 
-def strip_launcher_frames(tb: Optional[TracebackType]):
+def strip_launcher_frames(tb: Optional[TracebackType]) -> Optional[TracebackType]:
     """Drop the leading wrapper/runpy frames so the report looks like `python main.py`."""
     skip = _launcher_files()
     while tb is not None:
@@ -73,7 +73,7 @@ def strip_launcher_frames(tb: Optional[TracebackType]):
     return tb
 
 
-def _is_app_file(filename: str, app_root: Optional[str]):
+def _is_app_file(filename: str, app_root: Optional[str]) -> bool:
     if not app_root or not filename or filename.startswith("<"):
         return False
     path = os.path.normcase(os.path.normpath(str(Path(filename).absolute())))
@@ -85,7 +85,9 @@ def _is_app_file(filename: str, app_root: Optional[str]):
     return first not in ("pyapp", ".venv") and not first.startswith(".venv")
 
 
-def _frames(te: traceback.TracebackException, app_root: Optional[str], context_lines: Tuple[int, int]):
+def _frames(
+    te: traceback.TracebackException, app_root: Optional[str], context_lines: Tuple[int, int]
+) -> List[Dict[str, Any]]:
     frames = []
     for frame in te.stack:
         is_app = _is_app_file(frame.filename, app_root)
@@ -109,7 +111,9 @@ def _frames(te: traceback.TracebackException, app_root: Optional[str], context_l
     return frames
 
 
-def _chain(te: traceback.TracebackException, app_root: Optional[str], context_lines: Tuple[int, int]):
+def _chain(
+    te: traceback.TracebackException, app_root: Optional[str], context_lines: Tuple[int, int]
+) -> List[Dict[str, Any]]:
     """Exception chain oldest first, like CPython prints it.
 
     Each entry's "relation" is the sentence printed between the previous entry and it.
@@ -117,7 +121,7 @@ def _chain(te: traceback.TracebackException, app_root: Optional[str], context_li
     entries = []
     seen = set()
 
-    def add(current: Optional[traceback.TracebackException]):
+    def add(current: Optional[traceback.TracebackException]) -> None:
         if current is None or id(current) in seen:
             return
         seen.add(id(current))
@@ -143,7 +147,7 @@ def _chain(te: traceback.TracebackException, app_root: Optional[str], context_li
 
 def build_report(
     error: BaseException, script_path: str, app_root: Optional[str] = None, context_lines: Tuple[int, int] = (3, 3)
-):
+) -> Dict[str, Any]:
     """Serializable report of an exception as if main.py had been run directly.
 
     context_lines: (lines before, lines after) the failing line shown for the app's own files.
@@ -174,7 +178,7 @@ def save_report(
     output_path: str,
     app_root: Optional[str] = None,
     context_lines: Tuple[int, int] = (3, 3),
-):
+) -> Dict[str, Any]:
     """Write the report atomically (temporary file + replace)."""
     report = build_report(error, script_path, app_root, context_lines)
     temporary = output_path + ".tmp"
@@ -184,6 +188,6 @@ def save_report(
     return report
 
 
-def exit_code_is_success(code: object):
+def exit_code_is_success(code: object) -> bool:
     """Only None and integer zero (including False) count as a successful SystemExit."""
     return code is None or (isinstance(code, int) and code == 0)
