@@ -24,6 +24,9 @@ The first versioned release; it contains every change below.
 - Removed the Tools shortcut (`tools_shortcut_name`, `B/T.bat`, the `tools` menu of the dev tools); Setup removes existing Tools shortcuts. The dev tools in `code/pyapp/dev_tools` stay.
 - The launcher is now licensed under the MIT License only (before: MIT OR Apache-2.0); `LICENSES/` is replaced by the license text in `LICENSE.md`.
 - The browser terminal is the self-contained folder `browser_terminal` (standard library only, nothing from the launcher): copy it into another project and run `python browser_terminal [-- command]`.
+- Browser terminal: notifications on every output (at most once a second); typed input and the redraw after resizing or zooming no longer light up.
+- Browser terminal: buttons that clear the output and open the code, the settings and the log folder (each only if its shortcut is enabled; package settings `code_file`, `settings_file`, `log_path`), an info panel with the program, Python, environment, project and log paths, start and end time and exit code (package setting `info`), and a clear end: the exit code in the corner, green for 0 and red otherwise, and ✓ or ✗ in the tab title.
+- Setup creates the shortcuts in the order start, No-Terminal, Browser, Settings, STOP, Logs, Crash-Logs, Edit-Code.
 
 ### 2026-11-11 - audit fixes
 

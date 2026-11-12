@@ -68,6 +68,18 @@ def wt_command(title: str, tab_color: Optional[str], command: List[str]) -> List
     return ["wt.exe", "--title", *(argument.replace(";", "\\;") for argument in arguments)]
 
 
+def _python_version_note() -> str:
+    """The environment's Python version from its pyvenv.cfg, as " (3.14.2)", or "" if unknown."""
+    try:
+        for line in (Path(paths.VENV_DIR) / "pyvenv.cfg").read_text(encoding="utf-8").splitlines():
+            key, _, value = line.partition("=")
+            if key.strip() in ("version", "version_info"):
+                return f" ({value.strip()})"
+    except OSError:
+        pass
+    return ""
+
+
 def browser_command(s: Union[ModuleType, SimpleNamespace], run_dir: Path, command: List[str]) -> List[str]:
     """The command line that runs `command` in the browser terminal, after writing its settings.
 
@@ -75,7 +87,8 @@ def browser_command(s: Union[ModuleType, SimpleNamespace], run_dir: Path, comman
     """
     from pyapp.DONT_CHANGE.browser_terminal.ui import colors_from_code
     from pyapp.DONT_CHANGE.scripts import browser_links
-    from pyapp.DONT_CHANGE.scripts.shortcuts import project_app_id, read_start_link
+    from pyapp.DONT_CHANGE.scripts.launcher_ui import get_log_folder_path
+    from pyapp.DONT_CHANGE.scripts.shortcuts import project_app_id, read_start_link, shortcut_targets
 
     colors = colors_from_code(terminal_color_code(s.terminal_bg_color, s.terminal_text_color))
     # The same address on every start (and the one Setup shows), so it can be bookmarked.
@@ -84,8 +97,23 @@ def browser_command(s: Union[ModuleType, SimpleNamespace], run_dir: Path, comman
     start_link = read_start_link()
     if start_link != browser_links.scheme(app_id):
         start_link = ""  # recorded for an earlier program name; Setup has not run since
+    # The page's open buttons match the shortcuts: each only if its shortcut is wanted.
+    targets = shortcut_targets(s)
+    log_folder = get_log_folder_path(s.log_path, s.log_path_is_relative_to_start_folder_if_relative) or ""
+    info = [
+        ["Program", targets["open_code"]],
+        ["Python", paths.VENV_PYTHON_EXE + _python_version_note()],
+        ["Environment", paths.VENV_DIR],
+        ["Project", str(Path(paths.BACKEND_DIR).parents[1])],
+        ["Logs", log_folder or "off"],
+        ["Launcher", "PyApp-Template " + paths.LAUNCHER_VERSION],
+    ]
     config = {
         "title": s.program_name,
+        "info": info,
+        "code_file": targets["open_code"] if s.open_code_shortcut_name else "",
+        "settings_file": targets["settings"] if s.open_settings_shortcut_name else "",
+        "log_path": log_folder if s.open_log_folder_shortcut_name else "",
         "host_name": host_name,
         "port": port,
         "key": key,

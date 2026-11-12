@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>PyApp</title>
+<title>Terminal</title>
 <link rel="icon" id="favicon" href="icon">
 <link rel="stylesheet" href="xterm.css">
 <style>
@@ -43,6 +43,16 @@
   }
   .panel label { display: flex; gap: 8px; align-items: baseline; margin: 0 0 6px; cursor: pointer; }
   .panel .dim { color: #aaa; }
+  #info-panel { max-width: min(640px, calc(100% - 64px)); }
+  #info-list { display: grid; grid-template-columns: auto 1fr; gap: 3px 12px; margin: 0 0 10px; }
+  #info-list dt { color: #aaa; }
+  #info-list dd { margin: 0; font: 13px/1.45 "Cascadia Mono", Consolas, monospace; overflow-wrap: anywhere; user-select: text; }
+
+  /* How the program ended: green for exit code 0, red otherwise. */
+  #notice.success { border-left: 4px solid #3fb950; }
+  #notice.failure { border-left: 4px solid #f85149; }
+  #info-list dd.success { color: #3fb950; }
+  #info-list dd.failure { color: #f85149; }
 
   #search {
     position: absolute; top: 38px; right: 22px; display: flex; gap: 4px; align-items: center;
@@ -73,6 +83,11 @@
 <div id="tools">
   <button id="search-button" type="button" title="Search (Ctrl+F)" aria-label="Search">&#128269;&#xFE0E;</button>
   <button id="save-button" type="button" title="Save the output as a text file (Ctrl+S)" aria-label="Save the output">&#10515;</button>
+  <button id="clear-button" type="button" title="Clear the output" aria-label="Clear the output">&#128465;&#xFE0E;</button>
+  <button id="open-code" class="open" type="button" data-what="code" data-label="Open the code" hidden>&#9998;&#xFE0E;</button>
+  <button id="open-settings" class="open" type="button" data-what="settings" data-label="Open the settings" hidden>&#128295;&#xFE0E;</button>
+  <button id="open-logs" class="open" type="button" data-what="logs" data-label="Open the logs" hidden>&#128193;&#xFE0E;</button>
+  <button id="info-button" type="button" title="About this run: paths, start and end" aria-label="About this run" aria-expanded="false" aria-controls="info-panel">&#9432;&#xFE0E;</button>
   <button id="view-button" type="button" title="View options" aria-label="View options" aria-expanded="false" aria-controls="view-panel">&#9881;&#xFE0E;</button>
   <button id="notify-button" type="button" title="Notifications" aria-label="Notifications" aria-expanded="false" aria-controls="notify-panel">&#128276;&#xFE0E;</button>
   <button id="bookmark" type="button" title="Bookmark this terminal" aria-label="Bookmark this terminal" aria-expanded="false" aria-controls="bookmark-panel">&#9734;</button>
@@ -91,6 +106,11 @@
   <label><input id="opt-highlight" type="checkbox" checked> Light up new output for a moment</label>
   <label><input id="opt-follow" type="checkbox" checked> Jump to new output <span class="dim">(off: stay where you are reading)</span></label>
   <label><input id="opt-front" type="checkbox"> Bring the browser to the front when the program asks for input</label>
+</div>
+
+<div id="info-panel" class="panel" role="dialog" aria-label="About this run" tabindex="-1" hidden>
+  <dl id="info-list"></dl>
+  <p><button id="info-copy" type="button">Copy all</button></p>
 </div>
 
 <div id="notify-panel" class="panel" role="dialog" aria-label="Notifications" tabindex="-1" hidden>

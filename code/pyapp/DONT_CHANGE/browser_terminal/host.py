@@ -126,6 +126,21 @@ def open_in_editor(path: str, line: Optional[int] = None) -> None:
         subprocess.Popen([notepad, str(file)], env=env)  # noqa: S603
 
 
+# The page's buttons that open a file or folder, and the config setting that names each. The
+# page only sends which one; the path never comes from the page.
+OPENABLE = {"code": "code_file", "settings": "settings_file", "logs": "log_path"}
+
+
+def open_path(path: str) -> None:
+    """A file in the editor (as open_in_editor), a folder in Explorer; nothing if it is neither."""
+    target = Path(path)
+    if target.is_file():
+        open_in_editor(str(target))
+    elif target.is_dir():
+        explorer = os.environ.get("WINDIR", "C:\\Windows") + "\\explorer.exe"
+        subprocess.Popen([explorer, str(target)])  # noqa: S603
+
+
 # ---------------------------------------------------------------- Windows API
 
 kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
@@ -504,6 +519,9 @@ class Session:
 
     def __init__(self, config: Dict[str, Any]) -> None:
         self.config = config
+        # Wall-clock times (ms since 1970, as JavaScript counts) for the page's info panel.
+        self.started_at: Optional[int] = None
+        self.ended_at: Optional[int] = None
         self.console: Optional[PseudoConsole] = None  # started once the first page reported its size
         self.first_size: Optional[Tuple[int, int]] = None
         self.size_known = threading.Event()
@@ -567,6 +585,7 @@ class Session:
             "iconVersion": self.icon_version,
             "colors": self.colors,
             "ready": self.window_ready.is_set(),
+            "started": self.started_at,
         }
         with self.lock:
             client.send_json(hello)
@@ -576,7 +595,7 @@ class Session:
             first = not self.ever_connected.is_set()
             self.ever_connected.set()
         if self.exit_code is not None and self.output_done.is_set():
-            client.send_json({"t": "exit", "code": self.exit_code})
+            client.send_json({"t": "exit", "code": self.exit_code, "at": self.ended_at})
         if first:
             threading.Thread(target=self.find_window, daemon=True).start()
 
@@ -609,6 +628,20 @@ class Session:
         elif kind == "p":
             # The page's preferences that the host acts on.
             self.front_on_input = message.get("frontOnInput") is True
+        elif kind == "open" and message.get("what") in OPENABLE:
+            # A button of the page: the code, the settings file or the logs.
+            path = self.config.get(OPENABLE[message["what"]]) or ""
+            try:
+                if path:
+                    open_path(path)
+            except Exception:
+                report_ignored("browser terminal: open " + message["what"])
+        elif kind == "clear":
+            # The output so far is forgotten, so that a reloaded page does not show it again, and
+            # every open page clears its view.
+            with self.lock:
+                self.history.clear()
+            self.broadcast({"t": "clear"})
         elif kind == "o" and isinstance(message.get("path"), str):
             # A clicked file path in the output (e.g. a traceback line).
             line = message.get("line")
@@ -799,6 +832,9 @@ def make_handler(session: Session, token: str, hosts: Set[str]) -> type:
                 key: session.config[key] for key in ("title", "marker", "theme", "font", "windowsBuild", "scroll")
             }
             settings["startLink"] = session.config["start_link"]
+            settings["info"] = session.config["info"]
+            # Which open buttons to show, with their paths for the tooltips.
+            settings["opens"] = {what: session.config[key] for what, key in OPENABLE.items() if session.config[key]}
             # Inside <script type="application/json">: "</" must not end the element.
             data = json.dumps(settings).replace("</", "<\\/")
             return page.replace("__BROWSER_TERMINAL_CONFIG__", data).encode("utf-8")
@@ -927,6 +963,11 @@ def complete_config(config: Dict[str, Any], command: List[str]) -> Dict[str, Any
     window_file       where the handle of the browser window is written once it is found
     ui_env_var        name of that variable (default ui.ENV_VAR)
     hidden_env_prefixes   variables with these prefixes are not passed on to the browser
+    info              [label, text] pairs the page's info panel lists (default: the command line
+                      and the working folder); the start and end times are added to them
+    code_file, settings_file, log_path
+                      a file or folder that a button of the page opens: a file in VS Code or
+                      Notepad, a folder in Explorer (default: none, and no button)
     """
     config = dict(config)
     if not config.get("state_dir"):
@@ -952,6 +993,13 @@ def complete_config(config: Dict[str, Any], command: List[str]) -> Dict[str, Any
     config.setdefault("windowsBuild", sys.getwindowsversion().build)
     config.setdefault("scroll", 5)
     config.setdefault("start_link", "")
+    for key in OPENABLE.values():
+        config[key] = str(config.get(key) or "")
+    info = config.get("info") or [
+        ["Command", subprocess.list2cmdline(command)],
+        ["Working folder", str(Path(config.get("cwd") or Path.cwd()).absolute())],
+    ]
+    config["info"] = [[str(label), str(text)] for label, text in info]
     return config
 
 
@@ -989,6 +1037,8 @@ def run(config: Dict[str, Any], command: List[str]) -> int:
     columns, rows = session.first_size or (INITIAL_COLUMNS, INITIAL_ROWS)
     console = PseudoConsole(command, env, columns, rows, config.get("cwd"))
     session.console = console
+    session.started_at = int(time.time() * 1000)
+    session.broadcast({"t": "started", "at": session.started_at})
     threading.Thread(target=session.pump_output, args=(console,), daemon=True).start()
     code: Optional[int] = None
     while code is None:
@@ -1004,10 +1054,11 @@ def run(config: Dict[str, Any], command: List[str]) -> int:
             return 1
     # The command ended. Closing the pseudoconsole flushes its last output; then the pages hear about it.
     session.exit_code = code
+    session.ended_at = int(time.time() * 1000)
     console.close()
     session.output_done.wait(5)
     session.read_ui_requests(ui_file)
-    session.broadcast({"t": "exit", "code": code})
+    session.broadcast({"t": "exit", "code": code, "at": session.ended_at})
     _close_pages(session)
     server.shutdown()
     return code

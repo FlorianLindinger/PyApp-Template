@@ -16,8 +16,9 @@
   let title = config.title;
   let attention = false;
   document.title = config.marker;
+  let endMark = ""; // \u2713 or \u2717 once the program has ended
   const applyTitle = () => {
-    if (windowFound) document.title = (attention ? "\u25CF " : "") + title;
+    if (windowFound) document.title = (attention ? "\u25CF " : "") + endMark + title;
   };
   const showTitle = (text) => {
     title = text || config.title;
@@ -54,8 +55,9 @@
   };
   setColors({});
 
-  const showNotice = (text) => {
+  const showNotice = (text, kind = "") => {
     notice.textContent = text;
+    notice.className = kind;
     notice.hidden = !text;
   };
 
@@ -261,6 +263,7 @@
   const handleControl = (message) => {
     switch (message.t) {
       case "hello":
+        if (message.started) showInfo({ started: message.started });
         setColors(message.colors);
         if (message.iconVersion) favicon.href = "icon?v=" + message.iconVersion;
         if (message.ready) {
@@ -290,13 +293,25 @@
         endAnnounced = true;
         if (notifyEnd.checked) notify(message.text);
         break;
+      case "clear":
+        clearOutput();
+        break;
+      case "started":
+        showInfo({ started: message.at });
+        break;
       case "exit":
         ended = true;
-        if (notifyEnd.checked && !endAnnounced) notify("The program has ended.");
+        showInfo({ ended: message.at, code: message.code });
+        endMark = message.code === 0 ? "\u2713 " : "\u2717 ";
+        applyTitle();
+        if (notifyEnd.checked && !endAnnounced) notify(endText(message.code) + ".");
         // Like a console window: it closes when its program has ended. A browser only lets a
         // page close a window or tab that holds nothing else, so the notice stays otherwise.
         window.close();
-        setTimeout(() => showNotice("The program has ended. You can close this window."), 300);
+        setTimeout(
+          () => showNotice(endText(message.code) + ". You can close this window.", message.code === 0 ? "success" : "failure"),
+          300,
+        );
         break;
     }
   };
@@ -481,6 +496,84 @@
   };
   document.getElementById("save-button").addEventListener("click", saveOutput);
 
+  // ------------------------------------------------------------ info panel (paths, start and end)
+
+  // Exit code 0 is success, as for every Windows program; anything else is shown as a failure.
+  // Large codes are Windows status codes (e.g. 0xC000013A: ended by Ctrl+C or closing the console).
+  const exitCodeText = (code) => (code > 0xffff ? `0x${(code >>> 0).toString(16).toUpperCase()}` : String(code));
+  const endText = (code) =>
+    code === 0 ? "The program has ended successfully (exit code 0)" : `The program has ended with exit code ${exitCodeText(code)}`;
+  const timeText = (ms) => new Date(ms).toLocaleString();
+  const durationText = (ms) => {
+    const seconds = Math.round(ms / 1000);
+    const parts = [Math.floor(seconds / 3600), Math.floor(seconds / 60) % 60, seconds % 60];
+    return parts[0] ? `${parts[0]} h ${parts[1]} min` : parts[1] ? `${parts[1]} min ${parts[2]} s` : `${parts[2]} s`;
+  };
+  const run = { started: 0, ended: 0, code: null };
+  const infoList = document.getElementById("info-list");
+  const infoRows = () => {
+    const rows = (config.info || []).map(([label, text]) => [label, text, ""]);
+    rows.push(["Started", run.started ? timeText(run.started) : "not yet", ""]);
+    if (run.ended) {
+      const outcome = run.code === 0 ? "success" : "failure";
+      const length = run.started ? `, after ${durationText(run.ended - run.started)}` : "";
+      rows.push(["Ended", `${timeText(run.ended)}${length}`, ""]);
+      rows.push(["Exit code", `${exitCodeText(run.code)} (${outcome})`, outcome]);
+    } else if (run.started) {
+      rows.push(["Ended", "still running", ""]);
+    }
+    return rows;
+  };
+  const showInfo = (update) => {
+    Object.assign(run, update);
+    infoList.replaceChildren();
+    for (const [label, text, kind] of infoRows()) {
+      const labelCell = document.createElement("dt");
+      labelCell.textContent = label;
+      const value = document.createElement("dd");
+      value.textContent = text;
+      if (kind) value.className = kind;
+      infoList.append(labelCell, value);
+    }
+  };
+  showInfo({});
+  document.getElementById("info-copy").addEventListener("click", (event) => {
+    const button = event.currentTarget;
+    const text = infoRows()
+      .map(([label, value]) => `${label}: ${value}`)
+      .join("\r\n");
+    navigator.clipboard.writeText(text).then(
+      () => (button.textContent = "Copied"),
+      () => (button.textContent = "Select and copy it"),
+    );
+  });
+
+  // ------------------------------------------------------------ clear, and the open buttons
+
+  // Like "Clear buffer" in Windows Terminal: the scrollback and the screen go, the line with the
+  // cursor (often a prompt) stays. The program is not told; the host forgets the output too.
+  const clearOutput = () => {
+    term.clear();
+    for (const entry of fresh.splice(0)) {
+      entry.decoration.dispose();
+      entry.marker.dispose();
+    }
+  };
+  document.getElementById("clear-button").addEventListener("click", () => {
+    clearOutput();
+    send({ t: "clear" });
+    term.focus();
+  });
+  // Shown only for what the program named (config "opens"); the host opens it.
+  for (const button of document.querySelectorAll("#tools .open")) {
+    const path = (config.opens || {})[button.dataset.what];
+    if (!path) continue;
+    button.hidden = false;
+    button.title = `${button.dataset.label} (${path})`;
+    button.setAttribute("aria-label", button.dataset.label);
+    button.addEventListener("click", () => send({ t: "open", what: button.dataset.what }));
+  }
+
   // ------------------------------------------------------------ file paths
 
   // "C:\folder\file.py:9" (the launcher's reports) and 'File "C:\folder\file.py", line 9' (Python)
@@ -596,6 +689,7 @@
     });
   }
   const panels = [
+    [document.getElementById("info-button"), document.getElementById("info-panel")],
     [document.getElementById("view-button"), document.getElementById("view-panel")],
     [document.getElementById("notify-button"), document.getElementById("notify-panel")],
     [document.getElementById("bookmark"), document.getElementById("bookmark-panel")],

@@ -234,6 +234,12 @@ window.
   Setup shows both; the ☆ in the page explains how to bookmark them.
 - **Copy and paste like Windows Terminal:** Ctrl+C copies a selection and otherwise interrupts,
   Ctrl+V pastes, right-click copies or pastes.
+- **Buttons for what the shortcuts open:** the code (✎), the settings (🔧) and the logs (📁), each
+  only if its shortcut is enabled, and a button that clears the output (🗑).
+- **Info about the run (ⓘ):** the program, Python, environment, project and log paths, the start
+  and end time and the exit code, ready to copy into a bug report.
+- **A clear end:** when the program ends, its exit code shows in the corner, green for success
+  (0) and red otherwise, and the tab title gets a ✓ or ✗.
 
 It is served on `127.0.0.1` only, behind a secret key in the address, and only its own page may
 connect. Closing the tab ends the program, like closing a console window; reloading it does not.

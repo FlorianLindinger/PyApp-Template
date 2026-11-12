@@ -12,7 +12,15 @@ progress bars work as in the classic console. The page adds:
 - notifications (🔔) when the program ends, once on its next output, or on every output (at most
   once a second), while the tab is not in front, and optionally the browser coming to the front when the program waits for input;
 - copy and paste like Windows Terminal: Ctrl+C copies a selection and otherwise interrupts,
-  Ctrl+V pastes, right-click copies or pastes.
+  Ctrl+V pastes, right-click copies or pastes;
+- clearing the output (🗑), which a reloaded page does not bring back;
+- an info panel (ⓘ) with the command and working folder (or the `info` you give), the start and
+  end time and the exit code, to copy as text;
+- when the program ends: the exit code in the corner, green for 0 and red otherwise, and ✓ or ✗
+  in the tab title;
+- optional buttons that open a code file (✎), a settings file (🔧) and a log folder (📁), from
+  the settings `code_file`, `settings_file` and `log_path`: a file in VS Code or Notepad, a
+  folder in Explorer. The page only says which one; the path comes from the settings.
 
 The program starts once the page has reported its size, so nothing it prints at start-up is
 redrawn at another size.

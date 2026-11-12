@@ -163,6 +163,47 @@ class StandaloneTest(unittest.TestCase):
                     self.assertTrue(name in own or name in STDLIB, f"{path.name} imports {name}")
 
 
+@unittest.skipUnless(os.name == "nt", "Windows only")
+class PageButtonsTest(unittest.TestCase):
+    """The page's clear and open buttons, handled by the host."""
+
+    def session(self, **config: Any) -> Any:
+        return browser_terminal.Session(browser_terminal.complete_config(config, ["prog.exe", "a b"]))
+
+    def test_a_button_opens_only_the_path_from_the_config(self):
+        with tempfile.TemporaryDirectory() as folder:
+            code = Path(folder) / "main.py"
+            code.write_text("print(1)\n", encoding="utf-8")
+            session = self.session(code_file=str(code), log_path=folder)
+            with mock.patch.object(browser_terminal, "open_in_editor") as editor, mock.patch.object(
+                browser_terminal.subprocess, "Popen"
+            ) as popen:
+                # A path sent along by the page is ignored: the host opens what it was told to.
+                session.handle_message(1, json.dumps({"t": "open", "what": "code", "path": "C:\\x.bat"}).encode())
+                session.handle_message(1, json.dumps({"t": "open", "what": "logs"}).encode())
+                session.handle_message(1, json.dumps({"t": "open", "what": "settings"}).encode())  # none given
+                session.handle_message(1, json.dumps({"t": "open", "what": "C:\\x.bat"}).encode())
+            editor.assert_called_once_with(str(code))
+            ((command,), _) = popen.call_args
+            self.assertTrue(command[0].lower().endswith("explorer.exe"))
+            self.assertEqual(command[1:], [folder])
+            self.assertEqual(popen.call_count, 1)
+
+    def test_clearing_forgets_the_output_for_every_page(self):
+        session = self.session()
+        session.history.extend(b"old output\r\n")
+        with mock.patch.object(session, "broadcast") as broadcast:
+            session.handle_message(1, b'{"t": "clear"}')
+        self.assertEqual(bytes(session.history), b"")
+        broadcast.assert_called_once_with({"t": "clear"})
+
+    def test_the_info_panel_lists_the_command_unless_told_otherwise(self):
+        config = browser_terminal.complete_config({"cwd": "C:\\work"}, ["prog.exe", "a b"])
+        self.assertEqual(config["info"], [["Command", 'prog.exe "a b"'], ["Working folder", "C:\\work"]])
+        config = browser_terminal.complete_config({"info": [["Python", "C:\\py.exe"]]}, ["prog.exe"])
+        self.assertEqual(config["info"], [["Python", "C:\\py.exe"]])
+
+
 class PageClient:
     """The page's side of the WebSocket: binary output collected, JSON messages listed."""
 
@@ -334,7 +375,11 @@ class HostTest(unittest.TestCase):
         self.assertIn({"t": "colors", "colors": {"background": "#000000", "foreground": "#FFFFFF"}}, page.messages)
         self.assertIn({"t": "icon", "v": 1}, page.messages)
         self.assertIn({"t": "notify", "text": '"main.py" failed: ValueError', "failed": True}, page.messages)
-        self.assertEqual(page.messages[-1], {"t": "exit", "code": 3})
+        exit_message = page.messages[-1]
+        self.assertEqual((exit_message["t"], exit_message["code"]), ("exit", 3))
+        started = next(m["at"] for m in page.messages if m["t"] == "started")
+        self.assertLessEqual(abs(started / 1000 - time.time()), 60)
+        self.assertGreaterEqual(exit_message["at"], started)
 
     def test_only_the_page_may_connect(self):
         path, port, result = self.start("import time; time.sleep(30)")
