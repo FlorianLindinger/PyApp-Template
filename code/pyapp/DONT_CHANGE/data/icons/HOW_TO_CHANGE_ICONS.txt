@@ -28,34 +28,6 @@ uses default_icon.png from:
 
 
 =======================================
-==== SMALL SIZES =======================
-
-    icon_16x16.png   (optional)
-    icon_24x24.png   (optional)
-    icon_32x32.png   (optional)
-    icon_48x48.png   (optional)
-
-The file name selects the ICO size. The PNG itself can have any resolution;
-it is resized during generation. The shipped placeholders are full-resolution
-instruction images, each naming its target icon size so the instructions stay readable.
-
-At small sizes (taskbar, browser tab, small Explorer icons) fine details of
-icon.png blur into noise. These four files, next to icon.png, replace it for
-exactly that size: the same picture simplified (no background pattern, thicker
-lines, stronger contrast), or drawn pixel by pixel for 16x16. The overlays are
-added to them the same way. Without a 16x16 image, the 32x32 one is used for 16
-pixels too.
-
-The template ships four editable placeholders, recognized by their
-pixels. With the unchanged template icon.png, the generator uses the bundled
-default_icon_<size>x<size>.png artwork. After you replace icon.png (including with
-a 265x265 or 256x256 image), unchanged small placeholders and bundled small artwork
-are ignored: all sizes are scaled from your image unless you replace a small PNG
-too. A replaced small PNG is used even if icon.png itself is unchanged.
-Leave them as they are (or delete them) if your icon.png looks fine when small.
-
-
-=======================================
 ==== OVERLAYS ==========================
 =======================================
 
@@ -91,7 +63,6 @@ Replace any .ico file in code/pyapp/icons/ with your own, keeping its name:
     failure.ico          (also shown after a crash or Ctrl+C)
     crash_log.ico
     open_code.ico
-    browser.ico          (the browser terminal shortcut)
 
 The generator remembers which icons it made, in
 code/pyapp/generated/auto_generated_icons.json (commit that file with the icons). Those
@@ -112,6 +83,9 @@ The launcher reports success or failure and waits for a keypress before closing.
 It works after moving the project folder because its paths are relative to itself.
 
 Each ICO contains 256, 128, 64, 48, 32, 24, and 16 pixel versions for good
-appearance in Windows shortcuts, Explorer, and the taskbar.
+appearance in Windows shortcuts, Explorer, and the taskbar. They are scaled
+from icon.png with area averaging; 16 to 48 pixels are averaged in linear light
+and 16 to 32 pixels are sharpened a little, so small icons stay crisp. A simple image with
+bold shapes and strong contrast still looks best when small.
 
 The generator uses built-in Windows PowerShell/WPF and does not require Pillow.

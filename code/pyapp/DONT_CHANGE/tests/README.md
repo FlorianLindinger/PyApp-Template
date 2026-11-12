@@ -44,7 +44,7 @@ Run them after changing anything in `DONT_CHANGE`, or after updating the templat
 | `test_repository_check.py` | `pyapp_tools/check_repository`: problems that break clones, other PCs or Windows |
 | `test_release.py` | `pyapp_tools/release`: version numbers, the changelog and the zip |
 | `test_tools.py` | `pyapp_tools/fresh_clone_test` and `test_all_pythons`: the parts that can be checked without a clone |
-| `test_browser_terminal.py` | the browser terminal: its shortcut, stable address and start link (never another program's), a copy of the `browser_terminal` folder runs on its own, tab or app window, colors, and the host with a real pseudoconsole: input, Ctrl+C, UTF-8, icon/color requests, exit code, only the page may connect, a closed page ends the program |
+| `test_browser_terminal.py` | the browser terminal in the launcher: its shortcut, stable address and start link (never another program's), the console check that ignores an inherited variable. The package itself is tested by `browser_terminal/tests/test_host.py`, which this runner runs too: a real pseudoconsole, input, Ctrl+C, UTF-8, start at the page's size, icon/color/notify requests, file links, only the page may connect, a copy of the folder runs on its own |
 | `test_windows.py` | Windows only: registry records with job names, Stop ends the whole job (incl. grandchildren), graceful Stop via Ctrl+C, file lock |
 
 Manual release check (not automated): Setup, start twice, Stop on the example window, the

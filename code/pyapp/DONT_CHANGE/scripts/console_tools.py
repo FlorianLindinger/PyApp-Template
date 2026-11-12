@@ -422,13 +422,21 @@ def in_browser_terminal() -> bool:
         return False
 
 
-def browser_terminal_ui(icon: Optional[str] = None, colors: Optional[str] = None) -> None:
-    """Ask the browser terminal for an icon (file) or colors (a `color` argument such as "4F")."""
+def browser_terminal_ui(
+    icon: Optional[str] = None, colors: Optional[str] = None, notify: Optional[str] = None, failed: bool = False
+) -> None:
+    """Ask the browser terminal for an icon (file), colors (a `color` argument such as "4F") or a notification."""
     try:
         from pyapp.DONT_CHANGE.backend_settings import BROWSER_UI_ENV_VAR
         from pyapp.DONT_CHANGE.browser_terminal import ui
 
-        ui.request(BROWSER_UI_ENV_VAR, icon=icon, colors=ui.colors_from_code(colors) if colors else None)
+        ui.request(
+            BROWSER_UI_ENV_VAR,
+            icon=icon,
+            colors=ui.colors_from_code(colors) if colors else None,
+            notify=notify,
+            failed=failed,
+        )
     except Exception:
         note_ignored("browser_terminal_ui")
 

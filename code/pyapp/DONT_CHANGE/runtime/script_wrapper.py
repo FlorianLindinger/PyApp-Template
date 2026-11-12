@@ -342,13 +342,23 @@ def _finish_logging() -> None:
             log_file.close()
 
 
-def install_input_prefix(input_prepend: Optional[str]) -> None:
-    """input() bypasses sys.stdout's prefixing, so wrap it."""
+def install_input_prefix(input_prepend: Optional[str], browser_ui: str = "") -> None:
+    """input() bypasses sys.stdout's prefixing, so wrap it.
+
+    browser_ui: in the browser terminal, the file of its UI requests: each input() announces
+    that the program waits for input there (the page can then come to the front).
+    """
     import builtins
 
     original_input = builtins.input
 
     def input_with_prepend(prompt: object = "") -> str:
+        if browser_ui:
+            try:
+                with Path(browser_ui).open("a", encoding="utf-8") as stream:
+                    stream.write('{"input": true}\n')
+            except OSError:
+                pass  # cosmetic: the input itself must work
         if hasattr(sys.stdout, "write_input_prompt"):
             sys.stdout.write_input_prompt(prompt)
             text = original_input("")
@@ -483,8 +493,9 @@ def main() -> None:
             ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(config["app_id"])
         except Exception as error:
             print(f"Warning: could not set the taskbar identity of this window: {error}")
-    if input_prepend or log_input_prepend or hasattr(sys.stdout, "complete_input_line"):
-        install_input_prefix(input_prepend)
+    browser_ui = config.get("browser_ui") or ""
+    if input_prepend or log_input_prepend or browser_ui or hasattr(sys.stdout, "complete_input_line"):
+        install_input_prefix(input_prepend, browser_ui)
 
     # Make the application's folder sys.path[0], exactly like `python main.py`,
     # instead of this launcher folder.

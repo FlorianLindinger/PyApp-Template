@@ -16,45 +16,103 @@
     padding: 10px 14px; border-radius: 6px; font: 14px/1.4 "Segoe UI", system-ui, sans-serif;
     background: #2b2b2b; color: #f2f2f2; box-shadow: 0 4px 16px #0008;
   }
-  #notice[hidden] { display: none; }
-  /* The bookmark hint: a faint star in the corner (clear of the scrollbar), a panel when clicked. */
-  #bookmark {
-    position: absolute; top: 6px; right: 22px; width: 26px; height: 26px; padding: 0;
-    border: 0; border-radius: 6px; background: transparent; color: var(--fg);
-    font: 17px/26px "Segoe UI Symbol", "Segoe UI", sans-serif; cursor: pointer; opacity: .6;
-    transition: opacity .2s;
+  [hidden] { display: none !important; }
+
+  /* Small tools in the top-right corner (clear of the scrollbar): faint until hovered. */
+  #tools { position: absolute; top: 6px; right: 22px; display: flex; gap: 2px; }
+  #tools button {
+    width: 26px; height: 26px; padding: 0; border: 0; border-radius: 6px; background: transparent;
+    color: var(--fg); font: 15px/26px "Segoe UI Symbol", "Segoe UI Emoji", "Segoe UI", sans-serif;
+    cursor: pointer; opacity: .6; transition: opacity .2s;
   }
-  #bookmark:hover, #bookmark:focus-visible, #bookmark[aria-expanded="true"] { opacity: 1; background: #fff2; }
-  #bookmark-panel {
+  #tools button:hover, #tools button:focus-visible, #tools button[aria-expanded="true"] { opacity: 1; background: #fff2; }
+  #notify-button.armed { opacity: 1; color: #ffd75e; }
+
+  .panel {
     position: absolute; top: 38px; right: 22px; max-width: min(420px, calc(100% - 64px));
     padding: 12px 14px; border-radius: 8px; font: 14px/1.45 "Segoe UI", system-ui, sans-serif;
     background: #2b2b2b; color: #f2f2f2; box-shadow: 0 6px 20px #0009; outline: none;
   }
-  #bookmark-panel[hidden] { display: none; }
-  #bookmark-panel p { margin: 0 0 8px; }
-  #bookmark-panel p:last-child { margin-bottom: 0; }
-  #bookmark-panel kbd { padding: 1px 5px; border-radius: 4px; background: #fff2; font: inherit; }
-  #bookmark-panel code { padding: 1px 4px; border-radius: 4px; background: #0006; user-select: all; }
-  #bookmark-panel button {
+  .panel p { margin: 0 0 8px; }
+  .panel p:last-child { margin-bottom: 0; }
+  .panel kbd { padding: 1px 5px; border-radius: 4px; background: #fff2; font: inherit; }
+  .panel code { padding: 1px 4px; border-radius: 4px; background: #0006; user-select: all; }
+  .panel button {
     margin-left: 6px; padding: 1px 8px; border: 1px solid #fff4; border-radius: 4px;
     background: transparent; color: inherit; font: inherit; cursor: pointer;
   }
-  #bookmark-panel .dim { color: #aaa; }
+  .panel label { display: flex; gap: 8px; align-items: baseline; margin: 0 0 6px; cursor: pointer; }
+  .panel .dim { color: #aaa; }
+
+  #search {
+    position: absolute; top: 38px; right: 22px; display: flex; gap: 4px; align-items: center;
+    padding: 6px 8px; border-radius: 8px; background: #2b2b2b; box-shadow: 0 6px 20px #0009;
+    font: 13px "Segoe UI", system-ui, sans-serif; color: #f2f2f2;
+  }
+  #search input {
+    width: 200px; padding: 3px 6px; border: 1px solid #fff4; border-radius: 4px;
+    background: #1b1b1b; color: inherit; font: inherit; outline: none;
+  }
+  #search input:focus { border-color: #6ea8ff; }
+  #search button {
+    min-width: 24px; height: 24px; padding: 0 6px; border: 0; border-radius: 4px;
+    background: transparent; color: inherit; font: inherit; cursor: pointer;
+  }
+  #search button:hover, #search button[aria-pressed="true"] { background: #fff2; }
+  #search-count { min-width: 52px; text-align: center; color: #aaa; }
+
+  /* Lines just printed light up and fade, so a repeated line can be told from the same old one. */
+  .fresh { animation: fresh 1.4s ease-out forwards; }
+  @keyframes fresh { from { background: #ffd75e55; } to { background: transparent; } }
 </style>
 </head>
 <body>
 <div id="terminal"></div>
 <div id="notice" role="status" hidden></div>
-<button id="bookmark" type="button" title="Bookmark this terminal" aria-label="Bookmark this terminal" aria-expanded="false" aria-controls="bookmark-panel">&#9734;</button>
-<div id="bookmark-panel" role="dialog" aria-label="Bookmark this terminal" tabindex="-1" hidden>
+
+<div id="tools">
+  <button id="search-button" type="button" title="Search (Ctrl+F)" aria-label="Search">&#128269;&#xFE0E;</button>
+  <button id="save-button" type="button" title="Save the output as a text file (Ctrl+S)" aria-label="Save the output">&#10515;</button>
+  <button id="view-button" type="button" title="View options" aria-label="View options" aria-expanded="false" aria-controls="view-panel">&#9881;&#xFE0E;</button>
+  <button id="notify-button" type="button" title="Notifications" aria-label="Notifications" aria-expanded="false" aria-controls="notify-panel">&#128276;&#xFE0E;</button>
+  <button id="bookmark" type="button" title="Bookmark this terminal" aria-label="Bookmark this terminal" aria-expanded="false" aria-controls="bookmark-panel">&#9734;</button>
+</div>
+
+<div id="search" role="search" hidden>
+  <input id="search-input" type="text" placeholder="Search the output" aria-label="Search the output" spellcheck="false">
+  <span id="search-count" aria-live="polite"></span>
+  <button id="search-case" type="button" title="Match case" aria-pressed="false">Aa</button>
+  <button id="search-previous" type="button" title="Previous (Shift+Enter)" aria-label="Previous match">&#8593;</button>
+  <button id="search-next" type="button" title="Next (Enter)" aria-label="Next match">&#8595;</button>
+  <button id="search-close" type="button" title="Close (Esc)" aria-label="Close the search">&#10005;</button>
+</div>
+
+<div id="view-panel" class="panel" role="dialog" aria-label="View options" tabindex="-1" hidden>
+  <label><input id="opt-highlight" type="checkbox" checked> Light up new output for a moment</label>
+  <label><input id="opt-follow" type="checkbox" checked> Jump to new output <span class="dim">(off: stay where you are reading)</span></label>
+  <label><input id="opt-front" type="checkbox"> Bring the browser to the front when the program asks for input</label>
+</div>
+
+<div id="notify-panel" class="panel" role="dialog" aria-label="Notifications" tabindex="-1" hidden>
+  <p><b>Notify me</b> <span class="dim">(only while this tab is not in front)</span></p>
+  <label><input id="notify-end" type="checkbox"> when the program ends or fails</label>
+  <label><input id="notify-next" type="checkbox"> once, on the next output</label>
+  <label><input id="notify-every" type="checkbox"> on every output <span class="dim">(at most once a second)</span></label>
+  <p id="notify-blocked" class="dim" hidden>The browser blocks notifications for this page; the tab title shows &#9679; instead.</p>
+</div>
+
+<div id="bookmark-panel" class="panel" role="dialog" aria-label="Bookmark this terminal" tabindex="-1" hidden>
   <p><b>Bookmark this terminal:</b> press <kbd>Ctrl</kbd>+<kbd>D</kbd> now, or click &#9734; in the address bar.
      <span class="dim">The bookmark opens it while the program runs.</span></p>
   <p id="start-link" hidden>To also <b>start</b> the program from a bookmark, give a bookmark this address:
      <code id="start-link-text"></code><button id="start-link-copy" type="button">Copy</button></p>
-</div><script id="config" type="application/json">__BROWSER_TERMINAL_CONFIG__</script>
+</div>
+
+<script id="config" type="application/json">__BROWSER_TERMINAL_CONFIG__</script>
 <script src="xterm.js"></script>
 <script src="addon-fit.js"></script>
 <script src="addon-web-links.js"></script>
+<script src="addon-search.js"></script>
 <script src="terminal.js"></script>
 </body>
 </html>

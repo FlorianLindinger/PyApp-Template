@@ -3,12 +3,11 @@
 from __future__ import annotations
 
 import json
-import shutil
 import struct
 import tempfile
 import unittest
 from pathlib import Path
-from typing import Dict, Iterable, Optional, Union
+from typing import Iterable, Optional, Union
 from unittest import mock
 
 from project_location import DONT_CHANGE
@@ -29,7 +28,6 @@ class GenIconsTests(unittest.TestCase):
             overlay: Optional[str],
             sub_icon_area_scale_factor: float,
             sub_icon_alignment: str,
-            size_png_paths: Optional[Dict[int, str]] = None,
         ):
             overlays.append(overlay)
             Path(output).write_bytes(content)
@@ -92,79 +90,55 @@ class GenIconsTests(unittest.TestCase):
             self.assertEqual(failure.read_bytes(), b"mine")
 
 
-if __name__ == "__main__":
-    unittest.main()
+class SmallSizeFinishingTests(unittest.TestCase):
+    """Small sizes: averaged in linear light, sharpened, written as PNG without an image library."""
+
+    def test_averaging_happens_in_linear_light(self):
+        from pyapp.DONT_CHANGE.scripts import image_tools
+
+        # One output pixel from 2 x 2 source pixels: two white, two black (premultiplied BGRA, opaque).
+        white, black = bytes([255, 255, 255, 255]), bytes([0, 0, 0, 255])
+        ((red, green, blue, alpha),) = image_tools._shrink_in_linear_light(white + black + black + white, 1, 2)
+        # Half the light is sRGB 0.735 (188/255), not 0.5: plain averaging would make thin lines too dark.
+        self.assertAlmostEqual(red, 0.7354, places=3)
+        self.assertEqual((red, alpha), (green, 1.0))
+        self.assertEqual(blue, red)
+
+    def test_transparent_pixels_do_not_darken_the_average(self):
+        from pyapp.DONT_CHANGE.scripts import image_tools
+
+        white, clear = bytes([255, 255, 255, 255]), bytes([0, 0, 0, 0])
+        ((red, _, _, alpha),) = image_tools._shrink_in_linear_light(white + clear + clear + clear, 1, 2)
+        self.assertEqual((round(red, 6), alpha), (1.0, 0.25))
+
+    def test_sharpening_keeps_values_in_range_and_skips_large_sizes(self):
+        from pyapp.DONT_CHANGE.scripts import image_tools
+
+        pixels = [(1.0, 1.0, 1.0, 1.0) if index % 2 else (0.0, 0.0, 0.0, 1.0) for index in range(16)]
+        sharpened = image_tools._sharpen(pixels, 4, 0.6)
+        self.assertTrue(all(0.0 <= channel <= 1.0 for pixel in sharpened for channel in pixel))
+        self.assertIs(image_tools._sharpen(pixels, 4, 0.0), pixels)
+
+    def test_the_png_is_valid(self):
+        import zlib
+
+        from pyapp.DONT_CHANGE.scripts import image_tools
+
+        png = image_tools._png_rgba(2, [(1.0, 0.0, 0.0, 1.0)] * 4)
+        self.assertTrue(png.startswith(bytes([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A])))
+        self.assertEqual(struct.unpack(">II", png[16:24]), (2, 2))
+        length = struct.unpack(">I", png[33:37])[0]
+        self.assertEqual(zlib.decompress(png[41 : 41 + length]), bytes([0, 255, 0, 0, 255, 255, 0, 0, 255] * 2))
 
 
-class SizeIconTests(unittest.TestCase):
-    """Small images are used only when appropriate for the selected base artwork."""
-
-    TEMPLATE_BASE = str(Path(gen_icons.ICON_FALLBACK_PNG_DIR) / "default_icon.png")
-
-    def pick(self, own: Iterable[str], base: str, template_files: Iterable[str] = ()) -> Dict[int, str]:
-        """{size: file name} picked with the given files of your own and unchanged template files."""
-        ids = {name: "own-" + name for name in own}
-        ids.update({name: template_id for _, name, template_id, _ in gen_icons.SIZE_PNGS if name in template_files})
-        with tempfile.TemporaryDirectory() as folder:
-            for name in ids:
-                (Path(folder) / name).write_bytes(b"")
-
-            def image_id(path: str) -> str:
-                return ids[Path(path).name]
-
-            with mock.patch.object(gen_icons, "ICON_PNG_DIR", folder), mock.patch.object(
-                gen_icons, "_cached_png_image_id", image_id
-            ):
-                return {size: Path(path).name for size, path in gen_icons._pick_size_pngs(base).items()}
-
-    def test_your_own_size_images_are_used(self):
-        own = [f"icon_{size}x{size}.png" for size in (16, 24, 32, 48)]
-        self.assertEqual(
-            self.pick(own, "custom/icon.png"), {size: f"icon_{size}x{size}.png" for size in (16, 24, 32, 48)}
-        )
-
-    def test_a_32x32_image_alone_also_serves_16_px(self):
-        self.assertEqual(
-            self.pick(["icon_32x32.png"], "custom/icon.png"),
-            {32: "icon_32x32.png", 16: "icon_32x32.png"},
-        )
-
-    def test_a_replaced_small_image_overrides_only_its_sizes(self):
-        template = [name for _, name, _, _ in gen_icons.SIZE_PNGS]
-        for size in (16, 24, 32, 48):
-            name = f"icon_{size}x{size}.png"
-            expected = {size: name}
-            if size == 32:
-                expected[16] = name
-            with self.subTest(size=size):
-                self.assertEqual(self.pick([name], "custom/icon.png", [n for n in template if n != name]), expected)
-
-    def test_a_custom_265_px_base_ignores_all_unchanged_small_placeholders(self):
-        with tempfile.TemporaryDirectory() as folder:
-            root = Path(folder)
-            # The bundled artwork is 265 px; placing it as the project's icon.png makes it
-            # a custom base, distinct from the shipped 512 px editable placeholder.
-            shutil.copyfile(self.TEMPLATE_BASE, root / "icon.png")
-            for _, name, _, _ in gen_icons.SIZE_PNGS:
-                shutil.copyfile(DONT_CHANGE.parent / "icons" / name, root / name)
-            with mock.patch.object(gen_icons, "ICON_PNG_DIR", folder):
-                base = gen_icons._pick_png(*gen_icons._base)
-                self.assertEqual(Path(base), root / "icon.png")
-                self.assertEqual(gen_icons._pick_size_pngs(base), {})
-
-    def test_default_ico_includes_every_requested_small_size(self):
+class IcoSizeTests(unittest.TestCase):
+    def test_every_ico_has_all_sizes_including_24_px(self):
+        """24 px is what Windows shows at 125 % display scaling; without it, 32 px is shrunk."""
         from pyapp.DONT_CHANGE.scripts.image_tools import generate_ico_from_png
 
         with tempfile.TemporaryDirectory() as folder:
             output = Path(folder) / "icon.ico"
-            # Source PNG dimensions need not match their target ICO slots.
-            generate_ico_from_png(
-                str(output),
-                self.TEMPLATE_BASE,
-                size_png_paths={
-                    size: str(DONT_CHANGE.parent / "icons" / name) for size, name, _, _ in gen_icons.SIZE_PNGS
-                },
-            )
+            generate_ico_from_png(str(output), str(DONT_CHANGE / "data" / "icons" / "default_icon.png"))
             data = output.read_bytes()
         self.assertEqual(struct.unpack_from("<HHH", data), (0, 1, 7))
         for index, size in enumerate((256, 128, 64, 48, 32, 24, 16)):
@@ -172,20 +146,6 @@ class SizeIconTests(unittest.TestCase):
             self.assertEqual(entry[:2], (size % 256, size % 256))
             self.assertEqual(struct.unpack_from(">II", data, entry[-1] + 16), (size, size))
 
-    def test_the_templates_small_images_never_go_with_your_own_icon(self):
-        template = [name for _, name, _, _ in gen_icons.SIZE_PNGS]
-        self.assertEqual(self.pick([], "custom/icon.png", template), {})
-        # With the template's icon.png they are used (the bundled copies).
-        self.assertEqual(
-            self.pick([], self.TEMPLATE_BASE, template),
-            {size: f"default_icon_{size}x{size}.png" for size in (16, 24, 32, 48)},
-        )
 
-    def test_the_shipped_placeholders_match_ids_and_fallbacks_match_sizes(self):
-        from pyapp.DONT_CHANGE.scripts.image_tools import get_png_image_id
-
-        for size, name, template_id, bundled in gen_icons.SIZE_PNGS:
-            placeholder = DONT_CHANGE.parent / "icons" / name
-            self.assertEqual(get_png_image_id(str(placeholder)), template_id, placeholder)
-            fallback = DONT_CHANGE / "data" / "icons" / bundled
-            self.assertTrue(get_png_image_id(str(fallback)).startswith(f"{size}x{size}:"), fallback)
+if __name__ == "__main__":
+    unittest.main()

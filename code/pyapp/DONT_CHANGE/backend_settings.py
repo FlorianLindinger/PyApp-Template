@@ -126,7 +126,6 @@ SUCCESS_ICON_PATH = ICON_DIR + "\\success.ico"
 FAILURE_ICON_PATH = ICON_DIR + "\\failure.ico"
 CRASH_LOG_ICON_PATH = ICON_DIR + "\\crash_log.ico"
 OPEN_CODE_ICON_PATH = ICON_DIR + "\\open_code.ico"
-BROWSER_ICON_PATH = ICON_DIR + "\\browser.ico"
 
 # ------------------------
 # generated process state
@@ -173,7 +172,6 @@ SUB_ICONS = {
     "failure": (0.35, "bottom right"),
     "crash_log": (0.35, "bottom right"),
     "open_code": (0.35, "bottom right"),
-    "browser": (0.35, "bottom right"),
 }
 
 # Import-finder scan exclusions (folder names anywhere below the code folder; folders starting

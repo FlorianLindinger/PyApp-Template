@@ -10,8 +10,8 @@ from pathlib import Path
 from typing import List
 
 from pyapp.DONT_CHANGE.backend_settings import (
-    BROWSER_ICON_PATH,
     DEV_SETTINGS_PATH,
+    ICON_PATH,
     INSTALL_ENVIRONMENT_WHEN_GENERATING_SHORTCUTS,
     LAUNCHER_VERSION,
     SHORTCUT_OUTPUT_DIR,
@@ -67,7 +67,7 @@ def sync_start_link(s: object, app_id: str) -> str:
     try:
         if getattr(s, "browser_terminal_shortcut_name", ""):
             name = browser_links.scheme(app_id)
-            if browser_links.register_start_link(name, app_id, BROWSER_ICON_PATH):
+            if browser_links.register_start_link(name, app_id, ICON_PATH):
                 current = name
             else:
                 print_warn(

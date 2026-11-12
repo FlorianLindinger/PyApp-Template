@@ -42,7 +42,9 @@ try:
     from pyapp.DONT_CHANGE.scripts.config import main_script_path, settings
     from pyapp.DONT_CHANGE.scripts.console_tools import (
         ask,
+        browser_terminal_ui,
         enable_ansi,
+        in_browser_terminal,
         print_choices,
         print_error,
         print_info,
@@ -290,6 +292,9 @@ def complete(
         if outcome in ("failure", "keyboard_interrupt"):  # both show a traceback
             set_terminal_colors(FAILURE_COLORS)
         set_terminal_icon(OUTCOMES[outcome]["icon"])
+    if message and in_browser_terminal():
+        # A desktop notification in the browser terminal, if switched on there.
+        browser_terminal_ui(notify=message, failed=outcome != "success")
     if message:
         print()
         if outcome != "success":

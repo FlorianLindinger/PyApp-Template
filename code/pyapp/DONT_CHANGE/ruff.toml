@@ -61,5 +61,6 @@ ignore = [
 # Test methods and fakes: annotating every test returning None or every unused fake argument
 # adds noise, not safety. Pyrefly still checks the tests.
 "tests/**" = ["ANN", "ARG"]
+"browser_terminal/tests/**" = ["ANN", "ARG"]
 # The banner test uses typographic characters on purpose.
 "tests/test_banner.py" = ["RUF001"]

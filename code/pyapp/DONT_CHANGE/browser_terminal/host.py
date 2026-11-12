@@ -43,7 +43,7 @@ from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 try:  # imported as a package (python -m, an embedding program) or the folder run as a script (__main__.py)
     from . import ui
 except ImportError:
-    import ui  # type: ignore[no-redef]
+    import ui
 
 STATIC_DIR = Path(__file__).resolve().parent / "web"
 # Files the page may load; everything else is 404. Content types are fixed here, not guessed.
@@ -52,12 +52,17 @@ STATIC_FILES = {
     "xterm.css": "text/css; charset=utf-8",
     "addon-fit.js": "text/javascript; charset=utf-8",
     "addon-web-links.js": "text/javascript; charset=utf-8",
+    "addon-search.js": "text/javascript; charset=utf-8",
     "terminal.js": "text/javascript; charset=utf-8",
 }
 ICON_TYPES = {".ico": "image/x-icon", ".png": "image/png"}
 
-# Size of the pseudoconsole until the page reports its own (the classic console's default).
+# Size of the pseudoconsole if a connected page does not report its own within FIRST_SIZE_SECONDS
+# (the classic console's default). Normally the command starts at the page's size: output printed
+# at another size is partly overwritten when the pseudoconsole is resized to the page, because
+# it repaints its screen then.
 INITIAL_COLUMNS, INITIAL_ROWS = 120, 30
+FIRST_SIZE_SECONDS = 5
 # The browser must connect within this time, or the program is ended (nobody could see it).
 CONNECT_TIMEOUT_SECONDS = 60
 # A page that disconnects gets this long to come back (a reload) before the program is ended.
@@ -81,6 +86,45 @@ def _print_ignored(context: str) -> None:
 # Called inside an except block for an error the host ignores on purpose (cosmetic steps); an
 # embedding program can replace it before run(), e.g. to write its own log.
 report_ignored: Callable[[str], None] = _print_ignored
+
+# Editors started with the "code" command (bin\code.cmd sits one folder below the executable).
+VSCODE_EXECUTABLES = ("Code.exe", "Code - Insiders.exe", "VSCodium.exe", "Cursor.exe")
+
+
+def _vscode() -> Optional[str]:
+    """VS Code (or a fork) found through the "code" command, as its .exe (no cmd.exe parsing of paths)."""
+    import shutil
+
+    found = shutil.which("code")
+    if not found:
+        return None
+    if found.lower().endswith((".cmd", ".bat")):
+        folder = Path(found).resolve().parent.parent
+        for name in VSCODE_EXECUTABLES:
+            if (folder / name).is_file():
+                return str(folder / name)
+        return None
+    return found
+
+
+def open_in_editor(path: str, line: Optional[int] = None) -> None:
+    """Open a file clicked in the output: VS Code at the line, else Notepad.
+
+    Never with the file's Windows association: for a .py file that would run it.
+    """
+    file = Path(path)
+    if not file.is_file():
+        return
+    editor = _vscode()
+    env = {key: value for key, value in os.environ.items() if key.upper() != "ELECTRON_RUN_AS_NODE"}
+    if editor:
+        target = f"{file}:{line}" if line else str(file)
+        # The user's editor, with the clicked path as one argument.
+        subprocess.Popen([editor, "--goto", target], env=env)  # noqa: S603
+    else:
+        notepad = os.environ.get("WINDIR", "C:\\Windows") + "\\System32\\notepad.exe"
+        subprocess.Popen([notepad, str(file)], env=env)  # noqa: S603
+
 
 # ---------------------------------------------------------------- Windows API
 
@@ -458,9 +502,11 @@ class WebSocket:
 class Session:
     """The running command, the connected pages and what a newly connected page needs to know."""
 
-    def __init__(self, config: Dict[str, Any], console: PseudoConsole) -> None:
+    def __init__(self, config: Dict[str, Any]) -> None:
         self.config = config
-        self.console = console
+        self.console: Optional[PseudoConsole] = None  # started once the first page reported its size
+        self.first_size: Optional[Tuple[int, int]] = None
+        self.size_known = threading.Event()
         self.lock = threading.Lock()
         self.clients: Set[WebSocket] = set()
         self.history = bytearray()
@@ -472,17 +518,19 @@ class Session:
         self.icon_version = 0
         self.colors: Dict[str, str] = {}
         self.window_ready = threading.Event()
+        self.window = 0  # the browser window of the page, once found (find_window)
+        self.front_on_input = False  # the page's switch "bring to front when input is needed"
         self._ui_lock = threading.Lock()
         self._ui_offset = 0
         self._ui_pending = b""  # an incomplete last line
 
     # -- output
 
-    def pump_output(self) -> None:
+    def pump_output(self, console: PseudoConsole) -> None:
         """Copy the pseudoconsole's output to every page and into the history, until it closes."""
         try:
             while True:
-                data = self.console.read()
+                data = console.read()
                 if not data:
                     break
                 with self.lock:
@@ -544,15 +592,30 @@ class Session:
             return
         message = json.loads(payload.decode("utf-8"))
         kind = message.get("t")
-        if kind == "i" and isinstance(message.get("d"), str):
-            self.console.write(message["d"].encode("utf-8"))
-        elif kind == "b" and isinstance(message.get("d"), str):
+        console = self.console  # None until the command runs: typing before that is dropped
+        if kind == "i" and isinstance(message.get("d"), str) and console:
+            console.write(message["d"].encode("utf-8"))
+        elif kind == "b" and isinstance(message.get("d"), str) and console:
             # xterm.js's binary input (some mouse reports): one character per byte.
-            self.console.write(message["d"].encode("latin-1", errors="replace"))
+            console.write(message["d"].encode("latin-1", errors="replace"))
         elif kind == "r":
             columns, rows = message.get("c"), message.get("r")
             if isinstance(columns, int) and isinstance(rows, int):
-                self.console.resize(columns, rows)
+                if console:
+                    console.resize(columns, rows)
+                elif not self.size_known.is_set():
+                    self.first_size = (columns, rows)
+                    self.size_known.set()
+        elif kind == "p":
+            # The page's preferences that the host acts on.
+            self.front_on_input = message.get("frontOnInput") is True
+        elif kind == "o" and isinstance(message.get("path"), str):
+            # A clicked file path in the output (e.g. a traceback line).
+            line = message.get("line")
+            try:
+                open_in_editor(message["path"], line if isinstance(line, int) and line > 0 else None)
+            except Exception:
+                report_ignored("browser terminal: open a file from the output")
 
     # -- the browser window
 
@@ -571,6 +634,7 @@ class Session:
             if not found:
                 time.sleep(0.05)
         if found:
+            self.window = found
             try:
                 bring_to_front(found)
             except Exception:
@@ -617,6 +681,18 @@ class Session:
         if isinstance(colors, dict):
             self.colors = {key: value for key, value in colors.items() if key in ("background", "foreground")}
             self.broadcast({"t": "colors", "colors": self.colors})
+        if request.get("input") is True:
+            # The program waits for input: the page shows it, and comes to the front if wanted.
+            self.broadcast({"t": "input"})
+            if self.front_on_input and self.window:
+                try:
+                    bring_to_front(self.window)
+                except Exception:
+                    report_ignored("browser terminal: bring the page to the front for input")
+        notify = request.get("notify")
+        if isinstance(notify, str) and notify:
+            # The page shows it if notifications are on and nobody is looking at it.
+            self.broadcast({"t": "notify", "text": notify[:300], "failed": bool(request.get("failed"))})
 
 
 def _window_title(hwnd: int) -> str:
@@ -885,17 +961,35 @@ def run(config: Dict[str, Any], command: List[str]) -> int:
     ui_file = Path(config["ui_file"])
     env = dict(os.environ)
     env[config["ui_env_var"]] = str(ui_file)
-    console = PseudoConsole(command, env, INITIAL_COLUMNS, INITIAL_ROWS, config.get("cwd"))
-    session = Session(config, console)
+    session = Session(config)
     hosts: Set[str] = set()
     server = start_server(int(config["port"]), make_handler(session, config["key"], hosts))
     port = server.server_address[1]
     hosts.update({f"{config['host_name']}:{port}", f"127.0.0.1:{port}"})
     threading.Thread(target=server.serve_forever, daemon=True).start()
-    threading.Thread(target=session.pump_output, daemon=True).start()
     threading.Thread(target=session.follow_ui_requests, args=(ui_file,), daemon=True).start()
     open_browser(f"http://{config['host_name']}:{port}/{config['key']}/", tuple(config["hidden_env_prefixes"]))
+    # The command starts at the page's size (see INITIAL_COLUMNS).
     started = time.monotonic()
+    connected_at = 0.0
+    while not session.size_known.wait(0.1):
+        if session.ever_connected.is_set():
+            connected_at = connected_at or time.monotonic()
+            if time.monotonic() - connected_at > FIRST_SIZE_SECONDS:
+                break
+        elif time.monotonic() - started > CONNECT_TIMEOUT_SECONDS:
+            server.shutdown()
+            user32.MessageBoxW(
+                None,
+                "The browser did not open the terminal page in time, so the program was not started.",
+                config["title"],
+                MB_ICONERROR,
+            )
+            return 1
+    columns, rows = session.first_size or (INITIAL_COLUMNS, INITIAL_ROWS)
+    console = PseudoConsole(command, env, columns, rows, config.get("cwd"))
+    session.console = console
+    threading.Thread(target=session.pump_output, args=(console,), daemon=True).start()
     code: Optional[int] = None
     while code is None:
         code = console.wait(0.25)
@@ -904,17 +998,7 @@ def run(config: Dict[str, Any], command: List[str]) -> int:
         with session.lock:
             connected = bool(session.clients)
             last_disconnect = session.last_disconnect
-        if not session.ever_connected.is_set():
-            if time.monotonic() - started > CONNECT_TIMEOUT_SECONDS:
-                _end_unseen(console)
-                user32.MessageBoxW(
-                    None,
-                    "The browser did not open the terminal page in time, so the program was ended.",
-                    config["title"],
-                    MB_ICONERROR,
-                )
-                return 1
-        elif not connected and time.monotonic() - last_disconnect > RECONNECT_GRACE_SECONDS:
+        if not connected and time.monotonic() - last_disconnect > RECONNECT_GRACE_SECONDS:
             # The window was closed: end the program like a closed console window does.
             _end_unseen(console)
             return 1

@@ -21,7 +21,6 @@ Open items for the launcher and the template. Done items are removed; Longer-ter
 - Feature list: "fully reviewable code, no black box"; uv (shared cache, portable mode).
 - Explain how main.py can use the launcher's environment variables (PROGRAM_NAME, ICON_PATH,
   LOG_PATH, APP_ID, PROGRAM_HAS_TERMINAL, ...), with small Tkinter / Qt examples.
-- Mention that Windows SmartScreen may ask before running downloaded scripts.
 
 ## Ideas
 
@@ -327,18 +326,13 @@ in staret_program docsating: """WIP: Add args and defaults""" and what it all do
 Same detail in wrapper
 
 underline in readme better visible?
-update main readme
-cleanup readme. add browser is WIP
 update git topics and order
 Fix Release in git
-mention colorful traceback on error
-mention that windows might ask for permissions for start since it is code from online. any alternatives?
 
 check overall start time overhead compared to global python. I guess check with batch i have that measures execution time and just a script that exits immediately. maybe mention that overhead in README
 
 in readme image circle what all is different. i guess the terminal title and icon and colors. the taskbar grouping and icon. and have comparison what it would look like wibtittu
 
-update license paths
 
 Reorder features in readme. Also tags. And add description 
 
@@ -348,7 +342,6 @@ update size in readme
 
 ask it to add comment to code blocks
 
-update all licenses
 
 ask AI for github tags
 
@@ -1056,7 +1049,6 @@ Keep the last N runtimes for instant rollback.
 Windows notification instead of a console popup when a hidden app fails.
 
 Toast notification on failure in hidden mode instead of popping up a console.?
-Fall back to classic conhost when wt.exe is missing.
 
 add benchmark to all versions and install and traceback and so on automation.
 
@@ -1078,7 +1070,6 @@ add setting: foreground_on_ ....
 
 add a startup workflow to one of the readmes
 
-add crash icons? and terminal name. i guess they could always do that?
 
 ======================================
 ```

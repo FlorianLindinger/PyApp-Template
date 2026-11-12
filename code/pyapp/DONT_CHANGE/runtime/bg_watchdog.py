@@ -257,6 +257,8 @@ def main() -> None:
             "traceback_lines_after": paths.traceback_lines_after,
             "print_prepend": settings.print_prepend,
             "input_prepend": settings.input_prepend,
+            # The browser terminal's UI request file: input() announces itself there.
+            "browser_ui": os.environ.get(paths.BROWSER_UI_ENV_VAR, "") if launch_mode == "browser" else "",
             "log_print_prepend": settings.log_print_prepend,
             "log_input_prepend": settings.log_input_prepend,
             "log_path": log_path,

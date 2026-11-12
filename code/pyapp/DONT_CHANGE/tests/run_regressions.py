@@ -20,10 +20,13 @@ from pathlib import Path
 from typing import List, Tuple
 
 TESTS = Path(__file__).parent
+# The browser terminal is a standalone package with its own tests; they run here too.
+PACKAGE_TESTS = TESTS.parent / "browser_terminal" / "tests"
 parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
 parser.add_argument("pattern", nargs="?", default="test_*.py", help="test file pattern, e.g. test_wrapper.py")
 parser.add_argument("-q", "--quiet", action="store_true", help="one dot per test instead of one line")
 parser.add_argument("-j", "--jobs", type=int, default=1, help="test files run at once (0: one per CPU)")
+parser.add_argument("--folder", help=argparse.SUPPRESS)  # the folder of one file, for -j
 args = parser.parse_args()
 sys.path.insert(0, str(TESTS))
 from project_location import PROJECT_ROOT
@@ -33,7 +36,7 @@ def run_file(path: Path) -> Tuple[Path, int, str]:
     """One test file in its own process: (file, exit code, output)."""
     # The test runner itself, with the same interpreter, on one of its own test files.
     completed = subprocess.run(  # noqa: S603
-        [sys.executable, "-B", str(Path(__file__)), path.name, "-q"],
+        [sys.executable, "-B", str(Path(__file__)), path.name, "-q", "--folder", str(path.parent)],
         capture_output=True,
         text=True,
         encoding="utf-8",
@@ -64,9 +67,14 @@ def run_in_parallel(files: List[Path], jobs: int) -> bool:
 
 
 print(f"Testing the launcher of {PROJECT_ROOT} with Python {sys.version.split()[0]}", flush=True)
-files = sorted(TESTS.glob(args.pattern))
+folders = [Path(args.folder)] if args.folder else [TESTS, PACKAGE_TESTS]
+files = [path for folder in folders for path in sorted(folder.glob(args.pattern))]
 if args.jobs != 1 and len(files) > 1:
     raise SystemExit(not run_in_parallel(files, args.jobs or os.cpu_count() or 1))
-suite = unittest.defaultTestLoader.discover(str(TESTS), pattern=args.pattern)
+suite = unittest.TestSuite(
+    unittest.defaultTestLoader.discover(str(folder), pattern=args.pattern)
+    for folder in folders
+    if any(folder.glob(args.pattern))
+)
 result = unittest.TextTestRunner(verbosity=1 if args.quiet else 2).run(suite)
 raise SystemExit(not result.wasSuccessful())

@@ -90,12 +90,29 @@ def inside(env_var: str = ENV_VAR) -> bool:
     return bool(hwnd) and name.value == "PseudoConsoleWindow"
 
 
-def request(env_var: str = ENV_VAR, icon: Optional[str] = None, colors: Optional[Dict[str, str]] = None) -> None:
-    """Ask the page for a new icon (.ico or .png file) and/or colors ({"background", "foreground"})."""
+def request(
+    env_var: str = ENV_VAR,
+    icon: Optional[str] = None,
+    colors: Optional[Dict[str, str]] = None,
+    notify: Optional[str] = None,
+    failed: bool = False,
+    waiting_for_input: bool = False,
+) -> None:
+    """Ask the page for a new icon (.ico or .png file) and/or colors ({"background", "foreground"}).
+
+    notify: how the program ended (e.g. "main.py failed: ..."); the page shows it as a desktop
+    notification if the user switched those on and is looking elsewhere.
+    waiting_for_input: the program is about to read input (the page can come to the front).
+    """
     fields: Dict[str, object] = {}
     if icon is not None:
         fields["icon"] = icon
     if colors is not None:
         fields["colors"] = colors
+    if notify:
+        fields["notify"] = notify
+        fields["failed"] = failed
+    if waiting_for_input:
+        fields["input"] = True
     with Path(os.environ[env_var]).open("a", encoding="utf-8") as stream:
         stream.write(json.dumps(fields) + "\n")

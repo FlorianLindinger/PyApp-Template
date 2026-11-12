@@ -9,6 +9,6 @@ else:
     # Run as a folder: Python put the folder itself on sys.path (or nothing, with -I), so the
     # package cannot be imported by name. host.py then imports ui.py from its own folder.
     sys.path.append(str(Path(__file__).resolve().parent))
-    from host import main  # type: ignore[import-not-found]
+    from host import main
 
 sys.exit(main())

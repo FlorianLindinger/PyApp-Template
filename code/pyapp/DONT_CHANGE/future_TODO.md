@@ -189,11 +189,7 @@ Documentation
 
 add more explanation text to the .gitignore files.
 
-mention what the effective license allows and the difference to MIT; add the DONT_CHANGE license summary to the main license.
-
 check whether exception handling is mentioned in the README.
-
-add a terminal emulator image to the README (once it exists again).
 
 explain the limits on PCs without Windows long-path support.
 
@@ -314,29 +310,10 @@ add an explanation for the PyQt6 license (if the emulator ships).
 
 
 ===================================
-Browser terminal (future, WIP, see future/browser_terminal)
+Browser terminal
 ===================================
 
-run the terminal in the browser; ask AI if there is an easy way to run it as a tab; start with a bookmark.
-
-call it WIP and don't fix problems there yet.
-
-is cls implemented?
-
-add all buttons of the fancy terminal to the browser, maybe more.
-
-Behavior	Current browser terminal	xterm.js + pywinpty
-print() output	Works	Works
-input()	Works line-by-line	Works like terminal
-Arrow keys	Browser text box only	Sent to program
-Ctrl+C	Not real Ctrl+C	Real terminal interrupt
-ANSI colors	Printed as raw escape codes unless parsed	Rendered by xterm.js
-Progress bars	Often messy	Usually correct
-Interactive CLIs	Mostly bad	Good
-sys.stdin.isatty()	Usually False	Usually terminal-like
-Resize behavior	No real terminal resize	Can resize PTY cols/rows
-Complexity	Low	Medium
-Dependencies	None	pywinpty + bundled xterm.js
+remaining buttons of the fancy terminal worth porting: clear output, confirm on close, timestamps on/off, a help panel with the shortcuts.
 
 
 ===================================
@@ -384,7 +361,6 @@ old components that no longer exist: embedded python in DONT_CHANGE\P, python_pa
 - renaming python.exe (shortcuts and batches have the python name hardcoded); passing the name/icon to PySide via a renamed python.exe.
 - Finish crash handling parity between script_wrapper and the terminal emulator; unify wrapper and emulator behavior (logging, timestamps, close-on-*, PID handling, faulthandler).
 - the terminal_emulator e.code = 0 / '%H:%M:%S\t' OSError for an outdated compiled terminal.
-- re-add the browser shortcut: start_browser_shortcut_name = f"{program_name} (Browser)".
 - move set_terminal_colors / setup_unminimize_and_foreground_on_first_print to main; move stuff to the watchdog so the visible terminal disappears fastest; "make start: This script is intended to be launched in a visible terminal that is minimized on start".
 - do i need to make terminal_args safe?
 - old settings: prevent_launch_if_existing_instances_running / close_existing_instances_on_start / prompt_to_close_existing_instances (now instance_policy).

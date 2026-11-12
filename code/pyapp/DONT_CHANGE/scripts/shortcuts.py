@@ -20,7 +20,6 @@ from typing import Any, Dict, Iterable, List, Optional, Protocol, Tuple, Union
 
 from pyapp.DONT_CHANGE.backend_settings import (
     BROWSER_APP_ID_SUFFIX,
-    BROWSER_ICON_PATH,
     CRASH_LOG_ICON_PATH,
     CREATED_SHORTCUTS_LIST_PATH,
     DEV_SETTINGS_PATH,
@@ -425,8 +424,14 @@ def shortcut_targets(s: Union[ModuleType, SimpleNamespace]) -> Dict[str, str]:
 def shortcut_definitions(
     s: Union[ModuleType, SimpleNamespace], app_id: str, targets: Dict[str, str]
 ) -> List[Tuple[str, str, str, str, str, Optional[str], str]]:
-    """(kind, name, icon, launcher, args, app_id, description) for every enabled shortcut."""
+    """(kind, name, icon, launcher, args, app_id, description) for every enabled shortcut.
+
+    In this order, which Setup also creates and lists them in: the ways to start the app, then
+    settings, stop, logs, crash logs and the code.
+    """
     name = s.program_name
+    # Without a settings file (user_settings_path empty) there is no settings shortcut.
+    settings_name = s.open_settings_shortcut_name if s.user_settings_path else ""
     definitions = [
         ("terminal", s.terminal_shortcut_name, ICON_PATH, LAUNCHER_TERMINAL, app_id, app_id, f"Start {name}"),
         (
@@ -441,11 +446,20 @@ def shortcut_definitions(
         (
             "browser_terminal",
             s.browser_terminal_shortcut_name,
-            BROWSER_ICON_PATH,
+            ICON_PATH,  # the same app, so the same icon as the terminal shortcut
             LAUNCHER_BROWSER_TERMINAL,
             app_id,
             app_id + BROWSER_APP_ID_SUFFIX,
             f"Start {name} in a terminal in the browser",
+        ),
+        (
+            "settings",
+            settings_name,
+            SETTINGS_ICON_PATH,
+            LAUNCHER_OPEN_SETTINGS,
+            targets["settings"],
+            None,
+            f"Open the {name} settings file",
         ),
         (
             "stop",
@@ -484,18 +498,6 @@ def shortcut_definitions(
             f"Open the {name} main script",
         ),
     ]
-    if s.user_settings_path:
-        definitions.append(
-            (
-                "settings",
-                s.open_settings_shortcut_name,
-                SETTINGS_ICON_PATH,
-                LAUNCHER_OPEN_SETTINGS,
-                targets["settings"],
-                None,
-                f"Open the {name} settings file",
-            )
-        )
     return [
         (kind, label, icon, launcher, arguments, identity, description)
         for kind, label, icon, launcher, arguments, identity, description in definitions
