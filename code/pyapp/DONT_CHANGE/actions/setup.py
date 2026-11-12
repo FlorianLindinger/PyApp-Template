@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import List
 
 from pyapp.DONT_CHANGE.backend_settings import (
+    BROWSER_ICON_PATH,
     DEV_SETTINGS_PATH,
     INSTALL_ENVIRONMENT_WHEN_GENERATING_SHORTCUTS,
     LAUNCHER_VERSION,
@@ -36,6 +37,7 @@ from pyapp.DONT_CHANGE.scripts.shortcuts import (
     leftover_shortcuts,
     project_app_id,
     read_created_shortcuts,
+    read_start_link,
     remove_shortcuts,
     shortcut_definitions,
     shortcut_filename,
@@ -54,6 +56,29 @@ def _short(path: str) -> str:
     if os.path.normcase(path).startswith(os.path.normcase(home) + os.sep):
         return "%USERPROFILE%" + path[len(home) :]
     return path
+
+
+def sync_start_link(s: object, app_id: str) -> str:
+    """Register the browser terminal's start link (with its shortcut), remove an outdated one; returns its scheme."""
+    from pyapp.DONT_CHANGE.scripts import browser_links
+
+    previous = read_start_link()
+    current = ""
+    try:
+        if getattr(s, "browser_terminal_shortcut_name", ""):
+            name = browser_links.scheme(app_id)
+            if browser_links.register_start_link(name, app_id, BROWSER_ICON_PATH):
+                current = name
+            else:
+                print_warn(
+                    f'"{name}://" belongs to another program, so there is no start link for the browser terminal.'
+                )
+        # E.g. after renaming the program or disabling the browser terminal shortcut.
+        if previous and previous != current:
+            browser_links.unregister_start_link(previous)
+    except OSError:
+        note_ignored("browser terminal start link")
+    return current
 
 
 def main() -> None:
@@ -144,12 +169,20 @@ def main() -> None:
     except BaseException:
         # Stopped halfway (e.g. a Desktop write blocked by Controlled Folder Access): record every
         # shortcut that exists now, so the next Setup or remove_shortcuts still knows about it.
-        write_created_shortcuts(previous + created, targets_by_kind)
+        write_created_shortcuts(previous + created, targets_by_kind, read_start_link())
         raise
     removed = remove_shortcuts(previous, keep=created)
-    write_created_shortcuts(created + leftover_shortcuts(previous, removed + created), targets_by_kind)
+    start_link = sync_start_link(s, app_id)
+    write_created_shortcuts(created + leftover_shortcuts(previous, removed + created), targets_by_kind, start_link)
     for path in removed:
         print(f"  {styled('-', ANSI_DIM)} {styled('removed ' + _short(path), ANSI_DIM)}")
+    if s.browser_terminal_shortcut_name:
+        from pyapp.DONT_CHANGE.scripts.browser_links import page_url
+
+        print_heading("Browser terminal")
+        print(f"  bookmark    {page_url(s, app_id)}  {styled('(works while the program runs)', ANSI_DIM)}")
+        if start_link:
+            print(f"  start link  {start_link}://start  {styled('(starts the program in the browser)', ANSI_DIM)}")
     delete_finished_run_folders()
     print()
     print_success(" Setup completed. The shortcuts are ready for this location. ")

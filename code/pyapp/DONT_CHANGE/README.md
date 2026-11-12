@@ -90,14 +90,28 @@ Three Pythons can be involved, but usually they are the same installation:
 6. **`scripts\entrypoint.py`** puts the `code` folder on `sys.path` and runs
    `actions\start_program.py`'s `main()`.
 7. **`actions\start_program.py`** validates the settings, resolves the launch mode (`conhost`,
-   `wt` or `no_terminal`; Windows Terminal falls back to the classic console when missing),
+   `wt`, `browser` or `no_terminal`; Windows Terminal falls back to the classic console when missing),
    gives its own minimized window the app's title, icon and taskbar group, applies
    `instance_policy` (allow / focus the running one / ask / replace / block, see
    `scripts\instance_policy.py`), deletes old run folders when no instance is running, warns about outdated "open" shortcuts and
    calls `ensure_environment()` (see [The Python environment](#the-python-environment)).
    It then reserves a run folder `tmp\runs\<id>\` and starts the watchdog in a new console
-   (`conhost.exe` or `wt.exe`) or hidden, and waits until the watchdog writes
+   (`conhost.exe` or `wt.exe`), in the browser terminal (below) or hidden, and waits until the watchdog writes
    `startup.json` ("started", "cancelled" or an error). Then this window closes.
+   From the browser terminal shortcut (`B\B.bat`, mode `browser`), **`runtime\browser_terminal_host.py`**
+   runs hidden: it starts the self-contained **`browser_terminal`** package (see its README; it can
+   be copied into other projects) with the launcher's diagnostics log. The
+   package starts the watchdog in a Windows pseudoconsole (ConPTY), serves its page (xterm.js,
+   bundled) on `127.0.0.1` with a random port and token, streams the console over a WebSocket and
+   opens the page in a new tab of the default browser. It finds the browser window by the page's
+   unique first title, brings it to the front, and stores its handle in the run folder (`browser-window.json`, used by `instance_policy = "focus"`).
+   Its address is stable per project copy (`scripts\browser_links.py`): `http://<name>.localhost:<port>/<key>/`
+   with a port derived from the taskbar identity and a per-PC key in `generated\browser_terminal_key.txt`
+   (not committed), or `browser_terminal_address`. Setup shows it and registers the start link
+   `<name>://start` for the current user (HKCU), which starts the browser terminal shortcut's launcher.
+   Window icon and `color` changes cannot pass through a pseudoconsole: `console_tools` appends
+   them to `browser-ui.jsonl` instead. Closing the page ends the program after a 5-second grace
+   period (a reload reconnects), like closing a console window.
 8. **`runtime\bg_watchdog.py`** puts itself into a Windows job object (so Stop can end
    every process the app starts, see [Process control](#process-control-and-stop)), registers
    the run in `tmp\running\` under the instance policy, sets the console's title, icon, colors
@@ -130,7 +144,7 @@ identity), `PROGRAM_HAS_TERMINAL` (`1`/`0`), `LOG_PATH`, `WDIR_IS_SCRIPT_DIR`,
 | `<name> - Settings` | `B\S.bat <file>` | Opens the user settings file (`user_settings_path`). |
 | `<name> - Edit Code` | `B\M.bat <file>` | Opens the file set in `main_script_path`. |
 | `<name> - Logs` / `- Crash Logs` | `B\L.bat` / `B\C.bat <folder>` | Opens the log / crash-log folder. |
-| `<name> - Tools` | `B\T.bat` → `scripts\dev_tools\main.py tools` | The dev tools that the people using the app may need (`USER_TOOLS` in `main.py`). |
+| `<name> (Browser)` | `B\B.bat` → `actions\start_program.py`, mode `browser` | The app with its console in a browser tab (see `browser_terminal`). |
 
 Setup passes each "open" shortcut its resolved target. `bootstrap\open_file.bat` /
 `open_folder.bat` then open it **without starting Python** (VS Code via its `Code.exe`, else
@@ -255,7 +269,7 @@ ASCII art (`scripts/banner.py`). The batch/Python bootstrap and the
 | `CHANGELOG.md` | Changes per version; the newest heading matches `LAUNCHER_VERSION`. |
 | `AGENT_CHANGELOG.md` | What coding agents changed, task by task, with the checks they ran. |
 | `TODO.md` | Open items and ideas. |
-| `LICENSE.md`, `LICENSES/` | License of this folder (`MIT OR Apache-2.0`), which also covers the bundled banner font. |
+| `LICENSE.md` | License of this folder (MIT), which also covers the bundled banner font. |
 | `backend_settings.py` | Every internal path and constant (`LAUNCHER_VERSION`, folders, icon paths, file names, defaults). Imported by almost everything; changes nothing on import. |
 | `ruff.toml`, `pyrefly.toml` | Lint and type-check settings for this folder only (Python 3.8, Windows, 120 columns). |
 | `.gitignore` | Keeps `tmp/`, caches and `__pycache__` out of Git. |
@@ -270,7 +284,7 @@ ASCII art (`scripts/banner.py`). The batch/Python bootstrap and the
 | `Q.bat` | `Stop` shortcut | `stop_program.py` |
 | `S.bat`, `M.bat` | Settings / Edit Code | `open_file.bat <file>`, else `open_file.py` |
 | `L.bat`, `C.bat` | Logs / Crash Logs | `open_folder.bat <folder>`, else `open_folder.py` |
-| `T.bat` | Tools | `dev_tools/main.py tools` |
+| `B.bat` | Browser terminal | `actions/start_program.py` (mode `browser`) |
 
 ### `bootstrap/` – before any Python is known
 
@@ -382,4 +396,5 @@ requires Python 3.12; the launcher keeps its standard-library-only runtime.
 
 ## Licensing
 
-Everything here is `MIT OR Apache-2.0`, including the banner font in `data/fonts`. See [LICENSE.md](LICENSE.md).
+Everything here is MIT, including the banner font in `data/fonts`. The bundled xterm.js files in
+`browser_terminal/web` are MIT as well, with their own copyright notice. See [LICENSE.md](LICENSE.md).

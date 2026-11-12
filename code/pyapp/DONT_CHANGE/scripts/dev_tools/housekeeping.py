@@ -142,15 +142,20 @@ def cmd_clean(_arguments: List[str]) -> None:
 
 def cmd_remove_shortcuts(_arguments: List[str]) -> None:
     """Remove every shortcut Setup created (project folder, Start Menu, Desktop)."""
+    from pyapp.DONT_CHANGE.scripts.browser_links import unregister_start_link
     from pyapp.DONT_CHANGE.scripts.shortcuts import (
         leftover_shortcuts,
         read_created_shortcuts,
+        read_start_link,
         remove_shortcuts,
         write_created_shortcuts,
     )
 
     previous = read_created_shortcuts()
     removed = remove_shortcuts(previous)
+    start_link = read_start_link()
+    if start_link and unregister_start_link(start_link):
+        print_info(f"Removed the start link {start_link}://")
     # Shortcuts that could not be deleted (e.g. open in Explorer) stay recorded for the next try.
     write_created_shortcuts(leftover_shortcuts(previous, removed))
     for path in removed:

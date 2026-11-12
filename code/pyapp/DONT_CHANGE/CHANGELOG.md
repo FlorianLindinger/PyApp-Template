@@ -7,6 +7,19 @@ README.md ("Versions"); `LAUNCHER_VERSION` in `backend_settings.py` names the cu
 
 The first versioned release; it contains every change below.
 
+### 2026-11-11 - browser terminal
+
+- New shortcut "<program_name> (Browser)" (`browser_terminal_shortcut_name`, `""` to disable; also for `desktop_shortcuts` as `"browser_terminal"`) with its own `browser.ico`: it shows the console as a terminal in a new tab of the default browser, brought to the front. The program runs in a real Windows pseudoconsole (ConPTY), so input, Ctrl+C, colors, titles, progress bars and the completion prompts work as in the console; the page (xterm.js 5.5.0, bundled, MIT) adds sharp text, zoom (Ctrl+wheel, touchpad pinch, Ctrl+/-/0), clickable links and Windows Terminal-style copy and paste. Closing the tab ends the program like closing a console window, the tab closes when the program ends, and `instance_policy = "focus"`, Stop, restarting after a missing package and the success/failure icons and colors work. Needs Windows 10 1809 or newer.
+- The browser terminal keeps one address per project copy, e.g. `http://pyapp-template.localhost:25577/<key>/`, so it can be bookmarked (it works while the program runs); `browser_terminal_address` chooses another. The key is kept per PC in `generated/browser_terminal_key.txt` (ignored by Git). Setup shows the address and registers the start link `<program name>://start` for the current Windows user: a bookmark or link with it starts the program in the browser terminal. It is removed with the shortcut, by `remove_shortcuts` and after renaming the program; a scheme of another program is never changed.
+- Icons look clean at 32 and 16 px: the optional `icons/icon_32x32_optional.png` and `icons/icon_16x16_optional.png` replace `icon.png` for exactly those sizes (taskbar, browser tab, small Explorer icons), also under the overlays. The template ships versions of its icon without the blueprint grid; they are used only with the template's `icon.png`, never with your own.
+- A window that stays open after Ctrl+C now turns black like after a failure, so the whole report is readable on one background.
+- A faint ☆ in the browser terminal's corner explains how to bookmark it and offers the start link to copy (Ctrl+D works while its panel is open; in the terminal it stays end of input).
+- The browser terminal scrolls 5x faster with the mouse wheel or touchpad, Alt+wheel 25x; config `scroll` of the browser_terminal package.
+- The banner no longer shows `?` boxes in the classic console: its font Consolas lacks the block characters, so the window switches to Cascadia Mono (shipped with Windows 11) at the same size, or the plain name is shown.
+- Removed the Tools shortcut (`tools_shortcut_name`, `B/T.bat`, the `tools` menu of the dev tools); Setup removes existing Tools shortcuts. The dev tools in `code/pyapp/dev_tools` stay.
+- The launcher is now licensed under the MIT License only (before: MIT OR Apache-2.0); `LICENSES/` is replaced by the license text in `LICENSE.md`.
+- The browser terminal is the self-contained folder `browser_terminal` (standard library only, nothing from the launcher): copy it into another project and run `python browser_terminal [-- command]`.
+
 ### 2026-11-11 - audit fixes
 
 - App modules named like standard-library modules (`code/random.py`, `code/signal.py`, ...) no longer break the launcher: the code folder comes last on the launcher's own `sys.path`.

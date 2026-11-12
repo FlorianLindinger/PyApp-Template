@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 from pyapp.DONT_CHANGE.backend_settings import (
+    BROWSER_ICON_PATH,
     CRASH_LOG_ICON_PATH,
     DEFAULT_ICON_DIR,
     FAILURE_ICON_PATH,
@@ -52,6 +53,7 @@ ICON_GENERATION_SETTINGS = [
     (FAILURE_ICON_PATH, *_base, "default_failure.png"),
     (CRASH_LOG_ICON_PATH, *_base, "default_crash_log.png"),
     (OPEN_CODE_ICON_PATH, *_base, "default_open_code.png"),
+    (BROWSER_ICON_PATH, *_base, "default_browser.png"),
 ]
 # fmt: on
 
@@ -87,6 +89,37 @@ def _pick_png(filename: str, expected_id: Optional[str], fallback_filename: Opti
     if not Path(fallback_path).is_file():
         raise FileNotFoundError(f'Fallback PNG does not exist: "{fallback_path}"')
     return fallback_path
+
+
+# Optional images for single sizes, next to icon.png: (size, file name, ID of the template's
+# version, bundled copy of it). At 16 and 32 px (taskbar, browser tab, small Explorer icons) the
+# details of icon.png blur; a simplified or hand-drawn version looks better. The template ships
+# its own versions under these names; they are used only together with the template's
+# icon.png, so a replaced icon.png is never mixed with the template's small art.
+SIZE_PNGS = (
+    (32, "icon_32x32_optional.png", "32x32:ba40112b", "default_icon_32x32.png"),
+    (16, "icon_16x16_optional.png", "16x16:82810d24", "default_icon_16x16.png"),
+)
+
+
+def _pick_size_pngs(base_path: str) -> Dict[int, str]:
+    """{size: PNG} for the sizes that do not use icon.png itself.
+
+    Your own optional image (changed from the template's) is always used. The template's are
+    used only while icon.png is the template's too. Without a 16x16 image, a 32x32 one is used
+    for 16 px as well.
+    """
+    template_icon = Path(base_path).parent == Path(ICON_FALLBACK_PNG_DIR)
+    picked: Dict[int, str] = {}
+    for size, name, template_id, bundled in SIZE_PNGS:
+        own = Path(ICON_PNG_DIR) / name
+        if own.is_file() and _cached_png_image_id(str(own)) != template_id:
+            picked[size] = str(own)
+        elif template_icon:
+            picked[size] = str(Path(ICON_FALLBACK_PNG_DIR) / bundled)
+    if 16 not in picked and 32 in picked:
+        picked[16] = picked[32]
+    return picked
 
 
 def _file_hash(path: str) -> str:
@@ -143,9 +176,10 @@ def main() -> None:
     validate(load_settings())
     record = _read_record()
     with tempfile.TemporaryDirectory() as folder:
-        jobs: List[Tuple[str, str, str, Optional[str], float, str]] = []
+        jobs: List[Tuple[str, str, str, Optional[str], float, str, Dict[int, str]]] = []
         for output_path, base_name, base_id, base_fallback, overlay_name in ICON_GENERATION_SETTINGS:
             base_path = _pick_png(base_name, base_id, base_fallback)
+            size_paths = _pick_size_pngs(base_path)
             # e.g. stop.ico -> SUB_ICONS["stop"]
             placement = SUB_ICONS.get(Path(output_path).stem)
             overlay_path = None
@@ -155,17 +189,18 @@ def main() -> None:
                     raise FileNotFoundError(f'Bundled overlay PNG does not exist: "{overlay_path}"')
             scale, alignment = placement or (0.35, "bottom right")
             built_path = str(Path(folder) / Path(output_path).name)
-            jobs.append((output_path, built_path, base_path, overlay_path, scale, alignment))
+            jobs.append((output_path, built_path, base_path, overlay_path, scale, alignment, size_paths))
 
-        def generate(job: Tuple[str, str, str, Optional[str], float, str]) -> str:
+        def generate(job: Tuple[str, str, str, Optional[str], float, str, Dict[int, str]]) -> str:
             """Build one ICO from the resolved base image, overlay and placement settings."""
-            _, built_path, base_path, overlay_path, scale, alignment = job
+            _, built_path, base_path, overlay_path, scale, alignment, size_paths = job
             return generate_ico_from_png(
                 built_path,
                 base_path,
                 overlay_path,
                 sub_icon_area_scale_factor=scale,
                 sub_icon_alignment=alignment,
+                size_png_paths=size_paths,
             )
 
         with ThreadPoolExecutor(max_workers=max(1, min(4, len(jobs)))) as executor:

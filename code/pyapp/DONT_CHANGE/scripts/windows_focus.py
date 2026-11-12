@@ -102,11 +102,36 @@ def focus_window(hwnd: int) -> bool:
     return True
 
 
+def _browser_terminal_window(record: Dict[str, Any]) -> int:
+    """The browser window of an instance in the browser terminal, or 0.
+
+    Its console is an invisible pseudoconsole, so console_hwnd cannot be shown; the terminal's
+    host stores the browser window it found in the run's folder.
+    """
+    import json
+    from pathlib import Path
+
+    from pyapp.DONT_CHANGE.backend_settings import BROWSER_WINDOW_FILE_NAME
+
+    run_dir = record.get("run_dir")
+    if not run_dir:
+        return 0
+    try:
+        hwnd = json.loads((Path(run_dir) / BROWSER_WINDOW_FILE_NAME).read_text(encoding="utf-8"))["hwnd"]
+    except (OSError, ValueError, KeyError, TypeError):
+        return 0
+    user32 = ctypes.WinDLL("user32", use_last_error=True)
+    return hwnd if isinstance(hwnd, int) and user32.IsWindow(hwnd) and user32.IsWindowVisible(hwnd) else 0
+
+
 def focus_instance(record: Dict[str, Any]) -> str:
     """Return "focused", or "no_window" when the instance has neither app nor console window."""
     child = (record.get("child") or {}).get("pid") if isinstance(record.get("child"), dict) else None
     windows = app_windows(process_tree([record.get("pid"), child]))
     if windows and focus_window(windows[0]):
+        return "focused"
+    browser = _browser_terminal_window(record)
+    if browser and focus_window(browser):
         return "focused"
     console = record.get("console_hwnd") or 0
     if console and focus_window(console):

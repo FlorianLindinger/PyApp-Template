@@ -162,6 +162,9 @@ def set_terminal_icon(icon_path: Optional[str]) -> None:
     if icon_path in ("", None):
         return
     icon_path = os.path.normpath(icon_path)
+    if in_browser_terminal():
+        browser_terminal_ui(icon=icon_path)  # the page's favicon
+        return
 
     import ctypes
     from ctypes import wintypes
@@ -385,6 +388,10 @@ def set_terminal_colors(colors: Optional[str]) -> None:
 
         if not isinstance(colors, str) or not re.fullmatch(r"[0-9A-Fa-f]{1,2}", colors):
             raise ValueError("Terminal colors must contain one or two hexadecimal digits.")
+        if in_browser_terminal():
+            # Like `color`, this recolors everything with the default colors, including what was printed.
+            browser_terminal_ui(colors=colors)
+            return
         try:
             import subprocess
 
@@ -394,6 +401,36 @@ def set_terminal_colors(colors: Optional[str]) -> None:
             subprocess.run([CMD_EXE, "/c", "color", colors], check=False)  # noqa: S603
         except Exception:
             note_ignored("set_terminal_colors")
+
+
+# ---------------------------------------------------------------- browser terminal
+#
+# The browser terminal shortcut shows the console as a pseudoconsole in the browser (the
+# browser_terminal package). Titles and text reach the page through it, but the window icon and
+# the `color` command do not: those requests go through the package's ui module instead.
+
+
+def in_browser_terminal() -> bool:
+    """True in a console shown by the browser terminal."""
+    try:
+        from pyapp.DONT_CHANGE.backend_settings import BROWSER_UI_ENV_VAR
+        from pyapp.DONT_CHANGE.browser_terminal import ui
+
+        return ui.inside(BROWSER_UI_ENV_VAR)
+    except Exception:
+        note_ignored("in_browser_terminal")
+        return False
+
+
+def browser_terminal_ui(icon: Optional[str] = None, colors: Optional[str] = None) -> None:
+    """Ask the browser terminal for an icon (file) or colors (a `color` argument such as "4F")."""
+    try:
+        from pyapp.DONT_CHANGE.backend_settings import BROWSER_UI_ENV_VAR
+        from pyapp.DONT_CHANGE.browser_terminal import ui
+
+        ui.request(BROWSER_UI_ENV_VAR, icon=icon, colors=ui.colors_from_code(colors) if colors else None)
+    except Exception:
+        note_ignored("browser_terminal_ui")
 
 
 # ---------------------------------------------------------------- editor

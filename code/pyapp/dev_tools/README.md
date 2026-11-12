@@ -1,7 +1,7 @@
 # Dev tools
 
 Double-click a tool, or run it from a terminal with arguments (e.g. `add_packages.cmd requests "numpy>=2"`; quote requirements with `<`, `>` or `|`, which the command prompt would otherwise treat as redirection).
-`Dev Menu.cmd` lists all of them. The **&lt;name&gt; - Tools** shortcut offers the people using the app the few they may need (status, repair, add packages, package terminal, make self-contained, clean, remove shortcuts), each with a note on what it changes; set `tools_shortcut_name = None` to leave it out. Every tool validates `developer_settings.py` first and
+`Dev Menu.cmd` lists all of them. Every tool validates `developer_settings.py` first and
 prepares the environment if needed. Close running app instances before changing packages
 or Python — Windows locks the files they use.
 

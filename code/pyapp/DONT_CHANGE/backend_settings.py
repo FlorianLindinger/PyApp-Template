@@ -82,6 +82,17 @@ WATCHDOG_PATH = DONT_CHANGE_DIR + "\\runtime\\bg_watchdog.py"
 PROCESS_EXIT_PATH = DONT_CHANGE_DIR + "\\runtime\\process_exit.py"
 SCRIPT_WRAPPER_PATH = DONT_CHANGE_DIR + "\\runtime\\script_wrapper.py"
 CTRL_C_HELPER_PATH = DONT_CHANGE_DIR + "\\runtime\\send_ctrl_c.py"
+# The browser terminal shortcut: the launcher's wrapper around the self-contained browser_terminal
+# package, and the files it shares with the run (in the run's folder): its settings, icon/color
+# requests, its window handle. The variable names the request file for console_tools.
+BROWSER_TERMINAL_PATH = DONT_CHANGE_DIR + "\\runtime\\browser_terminal_host.py"
+BROWSER_UI_ENV_VAR = "PYAPP_BROWSER_TERMINAL_UI"
+BROWSER_CONFIG_FILE_NAME = "browser-terminal.json"
+BROWSER_UI_FILE_NAME = "browser-ui.jsonl"
+BROWSER_WINDOW_FILE_NAME = "browser-window.json"
+# The secret part of the browser terminal's stable address, per PC (scripts/browser_links.py).
+# UPDATE code/pyapp/.gitignore when moving it: it must not be committed.
+BROWSER_KEY_PATH = GENERATED_DIR + "\\browser_terminal_key.txt"
 RESOLVE_RUNTIME_PATH = DONT_CHANGE_DIR + "\\bootstrap\\resolve_runtime.py"
 
 # ------------------------
@@ -90,11 +101,11 @@ RESOLVE_RUNTIME_PATH = DONT_CHANGE_DIR + "\\bootstrap\\resolve_runtime.py"
 LAUNCHER_TERMINAL = ENTRY_BATCHES_DIR + "\\W.bat"
 LAUNCHER_OPEN_SETTINGS = ENTRY_BATCHES_DIR + "\\S.bat"
 LAUNCHER_NO_TERMINAL = ENTRY_BATCHES_DIR + "\\N.bat"
+LAUNCHER_BROWSER_TERMINAL = ENTRY_BATCHES_DIR + "\\B.bat"
 LAUNCHER_STOP = ENTRY_BATCHES_DIR + "\\Q.bat"
 LAUNCHER_OPEN_LOG_DIR = ENTRY_BATCHES_DIR + "\\L.bat"
 LAUNCHER_OPEN_CRASH_LOG_DIR = ENTRY_BATCHES_DIR + "\\C.bat"
 LAUNCHER_OPEN_CODE = ENTRY_BATCHES_DIR + "\\M.bat"
-LAUNCHER_TOOLS = ENTRY_BATCHES_DIR + "\\T.bat"
 # Machine-specific list of every generated .lnk, used to remove stale shortcuts.
 CREATED_SHORTCUTS_LIST_PATH = GENERATED_DIR + "\\shortcuts_created_by_setup.json"
 # Every generated shortcut's arguments contain this fragment; stale-shortcut removal
@@ -115,6 +126,7 @@ SUCCESS_ICON_PATH = ICON_DIR + "\\success.ico"
 FAILURE_ICON_PATH = ICON_DIR + "\\failure.ico"
 CRASH_LOG_ICON_PATH = ICON_DIR + "\\crash_log.ico"
 OPEN_CODE_ICON_PATH = ICON_DIR + "\\open_code.ico"
+BROWSER_ICON_PATH = ICON_DIR + "\\browser.ico"
 
 # ------------------------
 # generated process state
@@ -161,6 +173,7 @@ SUB_ICONS = {
     "failure": (0.35, "bottom right"),
     "crash_log": (0.35, "bottom right"),
     "open_code": (0.35, "bottom right"),
+    "browser": (0.35, "bottom right"),
 }
 
 # Import-finder scan exclusions (folder names anywhere below the code folder; folders starting
@@ -187,6 +200,8 @@ WRAPPER_READY_TIMEOUT_SECONDS = 120
 # Taskbar identity suffix of the no-terminal shortcut and of the windows it launches, so a
 # pinned no-terminal shortcut groups its app windows separately from the terminal shortcut.
 NO_TERMINAL_APP_ID_SUFFIX = "W"
+# The same for the browser terminal shortcut, so it can be pinned next to the terminal shortcut.
+BROWSER_APP_ID_SUFFIX = "B"
 
 # Source lines of your own code shown before and after each failing line (0: none).
 # Library code always shows just the failing line, like Python does.

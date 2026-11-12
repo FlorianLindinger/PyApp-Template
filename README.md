@@ -159,7 +159,7 @@ Before you publish your app, replace the license placeholder in [`LICENSE.md`](L
 | **&lt;name&gt; - Settings** | Opens `code/settings.py` |
 | **&lt;name&gt; - Edit Code** | Opens `main.py` in VS Code, or Notepad if VS Code isn't installed |
 | **&lt;name&gt; - Logs** / **Crash Logs** | Opens the matching folder |
-| **&lt;name&gt; - Tools** | A menu for the people using the app: check the setup, repair or add packages, make the folder run offline on other PCs, delete logs, remove the shortcuts |
+| **&lt;name&gt; (Browser)** | Starts the app with its console in a browser tab instead of a console window |
 
 Set a shortcut's name to `""` in the settings to remove it. To add shortcuts to the desktop, use `desktop_shortcuts`, for example `["no_terminal"]`. Every copy of the project has its own taskbar group, so two apps made from this template never mix their windows.
 
@@ -310,6 +310,6 @@ Replace `code/pyapp/DONT_CHANGE` with the newer version. Your code and settings 
 
 ## License
 
-The launcher in `code/pyapp/DONT_CHANGE` is available under `MIT OR Apache-2.0`. uv, Python and third-party packages keep their own licenses. Your project's own license goes in [`LICENSE.md`](LICENSE.md), which explains which terms cover which files.
+The launcher in `code/pyapp/DONT_CHANGE` is available under the MIT License. uv, Python and third-party packages keep their own licenses. Your project's own license goes in [`LICENSE.md`](LICENSE.md), which explains which terms cover which files.
 
 Originally built by [Florian Lindinger](https://github.com/FlorianLindinger/PyApp-Template).

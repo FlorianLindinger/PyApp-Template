@@ -15,6 +15,9 @@
 # machine-specific list of generated shortcuts:
 /generated/shortcuts_created_by_setup.json
 
+# secret part of the browser terminal's address, per PC:
+/generated/browser_terminal_key.txt
+
 # The launcher folder is always tracked: this overrides every rule in the root .gitignore.
 # Rules inside DONT_CHANGE/.gitignore still apply;
 !/DONT_CHANGE/**

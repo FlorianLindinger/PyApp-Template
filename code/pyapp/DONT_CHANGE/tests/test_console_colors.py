@@ -1,6 +1,7 @@
 """Only hexadecimal color codes may reach the Windows color command."""
 
 import unittest
+from typing import List
 from unittest import mock
 
 import project_location  # noqa: F401 - make this checkout's code importable
@@ -31,3 +32,40 @@ class ConsoleColorTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class OutcomeColorTests(unittest.TestCase):
+    """A window that stays open after a traceback turns black, so the colored report stays readable."""
+
+    def colors_after(self, outcome: str) -> List[str]:
+        from types import SimpleNamespace
+
+        from pyapp.DONT_CHANGE.runtime import process_exit
+
+        s = SimpleNamespace(
+            program_name="App",
+            **{
+                "close_after_" + outcome: False,
+                "open_log_file_after_" + outcome: False,
+                "play_sound_after_" + outcome: False,
+            },
+        )
+        with mock.patch.multiple(
+            process_exit,
+            settings=mock.Mock(return_value=s),
+            set_terminal_title=mock.DEFAULT,
+            set_terminal_icon=mock.DEFAULT,
+            set_terminal_colors=mock.DEFAULT,
+            print_report=mock.DEFAULT,
+            write_crash_log=mock.Mock(return_value=None),
+            wait_for_enter=mock.DEFAULT,
+        ) as patched:
+            process_exit.complete(outcome, None)
+        return [call.args[0] for call in patched["set_terminal_colors"].call_args_list]
+
+    def test_failure_and_ctrl_c_turn_the_window_black(self):
+        self.assertEqual(self.colors_after("failure"), ["0F"])
+        self.assertEqual(self.colors_after("keyboard_interrupt"), ["0F"])
+
+    def test_success_keeps_the_colors(self):
+        self.assertEqual(self.colors_after("success"), [])

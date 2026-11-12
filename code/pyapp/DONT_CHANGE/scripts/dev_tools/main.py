@@ -39,7 +39,7 @@ from pyapp.DONT_CHANGE.scripts.dev_tools.self_contained import cmd_make_self_con
 from pyapp.DONT_CHANGE.scripts.entrypoint import expected_problem
 
 # Commands that end on their own (a menu, a terminal); no "Press Enter" afterwards.
-NO_PAUSE = {"menu", "tools", "terminal"}
+NO_PAUSE = {"menu", "terminal"}
 
 COMMANDS = {
     "add": cmd_add,
@@ -64,39 +64,6 @@ MENU_GROUPS = (
     ("Packages", ("add", "remove", "upgrade", "sync", "find-imports", "terminal", "export")),
     ("Python", ("change-python", "update-python")),
     ("Project", ("status", "clean", "remove-shortcuts", "make-self-contained", "test")),
-)
-# The Tools shortcut's menu, for the people using the app rather than its developer:
-# (command, what it does, what to know before using it). The other commands change what the
-# developer recorded for everyone (packages they did not test, another Python), so they are left out.
-USER_TOOLS = (
-    ("status", "Check uv, Python and the packages", "Send this to the developer when the app does not start."),
-    ("sync", "Repair the packages", "Reinstalls exactly the packages the app lists."),
-    (
-        "add",
-        "Add packages for good",
-        (
-            "Recorded in code\\pyapp\\developer_settings.py of this copy. A new version of the app from its developer"
-            " replaces that file: ask them to add it, if it should be in the app for everyone."
-        ),
-    ),
-    (
-        "terminal",
-        "Package command prompt (advanced)",
-        (
-            '"uv pip install" there is only temporary: the next repair or update removes it.'
-            ' To keep a package, use "uv add" there, or "Add packages" here.'
-        ),
-    ),
-    (
-        "make-self-contained",
-        "Make this folder run on other PCs without internet",
-        (
-            "Copies uv, Python and the packages into this folder and changes settings in"
-            " code\\pyapp\\developer_settings.py of this copy."
-        ),
-    ),
-    ("clean", "Delete logs", "Only the app's own log files."),
-    ("remove-shortcuts", "Remove the shortcuts", "In this folder, the Start Menu and on the Desktop."),
 )
 # For the commands that do not start with a heading of their own.
 HEADINGS = {
@@ -129,12 +96,6 @@ def cmd_menu(_arguments: List[str]) -> None:
         for title, group in MENU_GROUPS
     ]
     _run_menu(groups)
-
-
-def cmd_tools(_arguments: List[str]) -> None:
-    """The menu of the Tools shortcut (USER_TOOLS)."""
-    lines = [(name, label + "\n       " + styled(note, ANSI_DIM)) for name, label, note in USER_TOOLS]
-    _run_menu([("Tools", lines)])
 
 
 def _run_menu(groups: List[Tuple[str, List[Tuple[str, str]]]]) -> None:
@@ -179,8 +140,6 @@ def main() -> None:
         pause_on_success = False
     if command == "menu":
         return cmd_menu(sys.argv[2:])
-    if command == "tools":
-        return cmd_tools(sys.argv[2:])
     if command not in COMMANDS:
         raise SystemExit("Unknown command. Use one of: menu, " + ", ".join(COMMANDS))
     return run_command(command, sys.argv[2:])

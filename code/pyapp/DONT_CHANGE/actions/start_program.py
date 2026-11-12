@@ -17,7 +17,7 @@ import uuid
 from pathlib import Path
 
 from pyapp.DONT_CHANGE import backend_settings as paths
-from pyapp.DONT_CHANGE.scripts.config import settings, validate
+from pyapp.DONT_CHANGE.scripts.config import settings, terminal_color_code, validate
 from pyapp.DONT_CHANGE.scripts.console_tools import print_info, print_warn
 from pyapp.DONT_CHANGE.scripts.diagnostics import note_ignored
 from pyapp.DONT_CHANGE.scripts.env.venv import ensure_environment
@@ -30,11 +30,11 @@ from pyapp.DONT_CHANGE.scripts.runtime_state import ProcessRegistry
 
 
 def resolve_mode(s: Union[ModuleType, SimpleNamespace], requested: str) -> str:
-    """Map the shortcut's request to conhost / wt / no_terminal (with a Windows Terminal fallback)."""
+    """Map the shortcut's request to conhost / wt / browser / no_terminal (with a Windows Terminal fallback)."""
     mode = requested
     if mode == "terminal":
         mode = "conhost" if s.use_classic_terminal else "wt"
-    if mode not in {"conhost", "wt", "no_terminal"}:
+    if mode not in {"conhost", "wt", "browser", "no_terminal"}:
         raise ValueError("Unknown launch mode: " + mode)
     if mode == "wt" and not shutil.which("wt.exe"):
         print_warn("Windows Terminal (wt.exe) is not installed; using the classic terminal instead.")
@@ -66,6 +66,44 @@ def wt_command(title: str, tab_color: Optional[str], command: List[str]) -> List
     """
     arguments = [title, *(["--tabColor", tab_color] if tab_color else []), *command]
     return ["wt.exe", "--title", *(argument.replace(";", "\\;") for argument in arguments)]
+
+
+def browser_command(s: Union[ModuleType, SimpleNamespace], run_dir: Path, command: List[str]) -> List[str]:
+    """The command line that runs `command` in the browser terminal, after writing its settings.
+
+    The browser_terminal package fills in everything not set here (see its host.complete_config).
+    """
+    from pyapp.DONT_CHANGE.browser_terminal.ui import colors_from_code
+    from pyapp.DONT_CHANGE.scripts import browser_links
+    from pyapp.DONT_CHANGE.scripts.shortcuts import project_app_id, read_start_link
+
+    colors = colors_from_code(terminal_color_code(s.terminal_bg_color, s.terminal_text_color))
+    # The same address on every start (and the one Setup shows), so it can be bookmarked.
+    app_id = project_app_id(s.program_name)
+    host_name, port, key = browser_links.address(s, app_id)
+    start_link = read_start_link()
+    if start_link != browser_links.scheme(app_id):
+        start_link = ""  # recorded for an earlier program name; Setup has not run since
+    config = {
+        "title": s.program_name,
+        "host_name": host_name,
+        "port": port,
+        "key": key,
+        # Offered by the page's bookmark hint, if Setup registered it.
+        "start_link": f"{start_link}://start" if start_link else "",
+        "icon": paths.ICON_PATH,
+        "theme": {**colors, "cursor": colors["foreground"]},
+        "state_dir": str(run_dir),
+        "ui_file": str(run_dir / paths.BROWSER_UI_FILE_NAME),
+        "window_file": str(run_dir / paths.BROWSER_WINDOW_FILE_NAME),
+        "ui_env_var": paths.BROWSER_UI_ENV_VAR,
+        # The browser may outlive this run (when it was not running yet).
+        "hidden_env_prefixes": ["PYAPP_"],
+    }
+    config_path = run_dir / paths.BROWSER_CONFIG_FILE_NAME
+    config_path.write_text(json.dumps(config), encoding="utf-8")
+    python = [sys.executable, "-I", "-S", "-X", "utf8"]
+    return [*python, paths.BROWSER_TERMINAL_PATH, "--config", str(config_path), "--", *command]
 
 
 def main() -> int:
@@ -126,15 +164,27 @@ def main() -> int:
         args = wt_command(s.program_name, s.tab_bar_color, args)
     elif mode == "conhost":
         args = [paths.CONHOST_EXE, *args]
+    elif mode == "browser":
+        args = browser_command(s, run_dir, args)
+        # Windows lets the process started by the click bring windows to the front; the browser
+        # opens later from the hidden host, so this process passes that right on (ASFW_ANY).
+        try:
+            import ctypes
+
+            ctypes.windll.user32.AllowSetForegroundWindow(-1)
+        except Exception:
+            note_ignored("AllowSetForegroundWindow for the browser terminal")
+    # The browser terminal's host has no window of its own, like the watchdog without a terminal.
+    hidden = mode in ("no_terminal", "browser")
     with Path(run_dir / "bootstrap.log").open("w", encoding="utf-8") as diagnostics:
         # The configured launcher/interpreter is intentional; program arguments remain separate.
         child = subprocess.Popen(  # noqa: S603
             args,
             env=env,
             startupinfo=startup,
-            creationflags=subprocess.CREATE_NO_WINDOW if mode == "no_terminal" else subprocess.CREATE_NEW_CONSOLE,
-            stdout=diagnostics if mode == "no_terminal" else None,
-            stderr=diagnostics if mode == "no_terminal" else None,
+            creationflags=subprocess.CREATE_NO_WINDOW if hidden else subprocess.CREATE_NEW_CONSOLE,
+            stdout=diagnostics if hidden else None,
+            stderr=diagnostics if hidden else None,
         )
         deadline = time.monotonic() + paths.STARTUP_ACKNOWLEDGEMENT_TIMEOUT_SECONDS
         while time.monotonic() < deadline:

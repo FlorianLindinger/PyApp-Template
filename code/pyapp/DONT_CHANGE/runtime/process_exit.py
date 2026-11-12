@@ -69,7 +69,7 @@ except Exception as import_error:
 
 REPORT_PATH = str(Path(os.environ.get("PYAPP_RUN_DIR", paths.TEMPORARY_DIR)) / "traceback.json")
 
-# Failures: black background (bright white text) so the colored traceback stays readable.
+# Failures and Ctrl+C: black background (bright white text) so the colored traceback stays readable.
 FAILURE_COLORS = "0F"
 
 OUTCOMES = {
@@ -176,6 +176,8 @@ def restart_program(app_id: str, new_terminal_was_created: bool) -> None:
     """Start the program again with the same terminal behavior."""
     env = os.environ.copy()
     env["PYAPP_LAUNCH_MODE"] = "no_terminal" if new_terminal_was_created else "terminal"
+    if env.get(paths.BROWSER_UI_ENV_VAR):  # started by the browser terminal shortcut: stay in the browser
+        env["PYAPP_LAUNCH_MODE"] = "browser"
     # Run the launcher restart helper or open the configured local log file.
     subprocess.Popen(  # noqa: S603
         [
@@ -285,7 +287,7 @@ def complete(
     if stays_open:
         # First: changing the window colors repaints everything already printed.
         set_terminal_title(OUTCOMES[outcome]["title"].format(program_name=s.program_name))
-        if outcome == "failure":
+        if outcome in ("failure", "keyboard_interrupt"):  # both show a traceback
             set_terminal_colors(FAILURE_COLORS)
         set_terminal_icon(OUTCOMES[outcome]["icon"])
     if message:

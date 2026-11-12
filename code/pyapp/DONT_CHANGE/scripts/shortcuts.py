@@ -19,11 +19,14 @@ from types import ModuleType, SimpleNamespace
 from typing import Any, Dict, Iterable, List, Optional, Protocol, Tuple, Union
 
 from pyapp.DONT_CHANGE.backend_settings import (
+    BROWSER_APP_ID_SUFFIX,
+    BROWSER_ICON_PATH,
     CRASH_LOG_ICON_PATH,
     CREATED_SHORTCUTS_LIST_PATH,
     DEV_SETTINGS_PATH,
     ENTRY_BATCHES_DIR,
     ICON_PATH,
+    LAUNCHER_BROWSER_TERMINAL,
     LAUNCHER_NO_TERMINAL,
     LAUNCHER_OPEN_CODE,
     LAUNCHER_OPEN_CRASH_LOG_DIR,
@@ -31,7 +34,6 @@ from pyapp.DONT_CHANGE.backend_settings import (
     LAUNCHER_OPEN_SETTINGS,
     LAUNCHER_STOP,
     LAUNCHER_TERMINAL,
-    LAUNCHER_TOOLS,
     LOG_ICON_PATH,
     NO_TERMINAL_APP_ID_SUFFIX,
     OPEN_CODE_ICON_PATH,
@@ -352,10 +354,17 @@ def read_created_shortcuts() -> List[str]:
     return list(_read_created_shortcuts_file().get("shortcuts", []))
 
 
-def write_created_shortcuts(paths: List[str], targets: Optional[Dict[str, str]] = None) -> None:
-    """Record the created .lnk files (to remove stale ones later) and the targets they open."""
+def read_start_link() -> str:
+    """The URL scheme of the browser terminal's start link that Setup registered ("" for none)."""
+    link = _read_created_shortcuts_file().get("start_link", "")
+    return link if isinstance(link, str) else ""
+
+
+def write_created_shortcuts(paths: List[str], targets: Optional[Dict[str, str]] = None, start_link: str = "") -> None:
+    """Record the created .lnk files (to remove stale ones later), the targets they open and the start link."""
+    record = {"version": 2, "shortcuts": sorted(set(paths)), "targets": targets or {}, "start_link": start_link}
     with Path(CREATED_SHORTCUTS_LIST_PATH).open("w", encoding="utf-8") as stream:
-        json.dump({"version": 2, "shortcuts": sorted(set(paths)), "targets": targets or {}}, stream, indent=2)
+        json.dump(record, stream, indent=2)
 
 
 def leftover_shortcuts(paths: Iterable[str], removed: Iterable[str]) -> List[str]:
@@ -430,6 +439,15 @@ def shortcut_definitions(
             f"Start {name} without opening a terminal window",
         ),
         (
+            "browser_terminal",
+            s.browser_terminal_shortcut_name,
+            BROWSER_ICON_PATH,
+            LAUNCHER_BROWSER_TERMINAL,
+            app_id,
+            app_id + BROWSER_APP_ID_SUFFIX,
+            f"Start {name} in a terminal in the browser",
+        ),
+        (
             "stop",
             s.stop_running_shortcut_name,
             STOP_ICON_PATH,
@@ -464,15 +482,6 @@ def shortcut_definitions(
             targets["open_code"],
             None,
             f"Open the {name} main script",
-        ),
-        (
-            "tools",
-            s.tools_shortcut_name,
-            SETTINGS_ICON_PATH,  # no icon of its own yet
-            LAUNCHER_TOOLS,
-            "",
-            None,
-            f"Tools for {name}: repair, add packages, make the folder self-contained",
         ),
     ]
     if s.user_settings_path:

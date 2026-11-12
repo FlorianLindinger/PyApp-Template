@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PyApp</title>
+<link rel="icon" id="favicon" href="icon">
+<link rel="stylesheet" href="xterm.css">
+<style>
+  :root { --bg: #0c0c0c; --fg: #cccccc; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); color: var(--fg); }
+  #terminal { position: absolute; inset: 0; padding: 4px 0 0 8px; }
+  #terminal .xterm-viewport { scrollbar-color: #8888 transparent; }
+  #notice {
+    position: absolute; right: 16px; bottom: 16px; max-width: calc(100% - 64px);
+    padding: 10px 14px; border-radius: 6px; font: 14px/1.4 "Segoe UI", system-ui, sans-serif;
+    background: #2b2b2b; color: #f2f2f2; box-shadow: 0 4px 16px #0008;
+  }
+  #notice[hidden] { display: none; }
+  /* The bookmark hint: a faint star in the corner (clear of the scrollbar), a panel when clicked. */
+  #bookmark {
+    position: absolute; top: 6px; right: 22px; width: 26px; height: 26px; padding: 0;
+    border: 0; border-radius: 6px; background: transparent; color: var(--fg);
+    font: 17px/26px "Segoe UI Symbol", "Segoe UI", sans-serif; cursor: pointer; opacity: .6;
+    transition: opacity .2s;
+  }
+  #bookmark:hover, #bookmark:focus-visible, #bookmark[aria-expanded="true"] { opacity: 1; background: #fff2; }
+  #bookmark-panel {
+    position: absolute; top: 38px; right: 22px; max-width: min(420px, calc(100% - 64px));
+    padding: 12px 14px; border-radius: 8px; font: 14px/1.45 "Segoe UI", system-ui, sans-serif;
+    background: #2b2b2b; color: #f2f2f2; box-shadow: 0 6px 20px #0009; outline: none;
+  }
+  #bookmark-panel[hidden] { display: none; }
+  #bookmark-panel p { margin: 0 0 8px; }
+  #bookmark-panel p:last-child { margin-bottom: 0; }
+  #bookmark-panel kbd { padding: 1px 5px; border-radius: 4px; background: #fff2; font: inherit; }
+  #bookmark-panel code { padding: 1px 4px; border-radius: 4px; background: #0006; user-select: all; }
+  #bookmark-panel button {
+    margin-left: 6px; padding: 1px 8px; border: 1px solid #fff4; border-radius: 4px;
+    background: transparent; color: inherit; font: inherit; cursor: pointer;
+  }
+  #bookmark-panel .dim { color: #aaa; }
+</style>
+</head>
+<body>
+<div id="terminal"></div>
+<div id="notice" role="status" hidden></div>
+<button id="bookmark" type="button" title="Bookmark this terminal" aria-label="Bookmark this terminal" aria-expanded="false" aria-controls="bookmark-panel">&#9734;</button>
+<div id="bookmark-panel" role="dialog" aria-label="Bookmark this terminal" tabindex="-1" hidden>
+  <p><b>Bookmark this terminal:</b> press <kbd>Ctrl</kbd>+<kbd>D</kbd> now, or click &#9734; in the address bar.
+     <span class="dim">The bookmark opens it while the program runs.</span></p>
+  <p id="start-link" hidden>To also <b>start</b> the program from a bookmark, give a bookmark this address:
+     <code id="start-link-text"></code><button id="start-link-copy" type="button">Copy</button></p>
+</div><script id="config" type="application/json">__BROWSER_TERMINAL_CONFIG__</script>
+<script src="xterm.js"></script>
+<script src="addon-fit.js"></script>
+<script src="addon-web-links.js"></script>
+<script src="terminal.js"></script>
+</body>
+</html>

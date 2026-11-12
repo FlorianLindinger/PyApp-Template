@@ -28,6 +28,25 @@ uses default_icon.png from:
 
 
 =======================================
+==== SMALL SIZES =======================
+
+    icon_32x32_optional.png   (optional)
+    icon_16x16_optional.png   (optional)
+
+At 32 and 16 pixels (taskbar, browser tab, small Explorer icons) fine details of
+icon.png blur into noise. These two files, next to icon.png, replace it for
+exactly that size: the same picture simplified (no background pattern, thicker
+lines, stronger contrast), or drawn pixel by pixel for 16x16. The overlays are
+added to them the same way. Without a 16x16 image, the 32x32 one is used for 16
+pixels too.
+
+The template ships its own versions of both. They are used only together with the
+template's icon.png: after you replace icon.png, they are ignored until you
+replace them too, so your icon is never mixed with the template's small art.
+Leave them as they are (or delete them) if your icon.png looks fine when small.
+
+
+=======================================
 ==== OVERLAYS ==========================
 =======================================
 
@@ -63,6 +82,7 @@ Replace any .ico file in code/pyapp/icons/ with your own, keeping its name:
     failure.ico          (also shown after a crash or Ctrl+C)
     crash_log.ico
     open_code.ico
+    browser.ico          (the browser terminal shortcut)
 
 The generator remembers which icons it made, in
 code/pyapp/generated/auto_generated_icons.json (commit that file with the icons). Those

@@ -21,7 +21,7 @@ Run them after changing anything in `DONT_CHANGE`, or after updating the templat
 | `test_wrapper.py` | `script_wrapper.py` in a real interpreter: arguments, hidden launcher variables, no shadowing of the app's `protocol.py`, reports for exceptions, `SystemExit`, missing modules, `os._exit`, late worker-thread errors, log and print prefixes |
 | `test_tracebacks.py` | exception chains, suppressed context, notes and groups (3.11+), success rules, the explicit exit-code mapping, rendering |
 | `test_uv_fallback.py` | installing a Python retries once with a newer uv, and reports the error when none is available |
-| `test_icons.py` | icons always use the bundled overlays; generated icons update silently, a question per icon for placed ones |
+| `test_icons.py` | icons always use the bundled overlays; the optional 32x32/16x16 images, never the template's with your own `icon.png`; generated icons update silently, a question per icon for placed ones |
 | `test_imports.py` | stdlib/local/launcher exclusions, nested `pyapp` folders, optional-import guards, unparsable files, installed metadata, the mapping file |
 | `test_import_map.py` | approved HTTPS download sources, redirect restrictions, range headers and byte responses without network access |
 | `test_console_colors.py` | only hexadecimal color arguments can reach the Windows color command |
@@ -43,6 +43,7 @@ Run them after changing anything in `DONT_CHANGE`, or after updating the templat
 | `test_repository_check.py` | `pyapp_tools/check_repository`: problems that break clones, other PCs or Windows |
 | `test_release.py` | `pyapp_tools/release`: version numbers, the changelog and the zip |
 | `test_tools.py` | `pyapp_tools/fresh_clone_test` and `test_all_pythons`: the parts that can be checked without a clone |
+| `test_browser_terminal.py` | the browser terminal: its shortcut, stable address and start link (never another program's), a copy of the `browser_terminal` folder runs on its own, tab or app window, colors, and the host with a real pseudoconsole: input, Ctrl+C, UTF-8, icon/color requests, exit code, only the page may connect, a closed page ends the program |
 | `test_windows.py` | Windows only: registry records with job names, Stop ends the whole job (incl. grandchildren), graceful Stop via Ctrl+C, file lock |
 
 Manual release check (not automated): Setup, start twice, Stop on the example window, the

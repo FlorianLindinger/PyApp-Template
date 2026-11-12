@@ -1,7 +1,9 @@
-"""The shipped banner font and its character coverage."""
+"""The shipped banner font, its character coverage and the console font it needs."""
 
+import os
 import unicodedata
 import unittest
+from unittest import mock
 
 from project_location import CODE
 
@@ -49,3 +51,35 @@ class BannerTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ConsoleFontTests(unittest.TestCase):
+    """The classic console has no font fallback: missing block characters would show as boxes."""
+
+    QUADRANTS = "".join(chr(code) for code in range(0x2596, 0x25A0))
+
+    @unittest.skipUnless(os.name == "nt", "Windows only")
+    def test_the_default_console_font_lacks_the_quadrants(self):
+        # Why the banner switches fonts: Consolas, the classic console's default, has no quadrants.
+        if not banner.font_has_glyphs("Consolas", "A"):
+            self.skipTest("Consolas is not installed")
+        self.assertFalse(banner.font_has_glyphs("Consolas", self.QUADRANTS))
+        self.assertFalse(banner.font_has_glyphs("No Such Font 123", "A"))  # no silent substitute
+
+    @unittest.skipUnless(os.name == "nt", "Windows only")
+    def test_a_replacement_font_has_every_block_character_of_the_banner(self):
+        used = "".join(
+            {character for row in banner.render("PyApp-Template") for character in row if ord(character) > 127}
+        )
+        installed = [face for face in banner.BLOCK_FONTS if banner.font_has_glyphs(face, "A")]
+        if not installed:
+            self.skipTest("no Cascadia font installed")
+        self.assertTrue(all(banner.font_has_glyphs(face, used) for face in installed))
+
+    def test_without_a_suitable_font_the_plain_banner_is_printed(self):
+        settings = mock.Mock(program_name="App")
+        with mock.patch.object(banner, "_shown", False), mock.patch.object(
+            banner, "settings", return_value=settings
+        ), mock.patch.object(banner, "console_can_show", return_value=False), mock.patch("builtins.print") as printed:
+            banner.print_banner()
+        self.assertEqual(printed.call_args[0][0], "App\n===\n")

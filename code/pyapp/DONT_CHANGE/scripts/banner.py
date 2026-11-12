@@ -79,6 +79,86 @@ def render(text: str) -> List[str]:
     return [line.rstrip() for line in result]
 
 
+# Fonts of the classic console that have every block character of the banner font; Windows 11
+# ships them. Consolas, its default, lacks the quadrants (U+2596-U+259F).
+BLOCK_FONTS = ("Cascadia Mono", "Cascadia Code")
+
+
+def font_has_glyphs(face: str, text: str) -> bool:
+    """True when the installed font `face` has a glyph for every character of text (GDI)."""
+    import ctypes
+    from ctypes import wintypes
+
+    gdi32 = ctypes.WinDLL("gdi32", use_last_error=True)
+    gdi32.CreateCompatibleDC.argtypes = [wintypes.HDC]
+    gdi32.CreateCompatibleDC.restype = wintypes.HDC
+    gdi32.CreateFontW.argtypes = [ctypes.c_int] * 5 + [wintypes.DWORD] * 8 + [wintypes.LPCWSTR]
+    gdi32.CreateFontW.restype = wintypes.HFONT
+    gdi32.SelectObject.argtypes = [wintypes.HDC, wintypes.HGDIOBJ]
+    gdi32.SelectObject.restype = wintypes.HGDIOBJ
+    gdi32.GetTextFaceW.argtypes = [wintypes.HDC, ctypes.c_int, wintypes.LPWSTR]
+    gdi32.GetGlyphIndicesW.argtypes = [wintypes.HDC, wintypes.LPCWSTR, ctypes.c_int, ctypes.c_void_p, wintypes.DWORD]
+    gdi32.GetGlyphIndicesW.restype = wintypes.DWORD
+    gdi32.DeleteObject.argtypes = [wintypes.HGDIOBJ]
+    gdi32.DeleteDC.argtypes = [wintypes.HDC]
+    dc = gdi32.CreateCompatibleDC(None)
+    font = gdi32.CreateFontW(-16, 0, 0, 0, 400, 0, 0, 0, 1, 0, 0, 0, 0, face)  # 1: DEFAULT_CHARSET
+    try:
+        gdi32.SelectObject(dc, font)
+        # GDI silently substitutes another font for one that is not installed.
+        selected = ctypes.create_unicode_buffer(64)
+        gdi32.GetTextFaceW(dc, 64, selected)
+        if selected.value.lower() != face.lower():
+            return False
+        indices = (wintypes.WORD * len(text))()
+        gdi32.GetGlyphIndicesW(dc, text, len(text), indices, 1)  # 1: GGI_MARK_NONEXISTING_GLYPHS
+        return all(index != 0xFFFF for index in indices)
+    finally:
+        gdi32.DeleteObject(font)
+        gdi32.DeleteDC(dc)
+
+
+def console_can_show(text: str) -> bool:
+    """Make sure this console can display text: in a classic console window whose font lacks
+    glyphs, switch it to a font that has them. False when that is not possible.
+
+    Windows Terminal, the browser terminal and redirected output fall back to other fonts for
+    missing glyphs themselves, so only the classic console (conhost) is changed.
+    """
+    import ctypes
+    from ctypes import wintypes
+
+    class _ConsoleFont(ctypes.Structure):  # CONSOLE_FONT_INFOEX
+        _fields_ = (
+            ("cbSize", wintypes.ULONG),
+            ("nFont", wintypes.DWORD),
+            ("dwFontSize", wintypes._COORD),
+            ("FontFamily", wintypes.UINT),
+            ("FontWeight", wintypes.UINT),
+            ("FaceName", wintypes.WCHAR * 32),
+        )
+
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    hwnd = int(kernel32.GetConsoleWindow() or 0)
+    name = ctypes.create_unicode_buffer(64)
+    ctypes.windll.user32.GetClassNameW(hwnd, name, 64)
+    if not hwnd or name.value != "ConsoleWindowClass":
+        return True
+    output = kernel32.GetStdHandle(-11)
+    info = _ConsoleFont()
+    info.cbSize = ctypes.sizeof(_ConsoleFont)
+    if not kernel32.GetCurrentConsoleFontEx(output, False, ctypes.byref(info)):
+        return True  # stdout is not this console (redirected)
+    if font_has_glyphs(info.FaceName, text):
+        return True
+    for face in BLOCK_FONTS:
+        if font_has_glyphs(face, text):
+            info.FaceName = face
+            info.nFont = 0
+            return bool(kernel32.SetCurrentConsoleFontEx(output, False, ctypes.byref(info)))
+    return False
+
+
 def print_banner() -> None:
     """Print the program name in the banner font, once per process; never raises."""
     global _shown
@@ -89,13 +169,29 @@ def print_banner() -> None:
         s = settings()
         rows = render(s.program_name)
         columns = shutil.get_terminal_size((120, 30)).columns
+        plain = [s.program_name, "=" * len(s.program_name)]
         if not rows or max(len(row) for row in rows) >= columns:
-            rows = [s.program_name, "=" * len(s.program_name)]  # too wide for the window
+            rows = plain  # too wide for the window
+        elif not _can_show("".join({character for row in rows for character in row if ord(character) > 127})):
+            rows = plain  # the window's font would show the block characters as boxes
         print("\n".join(rows) + "\n", flush=True)
     except Exception:
         from pyapp.DONT_CHANGE.scripts.diagnostics import note_ignored
 
         note_ignored("print_banner")
+
+
+def _can_show(text: str) -> bool:
+    """console_can_show(text), but a failing check never costs the banner: then it is printed as before."""
+    if not text:
+        return True
+    try:
+        return console_can_show(text)
+    except Exception:
+        from pyapp.DONT_CHANGE.scripts.diagnostics import note_ignored
+
+        note_ignored("banner: console font check")
+        return True
 
 
 def show_setup_window() -> None:

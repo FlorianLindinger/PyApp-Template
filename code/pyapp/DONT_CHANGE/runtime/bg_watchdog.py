@@ -205,7 +205,7 @@ def main() -> None:
     except Exception as error:
         acknowledge(run_dir, status="failed", message=f"developer_settings.py could not be loaded: {error}")
         raise
-    has_terminal = launch_mode in ("wt", "conhost")
+    has_terminal = launch_mode in ("wt", "conhost", "browser")
     registry = ProcessRegistry(paths.PROCESS_REGISTRY_DIR)
     try:
         # Before anything is started: the app and all its processes then belong to this job.
@@ -218,7 +218,7 @@ def main() -> None:
     exit_handled = False
     child: Optional[subprocess.Popen[bytes]] = None
     try:
-        if launch_mode not in ("wt", "conhost", "no_terminal"):
+        if launch_mode not in ("wt", "conhost", "browser", "no_terminal"):
             raise ValueError("Unknown launch mode: " + launch_mode)
         script = main_script_path(settings)
         if has_terminal:

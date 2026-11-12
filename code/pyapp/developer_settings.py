@@ -102,6 +102,16 @@ play_sound_after_failure = True
 # False: Windows Terminal (wt.exe). Tabs, better text rendering and zoom.
 #        Falls back to the classic console with a warning if Windows Terminal is not installed.
 use_classic_terminal = True
+# The browser terminal shortcut (browser_terminal_shortcut_name) shows the console as a terminal in a new tab of your
+# default browser instead, with the same input, Ctrl+C, colors and titles: sharp text, zoom with Ctrl+wheel or
+# Ctrl+/-, clickable links, copy and paste like Windows Terminal. Closing the tab ends the program, like closing a
+# console window. Needs Windows 10 1809 or newer.
+# Its address stays the same, so it can be bookmarked (works while the program runs); Setup shows it.
+#   ""  automatic: http://<program name>.localhost:<port of this project folder>/<key>/
+#   e.g. "http://my-app.localhost:8765" or "http://127.0.0.1:8765" (the key is added; it is kept per PC
+#   in pyapp/generated and never committed). Setup also registers the start link <program name>://start,
+#   which starts the program in the browser terminal, e.g. from a bookmark.
+browser_terminal_address = ""
 
 # Background color: 0=Black,1=Blue,2=Green,3=Aqua,4=Red,5=Purple,6=Yellow,7=White,8=Gray,9=LightBlue. "" for default:
 terminal_bg_color = "9"
@@ -150,7 +160,7 @@ user_settings_path = "..\\settings.py"
 # The project folder always gets all enabled shortcuts. Setup removes earlier ones that are no longer wanted.
 # Start Menu: a folder named after program_name with all enabled shortcuts:
 start_menu_shortcuts = True
-# Desktop: a list of "terminal", "no_terminal", "stop", "settings", "logs", "crash_logs", "open_code", "tools". Example: ["no_terminal"]
+# Desktop: a list of "terminal", "no_terminal", "browser_terminal", "stop", "settings", "logs", "crash_logs", "open_code". Example: ["no_terminal"]
 desktop_shortcuts = []
 
 # --- Log files ---
@@ -180,14 +190,13 @@ crash_log_path_is_relative_to_start_folder_if_relative = False
 # --- Shortcut names ---
 # Shortcut names. "" to disable.
 terminal_shortcut_name = f"{program_name}"
-no_terminal_shortcut_name = f"{program_name} (no Terminal)"
-open_settings_shortcut_name = f"{program_name} - Settings"
-stop_running_shortcut_name = f"Stop {program_name}"
-open_log_folder_shortcut_name = f"{program_name} - Logs"
-open_crash_log_folder_shortcut_name = f"{program_name} - Crash Logs"
-open_code_shortcut_name = f"{program_name} - Edit Code"
-# Tools for the people using the app: repair, add packages, make the folder self-contained, delete logs, ...
-tools_shortcut_name = f"{program_name} - Tools"
+no_terminal_shortcut_name = f"{program_name} (No-Terminal)"
+browser_terminal_shortcut_name = f"{program_name} (Browser)"
+open_settings_shortcut_name = f"{program_name} (Settings)"
+stop_running_shortcut_name = f"{program_name} (STOP)"
+open_log_folder_shortcut_name = f"{program_name} (Logs)"
+open_crash_log_folder_shortcut_name = f"{program_name} (Crash-Logs)"
+open_code_shortcut_name = f"{program_name} (Edit-Code)"
 
 # --- Startup ---
 # Start with the window minimized:

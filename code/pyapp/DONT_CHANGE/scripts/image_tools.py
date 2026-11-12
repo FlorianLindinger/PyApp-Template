@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Iterable, List, Optional  # typing: annotations stay evaluable on Python 3.8
+from typing import Dict, Iterable, List, Optional  # typing: annotations stay evaluable on Python 3.8
 
 
 def _run_wpf_powershell(script: str, **extra_env: str) -> str:
@@ -73,6 +73,7 @@ def generate_ico_from_png(
     sub_icon_alignment: str = "bottom right",
     override: bool = True,
     icon_sizes: Iterable[int] = (256, 128, 64, 48, 32, 16),
+    size_png_paths: Optional[Dict[int, str]] = None,
 ) -> str:
     """Create a multi-resolution ICO from a base PNG and optional overlay.
 
@@ -81,6 +82,10 @@ def generate_ico_from_png(
     ``sub_icon_area_scale_factor`` and its compass-style position by
     ``sub_icon_alignment``. Set ``override`` to ``False`` to preserve an
     existing output. Returns the absolute ICO path.
+
+    ``size_png_paths``: {size: PNG} drawn for that size instead of the base image, e.g. a
+    simplified or hand-drawn 16x16 version where the details of the base image would blur; the
+    overlay is drawn on it the same way.
     """
     import base64
     import json
@@ -91,9 +96,15 @@ def generate_ico_from_png(
         os.path.normpath(str(Path(base_png_path).absolute())),
     )
     sub_png_path = os.path.normpath(str(Path(sub_png_path).absolute())) if sub_png_path else None
+    size_png_paths = {
+        size: os.path.normpath(str(Path(path).absolute())) for size, path in (size_png_paths or {}).items()
+    }
     sizes = tuple(icon_sizes)
     if not Path(base_png_path).is_file():
         raise FileNotFoundError(f'Base PNG does not exist: "{base_png_path}"')
+    for path in size_png_paths.values():
+        if not Path(path).is_file():
+            raise FileNotFoundError(f'PNG for one icon size does not exist: "{path}"')
     if sub_png_path and not Path(sub_png_path).is_file():
         raise FileNotFoundError(f'Sub PNG does not exist: "{sub_png_path}"')
     if not 0 < sub_icon_area_scale_factor <= 1:
@@ -145,20 +156,33 @@ if ($env:ICO_OVERLAY_URI) {
 @($env:ICO_SIZES -split ',' | ForEach-Object { [pscustomobject]@{ size=[int]$_; png=(Square $base ([int]$_)) } }) | ConvertTo-Json -Compress
 """
 
-    payload = json.loads(
-        _run_wpf_powershell(
-            script,
-            ICO_BASE_URI=Path(base_png_path).resolve().as_uri(),
-            ICO_OVERLAY_URI=Path(sub_png_path).resolve().as_uri() if sub_png_path else "",
-            ICO_OVERLAY_SCALE=str(sub_icon_area_scale_factor),
-            ICO_VERTICAL=vertical,
-            ICO_HORIZONTAL=horizontal,
-            ICO_SIZES=",".join(map(str, sizes)),
+    def render(base: str, layer_sizes: List[int]) -> Dict[int, bytes]:
+        """{size: PNG} of base (with the overlay) at the given sizes."""
+        if not layer_sizes:
+            return {}
+        payload = json.loads(
+            _run_wpf_powershell(
+                script,
+                ICO_BASE_URI=Path(base).resolve().as_uri(),
+                ICO_OVERLAY_URI=Path(sub_png_path).resolve().as_uri() if sub_png_path else "",
+                ICO_OVERLAY_SCALE=str(sub_icon_area_scale_factor),
+                ICO_VERTICAL=vertical,
+                ICO_HORIZONTAL=horizontal,
+                ICO_SIZES=",".join(map(str, layer_sizes)),
+            )
         )
-    )
-    if isinstance(payload, dict):
-        payload = [payload]
-    layers = [(int(entry["size"]), base64.b64decode(entry["png"])) for entry in payload]
+        if isinstance(payload, dict):
+            payload = [payload]
+        return {int(entry["size"]): base64.b64decode(entry["png"]) for entry in payload}
+
+    # One rendering per base image: the main one, and each image that replaces it for a size.
+    bases: Dict[str, List[int]] = {}
+    for size in sizes:
+        bases.setdefault(size_png_paths.get(size, base_png_path), []).append(size)
+    rendered: Dict[int, bytes] = {}
+    for base, base_sizes in bases.items():
+        rendered.update(render(base, base_sizes))
+    layers = [(size, rendered[size]) for size in sizes]
     offset = 6 + 16 * len(layers)
     entries: List[bytes] = []
     data = bytearray()

@@ -5,6 +5,10 @@ import tkinter as tk
 from tkinter import ttk
 
 
+while True:
+    m=input()
+    print(m)
+
 def main():
     """Show the example Tkinter window using the launcher-provided app name and icon."""
     root = tk.Tk()

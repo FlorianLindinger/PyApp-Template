@@ -43,12 +43,12 @@ CHOICES = {
 SHORTCUT_KINDS = (
     "terminal",
     "no_terminal",
+    "browser_terminal",
     "stop",
     "settings",
     "logs",
     "crash_logs",
     "open_code",
-    "tools",
 )
 # GitHub Actions an app can choose in github_actions; one data/workflows/<name>.yml each.
 APP_WORKFLOWS = ("leaks",)
@@ -74,12 +74,12 @@ OUTCOMES = ("success", "failure", "keyboard_interrupt")
 SHORTCUT_NAME_SETTINGS = (
     "terminal_shortcut_name",
     "no_terminal_shortcut_name",
+    "browser_terminal_shortcut_name",
     "open_settings_shortcut_name",
     "stop_running_shortcut_name",
     "open_log_folder_shortcut_name",
     "open_crash_log_folder_shortcut_name",
     "open_code_shortcut_name",
-    "tools_shortcut_name",
 )
 
 
@@ -425,6 +425,10 @@ def validate(module: Optional[Union[ModuleType, SimpleNamespace]] = None) -> Non
             f"terminal_bg_color and terminal_text_color: {colors[0]!r} for both would make the text invisible; "
             'use two different colors ("" means black background or white text).'
         )
+    from pyapp.DONT_CHANGE.scripts.browser_links import address_problem
+
+    address = get("browser_terminal_address")
+    need("browser_terminal_address", lambda v: address_problem(v) is None, address_problem(address) or "")
     need(
         "tab_bar_color",
         lambda v: isinstance(v, str) and (v == "" or re.fullmatch(r"#[0-9A-Fa-f]{6}", v)),

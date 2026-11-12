@@ -16,7 +16,7 @@ Until that placeholder is replaced, no license is granted for those files beyond
 
 ## 2. PyApp-Template backend
 
-The files in **`code/pyapp/DONT_CHANGE`** are provided by [PyApp-Template](https://github.com/FlorianLindinger/PyApp-Template). You may use the backend under either MIT or Apache-2.0, at your choice (`MIT OR Apache-2.0`). Both license texts are included in **`code/pyapp/DONT_CHANGE/LICENSES/`**.
+The files in **`code/pyapp/DONT_CHANGE`** are provided by [PyApp-Template](https://github.com/FlorianLindinger/PyApp-Template). The backend is licensed under the MIT License; its text is in **`code/pyapp/DONT_CHANGE/LICENSE.md`**, which also names the bundled third-party files (xterm.js, MIT as well).
 
 ## 3. Python distributions and third-party packages
 

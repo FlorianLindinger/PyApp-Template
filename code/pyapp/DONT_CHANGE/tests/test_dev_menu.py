@@ -19,55 +19,6 @@ class MenuTests(unittest.TestCase):
         self.assertLessEqual(set(dev_tools.HEADINGS), set(dev_tools.COMMANDS))
 
 
-class ToolsMenuTests(unittest.TestCase):
-    """The Tools shortcut's menu for the people using the app."""
-
-    def test_every_tool_is_a_command_with_a_note(self):
-        for name, label, note in dev_tools.USER_TOOLS:
-            self.assertIn(name, dev_tools.COMMANDS)
-            self.assertTrue(label and note)
-
-    def test_the_tools_that_change_what_everyone_gets_are_left_out(self):
-        names = {name for name, _, _ in dev_tools.USER_TOOLS}
-        self.assertFalse(names & {"remove", "upgrade", "change-python", "update-python", "find-imports", "export"})
-
-    def test_the_menu_warns_about_settings_and_temporary_installs(self):
-        notes = {name: note for name, _, note in dev_tools.USER_TOOLS}
-        self.assertIn("developer_settings.py of this copy", notes["make-self-contained"])
-        self.assertIn("only temporary", notes["terminal"])
-
-    def test_a_chosen_tool_runs_and_enter_leaves(self):
-        command = mock.Mock(__doc__="Repair.")
-        with mock.patch.dict(dev_tools.COMMANDS, {"sync": command}), mock.patch.object(
-            dev_tools, "ask", side_effect=["2", ""]
-        ), mock.patch.object(dev_tools, "wait_for_enter"), mock.patch("builtins.print"):
-            dev_tools.cmd_tools([])
-        command.assert_called_once_with([])
-
-    def test_the_shortcut_runs_the_tools_menu(self):
-        from pyapp.DONT_CHANGE.scripts import shortcuts
-
-        def kinds(name: str):
-            s = types.SimpleNamespace(
-                program_name="App",
-                terminal_shortcut_name="",
-                no_terminal_shortcut_name="",
-                stop_running_shortcut_name="",
-                open_log_folder_shortcut_name="",
-                open_crash_log_folder_shortcut_name="",
-                open_code_shortcut_name="",
-                tools_shortcut_name=name,
-                user_settings_path="",
-            )
-            targets = {"logs": "", "crash_logs": "", "open_code": "", "settings": ""}
-            return shortcuts.shortcut_definitions(s, "app", targets)
-
-        (tools,) = kinds("App - Tools")
-        self.assertEqual((tools[0], tools[1]), ("tools", "App - Tools"))
-        self.assertTrue(tools[3].endswith("T.bat"))
-        self.assertEqual(kinds(""), [])
-
-
 class CancelTests(unittest.TestCase):
     """Every prompt has a way out that changes nothing."""
 
