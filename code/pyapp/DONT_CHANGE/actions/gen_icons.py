@@ -46,14 +46,14 @@ _base = ("icon.png", "512x512:34babea5", "default_icon.png")
 ICON_GENERATION_SETTINGS = [
     # output ICO, base PNG, base PNG ID, fallback base PNG, bundled overlay PNG
     (ICON_PATH, *_base, None),
-    (SETTINGS_ICON_PATH, *_base, "default_settings.png"),
-    (STOP_ICON_PATH, *_base, "default_stop.png"),
-    (LOG_ICON_PATH, *_base, "default_log.png"),
-    (SUCCESS_ICON_PATH, *_base, "default_success.png"),
-    (FAILURE_ICON_PATH, *_base, "default_failure.png"),
-    (CRASH_LOG_ICON_PATH, *_base, "default_crash_log.png"),
-    (OPEN_CODE_ICON_PATH, *_base, "default_open_code.png"),
-    (BROWSER_ICON_PATH, *_base, "default_browser.png"),
+    (SETTINGS_ICON_PATH, *_base, "settings.png"),
+    (STOP_ICON_PATH, *_base, "stop.png"),
+    (LOG_ICON_PATH, *_base, "log.png"),
+    (SUCCESS_ICON_PATH, *_base, "success.png"),
+    (FAILURE_ICON_PATH, *_base, "failure.png"),
+    (CRASH_LOG_ICON_PATH, *_base, "crash_log.png"),
+    (OPEN_CODE_ICON_PATH, *_base, "open_code.png"),
+    (BROWSER_ICON_PATH, *_base, "browser.png"),
 ]
 # fmt: on
 
@@ -91,14 +91,14 @@ def _pick_png(filename: str, expected_id: Optional[str], fallback_filename: Opti
     return fallback_path
 
 
-# Optional images for single sizes, next to icon.png: (size, file name, ID of the template's
-# version, bundled copy of it). At 16 and 32 px (taskbar, browser tab, small Explorer icons) the
-# details of icon.png blur; a simplified or hand-drawn version looks better. The template ships
-# its own versions under these names; they are used only together with the template's
-# icon.png, so a replaced icon.png is never mixed with the template's small art.
+# Optional images next to icon.png: (size, editable placeholder, placeholder ID, bundled artwork).
+# IDs recognize unchanged placeholders. Only a changed small PNG may accompany a custom base;
+# otherwise every size is rendered from that base, without mixing in the template's artwork.
 SIZE_PNGS = (
-    (32, "icon_32x32_optional.png", "32x32:ba40112b", "default_icon_32x32.png"),
-    (16, "icon_16x16_optional.png", "16x16:82810d24", "default_icon_16x16.png"),
+    (16, "icon_16x16.png", "512x512:13b8cc7f", "default_icon_16x16.png"),
+    (24, "icon_24x24.png", "512x512:a477d4ac", "default_icon_24x24.png"),
+    (32, "icon_32x32.png", "512x512:3268d71e", "default_icon_32x32.png"),
+    (48, "icon_48x48.png", "512x512:1cf85c6c", "default_icon_48x48.png"),
 )
 
 

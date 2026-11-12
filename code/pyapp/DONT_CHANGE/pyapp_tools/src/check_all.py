@@ -64,7 +64,8 @@ def run_step(step: Step, refs: str, *, hook: bool = False) -> int:
         check=False,
     )
     if hook and completed.returncode and not (step.can_skip and completed.returncode == SKIPPED):
-        output = completed.stdout.decode("utf-8", "replace").strip()
+        # Normalize captured Windows line endings before print() translates them again.
+        output = "\n".join(completed.stdout.decode("utf-8", "replace").splitlines()).strip()
         if not output.startswith("Push blocked:"):
             _ui.info(
                 f"Push blocked: {step.label} failed (exit code {completed.returncode}). "

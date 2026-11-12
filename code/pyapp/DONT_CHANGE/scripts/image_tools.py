@@ -72,7 +72,7 @@ def generate_ico_from_png(
     sub_icon_area_scale_factor: float = 0.35,
     sub_icon_alignment: str = "bottom right",
     override: bool = True,
-    icon_sizes: Iterable[int] = (256, 128, 64, 48, 32, 16),
+    icon_sizes: Iterable[int] = (256, 128, 64, 48, 32, 24, 16),
     size_png_paths: Optional[Dict[int, str]] = None,
 ) -> str:
     """Create a multi-resolution ICO from a base PNG and optional overlay.

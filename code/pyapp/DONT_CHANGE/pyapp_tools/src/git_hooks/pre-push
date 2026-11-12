@@ -24,4 +24,5 @@ fi
 
 # The same steps as check_all.bat (leak check, repository check, verify_launcher, tests),
 # stopping at the first failure. The refs being pushed arrive on stdin, as Git gives them.
-exec "$python" -B "$launcher/pyapp_tools/src/check_all.py" --pushing
+# Git clients use stderr for failed-push diagnostics; stdout can be omitted from their error dialog.
+exec "$python" -B "$launcher/pyapp_tools/src/check_all.py" --pushing >&2

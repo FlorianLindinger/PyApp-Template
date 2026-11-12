@@ -198,13 +198,13 @@ crash_log_path_is_relative_to_start_folder_if_relative = False
 # --- Shortcut names ---
 # Shortcut names. "" to disable.
 terminal_shortcut_name = f"{program_name}"
-no_terminal_shortcut_name = f"{program_name} (no Terminal)"
+no_terminal_shortcut_name = f"{program_name} (No-Terminal)"
 browser_terminal_shortcut_name = f"{program_name} (Browser)"
-open_settings_shortcut_name = f"{program_name} - Settings"
-stop_running_shortcut_name = f"Stop {program_name}"
-open_log_folder_shortcut_name = f"{program_name} - Logs"
-open_crash_log_folder_shortcut_name = f"{program_name} - Crash Logs"
-open_code_shortcut_name = f"{program_name} - Edit Code"
+open_settings_shortcut_name = f"{program_name} (Settings)"
+stop_running_shortcut_name = f"{program_name} (STOP)"
+open_log_folder_shortcut_name = f"{program_name} (Logs)"
+open_crash_log_folder_shortcut_name = f"{program_name} (Crash-Logs)"
+open_code_shortcut_name = f"{program_name} (Edit-Code)"
 
 # --- Startup ---
 # Start with the window minimized:

@@ -40,6 +40,7 @@ Run them after changing anything in `DONT_CHANGE`, or after updating the templat
 | `test_git_leaks.py` | `pyapp_tools/check_git_leaks`: what counts as a leak; secrets are never printed in full |
 | `test_staged_ruff.py` | `pyapp_tools/check_staged_ruff` (pre-commit hook): Ruff on the staged launcher files |
 | `test_check_all.py` | `pyapp_tools/check_all` (pre-push hook): every check at once, with a summary |
+| `test_git_hooks.py` | Real shell hooks in disposable repositories: failure diagnostics reach stderr and push refs reach the check |
 | `test_repository_check.py` | `pyapp_tools/check_repository`: problems that break clones, other PCs or Windows |
 | `test_release.py` | `pyapp_tools/release`: version numbers, the changelog and the zip |
 | `test_tools.py` | `pyapp_tools/fresh_clone_test` and `test_all_pythons`: the parts that can be checked without a clone |

@@ -22,5 +22,6 @@ if [ -z "$python" ]; then
     exit 1
 fi
 
-"$python" -B "$launcher/pyapp_tools/src/check_git_leaks.py" --committing || exit 1
-exec "$python" -B "$launcher/pyapp_tools/src/check_staged_ruff.py"
+# Keep diagnostics on the stream Git clients display when a command fails.
+"$python" -B "$launcher/pyapp_tools/src/check_git_leaks.py" --committing >&2 || exit 1
+exec "$python" -B "$launcher/pyapp_tools/src/check_staged_ruff.py" >&2

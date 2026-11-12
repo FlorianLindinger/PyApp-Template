@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import shutil
+import struct
 import tempfile
 import unittest
 from pathlib import Path
@@ -34,7 +36,7 @@ class GenIconsTests(unittest.TestCase):
             return output
 
         table = [
-            (str(Path(folder) / name), "icon.png", None, "default_icon.png", "default_failure.png")
+            (str(Path(folder) / name), "icon.png", None, "default_icon.png", "failure.png")
             for name in ("failure.ico", "success.ico")
         ]
         with mock.patch.object(gen_icons, "ICON_GENERATION_SETTINGS", table), mock.patch.object(
@@ -51,7 +53,7 @@ class GenIconsTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             Path(folder, "failure.png").write_bytes(b"not used")
             overlays, _ = self.regenerate(folder)
-        self.assertEqual(set(overlays), {str(DONT_CHANGE / "data" / "icons" / "default_failure.png")})
+        self.assertEqual(set(overlays), {str(DONT_CHANGE / "data" / "icons" / "failure.png")})
 
     def test_generated_icons_update_without_a_question(self):
         with tempfile.TemporaryDirectory() as folder:
@@ -95,7 +97,7 @@ if __name__ == "__main__":
 
 
 class SizeIconTests(unittest.TestCase):
-    """icon_32x32_optional.png / icon_16x16_optional.png: images for single sizes."""
+    """Small images are used only when appropriate for the selected base artwork."""
 
     TEMPLATE_BASE = str(Path(gen_icons.ICON_FALLBACK_PNG_DIR) / "default_icon.png")
 
@@ -116,29 +118,74 @@ class SizeIconTests(unittest.TestCase):
                 return {size: Path(path).name for size, path in gen_icons._pick_size_pngs(base).items()}
 
     def test_your_own_size_images_are_used(self):
-        own = ["icon_32x32_optional.png", "icon_16x16_optional.png"]
+        own = [f"icon_{size}x{size}.png" for size in (16, 24, 32, 48)]
         self.assertEqual(
-            self.pick(own, "custom/icon.png"), {32: "icon_32x32_optional.png", 16: "icon_16x16_optional.png"}
+            self.pick(own, "custom/icon.png"), {size: f"icon_{size}x{size}.png" for size in (16, 24, 32, 48)}
         )
 
     def test_a_32x32_image_alone_also_serves_16_px(self):
         self.assertEqual(
-            self.pick(["icon_32x32_optional.png"], "custom/icon.png"),
-            {32: "icon_32x32_optional.png", 16: "icon_32x32_optional.png"},
+            self.pick(["icon_32x32.png"], "custom/icon.png"),
+            {32: "icon_32x32.png", 16: "icon_32x32.png"},
         )
+
+    def test_a_replaced_small_image_overrides_only_its_sizes(self):
+        template = [name for _, name, _, _ in gen_icons.SIZE_PNGS]
+        for size in (16, 24, 32, 48):
+            name = f"icon_{size}x{size}.png"
+            expected = {size: name}
+            if size == 32:
+                expected[16] = name
+            with self.subTest(size=size):
+                self.assertEqual(self.pick([name], "custom/icon.png", [n for n in template if n != name]), expected)
+
+    def test_a_custom_265_px_base_ignores_all_unchanged_small_placeholders(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            # The bundled artwork is 265 px; placing it as the project's icon.png makes it
+            # a custom base, distinct from the shipped 512 px editable placeholder.
+            shutil.copyfile(self.TEMPLATE_BASE, root / "icon.png")
+            for _, name, _, _ in gen_icons.SIZE_PNGS:
+                shutil.copyfile(DONT_CHANGE.parent / "icons" / name, root / name)
+            with mock.patch.object(gen_icons, "ICON_PNG_DIR", folder):
+                base = gen_icons._pick_png(*gen_icons._base)
+                self.assertEqual(Path(base), root / "icon.png")
+                self.assertEqual(gen_icons._pick_size_pngs(base), {})
+
+    def test_default_ico_includes_every_requested_small_size(self):
+        from pyapp.DONT_CHANGE.scripts.image_tools import generate_ico_from_png
+
+        with tempfile.TemporaryDirectory() as folder:
+            output = Path(folder) / "icon.ico"
+            # Source PNG dimensions need not match their target ICO slots.
+            generate_ico_from_png(
+                str(output),
+                self.TEMPLATE_BASE,
+                size_png_paths={
+                    size: str(DONT_CHANGE.parent / "icons" / name) for size, name, _, _ in gen_icons.SIZE_PNGS
+                },
+            )
+            data = output.read_bytes()
+        self.assertEqual(struct.unpack_from("<HHH", data), (0, 1, 7))
+        for index, size in enumerate((256, 128, 64, 48, 32, 24, 16)):
+            entry = struct.unpack_from("<BBBBHHII", data, 6 + index * 16)
+            self.assertEqual(entry[:2], (size % 256, size % 256))
+            self.assertEqual(struct.unpack_from(">II", data, entry[-1] + 16), (size, size))
 
     def test_the_templates_small_images_never_go_with_your_own_icon(self):
         template = [name for _, name, _, _ in gen_icons.SIZE_PNGS]
         self.assertEqual(self.pick([], "custom/icon.png", template), {})
         # With the template's icon.png they are used (the bundled copies).
         self.assertEqual(
-            self.pick([], self.TEMPLATE_BASE, template), {32: "default_icon_32x32.png", 16: "default_icon_16x16.png"}
+            self.pick([], self.TEMPLATE_BASE, template),
+            {size: f"default_icon_{size}x{size}.png" for size in (16, 24, 32, 48)},
         )
 
-    def test_the_shipped_images_are_the_templates(self):
+    def test_the_shipped_placeholders_match_ids_and_fallbacks_match_sizes(self):
         from pyapp.DONT_CHANGE.scripts.image_tools import get_png_image_id
 
         for size, name, template_id, bundled in gen_icons.SIZE_PNGS:
-            for path in (DONT_CHANGE.parent / "icons" / name, DONT_CHANGE / "data" / "icons" / bundled):
-                self.assertEqual(get_png_image_id(str(path)), template_id, path)
-                self.assertTrue(template_id.startswith(f"{size}x{size}:"))
+            placeholder = DONT_CHANGE.parent / "icons" / name
+            self.assertEqual(get_png_image_id(str(placeholder)), template_id, placeholder)
+            fallback = DONT_CHANGE / "data" / "icons" / bundled
+            self.assertTrue(get_png_image_id(str(fallback)).startswith(f"{size}x{size}:"), fallback)

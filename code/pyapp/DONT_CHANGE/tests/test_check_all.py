@@ -16,6 +16,14 @@ with mock.patch.object(sys, "path", [str(DONT_CHANGE / "pyapp_tools" / "src"), *
 
 
 class CheckAllTests(unittest.TestCase):
+    def test_windows_child_line_endings_are_normalized_before_printing(self):
+        output = io.StringIO()
+        with mock.patch.object(tool.subprocess, "run") as run, mock.patch("sys.stdout", output):
+            run.return_value = mock.Mock(returncode=1, stdout=b"Heading\r\nfixture.py:12:3: broken\r\n")
+            self.assertEqual(tool.run_step(tool.STEPS[2], "", hook=True), 1)
+        self.assertNotIn("\r", output.getvalue())
+        self.assertIn("Heading\nfixture.py:12:3: broken\n", output.getvalue())
+
     def test_real_child_output_is_buffered_behind_the_push_summary(self):
         step = tool.Step("Fixture", [sys.executable, "-c", "print('fixture.py:12:3: broken'); raise SystemExit(1)"])
         output = io.StringIO()
