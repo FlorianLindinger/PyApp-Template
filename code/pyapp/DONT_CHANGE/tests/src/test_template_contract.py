@@ -1,104 +1,31 @@
 """What must stay stable: the repository name in the Actions, what existing projects expect in DONT_CHANGE.
 
-That includes the fallback start (fallback/start_without_launcher.py), which runs on its own.
+What is protected is listed in backend_settings (PROTECTED_PATHS, PROTECTED_PROJECT_FILES,
+PROTECTED_RUN_COMMANDS, PROTECTED_DEV_TOOL_COMMANDS, PROTECTED_SETTING_NAMES).
 """
 
 from __future__ import annotations
 
 import ast
+import os
 import re
 import subprocess
 import sys
 import unittest
-from typing import List, Optional
+from pathlib import Path
+from typing import List, Optional, Tuple
 
 from project_location import CODE, DONT_CHANGE, PROJECT_ROOT
 
 # isort: split
 
+from pyapp.DONT_CHANGE import backend_settings
 from pyapp.DONT_CHANGE.scripts import config
 from pyapp.DONT_CHANGE.scripts.dev_tools import main as dev_tools
 
-# Projects keep their own files outside DONT_CHANGE when they update by replacing that folder, so
-# what those files use has to stay. Everything else in DONT_CHANGE is free to move between versions.
+# What existing projects rely on is listed in backend_settings (PROTECTED_*); these tests check
+# that the code still provides all of it, and that files outside DONT_CHANGE use nothing else.
 ENTRY_FILE = "run.bat"
-# code/pyapp/"Start without launcher.cmd" runs this directly, without run.bat: it must keep working
-# when the rest of the launcher is broken, so it may not use any other launcher file.
-FALLBACK_SCRIPT = "fallback\\start_without_launcher.py"
-RUN_COMMANDS = ("setup", "icons", "icons-help", "dev")
-DEV_TOOL_COMMANDS = (
-    "add",
-    "remove",
-    "upgrade",
-    "sync",
-    "find-imports",
-    "terminal",
-    "change-python",
-    "update-python",
-    "make-self-contained",
-    "export",
-    "clean",
-    "remove-shortcuts",
-    "status",
-)
-# Shortcuts made by Setup keep pointing at these until Setup runs again.
-SHORTCUT_TARGETS = ("B.bat", "C.bat", "L.bat", "M.bat", "N.bat", "Q.bat", "S.bat", "W.bat")
-# A setting that is renamed or removed silently stops working in existing developer_settings.py files.
-SETTING_NAMES = (
-    "args_for_main_py",
-    "close_after_failure",
-    "close_after_keyboard_interrupt",
-    "close_after_success",
-    "crash_log_path",
-    "crash_log_path_is_relative_to_start_folder_if_relative",
-    "desktop_shortcuts",
-    "enable_crash_log",
-    "enable_log_for_no_terminal_start",
-    "enable_log_for_terminal_start",
-    "environment_for_main_py",
-    "error_date_format",
-    "github_actions",
-    "input_prepend",
-    "instance_policy",
-    "log_input_prepend",
-    "log_path",
-    "log_path_is_relative_to_start_folder_if_relative",
-    "log_print_prepend",
-    "main_script_path",
-    "no_terminal_shortcut_name",
-    "open_code_shortcut_name",
-    "open_crash_log_after_failure",
-    "open_crash_log_folder_shortcut_name",
-    "open_log_file_after_failure",
-    "open_log_file_after_keyboard_interrupt",
-    "open_log_file_after_success",
-    "open_log_folder_shortcut_name",
-    "open_settings_shortcut_name",
-    "packages",
-    "play_sound_after_failure",
-    "play_sound_after_success",
-    "print_prepend",
-    "program_name",
-    "python_source",
-    "python_version",
-    "start_in_shortcut_folder",
-    "start_menu_shortcuts",
-    "start_minimized",
-    "stop_running_shortcut_name",
-    "stop_timeout_seconds",
-    "tab_bar_color",
-    "terminal_bg_color",
-    "terminal_shortcut_name",
-    "terminal_text_color",
-    "use_classic_terminal",
-    "use_system_certificates",
-    "user_settings_path",
-    "uv_cache",
-    "uv_install_if_missing",
-    "uv_prefer",
-    "uv_user_python_visible_globally",
-    "uv_version",
-)
 WORKFLOW_FOLDER = PROJECT_ROOT / ".github" / "workflows"
 
 
@@ -124,14 +51,27 @@ def is_the_template_itself() -> bool:
     return re.search(r'(?m)^program_name = "PyApp-Template"', settings) is not None
 
 
-def launcher_files_used_outside() -> List[str]:
-    """What the scripts outside DONT_CHANGE refer to inside it."""
+def scripts_outside() -> List[Path]:
+    """The .cmd files of a project outside DONT_CHANGE (kept when DONT_CHANGE is replaced)."""
     scripts = list(PROJECT_ROOT.glob("*.cmd")) + list((CODE / "pyapp").glob("*.cmd"))
     for folder in ("dev_tools", "icons"):
         scripts += (CODE / "pyapp" / folder).glob("*.cmd")
+    return scripts
+
+
+def launcher_files_used_outside() -> List[str]:
+    """What the scripts outside DONT_CHANGE refer to inside it."""
     found: List[str] = []
-    for script in scripts:
+    for script in scripts_outside():
         found += re.findall(r'DONT_CHANGE\\([^"\s]+)', script.read_text(encoding="utf-8"))
+    return found
+
+
+def run_commands_used_outside() -> List[Tuple[str, str]]:
+    """(run.bat command, dev tool command or "") of every call to run.bat outside DONT_CHANGE."""
+    found: List[Tuple[str, str]] = []
+    for script in scripts_outside():
+        found += re.findall(r'DONT_CHANGE\\run\.bat"\s+([\w-]+)(?:\s+([\w-]+))?', script.read_text(encoding="utf-8"))
     return found
 
 
@@ -152,17 +92,66 @@ class RepositoryNameTests(unittest.TestCase):
 class ExistingProjectTests(unittest.TestCase):
     def test_the_entry_file_and_its_commands_exist(self):
         text = (DONT_CHANGE / ENTRY_FILE).read_text(encoding="utf-8")
-        for command in RUN_COMMANDS:
+        for command in backend_settings.PROTECTED_RUN_COMMANDS:
             with self.subTest(command=command):
                 self.assertIn(f'"%~1"=="{command}"', text)
 
-    def test_scripts_outside_only_use_the_entry_file_and_the_fallback_start(self):
+    def test_scripts_outside_use_only_protected_commands(self):
+        used = run_commands_used_outside()
+        self.assertGreater(len(used), 10)
+        for command, dev_command in used:
+            with self.subTest(command=command, dev_command=dev_command):
+                self.assertIn(command, backend_settings.PROTECTED_RUN_COMMANDS)
+                if command == "dev":
+                    self.assertIn(dev_command, backend_settings.PROTECTED_DEV_TOOL_COMMANDS)
+
+    def test_protected_dev_tool_commands_still_exist(self):
+        # "menu" is not in COMMANDS: main() shows the menu itself (also without a command).
+        known = {*dev_tools.COMMANDS, "menu"}
+        self.assertLessEqual(set(backend_settings.PROTECTED_DEV_TOOL_COMMANDS), known)
+
+    def test_protected_project_files_are_still_where_the_launcher_looks(self):
+        from pyapp.DONT_CHANGE.actions import gen_icons
+
+        # Every path the launcher uses: the constants of backend_settings, and the base image the
+        # icon generator reads by name.
+        used = {os.path.normcase(value) for value in vars(backend_settings).values() if isinstance(value, str)}
+        used |= {os.path.normcase(str(Path(gen_icons.ICON_PNG_DIR) / gen_icons.ICON_GENERATION_SETTINGS[0][1]))}
+        for relative in backend_settings.PROTECTED_PROJECT_FILES:
+            with self.subTest(path=relative):
+                path = os.path.normcase(str(Path(backend_settings.BACKEND_DIR) / relative))
+                self.assertIn(path, used, f"no launcher path points at code/pyapp/{relative} any more")
+
+    def test_protected_setting_names_still_exist(self):
+        defaults = config.default_setting_expressions(backend_settings.DEFAULT_SETTINGS_PATH)
+        self.assertEqual(sorted(set(backend_settings.PROTECTED_SETTING_NAMES) - set(defaults)), [])
+
+    def test_scripts_outside_use_only_protected_paths(self):
         used = launcher_files_used_outside()
         self.assertGreater(len(used), 10)
-        self.assertEqual(set(used), {ENTRY_FILE, FALLBACK_SCRIPT})
+        self.assertLessEqual(set(used), set(backend_settings.PROTECTED_PATHS))
+        self.assertIn(backend_settings.FALLBACK_START_PATH, used)
+
+    def test_every_protected_path_exists(self):
+        for relative in backend_settings.PROTECTED_PATHS:
+            with self.subTest(path=relative):
+                self.assertTrue((DONT_CHANGE / relative.replace("\\", "/")).is_file())
+
+    def test_every_shortcut_target_is_protected(self):
+        # Existing shortcuts keep pointing at their target until Setup runs again.
+        targets = [
+            value
+            for name, value in vars(backend_settings).items()
+            if name.startswith("LAUNCHER_") and str(value).endswith(".bat")  # not LAUNCHER_VERSION
+        ]
+        self.assertGreaterEqual(len(targets), 8)
+        for target in targets:
+            with self.subTest(target=target):
+                relative = str(Path(target).relative_to(backend_settings.DONT_CHANGE_DIR))
+                self.assertIn(relative, backend_settings.PROTECTED_PATHS)
 
     def test_the_fallback_start_needs_nothing_else_from_the_launcher(self):
-        path = DONT_CHANGE / FALLBACK_SCRIPT.replace("\\", "/")
+        path = DONT_CHANGE / backend_settings.FALLBACK_START_PATH.replace("\\", "/")
         imported = set()
         for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
             if isinstance(node, ast.Import):
@@ -174,18 +163,6 @@ class ExistingProjectTests(unittest.TestCase):
         if stdlib is None:
             self.skipTest("sys.stdlib_module_names needs Python 3.10")
         self.assertEqual(sorted(imported - set(stdlib) - {"__future__"}), [])
-
-    def test_dev_tool_commands_still_exist(self):
-        self.assertLessEqual(set(DEV_TOOL_COMMANDS), set(dev_tools.COMMANDS))
-
-    def test_shortcut_targets_still_exist(self):
-        for name in SHORTCUT_TARGETS:
-            with self.subTest(target=name):
-                self.assertTrue((DONT_CHANGE / "B" / name).is_file())
-
-    def test_setting_names_are_not_renamed_or_removed(self):
-        defaults = config.default_setting_expressions(str(DONT_CHANGE / "data" / "dev_settings_default.py"))
-        self.assertEqual(sorted(set(SETTING_NAMES) - set(defaults)), [])
 
 
 if __name__ == "__main__":

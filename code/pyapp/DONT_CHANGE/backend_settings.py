@@ -2,6 +2,10 @@
 
 Every launcher script must keep running on Python 3.8+ (the oldest Python uv can
 install on Windows), so this module only uses 3.8-compatible syntax.
+
+Sections: version, folders, protected (what existing projects rely on), settings files, Windows programs, uv/Python and the
+app environment, temporary state, launcher scripts, browser terminal, shortcuts, icons, dev tools
+and data, behavior.
 """
 
 # fmt: off
@@ -16,12 +20,16 @@ def make_abs(x: str) -> str:
     """Make a path absolute relative to this file when it is relative."""
     return os.path.normpath(x if Path(x).is_absolute() else Path(__file__).parent / x)
 
+# ------------------------
+# version
+
 # Version of this DONT_CHANGE folder (Semantic Versioning, see README.md "Versions"):
 #   PATCH: bug fixes and minor improvements; update by replacing the DONT_CHANGE folder
 #   MINOR: new features, nothing breaks; replace DONT_CHANGE (new settings fall back to their
 #          defaults, new optional files outside it may be copied)
 #   MAJOR: something breaks; replace DONT_CHANGE and follow the steps in CHANGELOG.md
 LAUNCHER_VERSION = "0.0.1"
+MINIMUM_PYTHON = (3, 8)                             # oldest Python the launcher code supports
 
 # ------------------------
 # folders
@@ -29,17 +37,153 @@ LAUNCHER_VERSION = "0.0.1"
 # relative locations. UPDATE those files and code/pyapp/.gitignore when moving one.
 
 DONT_CHANGE_DIR = make_abs(".")
-BACKEND_DIR = make_abs("..")
+BACKEND_DIR = make_abs("..")                         # code/pyapp
 PYTHON_SCRIPTS_DIR = make_abs("..\\..")              # the "code" folder: main.py and the app's own modules
 SHORTCUT_OUTPUT_DIR = make_abs("..\\..\\..")         # repository root
 TEMPORARY_DIR = DONT_CHANGE_DIR + "\\tmp"
 SCRIPTS_DIR = DONT_CHANGE_DIR + "\\scripts"
 APP_ACTIONS_DIR = DONT_CHANGE_DIR + "\\actions"
-ENTRY_BATCHES_DIR = DONT_CHANGE_DIR + "\\B"        # short shortcut targets
+ENTRY_BATCHES_DIR = DONT_CHANGE_DIR + "\\B"          # short shortcut targets
 DATA_DIR = DONT_CHANGE_DIR + "\\data"
+# Everything the launcher creates and maintains. UPDATE bootstrap/*.bat and code/pyapp/.gitignore too.
+GENERATED_DIR = BACKEND_DIR + "\\generated"
+
+# ------------------------
+# protected: what existing projects rely on
+# Projects update by replacing DONT_CHANGE, but keep everything outside it: their .cmd files, the
+# shortcuts Setup made, developer_settings.py and the files the launcher created in code/pyapp.
+# A new version must keep everything listed here; removing or renaming an entry breaks existing
+# projects (a MAJOR version, with steps in CHANGELOG.md). Everything else is free to change.
+# tests/src/test_template_contract.py checks each list against the code.
+
+# Files in DONT_CHANGE that something outside it starts (paths relative to DONT_CHANGE).
+# The fallback start (code/pyapp/"Start without launcher.cmd"): runs the app when the rest of the
+# launcher is broken, so it may only use the standard library, no other launcher file.
+FALLBACK_START_PATH = "actions\\start_without_launcher.py"
+PROTECTED_PATHS = [
+    "run.bat",                  # every .cmd outside DONT_CHANGE: run.bat setup|icons|icons-help|dev <command>
+    FALLBACK_START_PATH,
+    # Shortcut targets: existing shortcuts point at them until Setup runs again.
+    "B\\W.bat",
+    "B\\N.bat",
+    "B\\B.bat",
+    "B\\S.bat",
+    "B\\Q.bat",
+    "B\\L.bat",
+    "B\\C.bat",
+    "B\\M.bat",
+]
+# Files and folders in code/pyapp that existing projects already have (paths relative to code/pyapp).
+# A version that looked for one elsewhere would not find it, without any error:
+PROTECTED_PROJECT_FILES = [
+    "developer_settings.py",                      # the app's whole configuration
+    "generated\\uv.lock",                         # the locked package versions (committed)
+    "generated\\.python-version",                 # the chosen Python (committed)
+    "generated\\shortcuts_created_by_setup.json", # else old shortcuts are no longer removed
+    "generated\\auto_generated_icons.json",       # else every icon counts as placed by hand
+    "generated\\browser_terminal_key.txt",        # else the browser terminal's address changes
+    "generated\\uv",                              # uv and Pythons of self-contained copies (offline)
+    "generated\\pythons",
+    "icons\\icon.png",                            # the app's own image; the .ico files below are
+    "icons\\icon.ico",                            # what the shortcuts Setup made show
+    "icons\\settings.ico",
+    "icons\\stop.ico",
+    "icons\\log.ico",
+    "icons\\success.ico",
+    "icons\\failure.ico",
+    "icons\\crash_log.ico",
+    "icons\\open_code.ico",
+]
+# The commands the .cmd files outside DONT_CHANGE pass to run.bat ...
+PROTECTED_RUN_COMMANDS = ["setup", "icons", "icons-help", "dev"]
+# ... and to "run.bat dev" (the files in code/pyapp/dev_tools); "menu" is the dev menu itself.
+PROTECTED_DEV_TOOL_COMMANDS = [
+    "menu",
+    "add",
+    "remove",
+    "upgrade",
+    "sync",
+    "find-imports",
+    "terminal",
+    "change-python",
+    "update-python",
+    "make-self-contained",
+    "export",
+    "clean",
+    "remove-shortcuts",
+    "status",
+]
+# Settings of developer_settings.py: a renamed or removed one silently stops working in existing
+# files (a new setting may be added: older files get its default from data/dev_settings_default.py).
+PROTECTED_SETTING_NAMES = [
+    "args_for_main_py",
+    "close_after_failure",
+    "close_after_keyboard_interrupt",
+    "close_after_success",
+    "crash_log_path",
+    "crash_log_path_is_relative_to_start_folder_if_relative",
+    "desktop_shortcuts",
+    "enable_crash_log",
+    "enable_log_for_no_terminal_start",
+    "enable_log_for_terminal_start",
+    "environment_for_main_py",
+    "error_date_format",
+    "github_actions",
+    "input_prepend",
+    "instance_policy",
+    "log_input_prepend",
+    "log_path",
+    "log_path_is_relative_to_start_folder_if_relative",
+    "log_print_prepend",
+    "main_script_path",
+    "no_terminal_shortcut_name",
+    "open_code_shortcut_name",
+    "open_crash_log_after_failure",
+    "open_crash_log_folder_shortcut_name",
+    "open_log_file_after_failure",
+    "open_log_file_after_keyboard_interrupt",
+    "open_log_file_after_success",
+    "open_log_folder_shortcut_name",
+    "open_settings_shortcut_name",
+    "packages",
+    "play_sound_after_failure",
+    "play_sound_after_success",
+    "print_prepend",
+    "program_name",
+    "python_source",
+    "python_version",
+    "start_in_shortcut_folder",
+    "start_menu_shortcuts",
+    "start_minimized",
+    "stop_running_shortcut_name",
+    "stop_timeout_seconds",
+    "tab_bar_color",
+    "terminal_bg_color",
+    "terminal_shortcut_name",
+    "terminal_text_color",
+    "use_classic_terminal",
+    "use_system_certificates",
+    "user_settings_path",
+    "uv_cache",
+    "uv_install_if_missing",
+    "uv_prefer",
+    "uv_user_python_visible_globally",
+    "uv_version",
+]
+
+# ------------------------
+# settings files
+
+DEV_SETTINGS_PATH = BACKEND_DIR + "\\developer_settings.py"
+DEV_SETTINGS_DIR = BACKEND_DIR
+DEFAULT_SETTINGS_PATH = DATA_DIR + "\\dev_settings_default.py"  # defaults for missing settings
+
+# ------------------------
+# Windows programs
+# By full path: started by bare name, Windows looks in the current folder (often the project
+# folder) before System32.
+
 WINDOWS_DIR = os.environ.get("WINDIR", "C:\\Windows")
-# Windows' own programs by full path: started by bare name, Windows looks in the current folder
-# (often the project folder) before System32.
 CMD_EXE = WINDOWS_DIR + "\\System32\\cmd.exe"
 CONHOST_EXE = WINDOWS_DIR + "\\System32\\conhost.exe"
 NOTEPAD_EXE = WINDOWS_DIR + "\\System32\\notepad.exe"
@@ -48,8 +192,6 @@ POWERSHELL_EXE = WINDOWS_DIR + "\\System32\\WindowsPowerShell\\v1.0\\powershell.
 # ------------------------
 # uv, Python and the application environment
 
-# Everything the launcher creates and maintains. UPDATE bootstrap/*.bat and code/pyapp/.gitignore too.
-GENERATED_DIR = BACKEND_DIR + "\\generated"
 LOCAL_UV_DIR = GENERATED_DIR + "\\uv"                 # uv.exe when installed locally
 LOCAL_UV_EXE = LOCAL_UV_DIR + "\\uv.exe"
 # Per-user uv, not on PATH: fetched when the usual uv is too old for a Python. UPDATE bootstrap/resolve_runtime.* too.
@@ -64,6 +206,10 @@ UV_LOCK_PATH = PROJECT_DIR + "\\uv.lock"
 PYTHON_VERSION_FILE = PROJECT_DIR + "\\.python-version"
 VENV_DIR = PROJECT_DIR + "\\.venv"
 VENV_PYTHON_EXE = VENV_DIR + "\\Scripts\\python.exe"
+
+# ------------------------
+# temporary state (DONT_CHANGE/tmp, ignored by Git)
+
 RUNTIME_CACHE_PATH = TEMPORARY_DIR + "\\runtime.cmd"   # written by bootstrap/resolve_runtime.py
 ENVIRONMENT_LOCK_PATH = TEMPORARY_DIR + "\\environment.lock"
 # Written after a successful environment check; while it matches, launches skip the uv checks.
@@ -71,20 +217,30 @@ ENVIRONMENT_STAMP_PATH = TEMPORARY_DIR + "\\environment.ok"
 # Errors the launcher ignores on purpose (cosmetic steps), see scripts/diagnostics.py.
 # PYAPP_DIAGNOSTICS_LOG: only for the tests, which must not write into the project folder.
 DIAGNOSTICS_LOG_PATH = os.environ.get("PYAPP_DIAGNOSTICS_LOG") or TEMPORARY_DIR + "\\diagnostics.log"
-MINIMUM_PYTHON = (3, 8)                             # oldest Python the launcher code supports
+# One identity record (JSON) per running watchdog; see runtime_state.ProcessRegistry.
+PROCESS_REGISTRY_DIR = TEMPORARY_DIR + "\\running"
+RUNS_DIR = TEMPORARY_DIR + "\\runs"
+# Written into a run's folder by Stop/"replace"; the watchdog then ends without completion actions.
+STOP_REQUEST_FILE_NAME = "stop-requested"
 
 # ------------------------
-# scripts
+# launcher scripts
 
 ENTRYPOINT_PATH = SCRIPTS_DIR + "\\entrypoint.py"        # runs every tool: entrypoint.py <tool.py> [args]
 START_PROGRAM_PATH = APP_ACTIONS_DIR + "\\start_program.py"
+RESOLVE_RUNTIME_PATH = DONT_CHANGE_DIR + "\\bootstrap\\resolve_runtime.py"
 WATCHDOG_PATH = DONT_CHANGE_DIR + "\\runtime\\bg_watchdog.py"
 PROCESS_EXIT_PATH = DONT_CHANGE_DIR + "\\runtime\\process_exit.py"
 SCRIPT_WRAPPER_PATH = DONT_CHANGE_DIR + "\\runtime\\script_wrapper.py"
 CTRL_C_HELPER_PATH = DONT_CHANGE_DIR + "\\runtime\\send_ctrl_c.py"
-# The browser terminal shortcut: the launcher's wrapper around the self-contained browser_terminal
-# package, and the files it shares with the run (in the run's folder): its settings, icon/color
-# requests, its window handle. The variable names the request file for console_tools.
+TEST_RUNNER_PATH = DONT_CHANGE_DIR + "\\tests\\src\\run_regressions.py"  # the dev tool "test"
+
+# ------------------------
+# browser terminal
+# The shortcut's launcher-side wrapper around the self-contained browser_terminal package, and the
+# files it shares with the run (in the run's folder): its settings, icon/color requests, its window
+# handle. The variable names the request file for console_tools.
+
 BROWSER_TERMINAL_PATH = DONT_CHANGE_DIR + "\\runtime\\browser_terminal_host.py"
 BROWSER_UI_ENV_VAR = "PYAPP_BROWSER_TERMINAL_UI"
 BROWSER_CONFIG_FILE_NAME = "browser-terminal.json"
@@ -93,10 +249,9 @@ BROWSER_WINDOW_FILE_NAME = "browser-window.json"
 # The secret part of the browser terminal's stable address, per PC (scripts/browser_links.py).
 # UPDATE code/pyapp/.gitignore when moving it: it must not be committed.
 BROWSER_KEY_PATH = GENERATED_DIR + "\\browser_terminal_key.txt"
-RESOLVE_RUNTIME_PATH = DONT_CHANGE_DIR + "\\bootstrap\\resolve_runtime.py"
 
 # ------------------------
-# shortcut launchers
+# shortcuts (their targets are in PROTECTED_PATHS)
 
 LAUNCHER_TERMINAL = ENTRY_BATCHES_DIR + "\\W.bat"
 LAUNCHER_OPEN_SETTINGS = ENTRY_BATCHES_DIR + "\\S.bat"
@@ -111,14 +266,19 @@ CREATED_SHORTCUTS_LIST_PATH = GENERATED_DIR + "\\shortcuts_created_by_setup.json
 # Every generated shortcut's arguments contain this fragment; stale-shortcut removal
 # only deletes .lnk files that contain it.
 SHORTCUT_SIGNATURE = "\\DONT_CHANGE\\B\\"
+# Taskbar identity suffix of the no-terminal shortcut and of the windows it launches, so a
+# pinned no-terminal shortcut groups its app windows separately from the terminal shortcut.
+NO_TERMINAL_APP_ID_SUFFIX = "W"
+# The same for the browser terminal shortcut, so it can be pinned next to the terminal shortcut.
+BROWSER_APP_ID_SUFFIX = "B"
+# Setup prepares uv, Python and packages, so the first start does not have to.
+INSTALL_ENVIRONMENT_WHEN_GENERATING_SHORTCUTS = True
 
 # ------------------------
 # icons (generated from icon.png and the bundled overlays by actions/gen_icons.py)
 
 ICON_DIR = BACKEND_DIR + "\\icons"
 ICON_PATH = ICON_DIR + "\\icon.ico"
-# Hashes of the icons the generator made; any other .ico was placed by hand and needs a question.
-GENERATED_ICONS_RECORD_PATH = GENERATED_DIR + "\\auto_generated_icons.json"
 SETTINGS_ICON_PATH = ICON_DIR + "\\settings.ico"
 STOP_ICON_PATH = ICON_DIR + "\\stop.ico"
 LOG_ICON_PATH = ICON_DIR + "\\log.ico"
@@ -126,41 +286,9 @@ SUCCESS_ICON_PATH = ICON_DIR + "\\success.ico"
 FAILURE_ICON_PATH = ICON_DIR + "\\failure.ico"
 CRASH_LOG_ICON_PATH = ICON_DIR + "\\crash_log.ico"
 OPEN_CODE_ICON_PATH = ICON_DIR + "\\open_code.ico"
-
-# ------------------------
-# generated process state
-
-# One identity record (JSON) per running watchdog; see runtime_state.ProcessRegistry.
-PROCESS_REGISTRY_DIR = TEMPORARY_DIR + "\\running"
-RUNS_DIR = TEMPORARY_DIR + "\\runs"
-# Written into a run's folder by Stop/"replace"; the watchdog then ends without completion actions.
-STOP_REQUEST_FILE_NAME = "stop-requested"
-
-# ------------------------
-# dev tools and data
-
-EXPORTED_REQUIREMENTS_PATH = BACKEND_DIR + "\\requirements.txt"
-IMPORT_MAPPING_PATH = DATA_DIR + "\\import_to_package.txt"
-DEFAULT_SETTINGS_PATH = DATA_DIR + "\\dev_settings_default.py"  # defaults for missing settings
-BANNER_FONT_PATH = DATA_DIR + "\\fonts\\pyapp-grid.tlf"  # Pixel banner font (scripts/banner.py)
 DEFAULT_ICON_DIR = DATA_DIR + "\\icons"  # bundled placeholder PNGs, used when the project's own are missing or unchanged
-
-# GitHub Actions an app can switch on (github_actions in developer_settings.py); Setup copies them:
-APP_WORKFLOW_SOURCE_DIR = DATA_DIR + "\\workflows"
-APP_WORKFLOW_TARGET_DIR = SHORTCUT_OUTPUT_DIR + "\\.github\\workflows"
-
-# ------------------------
-# remaining files
-
-DEV_SETTINGS_PATH = BACKEND_DIR + "\\developer_settings.py"
-DEV_SETTINGS_DIR = BACKEND_DIR
-DEFAULT_SOUND_AFTER_FAILURE = WINDOWS_DIR + "\\Media\\Windows Critical Stop.wav"
-DEFAULT_SOUND_AFTER_SUCCESS = WINDOWS_DIR + "\\Media\\notify.wav"
-# Window titles after the program ended ({program_name} is filled in).
-TITLE_AFTER_SUCCESS = "[Finished] {program_name}"
-TITLE_AFTER_FAILURE = "[Failure] {program_name}"
-TITLE_AFTER_KEYBOARD_INTERRUPT = "[KeyboardInterrupt] {program_name}"
-
+# Hashes of the icons the generator made; any other .ico was placed by hand and needs a question.
+GENERATED_ICONS_RECORD_PATH = GENERATED_DIR + "\\auto_generated_icons.json"
 # Overlay of each generated icon, by icon file name: (fraction of the base icon area it covers,
 # greater than 0 and at most 1; position such as "bottom right", "top" or "center left").
 # Use None instead of the pair to generate that icon without its overlay.
@@ -174,6 +302,15 @@ SUB_ICONS = {
     "open_code": (0.35, "bottom right"),
 }
 
+# ------------------------
+# dev tools and data
+
+EXPORTED_REQUIREMENTS_PATH = BACKEND_DIR + "\\requirements.txt"
+IMPORT_MAPPING_PATH = DATA_DIR + "\\import_to_package.txt"
+BANNER_FONT_PATH = DATA_DIR + "\\fonts\\pyapp-grid.tlf"  # Pixel banner font (scripts/banner.py)
+# GitHub Actions an app can switch on (github_actions in developer_settings.py); Setup copies them:
+APP_WORKFLOW_SOURCE_DIR = DATA_DIR + "\\workflows"
+APP_WORKFLOW_TARGET_DIR = SHORTCUT_OUTPUT_DIR + "\\.github\\workflows"
 # Import-finder scan exclusions (folder names anywhere below the code folder; folders starting
 # with "." are always skipped). The launcher's own pyapp folder is skipped only directly in
 # the code folder, so an app subpackage that happens to be named "pyapp" is still scanned.
@@ -187,20 +324,22 @@ EXCLUDED_FOLDERS_FOR_IMPORT_SEARCH = [
     # recognized by their pyvenv.cfg. Not "build" or "dist": those can be app packages.
     "site-packages",
 ]
-# Setup prepares uv, Python and packages, so the first start does not have to.
-INSTALL_ENVIRONMENT_WHEN_GENERATING_SHORTCUTS = True
-EMPTY_ARG_INDICATOR = "__EMPTY__"
+
+# ------------------------
+# behavior
+
 # Seconds a start waits for the watchdog's acknowledgement, and the watchdog for the app's
 # interpreter to load the wrapper. Generous: the first start of a fresh environment on a slow
 # disk with real-time scanning can take long, and both waits end early when the process exits.
 STARTUP_ACKNOWLEDGEMENT_TIMEOUT_SECONDS = 180
 WRAPPER_READY_TIMEOUT_SECONDS = 120
-# Taskbar identity suffix of the no-terminal shortcut and of the windows it launches, so a
-# pinned no-terminal shortcut groups its app windows separately from the terminal shortcut.
-NO_TERMINAL_APP_ID_SUFFIX = "W"
-# The same for the browser terminal shortcut, so it can be pinned next to the terminal shortcut.
-BROWSER_APP_ID_SUFFIX = "B"
-
+EMPTY_ARG_INDICATOR = "__EMPTY__"
+DEFAULT_SOUND_AFTER_FAILURE = WINDOWS_DIR + "\\Media\\Windows Critical Stop.wav"
+DEFAULT_SOUND_AFTER_SUCCESS = WINDOWS_DIR + "\\Media\\notify.wav"
+# Window titles after the program ended ({program_name} is filled in).
+TITLE_AFTER_SUCCESS = "[Finished] {program_name}"
+TITLE_AFTER_FAILURE = "[Failure] {program_name}"
+TITLE_AFTER_KEYBOARD_INTERRUPT = "[KeyboardInterrupt] {program_name}"
 # Source lines of your own code shown before and after each failing line (0: none).
 # Library code always shows just the failing line, like Python does.
 traceback_lines_before: int = 3

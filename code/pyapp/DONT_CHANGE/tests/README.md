@@ -83,7 +83,7 @@ uses it). `src/groups.py` defines the groups; a new test file must be added to o
 | --- | --- |
 | `test_files.py` | CRLF batch and settings files, every referenced script exists, every tool has `main()`, the README file tables, every test file in a group with its launcher |
 | `test_python38.py` | Python 3.8 compatibility of the launcher: lint targets, syntax and library calls, annotations that runtime type inspection can evaluate |
-| `test_template_contract.py` | what must stay stable: the repository name in the Actions, what existing projects expect in `DONT_CHANGE` (`run.bat` and the fallback start, which may only use the standard library) |
+| `test_template_contract.py` | what must stay stable: the repository name in the Actions, what existing projects expect in `DONT_CHANGE` (`backend_settings.PROTECTED_PATHS` exist and are all that files outside use; the fallback start uses only the standard library) |
 
 Manual release check (not automated): Setup, start twice, Stop on the example window, the
 open shortcuts, `status.cmd`, `change_python`, `make_self_contained`, a moved and a copied folder.

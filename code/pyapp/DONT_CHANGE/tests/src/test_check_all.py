@@ -48,6 +48,9 @@ class CheckAllTests(unittest.TestCase):
         config = tool.DONT_CHANGE_DIR / "scripts" / "config.py"
         output = tool.with_links(
             f'  File "{config}", line 12, in x\n'
+            "    self.assertEqual(a, b)\n"
+            "    ~~~~~~~~~~~~~~~~^^^^^^\n"
+            "AssertionError: 1 != 2\n"
             "scripts\\config.py:40:8: F401 unused\n"
             "  --> scripts/config.py:7:5\n"
             "no_such_file.py:3:1: E1 x"
@@ -57,11 +60,15 @@ class CheckAllTests(unittest.TestCase):
             output.splitlines(),
             [
                 f'  File "{config}", line 12, in x',
-                f"    {link}#L12",
+                # After the traceback's source line and markers, so the traceback stays readable.
+                "    self.assertEqual(a, b)",
+                "    ~~~~~~~~~~~~~~~~^^^^^^",
+                f"      {link}#L12",
+                "AssertionError: 1 != 2",
                 "scripts\\config.py:40:8: F401 unused",
                 f"    {link}#L40",
                 "  --> scripts/config.py:7:5",
-                f"    {link}#L7",
+                f"      {link}#L7",
                 "no_such_file.py:3:1: E1 x",
             ],
         )

@@ -66,16 +66,29 @@ def with_links(output: str) -> str:
     Pyrefly run) or the repository.
     """
     lines: List[str] = []
+    # A traceback's link waits until its source line and ~~~^^^ markers (indented deeper) are shown.
+    pending, pending_indent = "", 0
     for line in output.splitlines():
+        indent = len(line) - len(line.lstrip())
+        if pending and (not line.strip() or indent <= pending_indent):
+            lines.append(pending)
+            pending = ""
         lines.append(line)
-        match = TRACEBACK_LOCATION.match(line) or DIAGNOSTIC_LOCATION.match(line)
+        traceback = TRACEBACK_LOCATION.match(line)
+        match = traceback or DIAGNOSTIC_LOCATION.match(line)
         if not match:
             continue
         for base in (Path(), DONT_CHANGE_DIR, PROJECT_ROOT):
             path = base / match.group(1)
             if path.is_file():
-                lines.append("    " + _ui.file_link(path, int(match.group(2))))
+                link = " " * (indent + 4) + _ui.file_link(path, int(match.group(2)))
+                if traceback:
+                    pending, pending_indent = link, indent
+                else:
+                    lines.append(link)
                 break
+    if pending:
+        lines.append(pending)
     return "\n".join(lines)
 
 
