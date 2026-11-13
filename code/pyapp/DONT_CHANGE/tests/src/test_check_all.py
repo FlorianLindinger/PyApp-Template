@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import io
+import re
 import sys
 import unittest
 from typing import Dict, List, Tuple
@@ -41,6 +42,38 @@ class CheckAllTests(unittest.TestCase):
         self.assertIn('Click "Show Command Output" for details.', output.getvalue().splitlines()[0])
         self.assertIn("app.py:12:3: error", output.getvalue())
         self.assertEqual(run.call_args.kwargs["stderr"], tool.subprocess.STDOUT)
+
+    def test_locations_in_failed_output_get_links(self):
+        # A traceback line and diagnostics relative to DONT_CHANGE (Ruff, Pyrefly); unknown files get none.
+        config = tool.DONT_CHANGE_DIR / "scripts" / "config.py"
+        output = tool.with_links(
+            f'  File "{config}", line 12, in x\n'
+            "scripts\\config.py:40:8: F401 unused\n"
+            "  --> scripts/config.py:7:5\n"
+            "no_such_file.py:3:1: E1 x"
+        )
+        link = config.resolve().as_uri()
+        self.assertEqual(
+            output.splitlines(),
+            [
+                f'  File "{config}", line 12, in x',
+                f"    {link}#L12",
+                "scripts\\config.py:40:8: F401 unused",
+                f"    {link}#L40",
+                "  --> scripts/config.py:7:5",
+                f"    {link}#L7",
+                "no_such_file.py:3:1: E1 x",
+            ],
+        )
+
+    def test_a_blocked_push_lists_the_checks_that_did_not_run(self):
+        output = io.StringIO()
+        with mock.patch.object(tool, "run_step", return_value=1), mock.patch.object(
+            tool.sys, "stdin", mock.Mock(read=lambda: "")
+        ), mock.patch("sys.stdout", output):
+            tool.main(["--pushing"])
+        for step in tool.STEPS[1:]:
+            self.assertRegex(output.getvalue(), rf"not run\s+{re.escape(step.label)}")
 
     def test_successful_push_steps_are_quiet_and_skips_are_not_failures(self):
         output = io.StringIO()

@@ -53,6 +53,14 @@ class LeakPatternTests(unittest.TestCase):
             ],
         )
 
+    def test_a_user_name_ends_before_the_punctuation_after_the_path(self):
+        # Built in pieces, so this file passes the check itself.
+        for line in ("(see C:" + "\\Users\\Bob~1)", "C:" + "\\Users\\Bob, then", "C:" + "\\Users\\Bob; x"):
+            with self.subTest(line=line):
+                self.assertEqual(
+                    [f.value for f in tool.line_findings(line, "a.py", "a.py:1")], ["Bob~1" if "~" in line else "Bob"]
+                )
+
     def test_harmless_text_is_not_reported(self):
         for line in (
             r"C:\Users\Public\x",
@@ -96,6 +104,20 @@ class ReportTests(unittest.TestCase):
         self.assertIn("app.py:100 (staged)", output.getvalue())
         self.assertNotIn(GITHUB_TOKEN, output.getvalue())
         self.assertNotIn(AWS_KEY, output.getvalue())
+
+    def test_staged_and_current_findings_link_to_their_line_but_commits_do_not(self):
+        path = "code/pyapp/DONT_CHANGE/backend_settings.py"  # any file that exists in the checkout
+        link = (tool.PROJECT_ROOT / path).resolve().as_uri()
+        for where, expected in (
+            (f"{path}:12 (staged)", f"{link}#L12"),
+            (f"{path}:12", f"{link}#L12"),
+            (f"{path} (staged)", link),
+            (f"{path}:12 (commit abc1234)", ""),  # the file may have changed since that commit
+        ):
+            with self.subTest(where=where):
+                finding = tool.Finding(tool.SECRET, "AWS access key", "AKIA****", where, path)
+                self.assertEqual(tool.working_file_link(finding), expected)
+        self.assertEqual(tool.working_file_link(tool.Finding(tool.SECRET, "x", "y", "gone.py:1", "gone.py")), "")
 
     def test_personal_source_lines_are_preserved_exactly(self):
         line = '    profile = "C:' + '\\\\Users\\\\Alice"'

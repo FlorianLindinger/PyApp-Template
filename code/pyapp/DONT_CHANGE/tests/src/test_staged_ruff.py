@@ -23,7 +23,13 @@ class StagedRuffTests(unittest.TestCase):
         with mock.patch.object(tool, "run_ruff", side_effect=[(1, diagnostic), (0, "")]):
             self.assertEqual(
                 tool.problems_in(["ruff"], PREFIX + "a.py", b"# staged version\nimport os\n"),
-                [diagnostic + "\n    | import os"],
+                # The link opens the line from VS Code's "Show Command Output", where the path is only text.
+                [
+                    diagnostic
+                    + "\n    | import os\n    "
+                    + (tool.PROJECT_ROOT / PREFIX / "a.py").resolve().as_uri()
+                    + "#L2"
+                ],
             )
 
     def test_a_secret_in_a_lint_source_line_is_masked(self):

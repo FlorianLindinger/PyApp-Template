@@ -64,13 +64,17 @@ def problems_in(ruff: List[str], name: str, content: bytes) -> List[str]:
             details.append(diagnostic)
             location = re.match(r"^.+:(\d+):\d+: ", diagnostic)
             if location and 1 <= int(location.group(1)) <= len(source_lines):
-                details.append("    | " + redacted_source(source_lines[int(location.group(1)) - 1]))
+                number = int(location.group(1))
+                details.append("    | " + redacted_source(source_lines[number - 1]))
+                # Clickable in VS Code's "Show Command Output", where the relative path is only text.
+                details.append("    " + _ui.file_link(PROJECT_ROOT / name, number))
         found.append("\n".join(details) or f"{name}: Ruff lint failed (exit code {code})")
     code, output = run_ruff(ruff, ["format", "--check"], name, content)
     if code:
         format_details = "\n".join(redacted_source(line) for line in output.splitlines())
         found.append(
-            f"{name}: not formatted (run verify_launcher.bat --fix)" + ("\n" + format_details if format_details else "")
+            f"{name}: not formatted (run verify_launcher.bat --fix)\n    {_ui.file_link(PROJECT_ROOT / name)}"
+            + ("\n" + format_details if format_details else "")
             if code == 1
             else output or f"{name}: Ruff format could not complete (exit code {code})"
         )
@@ -92,7 +96,6 @@ def main(ruff: Optional[List[str]] = None) -> int:
         return 0  # silent: this runs on every commit
     # Keep the first diagnostic in the first line for Git clients that truncate hook output.
     _ui.info(f'Commit blocked: Ruff: {problems[0].splitlines()[0]}. Click "Show Command Output" for details.')
-    _ui.info("Locations refer to the staged files; unstaged edits can shift editor line numbers.")
     _ui.heading("Ruff diagnostics in staged launcher files")
     for problem in problems:
         _ui.info(problem)
@@ -100,6 +103,8 @@ def main(ruff: Optional[List[str]] = None) -> int:
     _ui.error(
         "Fix the diagnostics, stage the corrected files, then commit again.\n"
         "verify_launcher.bat --fix applies safe Ruff fixes and formatting to working files.\n"
+        "Ctrl+click a file:/// link to open its line. Locations refer to the staged files;\n"
+        "unstaged edits can shift the line numbers in the editor.\n"
         "To commit anyway, once: git commit --no-verify"
     )
     return 1

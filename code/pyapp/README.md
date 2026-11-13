@@ -18,5 +18,12 @@ Other generated items in `generated/`: `pythons/` and `uv/` (only when installed
 (only with `uv_cache = "local"`) and `shortcuts_created_by_setup.json` (the shortcuts Setup created, so it can
 remove stale ones). All are ignored by Git.
 
+If the launcher itself is broken, double-click [Start without launcher.cmd](Start%20without%20launcher.cmd)
+(its code: `DONT_CHANGE/actions/start_without_launcher.py`, which uses nothing else of the launcher):
+it runs the main script directly with the app's environment (`generated/.venv`), or with the global
+default Python when that environment is missing or broken. It shows the main script, Python,
+packages (installed or missing) and their folders first. There is no setup, no package installation,
+no log, no crash log and no STOP shortcut. Run Setup to repair the launcher.
+
 For normal development edit `../main.py`, `../settings.py` and `developer_settings.py`.
 See the [pyapp internals](DONT_CHANGE/README.md) when maintaining the template itself.

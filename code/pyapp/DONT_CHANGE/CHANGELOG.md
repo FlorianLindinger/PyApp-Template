@@ -230,7 +230,7 @@ Windows-only paths (batch files, job objects, COM, Stop, real consoles) still ne
 
 #### Dev Helpers
 - New layout: `tools/` (verify_launcher, get_startup_time, get_import_times,
-  make_import_map, show_longest_paths), `future/` (ideas only), `archive/old_launcher/`
+  make_import_map, get_longest_paths), `future/` (ideas only), `archive/old_launcher/`
   (pre-uv files), `tmp/` (was `temporary/`). New tests: `test_banner.py`.
 - Startup benchmark rewritten for the new launcher (temporary project copy with a probe main.py).
 
@@ -314,7 +314,7 @@ The 13 `.bat` + 13 `.py` package tools were replaced by one module (`scripts/dev
   `open_crash.py`, `open_log_folder.py` -> `open_log.py`), `scripts/runtime` -> `runtime` (`_pyapp_protocol.py` ->
   `protocol.py`), `scripts/setup` -> `setup`, `scripts/bootstrap` -> `bootstrap`, `temporary` -> `tmp`.
 - `code/backend/shortcuts.manifest.json` -> `code/backend/shortcuts_created_by_setup.json`.
-- Dev Helpers: `show_longest_paths.bat` lists the 30 longest paths in the template checkout and flags those over the Windows path limit.
+- Dev Helpers: `get_longest_paths.bat` lists the 30 longest paths in the template checkout and flags those over the Windows path limit.
 
 #### Fixes from the 2026-11-05 review
 

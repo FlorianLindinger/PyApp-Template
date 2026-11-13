@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import os
 import sys
+from pathlib import Path
 from typing import Callable, Iterable, Optional, Sequence, Tuple
 
 HEADING = "\x1b[1;36m"  # bold cyan
@@ -142,6 +143,15 @@ def progress(message: object) -> None:
         _prepare_console()
         print("\r\x1b[K" + styled(message, DIM), end="", flush=True)
         _progress_shown = True
+
+
+def file_link(path: Path, line: Optional[int] = None) -> str:
+    """A link that opens the file, at the line if given: "file:///D:/x/app.py#L12".
+
+    VS Code makes these clickable (Ctrl+click) in "Show Command Output", where a plain
+    "app.py:12" is only text; its terminal, Windows Terminal and browsers open them too.
+    """
+    return path.resolve().as_uri() + (f"#L{line}" if line else "")
 
 
 def fields(rows: Iterable[Tuple[str, object]], indent: int = 2) -> None:

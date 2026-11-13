@@ -35,6 +35,7 @@ uses it). `src/groups.py` defines the groups; a new test file must be added to o
 | `test_banner.py` | the banner font renders the app name, supports German letters and Latin-1, skips missing characters; the console font it needs |
 | `test_icons.py` | icons always use the bundled overlays; generated icons update silently, a question per icon for placed ones; small sizes in linear light; every `.ico` size |
 | `test_dev_menu.py` | the dev tools menu offers every command exactly once; every prompt can be cancelled; missing-package recovery |
+| `test_fallback.py` | `actions/start_without_launcher.py` from a copy that has nothing else of the launcher: settings, arguments, environment, exit code, missing packages, unreadable settings |
 | `test_windows.py` | Windows only: registry records with job names, Stop ends the whole job (incl. grandchildren), graceful Stop via Ctrl+C, file lock |
 
 ### `setup`: settings, environment, uv and Python
@@ -82,7 +83,7 @@ uses it). `src/groups.py` defines the groups; a new test file must be added to o
 | --- | --- |
 | `test_files.py` | CRLF batch and settings files, every referenced script exists, every tool has `main()`, the README file tables, every test file in a group with its launcher |
 | `test_python38.py` | Python 3.8 compatibility of the launcher: lint targets, syntax and library calls, annotations that runtime type inspection can evaluate |
-| `test_template_contract.py` | what must stay stable: the repository name in the Actions, what existing projects expect in `DONT_CHANGE` |
+| `test_template_contract.py` | what must stay stable: the repository name in the Actions, what existing projects expect in `DONT_CHANGE` (`run.bat` and the fallback start, which may only use the standard library) |
 
 Manual release check (not automated): Setup, start twice, Stop on the example window, the
 open shortcuts, `status.cmd`, `change_python`, `make_self_contained`, a moved and a copied folder.

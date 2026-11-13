@@ -12,6 +12,7 @@ verify_launcher is skipped rather than failed. Exit code 1 means a check failed.
 from __future__ import annotations
 
 import argparse
+import re
 import subprocess
 import sys
 import time
@@ -19,7 +20,7 @@ from pathlib import Path
 from typing import List, NamedTuple, Optional
 
 import _ui
-from _paths import DONT_CHANGE_DIR
+from _paths import DONT_CHANGE_DIR, PROJECT_ROOT
 from check_repository import git
 
 SOURCE = Path(__file__).resolve().parent
@@ -52,6 +53,32 @@ def refs_of_current_branch() -> str:
     return f"refs/heads/{branch} {local} refs/heads/{branch} {remote}\n"
 
 
+# A traceback line (File "D:\x\test_a.py", line 12) or a diagnostic (app.py:12:5: ... / --> app.py:12:5).
+TRACEBACK_LOCATION = re.compile(r'^\s*File "([^"]+)", line (\d+)')
+DIAGNOSTIC_LOCATION = re.compile(r"^\s*(?:-->\s*)?([^\s:\"]+(?::[\\/][^\s:\"]+)?):(\d+):\d+")
+
+
+def with_links(output: str) -> str:
+    """The output with a file:/// link under each line that names an existing file and line.
+
+    VS Code's "Show Command Output" shows a failed push as plain text, where only full links can
+    be clicked; relative diagnostics are resolved from the launcher folder (where Ruff and
+    Pyrefly run) or the repository.
+    """
+    lines: List[str] = []
+    for line in output.splitlines():
+        lines.append(line)
+        match = TRACEBACK_LOCATION.match(line) or DIAGNOSTIC_LOCATION.match(line)
+        if not match:
+            continue
+        for base in (Path(), DONT_CHANGE_DIR, PROJECT_ROOT):
+            path = base / match.group(1)
+            if path.is_file():
+                lines.append("    " + _ui.file_link(path, int(match.group(2))))
+                break
+    return "\n".join(lines)
+
+
 def run_step(step: Step, refs: str, *, hook: bool = False) -> int:
     """Stream manual checks; buffer hook checks so a later failure gets the first output line."""
     completed = subprocess.run(  # noqa: S603
@@ -64,13 +91,17 @@ def run_step(step: Step, refs: str, *, hook: bool = False) -> int:
     if hook and completed.returncode and not (step.can_skip and completed.returncode == SKIPPED):
         # Normalize captured Windows line endings before print() translates them again.
         output = "\n".join(completed.stdout.decode("utf-8", "replace").splitlines()).strip()
-        if not output.startswith("Push blocked:"):
+        if output.startswith("Push blocked:"):
+            _ui.info(output)  # the leak check's own report, with its first line and sections
+        else:
             _ui.info(
                 f"Push blocked: {step.label} failed (exit code {completed.returncode}). "
                 'Click "Show Command Output" for details.'
             )
-        if output:
-            _ui.info(output)
+            if output:
+                # Under its own heading, so it does not run into the summary of the checks below.
+                _ui.heading(f"Output of {step.label}")
+                _ui.info(with_links(output))
     return completed.returncode
 
 
@@ -101,8 +132,12 @@ def main(argv: Optional[List[str]] = None) -> int:
             if arguments.pushing:
                 break  # the push stops anyway; no need to wait for the rest
     if not live:
-        _ui.heading("All checks")
-        _ui.table(("check", "result", "time"), results)
+        # A push stops at the first failure: the steps after it are listed as not run, so the
+        # summary says what was and was not checked.
+        results += [[step.label, "not run", ""] for step in STEPS[len(results) :]]
+        _ui.heading("Checks before the push" if arguments.pushing else "All checks")
+        # The table aligns all but the last column right: the names read best as that last one.
+        _ui.table(("result", "time", "check"), [[status, seconds, label] for label, status, seconds in results])
     _ui.blank_line()
     if failed:
         how = "To push anyway, once: git push --no-verify" if arguments.pushing else "See the output above."

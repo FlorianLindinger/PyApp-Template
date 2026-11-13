@@ -1,9 +1,14 @@
-"""What must stay stable: the repository name in the Actions, and what existing projects expect in DONT_CHANGE."""
+"""What must stay stable: the repository name in the Actions, what existing projects expect in DONT_CHANGE.
+
+That includes the fallback start (fallback/start_without_launcher.py), which runs on its own.
+"""
 
 from __future__ import annotations
 
+import ast
 import re
 import subprocess
+import sys
 import unittest
 from typing import List, Optional
 
@@ -17,6 +22,9 @@ from pyapp.DONT_CHANGE.scripts.dev_tools import main as dev_tools
 # Projects keep their own files outside DONT_CHANGE when they update by replacing that folder, so
 # what those files use has to stay. Everything else in DONT_CHANGE is free to move between versions.
 ENTRY_FILE = "run.bat"
+# code/pyapp/"Start without launcher.cmd" runs this directly, without run.bat: it must keep working
+# when the rest of the launcher is broken, so it may not use any other launcher file.
+FALLBACK_SCRIPT = "fallback\\start_without_launcher.py"
 RUN_COMMANDS = ("setup", "icons", "icons-help", "dev")
 DEV_TOOL_COMMANDS = (
     "add",
@@ -118,7 +126,7 @@ def is_the_template_itself() -> bool:
 
 def launcher_files_used_outside() -> List[str]:
     """What the scripts outside DONT_CHANGE refer to inside it."""
-    scripts = list(PROJECT_ROOT.glob("*.cmd"))
+    scripts = list(PROJECT_ROOT.glob("*.cmd")) + list((CODE / "pyapp").glob("*.cmd"))
     for folder in ("dev_tools", "icons"):
         scripts += (CODE / "pyapp" / folder).glob("*.cmd")
     found: List[str] = []
@@ -148,10 +156,24 @@ class ExistingProjectTests(unittest.TestCase):
             with self.subTest(command=command):
                 self.assertIn(f'"%~1"=="{command}"', text)
 
-    def test_scripts_outside_only_use_the_entry_file(self):
+    def test_scripts_outside_only_use_the_entry_file_and_the_fallback_start(self):
         used = launcher_files_used_outside()
         self.assertGreater(len(used), 10)
-        self.assertEqual(set(used), {ENTRY_FILE})
+        self.assertEqual(set(used), {ENTRY_FILE, FALLBACK_SCRIPT})
+
+    def test_the_fallback_start_needs_nothing_else_from_the_launcher(self):
+        path = DONT_CHANGE / FALLBACK_SCRIPT.replace("\\", "/")
+        imported = set()
+        for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
+            if isinstance(node, ast.Import):
+                imported.update(alias.name.split(".")[0] for alias in node.names)
+            elif isinstance(node, ast.ImportFrom):
+                imported.add("." if node.level else (node.module or "").split(".")[0])
+        # Only the standard library: no launcher module, nothing relative, no package of the app.
+        stdlib = getattr(sys, "stdlib_module_names", None)  # Python 3.10+
+        if stdlib is None:
+            self.skipTest("sys.stdlib_module_names needs Python 3.10")
+        self.assertEqual(sorted(imported - set(stdlib) - {"__future__"}), [])
 
     def test_dev_tool_commands_still_exist(self):
         self.assertLessEqual(set(DEV_TOOL_COMMANDS), set(dev_tools.COMMANDS))

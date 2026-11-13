@@ -58,7 +58,8 @@ PLACEHOLDER = re.compile(
     r"(?i)^(?:[{<$%].*|your[-\w]*|.*example.*|changeme|placeholder|(?:my)?(?:password|secret)|x{4,}|\*{3,}|\.\.\..*)$"
 )
 
-HOME_FOLDER = re.compile(r"(?i)\b[A-Z]:[\\/]+Users[\\/]+([^\\/\s\"'<>|:*?`]+)|(?<![\w.])/home/([a-z_][\w.-]*)")
+# The user name ends at punctuation that usually follows a path in text, e.g. "(see C:\Users\bob)".
+HOME_FOLDER = re.compile(r"(?i)\b[A-Z]:[\\/]+Users[\\/]+([^\\/\s\"'<>|:*?`(),;]+)|(?<![\w.])/home/([a-z_][\w.-]*)")
 PLACEHOLDER_USERS = {"public", "default", "all users", "name", "user", "username", "you", "yourname", "me", "runner"}
 # Not after ":" or "/" (the password of a URL), and not ending like a file name.
 EMAIL = re.compile(
@@ -278,6 +279,20 @@ def only_new_history(current: List[Finding], history: List[Finding]) -> List[Fin
     return result
 
 
+def working_file_link(finding: Finding) -> str:
+    """A link to the place in the working file, for staged and current-file findings ("" otherwise).
+
+    A finding in a commit gets none: the file on disk may have changed since, or no longer exist.
+    """
+    if not finding.path or not (finding.where.endswith(" (staged)") or "(" not in finding.where):
+        return ""
+    path = PROJECT_ROOT / finding.path
+    if not path.is_file():
+        return ""
+    line = re.match(r"^.*?:(\d+)(?: \(|$)", finding.where)
+    return _ui.file_link(path, int(line.group(1)) if line else None)
+
+
 def show(title: str, findings: List[Finding]) -> None:
     """Group values and show every distinct location with its source line, masking recognized secrets."""
     if not findings:
@@ -290,15 +305,18 @@ def show(title: str, findings: List[Finding]) -> None:
     _ui.heading(f"{title} ({len(rows)})")
     table_rows: List[Tuple[Union[int, str], str, str, str]] = []
     for group in rows[:MAX_ROWS]:
-        locations = {finding.where: finding.source for finding in group}
-        for index, (location, source) in enumerate(locations.items()):
+        locations = {finding.where: finding for finding in group}
+        for index, (location, finding) in enumerate(locations.items()):
             table_rows.append(
                 (len({f.path for f in group}), group[0].value, group[0].kind, location)
                 if index == 0
                 else ("", "", "", location)
             )
-            if source:
-                table_rows.append(("", "", "", "    | " + source))
+            if finding.source:
+                table_rows.append(("", "", "", "    | " + finding.source))
+            link = working_file_link(finding)
+            if link:
+                table_rows.append(("", "", "", "    " + link))
     _ui.table(
         ("files", "value", "kind", "place"),
         table_rows,
@@ -398,7 +416,8 @@ def check_commit() -> int:
     _ui.error(
         "Edit the reported lines, stage the corrected files, then commit again.\n"
         'For an intentional value, put "leak-check: ignore" on that line and stage it again.\n'
-        "Locations refer to the staged version; unstaged edits can shift editor line numbers.\n"
+        "Ctrl+click a file:/// link to open its line. Locations refer to the staged version;\n"
+        "unstaged edits can shift the line numbers in the editor.\n"
         "To commit anyway, once: git commit --no-verify"
     )
     return 1
