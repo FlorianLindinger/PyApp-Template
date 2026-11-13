@@ -7,6 +7,7 @@ or Python — Windows locks the files they use.
 
 | Tool | What it does |
 | --- | --- |
+| `list_packages.cmd` | What is installed and why: the main packages (`packages` in `developer_settings.py` and `requirements_path`) with their limit, locked version and how many dependencies each brings in, then every dependency with the packages that need it. Also shows packages that are missing, at another version or installed by hand (`sync_packages.cmd` fixes them). Read from `uv.lock` and `.venv` through uv, after the usual preparation, so it is always current; it changes nothing. |
 | `add_packages.cmd [names]` | `uv add`: resolves and installs the packages, adds them to `packages` in `developer_settings.py` and updates `pyapp/generated/uv.lock`. Asks for names when none are given. |
 | `remove_packages.cmd [names]` | `uv remove`: lists `packages` and removes the chosen ones. |
 | `upgrade_packages.cmd [names]` | `uv lock --upgrade` (or `--upgrade-package` for the named ones), then an exact sync. Test the app and commit `uv.lock`. |

@@ -7,6 +7,16 @@ README.md ("Versions"); `LAUNCHER_VERSION` in `backend_settings.py` names the cu
 
 The first versioned release; it contains every change below.
 
+### 2026-11-13 - fallback start, package list, protected lists, hook output
+
+- New `code/pyapp/Start without launcher.cmd`: when the launcher itself is broken, it runs the main script directly (with the app's `.venv` Python, else the global default Python) after showing the main script, Python, packages (installed or missing) and their folders. Its code, `actions/start_without_launcher.py`, uses nothing else of the launcher.
+- New dev tool `list_packages.cmd`: the main packages with their limit, locked version and how many dependencies each brings in, every dependency with the packages that need it, and what is missing, at another version or installed by hand; read from `uv.lock` and `.venv` through uv.
+- `backend_settings.py` is ordered into sections and lists what existing projects rely on: `PROTECTED_PATHS`, `PROTECTED_PROJECT_FILES`, `PROTECTED_RUN_COMMANDS`, `PROTECTED_DEV_TOOL_COMMANDS`, `PROTECTED_SETTING_NAMES` (the tests check the code against them).
+- Git hooks (maintainer): every finding shows a `file:///...#L<line>` link that opens the line from VS Code's "Show Command Output"; a blocked push shows the failing check's output under its own heading and lists the checks that did not run.
+- Tests: the test code moved to `tests/src`; `tests/run_<group>_tests.cmd` runs one group (app, setup, browser, git, tools, files); redundant tests removed.
+- Removed the maintainer tool `get_import_times` (`get_startup_time` measures the whole start; `python -X importtime` shows single imports).
+- `DONT_CHANGE/.gitattributes` also keeps `.cmd` files at CRLF line endings, whatever a project's own root `.gitattributes` says.
+
 ### 2026-11-11 - browser terminal
 
 - New shortcut "<program_name> (Browser)" (`browser_terminal_shortcut_name`, `""` to disable; also for `desktop_shortcuts` as `"browser_terminal"`) with the app's icon: it shows the console as a terminal in a new tab of the default browser, brought to the front. The program runs in a real Windows pseudoconsole (ConPTY), so input, Ctrl+C, colors, titles, progress bars and the completion prompts work as in the console; the page (xterm.js 5.5.0, bundled, MIT) adds sharp text, zoom (Ctrl+wheel, touchpad pinch, Ctrl+/-/0), clickable links and Windows Terminal-style copy and paste. Closing the tab ends the program like closing a console window, the tab closes when the program ends, and `instance_policy = "focus"`, Stop, restarting after a missing package and the success/failure icons and colors work. Needs Windows 10 1809 or newer.

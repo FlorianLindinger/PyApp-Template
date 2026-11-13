@@ -1,4 +1,5 @@
 # Batch files can break with LF line endings, whatever an app's own root .gitattributes says:
 *.bat text eol=crlf
+*.cmd text eol=crlf
 # Git runs hooks with sh, which breaks on CRLF line endings:
 pyapp_tools/src/git_hooks/* text eol=lf

@@ -25,6 +25,7 @@ from pyapp.DONT_CHANGE.scripts.console_tools import (
     wait_for_enter,
 )
 from pyapp.DONT_CHANGE.scripts.dev_tools.housekeeping import cmd_clean, cmd_remove_shortcuts, cmd_status, cmd_test
+from pyapp.DONT_CHANGE.scripts.dev_tools.package_list import cmd_list_packages
 from pyapp.DONT_CHANGE.scripts.dev_tools.packages import (
     cmd_add,
     cmd_export,
@@ -42,6 +43,7 @@ from pyapp.DONT_CHANGE.scripts.entrypoint import expected_problem
 NO_PAUSE = {"menu", "terminal"}
 
 COMMANDS = {
+    "list-packages": cmd_list_packages,
     "add": cmd_add,
     "remove": cmd_remove,
     "upgrade": cmd_upgrade,
@@ -61,7 +63,7 @@ COMMANDS = {
 
 # Every command, in the order and groups of the menu.
 MENU_GROUPS = (
-    ("Packages", ("add", "remove", "upgrade", "sync", "find-imports", "terminal", "export")),
+    ("Packages", ("list-packages", "add", "remove", "upgrade", "sync", "find-imports", "terminal", "export")),
     ("Python", ("change-python", "update-python")),
     ("Project", ("status", "clean", "remove-shortcuts", "make-self-contained", "test")),
 )

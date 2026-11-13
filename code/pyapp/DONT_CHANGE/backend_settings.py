@@ -99,6 +99,7 @@ PROTECTED_RUN_COMMANDS = ["setup", "icons", "icons-help", "dev"]
 # ... and to "run.bat dev" (the files in code/pyapp/dev_tools); "menu" is the dev menu itself.
 PROTECTED_DEV_TOOL_COMMANDS = [
     "menu",
+    "list-packages",
     "add",
     "remove",
     "upgrade",
