@@ -14,15 +14,13 @@ import support  # first: makes the template importable
 
 from pyapp.DONT_CHANGE.scripts import config
 from pyapp.DONT_CHANGE.scripts.env import pyproject, venv
-from pyapp.DONT_CHANGE.scripts.errors import SetupError
+from pyapp.DONT_CHANGE.scripts.errors import SettingsError, SetupError
 
 
 class PyprojectTests(unittest.TestCase):
     def test_requirements_with_quotes_survive_restarts(self):
         packages = ['pywin32; sys_platform == "win32"', "pkg[extra] ; python_version < '3.12'", "requests>=2"]
         with support.temporary_settings() as (_, load):
-            from pyapp.DONT_CHANGE.scripts import config
-
             config.set_list_setting("packages", packages)
             for _ in range(3):
                 pyproject.reconcile_pyproject(load(), (3, 14))
@@ -87,8 +85,6 @@ class PyprojectTests(unittest.TestCase):
 
     def test_settings_win_when_both_changed(self):
         with support.temporary_settings() as (_, load):
-            from pyapp.DONT_CHANGE.scripts import config
-
             pyproject.reconcile_pyproject(load(), (3, 14))
             path = Path(pyproject.PYPROJECT_PATH)
             path.write_text(
@@ -155,8 +151,6 @@ class RequirementsFileTests(unittest.TestCase):
         return path, load
 
     def test_both_lists_reach_the_environment(self):
-        from pyapp.DONT_CHANGE.scripts import config
-
         _, load = self.settings_with("# from the file\nnumpy>=2 \\\n    --hash=sha256:aa\n")
         config.validate(load())
         self.assertEqual(config.all_packages(load()), ["requests", "numpy>=2"])
@@ -164,9 +158,6 @@ class RequirementsFileTests(unittest.TestCase):
         self.assertEqual(pyproject.declared_dependencies(), ["requests", "numpy>=2"])
 
     def test_problems_in_the_file_are_named(self):
-        from pyapp.DONT_CHANGE.scripts import config
-        from pyapp.DONT_CHANGE.scripts.errors import SettingsError
-
         for content, expected in (("-r other.txt\n", "-r other.txt"), ("Requests>=2\n", "also in")):
             with self.subTest(content=content):
                 _, load = self.settings_with(content)

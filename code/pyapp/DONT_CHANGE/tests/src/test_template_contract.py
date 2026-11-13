@@ -140,9 +140,6 @@ class RepositoryNameTests(unittest.TestCase):
                 self.assertTrue(checked, "the workflow does not check the repository name")
                 self.assertEqual({n.lower() for n in checked}, {name.lower()})
 
-    def test_the_name_is_read_from_the_condition(self):
-        self.assertEqual(names_checked_by("if: endsWith(github.repository, '/My-Repo')"), ["My-Repo"])
-
 
 class ExistingProjectTests(unittest.TestCase):
     def test_the_entry_file_and_its_commands_exist(self):

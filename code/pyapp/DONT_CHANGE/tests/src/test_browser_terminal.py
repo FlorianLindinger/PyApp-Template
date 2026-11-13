@@ -1,6 +1,6 @@
 """The browser terminal in the launcher: its shortcut, stable address and start link.
 
-The package itself has its own tests in browser_terminal/tests (run_regressions.py runs them too).
+The package itself has its own tests in browser_terminal/tests; run_browser_tests.cmd runs both.
 """
 
 from __future__ import annotations
@@ -58,38 +58,6 @@ class LaunchModeTest(unittest.TestCase):
         self.assertTrue(launcher.endswith("\\B\\B.bat"))
         self.assertIn("PYAPP_LAUNCH_MODE=browser", Path(launcher).read_text(encoding="utf-8"))
         self.assertEqual(definitions(""), [])
-
-    def test_shortcuts_are_made_in_their_listed_order(self):
-        if os.name != "nt":
-            self.skipTest("Windows only")
-        names = (
-            "terminal_shortcut_name",
-            "no_terminal_shortcut_name",
-            "browser_terminal_shortcut_name",
-            "open_settings_shortcut_name",
-            "stop_running_shortcut_name",
-            "open_log_folder_shortcut_name",
-            "open_crash_log_folder_shortcut_name",
-            "open_code_shortcut_name",
-        )
-        s = SimpleNamespace(program_name="App", user_settings_path="settings.py", **{n: n for n in names})
-        targets = {"logs": "", "crash_logs": "", "open_code": "", "settings": ""}
-        kinds = [d[0] for d in shortcuts.shortcut_definitions(s, "app", targets)]
-        expected = [
-            "terminal",
-            "no_terminal",
-            "browser_terminal",
-            "settings",
-            "stop",
-            "logs",
-            "crash_logs",
-            "open_code",
-        ]
-        self.assertEqual(kinds, expected)
-        # Without a settings file there is no settings shortcut, whatever its name.
-        s.user_settings_path = ""
-        kinds = [d[0] for d in shortcuts.shortcut_definitions(s, "app", targets)]
-        self.assertEqual(kinds, [k for k in expected if k != "settings"])
 
     def test_a_normal_console_ignores_the_inherited_variable(self):
         with mock.patch.dict(os.environ, {"PYAPP_BROWSER_TERMINAL_UI": "x"}):

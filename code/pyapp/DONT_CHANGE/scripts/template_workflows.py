@@ -26,7 +26,7 @@ from pyapp.DONT_CHANGE.backend_settings import SHORTCUT_OUTPUT_DIR
 # Only versions in which every job has "if: endsWith(github.repository, '/PyApp-Template')":
 # the template's older fresh-clone.yml and launcher-tests.yml had no such condition and are not
 # listed, so a folder that still holds one of them is left alone.
-# After changing a workflow, add the hash that tests/test_template_workflows.py names.
+# After changing a workflow, add the hash that tests/src/test_template_workflows.py names.
 KNOWN_TEMPLATE_WORKFLOWS: Dict[str, FrozenSet[str]] = {
     "pyapp-template-fresh-clone.yml": frozenset(
         {

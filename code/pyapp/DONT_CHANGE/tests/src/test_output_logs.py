@@ -117,18 +117,6 @@ class HiddenCompletionTests(unittest.TestCase):
         self.assertIn("Unknown exit mode 99", completed.stdout)
 
 
-class WindowsTerminalTests(unittest.TestCase):
-    def test_semicolons_do_not_split_the_wt_command_line(self):
-        from pyapp.DONT_CHANGE.actions.start_program import wt_command
-
-        command = wt_command("A; B", "#3B78FF", ["python.exe", "C:\\R;D\\watchdog.py"])
-        self.assertEqual(
-            command,
-            ["wt.exe", "--title", "A\\; B", "--tabColor", "#3B78FF", "python.exe", "C:\\R\\;D\\watchdog.py"],
-        )
-        self.assertEqual(wt_command("App", "", ["x"]), ["wt.exe", "--title", "App", "x"])
-
-
 class RawOutputTests(unittest.TestCase):
     def remaining_after(self, mode: int) -> bool:
         with tempfile.TemporaryDirectory() as folder:

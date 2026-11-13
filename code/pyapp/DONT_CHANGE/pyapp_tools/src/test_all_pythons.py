@@ -3,6 +3,7 @@
     test_all_pythons.bat                     Python 3.8 and the newest stable Python
     test_all_pythons.bat 3.10 3.12           these versions instead
     test_all_pythons.bat --pattern test_wrapper.py
+    test_all_pythons.bat --pattern browser       one group of tests/src/groups.py
 
 The Pythons are kept in a folder in your temporary directory, so they are downloaded once and
 neither the project nor your installed Pythons change.
@@ -25,7 +26,7 @@ import _ui
 from _paths import DONT_CHANGE_DIR
 
 PYTHONS_DIR = Path(tempfile.gettempdir()) / "pyapp_test_pythons"
-RUNNER = DONT_CHANGE_DIR / "tests" / "run_regressions.py"
+RUNNER = DONT_CHANGE_DIR / "tests" / "src" / "run_regressions.py"
 OLDEST_SUPPORTED = "3.8"
 NEWEST = "newest"
 TIMEOUT_SECONDS = 600
@@ -150,7 +151,7 @@ def run_tests(python: str, pattern: Optional[str]) -> Tuple[bool, str]:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("versions", nargs="*", help='Python versions, or "newest" (default: 3.8 and newest)')
-    parser.add_argument("--pattern", help="test file pattern, e.g. test_wrapper.py")
+    parser.add_argument("--pattern", help="test file pattern or group, e.g. test_wrapper.py or browser")
     arguments = parser.parse_args()
 
     _ui.heading("Launcher tests on several Pythons")

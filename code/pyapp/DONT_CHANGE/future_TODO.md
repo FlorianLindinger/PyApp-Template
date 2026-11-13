@@ -8,6 +8,7 @@ validation, free-threaded Python, start minimized + foreground on first print, C
 traceback context lines, open log after failure). Items that refer to the old (pre-uv) launcher
 are at the end under "Probably obsolete".
 
+system tray would still be nice but how to trigger? do i replace the x button. i guess genrally the button features
 
 ===================================
 Launcher features

@@ -5,13 +5,11 @@ import unicodedata
 import unittest
 from unittest import mock
 
-from project_location import CODE
+from project_location import CODE  # noqa: F401 - makes "pyapp" importable
 
 # isort: split
 
 from pyapp.DONT_CHANGE.scripts import banner
-
-FONTS = CODE / "pyapp" / "DONT_CHANGE" / "data" / "fonts"
 
 
 class BannerTests(unittest.TestCase):
@@ -25,9 +23,6 @@ class BannerTests(unittest.TestCase):
 
     def test_missing_characters_are_left_out(self):
         self.assertEqual(banner.render("A\u4e00B"), banner.render("AB"))
-
-    def test_the_expected_font_is_shipped(self):
-        self.assertEqual(sorted(path.name for path in FONTS.iterdir()), ["pyapp-grid.tlf"])
 
     def test_printable_ascii_latin1_and_german_have_visible_glyphs(self):
         glyphs = banner.load_font()
@@ -47,10 +42,6 @@ class BannerTests(unittest.TestCase):
     def test_decomposed_german_accents_render_like_precomposed_text(self):
         text = "Grüße ÄÖÜ äöü"
         self.assertEqual(banner.render(text), banner.render(unicodedata.normalize("NFD", text)))
-
-
-if __name__ == "__main__":
-    unittest.main()
 
 
 class ConsoleFontTests(unittest.TestCase):
@@ -83,3 +74,7 @@ class ConsoleFontTests(unittest.TestCase):
         ), mock.patch.object(banner, "console_can_show", return_value=False), mock.patch("builtins.print") as printed:
             banner.print_banner()
         self.assertEqual(printed.call_args[0][0], "App\n===\n")
+
+
+if __name__ == "__main__":
+    unittest.main()

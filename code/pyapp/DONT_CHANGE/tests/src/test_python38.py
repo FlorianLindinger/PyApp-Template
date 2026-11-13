@@ -1,14 +1,45 @@
-"""Annotations remain inspectable at runtime, including on the oldest supported Python."""
+"""The launcher runs on Python 3.8: syntax, library calls and annotations it inspects at runtime."""
 
 import ast
 import importlib
 import inspect
+import re
 import sys
 import typing
 import unittest
 from unittest import mock
 
 from project_location import DONT_CHANGE
+
+
+class SourceTests(unittest.TestCase):
+    def test_lint_configs_target_python_3_8(self):
+        # Ruff and Pyrefly only report newer syntax and library calls when they check against 3.8.
+        self.assertIn('target-version = "py38"', (DONT_CHANGE / "ruff.toml").read_text(encoding="utf-8"))
+        self.assertIn('python-version = "3.8"', (DONT_CHANGE / "pyrefly.toml").read_text(encoding="utf-8"))
+
+    def test_launcher_code_stays_python_3_8_compatible(self):
+        forbidden = {
+            r"^\s*match .+:\s*$": "match statement",
+            r"\.removeprefix\(|\.removesuffix\(": "str.removeprefix/removesuffix",
+            r"\bfunctools\.cache\b|from functools import cache\b": "functools.cache",
+            r"zip\([^)]*strict=": "zip(strict=...)",
+        }
+        for path in DONT_CHANGE.rglob("*.py"):
+            if path.name == "test_python38.py":  # this file names the patterns
+                continue
+            text = path.read_text(encoding="utf-8")
+            for pattern, what in forbidden.items():
+                self.assertIsNone(
+                    re.search(pattern, text, re.MULTILINE), f"{path.name} uses {what} (needs Python > 3.8)"
+                )
+            if re.search(r"\b(?:list|dict|tuple|set)\[|\w \| None", text) and path.name not in (
+                "_pyapp.py",
+                "script_wrapper.py",
+            ):
+                self.assertIn(
+                    "from __future__ import annotations", text, f"{path.name} needs the __future__ import for 3.8"
+                )
 
 
 class AnnotationTests(unittest.TestCase):

@@ -52,7 +52,7 @@ Three Pythons can be involved, but usually they are the same installation:
   `from __future__ import annotations` with `typing.List`, `Optional`, and `Union`
   so `typing.get_type_hints()` also works on 3.8 (Ruff preserves runtime typing).
   Use public protocols for structural types; no `match`, no parenthesized `with`, no
-  `str.removeprefix`, no `functools.cache` (`tests/test_files.py` checks this).
+  `str.removeprefix`, no `functools.cache` (`tests/src/test_python38.py` checks this).
 - **Settings are read when needed, never at import time** (`config.settings()`), so a mistake
   in `developer_settings.py` becomes a short message with a line number instead of a traceback.
 - **Every tool is a plain module with a `main()`**, run by `scripts/entrypoint.py`, which owns
@@ -383,8 +383,9 @@ releases are tagged `v<version>` on GitHub. Setup and the `status` dev tool show
 ## Tests, linting and type checking
 
 - `tests/` holds the regression tests (about 10 s, offline, standard library only):
-  `code/pyapp/DONT_CHANGE/tests/run_launcher_tests.cmd`, or `python run_regressions.py` in that folder.
-  `test_windows.py` runs on Windows only. See `tests/README.md` for what each file covers.
+  `code/pyapp/DONT_CHANGE/tests/run_launcher_tests.cmd`, or `python run_regressions.py` in its `src` folder;
+  `run_browser_tests.cmd` and the other `run_<group>_tests.cmd` run one group of them. `test_windows.py`
+  runs on Windows only. See `tests/README.md` for the groups and what each file covers.
 - `ruff.toml` and `pyrefly.toml` apply to this folder only (the app's own code keeps the
   developer's settings). Run `ruff check`, `ruff format --check` and `pyrefly check` here; the
   `BLE001` permits catch-all excepts around cosmetic steps; other reviewed exceptions

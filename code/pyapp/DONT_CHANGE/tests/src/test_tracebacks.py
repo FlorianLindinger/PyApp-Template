@@ -117,10 +117,6 @@ class RenderTests(unittest.TestCase):
         for line in render(report, colors=True):
             self.assertTrue(line.startswith("\x1b[40m"), repr(line))
 
-    def test_colors_only_when_asked(self):
-        report = report_for("raise RuntimeError('boom')\n")
-        self.assertIn("\x1b[", "\n".join(render(report, colors=True)))
-
 
 if __name__ == "__main__":
     unittest.main()

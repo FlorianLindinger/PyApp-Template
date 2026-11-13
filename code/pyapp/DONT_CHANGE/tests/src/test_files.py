@@ -1,4 +1,4 @@
-"""Static checks of the batch, PowerShell and config files (any OS)."""
+"""Static checks of the shipped batch, settings and config files, the READMEs and the test groups (any OS)."""
 
 import re
 import unittest
@@ -12,8 +12,10 @@ def batch_files():
 
 
 class LauncherFileTests(unittest.TestCase):
-    def test_batch_files_use_crlf(self):
-        for path in batch_files():
+    def test_batch_and_settings_files_use_crlf(self):
+        # The settings files are opened in Notepad and edited by the launcher, which keeps CRLF.
+        settings = [CODE / "pyapp" / "developer_settings.py", DONT_CHANGE / "data" / "dev_settings_default.py"]
+        for path in batch_files() + settings:
             raw = path.read_bytes()
             self.assertEqual(raw.count(b"\n"), raw.count(b"\r\n"), f"{path.name} must use CRLF line endings")
 
@@ -45,9 +47,11 @@ class LauncherFileTests(unittest.TestCase):
                 if not any((base / name).exists() for base in bases):
                     missing.append(name)
         self.assertEqual(missing, [], "named in DONT_CHANGE/README.md, but not found")
-        tests = DONT_CHANGE / "tests"
-        listed = set(re.findall(r"(?m)^\| `(test_\w+\.py)`", (tests / "README.md").read_text(encoding="utf-8")))
-        self.assertEqual(listed, {path.name for path in tests.glob("test_*.py")}, "tests/README.md file table")
+        from groups import all_test_files
+
+        readme = (DONT_CHANGE / "tests" / "README.md").read_text(encoding="utf-8")
+        listed = set(re.findall(r"(?m)^\| `(test_\w+\.py)`", readme))
+        self.assertEqual(listed, {path.name for path in all_test_files()}, "tests/README.md file table")
 
     def test_runner_and_every_tool_have_a_main(self):
         self.assertIn("scripts\\entrypoint.py", (DONT_CHANGE / "bootstrap" / "run.bat").read_text(encoding="utf-8"))
@@ -81,8 +85,9 @@ class LauncherFileTests(unittest.TestCase):
             self.assertNotIn(".ps1", text, name)
 
     def test_the_app_runs_in_utf8_mode(self):
-        source = (DONT_CHANGE / "scripts" / "env" / "venv.py").read_text(encoding="utf-8")
-        self.assertIn('APP_PYTHON_FLAGS = ["-E", "-s", "-X", "utf8"]', source)
+        from pyapp.DONT_CHANGE.scripts.env.venv import APP_PYTHON_FLAGS
+
+        self.assertEqual(APP_PYTHON_FLAGS[APP_PYTHON_FLAGS.index("-X") + 1], "utf8")
 
     def test_changelog_names_the_launcher_version(self):
         settings_text = (DONT_CHANGE / "backend_settings.py").read_text(encoding="utf-8")
@@ -93,32 +98,23 @@ class LauncherFileTests(unittest.TestCase):
         self.assertIsNotNone(newest, "CHANGELOG.md has no version heading")
         self.assertEqual(newest.group(1), version.group(1), "the newest CHANGELOG.md entry must match LAUNCHER_VERSION")
 
-    def test_lint_configs_target_python_3_8(self):
-        self.assertIn('target-version = "py38"', (DONT_CHANGE / "ruff.toml").read_text(encoding="utf-8"))
-        self.assertIn('python-version = "3.8"', (DONT_CHANGE / "pyrefly.toml").read_text(encoding="utf-8"))
 
-    def test_launcher_code_stays_python_3_8_compatible(self):
-        forbidden = {
-            r"^\s*match .+:\s*$": "match statement",
-            r"\.removeprefix\(|\.removesuffix\(": "str.removeprefix/removesuffix",
-            r"\bfunctools\.cache\b|from functools import cache\b": "functools.cache",
-            r"zip\([^)]*strict=": "zip(strict=...)",
-        }
-        for path in DONT_CHANGE.rglob("*.py"):
-            if path.name == "test_files.py":  # this file names the patterns
-                continue
-            text = path.read_text(encoding="utf-8")
-            for pattern, what in forbidden.items():
-                self.assertIsNone(
-                    re.search(pattern, text, re.MULTILINE), f"{path.name} uses {what} (needs Python > 3.8)"
-                )
-            if re.search(r"\b(?:list|dict|tuple|set)\[|\w \| None", text) and path.name not in (
-                "_pyapp.py",
-                "script_wrapper.py",
-            ):
-                self.assertIn(
-                    "from __future__ import annotations", text, f"{path.name} needs the __future__ import for 3.8"
-                )
+class TestFolderTests(unittest.TestCase):
+    def test_every_test_file_is_in_exactly_one_group(self):
+        from groups import GROUPS, all_test_files
+
+        listed = [name for names in GROUPS.values() for name in names]
+        self.assertEqual(len(listed), len(set(listed)), "a file is in more than one group")
+        found = [path.name for path in all_test_files()]
+        # Groups name files without their folder.
+        self.assertEqual(len(found), len(set(found)), "two test folders have a file of the same name")
+        self.assertEqual(sorted(listed), sorted(found), "groups.py must list every test file")
+        # Each group has its own section in tests/README.md and its own launcher.
+        readme = (DONT_CHANGE / "tests" / "README.md").read_text(encoding="utf-8")
+        self.assertEqual(re.findall(r"(?m)^### `(\w+)`", readme), list(GROUPS), "tests/README.md group sections")
+        for name in GROUPS:
+            launcher = DONT_CHANGE / "tests" / f"run_{name}_tests.cmd"
+            self.assertIn(f'run_launcher_tests.cmd" {name} ', launcher.read_text(encoding="utf-8"), launcher.name)
 
 
 if __name__ == "__main__":

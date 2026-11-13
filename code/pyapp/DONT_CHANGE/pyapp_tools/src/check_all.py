@@ -23,6 +23,7 @@ from _paths import DONT_CHANGE_DIR
 from check_repository import git
 
 SOURCE = Path(__file__).resolve().parent
+TEST_RUNNER = DONT_CHANGE_DIR / "tests" / "src" / "run_regressions.py"
 NO_COMMIT = "0" * 40
 SKIPPED = 2  # verify_launcher's exit code when Ruff or Pyrefly is missing
 
@@ -38,10 +39,7 @@ STEPS = (
     Step("Leak check", [sys.executable, "-B", str(SOURCE / "check_git_leaks.py"), "--pushing"], reads_refs=True),
     Step("Repository check", [sys.executable, "-B", str(SOURCE / "check_repository.py")]),
     Step("Verify launcher (Ruff, Pyrefly)", [sys.executable, "-B", str(SOURCE / "verify_launcher.py")], can_skip=True),
-    Step(
-        "Tests",
-        [sys.executable, "-B", "-X", "utf8", str(DONT_CHANGE_DIR / "tests" / "run_regressions.py"), "-q", "-j", "0"],
-    ),
+    Step("Tests", [sys.executable, "-B", "-X", "utf8", str(TEST_RUNNER), "-q", "-j", "0"]),
 )
 
 

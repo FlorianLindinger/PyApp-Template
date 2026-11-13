@@ -276,10 +276,10 @@ def cmd_status(_arguments: List[str]) -> None:
 
 
 def cmd_test(arguments: List[str]) -> None:
-    """Run the launcher's regression tests (DONT_CHANGE/tests); optional file pattern."""
+    """Run the launcher's regression tests (DONT_CHANGE/tests); optional groups or file patterns."""
     import subprocess
 
-    script = str(Path(paths.DONT_CHANGE_DIR) / "tests" / "run_regressions.py")
+    script = str(Path(paths.DONT_CHANGE_DIR) / "tests" / "src" / "run_regressions.py")
     if not Path(script).is_file():
         print_info("The tests folder DONT_CHANGE/tests was removed; nothing to run.")
         return

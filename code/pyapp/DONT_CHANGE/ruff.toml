@@ -63,4 +63,4 @@ ignore = [
 "tests/**" = ["ANN", "ARG"]
 "browser_terminal/tests/**" = ["ANN", "ARG"]
 # The banner test uses typographic characters on purpose.
-"tests/test_banner.py" = ["RUF001"]
+"tests/src/test_banner.py" = ["RUF001"]

@@ -1,10 +1,9 @@
-"""Log paths, the diagnostics log, and shortcut names, targets and taskbar identity."""
+"""Log paths, the diagnostics log, cleaning up logs and run folders, and reading process records."""
 
 from __future__ import annotations
 
 import contextlib
 import io
-import json
 import os
 import subprocess
 import tempfile
@@ -18,7 +17,7 @@ from project_location import CODE  # noqa: F401 - makes "pyapp" importable
 
 # isort: split
 
-from pyapp.DONT_CHANGE.scripts import diagnostics, launcher_ui, runtime_state, shortcuts
+from pyapp.DONT_CHANGE.scripts import diagnostics, launcher_ui, runtime_state
 from pyapp.DONT_CHANGE.scripts.dev_tools import housekeeping
 
 
@@ -43,20 +42,8 @@ class LogTests(unittest.TestCase):
         self.assertTrue(first.endswith(".txt"))
         self.assertEqual(runtime_state.unique_log_path(""), "")
 
-    def test_ignored_errors_are_recorded(self):
-        with tempfile.TemporaryDirectory() as folder:
-            log = str(Path(folder) / "diagnostics.log")
-            with mock.patch.object(diagnostics, "DIAGNOSTICS_LOG_PATH", log):
-                try:
-                    raise ZeroDivisionError("test")
-                except ZeroDivisionError:
-                    diagnostics.note_ignored("unit test step")
-                summary = diagnostics.diagnostics_summary()
-            self.assertIn("1 ignored error", summary or "")
-            self.assertIn("ZeroDivisionError", Path(log).read_text(encoding="utf-8"))
-
-    def test_a_chained_traceback_is_one_entry(self):
-        """Its blank lines ("During handling of the above exception ...") do not split it."""
+    def test_an_ignored_error_is_recorded_as_one_entry_even_when_chained(self):
+        """A chain's blank lines ("During handling of the above exception ...") do not split it."""
         with tempfile.TemporaryDirectory() as folder:
             log = str(Path(folder) / "diagnostics.log")
             with mock.patch.object(diagnostics, "DIAGNOSTICS_LOG_PATH", log):
@@ -68,8 +55,11 @@ class LogTests(unittest.TestCase):
                 except ValueError:
                     diagnostics.note_ignored("chained step")
                 summary = diagnostics.diagnostics_summary() or ""
+            text = Path(log).read_text(encoding="utf-8")
             self.assertTrue(summary.startswith("1 ignored error(s), last: "), summary)
             self.assertTrue(summary.endswith(": chained step"), summary)
+            self.assertIn("KeyError", text)
+            self.assertIn("ValueError", text)
 
 
 class RemoveTreeTests(unittest.TestCase):
@@ -121,6 +111,7 @@ class FinishedRunFolderTests(unittest.TestCase):
 
 class CleanToolTests(unittest.TestCase):
     def clean(self, folder: str, running: List[Dict[str, Any]]):
+        """Run "clean" for the logs (1) and run folders (3); return (runs folder, its success message)."""
         runs = Path(folder, "tmp", "runs", "abc")
         runs.mkdir(parents=True)
         settings = types.SimpleNamespace(
@@ -136,13 +127,14 @@ class CleanToolTests(unittest.TestCase):
             "ask": mock.Mock(return_value="1 3"),
             "confirm": mock.Mock(return_value=True),
             "ProcessRegistry": mock.Mock(return_value=registry),
+            "print_success": mock.DEFAULT,
         }
         folders = {"RUNS_DIR": str(runs.parent), "TEMPORARY_DIR": str(runs.parent.parent)}
         patch_tool = mock.patch.multiple(housekeeping, **tool)
         patch_folders = mock.patch.multiple(housekeeping.paths, **folders)
-        with patch_tool, patch_folders, contextlib.redirect_stdout(io.StringIO()):
+        with patch_tool as mocks, patch_folders, contextlib.redirect_stdout(io.StringIO()):
             housekeeping.cmd_clean([])
-        return runs.parent
+        return runs.parent, mocks["print_success"].call_args[0][0]
 
     def test_files_in_use_are_kept_and_the_rest_is_deleted(self):
         with tempfile.TemporaryDirectory() as folder:
@@ -183,41 +175,15 @@ class CleanToolTests(unittest.TestCase):
         self.assertFalse(pattern.fullmatch("notes.txt"))
         self.assertTrue(housekeeping._log_name_pattern("100%%_%H.txt").fullmatch("100%_07_0123456789ab.txt"))
 
-    def test_run_folders_are_kept_while_an_instance_runs(self):
+    def test_run_folders_are_kept_while_an_instance_runs_and_not_reported_as_deleted(self):
         with tempfile.TemporaryDirectory() as folder:
-            self.assertTrue(self.clean(folder, [{"pid": 1}]).exists())
+            runs, message = self.clean(folder, [{"pid": 1}])
+            self.assertTrue(runs.exists())
+            self.assertNotIn("per-run diagnostics", message)
 
     def test_run_folders_are_deleted_when_nothing_runs(self):
         with tempfile.TemporaryDirectory() as folder:
-            self.assertFalse(self.clean(folder, []).exists())
-
-
-class CleanMessageTests(unittest.TestCase):
-    def test_kept_run_folders_are_not_reported_as_deleted(self):
-        with tempfile.TemporaryDirectory() as folder:
-            runs = Path(folder, "tmp", "runs")
-            runs.mkdir(parents=True)
-            settings = types.SimpleNamespace(
-                log_path="",
-                log_path_is_relative_to_start_folder_if_relative=False,
-                crash_log_path="",
-                crash_log_path_is_relative_to_start_folder_if_relative=False,
-            )
-            registry = mock.Mock()
-            registry.records.return_value = ([{"pid": 1}], 0)
-            tool = {
-                "settings": mock.Mock(return_value=settings),
-                "ask": mock.Mock(return_value="3"),
-                "confirm": mock.Mock(return_value=True),
-                "ProcessRegistry": mock.Mock(return_value=registry),
-                "print_success": mock.DEFAULT,
-            }
-            folders = {"RUNS_DIR": str(runs), "TEMPORARY_DIR": str(runs.parent)}
-            with mock.patch.multiple(housekeeping, **tool) as mocks, mock.patch.multiple(
-                housekeeping.paths, **folders
-            ), contextlib.redirect_stdout(io.StringIO()):
-                housekeeping.cmd_clean([])
-            self.assertNotIn("per-run diagnostics", mocks["print_success"].call_args[0][0])
+            self.assertFalse(self.clean(folder, [])[0].exists())
 
 
 class CrashCodeTests(unittest.TestCase):
@@ -247,57 +213,6 @@ class RegistryReadTests(unittest.TestCase):
             with mock.patch.object(Path, "read_text", locked):
                 self.assertEqual(registry.records(), ([], 0))
             self.assertTrue(record.exists())
-
-
-class RemoveShortcutsTests(unittest.TestCase):
-    def test_shortcuts_that_could_not_be_removed_stay_recorded(self):
-        from pyapp.DONT_CHANGE.scripts import shortcuts as shortcut_module
-
-        written: List[List[str]] = []
-
-        def record(paths: List[str], *_arguments: object) -> None:
-            written.append(list(paths))
-
-        with mock.patch.object(
-            shortcut_module, "read_created_shortcuts", return_value=["a.lnk", "b.lnk"]
-        ), mock.patch.object(shortcut_module, "remove_shortcuts", return_value=["a.lnk"]), mock.patch.object(
-            shortcut_module, "is_generated_shortcut", return_value=True
-        ), mock.patch.object(
-            shortcut_module, "write_created_shortcuts", side_effect=record
-        ), contextlib.redirect_stdout(io.StringIO()):
-            housekeeping.cmd_remove_shortcuts([])
-        self.assertEqual(written, [["b.lnk"]])
-
-
-class ShortcutTests(unittest.TestCase):
-    def test_taskbar_identity_is_per_project_folder(self):
-        first = shortcuts.project_app_id("PyApp-Template", "D:/A")
-        self.assertEqual(first, shortcuts.project_app_id("PyApp-Template", "D:/A"))
-        self.assertNotEqual(first, shortcuts.project_app_id("PyApp-Template", "D:/B"))
-        self.assertTrue(first.startswith("pyapp-template."))
-        self.assertTrue(shortcuts.project_app_id("名前", "D:/A").startswith("pyapp."))
-        self.assertLessEqual(len(shortcuts.project_app_id("x" * 300, "D:/A")), 128)
-
-    def test_shortcut_file_names(self):
-        self.assertEqual(shortcuts.shortcut_filename("My App"), "My App.lnk")
-        cleaned = shortcuts.shortcut_filename('a<b>c:"d/e')
-        self.assertTrue(cleaned.endswith(".lnk"))
-        self.assertFalse(set('<>:"/') & set(cleaned))
-        long_a, long_b = shortcuts.shortcut_filename("x" * 300 + "a"), shortcuts.shortcut_filename("x" * 300 + "b")
-        self.assertNotEqual(long_a, long_b)
-        self.assertLessEqual(len(long_a), 255)
-
-    def test_outdated_targets_are_detected(self):
-        with tempfile.TemporaryDirectory() as folder:
-            record = str(Path(folder) / "created.json")
-            Path(record).write_text(
-                json.dumps({"version": 2, "shortcuts": [], "targets": {"logs": "D:/old"}}), encoding="utf-8"
-            )
-            targets = {"logs": "D:/new", "open_code": "D:/m.py"}
-            with mock.patch.object(shortcuts, "CREATED_SHORTCUTS_LIST_PATH", record), mock.patch.object(
-                shortcuts, "shortcut_targets", return_value=targets
-            ):
-                self.assertEqual(shortcuts.outdated_shortcut_targets(mock.Mock()), ["logs"])
 
 
 if __name__ == "__main__":

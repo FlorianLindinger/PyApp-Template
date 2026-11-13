@@ -448,11 +448,5 @@ class EditingTests(unittest.TestCase):
             config.edit_settings({"no_such_setting": 1})
 
 
-class ShippedFileTests(unittest.TestCase):
-    def test_settings_file_uses_crlf(self):
-        raw = (CODE / "pyapp" / "developer_settings.py").read_bytes()
-        self.assertEqual(raw.count(b"\n"), raw.count(b"\r\n"))
-
-
 if __name__ == "__main__":
     unittest.main()

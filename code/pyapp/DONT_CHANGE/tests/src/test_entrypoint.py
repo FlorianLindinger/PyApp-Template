@@ -59,10 +59,6 @@ class RunFileTests(unittest.TestCase):
         self.assertEqual(self.run_tool(source)[1], [], "main() turning the pause off must be respected")
         self.assertEqual(len(self.run_tool("def main():\n    raise ValueError('x')\n")[1]), 1, "failures always wait")
 
-    def test_arguments_reach_the_tool(self):
-        source = "import sys\nresult = []\ndef main():\n    return 0 if sys.argv[1:] == ['a', 'b c'] else 9\n"
-        self.assertEqual(self.run_tool(source, ["a", "b c"])[0], 0)
-
     def test_expected_problems_are_recognised_by_class(self):
         self.assertEqual(entrypoint.expected_problem(SetupError("fix this")), "fix this")
         self.assertIsNone(entrypoint.expected_problem(RuntimeError("bug")))

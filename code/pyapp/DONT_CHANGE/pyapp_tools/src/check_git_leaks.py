@@ -75,7 +75,7 @@ MACHINE_FILES = ("*.lnk", "*.pyc", "shortcuts_created_by_setup.json", "runtime.c
 # These name the patterns or example values themselves; license texts and lock files hold other people's addresses.
 SKIPPED_FILES = {
     "code/pyapp/DONT_CHANGE/pyapp_tools/src/check_git_leaks.py",
-    "code/pyapp/DONT_CHANGE/tests/test_git_leaks.py",
+    "code/pyapp/DONT_CHANGE/tests/src/test_git_leaks.py",
 }
 NO_PERSONAL_CHECK = ("*LICENSE*", "*/LICENSES/*", "*.lock")
 # Other people's published code, also in old commits: its examples, CA bundles and author addresses are not leaks.

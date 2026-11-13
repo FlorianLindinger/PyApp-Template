@@ -76,15 +76,6 @@ class ZipTests(unittest.TestCase):
             with zipfile.ZipFile(target) as archive:
                 self.assertEqual(archive.namelist(), ["DONT_CHANGE/backend_settings.py"])
 
-    def test_a_wrong_version_in_the_zip_is_refused(self):
-        with tempfile.TemporaryDirectory() as folder:
-            root = Path(folder)
-            launcher = root / release.LAUNCHER_FOLDER
-            launcher.mkdir(parents=True)
-            (launcher / "backend_settings.py").write_text('LAUNCHER_VERSION = "1.2.3"\n', encoding="utf-8")
-            with mock.patch.object(release, "PROJECT_ROOT", root), self.assertRaises(RuntimeError):
-                release.build_zip("1.2.4", [release.LAUNCHER_FOLDER + "backend_settings.py"])
-
 
 class FailedReleaseTests(unittest.TestCase):
     def test_a_failed_zip_leaves_version_and_changelog_unchanged(self):
@@ -104,7 +95,7 @@ class FailedReleaseTests(unittest.TestCase):
                 release.main(["patch", "--skip-tests"])
             self.assertEqual((settings.read_bytes(), changelog.read_bytes()), before)
 
-    def test_a_failed_zip_check_leaves_no_temporary_file(self):
+    def test_a_wrong_version_in_the_zip_is_refused_without_leaving_a_file(self):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)
             launcher = root / release.LAUNCHER_FOLDER

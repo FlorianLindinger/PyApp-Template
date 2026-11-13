@@ -1,6 +1,6 @@
 """Make the code folder importable ("pyapp.DONT_CHANGE...") for the tests in this folder.
 
-The tests live in code/pyapp/DONT_CHANGE/tests and always test the checkout they are part of.
+The tests live in code/pyapp/DONT_CHANGE/tests/src and always test the checkout they are part of.
 """
 
 import atexit
@@ -10,7 +10,7 @@ import sys
 import tempfile
 from pathlib import Path
 
-DONT_CHANGE = Path(__file__).resolve().parents[1]
+DONT_CHANGE = Path(__file__).resolve().parents[2]
 CODE = DONT_CHANGE.parents[1]
 PROJECT_ROOT = CODE.parent
 if str(CODE) not in sys.path:

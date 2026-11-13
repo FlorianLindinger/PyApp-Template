@@ -27,7 +27,7 @@ from _paths import DONT_CHANGE_DIR, PROJECT_ROOT
 
 SETTINGS_PATH = DONT_CHANGE_DIR / "backend_settings.py"
 CHANGELOG_PATH = DONT_CHANGE_DIR / "CHANGELOG.md"
-RUNNER = DONT_CHANGE_DIR / "tests" / "run_regressions.py"
+RUNNER = DONT_CHANGE_DIR / "tests" / "src" / "run_regressions.py"
 LAUNCHER_FOLDER = "code/pyapp/DONT_CHANGE/"
 # Inside the launcher, but ignored by Git (DONT_CHANGE/.gitignore), so a zip never contains older zips.
 RELEASES_FOLDER = "pyapp_tools/zip_releases"

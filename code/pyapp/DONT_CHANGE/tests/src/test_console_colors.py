@@ -1,4 +1,4 @@
-"""Only hexadecimal color codes may reach the Windows color command."""
+"""The console window: only hexadecimal color codes reach the color command, outcome colors, the wt.exe command line."""
 
 import unittest
 from typing import List
@@ -28,10 +28,6 @@ class ConsoleColorTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     set_terminal_colors(colors)
                 run.assert_not_called()
-
-
-if __name__ == "__main__":
-    unittest.main()
 
 
 class OutcomeColorTests(unittest.TestCase):
@@ -69,3 +65,19 @@ class OutcomeColorTests(unittest.TestCase):
 
     def test_success_keeps_the_colors(self):
         self.assertEqual(self.colors_after("success"), [])
+
+
+class WindowsTerminalTests(unittest.TestCase):
+    def test_semicolons_do_not_split_the_wt_command_line(self):
+        from pyapp.DONT_CHANGE.actions.start_program import wt_command
+
+        command = wt_command("A; B", "#3B78FF", ["python.exe", "C:\\R;D\\watchdog.py"])
+        self.assertEqual(
+            command,
+            ["wt.exe", "--title", "A\\; B", "--tabColor", "#3B78FF", "python.exe", "C:\\R\\;D\\watchdog.py"],
+        )
+        self.assertEqual(wt_command("App", "", ["x"]), ["wt.exe", "--title", "App", "x"])
+
+
+if __name__ == "__main__":
+    unittest.main()

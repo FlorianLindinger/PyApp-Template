@@ -30,8 +30,7 @@ class LeakPatternTests(unittest.TestCase):
     def test_credentials_in_code_and_urls(self):
         self.assertEqual(kinds('api_key = "q7Zp2Lm9Xw4R"'), ["Hard-coded credential"])
         self.assertEqual(kinds("https://bob:q7Zp2Lm9@host.org/x"), ["Password in URL"])
-
-    def test_a_password_containing_a_common_word_is_found(self):
+        # A common word inside does not make it a placeholder.
         self.assertEqual(kinds('password = "SuperSecret123"'), ["Hard-coded credential"])
 
     def test_placeholders_are_not_secrets(self):
