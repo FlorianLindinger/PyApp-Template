@@ -64,6 +64,11 @@ class HookOutputTests(unittest.TestCase):
     def test_commit_ruff_diagnostics_reach_stderr(self):
         self.assert_failure_is_visible(self.run_hook("pre-commit", "check_staged_ruff"))
 
+    def test_a_passing_commit_is_silent_outside_a_terminal(self):
+        # The success line is only for terminals; editors' Git output stays empty.
+        result = self.run_hook("pre-commit", "")
+        self.assertEqual((result.returncode, result.stdout, result.stderr), (0, "", ""))
+
 
 if __name__ == "__main__":
     unittest.main()

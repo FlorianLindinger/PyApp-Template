@@ -52,6 +52,17 @@ def _interactive() -> bool:
     return bool(sys.stdout is not None and sys.stdout.isatty())
 
 
+def interactive() -> bool:
+    """A person watches in a terminal (not an editor's Git output or a redirected file)."""
+    return _interactive()
+
+
+def done(label: str, ok: bool, seconds: float, note: str = "") -> None:
+    """One finished step: "  ✓ label   1.2 s" (✗ in red when it failed)."""
+    mark = styled("✓", "\x1b[32m") if ok else styled("✗", "\x1b[31m")
+    _say(f"  {mark} {label.ljust(34)} {styled(f'{seconds:4.1f} s', DIM)}" + (f"  {styled(note, DIM)}" if note else ""))
+
+
 def _prepare_console() -> None:
     """The classic Windows console only understands colors after this switch."""
     global _console_prepared

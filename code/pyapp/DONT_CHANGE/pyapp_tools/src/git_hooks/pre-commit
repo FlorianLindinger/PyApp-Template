@@ -22,6 +22,14 @@ if [ -z "$python" ]; then
     exit 1
 fi
 
+started=$(date +%s%N 2>/dev/null)
 # Keep diagnostics on the stream Git clients display when a command fails.
 "$python" -B "$launcher/pyapp_tools/src/check_git_leaks.py" --committing >&2 || exit 1
-exec "$python" -B "$launcher/pyapp_tools/src/check_staged_ruff.py" >&2
+"$python" -B "$launcher/pyapp_tools/src/check_staged_ruff.py" >&2 || exit 1
+
+# Silent in editors; in a terminal one line, so a passing commit is visibly checked.
+if [ -t 2 ]; then
+    seconds=$(awk -v a="$started" -v b="$(date +%s%N 2>/dev/null)" 'BEGIN { if (a && b) printf "%.1f", (b - a) / 1e9 }')
+    if [ -n "$NO_COLOR" ]; then green=""; reset=""; else green=$(printf '\033[32m'); reset=$(printf '\033[0m'); fi
+    printf '%s✓ pre-commit: no leaks, Ruff clean%s%s\n' "$green" "${seconds:+ ($seconds s)}" "$reset" >&2
+fi

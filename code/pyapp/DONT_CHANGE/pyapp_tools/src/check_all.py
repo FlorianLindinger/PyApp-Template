@@ -83,17 +83,28 @@ def main(argv: Optional[List[str]] = None) -> int:
     refs = sys.stdin.read() if arguments.pushing else refs_of_current_branch()
     results: List[List[str]] = []
     failed = False
+    # A push watched in a terminal shows each step as it finishes; editors (VS Code) get no extra
+    # lines, so that a failure still starts with the "Push blocked: ..." line they display.
+    live = arguments.pushing and _ui.interactive()
+    if live:
+        _ui.heading("Checks before the push")
     for step in STEPS:
         started = time.monotonic()
+        if live:
+            _ui.progress(f"  » {step.label} ...")
         code = run_step(step, refs, hook=arguments.pushing)
         status = "skipped" if step.can_skip and code == SKIPPED else "passed" if code == 0 else "FAILED"
-        results.append([step.label, status, f"{time.monotonic() - started:.1f} s"])
+        seconds = time.monotonic() - started
+        results.append([step.label, status, f"{seconds:.1f} s"])
+        if live:
+            _ui.done(step.label, status != "FAILED", seconds, "skipped" if status == "skipped" else "")
         if status == "FAILED":
             failed = True
             if arguments.pushing:
                 break  # the push stops anyway; no need to wait for the rest
-    _ui.heading("All checks")
-    _ui.table(("check", "result", "time"), results)
+    if not live:
+        _ui.heading("All checks")
+        _ui.table(("check", "result", "time"), results)
     _ui.blank_line()
     if failed:
         how = "To push anyway, once: git push --no-verify" if arguments.pushing else "See the output above."
