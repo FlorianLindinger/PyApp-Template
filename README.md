@@ -170,9 +170,10 @@ python_version = "3.14"     # newest 3.14.x
 python_version = "3.14.6"   # exactly this version
 python_version = "3.14t"    # free-threaded build
 python_version = ""         # newest stable, chosen once and then kept
+python_version = "3.12-3.14" # newest inside the range (either order), chosen once and then kept
 ```
 
-Anything uv understands works, such as `"pypy@3.11"`; on Windows x64 that means CPython 3.8.2 and
+`">=3.12"` and `"3"` work like a range. Anything uv understands works, such as `"pypy@3.11"`; on Windows x64 that means CPython 3.8.2 and
 newer. Changing it later is safe: a menu lets you keep your package versions, upgrade them or undo
 the change, and the new environment replaces the old one only once it works.
 

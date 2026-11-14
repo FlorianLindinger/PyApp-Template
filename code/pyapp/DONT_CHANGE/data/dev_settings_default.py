@@ -37,6 +37,8 @@ program_name = "PyApp-Template"
 #   "3.14"    any 3.14.x (uv picks the newest patch)
 #   "3.14.6"  exactly that patch
 #   "3.14t"   free-threaded build; any other uv request string such as "pypy@3.11" also works
+#   "3.12-3.14", ">=3.12" or "3"   any version inside, a range in either order ("3.12-3.14.2" stops at 3.14.2);
+#             like "", the Python chosen on the first start is kept while it is inside (see dev tool update_python)
 # Supported: every version uv can provide (Windows x64 currently 3.8.2 and newer).
 # The launcher itself needs Python 3.8 or newer. Changing this later offers a migration menu.
 python_version = "3.14"
@@ -222,7 +224,7 @@ uv_version = ""
 # [bootstrap] For python_source = "uv_user": also register the Python in Windows (py launcher) and put python3.x.exe on PATH:
 uv_user_python_visible_globally = True
 
-# [bootstrap] uv download cache: "global" (uv's per-user cache) or "local" (code/pyapp/generated/uv-cache, grows over time):
+# [bootstrap] uv download cache: "global" (uv's per-user cache, or your UV_CACHE_DIR if set) or "local" (code/pyapp/generated/uv-cache, grows over time):
 uv_cache = "global"
 
 # [bootstrap] Use Windows' certificate store for downloads (needed behind some company proxies):

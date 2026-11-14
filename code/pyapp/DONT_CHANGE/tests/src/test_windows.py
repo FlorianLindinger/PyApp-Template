@@ -70,6 +70,44 @@ class StructureTests(unittest.TestCase):
         self.assertEqual(ctypes.sizeof(PROPVARIANT), 24 if ctypes.sizeof(ctypes.c_void_p) == 8 else 16)
 
 
+# pid: creation time; None = ended or not readable
+TREE_CREATED: Dict[int, Any] = {100: 50, 101: 60, 102: 70, 200: 10, 300: None, 301: 80}
+# (pid, parent pid): 200 is older than 100, so its parent was another process with PID 100.
+TREE_PARENTS = ((100, 4), (101, 100), (102, 101), (200, 100), (300, 100), (301, 300), (0, 0))
+
+
+@unittest.skipUnless(os.name == "nt", "Windows only")
+class ProcessTreeTests(unittest.TestCase):
+    """A reused parent PID must not make an unrelated process a child (audit F16)."""
+
+    def tree(self, *roots: Any) -> Any:
+        from pyapp.DONT_CHANGE.scripts.windows_focus import descendants
+
+        return descendants(roots, TREE_PARENTS, TREE_CREATED.get)
+
+    def test_children_created_after_their_parent_are_found(self):
+        self.assertEqual(self.tree(100), {100, 101, 102})
+
+    def test_an_older_process_with_a_reused_parent_pid_is_left_out(self):
+        self.assertNotIn(200, self.tree(100))
+
+    def test_a_child_whose_age_cannot_be_read_is_left_out_with_its_children(self):
+        self.assertFalse({300, 301} & self.tree(100))
+
+    def test_roots_are_kept_and_empty_roots_ignored(self):
+        self.assertEqual(self.tree(None, 0, 200), {200})
+
+    def test_the_real_tree_of_this_process_contains_a_new_child(self):
+        from pyapp.DONT_CHANGE.scripts.windows_focus import process_tree
+
+        child = subprocess.Popen([PYTHON, "-c", "import time; time.sleep(30)"])  # noqa: S603
+        try:
+            self.assertIn(child.pid, process_tree([os.getpid()]))
+        finally:
+            child.kill()
+            child.wait()
+
+
 class WindowsProcessTests(unittest.TestCase):
     # typing.override requires Python 3.12; keep this override dependency-free on 3.8.
     def setUp(self):  # pyrefly: ignore[missing-override-decorator]

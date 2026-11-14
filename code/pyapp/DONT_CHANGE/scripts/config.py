@@ -19,6 +19,7 @@ from pyapp.DONT_CHANGE.backend_settings import (
     DEV_SETTINGS_PATH,
     PYTHON_SCRIPTS_DIR,
 )
+from pyapp.DONT_CHANGE.scripts.env.python_request import range_ends
 from pyapp.DONT_CHANGE.scripts.errors import SettingsError
 
 # Read by bootstrap/resolve_runtime.py before Python exists; must stay one-line literals.
@@ -288,6 +289,15 @@ def _bootstrap_literal_problems() -> List[str]:
 def python_version_problem(value: str) -> Optional[str]:
     """Explain an obviously unsupported python_version; uv validates exotic request strings itself."""
     if not value:
+        return None
+    ends = range_ends(value)
+    if ends:
+        # A range "3.12-3.14": uv chooses the newest Python inside it, so only its upper end must be usable.
+        low, high = ends
+        if low[0] != 3 or high[0] != 3:
+            return f'python_version "{value}" is not supported: only Python 3 versions exist on uv (3.8.2 and newer on Windows x64).'
+        if len(high) > 1 and high[1] < 8:
+            return f'python_version "{value}" is not supported: the launcher needs Python 3.8 or newer (uv offers 3.8.2 and newer on Windows x64).'
         return None
     match = re.fullmatch(r"(\d+)(?:\.(\d+))?(?:\.(\d+))?(t)?", value)
     if not match:

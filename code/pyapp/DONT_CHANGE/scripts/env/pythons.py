@@ -15,6 +15,7 @@ from pyapp.DONT_CHANGE.backend_settings import MINIMUM_PYTHON, PYTHON_VERSION_FI
 from pyapp.DONT_CHANGE.scripts.banner import show_setup_window
 from pyapp.DONT_CHANGE.scripts.config import settings
 from pyapp.DONT_CHANGE.scripts.console_tools import print_step
+from pyapp.DONT_CHANGE.scripts.env.python_request import allows, recorded_request, uv_request
 from pyapp.DONT_CHANGE.scripts.env.uv import install_newer_uv, run_uv, run_uv_captured
 from pyapp.DONT_CHANGE.scripts.errors import SetupError
 
@@ -40,7 +41,7 @@ def version_text(version: Tuple[int, ...]) -> str:
 
 def find_python(request: str, s: Optional[Union[ModuleType, SimpleNamespace]] = None) -> Optional[str]:
     """Return the interpreter uv would use for a request ("" = system default), or None."""
-    arguments = ["python", "find", "--no-project"] + ([request] if request else [])
+    arguments = ["python", "find", "--no-project"] + ([uv_request(request)] if request else [])
     # Run outside the project, otherwise uv returns the project .venv's interpreter.
     code, out, _ = run_uv_captured(arguments, check=False, cwd=tempfile.gettempdir(), s=s)
     lines = [line.strip() for line in out.splitlines() if line.strip()]
@@ -79,6 +80,34 @@ def newest_stable_minor(s: Optional[Union[ModuleType, SimpleNamespace]] = None) 
     return ".".join(newest.split(".")[:2])
 
 
+def newest_allowed(value: str, s: Optional[Union[ModuleType, SimpleNamespace]] = None) -> Optional[str]:
+    """The .python-version text for the newest stable CPython a loose python_version allows, or None."""
+    allowed = [
+        version_key(e["version"])
+        for e in python_downloads(True, s)
+        if re.fullmatch(r"\d+\.\d+\.\d+", e.get("version", "")) and allows(value, version_key(e["version"]))
+    ]
+    return recorded_request(value, max(allowed)) if allowed else None
+
+
+def python_offered(request: str, s: Optional[Union[ModuleType, SimpleNamespace]] = None) -> Optional[bool]:
+    """Whether this uv has a download for request: True, False, or None when its answer is unclear.
+
+    uv matches the request itself, so free-threaded, PyPy and range requests count too. The list is
+    built into uv, so it also answers offline. An older uv that does not accept a request here
+    gives None.
+    """
+    arguments = ["python", "list", uv_request(request), "--only-downloads", "--all-versions", "--output-format", "json"]
+    code, out, _ = run_uv_captured(arguments, check=False, cwd=tempfile.gettempdir(), s=s)
+    if code:
+        return None
+    try:
+        entries = json.loads(out)
+    except ValueError:
+        return None
+    return bool(entries) if isinstance(entries, list) else None
+
+
 def available_summary(s: Optional[Union[ModuleType, SimpleNamespace]] = None) -> str:
     """One line describing which Python versions uv can install here."""
     versions = sorted({e["version"] for e in python_downloads(True, s)}, key=version_key)
@@ -102,9 +131,12 @@ def install_python(request: str, s: Optional[Union[ModuleType, SimpleNamespace]]
         )
     show_setup_window()
     print_step(f"Installing Python {request} with uv...")
-    arguments = ["python", "install", request]
+    arguments = ["python", "install", uv_request(request)]
     failed = run_uv(arguments, check=False, cwd=tempfile.gettempdir(), s=s)
-    if failed and install_newer_uv():
+    # A newer uv only helps when this one does not know the requested Python; when it does, the
+    # download itself failed (offline, proxy) and fetching another uv would fail the same way.
+    # An unclear answer keeps the retry.
+    if failed and python_offered(request, s) is not True and install_newer_uv():
         invalidate_runtime_cache()  # the next launch looks up uv again and finds the newer one
         failed = run_uv(arguments, check=False, cwd=tempfile.gettempdir(), s=s)
     if failed:
@@ -145,15 +177,6 @@ def read_python_version_file() -> Optional[str]:
 def write_python_version_file(request: str) -> None:
     with Path(PYTHON_VERSION_FILE).open("w", encoding="utf-8", newline="\n") as stream:
         stream.write(request + "\n")
-
-
-def request_matches(setting_value: str, file_value: Optional[str]) -> bool:
-    """python_version "" accepts the Python chosen earlier; otherwise both requests must be equal."""
-    if file_value is None:
-        return False
-    if not setting_value:
-        return True
-    return setting_value.strip().lower() == file_value.strip().lower()
 
 
 def invalidate_runtime_cache() -> None:

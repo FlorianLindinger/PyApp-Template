@@ -52,12 +52,12 @@ from pyapp.DONT_CHANGE.scripts.env.pyproject import (
     set_requires_python,
     version_satisfies_requires,
 )
+from pyapp.DONT_CHANGE.scripts.env.python_request import recorded_request, request_matches
 from pyapp.DONT_CHANGE.scripts.env.pythons import (
     find_or_install_python,
     interpreter_version,
     invalidate_runtime_cache,
     read_python_version_file,
-    request_matches,
     version_text,
     write_python_version_file,
 )
@@ -262,9 +262,9 @@ def ensure_environment(interactive: bool = True) -> AppPython:
 
         if file_request is None:
             # First run: the bootstrap resolved the launcher Python from python_version.
-            # An empty python_version keeps the newest Python chosen now ("pick once").
-            request = s.python_version or ".".join(str(n) for n in base_version[:2])
-            write_python_version_file(request)
+            # An empty or loose python_version ("3", ">=3.12", "3.12-3.14") keeps the Python
+            # chosen now, so a newer Python release cannot leave the lock file unused later.
+            write_python_version_file(recorded_request(s.python_version, base_version))
         elif not request_matches(s.python_version, file_request):
             switched = handle_version_change(file_request, s, interactive)
             if switched:
@@ -453,7 +453,7 @@ def switch_python(
         except OSError:
             backups[path] = None
     try:
-        write_python_version_file(request)
+        write_python_version_file(recorded_request(request, new_version))
         set_requires_python(new_version)
         if clear:
             clear_dependencies()

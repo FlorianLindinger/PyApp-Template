@@ -6,6 +6,7 @@ import tempfile
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
+from typing import List
 from unittest import mock
 
 import support  # first: makes the template importable
@@ -13,7 +14,7 @@ import support  # first: makes the template importable
 # isort: split
 
 from pyapp.DONT_CHANGE.scripts import config
-from pyapp.DONT_CHANGE.scripts.env import pyproject, venv
+from pyapp.DONT_CHANGE.scripts.env import pyproject, python_request, venv
 from pyapp.DONT_CHANGE.scripts.errors import SettingsError, SetupError
 
 
@@ -250,6 +251,91 @@ class RunningInstanceTests(unittest.TestCase):
             # An unchanged environment is not touched, so a second instance can still start.
             read_stamp.return_value = "new"
             venv.ensure_environment()
+
+
+class PythonRequestTests(unittest.TestCase):
+    """Loose python_version requests record the Python they resolved to (audit F18)."""
+
+    def test_ranges_become_uv_specifiers_in_either_order(self):
+        for value, expected in (
+            ("3.12-3.14", ">=3.12,<3.15"),
+            ("3.14-3.12", ">=3.12,<3.15"),
+            ("3.12-3.19.1", ">=3.12,<=3.19.1"),
+            ("3.19.1 - 3.12", ">=3.12,<=3.19.1"),
+            ("3-3.12", ">=3,<3.13"),
+            ("3.12-3", ">=3,<3.13"),
+            ("3.13-3.13", ">=3.13,<3.14"),
+        ):
+            with self.subTest(value=value):
+                self.assertEqual(python_request.uv_request(value), expected)
+
+    def test_other_requests_reach_uv_unchanged(self):
+        for value in ("", "3.14", "3.14.6", "3.14t", "pypy@3.11", ">=3.12", "cpython-3.12.3-windows-x86_64-none"):
+            with self.subTest(value=value):
+                self.assertEqual(python_request.uv_request(value), value)
+
+    def test_loose_requests_record_the_resolved_minor_version(self):
+        for value, version, expected in (
+            ("", (3, 14, 2), "3.14"),
+            ("3", (3, 14, 2), "3.14"),
+            (">=3.12", (3, 14, 2), "3.14"),
+            ("3.12-3.14", (3, 13, 9), "3.13"),
+            # Not every 3.19 patch is allowed, so the patch is recorded too.
+            ("3.12-3.19.1", (3, 19, 1), "3.19.1"),
+            (">3.14", (3, 14, 1), "3.14.1"),
+            # Fixed and non-numeric requests are recorded as before.
+            ("3.14", (3, 14, 2), "3.14"),
+            ("3.14.6", (3, 14, 6), "3.14.6"),
+            ("3.14t", (3, 14, 2), "3.14t"),
+            ("pypy@3.11", (3, 11, 13), "pypy@3.11"),
+        ):
+            with self.subTest(value=value):
+                self.assertEqual(python_request.recorded_request(value, version), expected)
+
+    def test_a_recorded_version_inside_the_setting_needs_no_migration(self):
+        for setting, recorded, expected in (
+            ("", "3.14", True),
+            ("3", "3.14", True),
+            (">=3.12", "3.14", True),
+            (">=3.15", "3.14", False),
+            ("3.12-3.14", "3.13", True),
+            ("3.14-3.12", "3.15", False),
+            ("3.12-3.19.1", "3.19.1", True),
+            ("3.12-3.19.1", "3.19", False),
+            ("3.12-3.19.1", "3.19.2", False),
+            ("3.14", "3.14", True),
+            ("3.14", "3.13", False),
+            ("pypy@3.11", "pypy@3.11", True),
+            # A file written before loose requests were recorded still matches its own text.
+            (">=3.12", ">=3.12", True),
+            (">=3.12", None, False),
+        ):
+            with self.subTest(setting=setting, recorded=recorded):
+                self.assertEqual(python_request.request_matches(setting, recorded), expected)
+
+    def test_ranges_outside_python_3_8_and_newer_are_reported(self):
+        self.assertIsNone(config.python_version_problem("3.12-3.19.1"))
+        self.assertIsNone(config.python_version_problem("3.6-3.12"))
+        self.assertIn("3.8 or newer", config.python_version_problem("3.5-3.7") or "")
+        self.assertIn("only Python 3", config.python_version_problem("2.7-3.12") or "")
+
+    def test_first_start_records_the_python_a_loose_request_resolved_to(self):
+        s = SimpleNamespace(python_version=">=3.12")
+        written: List[str] = []
+        with mock.patch.multiple(
+            venv,
+            settings=mock.Mock(return_value=s),
+            validate=mock.DEFAULT,
+            FileLock=mock.Mock(return_value=contextlib.nullcontext()),
+            read_python_version_file=mock.Mock(return_value=None),
+            write_python_version_file=written.append,
+            reconcile_pyproject=mock.Mock(return_value=s),
+            current_requires_python=mock.Mock(return_value="==3.14.*"),
+            environment_fingerprint=mock.Mock(return_value="same"),
+            _read_stamp=mock.Mock(return_value="same"),
+        ), mock.patch.object(venv.sys, "version_info", (3, 14, 2, "final", 0)):
+            venv.ensure_environment()
+        self.assertEqual(written, ["3.14"])
 
 
 class FingerprintTests(unittest.TestCase):

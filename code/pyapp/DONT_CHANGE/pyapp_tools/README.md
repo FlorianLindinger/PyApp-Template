@@ -21,3 +21,11 @@ Double-click a `.bat`, or run it from a terminal with arguments. Each one uses t
 | `get_longest_paths.bat [count] [folder]` | Lists the longest paths in the project, including ignored ones such as `.venv` and `__pycache__` files that don't exist yet, and whether they exceed the Windows path limit. |
 
 The code these files run is in `src`.
+
+## GitHub Actions
+
+The template's own workflows (`.github/workflows/pyapp-template-launcher-tests.yml` and
+`pyapp-template-fresh-clone.yml`) run only for pushes and pull requests to `main`, on purpose: work on
+`dev` is checked by the pre-push hook and reaches CI through a pull request into `main`. Their actions
+are pinned by release tag, not by commit SHA. Changing a workflow also needs its new digest in
+`KNOWN_TEMPLATE_WORKFLOWS` (`scripts/template_workflows.py`).

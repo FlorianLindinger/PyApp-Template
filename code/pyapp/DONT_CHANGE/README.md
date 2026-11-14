@@ -167,6 +167,10 @@ and `code\pyapp\icons\*.cmd` run `actions\gen_icons.py`.
 - `python_version` is the requested Python; `pyapp/generated/.python-version` records the one the
   project actually uses (written on the first start). A different `python_version` opens a
   migration menu (re-lock keeping versions, upgrade all, empty package list, keep, write back).
+  `""` and loose requests (`"3"`, `">=3.12"`, a range `"3.12-3.14"`) record the resolved `X.Y`
+  (`X.Y.Z` when the request allows only some patches of it) and count as unchanged while that
+  version is inside them, so a newer Python release never leaves `uv.lock` unused
+  (`scripts/env/python_request.py`; uv has no range syntax, so ranges become `>=3.12,<3.15`).
 - `packages` is the dependency list. `pyapp/generated/pyproject.toml` is **generated** from it
   (`scripts/env/pyproject.py`) with `requires-python = "==X.Y.*"`. Its header records the list
   it was generated from, so a change made in the file itself (e.g. `uv add` in the package
@@ -185,10 +189,16 @@ and `code\pyapp\icons\*.cmd` run `actions\gen_icons.py`.
    one when the Python minor version changed, then `uv sync --locked --inexact` (offline first),
    and write the new stamp.
 
-Downloads happen only when needed. If the chosen uv cannot install the requested Python, the
-newest uv is fetched to `%LOCALAPPDATA%\PyApp-Template\uv` (never on PATH), the install is
-retried, and that uv is used from then on while it is newer. `scripts/env/uv.py: uv_environment()` builds uv's environment
-variables and mirrors `set_uv_environment` in `resolve_runtime.py`; keep both in sync. Python
+Downloads happen only when needed. If the chosen uv cannot install the requested Python and does
+not list it among its downloads (`uv python list <request> --only-downloads`), the newest uv is
+fetched to `%LOCALAPPDATA%\PyApp-Template\uv` (never on PATH), the install is retried, and that uv is
+used from then on while it is newer. When the uv lists it, the download itself failed (offline,
+proxy) and no other uv is fetched; when its answer is unclear, the newer uv is fetched anyway.
+`scripts/env/uv.py: uv_environment()` builds uv's environment variables and mirrors
+`set_uv_environment` in `resolve_runtime.py`; keep both in sync (a test compares the variables
+both remove). The user's other `UV_*` variables are kept, `UV_CACHE_DIR` too unless
+`uv_cache = "local"`; those that would change what uv does with the project (`UV_OFFLINE`,
+`UV_FROZEN`, `UV_LOCKED`, `UV_NO_SYNC`, `UV_PYTHON_DOWNLOADS`, ...) are removed. Python
 lookups run from the system temp folder, because uv would otherwise treat `pyapp/generated/.venv` as
 "the" Python; project commands use `code/pyapp/generated`.
 
@@ -346,6 +356,7 @@ ASCII art (`scripts/banner.py`). The batch/Python bootstrap and the
 | `dev_tools/housekeeping.py` | clean, remove_shortcuts, status, test. |
 | `env/uv.py` | Which uv to use, its environment variables, running it. |
 | `env/pythons.py` | Finding and installing Pythons with uv; `pyapp/generated/.python-version`. |
+| `env/python_request.py` | `python_version` ranges and loose requests: what uv gets, what `.python-version` records, when the setting still matches it. |
 | `env/pyproject.py` | The generated `pyproject.toml`: render, parse, reconcile with `packages`. |
 | `env/venv.py` | `ensure_environment()`, the fast-path stamp, building/re-linking `.venv`, lock and sync, Python switches, package actions, the package terminal. |
 

@@ -26,6 +26,7 @@ from pyapp.DONT_CHANGE.scripts.console_tools import (
 )
 from pyapp.DONT_CHANGE.scripts.dev_tools.common import confirm, prepare
 from pyapp.DONT_CHANGE.scripts.env.pyproject import set_requires_python
+from pyapp.DONT_CHANGE.scripts.env.python_request import recorded_request
 from pyapp.DONT_CHANGE.scripts.env.pythons import (
     find_python,
     install_python,
@@ -128,7 +129,7 @@ def cmd_make_self_contained(_arguments: List[str]) -> None:
 
     # 3. packages
     if read_python_version_file() is None:
-        write_python_version_file(request)
+        write_python_version_file(recorded_request(s.python_version, interpreter_version(python)))
     set_requires_python(interpreter_version(python))
     ensure_lock(local)
     if not _inside(read_venv_config().get("home", "") or "?", paths.LOCAL_PYTHONS_DIR):

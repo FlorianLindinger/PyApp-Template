@@ -26,6 +26,8 @@ exit /b %result%
 call :read_setting uv_install_if_missing install_mode
 call :read_setting python_source python_source
 call :read_setting uv_user_python_visible_globally visible
+rem Missing means True, as in resolve_runtime.py and the launcher.
+if not defined visible set "visible=True"
 call :find_uv
 if defined boot_uv goto have_uv
 if /i "%install_mode%"=="never" goto uv_not_allowed
@@ -175,6 +177,11 @@ set "UV_WORKING_DIR="
 set "UV_MANAGED_PYTHON="
 set "UV_NO_MANAGED_PYTHON="
 set "VIRTUAL_ENV="
+rem A user's UV_OFFLINE etc. would break the install below; resolve_runtime.py removes the same.
+set "UV_NO_SYNC="
+set "UV_FROZEN="
+set "UV_LOCKED="
+set "UV_OFFLINE="
 set "UV_PYTHON_PREFERENCE="
 set "UV_PYTHON_DOWNLOADS=automatic"
 set "UV_PYTHON_INSTALL_DIR="
@@ -198,9 +205,18 @@ if /i "%python_source%"=="system" goto no_system_python
 set "request="
 if exist "%generated%\.python-version" for /f "usebackq eol=# delims=" %%V in ("%generated%\.python-version") do if not defined request set "request=%%V"
 if not defined request call :read_setting python_version request
-echo Installing Python %request% with uv ...
-"%boot_uv%" python install %request%
+call :drop_version_range
+rem Quoted: a request such as >=3.12 would otherwise redirect the output to a file "=3.12".
+if not defined request goto install_default_python
+echo Installing Python "%request%" with uv ...
+"%boot_uv%" python install "%request%"
 if errorlevel 1 goto python_install_failed
+goto python_installed
+:install_default_python
+echo Installing Python with uv ...
+"%boot_uv%" python install
+if errorlevel 1 goto python_install_failed
+:python_installed
 call :query_python
 if not defined boot_python goto python_install_failed
 :python_found
@@ -209,6 +225,16 @@ popd
 if not errorlevel 1 exit /b 0
 call :error_blocked "%boot_python%"
 exit /b 1
+
+rem drop_version_range: a range such as 3.12-3.14 is not a uv request. resolve_runtime.py converts it;
+rem this stage only needs some Python 3.8+ to run it, so it lets uv install its default (the newest).
+rem A request that starts with a letter (cpython-3.12-windows-...) is a uv download key, not a range.
+:drop_version_range
+if not defined request exit /b 0
+if "%request:-=%"=="%request%" exit /b 0
+set "first_character=%request:~0,1%"
+for %%D in (0 1 2 3 4 5 6 7 8 9) do if "%first_character%"=="%%D" set "request="
+exit /b 0
 
 :query_python
 set "boot_python="

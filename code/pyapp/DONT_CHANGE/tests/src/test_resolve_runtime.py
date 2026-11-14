@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import os
 import shutil
 import subprocess
@@ -10,6 +11,7 @@ import tempfile
 import time
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Dict, List, Tuple
 from unittest import mock
 
@@ -17,6 +19,10 @@ from project_location import DONT_CHANGE
 
 with mock.patch.object(sys, "path", [str(DONT_CHANGE / "bootstrap"), *sys.path]):
     import resolve_runtime as tool
+
+# isort: split
+
+from pyapp.DONT_CHANGE.scripts.env import python_request, uv
 
 
 class SettingsTests(unittest.TestCase):
@@ -226,6 +232,112 @@ class CompanyPcTests(unittest.TestCase):
             tool.download("https://github.com/x", DONT_CHANGE / "tmp" / "never-written")
         self.assertIn("firewall", str(raised.exception))
         self.assertIn("make_self_contained", str(raised.exception))
+
+
+USER_CACHE = r"D:\my-uv-cache"
+UV_SETTINGS = {"python_source": "uv_user", "uv_user_python_visible_globally": True, "use_system_certificates": False}
+# uv variables a user may have set for all programs.
+USER_UV_VARIABLES = {
+    "UV_CACHE_DIR": USER_CACHE,
+    "UV_OFFLINE": "1",
+    "UV_FROZEN": "1",
+    "UV_LOCKED": "1",
+    "UV_NO_SYNC": "1",
+    "UV_PYTHON_DOWNLOADS": "never",
+    "UV_INDEX_URL": "https://example.invalid/simple",
+}
+
+
+class UvEnvironmentTests(unittest.TestCase):
+    """The bootstrap and the launcher give uv the same environment (audit F14)."""
+
+    def both(self, uv_cache: str) -> Tuple[Dict[str, str], Dict[str, str]]:
+        """(the bootstrap's environment, the launcher's) for a user who set USER_UV_VARIABLES."""
+        settings: Dict[str, object] = {**UV_SETTINGS, "uv_cache": uv_cache}
+        with mock.patch.dict(os.environ, USER_UV_VARIABLES):
+            launcher = uv.uv_environment(SimpleNamespace(**settings))
+            tool.set_uv_environment(settings, "uv_user")
+            bootstrap = dict(os.environ)
+        return bootstrap, launcher
+
+    def test_both_remove_the_same_variables(self):
+        self.assertEqual(set(tool.OWN_UV_VARIABLES), set(uv._OWN_UV_VARIABLES))
+
+    def test_variables_that_change_what_uv_does_are_removed(self):
+        for environment in self.both("global"):
+            for name in ("UV_OFFLINE", "UV_FROZEN", "UV_LOCKED", "UV_NO_SYNC"):
+                self.assertNotIn(name, environment)
+            self.assertEqual(environment["UV_PYTHON_DOWNLOADS"], "automatic")
+            self.assertEqual(environment["UV_INDEX_URL"], "https://example.invalid/simple")
+
+    def test_a_users_cache_folder_wins_over_the_global_cache(self):
+        for environment in self.both("global"):
+            self.assertEqual(environment["UV_CACHE_DIR"], USER_CACHE)
+        for environment in self.both("local"):
+            self.assertTrue(environment["UV_CACHE_DIR"].endswith("uv-cache"))
+            self.assertNotEqual(environment["UV_CACHE_DIR"], USER_CACHE)
+
+    def test_the_batch_stage_clears_the_same_behavior_variables(self):
+        text = (DONT_CHANGE / "bootstrap" / "resolve_runtime.bat").read_text(encoding="utf-8")
+        for name in ("UV_OFFLINE", "UV_FROZEN", "UV_LOCKED", "UV_NO_SYNC"):
+            self.assertIn(f'set "{name}="', text)
+        self.assertIn('if not defined visible set "visible=True"', text)
+
+
+class PythonRequestTests(unittest.TestCase):
+    def test_ranges_are_converted_like_the_launcher_does(self):
+        for value in (
+            "3.12-3.14",
+            "3.14-3.12",
+            "3.12-3.19.1",
+            " 3.19.1 - 3.12 ",
+            "3-3.12",
+            "3.12",
+            ">=3.12",
+            "",
+            "a-b",
+        ):
+            with self.subTest(value=value):
+                self.assertEqual(tool.range_specifier(value), python_request.range_specifier(value))
+
+    def resolve(self, offered: object, install_codes: List[int]) -> Tuple[List[List[str]], int]:
+        """Install a missing Python; returns the install commands and how often a newer uv was fetched."""
+        commands: List[List[str]] = []
+
+        def run_live(_uv: object, arguments: List[str]) -> int:
+            commands.append(arguments)
+            return install_codes[len(commands) - 1]
+
+        newer_uv = mock.Mock(return_value=Path("newer-uv.exe"))
+
+        with mock.patch.multiple(
+            tool,
+            set_uv_environment=mock.DEFAULT,
+            remove_broken_python_links=mock.DEFAULT,
+            project_python_request=mock.Mock(return_value="3.12-3.14"),
+            find_python=mock.Mock(side_effect=[None, "python.exe"]),
+            run_live=run_live,
+            python_offered=mock.Mock(return_value=offered),
+            install_newer_shared_uv=newer_uv,
+            run_captured=mock.Mock(return_value=(0, ["3.13.1"])),
+            available_summary=mock.Mock(return_value=""),
+        ):
+            with contextlib.suppress(tool.BootstrapError):
+                tool.resolve_python({}, Path("uv.exe"))
+            return commands, newer_uv.call_count
+
+    def test_a_range_is_installed_as_a_specifier(self):
+        commands, _ = self.resolve(True, [0])
+        self.assertEqual(commands, [["python", "install", ">=3.12,<3.15"]])
+
+    def test_no_newer_uv_when_this_uv_knows_the_python(self):
+        self.assertEqual(self.resolve(True, [1])[1], 0)
+
+    def test_a_newer_uv_when_this_one_does_not_know_it_or_cannot_tell(self):
+        for offered in (False, None):
+            with self.subTest(offered=offered):
+                commands, fetched = self.resolve(offered, [1, 0])
+                self.assertEqual((len(commands), fetched), (2, 1))
 
 
 class CacheTests(unittest.TestCase):

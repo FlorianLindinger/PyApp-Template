@@ -55,6 +55,8 @@ LOCAL_CACHE_DIR = GENERATED_DIR / "uv-cache"
 VERSION_FILE = GENERATED_DIR / ".python-version"
 MINIMUM_PYTHON = (3, 8)
 DOWNLOAD_TIMEOUT_SECONDS = 300
+# Same list as _OWN_UV_VARIABLES in scripts/env/uv.py (a test compares them); see there why
+# UV_CACHE_DIR is missing.
 OWN_UV_VARIABLES = (
     "UV_PYTHON",
     "UV_PYTHON_INSTALL_DIR",
@@ -66,7 +68,11 @@ OWN_UV_VARIABLES = (
     "UV_PROJECT_ENVIRONMENT",
     "UV_PROJECT",
     "UV_WORKING_DIR",
-    "VIRTUAL_ENV",
+    "UV_NO_SYNC",
+    "UV_FROZEN",
+    "UV_LOCKED",
+    "UV_OFFLINE",
+    "UV_PYTHON_DOWNLOADS",
 )
 # Windows error codes of a program that was refused rather than broken.
 POLICY_ERRORS = {5, 225, 1260, 4551}
@@ -530,7 +536,7 @@ def install_newer_shared_uv(settings: Settings, current_uv: object) -> Optional[
 
 def set_uv_environment(settings: Settings, source: object) -> None:
     """Mirrors uv_environment in scripts/env/uv.py."""
-    for name in OWN_UV_VARIABLES:
+    for name in (*OWN_UV_VARIABLES, "VIRTUAL_ENV"):
         os.environ.pop(name, None)
     visible = "1" if setting(settings, "uv_user_python_visible_globally", True) else "0"
     if source == "uv_user":
@@ -599,9 +605,34 @@ def available_summary(uv: object) -> str:
     return f"uv offers {versions[0]} to {versions[-1]} for this PC."
 
 
+def python_offered(uv: object, request: str) -> Optional[bool]:
+    """Mirrors python_offered in scripts/env/pythons.py: does this uv have a download for request?"""
+    arguments = ["python", "list", request, "--only-downloads", "--all-versions", "--output-format", "json"]
+    code, lines = run_captured(uv, arguments)
+    if code:
+        return None
+    try:
+        entries = json.loads("\n".join(lines))
+    except ValueError:
+        return None
+    return bool(entries) if isinstance(entries, list) else None
+
+
 def find_python(uv: object, request: str) -> Optional[str]:
     code, lines = run_captured(uv, ["python", "find", "--no-project", *([request] if request else [])])
     return lines[-1].strip() if code == 0 and lines else None
+
+
+def range_specifier(value: str) -> Optional[str]:
+    """Mirrors range_specifier in scripts/env/python_request.py: ">=3.12,<3.15" for "3.12-3.14"."""
+    match = re.fullmatch(r"\s*(\d+(?:\.\d+){0,2})\s*-\s*(\d+(?:\.\d+){0,2})\s*", value)
+    if not match:
+        return None
+    low, high = (tuple(int(part) for part in end.split(".")) for end in match.groups())
+    if high + (0,) * (3 - len(high)) < low + (0,) * (3 - len(low)):
+        low, high = high, low
+    upper = "<=" + ".".join(map(str, high)) if len(high) == 3 else "<" + ".".join(map(str, (*high[:-1], high[-1] + 1)))
+    return ">=" + ".".join(map(str, low)) + "," + upper
 
 
 def project_python_request(settings: Settings) -> str:
@@ -622,7 +653,9 @@ def resolve_python(settings: Settings, uv: Path) -> Tuple[str, Path]:
     assert_choice("python_source", source, ("local", "uv_user", "system"))
     set_uv_environment(settings, source)
     remove_broken_python_links()
+    # uv has no range syntax; a loose request is resolved here, and the launcher records the result.
     request = project_python_request(settings)
+    request = range_specifier(request) or request
     # Outside the project: uv would otherwise discover pyapp/generated/.venv as "the" Python.
     previous_folder = Path.cwd()
     os.chdir(tempfile.gettempdir())
@@ -639,7 +672,9 @@ def resolve_python(settings: Settings, uv: Path) -> Tuple[str, Path]:
         if not python:
             step(f"Installing Python {request} with uv...")
             code = run_live(uv, ["python", "install", request])
-            if code:
+            # A newer uv only helps when this one does not know the requested Python; otherwise the
+            # download itself failed (offline, proxy). An unclear answer keeps the retry.
+            if code and python_offered(uv, request) is not True:
                 newer = install_newer_shared_uv(settings, uv)
                 if newer is not None:
                     uv = newer

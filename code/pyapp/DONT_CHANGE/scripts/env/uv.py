@@ -55,6 +55,10 @@ def install_newer_uv() -> bool:
     return True
 
 
+# The launcher sets these itself, or they would change what uv does with the project (offline,
+# frozen, no sync, no Python downloads). bootstrap/resolve_runtime.py OWN_UV_VARIABLES must be the
+# same list (tests/src/test_resolve_runtime.py compares them). UV_CACHE_DIR is not in it: a user's own
+# cache folder wins over uv_cache = "global"; uv_cache = "local" replaces it.
 _OWN_UV_VARIABLES = (
     "UV_PYTHON",
     "UV_PYTHON_INSTALL_DIR",
@@ -70,7 +74,6 @@ _OWN_UV_VARIABLES = (
     "UV_FROZEN",
     "UV_LOCKED",
     "UV_OFFLINE",
-    "UV_CACHE_DIR",
     "UV_PYTHON_DOWNLOADS",
 )
 

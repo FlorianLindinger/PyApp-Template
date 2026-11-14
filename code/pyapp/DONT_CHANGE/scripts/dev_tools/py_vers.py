@@ -5,7 +5,7 @@ from __future__ import annotations
 import sys
 import tempfile
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 from pyapp.DONT_CHANGE.scripts.config import describe_python_request, edit_settings, python_version_problem, settings
 from pyapp.DONT_CHANGE.scripts.console_tools import (
@@ -18,11 +18,13 @@ from pyapp.DONT_CHANGE.scripts.console_tools import (
     print_success,
 )
 from pyapp.DONT_CHANGE.scripts.dev_tools.common import confirm, prepare
+from pyapp.DONT_CHANGE.scripts.env.python_request import loose_clauses, uv_request
 from pyapp.DONT_CHANGE.scripts.env.pythons import (
     available_summary,
     find_python,
     interpreter_version,
     invalidate_runtime_cache,
+    newest_allowed,
     newest_stable_minor,
     read_python_version_file,
     version_key,
@@ -55,7 +57,9 @@ def cmd_change_python(arguments: List[str]) -> None:
     new = (
         arguments[0]
         if arguments
-        else ask('New python_version (e.g. "3.13", "3.14t", empty = newest stable, q = cancel):').strip().strip('"')
+        else ask('New python_version (e.g. "3.13", "3.14t", "3.12-3.14", empty = newest stable, q = cancel):')
+        .strip()
+        .strip('"')
     )
     # Enter already means "newest stable", so cancelling needs a word of its own.
     if not arguments and new.lower() in CANCEL_WORDS:
@@ -74,18 +78,27 @@ def cmd_change_python(arguments: List[str]) -> None:
 
 
 def cmd_update_python(_arguments: List[str]) -> None:
-    """Newest patch release of the project's Python; with python_version = "" also a newer minor version."""
+    """Newest patch release of the project's Python; with an empty or loose python_version
+    ("3", ">=3.12", "3.12-3.14") also a newer minor version it allows."""
     s = settings()
     prepare(s)
     current = read_python_version_file()
     if not s.python_version:
-        newest = newest_stable_minor(s)
-        if (current and newest != current and version_key(newest) > version_key(current)) and confirm(
-            f"Python {newest} is available (the project uses {current}). Switch now?"
-        ):
-            switch_python(newest, s=s)
-            return
-    request = current or s.python_version
+        newest: Optional[str] = newest_stable_minor(s)
+    elif loose_clauses(s.python_version) is not None:
+        newest = newest_allowed(s.python_version, s)
+    else:
+        newest = None
+    if (
+        newest
+        and current
+        and newest != current
+        and version_key(newest) > version_key(current)
+        and confirm(f"Python {newest} is available (the project uses {current}). Switch now?")
+    ):
+        switch_python(newest, s=s)
+        return
+    request = uv_request(current or s.python_version)
     print_step(f"Updating Python {request} to its newest patch release...")
     run_uv(["python", "install", "--upgrade", request], cwd=tempfile.gettempdir())
     newest_exe = find_python(request, s)
