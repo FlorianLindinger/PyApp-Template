@@ -1,7 +1,7 @@
 # Dev tools
 
 Double-click a tool, or run it from a terminal with arguments (e.g. `add_packages.cmd requests "numpy>=2"`; quote requirements with `<`, `>` or `|`, which the command prompt would otherwise treat as redirection).
-`Dev Menu.cmd` lists all of them. Every tool validates `developer_settings.py` first and
+[`Developer Tools.cmd`](../Developer%20Tools.cmd) in the parent folder lists all of them. Every tool validates `developer_settings.py` first and
 prepares the environment if needed. Close running app instances before changing packages
 or Python — Windows locks the files they use.
 

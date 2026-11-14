@@ -9,6 +9,7 @@ environment it runs in, its icons and tools. Your own code lives one folder up, 
 | Item | What it is | You | Git |
 | --- | --- | --- | --- |
 | [developer_settings.py](developer_settings.py) | All settings of the app: name, Python, packages, shortcuts, logs, windows | edit | commit |
+| [Developer Tools.cmd](Developer%20Tools.cmd) | Menu of all developer tools | use | commit |
 | [dev_tools/](dev_tools/README.md) | Double-click tools: packages, Python version, tests, status, cleanup | use | commit |
 | [icons/](icons/README.md) | The app's icons, all made from `icon.png` | replace `icon.png` | commit |
 | [tests/](tests/test_example.py) | The app's own tests (`test_*.py`) | add tests | commit |
@@ -34,7 +35,7 @@ file gets its default from `DONT_CHANGE/data/dev_settings_default.py`.
 
 ## dev_tools/
 
-One `.cmd` per task; `Dev Menu.cmd` lists them all. Each checks the settings and brings the
+One `.cmd` per task; [`Developer Tools.cmd`](Developer%20Tools.cmd) here in `code/pyapp` lists them all. Each checks the settings and brings the
 environment up to date first. Details: [dev_tools/README.md](dev_tools/README.md).
 
 - Packages: `list_packages` (what is installed and why), `outdated_packages`, `add_packages`,

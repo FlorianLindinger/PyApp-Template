@@ -332,7 +332,7 @@ Logging turns stdout and stderr into pipes. If your app needs a real console, se
 
 ### Dev tools
 
-Double-click a tool in `code/pyapp/dev_tools`, or use **`Dev Menu.cmd`** for all of them.
+Double-click a tool in `code/pyapp/dev_tools`, or use **`code/pyapp/Developer Tools.cmd`** for all of them.
 
 | Tool | Purpose |
 | --- | --- |
@@ -422,7 +422,7 @@ None of these is needed to run your app:
 | --- | --- |
 | `.github/workflows/pyapp-template-*.yml` | The template's own test workflows; they do nothing in your app. Setup removes them if unchanged. |
 | `code/main.py`, `code/settings.py` | The example app and its settings. Point `main_script_path` at your main file; set `user_settings_path = ""` without a settings file. |
-| Single tools in `code/pyapp/dev_tools` | Each `.cmd` is optional; `Dev Menu.cmd` offers every command. |
+| Single tools in `code/pyapp/dev_tools` | Each `.cmd` is optional; `code/pyapp/Developer Tools.cmd` offers every command. |
 | `code/pyapp/icons/*.cmd` | Icon helpers. To regenerate without them: `code\pyapp\DONT_CHANGE\B\run.bat icons`. |
 | `code/pyapp/DONT_CHANGE/tests`, `.../browser_terminal/tests` | The launcher's and the browser terminal's own tests. |
 | `code/pyapp/DONT_CHANGE/pyapp_tools` | Tools for maintaining the template (release, tests on all Pythons, leak check, Git hooks). Delete `tests` with it; keep it if `github_actions` contains `"leaks"`. |
