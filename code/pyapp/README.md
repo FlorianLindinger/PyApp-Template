@@ -1,31 +1,87 @@
-# Application pyapp
+# code/pyapp
 
-Configure the application in [developer_settings.py](developer_settings.py): name,
-Python version, the packages it needs (`packages`), where uv/Python/packages come from,
-shortcuts, logging and completion behavior.
+Everything that makes your Python code a Windows app: its settings, the launcher, the
+environment it runs in, its icons and tools. Your own code lives one folder up, in `code/`
+(`main.py`, `settings.py` and your modules); here you mostly edit `developer_settings.py`.
 
-The app's uv project is in [generated](generated/README.md). Generated on the first run:
+## Overview
 
-- `generated/uv.lock` and `generated/.python-version`: the locked package versions and the recorded Python version request. **Commit them.**
-- `generated/pyproject.toml`: generated from `packages` and `python_version` for uv. Do not edit it;
-  changes made to it anyway (e.g. `uv add`) are copied into `packages`. Ignored by Git.
-- `generated/.venv/`: the app environment. Ignored by Git.
+| Item | What it is | You | Git |
+| --- | --- | --- | --- |
+| [developer_settings.py](developer_settings.py) | All settings of the app: name, Python, packages, shortcuts, logs, windows | edit | commit |
+| [dev_tools/](dev_tools/README.md) | Double-click tools: packages, Python version, tests, status, cleanup | use | commit |
+| [icons/](icons/README.md) | The app's icons, all made from `icon.png` | replace `icon.png` | commit |
+| [tests/](tests/test_example.py) | The app's own tests (`test_*.py`) | add tests | commit |
+| [generated/](generated/README.md) | What the launcher creates: the locked packages, the Python version, the environment | leave alone | partly |
+| [Start without launcher.cmd](Start%20without%20launcher.cmd) | Starts the app when the launcher itself is broken | use if needed | commit |
+| [DONT_CHANGE/](DONT_CHANGE/README.md) | The launcher; replaced as a whole to update it | don't edit | commit |
+| `.gitignore` | Keeps the environment, caches and per-PC files out of Git | rarely | commit |
 
-Change packages and the Python version in `developer_settings.py` or with the tools in
-[dev_tools](dev_tools/README.md).
+## developer_settings.py
 
-Other generated items in `generated/`: `pythons/` and `uv/` (only when installed locally), `uv-cache/`
-(only with `uv_cache = "local"`) and `shortcuts_created_by_setup.json` (the shortcuts Setup created, so it can
-remove stale ones). All are ignored by Git.
+The one file to configure the app, read by the launcher at every start; each setting is explained
+in a comment above it. Among them:
 
-If the launcher itself is broken, double-click [Start without launcher.cmd](Start%20without%20launcher.cmd)
-(its code: `DONT_CHANGE/actions/start_without_launcher.py`, which uses nothing else of the launcher):
-it runs the main script directly with the app's environment (`generated/.venv`), or with the global
-default Python when that environment is missing or broken. It shows the main script, Python,
-packages (installed or missing) and their folders first. There is no setup, no package installation,
-no log, no crash log and no STOP shortcut. Run Setup to repair the launcher.
+- `program_name`, `main_script_path` (default `../main.py`), and arguments and environment variables for it;
+- `python_version`, and `packages` (one requirement per line, like a requirements.txt) or `requirements_path`;
+- which shortcuts Setup makes and where (`start_menu_shortcuts`, `desktop_shortcuts`, the `*_shortcut_name` settings);
+- logs and crash logs, and what happens when the program ends (close, stay open, a sound, open the log);
+- the window: classic console or Windows Terminal (`use_classic_terminal`), colors, one instance or several (`instance_policy`);
+- where uv and Python come from (`python_source`, `uv_*`), and the GitHub Actions an app can switch on (`github_actions`).
 
-The app's tests go into [tests](tests/test_example.py) as `test_*.py` files; [run_tests.cmd](dev_tools/run_tests.cmd) runs them.
+A mistake in the file is reported with its line at the next start. A setting missing in an older
+file gets its default from `DONT_CHANGE/data/dev_settings_default.py`.
 
-For normal development edit `../main.py`, `../settings.py` and `developer_settings.py`.
-See the [pyapp internals](DONT_CHANGE/README.md) when maintaining the template itself.
+## dev_tools/
+
+One `.cmd` per task; `Dev Menu.cmd` lists them all. Each checks the settings and brings the
+environment up to date first. Details: [dev_tools/README.md](dev_tools/README.md).
+
+- Packages: `list_packages` (what is installed and why), `outdated_packages`, `add_packages`,
+  `remove_packages`, `upgrade_packages`, `sync_packages`, `find_imports`, `export_requirements`,
+  `package_terminal`.
+- Python: `change_python`, `update_python`.
+- Project: `run_tests`, `status`, `clean`, `remove_shortcuts`, `make_self_contained` (makes the
+  folder run on other PCs without internet).
+
+## icons/
+
+`icon.png` is the picture; `regenerate icons.cmd` makes the window and shortcut icons from it,
+each with a small symbol (Settings, STOP, Logs, ...), at every size Windows needs. Replace
+`icon.png`, regenerate, then run Setup so the shortcuts show the new icons. A single `.ico` can
+also be replaced by your own: the generator asks before replacing it. Details, including which
+icon is shown where: [icons/README.md](icons/README.md).
+
+## tests/
+
+The app's own tests: files named `test_*.py` with `unittest.TestCase` classes (or pytest
+functions, once pytest is in `packages`). `dev_tools/run_tests.cmd` runs them with the app's
+environment; a `tests` folder in `code/` is found too. `test_example.py` checks that every Python
+file of the app compiles and shows how a test looks.
+
+## generated/
+
+Created and kept up to date by the launcher; you normally change nothing here. Commit `uv.lock`
+(the exact package versions), `.python-version` and `auto_generated_icons.json`. The rest is per
+PC and ignored by Git: `pyproject.toml` (made from `packages`; a `uv add` made in it is copied
+back into `packages`), the environment `.venv/`, and, depending on the settings, a local uv,
+Python and download cache. Deleting `.venv/` is safe: the next start rebuilds it. Details:
+[generated/README.md](generated/README.md).
+
+## Start without launcher.cmd
+
+If the launcher itself is broken, this still starts the app: with the app's environment
+(`generated/.venv`), or with the global default Python when that is missing or broken. It first
+shows the main script, Python, the packages (installed or missing) and their folders. There is
+no setup, no package installation, no log, no crash log and no STOP shortcut; run Setup to repair
+the launcher. Its code is `DONT_CHANGE/actions/start_without_launcher.py`, which uses nothing
+else of the launcher.
+
+## DONT_CHANGE/
+
+The launcher: the batch files the shortcuts start, the Python code that prepares the environment
+and runs the app, its data and its own tests. To update it, replace the whole folder with the
+one of a newer template version; everything else in your project stays. What it keeps the same
+between versions (file names, commands, settings) is listed in `backend_settings.py`
+(`PROTECTED_*`). How it works: [DONT_CHANGE/README.md](DONT_CHANGE/README.md); changes:
+[DONT_CHANGE/CHANGELOG.md](DONT_CHANGE/CHANGELOG.md).

@@ -13,5 +13,6 @@ Files the launcher creates for this app: mostly what uv needs to run it. The lau
 | `pythons/` | Python installed for this project (only with `python_source = "local"`) | Ignored |
 | `uv-cache/` | uv's download cache (only with `uv_cache = "local"`) | Ignored |
 | `shortcuts_created_by_setup.json` | Which shortcuts Setup created on this PC, so it can remove old ones | Ignored |
+| `browser_terminal_key.txt` | The secret part of the browser terminal's address on this PC, so bookmarks keep working | Ignored |
 
-Deleting `.venv/` is safe: the next start rebuilds it. If you delete `uv.lock`, the next start creates a new one, but package versions may change.
+These names stay the same in every version of the launcher (`PROTECTED_PROJECT_FILES` in `../DONT_CHANGE/backend_settings.py`), so an update finds them. Deleting `.venv/` is safe: the next start rebuilds it. If you delete `uv.lock`, the next start creates a new one, but package versions may change.

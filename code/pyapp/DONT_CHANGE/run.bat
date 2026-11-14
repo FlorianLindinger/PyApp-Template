@@ -13,8 +13,15 @@ call "%~dp0bootstrap\run.bat" %*
 exit /b %ERRORLEVEL%
 
 :icons_help
-start "" "%SystemRoot%\System32\notepad.exe" "%~dp0data\icons\HOW_TO_CHANGE_ICONS.txt"
-exit /b %ERRORLEVEL%
+rem The instructions are code\pyapp\icons\README.md; a project from before it existed gets the short version.
+if exist "%~dp0..\icons\README.md" (
+    start "" "%SystemRoot%\System32\notepad.exe" "%~dp0..\icons\README.md"
+    exit /b 0
+)
+echo To change the icons: replace code\pyapp\icons\icon.png with your picture, run
+echo "regenerate icons.cmd" in that folder, then run Setup again for the shortcuts.
+echo To use your own icon for one case, replace that .ico file and keep its name.
+exit /b 0
 
 :unknown
 echo ERROR  Unknown command. Use: run.bat setup, icons, icons-help or dev [command].

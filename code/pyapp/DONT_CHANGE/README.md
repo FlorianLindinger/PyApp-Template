@@ -359,7 +359,7 @@ ASCII art (`scripts/banner.py`). The batch/Python bootstrap and the
 | `data/dev_settings_default.py` | The settings file this version ships with: defaults for settings a project's `developer_settings.py` lacks (see [Versions](#versions)). Read with `ast`, never imported. |
 | `data/protected_baseline.json` | The `PROTECTED_*` lists of `backend_settings.py` as of the last release, saved by `pyapp_tools/release`. Until the next MAJOR version, `tests/src/test_template_contract.py` (also run before each commit) refuses to take an entry off. Do not edit by hand. |
 | `data/fonts/` | Banner font, an original drawing made for this project (see [Licensing](#licensing)). |
-| `data/icons/` | Bundled default PNGs (used when the project's PNG in `code/pyapp/icons` is missing or unchanged) and `HOW_TO_CHANGE_ICONS.txt`. |
+| `data/icons/` | Bundled default PNGs: the default base image (used when the project's `icon.png` in `code/pyapp/icons` is missing or unchanged) and the overlays. How to change the icons is in `code/pyapp/icons/README.md` (`run.bat icons-help` opens it). |
 | `tests/` | Regression tests for this folder; the launchers (`run_*_tests.cmd`) are in `tests/`, the code in `tests/src`; see `tests/README.md`. |
 
 ## Versions
