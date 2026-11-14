@@ -137,7 +137,7 @@ def main() -> None:
     global pause_on_success
     enable_ansi()
     print_banner()
-    if sys.argv[1:2] == ["dev"]:  # DONT_CHANGE\\run.bat passes its own first word on
+    if sys.argv[1:2] == ["dev"]:  # DONT_CHANGE\\B\\run.bat passes its own first word on
         del sys.argv[1]
     command = sys.argv[1] if len(sys.argv) > 1 else "menu"
     if command in NO_PAUSE:

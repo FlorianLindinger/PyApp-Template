@@ -25,7 +25,7 @@ from pyapp.DONT_CHANGE.scripts.dev_tools import main as dev_tools
 
 # What existing projects rely on is listed in backend_settings (PROTECTED_*); these tests check
 # that the code still provides all of it, and that files outside DONT_CHANGE use nothing else.
-ENTRY_FILE = "run.bat"
+ENTRY_FILE = "B/run.bat"
 WORKFLOW_FOLDER = PROJECT_ROOT / ".github" / "workflows"
 
 
@@ -71,7 +71,7 @@ def run_commands_used_outside() -> List[Tuple[str, str]]:
     """(run.bat command, dev tool command or "") of every call to run.bat outside DONT_CHANGE."""
     found: List[Tuple[str, str]] = []
     for script in scripts_outside():
-        found += re.findall(r'DONT_CHANGE\\run\.bat"\s+([\w-]+)(?:\s+([\w-]+))?', script.read_text(encoding="utf-8"))
+        found += re.findall(r'DONT_CHANGE\\B\\run\.bat"\s+([\w-]+)(?:\s+([\w-]+))?', script.read_text(encoding="utf-8"))
     return found
 
 

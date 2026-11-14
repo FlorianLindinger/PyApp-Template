@@ -61,7 +61,7 @@ GENERATED_DIR = BACKEND_DIR + "\\generated"
 # launcher is broken, so it may only use the standard library, no other launcher file.
 FALLBACK_START_PATH = "actions\\start_without_launcher.py"
 PROTECTED_PATHS = [
-    "run.bat",                  # every .cmd outside DONT_CHANGE: run.bat setup|icons|icons-help|dev <command>
+    "B\\run.bat",               # every .cmd outside DONT_CHANGE: run.bat setup|icons|icons-help|dev <command>
     FALLBACK_START_PATH,
     # Shortcut targets: existing shortcuts point at them until Setup runs again.
     "B\\W.bat",
@@ -94,7 +94,7 @@ PROTECTED_PROJECT_FILES = [
     "icons\\crash_log.ico",
     "icons\\open_code.ico",
 ]
-# The commands the .cmd files outside DONT_CHANGE pass to run.bat ...
+# The commands the .cmd files outside DONT_CHANGE pass to B\run.bat ...
 PROTECTED_RUN_COMMANDS = ["setup", "icons", "icons-help", "dev"]
 # ... and to "run.bat dev" (the files in code/pyapp/dev_tools); "menu" is the dev menu itself.
 PROTECTED_DEV_TOOL_COMMANDS = [

@@ -267,7 +267,6 @@ ASCII art (`scripts/banner.py`). The batch/Python bootstrap and the
 | --- | --- |
 | `README.md` | This document. |
 | `CHANGELOG.md` | Changes per version; the newest heading matches `LAUNCHER_VERSION`. |
-| `AGENT_CHANGELOG.md` | What coding agents changed, task by task, with the checks they ran. |
 | `TODO.md` | Open items and ideas. |
 | `LICENSE.md` | License of this folder (MIT), which also covers the bundled banner font. |
 | `backend_settings.py` | Every internal path and constant (`LAUNCHER_VERSION`, folders, icon paths, file names, defaults). Imported by almost everything; changes nothing on import. |
@@ -275,7 +274,7 @@ ASCII art (`scripts/banner.py`). The batch/Python bootstrap and the
 | `.gitignore` | Keeps `tmp/`, caches and `__pycache__` out of Git. |
 | `tmp/` | Created at runtime, never committed: `runtime.cmd` (bootstrap cache), `environment.ok`/`.lock`, `bootstrap.lock`, `running/` (registry), `runs/<id>/` (per-run files: `wrapper.json`, `ready`, `startup.json`, `result.json`, `traceback.json`, `bootstrap.log`, `stop-requested`; deleted by a launch, Stop or Setup when no instance is running and the folder is at least 5 minutes old), `diagnostics.log`. Safe to delete while the app is not running. |
 
-### `B/` – shortcut targets (short names keep the shortcut command line short)
+### `B/` – entry points: the shortcut targets (short names keep the shortcut command line short) and `run.bat`
 
 | File | Started by | Does |
 | --- | --- | --- |
@@ -285,6 +284,7 @@ ASCII art (`scripts/banner.py`). The batch/Python bootstrap and the
 | `S.bat`, `M.bat` | Settings / Edit Code | `open_file.bat <file>`, else `open_file.py` |
 | `L.bat`, `C.bat` | Logs / Crash Logs | `open_folder.bat <folder>`, else `open_folder.py` |
 | `B.bat` | Browser terminal | `actions/start_program.py` (mode `browser`) |
+| `run.bat` | every script outside `DONT_CHANGE` (Setup, dev tools, icons) | `run.bat setup`, `icons`, `icons-help` or `dev <command>`: the matching tool. It and the other paths in `PROTECTED_PATHS` (`backend_settings.py`) keep their place; everything else in this folder can move between versions. |
 
 ### `bootstrap/` – before any Python is known
 
@@ -292,7 +292,6 @@ ASCII art (`scripts/banner.py`). The batch/Python bootstrap and the
 | --- | --- |
 | `run.bat` | Runs `%PYAPP_ENTRY_SCRIPT%` through `entrypoint.py` with the launcher Python; pauses on bootstrap failures. |
 | `ensure_runtime.bat` | Creates `tmp\`, loads the cached uv/Python paths or calls `resolve_runtime.py`; sets `PYAPP_UV` and `PYAPP_PYTHON`. |
-| `..\run.bat` | The one launcher file that scripts outside `DONT_CHANGE` start: `run.bat setup`, `icons`, `icons-help` or `dev <command>`. It and the other paths in `PROTECTED_PATHS` (`backend_settings.py`) keep their place; everything else in this folder can move between versions. |
 | `resolve_runtime.bat` | Gets any working uv and Python with tools built into Windows (`curl`, `tar`), then runs `resolve_runtime.py`. No PowerShell script, so policies that block those don't matter. |
 | `resolve_runtime.py` | Reads the `[bootstrap]` settings, finds/installs uv and the project's Python, writes `tmp\runtime.cmd`. |
 | `open_file.bat`, `open_folder.bat` | Open a file (VS Code, else Notepad) or folder without Python. |

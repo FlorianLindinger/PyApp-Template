@@ -9,6 +9,7 @@ The first versioned release; it contains every change below.
 
 ### 2026-11-14 - app tests, outdated and unused packages, release and push checks
 
+- The entry point for scripts outside `DONT_CHANGE` moved from `DONT_CHANGE/run.bat` to `DONT_CHANGE/B/run.bat`, next to the shortcut targets; the template's `.cmd` files call it there.
 - How to change the icons is now `code/pyapp/icons/README.md` (`run.bat icons-help` opens it; without it, a short version is shown). `data/icons/HOW_TO_CHANGE_ICONS.txt` and the template's `code/pyapp/icons/How to change icons.cmd` are gone; projects may delete their copy of that .cmd and copy the new README. `code/pyapp/README.md` gives an overview of the whole folder.
 - New dev tool `run_tests.cmd`: runs the app's own tests from `code/pyapp/tests` (and `code/tests`) with the app's environment, with pytest if it is among the packages, else unittest; no tests at all is a note, not a failure. The template ships `code/pyapp/tests/test_example.py`, which checks that every Python file of the app compiles.
 - `list_packages` marks main packages that no file in `code/` imports; new `outdated_packages.cmd` (`list_packages --outdated`) shows newer versions on PyPI, what `upgrade_packages` would install and what the limits hold back.
