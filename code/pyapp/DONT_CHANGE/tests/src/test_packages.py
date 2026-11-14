@@ -47,8 +47,23 @@ class PyprojectTests(unittest.TestCase):
 
             self.assertEqual(tomllib.loads(text)["project"]["dependencies"], packages)
 
+    def test_the_lock_must_work_on_64_bit_windows(self):
+        """Without it, uv add PyQt5 locked pyqt5-qt5 5.15.19, which has no Windows build."""
+        text = pyproject.render_pyproject(["PyQt5"], "==3.14.*")
+        if sys.version_info >= (3, 11):
+            import tomllib
+
+            self.assertEqual(
+                tomllib.loads(text)["tool"]["uv"]["required-environments"],
+                ["sys_platform == 'win32' and platform_machine == 'AMD64'"],
+            )
+        else:
+            self.assertIn("required-environments = [\"sys_platform == 'win32'", text)
+
     def test_uv_add_in_pyproject_is_copied_into_the_settings(self):
         with support.temporary_settings() as (_, load):
+            # Start without packages, whatever the project's own settings list.
+            config.set_list_setting("packages", [])
             pyproject.reconcile_pyproject(load(), (3, 14))
             path = Path(pyproject.PYPROJECT_PATH)
             text = path.read_text(encoding="utf-8").replace(

@@ -89,6 +89,13 @@ class RenderTests(unittest.TestCase):
         self.assertIn(">", text)
         self.assertNotIn("\x1b[", text)
 
+    def test_frames_of_the_import_system_become_one_line(self):
+        report = report_for("import importlib\nimportlib.import_module('no_such_module_xyz')\n")
+        text = "\n".join(render(report, colors=False))
+        self.assertNotIn("<frozen importlib._bootstrap>", text)
+        self.assertRegex(text, r"\.\.\. \d+ frames inside Python's import system")
+        self.assertIn("ModuleNotFoundError: No module named 'no_such_module_xyz'", text)
+
     def test_error_comes_before_the_metadata(self):
         report = report_for("raise RuntimeError('boom')\n")
         lines = render(report, colors=False)

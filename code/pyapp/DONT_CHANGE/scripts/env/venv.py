@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import contextlib
 import os
+import platform
 import re
 import shutil
 import subprocess
@@ -61,7 +62,7 @@ from pyapp.DONT_CHANGE.scripts.env.pythons import (
     version_text,
     write_python_version_file,
 )
-from pyapp.DONT_CHANGE.scripts.env.uv import run_uv, uv_environment, uv_exe, uv_succeeds
+from pyapp.DONT_CHANGE.scripts.env.uv import run_uv, run_uv_captured, uv_environment, uv_exe, uv_succeeds
 from pyapp.DONT_CHANGE.scripts.errors import LaunchCancelled, SetupError
 from pyapp.DONT_CHANGE.scripts.runtime_state import FileLock
 
@@ -483,6 +484,31 @@ def add_packages(names: List[str], s: Optional[Union[ModuleType, SimpleNamespace
     reconcile_pyproject(s)
     run_uv(["add", *names], s=s)
     reconcile_pyproject()
+
+
+# uv's wording when a package has releases, but none that installs on this Python and Windows:
+# no wheel for the platform, the Python ABI or implementation, or a Requires-Python that excludes it.
+_NO_BUILD_HERE = re.compile(
+    r"matching (?:platform|Python ABI|Python implementation) tag|for the current platform"
+    r"|does not satisfy Python|requires-python",
+    re.IGNORECASE,
+)
+
+
+def install_problem(name: str, s: Optional[Union[ModuleType, SimpleNamespace]] = None) -> Optional[str]:
+    """Why a single package cannot be installed into the app's environment, in plain words, or None.
+
+    Asks uv for a dry run of just this package; None when that works (the failure came from the
+    combination with other packages) or uv's answer is something else.
+    """
+    _, _, err = run_uv_captured(["pip", "install", "--dry-run", "--python", VENV_PYTHON_EXE, name], check=False, s=s)
+    if "not found in the package registry" in err:
+        return f'there is no package "{name}" on PyPI.'
+    if _NO_BUILD_HERE.search(err):
+        version = ".".join(str(part) for part in sys.version_info[:2])
+        machine = {"AMD64": "64-bit", "ARM64": "ARM64", "x86": "32-bit"}.get(platform.machine(), platform.machine())
+        return f"it does not exist for Python {version} on Windows ({machine})."
+    return None
 
 
 def remove_packages(names: List[str], s: Optional[Union[ModuleType, SimpleNamespace]] = None) -> None:

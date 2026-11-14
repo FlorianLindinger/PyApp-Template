@@ -34,6 +34,9 @@ dependencies = {dependencies}
 
 [tool.uv]
 package = false
+# uv locks for every platform at once and would otherwise accept a release without a Windows build
+# (e.g. pyqt5-qt5 5.15.19 for PyQt5); the launcher only runs on 64-bit Windows.
+required-environments = ["sys_platform == 'win32' and platform_machine == 'AMD64'"]
 """
 
 

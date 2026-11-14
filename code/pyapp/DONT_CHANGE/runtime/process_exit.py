@@ -205,6 +205,7 @@ def local_module_exists(name: str) -> bool:
 def handle_missing_module(missing: str, app_id: str, new_terminal_was_created: bool) -> None:
     """Offer to install the distribution behind a ModuleNotFoundError, then restart."""
     from pyapp.DONT_CHANGE.scripts.env import venv
+    from pyapp.DONT_CHANGE.scripts.errors import SetupError
     from pyapp.DONT_CHANGE.scripts.import_finder import distribution_for_import
 
     top = missing.split(".", maxsplit=1)[0]
@@ -217,16 +218,43 @@ def handle_missing_module(missing: str, app_id: str, new_terminal_was_created: b
     distribution = distribution_for_import(top)
     if distribution != top:
         print_info(f'The import "{top}" is provided by the package "{distribution}".')
-    options = [
-        ("add", f'Add "{distribution}" to the packages in developer_settings.py and restart'),
-        ("install", f'Install "{distribution}" without recording it and restart'),
+    # Asked before the menu: a package that cannot be installed here gets one plain sentence
+    # instead of an "Add" choice that ends in uv's long resolver error. Offline or with an unclear
+    # answer this is None and the menu offers everything.
+    try:
+        problem = venv.install_problem(distribution)
+    except Exception:
+        note_ignored("checking whether the missing package can be installed")
+        problem = None
+    if problem:
+        advice = (
+            "Check the import in your code."
+            if problem.startswith("there is no package")
+            else "Use another package (often a newer major version of it) or an older python_version."
+        )
+        headline = f'"{distribution}" is not installed and cannot be: {problem}\n{advice}'
+        options: List[Tuple[str, str]] = []
+    else:
+        headline = f'The package for "{top}" is not installed.'
+        options = [
+            ("add", f'Add "{distribution}" to the packages in developer_settings.py and restart'),
+            ("install", f'Install "{distribution}" without recording it and restart'),
+        ]
+    options += [
         ("find", "Find all imports of the project, review them, add the missing ones and restart"),
         ("terminal", "Open a package terminal, then restart"),
         ("quit", "Quit"),
     ]
+    first_round = True
     while True:
         print()
-        print_warn(f'The package for "{top}" is not installed.')
+        if not first_round:
+            # After a failed choice: separates its output (uv's error) from the menu shown again.
+            colors, width = _report_style()
+            print(rule_line(width, colors))
+            print()
+        first_round = False
+        print_warn(headline)
         print_choices(label for _, label in options)
         # Enter: the last option, quit.
         answer = ask(f"What now? [1-{len(options)}, Enter = quit]").strip() or str(len(options))
@@ -235,6 +263,9 @@ def handle_missing_module(missing: str, app_id: str, new_terminal_was_created: b
         action = options[int(answer) - 1][0]
         if action == "quit":
             return
+        # Separates the menu from the output of what was chosen (uv, the import finder, ...).
+        colors, width = _report_style()
+        print(rule_line(width, colors))
         try:
             if action == "add":
                 venv.add_packages([distribution])
@@ -248,6 +279,12 @@ def handle_missing_module(missing: str, app_id: str, new_terminal_was_created: b
                 find_imports_and_add()
             else:
                 venv.open_package_terminal()
+        except SetupError as error:
+            # An expected failure (e.g. a version conflict with other packages): uv has already
+            # printed why, so a launcher traceback would only bury that reason.
+            print()
+            print_error(f"{error}\nuv's message above says why.")
+            continue
         except Exception as error:
             print_traceback(f"Package recovery failed: {error}")
             continue

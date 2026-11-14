@@ -4,6 +4,7 @@ import tempfile
 import types
 import unittest
 from pathlib import Path
+from typing import Any, Dict, List, Optional
 from unittest import mock
 
 import project_location  # also makes this checkout's code importable
@@ -68,13 +69,16 @@ class CancelTests(unittest.TestCase):
             ask=mock.Mock(return_value=""),
         ), mock.patch(
             "pyapp.DONT_CHANGE.scripts.import_finder.distribution_for_import", return_value="requests"
-        ), mock.patch.object(venv, "add_packages") as add, mock.patch("builtins.print"):
+        ), mock.patch.object(venv, "add_packages") as add, mock.patch.object(
+            venv, "install_problem", return_value=None
+        ), mock.patch("builtins.print"):
             process_exit.handle_missing_module("requests", "", False)
         add.assert_not_called()
 
     def test_digits_int_cannot_read_are_asked_again(self):
         """ "²".isdigit() is True, but int("²") fails: the menu must ask again, not crash."""
         from pyapp.DONT_CHANGE.runtime import process_exit
+        from pyapp.DONT_CHANGE.scripts.env import venv
 
         with mock.patch.multiple(
             process_exit,
@@ -82,8 +86,68 @@ class CancelTests(unittest.TestCase):
             ask=mock.Mock(side_effect=["\u00b2", ""]),
         ), mock.patch(
             "pyapp.DONT_CHANGE.scripts.import_finder.distribution_for_import", return_value="requests"
-        ), mock.patch("builtins.print"):
+        ), mock.patch.object(venv, "install_problem", return_value=None), mock.patch("builtins.print"):
             process_exit.handle_missing_module("requests", "", False)
+
+    def menu(self, problem: Optional[str], answers: List[str], add_error: Optional[Exception] = None) -> Dict[str, Any]:
+        """Run the missing-package menu for PySide2; returns the mocks of what it printed and did."""
+        from pyapp.DONT_CHANGE.runtime import process_exit
+        from pyapp.DONT_CHANGE.scripts.env import venv
+
+        with mock.patch.multiple(
+            process_exit,
+            local_module_exists=mock.Mock(return_value=False),
+            ask=mock.Mock(side_effect=answers),
+            print_traceback=mock.DEFAULT,
+            print_error=mock.DEFAULT,
+            print_warn=mock.DEFAULT,
+            print_choices=mock.DEFAULT,
+            restart_program=mock.DEFAULT,
+        ) as mocks, mock.patch(
+            "pyapp.DONT_CHANGE.scripts.import_finder.distribution_for_import", return_value="PySide2"
+        ), mock.patch.object(venv, "add_packages", side_effect=add_error) as add, mock.patch.object(
+            venv, "install_problem", return_value=problem
+        ), mock.patch("builtins.print"):
+            process_exit.handle_missing_module("PySide2", "", False)
+        mocks["add"] = add
+        return mocks
+
+    def test_a_package_that_cannot_exist_here_is_said_once_without_add_choices(self):
+        mocks = self.menu("it does not exist for Python 3.14 on Windows (64-bit).", [""])
+        headline = mocks["print_warn"].call_args[0][0]
+        self.assertIn("cannot be: it does not exist for Python 3.14", headline)
+        self.assertIn("older python_version", headline)
+        choices = list(mocks["print_choices"].call_args[0][0])
+        self.assertFalse([choice for choice in choices if choice.startswith(("Add", "Install"))])
+        mocks["add"].assert_not_called()
+
+    def test_a_failed_add_gives_a_message_not_a_traceback(self):
+        from pyapp.DONT_CHANGE.scripts.errors import SetupError
+
+        mocks = self.menu(None, ["1", ""], add_error=SetupError("uv add PySide2 failed (exit code 1)."))
+        mocks["print_traceback"].assert_not_called()
+        mocks["restart_program"].assert_not_called()
+        self.assertIn("uv's message above says why", mocks["print_error"].call_args[0][0])
+
+    def test_uv_answers_become_plain_reasons(self):
+        from pyapp.DONT_CHANGE.scripts.env import venv
+
+        for err, expected in (
+            (
+                "cause: Because all versions of pyside2 have no wheels with a matching platform tag",
+                "does not exist for",
+            ),
+            ("cause: ... have no wheels with a matching Python ABI tag (e.g., `cp314`)", "does not exist for"),
+            ("the requested Python version (>=3.14) does not satisfy Python>=3.6,<3.11", "does not exist for"),
+            ("cause: Because nope was not found in the package registry", "there is no package"),
+            ("cause: Because a==1 depends on b<2 and c depends on b>=2", None),
+        ):
+            with self.subTest(err=err), mock.patch.object(venv, "run_uv_captured", return_value=(1, "", err)):
+                problem = venv.install_problem("x")
+                if expected is None:
+                    self.assertIsNone(problem)
+                else:
+                    self.assertIn(expected, problem or "")
 
 
 class ExportTests(unittest.TestCase):

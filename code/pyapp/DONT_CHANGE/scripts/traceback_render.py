@@ -118,7 +118,18 @@ def render(
         for entry in chain:
             if entry.get("relation"):
                 lines += ["", _style(entry["relation"], "relation", colors), ""]
-            for frame in entry.get("frames") or []:
+            hidden = 0  # frames of Python's own frozen modules (the import system) skipped so far
+            frames = entry.get("frames") or []
+            for index, frame in enumerate(frames):
+                # A failed import passes through many "<frozen importlib._bootstrap>" frames that
+                # say nothing about your code; they are counted into one line instead.
+                if str(frame.get("filename", "")).startswith("<frozen "):
+                    hidden += 1
+                    following = frames[index + 1] if index + 1 < len(frames) else {}
+                    if not str(following.get("filename", "")).startswith("<frozen "):
+                        lines.append(_style(f"  ... {hidden} frames inside Python's import system", "meta", colors))
+                        hidden = 0
+                    continue
                 if frame.get("context") and lines[-1]:
                     lines.append("")  # space around frames that show source lines
                 lines += _frame_lines(frame, colors)

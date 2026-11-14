@@ -172,7 +172,8 @@ and `code\pyapp\icons\*.cmd` run `actions\gen_icons.py`.
   version is inside them, so a newer Python release never leaves `uv.lock` unused
   (`scripts/env/python_request.py`; uv has no range syntax, so ranges become `>=3.12,<3.15`).
 - `packages` is the dependency list. `pyapp/generated/pyproject.toml` is **generated** from it
-  (`scripts/env/pyproject.py`) with `requires-python = "==X.Y.*"`. Its header records the list
+  (`scripts/env/pyproject.py`) with `requires-python = "==X.Y.*"` and `required-environments` for
+  64-bit Windows, so uv never locks a release without a Windows build (PyQt5's `pyqt5-qt5` 5.15.19). Its header records the list
   it was generated from, so a change made in the file itself (e.g. `uv add` in the package
   terminal) is copied back into `packages` instead of being overwritten.
 - `pyapp/generated/uv.lock` pins every package with hashes; commit it together with the settings.
