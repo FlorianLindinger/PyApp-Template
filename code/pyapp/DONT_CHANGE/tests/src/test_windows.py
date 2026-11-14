@@ -130,9 +130,18 @@ class WindowsProcessTests(unittest.TestCase):
             ),
             encoding="utf-8",
         )
+        # A console of its own (for the Ctrl+C test), but hidden: a visible one flashes up during
+        # every test run and pre-push hook, and with Windows Terminal as the default terminal it
+        # opens a whole window that closes again like a crash.
+        startup = subprocess.STARTUPINFO()
+        if new_console:
+            startup.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+            startup.wShowWindow = 0  # SW_HIDE
         # Test subprocesses execute fixed fixture/helper code using the local interpreter or Git.
         process = subprocess.Popen(  # noqa: S603
-            [PYTHON, "-E", "-s", str(script)], creationflags=CREATE_NEW_CONSOLE if new_console else 0
+            [PYTHON, "-E", "-s", str(script)],
+            creationflags=CREATE_NEW_CONSOLE if new_console else 0,
+            startupinfo=startup,
         )
         self.addCleanup(lambda: process.kill() if process.poll() is None else None)
         self.assertTrue(wait_for(ready.exists), "the test instance did not start")
