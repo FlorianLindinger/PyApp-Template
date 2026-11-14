@@ -4,8 +4,12 @@ from __future__ import annotations
 
 import io
 import re
+import shutil
+import subprocess
 import sys
+import tempfile
 import unittest
+from pathlib import Path
 from typing import Dict, List, Tuple
 from unittest import mock
 
@@ -14,6 +18,10 @@ from project_location import DONT_CHANGE
 with mock.patch.object(sys, "path", [str(DONT_CHANGE / "pyapp_tools" / "src"), *sys.path]):
     import _paths  # noqa: F401 - imported by the tool; the tools folder is only on sys.path here
     import check_all as tool
+    import check_changelog
+
+# By label, not position: steps can be added in between.
+VERIFY = next(step for step in tool.STEPS if step.label.startswith("Verify launcher"))
 
 
 class CheckAllTests(unittest.TestCase):
@@ -21,7 +29,7 @@ class CheckAllTests(unittest.TestCase):
         output = io.StringIO()
         with mock.patch.object(tool.subprocess, "run") as run, mock.patch("sys.stdout", output):
             run.return_value = mock.Mock(returncode=1, stdout=b"Heading\r\nfixture.py:12:3: broken\r\n")
-            self.assertEqual(tool.run_step(tool.STEPS[2], "", hook=True), 1)
+            self.assertEqual(tool.run_step(VERIFY, "", hook=True), 1)
         self.assertNotIn("\r", output.getvalue())
         self.assertIn("Heading\nfixture.py:12:3: broken\n", output.getvalue())
 
@@ -37,7 +45,7 @@ class CheckAllTests(unittest.TestCase):
         output = io.StringIO()
         with mock.patch.object(tool.subprocess, "run") as run, mock.patch("sys.stdout", output):
             run.return_value = mock.Mock(returncode=1, stdout=b"Heading\napp.py:12:3: error\n")
-            self.assertEqual(tool.run_step(tool.STEPS[2], "", hook=True), 1)
+            self.assertEqual(tool.run_step(VERIFY, "", hook=True), 1)
         self.assertTrue(output.getvalue().startswith("Push blocked: Verify launcher"))
         self.assertIn('Click "Show Command Output" for details.', output.getvalue().splitlines()[0])
         self.assertIn("app.py:12:3: error", output.getvalue())
@@ -85,7 +93,7 @@ class CheckAllTests(unittest.TestCase):
     def test_successful_push_steps_are_quiet_and_skips_are_not_failures(self):
         output = io.StringIO()
         with mock.patch.object(tool.subprocess, "run") as run, mock.patch("sys.stdout", output):
-            for step, code in ((tool.STEPS[0], 0), (tool.STEPS[2], tool.SKIPPED)):
+            for step, code in ((tool.STEPS[0], 0), (VERIFY, tool.SKIPPED)):
                 run.return_value = mock.Mock(returncode=code, stdout=b"Heading\nMore output\n")
                 self.assertEqual(tool.run_step(step, "refs", hook=True), code)
         self.assertEqual(output.getvalue(), "")
@@ -149,6 +157,60 @@ class CheckAllTests(unittest.TestCase):
 
         with mock.patch.object(tool, "git", side_effect=fake_git):
             self.assertEqual(tool.refs_of_current_branch(), f"refs/heads/dev abc refs/heads/dev {tool.NO_COMMIT}\n")
+
+
+@unittest.skipIf(shutil.which("git") is None, "needs Git")
+class ChangelogTests(unittest.TestCase):
+    """pyapp_tools/check_changelog: a push to main that changes the launcher must touch its CHANGELOG.md."""
+
+    def setUp(self):  # pyrefly: ignore[missing-override-decorator]
+        folder = tempfile.TemporaryDirectory()
+        self.addCleanup(folder.cleanup)
+        self.root = Path(folder.name)
+        self.git("init", "-q", "-b", "main")
+        self.base = self.commit({"README.md": "x"})
+        patcher = mock.patch.object(check_changelog, "PROJECT_ROOT", self.root)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def git(self, *arguments: str) -> str:
+        # Fixed Git commands in a temporary test repository.
+        completed = subprocess.run(  # noqa: S603
+            ["git", "-C", str(self.root), "-c", "user.name=T", "-c", "user.email=t@example.com", *arguments],  # noqa: S607
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        return completed.stdout.strip()
+
+    def commit(self, files: Dict[str, str]) -> str:
+        for name, text in files.items():
+            path = self.root / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(text, encoding="utf-8")
+        self.git("add", ".")
+        self.git("commit", "-q", "-m", "change")
+        return self.git("rev-parse", "HEAD")
+
+    def push(self, branch: str = "main") -> List[str]:
+        """What the check reports for pushing HEAD onto `branch` of a remote that has the first commit."""
+        head = self.git("rev-parse", "HEAD")
+        return check_changelog.missing_changelog(f"refs/heads/x {head} refs/heads/{branch} {self.base}\n")
+
+    def test_launcher_changes_without_a_changelog_entry_are_reported(self):
+        self.commit({"code/pyapp/DONT_CHANGE/scripts/a.py": "x"})
+        self.assertEqual(self.push(), ["code/pyapp/DONT_CHANGE/scripts/a.py"])
+
+    def test_a_changelog_entry_in_any_pushed_commit_is_enough(self):
+        self.commit({"code/pyapp/DONT_CHANGE/scripts/a.py": "x"})
+        self.commit({"code/pyapp/DONT_CHANGE/CHANGELOG.md": "- a change"})
+        self.assertEqual(self.push(), [])
+
+    def test_other_branches_notes_and_app_files_are_not_checked(self):
+        self.commit({"code/pyapp/DONT_CHANGE/TODO.md": "x", "code/main.py": "x"})
+        self.assertEqual(self.push(), [])
+        self.commit({"code/pyapp/DONT_CHANGE/scripts/a.py": "x"})
+        self.assertEqual(self.push("dev"), [])
 
 
 if __name__ == "__main__":

@@ -1,4 +1,4 @@
-"""Run every check at once: the leak check, the repository check, verify_launcher and the tests.
+"""Run every check at once: leaks, the changelog (for main), the repository, verify_launcher, tests.
 
     check_all.bat             before a push or release: checks the commits this branch has that its
                               remote does not, runs everything and shows a summary
@@ -38,6 +38,8 @@ class Step(NamedTuple):
 
 STEPS = (
     Step("Leak check", [sys.executable, "-B", str(SOURCE / "check_git_leaks.py"), "--pushing"], reads_refs=True),
+    # Only for pushes to main (releases come from there); a no-op for other branches.
+    Step("Changelog", [sys.executable, "-B", str(SOURCE / "check_changelog.py"), "--pushing"], reads_refs=True),
     Step("Repository check", [sys.executable, "-B", str(SOURCE / "check_repository.py")]),
     Step("Verify launcher (Ruff, Pyrefly)", [sys.executable, "-B", str(SOURCE / "verify_launcher.py")], can_skip=True),
     Step("Tests", [sys.executable, "-B", "-X", "utf8", str(TEST_RUNNER), "-q", "-j", "0"]),

@@ -122,6 +122,32 @@ class ExistingProjectTests(unittest.TestCase):
                 path = os.path.normcase(str(Path(backend_settings.BACKEND_DIR) / relative))
                 self.assertIn(path, used, f"no launcher path points at code/pyapp/{relative} any more")
 
+    def test_nothing_protected_was_removed_since_the_last_release(self):
+        """Removing a protected entry breaks existing projects: only a new MAJOR version may do it."""
+        import json
+
+        try:
+            baseline = json.loads(Path(backend_settings.PROTECTED_BASELINE_PATH).read_text(encoding="utf-8"))
+        except FileNotFoundError:
+            self.skipTest("no release has saved the protected lists yet")
+        released_major = int(str(baseline["launcher_version"]).split(".")[0])
+        current_major = int(backend_settings.LAUNCHER_VERSION.split(".")[0])
+        if current_major > released_major:
+            self.skipTest("a new MAJOR version may remove protected entries (describe the steps in CHANGELOG.md)")
+        removed = {
+            name: sorted(set(baseline.get(name, [])) - set(entries))
+            for name, entries in backend_settings.PROTECTED.items()
+            if set(baseline.get(name, [])) - set(entries)
+        }
+        if removed:
+            # One readable sentence: its first line is what Git clients show when the commit is stopped.
+            self.fail(
+                f"taken off since launcher {baseline['launcher_version']}: "
+                + "; ".join(f"{name} {', '.join(entries)}" for name, entries in removed.items())
+                + ". Existing projects rely on them: keep them (and the file, command or setting itself), "
+                "or raise the MAJOR version of LAUNCHER_VERSION and describe in CHANGELOG.md what projects have to change"
+            )
+
     def test_protected_setting_names_still_exist(self):
         defaults = config.default_setting_expressions(backend_settings.DEFAULT_SETTINGS_PATH)
         self.assertEqual(sorted(set(backend_settings.PROTECTED_SETTING_NAMES) - set(defaults)), [])

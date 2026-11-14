@@ -34,7 +34,7 @@ uses it). `src/groups.py` defines the groups; a new test file must be added to o
 | `test_console_colors.py` | only hexadecimal color arguments can reach the Windows color command; a failure turns the window black; the `wt.exe` command line |
 | `test_banner.py` | the banner font renders the app name, supports German letters and Latin-1, skips missing characters; the console font it needs |
 | `test_icons.py` | icons always use the bundled overlays; generated icons update silently, a question per icon for placed ones; small sizes in linear light; every `.ico` size |
-| `test_dev_menu.py` | the dev tools menu offers every command exactly once; every prompt can be cancelled; missing-package recovery |
+| `test_dev_menu.py` | the dev tools menu offers every command exactly once; every prompt can be cancelled; missing-package recovery; `run-tests` finds the app's tests folders (never the launcher's) and runs them with pytest or unittest |
 | `test_fallback.py` | `actions/start_without_launcher.py` from a copy that has nothing else of the launcher: settings, arguments, environment, exit code, missing packages, unreadable settings |
 | `test_windows.py` | Windows only: registry records with job names, Stop ends the whole job (incl. grandchildren), graceful Stop via Ctrl+C, file lock |
 
@@ -65,14 +65,14 @@ uses it). `src/groups.py` defines the groups; a new test file must be added to o
 | `test_git_hooks.py` | Real shell hooks in disposable repositories: failure diagnostics reach stderr and push refs reach the check |
 | `test_git_leaks.py` | `pyapp_tools/check_git_leaks`: what counts as a leak; secrets are never printed in full |
 | `test_staged_ruff.py` | `pyapp_tools/check_staged_ruff` (pre-commit hook): Ruff on the staged launcher files |
-| `test_check_all.py` | `pyapp_tools/check_all` (pre-push hook): every check at once, with a summary |
+| `test_check_all.py` | `pyapp_tools/check_all` (pre-push hook): every check at once, with a summary, links to the lines in failed output; `check_changelog`: a push to main with launcher changes needs a `CHANGELOG.md` entry |
 | `test_repository_check.py` | `pyapp_tools/check_repository`: problems that break clones, other PCs or Windows |
 
 ### `tools`: the maintainer tools in `pyapp_tools`
 
 | File | Covers |
 | --- | --- |
-| `test_release.py` | `pyapp_tools/release`: version numbers, the changelog and the zip |
+| `test_release.py` | `pyapp_tools/release`: version numbers, the changelog, the zip, the saved protected lists, the slow checks (unless `--quick`) |
 | `test_tools.py` | `pyapp_tools/fresh_clone_test` and `test_all_pythons`: the parts that can be checked without a clone |
 | `test_verify_launcher.py` | diagnostic warnings, tool errors, successful checks and continuing after a failed check |
 | `test_import_map.py` | `make_import_map`: approved HTTPS download sources, redirect restrictions, range headers and byte responses without network access, the cache |
@@ -81,9 +81,9 @@ uses it). `src/groups.py` defines the groups; a new test file must be added to o
 
 | File | Covers |
 | --- | --- |
-| `test_files.py` | CRLF batch and settings files, every referenced script exists, every tool has `main()`, the README file tables, every test file in a group with its launcher |
+| `test_files.py` | CRLF batch and settings files, every referenced script exists, every tool has `main()`, the README file tables, links in every README (files and headings), every test file in a group with its launcher |
 | `test_python38.py` | Python 3.8 compatibility of the launcher: lint targets, syntax and library calls, annotations that runtime type inspection can evaluate |
-| `test_template_contract.py` | what must stay stable: the repository name in the Actions, what existing projects expect in `DONT_CHANGE` (`backend_settings.PROTECTED_PATHS` exist and are all that files outside use; the fallback start uses only the standard library) |
+| `test_template_contract.py` | what must stay stable: the repository name in the Actions, what existing projects expect in `DONT_CHANGE` (the `PROTECTED_*` lists of `backend_settings.py` match the code, files outside use nothing else, nothing was taken off since the last release before a MAJOR version; the fallback start uses only the standard library) |
 
 Manual release check (not automated): Setup, start twice, Stop on the example window, the
 open shortcuts, `status.cmd`, `change_python`, `make_self_contained`, a moved and a copied folder.

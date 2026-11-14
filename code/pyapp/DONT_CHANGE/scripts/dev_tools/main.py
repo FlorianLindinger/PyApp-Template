@@ -24,6 +24,7 @@ from pyapp.DONT_CHANGE.scripts.console_tools import (
     styled,
     wait_for_enter,
 )
+from pyapp.DONT_CHANGE.scripts.dev_tools.app_tests import cmd_run_tests
 from pyapp.DONT_CHANGE.scripts.dev_tools.housekeeping import cmd_clean, cmd_remove_shortcuts, cmd_status, cmd_test
 from pyapp.DONT_CHANGE.scripts.dev_tools.package_list import cmd_list_packages
 from pyapp.DONT_CHANGE.scripts.dev_tools.packages import (
@@ -57,6 +58,7 @@ COMMANDS = {
     "clean": cmd_clean,
     "remove-shortcuts": cmd_remove_shortcuts,
     "status": cmd_status,
+    "run-tests": cmd_run_tests,
     "test": cmd_test,
 }
 
@@ -65,7 +67,7 @@ COMMANDS = {
 MENU_GROUPS = (
     ("Packages", ("list-packages", "add", "remove", "upgrade", "sync", "find-imports", "terminal", "export")),
     ("Python", ("change-python", "update-python")),
-    ("Project", ("status", "clean", "remove-shortcuts", "make-self-contained", "test")),
+    ("Project", ("run-tests", "status", "clean", "remove-shortcuts", "make-self-contained", "test")),
 )
 # For the commands that do not start with a heading of their own.
 HEADINGS = {

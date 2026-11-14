@@ -30,7 +30,7 @@ class HookOutputTests(unittest.TestCase):
             source.mkdir(parents=True)
             (launcher / "tmp").mkdir()
             (launcher / "tmp" / "runtime.cmd").write_text(f'set "PYAPP_PYTHON={sys.executable}"\n', encoding="utf-8")
-            for tool in ("check_git_leaks", "check_staged_ruff", "check_all"):
+            for tool in ("check_git_leaks", "check_staged_ruff", "check_protected", "check_all"):
                 script = ""
                 if tool == failing_tool:
                     script = "import sys\n"
@@ -63,6 +63,9 @@ class HookOutputTests(unittest.TestCase):
 
     def test_commit_ruff_diagnostics_reach_stderr(self):
         self.assert_failure_is_visible(self.run_hook("pre-commit", "check_staged_ruff"))
+
+    def test_commit_protected_diagnostics_reach_stderr(self):
+        self.assert_failure_is_visible(self.run_hook("pre-commit", "check_protected"))
 
     def test_a_passing_commit_is_silent_outside_a_terminal(self):
         # The success line is only for terminals; editors' Git output stays empty.

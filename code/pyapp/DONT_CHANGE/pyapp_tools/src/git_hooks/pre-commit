@@ -1,7 +1,8 @@
 #!/bin/sh
 # Stops a commit when the staged changes contain secrets or personal data, so nothing has to be
 # taken out of a commit later (git_hooks/pre-push checks again before publishing), or when the
-# staged launcher files fail Ruff's lint or format check.
+# staged launcher files fail Ruff's lint or format check, or when what existing projects rely on
+# (backend_settings PROTECTED_*) would break.
 # To use it in a clone: git config core.hooksPath code/pyapp/DONT_CHANGE/pyapp_tools/src/git_hooks
 # To commit anyway, once: git commit --no-verify
 
@@ -26,10 +27,11 @@ started=$(date +%s%N 2>/dev/null)
 # Keep diagnostics on the stream Git clients display when a command fails.
 "$python" -B "$launcher/pyapp_tools/src/check_git_leaks.py" --committing >&2 || exit 1
 "$python" -B "$launcher/pyapp_tools/src/check_staged_ruff.py" >&2 || exit 1
+"$python" -B "$launcher/pyapp_tools/src/check_protected.py" >&2 || exit 1
 
 # Silent in editors; in a terminal one line, so a passing commit is visibly checked.
 if [ -t 2 ]; then
     seconds=$(awk -v a="$started" -v b="$(date +%s%N 2>/dev/null)" 'BEGIN { if (a && b) printf "%.1f", (b - a) / 1e9 }')
     if [ -n "$NO_COLOR" ]; then green=""; reset=""; else green=$(printf '\033[32m'); reset=$(printf '\033[0m'); fi
-    printf '%s✓ pre-commit: no leaks, Ruff clean%s%s\n' "$green" "${seconds:+ ($seconds s)}" "$reset" >&2
+    printf '%s✓ pre-commit: no leaks, Ruff clean, protected intact%s%s\n' "$green" "${seconds:+ ($seconds s)}" "$reset" >&2
 fi

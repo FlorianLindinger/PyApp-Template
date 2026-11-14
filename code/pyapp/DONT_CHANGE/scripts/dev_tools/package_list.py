@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import json
 import re
-from typing import Dict, List, NamedTuple, Optional, Sequence, Set, Tuple
+from typing import Dict, FrozenSet, List, NamedTuple, Optional, Sequence, Set, Tuple
 
 from pyapp.DONT_CHANGE import backend_settings as paths
 from pyapp.DONT_CHANGE.scripts.config import (
@@ -138,14 +138,64 @@ def _version_note(name: str, locked: Dict[str, Locked], installed: Dict[str, str
     return ""
 
 
+class Extras(NamedTuple):
+    """What the report can add: unused main packages, and newer versions (only with --outdated)."""
+
+    unused: FrozenSet[str]  # main packages whose imports no file of the code folder uses
+    newest: Optional[Dict[str, str]]  # {name: newest version on PyPI}; None: not checked
+    allowed: Dict[str, str]  # {name: version an upgrade within the limits would install}
+
+
+def parse_outdated(text: str) -> Dict[str, str]:
+    """{normalized name: newest version} from "uv pip list --outdated --format json"."""
+    try:
+        rows = json.loads(text or "[]")
+    except ValueError:
+        return {}
+    return {normalized(str(row["name"])): str(row["latest_version"]) for row in rows if "latest_version" in row}
+
+
+def parse_upgrades(text: str) -> Dict[str, str]:
+    """{normalized name: new version} from "uv lock --upgrade --dry-run" ("Update idna v3.4 -> v3.20")."""
+    return {
+        normalized(name): new for name, new in re.findall(r"^Update (\S+) v\S+ -> v(\S+)", text, flags=re.MULTILINE)
+    }
+
+
+def unused_packages(main: Set[str], providers: Dict[str, List[str]], imported: Set[str]) -> Set[str]:
+    """Main packages that provide import names, none of which the code imports.
+
+    providers = {import name: distributions} of the installed packages; a package whose import
+    names are unknown (not installed) is not judged.
+    """
+    imports: Dict[str, Set[str]] = {}
+    for import_name, distributions in providers.items():
+        for distribution in distributions:
+            imports.setdefault(normalized(distribution), set()).add(import_name)
+    return {name for name in main if name in imports and not imports[name] & imported}
+
+
+def _update_note(name: str, extras: Extras) -> str:
+    """What an upgrade would bring ("" if the package is current or was not checked)."""
+    if extras.newest is None or name not in extras.newest:
+        return ""
+    newest = extras.newest[name]
+    if name in extras.allowed:
+        note = f"update: {extras.allowed[name]} (upgrade_packages)"
+        return note if extras.allowed[name] == newest else f"{note}, newest {newest} needs other limits"
+    return f"newest {newest}, held back by the limits"
+
+
 def show(
     declared: Sequence[Tuple[str, str]],
     locked: Dict[str, Locked],
     installed: Optional[Dict[str, str]],
+    extras: Optional[Extras] = None,
 ) -> int:
     """Print the report; declared = (requirement, where it is written). Returns the number of problems."""
     main = {requirement_key(requirement) for requirement, _ in declared}
     problems = 0
+    extras = extras or Extras(frozenset(), None, {})
 
     print_heading(f"Main packages ({len(declared)})")
     print_info("  What the app asks for: packages in developer_settings.py (and requirements_path).")
@@ -167,6 +217,10 @@ def show(
         if installed is not None and _version_note(name, locked, installed):
             notes.append(_version_note(name, locked, installed))
             problems += 1
+        if name in extras.unused:
+            notes.append("not imported in code/ (still needed, e.g. as a tool or plugin?)")
+        if _update_note(name, extras):
+            notes.append(_update_note(name, extras))
         rows.append([name, limit, _shown_version(locked[name].version), "  ".join(notes)])
     if rows:
         _table([["package", "limit", "version", ""], *rows], ["", ANSI_DIM, ANSI_GOOD, ANSI_DIM])
@@ -185,6 +239,7 @@ def show(
             needed += f"  (for {', '.join(served)})"
         note = _version_note(name, locked, installed) if installed is not None else ""
         problems += bool(note)
+        note = "  ".join(part for part in (note, _update_note(name, extras)) if part)
         rows.append([name, _shown_version(locked[name].version), "needed by " + needed if needed else "", note])
     if rows:
         _table(rows, ["", ANSI_GOOD, ANSI_DIM, ANSI_BOLD + "\x1b[33m"])
@@ -199,8 +254,29 @@ def show(
     return problems
 
 
-def cmd_list_packages(_arguments: List[str]) -> None:
-    """Show the main packages, their dependencies, and anything not as uv.lock says."""
+def read_extras(main: Set[str], outdated: bool) -> Tuple[Extras, str]:
+    """Unused main packages (offline), and newer versions if asked (online); plus a problem note."""
+    from pyapp.DONT_CHANGE.scripts.import_finder import imports_in_project, installed_providers
+
+    imported, _ = imports_in_project()
+    unused = frozenset(unused_packages(main, installed_providers(), set(imported)))
+    if not outdated:
+        return Extras(unused, None, {}), ""
+    code, listed, _ = run_uv_captured(
+        ["pip", "list", "--outdated", "--format", "json", "--python", paths.VENV_PYTHON_EXE], check=False
+    )
+    if code:
+        return Extras(unused, None, {}), "Newer versions could not be checked (no internet?)."
+    # What upgrade_packages would install: a resolution within the limits that writes nothing.
+    _, out, err = run_uv_captured(["lock", "--upgrade", "--dry-run"], check=False)
+    return Extras(unused, parse_outdated(listed), parse_upgrades(out + "\n" + err)), ""
+
+
+def cmd_list_packages(arguments: List[str]) -> None:
+    """Show the main packages, their dependencies, and anything not as uv.lock says.
+
+    --outdated also asks PyPI for newer versions (needs internet).
+    """
     s = settings()
     app_python = prepare(s)  # also brings pyproject.toml, uv.lock and .venv up to date
     declared = [(requirement, "packages") for requirement in package_entries(s)]
@@ -213,6 +289,7 @@ def cmd_list_packages(_arguments: List[str]) -> None:
         ["pip", "list", "--format", "json", "--python", paths.VENV_PYTHON_EXE], check=False
     )
     installed = parse_installed(listed) if code == 0 else None
+    extras, extras_problem = read_extras({requirement_key(r) for r, _ in declared}, "--outdated" in arguments)
 
     print_heading("Packages")
     print_fields(
@@ -222,8 +299,20 @@ def cmd_list_packages(_arguments: List[str]) -> None:
             ("Lock file", display_path(paths.UV_LOCK_PATH)),
         ]
     )
-    problems = show(declared, locked, installed)
+    problems = show(declared, locked, installed, extras)
     print()
+    if extras_problem:
+        print_warn(extras_problem)
+    if extras.newest is not None:
+        newer = sorted(set(extras.newest) & set(locked))
+        allowed = sorted(set(extras.allowed) & set(locked))
+        print_info(
+            f"{len(newer)} package(s) have newer versions; upgrade_packages installs the {len(allowed)} the limits allow."
+            if newer
+            else "Every package is at its newest version."
+        )
+    elif not extras_problem:
+        print_info("list_packages.cmd --outdated (or outdated_packages.cmd) also shows newer versions.")
     if installed is None:
         print_warn("The installed packages could not be read; only uv.lock is shown.")
     elif problems:

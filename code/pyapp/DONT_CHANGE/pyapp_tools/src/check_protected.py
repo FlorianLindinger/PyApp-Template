@@ -1,0 +1,77 @@
+"""What existing projects rely on, before each commit (git_hooks/pre-commit).
+
+Runs tests/src/test_template_contract.py (well under a second) when the staged changes touch
+code/pyapp: the lists in backend_settings (PROTECTED_*) must still match the code, and nothing
+may be taken off them before a new MAJOR version. It checks the files on disk, like the tests.
+
+Usage: check_protected.py   (exit code 1: something existing projects rely on would break)
+"""
+
+from __future__ import annotations
+
+import re
+import subprocess
+import sys
+from typing import List
+
+import _ui
+from _paths import DONT_CHANGE_DIR, PROJECT_ROOT
+from check_all import with_links
+
+TEST_FILE = "test_template_contract.py"
+RUNNER = DONT_CHANGE_DIR / "tests" / "src" / "run_regressions.py"
+
+
+def staged_paths() -> List[str]:
+    # A fixed Git command in the project folder.
+    completed = subprocess.run(  # noqa: S603
+        ["git", "-C", str(PROJECT_ROOT), "diff", "--cached", "--name-only", "-z"],  # noqa: S607
+        capture_output=True,
+        check=False,
+    )
+    return [name for name in completed.stdout.decode("utf-8", "replace").split("\0") if name]
+
+
+def first_problem(output: str) -> str:
+    """The first failure's message (else its test's name), for the one line Git clients show."""
+    message = re.search(r"^\w*(?:Error|Exception): (.+)$", output, re.MULTILINE)
+    if message:
+        return message.group(1).split(". ")[0][:200]  # the first sentence: the rest is in the details
+    test = re.search(r"^(?:FAIL|ERROR): (\w+)", output, re.MULTILINE)
+    return test.group(1).replace("test_", "", 1).replace("_", " ") if test else "the contract test failed"
+
+
+def main() -> int:
+    if not any(name.startswith("code/pyapp/") for name in staged_paths()):
+        return 0  # nothing of the launcher or the project files it relies on is being committed
+    if not RUNNER.is_file():
+        return 0  # a project without the launcher's tests
+    # This Python runs this checkout's own test runner on one fixed test file.
+    completed = subprocess.run(  # noqa: S603
+        [sys.executable, "-B", "-X", "utf8", str(RUNNER), TEST_FILE, "-q"],
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+    if completed.returncode == 0:
+        return 0  # silent: this runs on every commit
+    output = "\n".join(completed.stdout.decode("utf-8", "replace").splitlines()).strip()
+    _ui.info(
+        f"Commit blocked: protected (backend_settings.PROTECTED_*): {first_problem(output)}. "
+        'Click "Show Command Output" for details.'
+    )
+    _ui.heading(f"Output of {TEST_FILE}")
+    _ui.info(with_links(output))
+    _ui.blank_line()
+    _ui.error(
+        "Existing projects rely on what backend_settings.py lists as PROTECTED_*: their .cmd files, shortcuts,\n"
+        "settings and generated files. Keep it, or update the list together with the code. Taking an entry\n"
+        "off needs a new MAJOR version (LAUNCHER_VERSION) and steps in CHANGELOG.md.\n"
+        "To commit anyway, once: git commit --no-verify"
+    )
+    return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(_ui.run(main))

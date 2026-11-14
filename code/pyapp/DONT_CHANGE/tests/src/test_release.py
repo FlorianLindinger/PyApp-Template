@@ -78,22 +78,51 @@ class ZipTests(unittest.TestCase):
 
 
 class FailedReleaseTests(unittest.TestCase):
-    def test_a_failed_zip_leaves_version_and_changelog_unchanged(self):
+    def release_in(self, folder: str, build_zip: mock.Mock) -> Path:
+        """release.main(["patch"]) on fake files in folder; returns the protected baseline path."""
+        settings, changelog = Path(folder) / "backend_settings.py", Path(folder) / "CHANGELOG.md"
+        settings.write_bytes(b'LAUNCHER_VERSION = "1.2.3"\r\nPROTECTED = {"PROTECTED_PATHS": ["run.bat"]}\r\n')
+        changelog.write_bytes(CHANGELOG.replace("\n", "\r\n").encode("utf-8"))
+        baseline = Path(folder) / "protected_baseline.json"
+        with mock.patch.multiple(
+            release,
+            SETTINGS_PATH=settings,
+            CHANGELOG_PATH=changelog,
+            BASELINE_PATH=baseline,
+            git=mock.Mock(return_value=""),
+            tracked_launcher_files=mock.Mock(return_value=[]),
+            build_zip=build_zip,
+        ), mock.patch("builtins.print"):
+            release.main(["patch", "--skip-tests"])
+        return baseline
+
+    def test_a_failed_zip_leaves_version_changelog_and_protected_lists_unchanged(self):
         with tempfile.TemporaryDirectory() as folder:
-            settings, changelog = Path(folder) / "backend_settings.py", Path(folder) / "CHANGELOG.md"
-            settings.write_bytes(b'LAUNCHER_VERSION = "1.2.3"\r\n')
-            changelog.write_bytes(CHANGELOG.replace("\n", "\r\n").encode("utf-8"))
-            before = (settings.read_bytes(), changelog.read_bytes())
-            with mock.patch.multiple(
-                release,
-                SETTINGS_PATH=settings,
-                CHANGELOG_PATH=changelog,
-                git=mock.Mock(return_value=""),
-                tracked_launcher_files=mock.Mock(return_value=[]),
-                build_zip=mock.Mock(side_effect=OSError("disk full")),
-            ), mock.patch("builtins.print"), self.assertRaises(OSError):
-                release.main(["patch", "--skip-tests"])
-            self.assertEqual((settings.read_bytes(), changelog.read_bytes()), before)
+            files = (Path(folder) / "backend_settings.py", Path(folder) / "CHANGELOG.md")
+            with self.assertRaises(OSError):
+                self.release_in(folder, mock.Mock(side_effect=OSError("disk full")))
+            self.assertIn(b'"1.2.3"', files[0].read_bytes())
+            self.assertIn(b"## unreleased", files[1].read_bytes())
+            self.assertFalse((Path(folder) / "protected_baseline.json").exists())
+
+    def test_a_release_saves_what_is_protected_with_its_version(self):
+        import json
+
+        with tempfile.TemporaryDirectory() as folder:
+            zip_path = Path(folder) / "release.zip"
+            zip_path.write_bytes(b"")
+            baseline = self.release_in(folder, mock.Mock(return_value=zip_path))
+            data = json.loads(baseline.read_text(encoding="utf-8"))
+        self.assertEqual((data["launcher_version"], data["PROTECTED_PATHS"]), ("1.2.4", ["run.bat"]))
+
+    def test_the_slow_checks_run_unless_quick(self):
+        with mock.patch.object(release, "slow_checks_pass", return_value=False) as slow, mock.patch.object(
+            release, "tests_pass", return_value=True
+        ), mock.patch.object(release, "git", return_value=""), mock.patch("builtins.print"):
+            self.assertEqual(release.main([]), 1)  # a failed slow check stops the release
+            slow.assert_called_once()
+            self.assertEqual(release.main(["--quick"]), 0)
+            slow.assert_called_once()
 
     def test_a_wrong_version_in_the_zip_is_refused_without_leaving_a_file(self):
         with tempfile.TemporaryDirectory() as folder:

@@ -2,6 +2,7 @@
 
 import re
 import unittest
+from typing import Dict, Set
 
 from project_location import CODE, DONT_CHANGE, PROJECT_ROOT
 
@@ -97,6 +98,64 @@ class LauncherFileTests(unittest.TestCase):
         newest = re.search(r"^## (\d+\.\d+\.\d+)", changelog, re.MULTILINE)
         self.assertIsNotNone(newest, "CHANGELOG.md has no version heading")
         self.assertEqual(newest.group(1), version.group(1), "the newest CHANGELOG.md entry must match LAUNCHER_VERSION")
+
+
+# Folders whose README files are not the project's documentation (installed or generated content).
+SKIPPED_PARTS = {".git", ".venv", "node_modules", "tmp", "__pycache__", ".ruff_cache", "site-packages"}
+MARKDOWN_LINK = re.compile(r"(?<!!)\[[^\]]*\]\(([^)\s]+)(?:\s+\"[^\"]*\")?\)")
+
+
+def readme_files():
+    return [path for path in PROJECT_ROOT.rglob("README.md") if not SKIPPED_PARTS.intersection(path.parts)]
+
+
+def heading_anchors(text: str):
+    """The #anchors GitHub gives a document's headings (lowercase, punctuation dropped, "-" for spaces)."""
+    anchors: Set[str] = set()
+    seen: Dict[str, int] = {}
+    for heading in re.findall(r"(?m)^#{1,6}\s+(.+?)\s*#*\s*$", re.sub(r"```.*?```", "", text, flags=re.DOTALL)):
+        slug = re.sub(r"\[([^\]]*)\]\([^)]*\)", r"\1", heading)  # a link in a heading keeps its text
+        slug = re.sub(r"[^\w\- ]", "", re.sub(r"<[^>]+>", "", slug).strip().lower()).replace(" ", "-")
+        count = seen.get(slug, 0)
+        seen[slug] = count + 1
+        anchors.add(slug if count == 0 else f"{slug}-{count}")  # GitHub numbers repeated headings
+    return anchors
+
+
+class ReadmeLinkTests(unittest.TestCase):
+    def test_links_in_the_readmes_point_to_existing_files_and_headings(self):
+        import urllib.parse
+
+        files = readme_files()
+        self.assertGreaterEqual(len(files), 5)
+        broken = []
+        for readme in files:
+            text = re.sub(r"```.*?```", "", readme.read_text(encoding="utf-8"), flags=re.DOTALL)  # not code examples
+            for target in MARKDOWN_LINK.findall(text):
+                if re.match(r"[a-z][a-z0-9+.-]*:", target):
+                    continue  # https:, mailto:, ...: not checked offline
+                path, _, anchor = target.partition("#")
+                document = (readme.parent / urllib.parse.unquote(path)).resolve() if path else readme
+                if PROJECT_ROOT.resolve() not in document.parents and document != PROJECT_ROOT.resolve():
+                    continue  # leaves the repository, e.g. GitHub's ../../archive/... download link
+                place = f"{readme.relative_to(PROJECT_ROOT).as_posix()}: {target}"
+                if not document.exists():
+                    broken.append(place + "  (no such file)")
+                elif (
+                    anchor
+                    and document.suffix == ".md"
+                    and anchor not in heading_anchors(document.read_text(encoding="utf-8"))
+                ):
+                    broken.append(place + "  (no such heading)")
+        self.assertEqual(broken, [], "broken links in README files")
+
+    def test_heading_anchors_follow_github(self):
+        # The README headings use an en dash (U+2013), which GitHub drops like other punctuation.
+        text = "# Tests, linting and type checking\n## `actions/` \u2013 entry tools\n## Notes\n## Notes\n"
+        self.assertEqual(
+            heading_anchors(text),
+            {"tests-linting-and-type-checking", "actions--entry-tools", "notes", "notes-1"},
+        )
 
 
 class TestFolderTests(unittest.TestCase):

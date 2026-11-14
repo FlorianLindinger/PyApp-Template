@@ -25,5 +25,7 @@ default Python when that environment is missing or broken. It shows the main scr
 packages (installed or missing) and their folders first. There is no setup, no package installation,
 no log, no crash log and no STOP shortcut. Run Setup to repair the launcher.
 
+The app's tests go into [tests](tests/test_example.py) as `test_*.py` files; [run_tests.cmd](dev_tools/run_tests.cmd) runs them.
+
 For normal development edit `../main.py`, `../settings.py` and `developer_settings.py`.
 See the [pyapp internals](DONT_CHANGE/README.md) when maintaining the template itself.

@@ -13,7 +13,7 @@ import time
 import traceback
 from pathlib import Path
 from types import ModuleType, SimpleNamespace
-from typing import Optional, Union
+from typing import TYPE_CHECKING, Optional, Union
 
 # Last, so app modules named like standard-library modules (code/random.py, ...) cannot shadow them.
 sys.path.append(str(Path(__file__).resolve().parents[3]))
@@ -48,8 +48,14 @@ from pyapp.DONT_CHANGE.scripts.runtime_state import (
     unique_log_path,
 )
 
+# Popen became subscriptable in 3.9; runtime inspection (typing.get_type_hints) on 3.8 uses the class.
+if TYPE_CHECKING:
+    BinaryProcess = subprocess.Popen[bytes]
+else:
+    BinaryProcess = subprocess.Popen
 
-def end_started_app(child: Optional[subprocess.Popen[bytes]]) -> None:
+
+def end_started_app(child: Optional[BinaryProcess]) -> None:
     """End an app this watchdog started but can no longer supervise, with its child processes.
 
     Without this, a watchdog error after the start would leave the app running unregistered, so
@@ -216,7 +222,7 @@ def main() -> None:
     log_path = ""
     registered = False
     exit_handled = False
-    child: Optional[subprocess.Popen[bytes]] = None
+    child: Optional[BinaryProcess] = None
     try:
         if launch_mode not in ("wt", "conhost", "browser", "no_terminal"):
             raise ValueError("Unknown launch mode: " + launch_mode)

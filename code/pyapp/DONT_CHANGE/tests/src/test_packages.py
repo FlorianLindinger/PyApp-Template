@@ -356,6 +356,32 @@ class PackageListTests(unittest.TestCase):
         self.assertRegex(text, r"mdurl\s+0\.1\.2\s+needed by markdown-it-py  \(for rich\)\s+not installed")
         self.assertRegex(text, r"Installed by hand \(1\)[\s\S]*six\s+1\.16\.0")
 
+    def test_newer_versions_within_and_beyond_the_limits(self):
+        newest = self.tool.parse_outdated(
+            '[{"name": "idna", "version": "3.4", "latest_version": "3.20"},'
+            ' {"name": "rich", "version": "13.9.4", "latest_version": "15.0.0"},'
+            ' {"name": "certifi", "version": "1", "latest_version": "3"}]'
+        )
+        # uv lock --upgrade --dry-run: what an upgrade within the limits would install.
+        allowed = self.tool.parse_upgrades(
+            "Resolved 11 packages in 233ms\nUpdate idna v3.4 -> v3.20\nUpdate certifi v1 -> v2\n"
+        )
+        extras = self.tool.Extras(frozenset(), newest, allowed)
+        self.assertEqual(self.tool._update_note("idna", extras), "update: 3.20 (upgrade_packages)")
+        self.assertEqual(self.tool._update_note("rich", extras), "newest 15.0.0, held back by the limits")
+        self.assertEqual(
+            self.tool._update_note("certifi", extras), "update: 2 (upgrade_packages), newest 3 needs other limits"
+        )
+        self.assertEqual(self.tool._update_note("mdurl", extras), "")  # current
+        self.assertEqual(self.tool._update_note("idna", self.tool.Extras(frozenset(), None, {})), "")  # not checked
+
+    def test_main_packages_no_code_imports_are_marked(self):
+        providers = {"requests": ["requests"], "rich": ["rich"], "yaml": ["PyYAML"], "_yaml": ["PyYAML"]}
+        unused = self.tool.unused_packages(
+            {"requests", "rich", "pyyaml", "not-installed"}, providers, {"requests", "yaml"}
+        )
+        self.assertEqual(unused, {"rich"})  # PyYAML is used through "yaml"; unknown packages are not judged
+
     def test_installed_packages_are_read_from_uv_pip_list(self):
         self.assertEqual(
             self.tool.parse_installed('[{"name": "Markdown_It_Py", "version": "4.3.0"}]'), {"markdown-it-py": "4.3.0"}

@@ -3,7 +3,11 @@
     release.bat                     only check whether a release is possible
     release.bat patch               also: 1.2.3 -> 1.2.4 (minor, major, or an exact version)
     release.bat 1.0.0 --allow-dirty release although there are uncommitted changes
+    release.bat patch --quick       only the tests on this Python (not test_all_pythons, fresh_clone_test)
 
+Before anything changes, it runs the launcher tests, test_all_pythons (Python 3.8 and the newest)
+and fresh_clone_test. With the new version it also saves backend_settings' PROTECTED_* lists in
+data/protected_baseline.json: until the next MAJOR version, the tests refuse to take an entry off.
 The notes come from the "## unreleased" section of CHANGELOG.md, which becomes "## <version> - <date>";
 a new empty section is added above it. The zip holds the files of DONT_CHANGE that Git tracks, in a
 top-level DONT_CHANGE folder, and is written to DONT_CHANGE/pyapp_tools/zip_releases (Git keeps only its
@@ -14,8 +18,10 @@ from __future__ import annotations
 
 import argparse
 import datetime
+import json
 import os
 import re
+import runpy
 import subprocess
 import sys
 import zipfile
@@ -27,6 +33,7 @@ from _paths import DONT_CHANGE_DIR, PROJECT_ROOT
 
 SETTINGS_PATH = DONT_CHANGE_DIR / "backend_settings.py"
 CHANGELOG_PATH = DONT_CHANGE_DIR / "CHANGELOG.md"
+BASELINE_PATH = DONT_CHANGE_DIR / "data" / "protected_baseline.json"
 RUNNER = DONT_CHANGE_DIR / "tests" / "src" / "run_regressions.py"
 LAUNCHER_FOLDER = "code/pyapp/DONT_CHANGE/"
 # Inside the launcher, but ignored by Git (DONT_CHANGE/.gitignore), so a zip never contains older zips.
@@ -149,6 +156,46 @@ def build_zip(version: str, files: List[str]) -> Path:
     return target
 
 
+def protected_baseline(version: str) -> str:
+    """The PROTECTED_* lists of backend_settings.py as JSON, recorded for the release `version`.
+
+    tests/src/test_template_contract.py refuses to take an entry off a list before the next MAJOR
+    version, so this snapshot is what existing projects of this release may rely on.
+    """
+    lists = runpy.run_path(str(SETTINGS_PATH), run_name="backend_settings_for_release")["PROTECTED"]
+    data = {
+        "launcher_version": version,
+        "note": "Written by pyapp_tools/release: what was protected at that release. Do not edit by hand.",
+        **lists,
+    }
+    return json.dumps(data, indent=2) + "\n"
+
+
+def slow_checks_pass() -> bool:
+    """test_all_pythons (Python 3.8 and the newest) and fresh_clone_test, with their own output.
+
+    The first finds what only an old or new Python breaks, the second files missing from Git
+    and what only a first Setup in a fresh folder shows; both take minutes.
+    """
+    env = {key: value for key, value in os.environ.items() if not key.upper().startswith("PYAPP_")}
+    for label, script in (
+        ("Tests on Python 3.8 and the newest Python", "test_all_pythons.py"),
+        ("Fresh clone test", "fresh_clone_test.py"),
+    ):
+        _ui.step(f"{label} ...")
+        # This Python runs a fixed tool of this checkout; its output is shown as it comes.
+        completed = subprocess.run(  # noqa: S603
+            [sys.executable, "-B", "-X", "utf8", str(Path(__file__).with_name(script))],
+            env=env,
+            stdin=subprocess.DEVNULL,
+            check=False,
+        )
+        if completed.returncode:
+            _ui.error(f"{label} failed (exit code {completed.returncode}).")
+            return False
+    return True
+
+
 def tests_pass() -> bool:
     env = {key: value for key, value in os.environ.items() if not key.upper().startswith("PYAPP_")}
     # This Python runs this checkout's fixed test runner.
@@ -170,7 +217,10 @@ def main(argv: Optional[List[str]] = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("version", nargs="?", help="patch, minor, major or an exact version; empty = only check")
     parser.add_argument("--allow-dirty", action="store_true", help="allow uncommitted changes")
-    parser.add_argument("--skip-tests", action="store_true", help="do not run the launcher tests")
+    parser.add_argument("--skip-tests", action="store_true", help="do not run any tests")
+    parser.add_argument(
+        "--quick", action="store_true", help="only the tests on this Python, not on 3.8/newest or a clone"
+    )
     arguments = parser.parse_args(argv)
 
     settings_text, settings_crlf = read_text(SETTINGS_PATH)
@@ -199,6 +249,9 @@ def main(argv: Optional[List[str]] = None) -> int:
         if not tests_pass():
             _ui.error("The launcher tests failed, so nothing was changed.")
             return 1
+        if not arguments.quick and not slow_checks_pass():
+            _ui.error("Nothing was changed. --quick skips these checks (not recommended for a release).")
+            return 1
     if not new:
         _ui.success("A release is possible. Run this again with patch, minor, major or a version.")
         return 0
@@ -206,16 +259,24 @@ def main(argv: Optional[List[str]] = None) -> int:
     # The zip is built from the edited files, so they are written first and put back if anything
     # fails: a retry then makes the same release instead of skipping a version.
     originals = {path: path.read_bytes() for path in (SETTINGS_PATH, CHANGELOG_PATH)}
+    baseline_before = BASELINE_PATH.read_bytes() if BASELINE_PATH.is_file() else None
     try:
         write_text(SETTINGS_PATH, with_version(settings_text, new), settings_crlf)
         today = datetime.date.today().isoformat()
         write_text(CHANGELOG_PATH, with_released_changelog(changelog, new, today), changelog_crlf)
+        BASELINE_PATH.write_bytes(protected_baseline(new).encode("utf-8"))  # bytes: LF on every Python
         _ui.step("Building the zip ...")
         target = build_zip(new, tracked_launcher_files())
     except BaseException:
         for path, data in originals.items():
             path.write_bytes(data)
-        _ui.error(f"The release failed; {SETTINGS_PATH.name} and {CHANGELOG_PATH.name} are unchanged.")
+        if baseline_before is None:
+            BASELINE_PATH.unlink(missing_ok=True)
+        else:
+            BASELINE_PATH.write_bytes(baseline_before)
+        _ui.error(
+            f"The release failed; {SETTINGS_PATH.name}, {CHANGELOG_PATH.name} and the protected lists are unchanged."
+        )
         raise
     _ui.fields([("Zip", target), ("Size", f"{target.stat().st_size / 1_048_576:.1f} MB")])
     _ui.blank_line()

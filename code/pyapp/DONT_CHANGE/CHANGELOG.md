@@ -7,6 +7,13 @@ README.md ("Versions"); `LAUNCHER_VERSION` in `backend_settings.py` names the cu
 
 The first versioned release; it contains every change below.
 
+### 2026-11-14 - app tests, outdated and unused packages, release and push checks
+
+- New dev tool `run_tests.cmd`: runs the app's own tests from `code/pyapp/tests` (and `code/tests`) with the app's environment, with pytest if it is among the packages, else unittest; no tests at all is a note, not a failure. The template ships `code/pyapp/tests/test_example.py`, which checks that every Python file of the app compiles.
+- `list_packages` marks main packages that no file in `code/` imports; new `outdated_packages.cmd` (`list_packages --outdated`) shows newer versions on PyPI, what `upgrade_packages` would install and what the limits hold back.
+- Fixed: on Python 3.8 the watchdog's annotations could not be inspected at runtime (`subprocess.Popen[bytes]`).
+- Maintainer: `release` also runs `test_all_pythons` and `fresh_clone_test` (`--quick` skips them) and saves the protected lists in `data/protected_baseline.json`; the pre-commit hook refuses to break what existing projects rely on (the `PROTECTED_*` lists must match the code, and keep every entry until a MAJOR version); a push to `main` with launcher changes needs a `CHANGELOG.md` entry; the tests check every link in the README files.
+
 ### 2026-11-13 - fallback start, package list, protected lists, hook output
 
 - New `code/pyapp/Start without launcher.cmd`: when the launcher itself is broken, it runs the main script directly (with the app's `.venv` Python, else the global default Python) after showing the main script, Python, packages (installed or missing) and their folders. Its code, `actions/start_without_launcher.py`, uses nothing else of the launcher.

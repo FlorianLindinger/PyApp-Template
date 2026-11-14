@@ -6,7 +6,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-import project_location  # noqa: F401 - make this checkout's code importable
+import project_location  # also makes this checkout's code importable
 from pyapp.DONT_CHANGE.scripts.dev_tools import main as dev_tools
 
 
@@ -121,6 +121,50 @@ class SelfContainedTests(unittest.TestCase):
                 self.assertFalse(self_contained.is_self_contained(shared))
                 config["home"] = "D:/shared/uv/python/cpython-3.14"  # a shared Python outside the folder
                 self.assertFalse(self_contained.is_self_contained(local))
+
+
+class AppTestsTests(unittest.TestCase):
+    """dev tool run-tests: the app's tests folders and how they are run."""
+
+    def test_only_tests_folders_with_python_files_count(self):
+        from pyapp.DONT_CHANGE.scripts.dev_tools import app_tests
+
+        with tempfile.TemporaryDirectory() as folder:
+            code_tests, pyapp_tests, empty = (Path(folder, name) for name in ("tests", "pyapp_tests", "empty"))
+            (code_tests / "unit").mkdir(parents=True)
+            (code_tests / "unit" / "test_a.py").write_text("", encoding="utf-8")
+            pyapp_tests.mkdir()
+            (pyapp_tests / "notes.txt").write_text("", encoding="utf-8")
+            empty.mkdir()
+            found = app_tests.test_folders([code_tests, pyapp_tests, empty, Path(folder, "missing")])
+        self.assertEqual(found, [code_tests])
+
+    def test_pytest_gets_every_folder_and_unittest_one_run_each(self):
+        from pyapp.DONT_CHANGE.scripts.dev_tools import app_tests
+
+        folders = [Path("C:/code/tests"), Path("C:/code/pyapp/tests")]
+        self.assertEqual(
+            app_tests.test_commands("py.exe", ["-E"], folders, True, ["-k", "x"]),
+            [["py.exe", "-E", "-m", "pytest", str(folders[0]), str(folders[1]), "-k", "x"]],
+        )
+        commands = app_tests.test_commands("py.exe", [], folders, False, [])
+        self.assertEqual(len(commands), 2)
+        self.assertEqual(commands[1][-4:], ["-s", str(folders[1]), "-t", str(folders[1])])
+
+    def test_no_tests_at_all_is_a_note_not_a_failure(self):
+        from pyapp.DONT_CHANGE.scripts.dev_tools import app_tests
+
+        # 5: pytest, and unittest from Python 3.12 on, found no test.
+        self.assertEqual(app_tests.summary([0, 0]), "passed")
+        self.assertEqual(app_tests.summary([5, 5]), "none")
+        self.assertEqual(app_tests.summary([0, 5]), "passed")  # one folder with tests, one empty
+        self.assertEqual(app_tests.summary([1, 5]), "failed")
+
+    def test_the_launchers_own_tests_are_never_app_tests(self):
+        from pyapp.DONT_CHANGE.scripts.dev_tools import app_tests
+
+        launcher = Path(project_location.DONT_CHANGE)
+        self.assertFalse(any(launcher in folder.parents or folder == launcher for folder in app_tests.TEST_FOLDERS))
 
 
 if __name__ == "__main__":

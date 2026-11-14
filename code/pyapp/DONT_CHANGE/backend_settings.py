@@ -100,6 +100,7 @@ PROTECTED_RUN_COMMANDS = ["setup", "icons", "icons-help", "dev"]
 PROTECTED_DEV_TOOL_COMMANDS = [
     "menu",
     "list-packages",
+    "run-tests",
     "add",
     "remove",
     "upgrade",
@@ -171,6 +172,16 @@ PROTECTED_SETTING_NAMES = [
     "uv_user_python_visible_globally",
     "uv_version",
 ]
+# All lists by name. pyapp_tools/release saves them with each release; until a new MAJOR version,
+# the test refuses a list that lost an entry since then (adding entries is always fine).
+PROTECTED = {
+    "PROTECTED_PATHS": PROTECTED_PATHS,
+    "PROTECTED_PROJECT_FILES": PROTECTED_PROJECT_FILES,
+    "PROTECTED_RUN_COMMANDS": PROTECTED_RUN_COMMANDS,
+    "PROTECTED_DEV_TOOL_COMMANDS": PROTECTED_DEV_TOOL_COMMANDS,
+    "PROTECTED_SETTING_NAMES": PROTECTED_SETTING_NAMES,
+}
+PROTECTED_BASELINE_PATH = make_abs("data\\protected_baseline.json")
 
 # ------------------------
 # settings files
