@@ -45,8 +45,6 @@ packages = """
 
 # Copy-paste needed packages here
 
-pyqt5>=5.15.11
-pyqt6>=6.12.1
 """
 # A requirements file whose packages are installed in addition to "packages" (relative to this file), e.g.
 # "..\\requirements.txt"; The launcher only reads it: the dev tools change "packages", so a package
