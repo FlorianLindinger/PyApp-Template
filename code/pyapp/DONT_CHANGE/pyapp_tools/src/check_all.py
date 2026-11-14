@@ -109,10 +109,14 @@ def run_step(step: Step, refs: str, *, hook: bool = False) -> int:
         if output.startswith("Push blocked:"):
             _ui.info(output)  # the leak check's own report, with its first line and sections
         else:
-            _ui.info(
-                f"Push blocked: {step.label} failed (exit code {completed.returncode}). "
-                'Click "Show Command Output" for details.'
+            # Promote the settings test's concise explanation above its traceback and diff.
+            mismatch = re.search(r"^AssertionError: (Settings mismatch: .+)$", output, re.MULTILINE)
+            reason = (
+                mismatch.group(1)
+                if step.label == "Tests" and mismatch
+                else (f"{step.label} failed (exit code {completed.returncode}).")
             )
+            _ui.info(f'Push blocked: {reason} Click "Show Command Output" for details.')
             if output:
                 # Under its own heading, so it does not run into the summary of the checks below.
                 _ui.heading(f"Output of {step.label}")

@@ -51,7 +51,46 @@ class StagedRuffTests(unittest.TestCase):
             output.getvalue().splitlines()[0],
             "Commit blocked: Ruff: " + diagnostic + '. Click "Show Command Output" for details.',
         )
-        self.assertIn("stage the corrected files", output.getvalue())
+        self.assertIn("Review and stage the corrected files", output.getvalue())
+
+    def test_format_only_popup_is_short_and_details_list_every_file(self):
+        names = [PREFIX + "a.py", PREFIX + "b.py", PREFIX + "c.py"]
+        output = io.StringIO()
+        with mock.patch.object(tool, "staged_python_files", return_value=names), mock.patch.object(
+            tool, "git", return_value=b"x=1\n"
+        ), mock.patch.object(tool, "run_ruff", side_effect=[(0, ""), (1, "")] * 3), mock.patch("sys.stdout", output):
+            self.assertEqual(tool.main(["ruff"]), 1)
+        text = output.getvalue()
+        self.assertEqual(
+            text.splitlines()[0],
+            'Commit blocked: 3 staged Python files need formatting. Click "Show Command Output" for details.',
+        )
+        for name in names:
+            self.assertIn(name + ": not formatted", text)
+        self.assertEqual(text.count("verify_launcher.bat --fix"), 1)
+        self.assertIn("1. Format the files above.", text)
+        self.assertIn("2. Review and stage the corrected files.", text)
+        self.assertIn("3. Commit again.", text)
+        self.assertIn("This check does not change files or staging.", text)
+
+    def test_single_formatting_problem_uses_singular_wording(self):
+        output = io.StringIO()
+        with mock.patch.object(tool, "staged_python_files", return_value=[PREFIX + "a.py"]), mock.patch.object(
+            tool, "git", return_value=b"x=1\n"
+        ), mock.patch.object(tool, "run_ruff", side_effect=[(0, ""), (1, "")]), mock.patch("sys.stdout", output):
+            self.assertEqual(tool.main(["ruff"]), 1)
+        self.assertIn("1 staged Python file needs formatting.", output.getvalue().splitlines()[0])
+
+    def test_lint_location_takes_priority_over_formatting_in_the_popup(self):
+        diagnostic = PREFIX + "b.py:12:3: F401 unused import"
+        output = io.StringIO()
+        with mock.patch.object(tool, "staged_python_files", return_value=[PREFIX + "a.py"]), mock.patch.object(
+            tool, "git", return_value=b""
+        ), mock.patch.object(
+            tool, "problems_in", return_value=[PREFIX + "a.py: not formatted", diagnostic]
+        ), mock.patch("sys.stdout", output):
+            self.assertEqual(tool.main(["ruff"]), 1)
+        self.assertIn(diagnostic, output.getvalue().splitlines()[0])
 
     def test_formatter_failure_without_output_has_a_useful_message(self):
         with mock.patch.object(tool, "run_ruff", side_effect=[(0, ""), (2, "")]):

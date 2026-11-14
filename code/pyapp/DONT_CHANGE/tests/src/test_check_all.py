@@ -25,6 +25,25 @@ VERIFY = next(step for step in tool.STEPS if step.label.startswith("Verify launc
 
 
 class CheckAllTests(unittest.TestCase):
+    def test_settings_mismatch_is_explained_on_the_first_line(self):
+        step = next(step for step in tool.STEPS if step.label == "Tests")
+        reason = (
+            "Settings mismatch: code/pyapp/developer_settings.py differs from fallback "
+            "code/pyapp/DONT_CHANGE/data/dev_settings_default.py."
+        )
+        diagnostics = (
+            f"FAIL: test_defaults_file_is_identical_to_the_shipped_settings\nAssertionError: {reason}\n+ test package\n"
+        )
+        output = io.StringIO()
+        with mock.patch.object(tool.subprocess, "run") as run, mock.patch("sys.stdout", output):
+            run.return_value = mock.Mock(returncode=1, stdout=diagnostics.encode("utf-8"))
+            self.assertEqual(tool.run_step(step, "", hook=True), 1)
+        self.assertEqual(
+            output.getvalue().splitlines()[0],
+            f'Push blocked: {reason} Click "Show Command Output" for details.',
+        )
+        self.assertIn(diagnostics, output.getvalue())
+
     def test_windows_child_line_endings_are_normalized_before_printing(self):
         output = io.StringIO()
         with mock.patch.object(tool.subprocess, "run") as run, mock.patch("sys.stdout", output):

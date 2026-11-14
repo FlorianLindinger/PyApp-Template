@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ast
+import difflib
 import importlib.util
 import os
 import py_compile
@@ -221,12 +222,24 @@ class DefaultsTests(unittest.TestCase):
         project = CODE / "pyapp" / "developer_settings.py"
         if not re.search(r'(?m)^program_name = "PyApp-Template"', project.read_text(encoding="utf-8")):
             self.skipTest("a project made from the template has its own settings")
-        self.maxDiff = None
-        self.assertEqual(
-            self.settings_part(project).splitlines(),
-            self.settings_part(self.DEFAULTS).splitlines(),
-            "data/dev_settings_default.py must match developer_settings.py (settings, values and comments)",
-        )
+        project_lines = self.settings_part(project).splitlines()
+        default_lines = self.settings_part(self.DEFAULTS).splitlines()
+        if project_lines != default_lines:
+            difference = "\n".join(
+                difflib.unified_diff(
+                    default_lines,
+                    project_lines,
+                    fromfile="code/pyapp/DONT_CHANGE/data/dev_settings_default.py (fallback)",
+                    tofile="code/pyapp/developer_settings.py",
+                    lineterm="",
+                )
+            )
+            self.fail(
+                "Settings mismatch: code/pyapp/developer_settings.py differs from fallback "
+                "code/pyapp/DONT_CHANGE/data/dev_settings_default.py.\n"
+                "The shipped template must match in settings, values and comments. "
+                "Remove accidental edits, or update both files for intentional template-default changes.\n" + difference
+            )
 
     def test_missing_settings_get_their_defaults(self):
         def drop(text: str):

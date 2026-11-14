@@ -73,7 +73,7 @@ def problems_in(ruff: List[str], name: str, content: bytes) -> List[str]:
     if code:
         format_details = "\n".join(redacted_source(line) for line in output.splitlines())
         found.append(
-            f"{name}: not formatted (run verify_launcher.bat --fix)\n    {_ui.file_link(PROJECT_ROOT / name)}"
+            f"{name}: not formatted\n    {_ui.file_link(PROJECT_ROOT / name)}"
             + ("\n" + format_details if format_details else "")
             if code == 1
             else output or f"{name}: Ruff format could not complete (exit code {code})"
@@ -94,18 +94,29 @@ def main(ruff: Optional[List[str]] = None) -> int:
     problems = [problem for name in names for problem in problems_in(ruff, name, git("show", ":" + name))]
     if not problems:
         return 0  # silent: this runs on every commit
-    # Keep the first diagnostic in the first line for Git clients that truncate hook output.
-    _ui.info(f'Commit blocked: Ruff: {problems[0].splitlines()[0]}. Click "Show Command Output" for details.')
-    _ui.heading("Ruff diagnostics in staged launcher files")
+    format_only = all(problem.splitlines()[0].endswith(": not formatted") for problem in problems)
+    if format_only:
+        count = len(problems)
+        reason = f"{count} staged Python {'file needs' if count == 1 else 'files need'} formatting."
+    else:
+        # Keep the exact location for lint errors; formatting alone needs only a short count.
+        diagnostic = next(problem for problem in problems if not problem.splitlines()[0].endswith(": not formatted"))
+        reason = "Ruff: " + diagnostic.splitlines()[0] + "."
+    _ui.info(f'Commit blocked: {reason} Click "Show Command Output" for details.')
+    _ui.heading("Formatting required" if format_only else "Ruff diagnostics in staged launcher files")
     for problem in problems:
         _ui.info(problem)
+    _ui.heading("How to fix")
+    _ui.info("1. Format the files above." if format_only else "1. Fix the diagnostics above.")
+    _ui.info(
+        "   Safe lint fixes and formatting: code\\pyapp\\DONT_CHANGE\\pyapp_tools\\verify_launcher.bat --fix\n"
+        "2. Review and stage the corrected files.\n"
+        "3. Commit again."
+    )
     _ui.blank_line()
-    _ui.error(
-        "Fix the diagnostics, stage the corrected files, then commit again.\n"
-        "verify_launcher.bat --fix applies safe Ruff fixes and formatting to working files.\n"
-        "Ctrl+click a file:/// link to open its line. Locations refer to the staged files;\n"
-        "unstaged edits can shift the line numbers in the editor.\n"
-        "To commit anyway, once: git commit --no-verify"
+    _ui.info(
+        "Ctrl+click a file:/// link to open the file. Line numbers refer to staged content.\n"
+        "This check does not change files or staging."
     )
     return 1
 
