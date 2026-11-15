@@ -118,8 +118,9 @@ Three Pythons can be involved, but usually they are the same installation:
    and taskbar identity, opens the log file, and starts the app Python with
    `script_wrapper.py --config tmp\runs\<id>\wrapper.json`. It shows the app's output in the
    console; the wrapper writes the log. Output that bypasses Python's streams (native code, child
-   processes) goes to `<log>.output.log` first, which the wrapper merges into the log as it
-   arrives; the file is deleted after a normal end and kept as evidence otherwise. It waits for the app to end,
+   processes) goes to `output.log` in the run folder (`tmp\runs\<id>`) first, which the wrapper merges into
+   the log as it arrives; after a failure with output the watchdog moves it next to the log as
+   `<log>.output.log`, otherwise it is deleted. It waits for the app to end,
    unregisters, and calls `process_exit.py` with the outcome. In no-terminal mode a completion
    window only appears when something needs to be shown.
 9. **`runtime\script_wrapper.py`** runs inside the app Python. It removes the launcher's

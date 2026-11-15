@@ -9,6 +9,12 @@
   const notice = document.getElementById("notice");
   const favicon = document.getElementById("favicon");
   const DEFAULT_FONT_SIZE = config.font.size;
+  // The rest of browser_terminal/settings.py (host.complete_config); fallbacks for an older host.
+  const options = Object.assign(
+    { cursorStyle: "block", cursorBlink: true, minFont: 6, maxFont: 72, zoomStep: 1.15, pinchSpeed: 1,
+      fastScroll: 5, scrollback: 9001, highlight: true, follow: true, frontOnInput: false, notifyEveryMs: 1000 },
+    config.options || {},
+  );
 
   // The host finds this window by this title, then sends "ready"; only then the real one is shown.
   // "attention" puts a dot in front while something happened that the user has not seen yet.
@@ -26,13 +32,14 @@
   };
 
   const term = new Terminal({
-    scrollback: 9001, // the classic console's default history
+    scrollback: options.scrollback, // settings.py SCROLLBACK_LINES
     fontFamily: config.font.family,
     fontSize: DEFAULT_FONT_SIZE,
-    cursorBlink: true,
+    cursorBlink: options.cursorBlink,
+    cursorStyle: options.cursorStyle,
     // xterm.js scrolls 1x by default, which feels much slower than a console window; Alt+wheel scrolls faster still.
     scrollSensitivity: config.scroll,
-    fastScrollSensitivity: config.scroll * 5,
+    fastScrollSensitivity: options.fastScroll,
     fastScrollModifier: "alt",
     // The search add-on highlights all matches with decorations, a "proposed" xterm.js API.
     allowProposedApi: true,
@@ -46,6 +53,57 @@
   term.loadAddon(search);
   term.loadAddon(new WebLinksAddon.WebLinksAddon());
   term.open(document.getElementById("terminal"));
+
+  // ------------------------------------------------------------ text selection
+
+  // xterm.js selects a rectangular grid even after a line's text has ended. Clip its native
+  // highlight per visible row; keep its selection model, dragging, search, and copying intact.
+  const selectionScreen = term.element.querySelector(".xterm-screen");
+  const selectionLayer = selectionScreen.querySelector(".xterm-selection");
+  let selectionFrame = 0;
+  const drawTextSelection = () => {
+    selectionFrame = 0;
+    const range = term.getSelectionPosition();
+    const buffer = term.buffer.active;
+    if (!range || buffer.type !== "normal" || term.element.classList.contains("column-select")) {
+      selectionLayer.style.clipPath = "";
+      return;
+    }
+    const size = selectionScreen.getBoundingClientRect();
+    const cellWidth = size.width / term.cols;
+    const cellHeight = size.height / term.rows;
+    const first = Math.max(range.start.y, buffer.viewportY);
+    const last = Math.min(range.end.y, buffer.viewportY + term.rows - 1);
+    const rectangles = [];
+    for (let row = first; row <= last; row++) {
+      const line = buffer.getLine(row);
+      if (!line) continue;
+      let textEnd = 0;
+      // Buffer cells, rather than string length, keep double-width and combining characters aligned.
+      for (let column = Math.min(term.cols, line.length) - 1; column >= 0; column--) {
+        const cell = line.getCell(column);
+        if (cell && /\S/u.test(cell.getChars())) {
+          textEnd = column + cell.getWidth();
+          break;
+        }
+      }
+      const start = row === range.start.y ? range.start.x : 0;
+      const end = Math.min(textEnd, row === range.end.y ? range.end.x : term.cols);
+      if (end <= start) continue;
+      const x = start * cellWidth;
+      const y = (row - buffer.viewportY) * cellHeight;
+      const width = (end - start) * cellWidth;
+      rectangles.push(`M${x},${y}h${width}v${cellHeight}h${-width}Z`);
+    }
+    selectionLayer.style.clipPath = rectangles.length ? `path("${rectangles.join(" ")}")` : "inset(100%)";
+  };
+  const scheduleSelection = () => {
+    if (!selectionFrame) selectionFrame = requestAnimationFrame(drawTextSelection);
+  };
+  term.onSelectionChange(scheduleSelection);
+  term.onScroll(() => term.hasSelection() && scheduleSelection());
+  term.onResize(() => term.hasSelection() && scheduleSelection());
+  term.onRender(() => term.hasSelection() && scheduleSelection());
 
   const setColors = (colors) => {
     const theme = Object.assign({}, config.theme, colors || {});
@@ -70,7 +128,7 @@
   const notifyEnd = document.getElementById("notify-end");
   const notifyNext = document.getElementById("notify-next");
   const notifyEvery = document.getElementById("notify-every");
-  const notifyButton = document.getElementById("notify-button");
+  const notifyButton = document.getElementById("view-button");
   try {
     notifyEnd.checked = localStorage.getItem(NOTIFY_END) === "1";
   } catch (error) {
@@ -91,7 +149,11 @@
     if (window.Notification && Notification.permission === "granted") {
       const shown = new Notification(title, { body: text, icon: favicon.href, tag: "browser-terminal", renotify });
       shown.onclick = () => {
+        // window.focus() switches to this tab; the host raises the browser window itself,
+        // which a page cannot do when another program is in front.
         window.focus();
+        send({ t: "front" });
+        term.focus();
         shown.close();
       };
     }
@@ -128,7 +190,7 @@
   });
   // Every output: deliberately not remembered, so a later start does not begin with a stream of
   // notifications nobody asked for this time.
-  const EVERY_COOLDOWN_MS = 1000;
+  const EVERY_COOLDOWN_MS = options.notifyEveryMs;
   let lastEveryAt = 0;
   let everyTimer = 0;
   const notifyEveryNow = () => {
@@ -172,6 +234,10 @@
   const optHighlight = document.getElementById("opt-highlight");
   const optFollow = document.getElementById("opt-follow");
   const optFront = document.getElementById("opt-front");
+  // settings.py's defaults, until the user changes a switch in this browser.
+  optHighlight.checked = options.highlight;
+  optFollow.checked = options.follow;
+  optFront.checked = options.frontOnInput;
   try {
     const saved = JSON.parse(localStorage.getItem(VIEW) || "{}");
     if (typeof saved.highlight === "boolean") optHighlight.checked = saved.highlight;
@@ -195,6 +261,42 @@
       sendPreferences();
     });
   }
+
+  // ------------------------------------------------------------ touchpad scrolling
+
+  // Accumulate fractional touchpad deltas before scrolling whole terminal rows. Updating only
+  // once per frame avoids a viewport/layout update for every tiny wheel event.
+  let scrollRevision = 0;
+  let scrollFrame = 0;
+  let scrollPixels = 0;
+  let scrollRows = 0;
+  let partialRow = 0;
+  term.attachCustomWheelEventHandler((event) => {
+    // Ctrl+wheel belongs to zoom. Leave application mouse reporting and alternate screens
+    // to xterm.js so interactive console programs still receive their own wheel input.
+    if (event.ctrlKey) return false;
+    if (event.shiftKey || term.modes.mouseTrackingMode !== "none" || term.buffer.active.type !== "normal") return true;
+    if (!event.deltaY) return true;
+    event.preventDefault();
+    scrollRevision += 1;
+    const speed = config.scroll * (event.altKey ? options.fastScroll : 1);
+    if (event.deltaMode === 0) scrollPixels += event.deltaY * speed;
+    else scrollRows += event.deltaY * speed * (event.deltaMode === 2 ? term.rows : 1);
+    if (!scrollFrame) {
+      scrollFrame = requestAnimationFrame(() => {
+        scrollFrame = 0;
+        const screen = term.element.querySelector(".xterm-screen");
+        const rowHeight = screen.getBoundingClientRect().height / term.rows;
+        partialRow += scrollRows + (rowHeight > 0 ? scrollPixels / rowHeight : 0);
+        scrollPixels = 0;
+        scrollRows = 0;
+        const rows = Math.trunc(partialRow);
+        partialRow -= rows;
+        if (rows) term.scrollLines(rows);
+      });
+    }
+    return false;
+  });
 
   // New output: light up the lines it touched for a moment (a decoration that fades out), and
   // either follow it to the bottom or keep the view where the user is reading.
@@ -230,6 +332,8 @@
   const writeOutput = (data, isHistory) => {
     const buffer = term.buffer.active;
     const viewTop = buffer.viewportY;
+    const follow = optFollow.checked && viewTop === buffer.baseY;
+    const revision = scrollRevision;
     const from = buffer.baseY + buffer.cursorY;
     const typed = Date.now() - keyAt < ECHO_MS;
     const repaint = repainting();
@@ -243,8 +347,10 @@
       if (!isHistory && !repaint && optHighlight.checked && after.type === "normal" && first <= last) {
         highlight(first, last);
       }
-      if (optFollow.checked) term.scrollToBottom();
-      else if (!isHistory) term.scrollToLine(viewTop);
+      // A wheel movement during an asynchronous write takes priority over its old viewport.
+      if (revision !== scrollRevision) return;
+      if (follow) term.scrollToBottom();
+      else if (!isHistory && after.viewportY !== viewTop) term.scrollToLine(viewTop);
     });
   };
 
@@ -365,24 +471,42 @@
   new ResizeObserver(scheduleFit).observe(document.getElementById("terminal"));
 
   // Zoom changes the font, not the page, so the terminal stays sharp and gets more columns.
-  // The font follows at once; the columns follow when the zoom settles.
+  // The wanted size is kept as a fraction and applied at most once per frame: every font change
+  // makes xterm.js measure and redraw everything, and a pinch sends far more events than frames.
+  // The columns follow when the zoom settles.
+  const MIN_FONT = options.minFont;
+  const MAX_FONT = options.maxFont;
+  let fontTarget = term.options.fontSize;
+  let zoomFrame = 0;
   const zoom = (size) => {
-    term.options.fontSize = Math.max(6, Math.min(72, size));
-    scheduleFit();
+    fontTarget = Math.max(MIN_FONT, Math.min(MAX_FONT, size));
+    if (zoomFrame) return;
+    zoomFrame = requestAnimationFrame(() => {
+      zoomFrame = 0;
+      const size = Math.round(fontTarget);
+      if (size === term.options.fontSize) return;
+      term.options.fontSize = size;
+      scheduleFit();
+    });
   };
-  // A mouse wheel notch is one step (deltaY about 100); a touchpad pinch sends many small
-  // deltas, which are added up so a pinch zooms smoothly instead of racing.
-  const WHEEL_STEP = 50;
-  let wheelTotal = 0;
+  // One step of Ctrl+plus/minus or a mouse wheel notch: about 15 %, like a browser's zoom steps,
+  // and always at least one pixel.
+  const ZOOM_STEP = options.zoomStep;
+  const zoomStep = (direction) => {
+    const now = Math.round(fontTarget);
+    zoom(direction > 0 ? Math.max(now + 1, Math.round(now * ZOOM_STEP)) : Math.min(now - 1, Math.round(now / ZOOM_STEP)));
+  };
+  // A mouse wheel notch (deltaY about 100, or line units) is one step; a touchpad pinch sends
+  // many small deltas, which scale the size continuously (100 units of pinch: about 2.7x).
+  const PINCH_UNITS = 100 / options.pinchSpeed;
   document.addEventListener(
     "wheel",
     (event) => {
       if (!event.ctrlKey) return;
       event.preventDefault();
-      wheelTotal = Math.abs(event.deltaY) >= WHEEL_STEP ? Math.sign(event.deltaY) * WHEEL_STEP : wheelTotal + event.deltaY;
-      if (Math.abs(wheelTotal) < WHEEL_STEP) return;
-      zoom(term.options.fontSize + (wheelTotal < 0 ? 1 : -1));
-      wheelTotal = 0;
+      if (!event.deltaY) return;
+      if (event.deltaMode !== 0 || Math.abs(event.deltaY) >= 50) zoomStep(-event.deltaY);
+      else zoom(fontTarget * Math.exp(-event.deltaY / PINCH_UNITS));
     },
     { passive: false },
   );
@@ -649,7 +773,8 @@
     }
     if (key === "=" || key === "+" || key === "-" || key === "0") {
       event.preventDefault();
-      zoom(key === "0" ? DEFAULT_FONT_SIZE : term.options.fontSize + (key === "-" ? -1 : 1));
+      if (key === "0") zoom(DEFAULT_FONT_SIZE);
+      else zoomStep(key === "-" ? -1 : 1);
       return false;
     }
     return true;
@@ -671,7 +796,7 @@
     }
   });
 
-  // ------------------------------------------------------------ panels (notifications, bookmark)
+  // ------------------------------------------------------------ panels (options, info, bookmark)
   //
   // Pages cannot create bookmarks, so the star opens a short explanation. Ctrl+D inside the
   // terminal is "end of input" for the program; the panel takes the focus, so Ctrl+D pressed
@@ -691,7 +816,6 @@
   const panels = [
     [document.getElementById("info-button"), document.getElementById("info-panel")],
     [document.getElementById("view-button"), document.getElementById("view-panel")],
-    [document.getElementById("notify-button"), document.getElementById("notify-panel")],
     [document.getElementById("bookmark"), document.getElementById("bookmark-panel")],
   ];
   const closePanels = () => {
@@ -700,6 +824,10 @@
       button.setAttribute("aria-expanded", "false");
     }
   };
+  document.getElementById("bookmark-ok").addEventListener("click", () => {
+    closePanels();
+    term.focus();
+  });
   for (const [button, panel] of panels) {
     button.addEventListener("click", () => {
       const open = panel.hidden;

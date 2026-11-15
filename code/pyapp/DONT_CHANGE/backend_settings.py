@@ -234,6 +234,9 @@ PROCESS_REGISTRY_DIR = TEMPORARY_DIR + "\\running"
 RUNS_DIR = TEMPORARY_DIR + "\\runs"
 # Written into a run's folder by Stop/"replace"; the watchdog then ends without completion actions.
 STOP_REQUEST_FILE_NAME = "stop-requested"
+# Output that bypasses Python's streams, while the app runs; kept next to the log only as
+# evidence after a failure (runtime/bg_watchdog.py keep_raw_output).
+RAW_OUTPUT_FILE_NAME = "output.log"
 
 # ------------------------
 # launcher scripts

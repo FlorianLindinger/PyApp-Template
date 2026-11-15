@@ -4,23 +4,29 @@ A terminal emulator in the browser for Windows console programs. The program run
 Windows pseudoconsole (ConPTY), so `input()`, Ctrl+C, colors, titles, cursor movement and
 progress bars work as in the classic console. The page adds:
 
-- sharp text, zoom (Ctrl+wheel, touchpad pinch, Ctrl+/-/0) and clickable links;
+- sharp text, zoom (Ctrl+wheel, touchpad pinch, Ctrl+/-/0; steps of about 15 %, a pinch scales smoothly,
+  redrawn at most once per frame) and clickable links;
 - search (Ctrl+F, F3) with all matches highlighted, and saving the output as text (Ctrl+S);
 - file paths with a line number (`C:\app\main.py:9`, `File "...", line 9`) open in VS Code at
   that line, or in Notepad; never with the file's Windows association, which would run a `.py`;
-- new output lights up briefly; the view follows it or stays where you read (⚙);
-- notifications (🔔) when the program ends, once on its next output, or on every output (at most
-  once a second), while the tab is not in front, and optionally the browser coming to the front when the program waits for input;
+- new output lights up briefly; following pauses while you scroll up and resumes at the bottom (⚙);
+- touchpad scroll deltas are accumulated once per animation frame, keeping small movements without repeated viewport updates;
+- notifications in the gear menu's Notifications section (⚙) when the program ends, once on its next output, or on every output (at most
+  once a second), while the tab is not in front; clicking one brings the browser window and the tab to the front;
+  optionally the browser also comes to the front when the program waits for input;
 - copy and paste like Windows Terminal: Ctrl+C copies a selection and otherwise interrupts,
   Ctrl+V pastes, right-click copies or pastes;
+- selection highlighting stops at each line's text and skips empty rows; the terminal uses an arrow pointer,
+  with a hand over links (search inputs keep their text cursor). Copying retains the native text and line breaks;
 - clearing the output (🗑), which a reloaded page does not bring back;
 - an info panel (ⓘ) with the command and working folder (or the `info` you give), the start and
   end time and the exit code, to copy as text;
 - when the program ends: the exit code in the corner, green for 0 and red otherwise, and ✓ or ✗
   in the tab title;
-- optional buttons that open a code file (✎), a settings file (🔧) and a log folder (📁), from
-  the settings `code_file`, `settings_file` and `log_path`: a file in VS Code or Notepad, a
-  folder in Explorer. The page only says which one; the path comes from the settings.
+- optional buttons that open a code file (`</>`), a settings file (🔧), a log folder (lined document),
+  and a crash-log folder (document with `!`), from the settings `code_file`, `settings_file`, `log_path`,
+  and `crash_log_path`: a file in VS Code or Notepad, a
+  folder in Explorer, brought to the front once it opens. The page only says which one; the path comes from the settings.
 
 The program starts once the page has reported its size, so nothing it prints at start-up is
 redrawn at another size.
@@ -41,6 +47,13 @@ python browser_terminal --host-name my-tool.localhost --port 8765 --key my-secre
 The page opens in a new tab of the default browser, which is brought to the front.
 `--config` names a JSON file with any of the settings listed in `complete_config()` in `host.py`
 (theme, font, icon, ...). The exit code is the program's exit code.
+
+**`settings.py`** holds the defaults of every terminal, each explained there: font and size,
+cursor, colors, zoom limits and step, pinch speed, scroll speed and scrollback, how the gear
+menu's switches start (light up and follow new output, front on input), the shortest time
+between notifications, and whether opened files and folders come to the front. A program that
+starts the terminal can still pass its own theme, font or scroll; those win. A value of the wrong
+type falls back to the built-in default.
 
 From Python: `from browser_terminal import host; host.run({"title": "My tool"}, ["python", "my_tool.py"])`.
 
@@ -75,11 +88,17 @@ programs in a pseudoconsole and talk to the host like the page does, without a b
 python -m unittest discover -s browser_terminal\tests
 ```
 
+Frontend scrolling and output-following regressions can also be run with Node.js (no packages needed):
+
+```bat
+node --test browser_terminal/tests/test_web.cjs
+```
+
 ## Files
 
 | File | Origin |
 | --- | --- |
-| `host.py`, `ui.py`, `__main__.py`, `tests/`, `web/index.html`, `web/terminal.js` | PyApp-Template launcher, MIT License (`LICENSE.txt`) |
+| `host.py`, `ui.py`, `settings.py`, `__main__.py`, `tests/`, `web/index.html`, `web/terminal.js` | PyApp-Template launcher, MIT License (`LICENSE.txt`) |
 | `web/xterm.js`, `web/xterm.css` | [xterm.js](https://github.com/xtermjs/xterm.js) 5.5.0 (`@xterm/xterm`), unchanged |
 | `web/addon-fit.js` | `@xterm/addon-fit` 0.10.0, unchanged |
 | `web/addon-web-links.js` | `@xterm/addon-web-links` 0.11.0, unchanged |

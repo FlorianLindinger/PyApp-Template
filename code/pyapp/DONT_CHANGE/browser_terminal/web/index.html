@@ -11,6 +11,10 @@
   html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); color: var(--fg); }
   #terminal { position: absolute; inset: 0; padding: 4px 0 0 8px; }
   #terminal .xterm-viewport { scrollbar-color: #8888 transparent; }
+  #terminal .xterm { cursor: default; }
+  #terminal .xterm.xterm-cursor-pointer, #terminal .xterm .xterm-cursor-pointer { cursor: pointer; }
+  /* Give the native selection layer a box for clipping away unused terminal cells. */
+  #terminal .xterm-selection { width: 100%; height: 100%; }
   #notice {
     position: absolute; right: 16px; bottom: 16px; max-width: calc(100% - 64px);
     padding: 10px 14px; border-radius: 6px; font: 14px/1.4 "Segoe UI", system-ui, sans-serif;
@@ -18,23 +22,30 @@
   }
   [hidden] { display: none !important; }
 
-  /* Small tools in the top-right corner (clear of the scrollbar): faint until hovered. */
-  #tools { position: absolute; top: 6px; right: 22px; display: flex; gap: 2px; }
+  /* Keep tools clear of the scrollbar, with larger symbols and click targets. */
+  #tools { position: absolute; top: 6px; right: 22px; display: flex; gap: 3px; }
   #tools button {
-    width: 26px; height: 26px; padding: 0; border: 0; border-radius: 6px; background: transparent;
-    color: var(--fg); font: 15px/26px "Segoe UI Symbol", "Segoe UI Emoji", "Segoe UI", sans-serif;
+    width: 34px; height: 34px; padding: 0; border: 0; border-radius: 6px; background: transparent;
+    color: var(--fg); font: 21px/34px "Segoe UI Symbol", "Segoe UI Emoji", "Segoe UI", sans-serif;
     cursor: pointer; opacity: .6; transition: opacity .2s;
   }
   #tools button:hover, #tools button:focus-visible, #tools button[aria-expanded="true"] { opacity: 1; background: #fff2; }
-  #notify-button.armed { opacity: 1; color: #ffd75e; }
+  #view-button.armed { opacity: 1; color: #ffd75e; }
+  #open-code { font: 600 16px/34px "Cascadia Mono", Consolas, monospace; }
+  #tools button svg {
+    display: block; width: 22px; height: 22px; margin: auto; fill: none; stroke: currentColor;
+    stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;
+  }
 
   .panel {
-    position: absolute; top: 38px; right: 22px; max-width: min(420px, calc(100% - 64px));
+    position: absolute; top: 46px; right: 22px; max-width: min(420px, calc(100% - 64px));
     padding: 12px 14px; border-radius: 8px; font: 14px/1.45 "Segoe UI", system-ui, sans-serif;
     background: #2b2b2b; color: #f2f2f2; box-shadow: 0 6px 20px #0009; outline: none;
   }
   .panel p { margin: 0 0 8px; }
   .panel p:last-child { margin-bottom: 0; }
+  .panel h2 { margin: 0 0 8px; font: inherit; font-weight: 600; }
+  .panel section + section { margin-top: 12px; padding-top: 12px; border-top: 1px solid #fff3; }
   .panel kbd { padding: 1px 5px; border-radius: 4px; background: #fff2; font: inherit; }
   .panel code { padding: 1px 4px; border-radius: 4px; background: #0006; user-select: all; }
   .panel button {
@@ -55,7 +66,7 @@
   #info-list dd.failure { color: #f85149; }
 
   #search {
-    position: absolute; top: 38px; right: 22px; display: flex; gap: 4px; align-items: center;
+    position: absolute; top: 46px; right: 22px; display: flex; gap: 4px; align-items: center;
     padding: 6px 8px; border-radius: 8px; background: #2b2b2b; box-shadow: 0 6px 20px #0009;
     font: 13px "Segoe UI", system-ui, sans-serif; color: #f2f2f2;
   }
@@ -84,12 +95,16 @@
   <button id="search-button" type="button" title="Search (Ctrl+F)" aria-label="Search">&#128269;&#xFE0E;</button>
   <button id="save-button" type="button" title="Save the output as a text file (Ctrl+S)" aria-label="Save the output">&#10515;</button>
   <button id="clear-button" type="button" title="Clear the output" aria-label="Clear the output">&#128465;&#xFE0E;</button>
-  <button id="open-code" class="open" type="button" data-what="code" data-label="Open the code" hidden>&#9998;&#xFE0E;</button>
+  <button id="open-code" class="open" type="button" data-what="code" data-label="Open the code" hidden>&lt;/&gt;</button>
   <button id="open-settings" class="open" type="button" data-what="settings" data-label="Open the settings" hidden>&#128295;&#xFE0E;</button>
-  <button id="open-logs" class="open" type="button" data-what="logs" data-label="Open the logs" hidden>&#128193;&#xFE0E;</button>
+  <button id="open-logs" class="open" type="button" data-what="logs" data-label="Open the logs" hidden>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z M14 2v6h6 M8 12h8 M8 16h8 M8 19h5"/></svg>
+  </button>
+  <button id="open-crash-logs" class="open" type="button" data-what="crash_logs" data-label="Open the crash logs" hidden>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z M14 2v6h6 M12 11v5 M12 19h.01"/></svg>
+  </button>
   <button id="info-button" type="button" title="About this run: paths, start and end" aria-label="About this run" aria-expanded="false" aria-controls="info-panel">&#9432;&#xFE0E;</button>
-  <button id="view-button" type="button" title="View options" aria-label="View options" aria-expanded="false" aria-controls="view-panel">&#9881;&#xFE0E;</button>
-  <button id="notify-button" type="button" title="Notifications" aria-label="Notifications" aria-expanded="false" aria-controls="notify-panel">&#128276;&#xFE0E;</button>
+  <button id="view-button" type="button" title="Terminal options" aria-label="Terminal options" aria-expanded="false" aria-controls="view-panel">&#9881;&#xFE0E;</button>
   <button id="bookmark" type="button" title="Bookmark this terminal" aria-label="Bookmark this terminal" aria-expanded="false" aria-controls="bookmark-panel">&#9734;</button>
 </div>
 
@@ -102,10 +117,21 @@
   <button id="search-close" type="button" title="Close (Esc)" aria-label="Close the search">&#10005;</button>
 </div>
 
-<div id="view-panel" class="panel" role="dialog" aria-label="View options" tabindex="-1" hidden>
+<div id="view-panel" class="panel" role="dialog" aria-label="Terminal options" tabindex="-1" hidden>
+  <section aria-labelledby="view-heading">
+  <h2 id="view-heading">View</h2>
   <label><input id="opt-highlight" type="checkbox" checked> Light up new output for a moment</label>
-  <label><input id="opt-follow" type="checkbox" checked> Jump to new output <span class="dim">(off: stay where you are reading)</span></label>
+  <label><input id="opt-follow" type="checkbox" checked> Follow new output <span class="dim">(pauses while scrolled up)</span></label>
   <label><input id="opt-front" type="checkbox"> Bring the browser to the front when the program asks for input</label>
+  </section>
+  <section aria-labelledby="notify-heading">
+  <h2 id="notify-heading">Notifications</h2>
+  <p class="dim">Only while this tab is not in front</p>
+  <label><input id="notify-end" type="checkbox"> when the program ends or fails</label>
+  <label><input id="notify-next" type="checkbox"> once, on the next output</label>
+  <label><input id="notify-every" type="checkbox"> on every output <span class="dim">(at most once a second)</span></label>
+  <p id="notify-blocked" class="dim" hidden>The browser blocks notifications for this page; the tab title shows &#9679; instead.</p>
+  </section>
 </div>
 
 <div id="info-panel" class="panel" role="dialog" aria-label="About this run" tabindex="-1" hidden>
@@ -113,19 +139,12 @@
   <p><button id="info-copy" type="button">Copy all</button></p>
 </div>
 
-<div id="notify-panel" class="panel" role="dialog" aria-label="Notifications" tabindex="-1" hidden>
-  <p><b>Notify me</b> <span class="dim">(only while this tab is not in front)</span></p>
-  <label><input id="notify-end" type="checkbox"> when the program ends or fails</label>
-  <label><input id="notify-next" type="checkbox"> once, on the next output</label>
-  <label><input id="notify-every" type="checkbox"> on every output <span class="dim">(at most once a second)</span></label>
-  <p id="notify-blocked" class="dim" hidden>The browser blocks notifications for this page; the tab title shows &#9679; instead.</p>
-</div>
-
 <div id="bookmark-panel" class="panel" role="dialog" aria-label="Bookmark this terminal" tabindex="-1" hidden>
   <p><b>Bookmark this terminal:</b> press <kbd>Ctrl</kbd>+<kbd>D</kbd> now, or click &#9734; in the address bar.
      <span class="dim">The bookmark opens it while the program runs.</span></p>
   <p id="start-link" hidden>To also <b>start</b> the program from a bookmark, give a bookmark this address:
      <code id="start-link-text"></code><button id="start-link-copy" type="button">Copy</button></p>
+  <p style="text-align: right"><button id="bookmark-ok" type="button">OK</button></p>
 </div>
 
 <script id="config" type="application/json">__BROWSER_TERMINAL_CONFIG__</script>

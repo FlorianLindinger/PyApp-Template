@@ -100,6 +100,7 @@ def browser_command(s: Union[ModuleType, SimpleNamespace], run_dir: Path, comman
     # The page's open buttons match the shortcuts: each only if its shortcut is wanted.
     targets = shortcut_targets(s)
     log_folder = get_log_folder_path(s.log_path, s.log_path_is_relative_to_start_folder_if_relative) or ""
+    crash_folder = get_log_folder_path(s.crash_log_path, s.crash_log_path_is_relative_to_start_folder_if_relative) or ""
     info = [
         ["Program", targets["open_code"]],
         ["Python", paths.VENV_PYTHON_EXE + _python_version_note()],
@@ -114,6 +115,7 @@ def browser_command(s: Union[ModuleType, SimpleNamespace], run_dir: Path, comman
         "code_file": targets["open_code"] if s.open_code_shortcut_name else "",
         "settings_file": targets["settings"] if s.open_settings_shortcut_name else "",
         "log_path": log_folder if s.open_log_folder_shortcut_name else "",
+        "crash_log_path": crash_folder if s.open_crash_log_folder_shortcut_name else "",
         "host_name": host_name,
         "port": port,
         "key": key,

@@ -5,6 +5,7 @@ from __future__ import annotations
 import io
 import json
 import os
+import shutil
 import signal
 import subprocess
 import sys
@@ -93,27 +94,44 @@ def successful_application_exit(mode: int, run_dir: Path) -> bool:
 EARLY_OUTPUT_LIMIT = 1_048_576
 
 
-def save_early_output(log_path: str, early_output: bytes) -> None:
+def save_early_output(raw_path: str, early_output: bytes) -> None:
     """Keep what the app printed if its wrapper never set up the raw output file.
 
     That happens when the interpreter or the wrapper fails right at the start; the wrapper then
     cannot merge the output into the log, and the console may be gone (no terminal).
     """
-    raw = Path(log_path + OUTPUT_LOG_SUFFIX)
-    if log_path and early_output and not raw.exists():
+    if raw_path and early_output and not Path(raw_path).exists():
         try:
-            raw.write_bytes(early_output)
+            Path(raw_path).write_bytes(early_output)
         except OSError:
             note_ignored("save the early output")
 
 
-def remove_raw_output_after_success(log_path: str, mode: int, run_dir: Path) -> None:
-    """The raw output is evidence for failures; after a normal end the log contains all of it."""
-    if log_path and successful_application_exit(mode, run_dir):
+def keep_raw_output(raw_path: str, log_path: str, mode: int, run_dir: Path) -> None:
+    """Move the raw output next to the log as evidence of a failure, or delete it.
+
+    While the app runs it lives in the run folder (tmp/runs/<id>), out of the log folder. After a
+    normal end the log contains all of it, and an empty one is evidence of nothing (Ctrl+C, a
+    closed window); only a failure with output leaves <log>.output.log next to the log.
+    """
+    if not raw_path:
+        return
+    raw = Path(raw_path)
+    try:
+        if not raw.is_file():
+            return
+        if successful_application_exit(mode, run_dir) or raw.stat().st_size == 0 or not log_path:
+            raw.unlink()
+            return
+        target = Path(log_path + OUTPUT_LOG_SUFFIX)
         try:
-            Path(log_path + OUTPUT_LOG_SUFFIX).unlink(missing_ok=True)
+            raw.replace(target)
         except OSError:
-            note_ignored("remove the raw output")  # e.g. a child program of the app still has it open
+            # A child program of the app may still have it open, which forbids moving it on
+            # Windows: keep a copy as evidence; the run folder is deleted with the next launch.
+            shutil.copyfile(raw, target)
+    except OSError:
+        note_ignored("keep or remove the raw output")
 
 
 def handle_exit(
@@ -249,6 +267,8 @@ def main() -> None:
                 ),
                 run_dir.name,
             )
+        # In the run folder while the app runs; next to the log only if kept (keep_raw_output).
+        raw_path = str(run_dir / paths.RAW_OUTPUT_FILE_NAME) if log_path else ""
         cwd = (
             os.environ.get("PYAPP_START_DIR", str(Path.cwd()))
             if settings.start_in_shortcut_folder
@@ -269,7 +289,7 @@ def main() -> None:
             "log_input_prepend": settings.log_input_prepend,
             "log_path": log_path,
             # Output that bypasses Python's streams is captured here and merged into the log.
-            "native_output": log_path + OUTPUT_LOG_SUFFIX if log_path else "",
+            "native_output": raw_path,
             "traceback": str(run_dir / "traceback.json"),
             "result": str(run_dir / "result.json"),
             "ready": str(run_dir / "ready"),
@@ -362,7 +382,7 @@ def main() -> None:
             signal.signal(signal.SIGINT, previous)
         if pump:
             pump.join(timeout=5)
-        save_early_output(log_path, bytes(early_output))
+        save_early_output(raw_path, bytes(early_output))
         native = None
         try:
             result = json.loads((run_dir / "result.json").read_text(encoding="utf-8"))
@@ -380,7 +400,7 @@ def main() -> None:
                 json.loads(background.read_text(encoding="utf-8")),
             )
             mode = ExitMode.APP_EXIT
-        remove_raw_output_after_success(log_path, mode, run_dir)
+        keep_raw_output(raw_path, log_path, mode, run_dir)
         # Remove the registration before recovery can start a new instance.
         registry.remove()
         registered = False

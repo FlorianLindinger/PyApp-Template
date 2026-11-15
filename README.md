@@ -324,7 +324,8 @@ Settings marked `[bootstrap]` are read before any Python exists, so keep them on
 - **Log:** a UTF-8 file per run with your prints and inputs (optionally timestamped), including the
   output of native code and child processes.
 - **`.output.log`:** that raw output next to it, including the last moments before a hard crash;
-  kept only when the app does not end normally.
+  written in `code/pyapp/DONT_CHANGE/tmp/runs/<run>` while the app runs, and moved next to the log only when the
+  app does not end normally and something was written to it.
 - **Crash log:** the error report, written after every failure and Ctrl+C.
 
 Logging turns stdout and stderr into pipes. If your app needs a real console, set

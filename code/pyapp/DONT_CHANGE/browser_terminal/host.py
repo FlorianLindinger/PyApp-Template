@@ -45,6 +45,63 @@ try:  # imported as a package (python -m, an embedding program) or the folder ru
 except ImportError:
     import ui
 
+# The built-in value and type of every setting in settings.py. A setting missing there, or of
+# another type (a typo, text instead of a number), falls back to this; the shipped settings.py
+# has exactly these values (tests/test_host.py checks it).
+SETTING_DEFAULTS: Dict[str, Any] = {
+    "FONT_FAMILY": '"Cascadia Mono", Consolas, "Courier New", monospace',
+    "FONT_SIZE": 15,
+    "CURSOR_STYLE": "block",
+    "CURSOR_BLINK": True,
+    "COLORS": {},
+    "MIN_FONT_SIZE": 6,
+    "MAX_FONT_SIZE": 72,
+    "ZOOM_STEP_PERCENT": 15,
+    "PINCH_ZOOM_SPEED": 1.0,
+    "SCROLL_LINES": 5,
+    "FAST_SCROLL_FACTOR": 5,
+    "SCROLLBACK_LINES": 9001,
+    "HIGHLIGHT_NEW_OUTPUT": True,
+    "FOLLOW_NEW_OUTPUT": True,
+    "FRONT_ON_INPUT": False,
+    "NOTIFY_EVERY_MIN_SECONDS": 1.0,
+    "FOCUS_OPENED_WINDOWS": True,
+    "FOCUS_WAIT_SECONDS": 10.0,
+}
+CURSOR_STYLES = ("block", "underline", "bar")
+
+
+def load_settings(module: Any = None) -> Dict[str, Any]:
+    """settings.py's values (or module's), each checked against its built-in default (see SETTING_DEFAULTS)."""
+    if module is None:
+        try:
+            try:
+                from . import settings as module
+            except ImportError:
+                import settings as module  # the folder run as a script
+        except Exception:  # a syntax error in the file the user edits must not stop the terminal
+            report_ignored("browser terminal: settings.py could not be loaded; using the built-in settings")
+            module = None
+    values: Dict[str, Any] = {}
+    for name, default in SETTING_DEFAULTS.items():
+        value = getattr(module, name, default)
+        if isinstance(default, bool):
+            ok = isinstance(value, bool)
+        elif isinstance(default, (int, float)):
+            ok = isinstance(value, (int, float)) and not isinstance(value, bool) and value > 0
+        else:
+            ok = isinstance(value, type(default))
+        values[name] = value if ok else default
+    if values["CURSOR_STYLE"] not in CURSOR_STYLES:
+        values["CURSOR_STYLE"] = SETTING_DEFAULTS["CURSOR_STYLE"]
+    if values["MIN_FONT_SIZE"] > values["MAX_FONT_SIZE"]:
+        values["MIN_FONT_SIZE"], values["MAX_FONT_SIZE"] = (
+            SETTING_DEFAULTS["MIN_FONT_SIZE"],
+            SETTING_DEFAULTS["MAX_FONT_SIZE"],
+        )
+    return values
+
+
 STATIC_DIR = Path(__file__).resolve().parent / "web"
 # Files the page may load; everything else is 404. Content types are fixed here, not guessed.
 STATIC_FILES = {
@@ -121,14 +178,16 @@ def open_in_editor(path: str, line: Optional[int] = None) -> None:
         target = f"{file}:{line}" if line else str(file)
         # The user's editor, with the clicked path as one argument.
         subprocess.Popen([editor, "--goto", target], env=env)  # noqa: S603
+        focus_when_shown(file.name, VSCODE_EXECUTABLES)
     else:
         notepad = os.environ.get("WINDIR", "C:\\Windows") + "\\System32\\notepad.exe"
         subprocess.Popen([notepad, str(file)], env=env)  # noqa: S603
+        focus_when_shown(file.name, ("notepad.exe",))
 
 
 # The page's buttons that open a file or folder, and the config setting that names each. The
 # page only sends which one; the path never comes from the page.
-OPENABLE = {"code": "code_file", "settings": "settings_file", "logs": "log_path"}
+OPENABLE = {"code": "code_file", "settings": "settings_file", "logs": "log_path", "crash_logs": "crash_log_path"}
 
 
 def open_path(path: str) -> None:
@@ -139,6 +198,43 @@ def open_path(path: str) -> None:
     elif target.is_dir():
         explorer = os.environ.get("WINDIR", "C:\\Windows") + "\\explorer.exe"
         subprocess.Popen([explorer, str(target)])  # noqa: S603
+        # Explorer's title is the folder's name, or its full path if set so in Explorer.
+        focus_when_shown(target.name or str(target), ("explorer.exe",))
+
+
+# How long an opened editor or folder window is looked for (a cold VS Code start takes seconds);
+# settings.py FOCUS_WAIT_SECONDS. 0: opened windows are left where Windows puts them.
+FOCUS_WAIT_SECONDS = 0.0
+
+
+def focus_when_shown(title_part: str, images: Tuple[str, ...]) -> None:
+    """Bring the window that opens for a clicked file or folder to the front, in the background.
+
+    The editor or Explorer is started by this hidden host, not by the browser the user clicked
+    in, so Windows would only let its window flash in the taskbar. The window is recognized by
+    its program and a title containing the file's or folder's name.
+    """
+
+    if not FOCUS_WAIT_SECONDS:
+        return
+
+    def wait_and_focus() -> None:
+        wanted = {image.lower() for image in images}
+        deadline = time.monotonic() + FOCUS_WAIT_SECONDS
+        while time.monotonic() < deadline:
+            hwnd = _window_of_program(title_part, wanted)
+            if hwnd:
+                bring_to_front(hwnd)
+                return
+            time.sleep(0.1)
+
+    def guarded() -> None:
+        try:
+            wait_and_focus()
+        except Exception:
+            report_ignored("browser terminal: bring an opened window to the front")
+
+    threading.Thread(target=guarded, daemon=True).start()
 
 
 # ---------------------------------------------------------------- Windows API
@@ -279,6 +375,18 @@ user32.keybd_event.argtypes = [wintypes.BYTE, wintypes.BYTE, wintypes.DWORD, cty
 user32.keybd_event.restype = None
 user32.MessageBoxW.argtypes = [wintypes.HWND, wintypes.LPCWSTR, wintypes.LPCWSTR, wintypes.UINT]
 user32.MessageBoxW.restype = ctypes.c_int
+user32.GetWindowThreadProcessId.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.DWORD)]
+user32.GetWindowThreadProcessId.restype = wintypes.DWORD
+kernel32.OpenProcess.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]
+kernel32.OpenProcess.restype = wintypes.HANDLE
+kernel32.QueryFullProcessImageNameW.argtypes = [
+    wintypes.HANDLE,
+    wintypes.DWORD,
+    wintypes.LPWSTR,
+    ctypes.POINTER(wintypes.DWORD),
+]
+kernel32.QueryFullProcessImageNameW.restype = wintypes.BOOL
+PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
 
 
 def _check(ok: object, what: str) -> None:
@@ -628,8 +736,15 @@ class Session:
         elif kind == "p":
             # The page's preferences that the host acts on.
             self.front_on_input = message.get("frontOnInput") is True
+        elif kind == "front" and self.window:
+            # A click on one of the page's notifications: the page can switch to its tab, but
+            # only this host can raise the browser window above the others.
+            try:
+                bring_to_front(self.window)
+            except Exception:
+                report_ignored("browser terminal: bring the page to the front from a notification")
         elif kind == "open" and message.get("what") in OPENABLE:
-            # A button of the page: the code, the settings file or the logs.
+            # A button of the page: code, settings, logs, or crash logs.
             path = self.config.get(OPENABLE[message["what"]]) or ""
             try:
                 if path:
@@ -749,6 +864,42 @@ def _window_with_title_containing(text: str) -> int:
     return found[0] if found else 0
 
 
+def _program_of_window(hwnd: int) -> str:
+    """The lower-case file name of the program that owns the window ("" if it cannot be read)."""
+    pid = wintypes.DWORD()
+    user32.GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
+    handle = kernel32.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, False, pid.value)
+    if not handle:
+        return ""
+    try:
+        size = wintypes.DWORD(1024)
+        buffer = ctypes.create_unicode_buffer(size.value)
+        if not kernel32.QueryFullProcessImageNameW(handle, 0, buffer, ctypes.byref(size)):
+            return ""
+        return Path(buffer.value).name.lower()
+    finally:
+        kernel32.CloseHandle(handle)
+
+
+def _window_of_program(title_part: str, images: Set[str]) -> int:
+    """A visible top-level window of one of these programs whose title contains title_part, or 0."""
+    found: List[int] = []
+    wanted = title_part.lower()
+
+    def visit(hwnd: int, _: int) -> bool:
+        if (
+            user32.IsWindowVisible(hwnd)
+            and wanted in _window_title(hwnd).lower()
+            and _program_of_window(hwnd) in images
+        ):
+            found.append(hwnd)
+            return False
+        return True
+
+    user32.EnumWindows(WNDENUMPROC(visit), 0)
+    return found[0] if found else 0
+
+
 def bring_to_front(hwnd: int) -> None:
     """Restore and activate the browser window that shows the new tab.
 
@@ -829,7 +980,8 @@ def make_handler(session: Session, token: str, hosts: Set[str]) -> type:
         def _page(self) -> bytes:
             page = (STATIC_DIR / "index.html").read_text(encoding="utf-8")
             settings = {
-                key: session.config[key] for key in ("title", "marker", "theme", "font", "windowsBuild", "scroll")
+                key: session.config[key]
+                for key in ("title", "marker", "theme", "font", "windowsBuild", "scroll", "options")
             }
             settings["startLink"] = session.config["start_link"]
             settings["info"] = session.config["info"]
@@ -963,9 +1115,11 @@ def complete_config(config: Dict[str, Any], command: List[str]) -> Dict[str, Any
     window_file       where the handle of the browser window is written once it is found
     ui_env_var        name of that variable (default ui.ENV_VAR)
     hidden_env_prefixes   variables with these prefixes are not passed on to the browser
+    options           the page's behavior (zoom, scrollback, cursor, the gear menu's defaults);
+                      default: from settings.py, which also gives theme, font and scroll their defaults
     info              [label, text] pairs the page's info panel lists (default: the command line
                       and the working folder); the start and end times are added to them
-    code_file, settings_file, log_path
+    code_file, settings_file, log_path, crash_log_path
                       a file or folder that a button of the page opens: a file in VS Code or
                       Notepad, a folder in Explorer (default: none, and no button)
     """
@@ -987,11 +1141,32 @@ def complete_config(config: Dict[str, Any], command: List[str]) -> Dict[str, Any
     config.setdefault("port", 0)
     if not config.get("key"):
         config["key"] = secrets.token_urlsafe(24)
-    config["theme"] = {**ui.DEFAULT_THEME, **(config.get("theme") or {})}
-    font = {"family": '"Cascadia Mono", Consolas, "Courier New", monospace', "size": 15}
+    chosen = load_settings()
+    config["theme"] = {**ui.DEFAULT_THEME, **chosen["COLORS"], **(config.get("theme") or {})}
+    font = {"family": chosen["FONT_FAMILY"], "size": chosen["FONT_SIZE"]}
     config["font"] = {**font, **(config.get("font") or {})}
     config.setdefault("windowsBuild", sys.getwindowsversion().build)
-    config.setdefault("scroll", 5)
+    config.setdefault("scroll", chosen["SCROLL_LINES"])
+    # The rest of settings.py, for the page.
+    config.setdefault(
+        "options",
+        {
+            "cursorStyle": chosen["CURSOR_STYLE"],
+            "cursorBlink": chosen["CURSOR_BLINK"],
+            "minFont": chosen["MIN_FONT_SIZE"],
+            "maxFont": chosen["MAX_FONT_SIZE"],
+            "zoomStep": 1 + chosen["ZOOM_STEP_PERCENT"] / 100,
+            "pinchSpeed": chosen["PINCH_ZOOM_SPEED"],
+            "fastScroll": chosen["FAST_SCROLL_FACTOR"],
+            "scrollback": int(chosen["SCROLLBACK_LINES"]),
+            "highlight": chosen["HIGHLIGHT_NEW_OUTPUT"],
+            "follow": chosen["FOLLOW_NEW_OUTPUT"],
+            "frontOnInput": chosen["FRONT_ON_INPUT"],
+            "notifyEveryMs": int(chosen["NOTIFY_EVERY_MIN_SECONDS"] * 1000),
+        },
+    )
+    global FOCUS_WAIT_SECONDS
+    FOCUS_WAIT_SECONDS = float(chosen["FOCUS_WAIT_SECONDS"]) if chosen["FOCUS_OPENED_WINDOWS"] else 0.0
     config.setdefault("start_link", "")
     for key in OPENABLE.values():
         config[key] = str(config.get(key) or "")

@@ -21,7 +21,7 @@ import threading
 import time
 import unittest
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any, Callable, Dict, List, Tuple
 from unittest import mock
 
 PACKAGE = Path(__file__).resolve().parents[1]
@@ -102,8 +102,55 @@ class SmallPartsTest(unittest.TestCase):
 
 
 @unittest.skipUnless(os.name == "nt", "Windows only")
+class SettingsFileTest(unittest.TestCase):
+    """browser_terminal/settings.py: the defaults of every terminal."""
+
+    def test_the_shipped_file_has_the_built_in_values(self):
+        import types
+
+        text = (PACKAGE / "settings.py").read_text(encoding="utf-8")
+        module = types.ModuleType("shipped_settings")
+        exec(compile(text, "settings.py", "exec"), module.__dict__)  # noqa: S102 - the package's own file
+        shipped = {name: getattr(module, name) for name in dir(module) if name.isupper()}
+        self.assertEqual(shipped, browser_terminal.SETTING_DEFAULTS)
+
+    def test_wrong_values_fall_back_to_the_built_in_ones(self):
+        import types
+
+        module = types.SimpleNamespace(
+            FONT_SIZE="big",
+            CURSOR_STYLE="wave",
+            CURSOR_BLINK=1,
+            SCROLL_LINES=-2,
+            MIN_FONT_SIZE=80,
+            ZOOM_STEP_PERCENT=25,
+        )
+        values = browser_terminal.load_settings(module)
+        defaults = browser_terminal.SETTING_DEFAULTS
+        for name in ("FONT_SIZE", "CURSOR_STYLE", "CURSOR_BLINK", "SCROLL_LINES", "MIN_FONT_SIZE", "MAX_FONT_SIZE"):
+            self.assertEqual(values[name], defaults[name], name)
+        self.assertEqual(values["ZOOM_STEP_PERCENT"], 25)
+
+    def test_the_settings_reach_the_page_and_a_caller_still_wins(self):
+        chosen = {**browser_terminal.SETTING_DEFAULTS, "FONT_SIZE": 18, "SCROLL_LINES": 3, "ZOOM_STEP_PERCENT": 20}
+        chosen["COLORS"] = {"red": "#ff0000"}
+        with mock.patch.object(browser_terminal, "load_settings", return_value=chosen):
+            config = browser_terminal.complete_config({"theme": {"red": "#aa0000"}}, ["prog.exe"])
+        self.assertEqual(config["font"]["size"], 18)
+        self.assertEqual(config["scroll"], 3)
+        self.assertAlmostEqual(config["options"]["zoomStep"], 1.2)
+        self.assertEqual(config["theme"]["red"], "#aa0000")  # the caller's theme over settings.py's colors
+
+
 class OpenInEditorTest(unittest.TestCase):
     """Paths clicked in the output: an editor, never the file's own Windows association."""
+
+    # typing.override requires Python 3.12; keep this override dependency-free on 3.8.
+    def setUp(self):  # pyrefly: ignore[missing-override-decorator]
+        # Opening starts a thread that looks for the new window; these tests start no real window.
+        patcher = mock.patch.object(browser_terminal, "focus_when_shown")
+        self.focus = patcher.start()
+        self.addCleanup(patcher.stop)
 
     def test_vs_code_opens_the_file_at_its_line(self):
         with tempfile.TemporaryDirectory() as folder:
@@ -115,6 +162,7 @@ class OpenInEditorTest(unittest.TestCase):
                 browser_terminal.open_in_editor(str(file), 9)
             self.assertEqual(popen.call_args[0][0], ["C:\\Code\\Code.exe", "--goto", f"{file}:9"])
             startfile.assert_not_called()  # it would run a .py file
+            self.focus.assert_called_once_with("main.py", browser_terminal.VSCODE_EXECUTABLES)
 
     def test_without_vs_code_notepad_opens_it(self):
         with tempfile.TemporaryDirectory() as folder:
@@ -125,6 +173,7 @@ class OpenInEditorTest(unittest.TestCase):
             ) as popen:
                 browser_terminal.open_in_editor(str(file), 9)
             self.assertTrue(popen.call_args[0][0][0].lower().endswith("notepad.exe"))
+            self.focus.assert_called_once_with("main.py", ("notepad.exe",))
 
     def test_a_path_that_is_no_file_opens_nothing(self):
         with mock.patch.object(browser_terminal.subprocess, "Popen") as popen:
@@ -167,6 +216,13 @@ class StandaloneTest(unittest.TestCase):
 class PageButtonsTest(unittest.TestCase):
     """The page's clear and open buttons, handled by the host."""
 
+    # typing.override requires Python 3.12; keep this override dependency-free on 3.8.
+    def setUp(self):  # pyrefly: ignore[missing-override-decorator]
+        # Opening starts a thread that looks for the new window; these tests start no real window.
+        patcher = mock.patch.object(browser_terminal, "focus_when_shown")
+        self.focus = patcher.start()
+        self.addCleanup(patcher.stop)
+
     def session(self, **config: Any) -> Any:
         return browser_terminal.Session(browser_terminal.complete_config(config, ["prog.exe", "a b"]))
 
@@ -188,6 +244,28 @@ class PageButtonsTest(unittest.TestCase):
             self.assertTrue(command[0].lower().endswith("explorer.exe"))
             self.assertEqual(command[1:], [folder])
             self.assertEqual(popen.call_count, 1)
+            self.focus.assert_called_once_with(Path(folder).name, ("explorer.exe",))
+
+    def test_a_clicked_notification_brings_the_browser_window_to_the_front(self):
+        session = self.session()
+        with mock.patch.object(browser_terminal, "bring_to_front") as front:
+            session.handle_message(1, b'{"t": "front"}')  # the window is not known yet
+            session.window = 1234
+            session.handle_message(1, b'{"t": "front"}')
+        front.assert_called_once_with(1234)
+
+    def test_crash_logs_button_uses_only_the_configured_folder(self):
+        with tempfile.TemporaryDirectory() as folder:
+            session = self.session(crash_log_path=folder)
+            with mock.patch.object(browser_terminal.subprocess, "Popen") as popen:
+                session.handle_message(1, json.dumps({"t": "open", "what": "crash_logs", "path": "C:\\x.bat"}).encode())
+            ((command,), _) = popen.call_args
+            self.assertTrue(command[0].lower().endswith("explorer.exe"))
+            self.assertEqual(command[1:], [folder])
+            self.assertEqual(popen.call_count, 1)
+        with mock.patch.object(browser_terminal, "open_path") as open_path:
+            self.session().handle_message(1, b'{"t": "open", "what": "crash_logs"}')
+        open_path.assert_not_called()
 
     def test_clearing_forgets_the_output_for_every_page(self):
         session = self.session()
@@ -202,6 +280,38 @@ class PageButtonsTest(unittest.TestCase):
         self.assertEqual(config["info"], [["Command", 'prog.exe "a b"'], ["Working folder", "C:\\work"]])
         config = browser_terminal.complete_config({"info": [["Python", "C:\\py.exe"]]}, ["prog.exe"])
         self.assertEqual(config["info"], [["Python", "C:\\py.exe"]])
+
+
+@unittest.skipUnless(os.name == "nt", "Windows only")
+class FocusOpenedWindowTest(unittest.TestCase):
+    """The window opened for a clicked file or folder comes to the front once it shows."""
+
+    def run_focus(self, windows: List[int]) -> mock.Mock:
+        found = mock.Mock(side_effect=windows + [0] * 100)
+
+        def run_at_once(target: Callable[[], None], daemon: bool) -> mock.Mock:
+            return mock.Mock(start=target)  # the waiting thread, run in this one instead
+
+        with mock.patch.object(browser_terminal, "_window_of_program", found), mock.patch.object(
+            browser_terminal, "bring_to_front"
+        ) as front, mock.patch.object(browser_terminal, "FOCUS_WAIT_SECONDS", 1), mock.patch.object(
+            browser_terminal.threading, "Thread", side_effect=run_at_once
+        ):
+            browser_terminal.focus_when_shown("main.py", ("Code.exe",))
+        found.assert_called_with("main.py", {"code.exe"})
+        return front
+
+    def test_the_window_is_raised_once_it_appears(self):
+        self.run_focus([0, 0, 777]).assert_called_once_with(777)
+
+    def test_no_window_means_nothing_is_raised(self):
+        self.run_focus([]).assert_not_called()
+
+    def test_windows_are_matched_by_program_and_title(self):
+        hwnd = browser_terminal._window_of_program("", {"explorer.exe"})
+        if hwnd:  # Explorer's taskbar is always there on a desktop session
+            self.assertEqual(browser_terminal._program_of_window(hwnd), "explorer.exe")
+        self.assertEqual(browser_terminal._window_of_program("no window has this title 9f3c", {"explorer.exe"}), 0)
 
 
 class PageClient:
