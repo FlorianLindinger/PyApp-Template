@@ -14,6 +14,7 @@ import sys
 import unittest
 from pathlib import Path
 from typing import List, Optional, Tuple
+from unittest import mock
 
 from project_location import CODE, DONT_CHANGE, PROJECT_ROOT
 
@@ -99,11 +100,23 @@ class ExistingProjectTests(unittest.TestCase):
     def test_scripts_outside_use_only_protected_commands(self):
         used = run_commands_used_outside()
         self.assertGreater(len(used), 10)
-        for command, dev_command in used:
-            with self.subTest(command=command, dev_command=dev_command):
-                self.assertIn(command, backend_settings.PROTECTED_RUN_COMMANDS)
-                if command == "dev":
-                    self.assertIn(dev_command, backend_settings.PROTECTED_DEV_TOOL_COMMANDS)
+        missing_run = sorted({command for command, _ in used} - set(backend_settings.PROTECTED_RUN_COMMANDS))
+        missing_dev = sorted(
+            {dev_command for command, dev_command in used if command == "dev"}
+            - set(backend_settings.PROTECTED_DEV_TOOL_COMMANDS)
+        )
+        if missing_run:
+            self.fail(
+                "Launcher commands missing from PROTECTED_RUN_COMMANDS: "
+                + ", ".join(missing_run)
+                + ". Add these commands to backend_settings.py so existing project scripts remain supported."
+            )
+        if missing_dev:
+            self.fail(
+                "Developer Tools commands missing from PROTECTED_DEV_TOOL_COMMANDS: "
+                + ", ".join(missing_dev)
+                + ". Add these commands to backend_settings.py so existing project scripts remain supported."
+            )
 
     def test_protected_dev_tool_commands_still_exist(self):
         # "menu" is not in COMMANDS: main() shows the menu itself (also without a command).
@@ -189,6 +202,21 @@ class ExistingProjectTests(unittest.TestCase):
         if stdlib is None:
             self.skipTest("sys.stdlib_module_names needs Python 3.10")
         self.assertEqual(sorted(imported - set(stdlib) - {"__future__"}), [])
+
+
+class ContractMessageTests(unittest.TestCase):
+    def test_missing_commands_are_named_without_dumping_the_protected_list(self):
+        case = ExistingProjectTests("test_scripts_outside_use_only_protected_commands")
+        used = [("dev", "install-requirements"), ("dev", "reset-imports")] * 6
+        with mock.patch(__name__ + ".run_commands_used_outside", return_value=used), mock.patch.object(
+            backend_settings, "PROTECTED_DEV_TOOL_COMMANDS", ["menu", "add"]
+        ), self.assertRaises(AssertionError) as raised:
+            case.test_scripts_outside_use_only_protected_commands()
+        self.assertEqual(
+            str(raised.exception).split(". ")[0],
+            "Developer Tools commands missing from PROTECTED_DEV_TOOL_COMMANDS: install-requirements, reset-imports",
+        )
+        self.assertNotIn("['menu'", str(raised.exception))
 
 
 if __name__ == "__main__":

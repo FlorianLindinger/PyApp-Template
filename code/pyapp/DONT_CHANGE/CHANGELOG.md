@@ -9,6 +9,9 @@ The first versioned release; it contains every change below.
 
 ### 2026-11-15
 
+- Capture errors from application `atexit` callbacks registered on Python 3.8/3.9, preserving native shutdown order, callback arguments, decorator returns and equality-based unregistration. Document the workaround's pre-setup registration limit.
+- Clarify other Git-hook headlines: name failing launcher tests/checkers, explain compatibility and missing changelog failures, distinguish staged leaks from leaks in pushed commits, and give a Setup action when Python is missing.
+- State explicitly in the blocked-push headline that developer settings do not match the fallback developer settings, using short filenames; keep full paths in the detailed diff.
 - Add working folder, settings paths, crash-log folder, and the actual per-run log file to browser run info. Supply launcher metadata through a generic info-update API so the browser-terminal package remains reusable.
 - Show the browser-terminal package folder in the browser run-info panel.
 - Use `</>` for the browser code button and document symbols for logs and crash logs; add a crash-log folder button when its shortcut is enabled.

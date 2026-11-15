@@ -19,6 +19,7 @@ with mock.patch.object(sys, "path", [str(DONT_CHANGE / "pyapp_tools" / "src"), *
     import _paths  # noqa: F401 - imported by the tool; the tools folder is only on sys.path here
     import check_all as tool
     import check_changelog
+    import check_protected
 
 # By label, not position: steps can be added in between.
 VERIFY = next(step for step in tool.STEPS if step.label.startswith("Verify launcher"))
@@ -28,8 +29,8 @@ class CheckAllTests(unittest.TestCase):
     def test_settings_mismatch_is_explained_on_the_first_line(self):
         step = next(step for step in tool.STEPS if step.label == "Tests")
         reason = (
-            "Settings mismatch: code/pyapp/developer_settings.py differs from fallback "
-            "code/pyapp/DONT_CHANGE/data/dev_settings_default.py."
+            "Settings mismatch: developer_settings.py does not match the fallback developer settings "
+            "(dev_settings_default.py)."
         )
         diagnostics = (
             f"FAIL: test_defaults_file_is_identical_to_the_shipped_settings\nAssertionError: {reason}\n+ test package\n"
@@ -65,10 +66,69 @@ class CheckAllTests(unittest.TestCase):
         with mock.patch.object(tool.subprocess, "run") as run, mock.patch("sys.stdout", output):
             run.return_value = mock.Mock(returncode=1, stdout=b"Heading\napp.py:12:3: error\n")
             self.assertEqual(tool.run_step(VERIFY, "", hook=True), 1)
-        self.assertTrue(output.getvalue().startswith("Push blocked: Verify launcher"))
+        self.assertTrue(output.getvalue().startswith("Push blocked: Launcher code checks failed"))
         self.assertIn('Click "Show Command Output" for details.', output.getvalue().splitlines()[0])
         self.assertIn("app.py:12:3: error", output.getvalue())
         self.assertEqual(run.call_args.kwargs["stderr"], tool.subprocess.STDOUT)
+
+    def test_other_check_failures_name_the_cause_before_the_full_output(self):
+        cases = (
+            (
+                "Tests",
+                "FAIL: test_stop_closes_children (Case)\nAssertionError: child survived",
+                "Launcher test failed: stop closes children.",
+            ),
+            ("Tests", "Traceback: test runner could not start", "Launcher tests could not complete (exit code 1)."),
+            (
+                VERIFY.label,
+                "Ruff lint   passed\nRuff format FAILED\nPyrefly     FAILED",
+                "Launcher code checks failed: Ruff format, Pyrefly.",
+            ),
+            ("Repository check", "Tracked cache files\n  cache.pyc", "Repository file/path checks failed."),
+        )
+        for label, diagnostics, reason in cases:
+            with self.subTest(label=label, reason=reason):
+                output = io.StringIO()
+                with mock.patch.object(tool.subprocess, "run") as run, mock.patch("sys.stdout", output):
+                    run.return_value = mock.Mock(returncode=1, stdout=diagnostics.encode("utf-8"))
+                    self.assertEqual(tool.run_step(tool.Step(label, []), "", hook=True), 1)
+                self.assertIn(reason, output.getvalue().splitlines()[0])
+                self.assertIn(diagnostics, output.getvalue())
+
+    def test_compatibility_error_explains_the_protected_contract(self):
+        output = io.StringIO()
+        diagnostics = b"FAIL: test_protected_settings\nAssertionError: settings removed: old_name\n"
+        with mock.patch.object(
+            check_protected, "staged_paths", return_value=["code/pyapp/developer_settings.py"]
+        ), mock.patch.object(
+            check_protected.subprocess, "run", return_value=mock.Mock(returncode=1, stdout=diagnostics)
+        ), mock.patch("sys.stdout", output):
+            self.assertEqual(check_protected.main(), 1)
+        first = output.getvalue().splitlines()[0]
+        self.assertIn("Launcher compatibility check failed: settings removed: old_name", first)
+        self.assertIn("PROTECTED_*", output.getvalue())
+        self.assertIn("Review and stage the corrections", output.getvalue())
+
+    def test_missing_dev_commands_have_a_readable_compatibility_headline(self):
+        reason = (
+            "Developer Tools commands missing from PROTECTED_DEV_TOOL_COMMANDS: install-requirements, reset-imports"
+        )
+        diagnostics = (
+            "FAIL: test_scripts_outside_use_only_protected_commands\nAssertionError: "
+            + reason
+            + ". Add these commands to backend_settings.py.\n"
+        )
+        self.assertEqual(check_protected.first_problem(diagnostics), reason)
+
+    def test_changelog_error_says_what_is_missing_and_which_branch_needs_it(self):
+        output = io.StringIO()
+        with mock.patch.object(
+            check_changelog, "missing_changelog", return_value=[check_changelog.LAUNCHER + "x.py"]
+        ), mock.patch("sys.stdout", output):
+            self.assertEqual(check_changelog.main([]), 1)
+        self.assertIn("Add a launcher CHANGELOG.md entry", output.getvalue().splitlines()[0])
+        self.assertIn("changes to main", output.getvalue().splitlines()[0])
+        self.assertIn(check_changelog.LAUNCHER + "x.py", output.getvalue())
 
     def test_locations_in_failed_output_get_links(self):
         # A traceback line and diagnostics relative to DONT_CHANGE (Ruff, Pyrefly); unknown files get none.

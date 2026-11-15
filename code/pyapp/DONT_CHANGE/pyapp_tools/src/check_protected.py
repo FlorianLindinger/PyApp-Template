@@ -58,17 +58,18 @@ def main() -> int:
         return 0  # silent: this runs on every commit
     output = "\n".join(completed.stdout.decode("utf-8", "replace").splitlines()).strip()
     _ui.info(
-        f"Commit blocked: protected (backend_settings.PROTECTED_*): {first_problem(output)}. "
+        f"Commit blocked: Launcher compatibility check failed: {first_problem(output)}. "
         'Click "Show Command Output" for details.'
     )
     _ui.heading(f"Output of {TEST_FILE}")
     _ui.info(with_links(output))
-    _ui.blank_line()
-    _ui.error(
-        "Existing projects rely on what backend_settings.py lists as PROTECTED_*: their .cmd files, shortcuts,\n"
-        "settings and generated files. Keep it, or update the list together with the code. Taking an entry\n"
-        "off needs a new MAJOR version (LAUNCHER_VERSION) and steps in CHANGELOG.md.\n"
-        "To commit anyway, once: git commit --no-verify"
+    _ui.heading("How to fix")
+    _ui.info(
+        "1. Check the protected files/settings named above (backend_settings.py: PROTECTED_*).\n"
+        "2. Register new commands in the corresponding protected list; restore accidental removals.\n"
+        "   Removing a protected entry requires a new MAJOR version and migration steps in CHANGELOG.md.\n"
+        "3. Review and stage the corrections, then commit again.\n"
+        "This check reads working files, including unstaged edits."
     )
     return 1
 

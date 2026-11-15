@@ -14,7 +14,7 @@ import time
 import traceback
 from pathlib import Path
 from types import ModuleType, SimpleNamespace
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING, Dict, Optional, Union
 
 # Last, so app modules named like standard-library modules (code/random.py, ...) cannot shadow them.
 sys.path.append(str(Path(__file__).resolve().parents[3]))
@@ -34,9 +34,11 @@ from pyapp.DONT_CHANGE.scripts.console_tools import (
     set_terminal_title,
 )
 from pyapp.DONT_CHANGE.scripts.diagnostics import note_ignored
+from pyapp.DONT_CHANGE.scripts.file_tools import make_abs_path_relative_to_file
 from pyapp.DONT_CHANGE.scripts.instance_policy import decide
 from pyapp.DONT_CHANGE.scripts.launcher_ui import (
     OUTPUT_LOG_SUFFIX,
+    get_log_folder_path,
     get_log_path,
     set_settings_colors,
 )
@@ -54,6 +56,52 @@ if TYPE_CHECKING:
     BinaryProcess = subprocess.Popen[bytes]
 else:
     BinaryProcess = subprocess.Popen
+
+
+def app_environment(
+    settings: Union[ModuleType, SimpleNamespace], has_terminal: bool, log_path: str, app_id: str
+) -> Dict[str, str]:
+    """Build the app's public environment without creating the folders its paths describe."""
+    env = clean_python_environment()
+    for key in list(env):
+        if key.startswith("PYAPP_"):
+            env.pop(key)
+    env.update(settings.environment_for_main_py)
+    env.update(
+        PROGRAM_NAME=settings.program_name,
+        ICON_PATH=paths.ICON_PATH,
+        SUCCESS_ICON_PATH=paths.SUCCESS_ICON_PATH,
+        FAILURE_ICON_PATH=paths.FAILURE_ICON_PATH,
+        SETTINGS_ICON_PATH=paths.SETTINGS_ICON_PATH,
+        LOG_ICON_PATH=paths.LOG_ICON_PATH,
+        CRASH_LOG_ICON_PATH=paths.CRASH_LOG_ICON_PATH,
+        OPEN_CODE_ICON_PATH=paths.OPEN_CODE_ICON_PATH,
+        TITLE_AFTER_SUCCESS=paths.TITLE_AFTER_SUCCESS.format(program_name=settings.program_name),
+        TITLE_AFTER_FAILURE=paths.TITLE_AFTER_FAILURE.format(program_name=settings.program_name),
+        USER_SETTINGS_PATH=(
+            make_abs_path_relative_to_file(settings.user_settings_path, paths.DEV_SETTINGS_PATH)
+            if settings.user_settings_path
+            else ""
+        ),
+        LOG_DIR=str(Path(log_path).parent) if log_path else "",
+        CRASH_LOG_DIR=(
+            get_log_folder_path(
+                settings.crash_log_path, settings.crash_log_path_is_relative_to_start_folder_if_relative
+            )
+            or ""
+        )
+        if settings.enable_crash_log
+        else "",
+        PROJECT_DIR=str(Path(paths.BACKEND_DIR).parents[1]),
+        START_DIR=os.environ.get("PYAPP_START_DIR", str(Path.cwd())),
+        PROGRAM_HAS_TERMINAL="1" if has_terminal else "0",
+        LOG_PATH=log_path,
+        APP_ID=app_id,
+        WDIR_IS_SCRIPT_DIR="0" if settings.start_in_shortcut_folder else "1",
+        CLOSE_AFTER_FAILURE="1" if settings.close_after_failure else "0",
+        CLOSE_AFTER_SUCCESS="1" if settings.close_after_success else "0",
+    )
+    return env
 
 
 def end_started_app(child: Optional[BinaryProcess]) -> None:
@@ -305,19 +353,7 @@ def main() -> None:
             "ready": str(run_dir / "ready"),
         }
         atomic_json(run_dir / "wrapper.json", config)
-        env = clean_python_environment()
-        for key in list(env):
-            if key.startswith("PYAPP_"):
-                env.pop(key)
-        env.update(settings.environment_for_main_py)
-        env["PROGRAM_NAME"] = settings.program_name
-        env["ICON_PATH"] = paths.ICON_PATH
-        env["PROGRAM_HAS_TERMINAL"] = "1" if has_terminal else "0"
-        env["LOG_PATH"] = log_path
-        env["APP_ID"] = window_app_id
-        env["WDIR_IS_SCRIPT_DIR"] = "0" if settings.start_in_shortcut_folder else "1"
-        env["CLOSE_AFTER_FAILURE"] = "1" if settings.close_after_failure else "0"
-        env["CLOSE_AFTER_SUCCESS"] = "1" if settings.close_after_success else "0"
+        env = app_environment(settings, has_terminal, log_path, window_app_id)
         pump = None
         early_output = bytearray()
         if log_path:

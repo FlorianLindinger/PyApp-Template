@@ -23,9 +23,9 @@ from typing import Dict, List
 # LOW:
 #   special cases and cosmetics: shortcut names, uv, certificates, error report details.
 
-# ==================================================================
-# ==== IMPORTANT ===================================================
-# ==================================================================
+# ========================================
+# ==== IMPORTANT =========================
+# ========================================
 
 # --- Program ---
 # Used for the shortcuts and window titles:
@@ -79,9 +79,9 @@ input_prepend = "%H:%M:%S > "
 #   "ask"      ask whether to replace the running instance(s)
 instance_policy = "allow"
 
-# ==================================================================
-# ==== MEDIUM ======================================================
-# ==================================================================
+# ========================================
+# ==== MEDIUM ============================
+# ========================================
 
 # --- When the program ends ---
 # success            end of file, sys.exit(0) or sys.exit()
@@ -193,9 +193,9 @@ crash_log_path = "..\\..\\crash logs\\crash_log_%Y-%m-%d_%H-%M-%S.txt"
 # A relative crash_log_path starts at: False = this file, True = the folder of the starting shortcut.
 crash_log_path_is_relative_to_start_folder_if_relative = False
 
-# ==================================================================
-# ==== LOW =========================================================
-# ==================================================================
+# ========================================
+# ==== LOW ===============================
+# ========================================
 
 # --- Shortcut names ---
 # Shortcut names. "" to disable.

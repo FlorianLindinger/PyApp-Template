@@ -1,4 +1,4 @@
-"""Dev tools for packages: add, remove, upgrade, sync, find imports, terminal, export."""
+"""Dev tools for packages: add, remove, upgrade, sync, import/reset, terminal, export."""
 
 from __future__ import annotations
 
@@ -14,7 +14,9 @@ from pyapp.DONT_CHANGE.scripts.config import (
     requirement_key,
     requirements_file_entries,
     requirements_file_path,
+    set_list_setting,
     settings,
+    validate,
 )
 from pyapp.DONT_CHANGE.scripts.console_tools import (
     ANSI_DIM,
@@ -30,6 +32,7 @@ from pyapp.DONT_CHANGE.scripts.console_tools import (
 from pyapp.DONT_CHANGE.scripts.dev_tools.common import (
     COMMIT_HINT,
     ask_package_names,
+    confirm,
     normalized,
     prepare,
     requirement_name,
@@ -121,7 +124,7 @@ def cmd_sync(_arguments: List[str]) -> None:
     print_success("The environment matches uv.lock.")
 
 
-def find_imports_and_add() -> None:
+def find_imports_and_add(*, reset: bool = False) -> None:
     """Show the imports found in the project, let the user review them, then add the chosen ones."""
     from pyapp.DONT_CHANGE.scripts.import_finder import find_requirements
 
@@ -129,10 +132,15 @@ def find_imports_and_add() -> None:
     requirements, problems = find_requirements()
     for problem in problems:
         print_warn("Could not parse " + problem)
+    if reset and problems:
+        raise SetupError("Fix the parse errors before resetting packages; imports may be missing from this scan.")
     declared = {requirement_name(r) for r in all_packages(s)}
-    candidates = [r for r in requirements if normalized(r.distribution) not in declared]
+    from_file = {requirement_name(r) for r in requirements_file_entries(s)}
+    candidates = [r for r in requirements if normalized(r.distribution) not in (from_file if reset else declared)]
     if not requirements:
         print_info("No third-party imports found.")
+        if reset:
+            reset_packages_to_imports([])
         return
     print_heading("Third-party imports")
     width = max(len(r.distribution) for r in requirements)
@@ -146,11 +154,14 @@ def find_imports_and_add() -> None:
         )
     if not candidates:
         print()
+        if reset:
+            reset_packages_to_imports([])
+            return
         print_success("Every imported package is already declared.")
         return
     # An ambiguous name has several candidates; none is checked, so the user picks the right one.
     selected = [not r.optional and r.source != "ambiguous" for r in candidates]
-    print_heading("Packages to add")
+    print_heading("Packages to keep or add" if reset else "Packages to add")
     print_info(
         "installed = found in the environment, ambiguous = one of several installed packages with that name (pick one),"
         " mapping = bundled list, guess = same as the import name (check it!)"
@@ -162,7 +173,8 @@ def find_imports_and_add() -> None:
             + styled(r.source + (", optional" if r.optional else ""), ANSI_DIM)
             for r, chosen in zip(candidates, selected)
         )
-        answer = ask("Enter = add the checked ones, numbers = toggle (e.g. 2 5), n = cancel:").strip().lower()
+        action = "review the reset" if reset else "add the checked ones"
+        answer = ask(f"Enter = {action}, numbers = toggle (e.g. 2 5), n = cancel:").strip().lower()
         if answer in ("n", "no", "q"):
             return
         if not answer:
@@ -171,6 +183,9 @@ def find_imports_and_add() -> None:
             if item.isdecimal() and 1 <= int(item) <= len(candidates):
                 selected[int(item) - 1] = not selected[int(item) - 1]
     names = [r.distribution for r, chosen in zip(candidates, selected) if chosen]
+    if reset:
+        reset_packages_to_imports(names)
+        return
     if not names:
         return
     refuse_mutation_while_running()
@@ -183,6 +198,59 @@ def cmd_find_imports(_arguments: List[str]) -> None:
     """Find the packages the code imports and add the missing ones after review."""
     prepare()
     find_imports_and_add()
+
+
+def reset_packages_to_imports(names: List[str]) -> None:
+    """Preview a replacement package list, keeping existing constraints, then sync after confirmation."""
+    s = settings()
+    wanted = {normalized(name) for name in names}
+    previous = package_entries(s)
+    kept = [entry for entry in previous if requirement_name(entry) in wanted]
+    declared = {requirement_name(entry) for entry in kept}
+    added = [name for name in names if normalized(name) not in declared]
+    removed = [entry for entry in previous if requirement_name(entry) not in wanted]
+    print_heading("Reset packages to imports")
+    print_info("Keep: " + (", ".join(kept) or "(none)"))
+    print_info("Add: " + (", ".join(added) or "(none)"))
+    print_info("Remove: " + (", ".join(removed) or "(none)"))
+    print_warn("Static imports cannot detect every plugin, command-line tool or dynamic import. Review removals.")
+    print_info("The requirements_path file and its packages are kept. Dependencies still needed are kept by uv.")
+    if not confirm("Replace packages with this list and sync the environment?"):
+        print_info("Nothing was changed.")
+        return
+    refuse_mutation_while_running()
+    set_list_setting("packages", kept + added)
+    # Reloaded settings are used by prepare(); reconciling regenerates pyproject.toml and uv.lock.
+    prepare()
+    sync(paths.VENV_PYTHON_EXE, exact=True)
+    print_success("Packages reset to the reviewed imports.")
+    print_info(COMMIT_HINT)
+
+
+def cmd_reset_imports(_arguments: List[str]) -> None:
+    """Reset packages to reviewed imports, removing unused declarations and preserving kept constraints."""
+    # Scan before preparation so declining cannot change the environment.
+    validate(settings())
+    find_imports_and_add(reset=True)
+
+
+def cmd_install_requirements(arguments: List[str]) -> None:
+    """Import a requirements.txt with uv add -r, record its packages and install them."""
+    if len(arguments) > 1:
+        raise SetupError("Pass one requirements file path, quoted if it contains spaces.")
+    name = arguments[0] if arguments else ask("Requirements file path (Enter = cancel):").strip().strip('"')
+    if not name:
+        print_info("Nothing was changed.")
+        return
+    source = Path(name).expanduser().resolve()
+    if not source.is_file():
+        raise SetupError(f'Requirements file not found: "{source}".')
+    refuse_mutation_while_running()
+    prepare()
+    # Use the normal uv-add/reconciliation path, including recording resolved requirements in settings.
+    add_packages(["-r", str(source)])
+    print_success(f'Imported packages from "{source}". The source file is unchanged.')
+    print_info(COMMIT_HINT)
 
 
 def cmd_terminal(_arguments: List[str]) -> None:

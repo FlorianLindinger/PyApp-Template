@@ -63,7 +63,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     if not files:
         return 0
     _ui.info(
-        f"Push blocked: {len(files)} launcher file(s) changed for main, but not CHANGELOG.md. "
+        "Push blocked: Add a launcher CHANGELOG.md entry before pushing launcher changes to main. "
         'Click "Show Command Output" for details.'
     )
     _ui.heading("Launcher files changed without a changelog entry")

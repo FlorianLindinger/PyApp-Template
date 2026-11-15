@@ -166,6 +166,115 @@ class ExportTests(unittest.TestCase):
         run_uv.assert_not_called()
 
 
+class PackageImportTests(unittest.TestCase):
+    def test_requirements_path_with_spaces_is_one_uv_argument(self):
+        from pyapp.DONT_CHANGE.scripts.dev_tools import packages
+
+        with tempfile.TemporaryDirectory() as folder:
+            source = Path(folder, "my requirements.txt")
+            source.write_text("requests>=2\n", encoding="utf-8")
+            with mock.patch.multiple(
+                packages, prepare=mock.DEFAULT, refuse_mutation_while_running=mock.DEFAULT, add_packages=mock.DEFAULT
+            ) as mocks, mock.patch("builtins.print"):
+                packages.cmd_install_requirements([str(source)])
+            mocks["add_packages"].assert_called_once_with(["-r", str(source.resolve())])
+            self.assertEqual(source.read_text(encoding="utf-8"), "requests>=2\n")
+
+    def test_cancel_or_missing_requirements_file_does_not_prepare(self):
+        from pyapp.DONT_CHANGE.scripts.dev_tools import packages
+        from pyapp.DONT_CHANGE.scripts.errors import SetupError
+
+        with mock.patch.object(packages, "ask", return_value=""), mock.patch.object(
+            packages, "prepare"
+        ) as prepare, mock.patch("builtins.print"):
+            packages.cmd_install_requirements([])
+            with tempfile.TemporaryDirectory() as folder, self.assertRaises(SetupError):
+                packages.cmd_install_requirements([str(Path(folder, "missing.txt"))])
+            prepare.assert_not_called()
+
+    def test_reset_keeps_constraints_and_removes_unused_declarations(self):
+        from pyapp.DONT_CHANGE.scripts.dev_tools import packages
+
+        with mock.patch.multiple(
+            packages,
+            settings=mock.DEFAULT,
+            package_entries=mock.Mock(return_value=['requests[socks]>=2; python_version >= "3.8"', "unused==1"]),
+            confirm=mock.Mock(return_value=True),
+            refuse_mutation_while_running=mock.DEFAULT,
+            set_list_setting=mock.DEFAULT,
+            prepare=mock.DEFAULT,
+            sync=mock.DEFAULT,
+        ) as mocks, mock.patch("builtins.print"):
+            packages.reset_packages_to_imports(["requests", "numpy"])
+        mocks["set_list_setting"].assert_called_once_with(
+            "packages", ['requests[socks]>=2; python_version >= "3.8"', "numpy"]
+        )
+        mocks["sync"].assert_called_once_with(packages.paths.VENV_PYTHON_EXE, exact=True)
+
+    def test_declining_reset_changes_nothing(self):
+        from pyapp.DONT_CHANGE.scripts.dev_tools import packages
+
+        with mock.patch.multiple(
+            packages,
+            settings=mock.DEFAULT,
+            package_entries=mock.Mock(return_value=["unused"]),
+            confirm=mock.Mock(return_value=False),
+            set_list_setting=mock.DEFAULT,
+            prepare=mock.DEFAULT,
+            sync=mock.DEFAULT,
+        ) as mocks, mock.patch("builtins.print"):
+            packages.reset_packages_to_imports([])
+        for name in ("set_list_setting", "prepare", "sync"):
+            mocks[name].assert_not_called()
+
+    def test_reset_never_removes_after_a_parse_error(self):
+        from pyapp.DONT_CHANGE.scripts.dev_tools import packages
+        from pyapp.DONT_CHANGE.scripts.errors import SetupError
+
+        with mock.patch.object(packages, "settings"), mock.patch.object(packages, "validate"), mock.patch(
+            "pyapp.DONT_CHANGE.scripts.import_finder.find_requirements", return_value=([], ["broken.py"])
+        ), mock.patch.object(packages, "set_list_setting") as write, mock.patch("builtins.print"), self.assertRaises(
+            SetupError
+        ):
+            packages.cmd_reset_imports([])
+        write.assert_not_called()
+
+    def test_requirements_path_packages_are_excluded_from_replacement_list(self):
+        from pyapp.DONT_CHANGE.scripts.dev_tools import packages
+        from pyapp.DONT_CHANGE.scripts.import_finder import Requirement
+
+        found = [Requirement("requests", ["requests"], "installed", ["main.py"], False)]
+        with mock.patch.multiple(
+            packages,
+            settings=mock.DEFAULT,
+            all_packages=mock.Mock(return_value=["requests>=2", "unused"]),
+            requirements_file_entries=mock.Mock(return_value=["requests>=2"]),
+            reset_packages_to_imports=mock.DEFAULT,
+            validate=mock.DEFAULT,
+        ) as mocks, mock.patch(
+            "pyapp.DONT_CHANGE.scripts.import_finder.find_requirements", return_value=(found, [])
+        ), mock.patch("builtins.print"):
+            packages.cmd_reset_imports([])
+        mocks["reset_packages_to_imports"].assert_called_once_with([])
+
+    def test_running_app_blocks_reset_before_writing(self):
+        from pyapp.DONT_CHANGE.scripts.dev_tools import packages
+        from pyapp.DONT_CHANGE.scripts.errors import SetupError
+
+        with mock.patch.multiple(
+            packages,
+            settings=mock.DEFAULT,
+            package_entries=mock.Mock(return_value=["unused"]),
+            confirm=mock.Mock(return_value=True),
+            refuse_mutation_while_running=mock.Mock(side_effect=SetupError("app running")),
+            set_list_setting=mock.DEFAULT,
+            prepare=mock.DEFAULT,
+        ) as mocks, mock.patch("builtins.print"), self.assertRaises(SetupError):
+            packages.reset_packages_to_imports([])
+        mocks["set_list_setting"].assert_not_called()
+        mocks["prepare"].assert_not_called()
+
+
 class SelfContainedTests(unittest.TestCase):
     def test_status_tells_whether_everything_is_inside_the_folder(self):
         from pyapp.DONT_CHANGE.scripts.dev_tools import self_contained

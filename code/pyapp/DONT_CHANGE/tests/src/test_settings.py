@@ -235,8 +235,8 @@ class DefaultsTests(unittest.TestCase):
                 )
             )
             self.fail(
-                "Settings mismatch: code/pyapp/developer_settings.py differs from fallback "
-                "code/pyapp/DONT_CHANGE/data/dev_settings_default.py.\n"
+                "Settings mismatch: developer_settings.py does not match the fallback developer settings "
+                "(dev_settings_default.py).\n"
                 "The shipped template must match in settings, values and comments. "
                 "Remove accidental edits, or update both files for intentional template-default changes.\n" + difference
             )

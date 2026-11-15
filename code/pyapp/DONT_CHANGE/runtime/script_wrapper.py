@@ -16,7 +16,7 @@ import sys
 import threading
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Callable, List, Optional, TextIO, Tuple, Union
+from typing import Any, Callable, List, Optional, TextIO, Tuple, TypeVar, Union
 
 # The protocol module lives next to this file; import it before sys.path[0]
 # is switched to the application's folder. It stays in sys.modules as "_pyapp",
@@ -373,6 +373,52 @@ def install_input_prefix(input_prepend: Optional[str], browser_ui: str = "") -> 
 
 # ------------------------------------------------------------ reports
 
+_ExitFunction = TypeVar("_ExitFunction", bound=Callable[..., object])
+
+
+def capture_legacy_atexit_errors(record: Callable[[BaseException], None]) -> None:
+    """Record errors from callbacks registered after setup on Python 3.8/3.9.
+
+    Keep execution in the native atexit registry so shutdown ordering is unchanged.
+    Wrapped callbacks compare like their originals because unregister() uses equality.
+    """
+    import atexit
+    from functools import wraps
+
+    original_register = atexit.register
+
+    class ExitCallback:
+        def __init__(self, function: Callable[..., object]) -> None:
+            self.function = function
+
+        def __call__(self, *args: object, **kwargs: object) -> object:
+            try:
+                return self.function(*args, **kwargs)
+            except BaseException as error:
+                record(error)
+                raise
+
+        def __eq__(self, other: object) -> bool:
+            return self.function == other
+
+        def __hash__(self) -> int:
+            return hash(self.function)
+
+        def __repr__(self) -> str:
+            return repr(self.function)
+
+    @wraps(original_register)
+    def register(function: _ExitFunction, /, *args: object, **kwargs: object) -> _ExitFunction:
+        if not callable(function):
+            raise TypeError("the first argument must be callable")
+        original_register(ExitCallback(function), *args, **kwargs)
+        return function
+
+    # Python 3.8 cannot annotate the ParamSpec signature used by modern atexit stubs.
+    # Install the compatibility shim through the module namespace; its return identity and
+    # native callback argument handling are preserved above.
+    vars(atexit)["register"] = register
+
 
 def save_result(code: int) -> None:
     """Atomic completion marker; its absence tells the watchdog the interpreter died abruptly."""
@@ -415,8 +461,10 @@ def capture_background_errors(
 
     # An exception in an atexit callback (e.g. a final save) leaves the exit code at 0. Python 3.10+
     # passes it to sys.unraisablehook, so it can be recorded like a late worker-thread error, which
-    # the watchdog then reports as a failure. Python 3.8/3.9 only print it. Other ignored errors
-    # (e.g. in __del__) stay non-fatal, as before.
+    # the watchdog then reports as a failure. Older versions need registration wrappers instead.
+    # Other ignored errors (e.g. in __del__) stay non-fatal, as before.
+    if sys.version_info < (3, 10):
+        capture_legacy_atexit_errors(record)
     previous_unraisable_hook = getattr(sys, "unraisablehook", None)
     if previous_unraisable_hook is not None:
 

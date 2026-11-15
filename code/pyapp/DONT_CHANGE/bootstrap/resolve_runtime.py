@@ -249,14 +249,14 @@ def run_live(executable: object, arguments: List[str]) -> int:
 def download(url: str, target: Path) -> None:
     """Uses Windows' proxy settings and certificate store, which also suits company networks."""
     try:
-        # A fixed https://github.com address for uv's releases.
+        # Fixed HTTPS addresses for uv's releases and GitHub's release API.
         request = urllib.request.Request(url, headers={"User-Agent": "PyApp-Template"})  # noqa: S310
         with urllib.request.urlopen(request, timeout=DOWNLOAD_TIMEOUT_SECONDS) as response, target.open("wb") as stream:  # noqa: S310
             shutil.copyfileobj(response, stream)
     except (urllib.error.URLError, OSError) as error:
         raise BootstrapError(
             f"Could not download {url}: {error}. A firewall or proxy may block it. Ask your IT department to allow "
-            "github.com, or copy a folder made with the make_self_contained dev tool to this PC."
+            "github.com and api.github.com, or copy a folder made with the make_self_contained dev tool to this PC."
         ) from error
 
 
@@ -327,6 +327,49 @@ def remove_bootstrap_folders() -> None:
             pass
 
 
+def matching_uv_release(spec: str, file_name: str, stage: Path) -> str:
+    """Newest stable release satisfying spec with an archive and checksum for this architecture."""
+    best: Optional[str] = None
+    page = 1
+    metadata = stage / "uv-releases.json"
+    while True:
+        download(f"https://api.github.com/repos/astral-sh/uv/releases?per_page=100&page={page}", metadata)
+        try:
+            releases = json.loads(metadata.read_text(encoding="utf-8"))
+        except (ValueError, OSError) as error:
+            raise BootstrapError(f"Could not read uv's GitHub release list: {error}") from error
+        if not isinstance(releases, list) or any(not isinstance(release, dict) for release in releases):
+            raise BootstrapError("GitHub returned an invalid uv release list.")
+        for release in releases:
+            tag = release.get("tag_name")
+            if (
+                release.get("draft")
+                or release.get("prerelease")
+                or not isinstance(tag, str)
+                or re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", tag) is None
+                or not version_satisfies(tag, spec)
+            ):
+                continue
+            assets = release.get("assets", [])
+            names = {asset.get("name") for asset in assets if isinstance(asset, dict)}
+            if (
+                file_name in names
+                and file_name + ".sha256" in names
+                and (best is None or (version_tuple(tag) or ()) > (version_tuple(best) or ()))
+            ):
+                best = tag
+        # GitHub does not guarantee semantic-version ordering; inspect every page, including backports.
+        if len(releases) < 100:
+            break
+        page += 1
+    if best is None:
+        raise BootstrapError(
+            f"No stable uv release satisfies uv_version '{spec}' with a Windows archive and checksum for {file_name}."
+        )
+    step(f"Selected uv {best} for uv_version '{spec}'.")
+    return best
+
+
 def fetch_uv_folder(spec: str, stage: Path) -> Path:
     """A folder with a checked uv.exe: the one the batch stage already fetched if it fits, else a verified download."""
     extracted = stage / "extracted"
@@ -342,6 +385,8 @@ def fetch_uv_folder(spec: str, stage: Path) -> Path:
         return extracted
     exact = exact_version(spec)
     file_name = f"uv-{uv_release_target()}.zip"
+    if spec.strip() and exact is None:
+        exact = matching_uv_release(spec, file_name, stage)
     base = (
         f"https://github.com/astral-sh/uv/releases/download/{exact}"
         if exact
@@ -362,7 +407,7 @@ def fetch_uv_folder(spec: str, stage: Path) -> Path:
 def install_uv(spec: str, destination: Path) -> Path:
     """Put uv into its own folder (replacing an earlier one) and return uv.exe."""
     exact = exact_version(spec)
-    step(f"Getting uv {exact or '(latest)'} for {destination} ...")
+    step(f"Getting uv {exact or spec.strip() or '(latest)'} for {destination} ...")
     destination.parent.mkdir(parents=True, exist_ok=True)
     # Next to the destination: a rename cannot cross drives.
     stage = destination.parent / ("uv-download-" + uuid.uuid4().hex)
@@ -375,7 +420,7 @@ def install_uv(spec: str, destination: Path) -> Path:
         version = uv_version_of(found)
         if not version_satisfies(version, spec):
             raise BootstrapError(
-                f"The latest uv ({version}) does not satisfy uv_version '{spec}'. Use an exact version in uv_version."
+                f"The downloaded uv ({version}) does not satisfy uv_version '{spec}'. The installed uv was kept."
             )
         previous = Path(str(destination) + ".previous")
         shutil.rmtree(previous, ignore_errors=True)

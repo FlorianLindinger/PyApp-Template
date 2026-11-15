@@ -163,6 +163,7 @@ class PushTests(unittest.TestCase):
             self.assertEqual(tool.check_push("refs"), 1)
         self.assertTrue(output.getvalue().startswith("Push blocked:"))
         self.assertIn("app.py:12 (commit abc1234)", output.getvalue().splitlines()[0])
+        self.assertIn("Possible secret in commits being pushed", output.getvalue().splitlines()[0])
         self.assertNotIn(GITHUB_TOKEN, output.getvalue())
 
     def revisions(self, local: str, remote: str, known: bool = True):
@@ -199,10 +200,17 @@ class CommitTests(unittest.TestCase):
         with mock.patch("sys.stdout", output):
             tool.hook_summary("Commit", tool.line_findings(f"key = {AWS_KEY}", "app.py", "app.py:100 (staged)"))
         first_line = output.getvalue().splitlines()[0]
-        self.assertTrue(first_line.startswith("Commit blocked: AWS access key"))
+        self.assertTrue(first_line.startswith("Commit blocked: Possible secret in staged changes: AWS access key"))
         self.assertIn("app.py:100 (staged)", first_line)
         self.assertNotIn(AWS_KEY, output.getvalue())
         self.assertIn('Click "Show Command Output" for details.', first_line)
+
+    def test_personal_data_is_distinguished_from_a_possible_secret(self):
+        finding = tool.Finding(tool.PERSONAL, "Home folder path", "User", "app.py:12 (staged)", "app.py")
+        output = io.StringIO()
+        with mock.patch("sys.stdout", output):
+            tool.hook_summary("Commit", [finding])
+        self.assertIn("Personal data in staged changes: Home folder path", output.getvalue().splitlines()[0])
 
     def test_commit_prints_the_source_from_the_staged_diff(self):
         line = '    profile = "C:' + '\\\\Users\\\\Alice"'

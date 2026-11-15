@@ -187,18 +187,68 @@ class WrapperTests(unittest.TestCase):
         self.assertEqual(code, 7)
         self.assertIn(b"last words", raw.read_bytes())
 
-    @unittest.skipIf(sys.version_info < (3, 10), "Python 3.8/3.9 do not pass atexit errors to sys.unraisablehook")
     def test_atexit_failure_is_recorded(self):
         source = """
             import atexit
             def save():
                 raise RuntimeError('final save failed')
+            atexit.register(lambda: print('remaining cleanup ran'))
             atexit.register(save)
+        """
+        code, output, run = self.run_app(source)
+        self.assertEqual(code, 0)
+        self.assertIn("remaining cleanup ran", output)
+        background = json.loads((run / "traceback.json.background").read_text(encoding="utf-8"))
+        self.assertEqual(background["exception_type"], "RuntimeError")
+
+    def test_atexit_system_exit_preserves_success_and_records_failure(self):
+        for status in (0, 1):
+            with self.subTest(status=status):
+                code, _, run = self.run_app(f"import atexit\nimport sys\natexit.register(sys.exit, {status})\n")
+                self.assertEqual(code, 0)
+                self.assertEqual((run / "traceback.json.background").exists(), status != 0)
+
+    def test_atexit_registration_keeps_decorators_arguments_and_reverse_order(self):
+        source = """
+            import atexit
+            def finish(name, *, suffix):
+                print(name + suffix)
+            assert atexit.register(finish, 'first', suffix='!') is finish
+            @atexit.register
+            def second():
+                print('second')
+            assert second.__name__ == 'second'
+        """
+        code, output, run = self.run_app(source)
+        self.assertEqual(code, 0)
+        self.assertEqual(output.splitlines(), ["second", "first!"])
+        self.assertFalse((run / "traceback.json.background").exists())
+
+    def test_atexit_unregister_removes_duplicates_and_equal_callables(self):
+        source = """
+            import atexit
+            def removed():
+                raise RuntimeError('should not run')
+            atexit.register(removed)
+            atexit.register(removed)
+            atexit.unregister(removed)
+            class EqualCallback:
+                def __call__(self):
+                    raise RuntimeError('equal callback should not run')
+                def __eq__(self, other):
+                    return isinstance(other, EqualCallback)
+            atexit.register(EqualCallback())
+            atexit.unregister(EqualCallback())
+            try:
+                atexit.register(42)
+            except TypeError:
+                pass
+            else:
+                raise AssertionError('non-callable was accepted')
         """
         code, _, run = self.run_app(source)
         self.assertEqual(code, 0)
-        background = json.loads((run / "traceback.json.background").read_text(encoding="utf-8"))
-        self.assertEqual(background["exception_type"], "RuntimeError")
+        self.assertFalse((run / "traceback.json.background").exists())
 
     def test_other_ignored_errors_stay_harmless(self):
         source = """

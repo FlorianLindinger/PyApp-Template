@@ -106,6 +106,8 @@ PROTECTED_DEV_TOOL_COMMANDS = [
     "upgrade",
     "sync",
     "find-imports",
+    "reset-imports",
+    "install-requirements",
     "terminal",
     "change-python",
     "update-python",

@@ -4,6 +4,10 @@ Tools for working on the launcher in `code/pyapp/DONT_CHANGE`, not for your app.
 
 Double-click a `.bat`, or run it from a terminal with arguments. Each one uses the Python the launcher has already set up. When it finishes, press Enter to run it again, with the same arguments, or close the window. The `.bat` files only name their script; `src/_run_tool.bat` does the rest for all of them.
 
+Hook failures begin with a short cause before the detailed output: a failing test or checker,
+a compatibility problem, a missing changelog entry, or a possible leak. Leak reports distinguish
+staged changes from commits being pushed. Use **Show Command Output** for locations and repair steps.
+
 | Tool | What it does |
 | --- | --- |
 | `verify_launcher.bat [--fix]` | Runs Ruff lint (including pathlib `PTH` and security `S` checks), Ruff format and strict Pyrefly on `DONT_CHANGE`, targeting Python 3.8 with its own `ruff.toml` and `pyrefly.toml`. Prints diagnostics and a warning for each check that reports problems; exits nonzero if any check fails. `--fix` applies safe fixes and formatting first; `--unsafe-fixes` also applies Ruff's unsafe ones. Needs `ruff` and `pyrefly` on PATH, or `uvx`. |

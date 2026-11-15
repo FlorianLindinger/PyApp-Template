@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import contextlib
+import hashlib
+import json
 import os
 import shutil
 import subprocess
@@ -10,6 +12,7 @@ import sys
 import tempfile
 import time
 import unittest
+import zipfile
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Dict, List, Tuple
@@ -72,6 +75,54 @@ class VersionTests(unittest.TestCase):
 
 
 class FetchUvTests(unittest.TestCase):
+    def test_range_downloads_the_selected_release_and_verifies_its_checksum(self):
+        with tempfile.TemporaryDirectory() as folder:
+            stage = Path(folder)
+            archive = stage / "source.zip"
+            with zipfile.ZipFile(archive, "w") as stream:
+                stream.writestr("uv.exe", b"uv")
+            content = archive.read_bytes()
+            urls: List[str] = []
+
+            def download(url: str, target: Path) -> None:
+                urls.append(url)
+                target.write_bytes(hashlib.sha256(content).hexdigest().encode() if url.endswith(".sha256") else content)
+
+            with mock.patch.object(tool, "own_bootstrap_folder", return_value=None), mock.patch.object(
+                tool, "matching_uv_release", return_value="0.9.9"
+            ) as select, mock.patch.object(
+                tool, "uv_release_target", return_value="x86_64-pc-windows-msvc"
+            ), mock.patch.object(tool, "download", side_effect=download):
+                extracted = tool.fetch_uv_folder(">=0.9,<0.10", stage)
+            select.assert_called_once_with(">=0.9,<0.10", "uv-x86_64-pc-windows-msvc.zip", stage)
+            self.assertEqual((extracted / "uv.exe").read_bytes(), b"uv")
+            self.assertTrue(all("/download/0.9.9/" in url for url in urls))
+
+    def test_exact_and_unrestricted_downloads_do_not_list_releases(self):
+        with tempfile.TemporaryDirectory() as folder:
+            for spec, url_part in (("==0.9.9", "/download/0.9.9/"), ("", "/latest/download/")):
+                with self.subTest(spec=spec), mock.patch.object(
+                    tool, "own_bootstrap_folder", return_value=None
+                ), mock.patch.object(tool, "matching_uv_release") as select, mock.patch.object(
+                    tool, "download", side_effect=tool.BootstrapError("stop before network")
+                ) as fetch:
+                    with self.assertRaises(tool.BootstrapError):
+                        tool.fetch_uv_folder(spec, Path(folder))
+                    self.assertIn(url_part, fetch.call_args[0][0])
+                    select.assert_not_called()
+
+    def test_no_matching_release_keeps_the_installed_uv_and_cleans_staging(self):
+        with tempfile.TemporaryDirectory() as folder:
+            destination = Path(folder, "uv")
+            destination.mkdir()
+            (destination / "uv.exe").write_bytes(b"previous")
+            with mock.patch.object(tool, "own_bootstrap_folder", return_value=None), mock.patch.object(
+                tool, "matching_uv_release", side_effect=tool.BootstrapError("no matching release")
+            ), self.assertRaises(tool.BootstrapError):
+                tool.install_uv("<0.1", destination)
+            self.assertEqual((destination / "uv.exe").read_bytes(), b"previous")
+            self.assertEqual(list(Path(folder).iterdir()), [destination])
+
     def test_the_bootstrap_uv_is_taken_without_its_archive(self):
         with tempfile.TemporaryDirectory() as folder:
             boot = Path(folder, "uv-bootstrap-1234")
@@ -85,6 +136,72 @@ class FetchUvTests(unittest.TestCase):
             ), mock.patch.dict(os.environ, {"PYAPP_BOOT_UV": str(boot / "uv.exe")}):
                 extracted = tool.fetch_uv_folder("", stage)
             self.assertEqual(sorted(p.name for p in extracted.iterdir()), ["uv.exe", "uvx.exe"])
+
+
+class MatchingUvReleaseTests(unittest.TestCase):
+    archive = "uv-x86_64-pc-windows-msvc.zip"
+
+    def release(self, tag: str, **changes: object) -> Dict[str, object]:
+        return {
+            "tag_name": tag,
+            "draft": False,
+            "prerelease": False,
+            "assets": [{"name": self.archive}, {"name": self.archive + ".sha256"}],
+            **changes,
+        }
+
+    def select(self, spec: str, pages: List[List[Dict[str, object]]]) -> Tuple[str, List[str]]:
+        urls: List[str] = []
+
+        def download(url: str, target: Path) -> None:
+            urls.append(url)
+            target.write_text(json.dumps(pages[len(urls) - 1]), encoding="utf-8")
+
+        with tempfile.TemporaryDirectory() as folder, mock.patch.object(tool, "download", side_effect=download):
+            return tool.matching_uv_release(spec, self.archive, Path(folder)), urls
+
+    def test_highest_matching_version_is_selected_numerically_not_by_api_order(self):
+        selected, _ = self.select(
+            ">=0.9,<0.10", [[self.release(tag) for tag in ("0.10.0", "0.9.2", "0.9.12", "0.9.9")]]
+        )
+        self.assertEqual(selected, "0.9.12")
+
+    def test_compatible_and_excluded_versions(self):
+        selected, _ = self.select("~=0.9.0,!=0.9.12", [[self.release(tag) for tag in ("0.10.0", "0.9.12", "0.9.9")]])
+        self.assertEqual(selected, "0.9.9")
+
+    def test_older_pages_are_checked_even_after_a_match(self):
+        selected, urls = self.select("<0.10", [[self.release("0.9.2")] * 100, [self.release("0.9.12")]])
+        self.assertEqual(selected, "0.9.12")
+        self.assertTrue(urls[0].endswith("per_page=100&page=1"))
+        self.assertTrue(urls[1].endswith("per_page=100&page=2"))
+
+    def test_nonstable_or_incomplete_releases_are_skipped(self):
+        releases = [
+            self.release("0.9.20", draft=True),
+            self.release("0.9.19", prerelease=True),
+            self.release("0.9.18rc1"),
+            self.release("0.9.17", assets=[]),
+            self.release("0.9.16", assets=[{"name": self.archive}]),
+            self.release("0.9.15"),
+        ]
+        selected, _ = self.select("<0.10", [releases])
+        self.assertEqual(selected, "0.9.15")
+
+    def test_no_match_has_an_actionable_error(self):
+        with self.assertRaisesRegex(tool.BootstrapError, "No stable uv release satisfies uv_version '<0.1'"):
+            self.select("<0.1", [[self.release("0.9.9")]])
+
+    def test_invalid_metadata_has_a_bootstrap_error(self):
+        for payload in ('{"message":"rate limited"}', "invalid json"):
+
+            def download(_url: str, target: Path, content: str = payload) -> None:
+                target.write_text(content, encoding="utf-8")
+
+            with self.subTest(payload=payload), tempfile.TemporaryDirectory() as folder, mock.patch.object(
+                tool, "download", side_effect=download
+            ), self.assertRaises(tool.BootstrapError):
+                tool.matching_uv_release("<1", self.archive, Path(folder))
 
 
 class UserPathTests(unittest.TestCase):

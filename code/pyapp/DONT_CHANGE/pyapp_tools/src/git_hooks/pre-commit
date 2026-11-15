@@ -17,7 +17,7 @@ if [ -z "$python" ] || [ ! -x "$python" ]; then
     python="$(command -v python3 || command -v python || command -v py)"
 fi
 if [ -z "$python" ]; then
-    echo 'Commit blocked: Python was not found. Click "Show Command Output" for details.' >&2
+    echo 'Commit blocked: Git hooks cannot find Python. Run Setup, restart your Git client, and retry.' >&2
     echo "Run Setup, then restart VS Code and try again." >&2
     echo "To bypass all commit checks once: git commit --no-verify" >&2
     exit 1

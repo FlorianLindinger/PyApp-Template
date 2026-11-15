@@ -137,6 +137,27 @@ The app gets these environment variables: `PROGRAM_NAME`, `ICON_PATH`, `APP_ID` 
 identity), `PROGRAM_HAS_TERMINAL` (`1`/`0`), `LOG_PATH`, `WDIR_IS_SCRIPT_DIR`,
 `CLOSE_AFTER_SUCCESS` and `CLOSE_AFTER_FAILURE`.
 
+The normal launcher also supplies these variables to the app and its imported modules:
+
+| Variable | Value |
+| --- | --- |
+| `SUCCESS_ICON_PATH`, `FAILURE_ICON_PATH` | Completion icons for a GUI. |
+| `SETTINGS_ICON_PATH`, `LOG_ICON_PATH`, `CRASH_LOG_ICON_PATH`, `OPEN_CODE_ICON_PATH` | Icons for matching GUI buttons. |
+| `TITLE_AFTER_SUCCESS`, `TITLE_AFTER_FAILURE` | Completion titles with the program name already filled in. |
+| `USER_SETTINGS_PATH` | Absolute user settings file path, resolved relative to `developer_settings.py`; empty when disabled. |
+| `LOG_DIR` | Folder of this run's actual `LOG_PATH`; empty when logging is disabled for this launch. |
+| `CRASH_LOG_DIR` | Configured crash-log folder, with date placeholders and relative-path rules resolved; empty when crash logging or its path is disabled. |
+| `PROJECT_DIR` | Project root containing `code/`, independent of the app's working folder. This is not uv's internal project folder in `pyapp/generated/`. |
+| `START_DIR` | Original launch folder, even when the app runs from its script's folder. |
+
+These are strings in `os.environ`, not Python global variables. For example,
+`root.title(os.environ["TITLE_AFTER_SUCCESS"])` reuses the completion title, and
+`Path(os.environ["USER_SETTINGS_PATH"])` gives the settings path (check that it is nonempty first).
+Exporting paths creates no files or folders: settings/icons may be absent, and the crash-log
+folder is normally created only when a report is written. Check existence before opening them.
+Direct Python starts and Start without launcher do not supply this full set; use
+`os.environ.get("USER_SETTINGS_PATH", "")` if the app must also work that way.
+
 ## The other shortcuts
 
 | Shortcut | Target | What it does |
@@ -196,6 +217,14 @@ not list it among its downloads (`uv python list <request> --only-downloads`), t
 fetched to `%LOCALAPPDATA%\PyApp-Template\uv` (never on PATH), the install is retried, and that uv is
 used from then on while it is newer. When the uv lists it, the download itself failed (offline,
 proxy) and no other uv is fetched; when its answer is unclear, the newer uv is fetched anyway.
+When uv must be downloaded, an exact `uv_version` pin downloads that release directly and
+`""` downloads latest. A range such as `">=0.9,<0.10"` selects the highest matching stable
+release with a Windows archive and SHA-256 checksum for this PC's architecture. Range lookup
+uses the paginated [GitHub releases API](https://docs.github.com/en/rest/releases/releases#list-releases)
+at `api.github.com`; downloads use `github.com`. Both must be reachable through the proxy/firewall.
+An already available bootstrap uv that satisfies the range can be reused. If no release matches,
+installation stops with a clear error and leaves the installed uv unchanged.
+
 `scripts/env/uv.py: uv_environment()` builds uv's environment variables and mirrors
 `set_uv_environment` in `resolve_runtime.py`; keep both in sync (a test compares the variables
 both remove). The user's other `UV_*` variables are kept, `UV_CACHE_DIR` too unless
@@ -239,6 +268,11 @@ move, so a copied folder works offline on another PC.
 - **Unexpected errors** in a tool: the tool's `fail_message`, then the traceback.
 - **Ignored errors** (cosmetic steps): `diagnostics.note_ignored()` appends them to
   `tmp/diagnostics.log` (the `status` dev tool shows the count; `PYAPP_DEBUG=1` prints them).
+- **Shutdown callbacks (`atexit`).** A failing application callback is reported as a failure even
+  when Python exits with code 0. Python 3.10+ uses `sys.unraisablehook`; on Python 3.8/3.9 the
+  wrapper intercepts registrations made after its setup while keeping Python's native shutdown
+  order and `unregister()` behavior. Callbacks registered before that setup, or through a saved
+  reference to the original registration function, are outside the older-version workaround.
 - **Exit codes** between the wrapper and the watchdog (`WrapperExit`) and between the watchdog
   and `process_exit.py` (`ExitMode`) are defined in `runtime/_pyapp.py`, with deliberately
   different numbers and an explicit mapping (`EXIT_MODE_FOR_WRAPPER_EXIT`).

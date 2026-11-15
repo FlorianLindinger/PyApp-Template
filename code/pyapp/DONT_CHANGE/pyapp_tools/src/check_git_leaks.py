@@ -390,8 +390,10 @@ def hook_summary(action: str, findings: List[Finding]) -> None:
     """Lead with an actionable line: Git clients may show only the first output line in a popup."""
     first = findings[0]
     more = f" (+{len(findings) - 1} more)" if len(findings) > 1 else ""
+    category = "Possible secret" if first.level == SECRET else "Personal data"
+    scope = "staged changes" if action == "Commit" else "commits being pushed"
     _ui.info(
-        f"{action} blocked: {first.kind} {first.value!r} at {first.where}{more}. "
+        f"{action} blocked: {category} in {scope}: {first.kind} at {first.where}{more}. "
         'Click "Show Command Output" for details.'
     )
 

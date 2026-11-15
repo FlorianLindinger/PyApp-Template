@@ -94,6 +94,27 @@ def with_links(output: str) -> str:
     return "\n".join(lines)
 
 
+def failure_reason(step: Step, code: int, output: str) -> str:
+    """A short cause for the popup; keep full diagnostics in the expanded output."""
+    if step.label == "Tests":
+        mismatch = re.search(r"^AssertionError: (Settings mismatch: .+)$", output, re.MULTILINE)
+        if mismatch:
+            return mismatch.group(1)
+        test = re.search(r"^(?:FAIL|ERROR): (\w+)", output, re.MULTILINE)
+        if test:
+            name = test.group(1)
+            name = name[5:] if name.startswith("test_") else name
+            return "Launcher test failed: " + name.replace("_", " ") + "."
+        return f"Launcher tests could not complete (exit code {code})."
+    if step.label.startswith("Verify launcher"):
+        checks = re.findall(r"^\s*(Ruff lint|Ruff format|Pyrefly)\s+FAILED\s*$", output, re.MULTILINE)
+        detail = ": " + ", ".join(dict.fromkeys(checks)) if checks else " (Ruff or Pyrefly)"
+        return "Launcher code checks failed" + detail + "."
+    if step.label == "Repository check":
+        return "Repository file/path checks failed. Fix the reported repository issues."
+    return f"{step.label} failed (exit code {code})."
+
+
 def run_step(step: Step, refs: str, *, hook: bool = False) -> int:
     """Stream manual checks; buffer hook checks so a later failure gets the first output line."""
     completed = subprocess.run(  # noqa: S603
@@ -109,13 +130,7 @@ def run_step(step: Step, refs: str, *, hook: bool = False) -> int:
         if output.startswith("Push blocked:"):
             _ui.info(output)  # the leak check's own report, with its first line and sections
         else:
-            # Promote the settings test's concise explanation above its traceback and diff.
-            mismatch = re.search(r"^AssertionError: (Settings mismatch: .+)$", output, re.MULTILINE)
-            reason = (
-                mismatch.group(1)
-                if step.label == "Tests" and mismatch
-                else (f"{step.label} failed (exit code {completed.returncode}).")
-            )
+            reason = failure_reason(step, completed.returncode, output)
             _ui.info(f'Push blocked: {reason} Click "Show Command Output" for details.')
             if output:
                 # Under its own heading, so it does not run into the summary of the checks below.
