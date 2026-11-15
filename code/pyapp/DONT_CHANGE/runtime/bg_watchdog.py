@@ -14,7 +14,7 @@ import time
 import traceback
 from pathlib import Path
 from types import ModuleType, SimpleNamespace
-from typing import TYPE_CHECKING, Dict, Optional, Union
+from typing import TYPE_CHECKING, Dict, List, Optional, Union
 
 # Last, so app modules named like standard-library modules (code/random.py, ...) cannot shadow them.
 sys.path.append(str(Path(__file__).resolve().parents[3]))
@@ -47,6 +47,7 @@ from pyapp.DONT_CHANGE.scripts.runtime_state import (
     atomic_json,
     clean_python_environment,
     create_own_job,
+    exit_code_looks_like_interpreter_crash,
     terminate_tree,
     unique_log_path,
 )
@@ -61,7 +62,13 @@ else:
 
 
 def app_working_folder(settings: Union[ModuleType, SimpleNamespace], script: str) -> str:
-    """Keep the inherited starting folder when requested; otherwise use the main script's folder."""
+    """An explicit directory wins; otherwise retain the existing shortcut/script-folder choice."""
+    configured = getattr(settings, "working_directory", "")
+    if configured:
+        folder = make_abs_path_relative_to_file(configured, paths.DEV_SETTINGS_PATH)
+        if not Path(folder).is_dir():
+            raise FileNotFoundError(f'working_directory does not exist or is not a folder: "{folder}"')
+        return folder
     if settings.start_in_shortcut_position:
         return os.environ.get("PYAPP_START_DIR", str(Path.cwd()))
     return str(Path(script).parent)
@@ -76,6 +83,12 @@ def app_environment(
         if key.startswith("PYAPP_"):
             env.pop(key)
     env.update(settings.environment_for_main_py)
+    script_directory = not settings.start_in_shortcut_position
+    if getattr(settings, "working_directory", ""):
+        main_script = main_script_path(settings)
+        script_directory = os.path.normcase(app_working_folder(settings, main_script)) == os.path.normcase(
+            str(Path(main_script).parent)
+        )
     env.update(
         PROGRAM_NAME=settings.program_name,
         ICON_PATH=paths.ICON_PATH,
@@ -106,7 +119,7 @@ def app_environment(
         PROGRAM_HAS_TERMINAL="1" if has_terminal else "0",
         LOG_PATH=log_path,
         APP_ID=app_id,
-        WDIR_IS_SCRIPT_DIR="0" if settings.start_in_shortcut_position else "1",
+        WDIR_IS_SCRIPT_DIR=str(int(script_directory)),
         CLOSE_AFTER_FAILURE="1" if settings.close_after_failure else "0",
         CLOSE_AFTER_SUCCESS="1" if settings.close_after_success else "0",
     )
@@ -211,6 +224,56 @@ def keep_raw_output(raw_path: str, log_path: str, mode: int, run_dir: Path) -> N
         note_ignored("keep or remove the raw output")
 
 
+def launch_crash_cleanup(
+    settings: Union[ModuleType, SimpleNamespace],
+    mode: int,
+    native_code: Optional[int],
+    python: List[str],
+    env: Dict[str, str],
+    cwd: str,
+    log_path: str,
+    run_dir: Path,
+) -> str:
+    """Launch one optional cleanup after a recognized hard crash, never after an ordinary error.
+
+    It is deliberately a direct, non-interactive script, not a replacement app: no wrapper,
+    recursive recovery or blocking of the original crash report. A daemon waiter reaps it while
+    this watchdog lives; the Windows job intentionally does not kill children on normal exit.
+    """
+    configured = getattr(settings, "after_interpreter_crash_script", "")
+    if not configured or mode != ExitMode.NO_REPORT or not exit_code_looks_like_interpreter_crash(native_code):
+        return ""
+    if (run_dir / paths.STOP_REQUEST_FILE_NAME).exists():
+        return ""
+    script = Path(make_abs_path_relative_to_file(configured, paths.DEV_SETTINGS_PATH))
+    output = Path(log_path).with_suffix(".recovery.log") if log_path else run_dir / "crash-recovery.log"
+    try:
+        if not script.is_file():
+            raise FileNotFoundError(f'after_interpreter_crash_script does not exist: "{script}"')
+        output.parent.mkdir(parents=True, exist_ok=True)
+        recovery_env = {
+            **env,
+            "CRASH_EXIT_CODE": str(native_code),
+            "CRASH_MAIN_SCRIPT": main_script_path(settings),
+            "CRASH_RECOVERY_LOG": str(output),
+        }
+        with output.open("ab") as stream:
+            child = subprocess.Popen(  # noqa: S603 - explicit developer-configured Python script, no shell
+                [*python, str(script)],
+                cwd=cwd,
+                env=recovery_env,
+                stdin=subprocess.DEVNULL,
+                stdout=stream,
+                stderr=subprocess.STDOUT,
+                creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+            )
+        threading.Thread(target=child.wait, name="PyApp crash cleanup", daemon=True).start()
+        return f'Interpreter-crash cleanup started (PID {child.pid}). Output: "{output}"'
+    except (OSError, ValueError):
+        note_ignored("launch interpreter-crash cleanup")
+        return f'Interpreter-crash cleanup could not start: "{script}". See tmp/diagnostics.log.'
+
+
 def handle_exit(
     settings: Union[ModuleType, SimpleNamespace],
     mode: int,
@@ -296,6 +359,7 @@ def register_with_policy(
 def main() -> None:
     """Own registration, launch, logging and completion handling for one application run."""
     app_id, launch_mode = sys.argv[1:3]
+    os.environ.pop("PYAPP_CRASH_RECOVERY_NOTICE", None)
     if app_id == paths.EMPTY_ARG_INDICATOR:
         app_id = ""
     run_dir = Path(os.environ["PYAPP_RUN_DIR"])
@@ -385,6 +449,9 @@ def main() -> None:
             # The browser terminal's UI request file: input() announces itself there.
             "browser_ui": os.environ.get(paths.BROWSER_UI_ENV_VAR, "") if launch_mode == "browser" else "",
             "foreground_on_first_print": settings.foreground_on_first_print and has_terminal,
+            "keyboard_interrupt_action": settings.keyboard_interrupt_action,
+            "program_name": settings.program_name,
+            "stop_request": str(run_dir / paths.STOP_REQUEST_FILE_NAME),
             "log_print_prepend": settings.log_print_prepend,
             "log_input_prepend": settings.log_input_prepend,
             "log_path": log_path,
@@ -522,6 +589,11 @@ def main() -> None:
             # Stopped by the Stop shortcut or a replacing launch: no sounds, menus or prompts.
             print_info("Stopped on request.")
             return
+        recovery_notice = launch_crash_cleanup(
+            settings, mode, native, [app_python["exe"], *app_python["flags"]], env, cwd, log_path, run_dir
+        )
+        if recovery_notice:
+            os.environ["PYAPP_CRASH_RECOVERY_NOTICE"] = recovery_notice
         handle_exit(settings, mode, app_id, has_terminal, log_path, script, run_dir, native)
     except Exception as error:
         try:

@@ -41,6 +41,7 @@ DEFAULTS: Dict[str, object] = {
     "program_name": "App",
     "python_version": "",
     "main_script_path": "..\\main.py",
+    "working_directory": "",
     "args_for_main_py": [],
     "environment_for_main_py": {},
     "packages": "",
@@ -259,17 +260,28 @@ def main() -> int:
     existing_pythonpath = env.get("PYTHONPATH", "")
     env["PYTHONPATH"] = code_folder + (os.pathsep + existing_pythonpath if existing_pythonpath else "")
     # The variables the launcher gives the app, as far as they make sense without it.
-    env.update(PROGRAM_NAME=program, PROGRAM_HAS_TERMINAL="1", WDIR_IS_SCRIPT_DIR="1", LOG_PATH="")
+    directory = text_setting(settings, "working_directory")
+    working = configured_path(directory) if directory else main_script.parent
+    if not working.is_dir():
+        print(style(f' ERROR  working_directory does not exist or is not a folder: "{working}"', "1;31"))
+        return 1
+    env.update(
+        PROGRAM_NAME=program,
+        PROGRAM_HAS_TERMINAL="1",
+        WDIR_IS_SCRIPT_DIR=str(int(working == main_script.parent)),
+        LOG_PATH="",
+    )
     if os.name == "nt" and ICON_PATH.is_file():
         env["ICON_PATH"] = str(ICON_PATH)
     command = [sys.executable, "-X", "utf8", str(main_script), *arguments]
     heading("Run")
+    row("Working folder", link(working))
     row("Command", subprocess.list2cmdline(command))
     # Flushed first: the app writes into the same window, and redirected output is buffered.
     print(style(" " + "─" * 70, "90"), flush=True)
     started = time.monotonic()
-    # The app runs like `python main.py` from its folder; this window waits and reports how it ended.
-    process = subprocess.Popen(command, cwd=str(main_script.parent), env=env)  # noqa: S603
+    # The app runs like `python main.py` in the chosen folder; this window waits and reports how it ended.
+    process = subprocess.Popen(command, cwd=str(working), env=env)  # noqa: S603
     while True:
         try:
             code = process.wait()

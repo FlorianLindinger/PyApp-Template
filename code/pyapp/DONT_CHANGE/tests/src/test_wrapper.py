@@ -6,6 +6,7 @@ import io
 import json
 import os
 import runpy
+import signal
 import subprocess
 import sys
 import tempfile
@@ -21,6 +22,61 @@ WRAPPER = DONT_CHANGE / "runtime" / "script_wrapper.py"
 
 
 class WrapperTests(unittest.TestCase):
+    def test_interrupt_policy_ignores_or_confirms_ctrl_c_but_stop_always_interrupts(self):
+        with mock.patch.object(sys, "path", [str(WRAPPER.parent), *sys.path]):
+            wrapper = runpy.run_path(str(WRAPPER), run_name="interrupt_policy_test")
+        install = wrapper["install_keyboard_interrupt_policy"]
+        with tempfile.TemporaryDirectory() as folder:
+            stop = Path(folder) / "stop"
+            for action in ("ignore", "confirm"):
+                with self.subTest(action=action), mock.patch.object(signal, "signal") as set_signal:
+                    install(action, "Example", str(stop))
+                    handler = set_signal.call_args.args[1]
+                    confirm = mock.Mock(return_value=False)
+                    with mock.patch.dict(install.__globals__, confirm_keyboard_interrupt=confirm):
+                        handler(signal.SIGINT, None)
+                        self.assertEqual(confirm.call_count, int(action == "confirm"))
+                        if action == "confirm":
+                            confirm.return_value = True
+                            with self.assertRaises(KeyboardInterrupt):
+                                handler(signal.SIGINT, None)
+                        stop.write_text("stop", encoding="utf-8")
+                        with self.assertRaises(KeyboardInterrupt):
+                            handler(signal.SIGINT, None)
+                        stop.unlink()
+
+    def test_real_sigint_can_be_ignored_and_default_keyboard_interrupt_is_reported(self):
+        source = "import signal\nsignal.raise_signal(signal.SIGINT)\nprint('continued')\n"
+        code, output, _ = self.run_app(source, keyboard_interrupt_action="ignore")
+        self.assertEqual(code, 0, output)
+        self.assertIn("continued", output)
+        code, output, run = self.run_app(source, keyboard_interrupt_action="interrupt")
+        self.assertNotEqual(code, 0, output)
+        self.assertEqual(
+            json.loads((run / "traceback.json").read_text(encoding="utf-8"))["exception_type"], "KeyboardInterrupt"
+        )
+
+    def test_confirmation_reentrancy_and_a_failed_dialog_do_not_strand_the_app(self):
+        with mock.patch.object(sys, "path", [str(WRAPPER.parent), *sys.path]):
+            wrapper = runpy.run_path(str(WRAPPER), run_name="interrupt_confirmation_test")
+        install = wrapper["install_keyboard_interrupt_policy"]
+        with mock.patch.object(signal, "signal") as set_signal:
+            install("confirm", "Example")
+        handler = set_signal.call_args.args[1]
+
+        def confirm(_name: str) -> bool:
+            handler(signal.SIGINT, None)  # second Ctrl+C while the first dialog is active
+            return False
+
+        confirm_mock = mock.Mock(side_effect=confirm)
+        with mock.patch.dict(install.__globals__, confirm_keyboard_interrupt=confirm_mock):
+            handler(signal.SIGINT, None)
+        confirm_mock.assert_called_once_with("Example")
+        with mock.patch.dict(
+            install.__globals__, confirm_keyboard_interrupt=mock.Mock(side_effect=OSError("denied"))
+        ), self.assertRaises(KeyboardInterrupt):
+            handler(signal.SIGINT, None)
+
     def test_native_focus_restores_only_a_visible_console_window(self):
         import ctypes
 

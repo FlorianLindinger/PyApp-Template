@@ -65,7 +65,8 @@ folder. An invalid explicit selection reports an error rather than choosing anot
 The script does not inspect or create `generated/.venv`, install Python or install packages.
 The selected Python must already have the app's dependencies installed.
 The script reads literal settings for the main file, arguments, environment and package list
-without executing `developer_settings.py`, then runs the app from the main script's folder.
+without executing `developer_settings.py`, then runs the app from `working_directory` when
+configured (absolute or relative to developer settings), otherwise the main script's folder.
 The `code` folder is included on the import path after the main script's folder, matching the launcher.
 Windows backslashes in configured relative file paths are accepted. This direct start does
 not install packages or provide the Windows launcher's shortcuts, logs or crash handling.

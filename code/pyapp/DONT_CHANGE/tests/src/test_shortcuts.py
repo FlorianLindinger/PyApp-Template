@@ -22,6 +22,48 @@ from pyapp.DONT_CHANGE.scripts.dev_tools import housekeeping
 
 
 class ShortcutTests(unittest.TestCase):
+    def test_windows_startup_is_opt_in_and_each_mode_uses_the_existing_launcher(self):
+        s = SimpleNamespace(start_on_windows_start=False)
+        with mock.patch.object(shortcuts, "special_folder") as folder:
+            self.assertIsNone(shortcuts.create_windows_startup_shortcut(s, "app.copy"))
+            folder.assert_not_called()
+        s = SimpleNamespace(program_name="Example", start_on_windows_start=True)
+        with tempfile.TemporaryDirectory() as folder, mock.patch.object(
+            shortcuts, "special_folder", return_value=folder
+        ), mock.patch.object(shortcuts, "generate_shortcut", return_value="created.lnk") as create:
+            for mode, launcher, suffix in (
+                ("terminal", shortcuts.LAUNCHER_TERMINAL, ""),
+                ("no_terminal", shortcuts.LAUNCHER_NO_TERMINAL, shortcuts.NO_TERMINAL_APP_ID_SUFFIX),
+                ("browser", shortcuts.LAUNCHER_BROWSER_TERMINAL, shortcuts.BROWSER_APP_ID_SUFFIX),
+            ):
+                s.windows_startup_launch_mode = mode
+                self.assertEqual(shortcuts.create_windows_startup_shortcut(s, "app.copy"), "created.lnk")
+                self.assertEqual(create.call_args.args[2], launcher)
+                self.assertEqual(create.call_args.kwargs["app_id"], "app.copy" + suffix)
+                self.assertEqual(create.call_args.kwargs["args"], "app.copy")
+
+    @unittest.skipUnless(os.name == "nt", "Windows shell links")
+    def test_startup_link_is_owned_recorded_and_removed_without_touching_an_unrelated_file(self):
+        s = SimpleNamespace(
+            program_name="Example", start_on_windows_start=True, windows_startup_launch_mode="no_terminal"
+        )
+        with tempfile.TemporaryDirectory() as folder, mock.patch.object(
+            shortcuts, "special_folder", return_value=folder
+        ), mock.patch.object(shortcuts, "CREATED_SHORTCUTS_LIST_PATH", str(Path(folder) / "created.json")):
+            created = shortcuts.create_windows_startup_shortcut(s, "app.copy")
+            self.assertIsNotNone(created)
+            self.assertTrue(Path(created).is_file())
+            self.assertTrue(shortcuts.is_generated_shortcut(created))
+            shortcuts.write_created_shortcuts([created])
+            s.start_on_windows_start = False
+            self.assertIsNone(shortcuts.create_windows_startup_shortcut(s, "app.copy"))
+            self.assertEqual(shortcuts.remove_shortcuts(shortcuts.read_created_shortcuts()), [created])
+            Path(created).write_text("handmade", encoding="utf-8")
+            s.start_on_windows_start = True
+            with self.assertRaisesRegex(FileExistsError, "unrelated"):
+                shortcuts.create_windows_startup_shortcut(s, "app.copy")
+            self.assertEqual(Path(created).read_text(encoding="utf-8"), "handmade")
+
     @unittest.skipUnless(os.name == "nt", "Windows shell links")
     def test_shortcut_default_start_in_is_empty(self):
         with tempfile.TemporaryDirectory() as folder:

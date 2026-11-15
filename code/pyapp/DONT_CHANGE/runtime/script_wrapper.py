@@ -17,6 +17,7 @@ import sys
 import threading
 from datetime import datetime
 from pathlib import Path
+from types import FrameType
 from typing import Any, Callable, List, Optional, TextIO, Tuple, TypeVar, Union
 
 # The protocol module lives next to this file; import it before sys.path[0]
@@ -541,6 +542,56 @@ def first_output_callback(browser_ui: str) -> Callable[[], None]:
 # ------------------------------------------------------------ main
 
 
+def confirm_keyboard_interrupt(program_name: str) -> bool:
+    """Ask through Windows UI, avoiding reentrant stdin/stdout operations inside a signal handler."""
+    if os.name != "nt":
+        return True  # The managed launcher is Windows-only; do not strand a direct non-Windows run.
+    import ctypes
+    from ctypes import wintypes
+
+    user = ctypes.WinDLL("user32", use_last_error=True)
+    user.MessageBoxW.argtypes = [wintypes.HWND, wintypes.LPCWSTR, wintypes.LPCWSTR, wintypes.UINT]
+    answer = user.MessageBoxW(None, f"Stop {program_name}?", program_name, 4 | 0x20 | 0x100 | 0x10000)
+    if not answer:
+        raise ctypes.WinError(ctypes.get_last_error())
+    return answer == 6  # IDYES; No is the default button.
+
+
+def install_keyboard_interrupt_policy(action: str, program_name: str, stop_request: str = "") -> None:
+    """Apply Ctrl+C policy before app code; explicit Stop requests bypass ignore/confirmation.
+
+    Only SIGINT is handled: explicit raise KeyboardInterrupt and app-installed handlers retain
+    their normal meaning. A second Ctrl+C while the native dialog is open does not open another.
+    """
+    import signal
+
+    if action == "interrupt":
+        signal.signal(signal.SIGINT, signal.default_int_handler)
+        return
+    if action not in ("ignore", "confirm"):
+        raise ValueError("Unknown keyboard_interrupt_action: " + action)
+    prompting = False
+
+    def handle(_signum: int, _frame: Optional[FrameType]) -> None:
+        nonlocal prompting
+        if stop_request and Path(stop_request).is_file():
+            raise KeyboardInterrupt
+        if action == "ignore" or prompting:
+            return
+        prompting = True
+        try:
+            try:
+                confirmed = confirm_keyboard_interrupt(program_name)
+            except OSError:
+                confirmed = True  # A failed dialog must not make it impossible to interrupt.
+            if confirmed:
+                raise KeyboardInterrupt
+        finally:
+            prompting = False
+
+    signal.signal(signal.SIGINT, handle)
+
+
 def main() -> None:
     """Load the launch configuration, prepare logging and argv, then run main.py as __main__."""
     global report_path, result_path
@@ -621,6 +672,11 @@ def main() -> None:
             if isinstance(stream, PipeSplitter):
                 stream.on_output = on_output
     try:
+        install_keyboard_interrupt_policy(
+            config.get("keyboard_interrupt_action", "interrupt"),
+            config.get("program_name", Path(script_path).stem),
+            config.get("stop_request", ""),
+        )
         runpy.run_path(script_path, run_name="__main__")
         background_error = pending_background_error()
         if background_error is not None:

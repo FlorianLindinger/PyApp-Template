@@ -36,6 +36,18 @@ def load_script():
 
 
 class FallbackStartTests(unittest.TestCase):
+    def test_explicit_working_directory_is_used_and_a_missing_one_is_reported(self):
+        code = self.project('main_script_path = "../app/run.py"\nworking_directory = "../work"\n')
+        working = code / "work"
+        working.mkdir()
+        status, output = self.start(code)
+        self.assertEqual(status, 3, output)
+        self.assertIn(str(working), output)
+        working.rmdir()
+        status, output = self.start(code)
+        self.assertEqual(status, 1, output)
+        self.assertIn("working_directory does not exist", output)
+
     def select_linux_python(self, code: Path, command: str) -> None:
         shell = code / "pyapp" / LINUX_START.name
         shell.write_text(

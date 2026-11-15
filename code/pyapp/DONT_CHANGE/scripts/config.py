@@ -35,6 +35,8 @@ BOOTSTRAP_SETTINGS = (
 )
 
 CHOICES = {
+    "keyboard_interrupt_action": ("interrupt", "ignore", "confirm"),
+    "windows_startup_launch_mode": ("no_terminal", "terminal", "browser"),
     "confirm_on_close": ("prompt", "block", "close", "hide"),
     "python_source": ("local", "uv_user", "system"),
     "uv_prefer": ("global", "local"),
@@ -55,6 +57,7 @@ SHORTCUT_KINDS = (
 # GitHub Actions an app can choose in github_actions; one data/workflows/<name>.yml each.
 APP_WORKFLOWS = ("leaks",)
 BOOLEANS = (
+    "start_on_windows_start",
     "wrap_terminal_output",
     "replace_minimize_with_minimize_to_system_tray",
     "allow_minimize",
@@ -453,7 +456,13 @@ def validate(module: Optional[Union[ModuleType, SimpleNamespace]] = None) -> Non
     else:
         need("packages", lambda _v: False, 'use a requirements string, one package per line; use "" for no packages')
     problems.extend(_requirements_file_problems(s, entries))
-    for name in ("log_path", "crash_log_path", "user_settings_path"):
+    for name in (
+        "log_path",
+        "crash_log_path",
+        "user_settings_path",
+        "working_directory",
+        "after_interpreter_crash_script",
+    ):
         need(name, lambda v: isinstance(v, str), 'use a path text or "" to disable')
     for name in ("terminal_bg_color", "terminal_text_color"):
         need(

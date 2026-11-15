@@ -12,6 +12,21 @@ from pyapp.DONT_CHANGE.runtime import bg_watchdog as watchdog
 
 
 class AppEnvironmentTests(unittest.TestCase):
+    def test_explicit_working_directory_accepts_absolute_and_settings_relative_paths(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            chosen = root / "chosen folder"
+            chosen.mkdir()
+            script = root / "main.py"
+            s = self.settings(start_in_shortcut_position=True, working_directory=str(chosen))
+            self.assertEqual(watchdog.app_working_folder(s, str(script)), str(chosen))
+            with mock.patch.object(watchdog.paths, "DEV_SETTINGS_PATH", str(root / "developer_settings.py")):
+                s.working_directory = "chosen folder"
+                self.assertEqual(watchdog.app_working_folder(s, str(script)), str(chosen))
+                s.working_directory = "missing"
+                with self.assertRaisesRegex(FileNotFoundError, "working_directory"):
+                    watchdog.app_working_folder(s, str(script))
+
     def test_working_folder_keeps_windows_start_or_switches_to_main_script_folder(self):
         script = project_location.CODE / "nested" / "main.py"
         inherited = str(project_location.PROJECT_ROOT / "shortcut location")

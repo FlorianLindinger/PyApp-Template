@@ -29,6 +29,20 @@ def append(lines: Iterable[str]) -> Callable[[str], str]:
 
 
 class ValidationTests(unittest.TestCase):
+    def test_new_launch_settings_reject_invalid_types_and_choices(self):
+        for name, value in (
+            ("working_directory", None),
+            ("after_interpreter_crash_script", None),
+            ("keyboard_interrupt_action", "block"),
+            ("start_on_windows_start", 1),
+            ("windows_startup_launch_mode", "gui"),
+        ):
+            with self.subTest(name=name), support.temporary_settings(append([f"{name} = {value!r}"])) as (
+                _,
+                load,
+            ), self.assertRaisesRegex(SettingsError, name):
+                config.validate(load())
+
     def test_settings_fstrings_resolve_program_name_once_and_missing_titles_use_project_name(self):
         def renamed(text: str) -> str:
             return text.replace('program_name = "PyApp-Template"', 'program_name = "Example {app}"')

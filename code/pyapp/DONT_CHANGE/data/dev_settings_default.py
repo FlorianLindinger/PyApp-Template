@@ -100,11 +100,25 @@ environment_for_main_py: Dict[str, str] = {}
 # Setup leaves "Start in" empty so it does not pin a moved shortcut to its old folder.
 # Windows chooses the starting folder; True does not locate the .lnk file itself.
 start_in_shortcut_position = False
+# Explicit working folder for main.py: absolute, or relative to this developer_settings.py.
+# "" keeps start_in_shortcut_position above. The folder must already exist; imports are unchanged.
+working_directory = ""
 
 # Stop shortcut and instance_policy "replace": seconds a running instance gets to close by itself
 # (its windows receive a normal close request, a console app gets Ctrl+C) before it is terminated.
 # 0 terminates immediately.
 stop_timeout_seconds: float = 3
+
+# Ctrl+C / SIGINT: "interrupt" (normal KeyboardInterrupt), "ignore", or "confirm" (Windows Yes/No dialog).
+# Stop/replacing a run still interrupts or terminates it. Explicit raise KeyboardInterrupt and
+# handlers installed by the app itself are not suppressed. This does not block Ctrl+Break or Task Manager.
+keyboard_interrupt_action = "interrupt"
+
+# Optional non-interactive cleanup script after a detected hard interpreter crash. "" disables it.
+# Absolute, or relative to this file; runs once in a fresh managed Python with the app's working
+# folder/environment. Its stdout/stderr go to a separate .recovery.log; normal crash reporting stays.
+# This is a direct cleanup script, not a managed replacement app or automatic restart loop.
+after_interpreter_crash_script = ""
 
 # --- Terminal host ---
 # True:  classic console (conhost.exe). No tabs, looks more like an app, but text rendering and zoom are worse.
@@ -123,6 +137,10 @@ use_classic_terminal = True
 browser_terminal_address = ""
 
 # --- Startup ---
+# Start automatically when this Windows user signs in. Run Setup to apply or remove the Startup shortcut.
+start_on_windows_start = False
+# Which launcher to use at sign-in: "no_terminal", "terminal" (configured conhost/WT), or "browser".
+windows_startup_launch_mode = "no_terminal"
 # Start with the window minimized:
 start_minimized = False
 # Restore the classic console/browser terminal on the app's first print/error output (once).

@@ -151,7 +151,9 @@ folder to `sys.path`. The launcher and fallback starts always include the `code`
 app's import path, even when the main script is in a subfolder; the main script's folder takes
 precedence. This lets a nested entry script use `import settings` for `code/settings.py`.
 `start_in_shortcut_position = True` keeps the starting folder Windows supplies; `False` uses
-the main script's folder. Setup leaves shortcuts' **Start in** empty, avoiding a saved folder
+the main script's folder. `working_directory` overrides this with an absolute path or a path
+relative to `developer_settings.py`; `""` preserves the existing behavior.
+Setup leaves shortcuts' **Start in** empty, avoiding a saved folder
 that becomes stale when a shortcut moves. Windows chooses that initial folder; the launcher
 does not locate the shortcut itself. This setting does not affect import order. Adding an
 arbitrary settings folder to `sys.path` could let its modules shadow other imports. A Python
@@ -356,8 +358,16 @@ All in `developer_settings.py`. Mistakes are reported with the setting's name wh
 | `print_prepend`, `input_prepend` | Timestamps or other text before each line |
 | `log_path`, `crash_log_path` | Log locations; both accept date codes |
 | `stop_timeout_seconds` | How long the app gets to close before it is terminated |
+| `working_directory` | Existing absolute or developer-settings-relative working folder; `""` keeps the usual folder selection |
+| `keyboard_interrupt_action` | Ctrl+C: `"interrupt"`, `"ignore"` or `"confirm"` (Windows dialog); explicit Stop still works |
+| `after_interpreter_crash_script` | Optional noninteractive cleanup script after a recognized hard interpreter crash; separate recovery output log |
+| `start_on_windows_start`, `windows_startup_launch_mode` | Per-user Windows sign-in shortcut; run Setup to apply/remove it. Modes: `"no_terminal"`, `"terminal"`, `"browser"` |
 | `main_script_path` | Which file to run, if not `main.py` |
 | `packages`, `requirements_path` | The packages the app needs |
+
+See [runtime settings](code/pyapp/DONT_CHANGE/docs/RUNTIME_SETTINGS.md) for path examples,
+Ctrl+C limits, crash-cleanup context and Windows Startup behavior, plus logging/buffering
+and startup-performance notes.
 
 Native window options leave browser windows alone. Alpha, always-on-top or taskbar status opens Windows Terminal
 in a dedicated window so unrelated tabs are unaffected. WT draws its own caption buttons, so

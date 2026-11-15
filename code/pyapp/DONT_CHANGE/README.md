@@ -11,6 +11,8 @@ or change it.
 
 For release validation, use [RELEASE_CHECKLIST.md](docs/RELEASE_CHECKLIST.md).
 The [window lifecycle rules](docs/WINDOW_LIFECYCLE.md) define tray, foreground and completion transitions.
+See [runtime settings](docs/RUNTIME_SETTINGS.md) for working folders, Ctrl+C policies,
+interpreter-crash cleanup, Windows sign-in startup and logging/performance notes.
 
 - [Overview](#overview)
 - [Design rules](#design-rules)
@@ -368,6 +370,7 @@ ASCII art (`scripts/banner.py`). The batch/Python bootstrap and the
 | `CHANGELOG.md` | Changes per version; the newest heading matches `LAUNCHER_VERSION`. |
 | `docs/RELEASE_CHECKLIST.md` | Repeatable candidate, automated, desktop and artifact validation with recorded evidence. |
 | `docs/WINDOW_LIFECYCLE.md` | Host capabilities and explicit window/tray/completion state transitions and coverage. |
+| `docs/RUNTIME_SETTINGS.md` | Working folder, Ctrl+C policy, crash cleanup, Windows Startup, logging and startup review. |
 | `docs/TODO.md` | Open items and ideas. |
 | `LICENSE.md` | License of this folder (MIT), which also covers the bundled banner font. |
 | `backend_settings.py` | Every internal path and constant (`LAUNCHER_VERSION`, folders, icon paths, file names, defaults). Imported by almost everything; changes nothing on import. |

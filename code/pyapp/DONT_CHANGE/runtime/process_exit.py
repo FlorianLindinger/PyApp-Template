@@ -463,6 +463,9 @@ def main() -> None:
     )
     os.environ["PYAPP_NOTIFICATION_APP_ID"] = app_id + suffix if app_id else ""
     script_name = Path(script_path).name
+    recovery_notice = os.environ.get("PYAPP_CRASH_RECOVERY_NOTICE", "")
+    if recovery_notice:
+        print_info(recovery_notice)
     if new_terminal_was_created and app_id:
         # Started by the "(no Terminal)" shortcut: group this window with that shortcut.
         set_terminal_app_id(app_id + paths.NO_TERMINAL_APP_ID_SUFFIX)

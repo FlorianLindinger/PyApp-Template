@@ -315,6 +315,7 @@ def special_folder(csidl: int) -> str:
 
 
 CSIDL_PROGRAMS = 0x02  # Start Menu\Programs of the current user
+CSIDL_STARTUP = 0x07  # This user's Startup folder, not the machine-wide Startup folder.
 CSIDL_DESKTOPDIRECTORY = 0x10
 
 
@@ -353,6 +354,37 @@ def _read_created_shortcuts_file() -> Dict[str, Any]:
 
 def read_created_shortcuts() -> List[str]:
     return list(_read_created_shortcuts_file().get("shortcuts", []))
+
+
+def create_windows_startup_shortcut(s: Union[ModuleType, SimpleNamespace], app_id: str) -> Optional[str]:
+    """Create the opt-in sign-in shortcut; Setup records it with its other owned shortcuts.
+
+    A project-specific suffix keeps copies with the same display name from overwriting each
+    other. The existing shortcut record removes stale names/locations or a disabled entry.
+    """
+    if not getattr(s, "start_on_windows_start", False):
+        return None
+    launchers = {
+        "terminal": (LAUNCHER_TERMINAL, app_id),
+        "no_terminal": (LAUNCHER_NO_TERMINAL, app_id + NO_TERMINAL_APP_ID_SUFFIX),
+        "browser": (LAUNCHER_BROWSER_TERMINAL, app_id + BROWSER_APP_ID_SUFFIX),
+    }
+    launcher, identity = launchers[s.windows_startup_launch_mode]
+    name = f"{s.program_name} ({app_id.rsplit('.', 1)[-1]})"
+    folder = special_folder(CSIDL_STARTUP)
+    destination = Path(folder) / shortcut_filename(name)
+    if destination.exists() and not is_generated_shortcut(str(destination)):
+        raise FileExistsError(f'Windows Startup shortcut would replace an unrelated file: "{destination}"')
+    return generate_shortcut(
+        name,
+        ICON_PATH,
+        launcher,
+        args=app_id,
+        app_id=identity,
+        output_dir=folder,
+        description=f"Start {s.program_name} when signing in to Windows",
+        start_minimized=True,
+    )
 
 
 def read_start_link() -> str:

@@ -33,6 +33,7 @@ from pyapp.DONT_CHANGE.scripts.launcher_ui import delete_finished_run_folders
 from pyapp.DONT_CHANGE.scripts.shortcuts import (
     CSIDL_DESKTOPDIRECTORY,
     CSIDL_PROGRAMS,
+    create_windows_startup_shortcut,
     generate_shortcut,
     leftover_shortcuts,
     project_app_id,
@@ -168,6 +169,10 @@ def main() -> None:
                 )
             where = ", ".join(label for label, _ in places)
             print(f"  {styled('+', ANSI_GOOD)} {name:<{name_width}}  {styled(where, ANSI_DIM)}")
+        startup_shortcut = create_windows_startup_shortcut(s, app_id)
+        if startup_shortcut:
+            created.append(startup_shortcut)
+            print(f"  {styled('+', ANSI_GOOD)} Windows sign-in  {styled(_short(startup_shortcut), ANSI_DIM)}")
     except BaseException:
         # Stopped halfway (e.g. a Desktop write blocked by Controlled Folder Access): record every
         # shortcut that exists now, so the next Setup or remove_shortcuts still knows about it.

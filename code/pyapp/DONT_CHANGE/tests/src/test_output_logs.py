@@ -28,6 +28,65 @@ SETTINGS = types.SimpleNamespace(
 
 
 class CrashLogTests(unittest.TestCase):
+    def test_a_missing_cleanup_script_does_not_replace_the_crash_report(self):
+        with tempfile.TemporaryDirectory() as folder, mock.patch.object(bg_watchdog, "note_ignored"), mock.patch.object(
+            bg_watchdog.subprocess, "Popen"
+        ) as create:
+            s = types.SimpleNamespace(after_interpreter_crash_script=str(Path(folder) / "missing.py"))
+            notice = bg_watchdog.launch_crash_cleanup(
+                s, ExitMode.NO_REPORT, 0xC0000005, [sys.executable], {}, folder, "", Path(folder)
+            )
+            self.assertIn("could not start", notice)
+            create.assert_not_called()
+
+    def test_cleanup_only_starts_after_a_recognized_hard_crash_and_keeps_separate_output(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            cleanup = root / "cleanup script.py"
+            cleanup.write_text(
+                "import os\nprint(os.environ['CRASH_EXIT_CODE'])\nprint(os.getcwd())\n", encoding="utf-8"
+            )
+            s = types.SimpleNamespace(
+                after_interpreter_crash_script=str(cleanup), main_script_path=str(root / "main.py")
+            )
+            for mode, code in (
+                (ExitMode.SUCCESS, 0xC0000005),
+                (ExitMode.APP_EXIT, 0xC0000005),
+                (ExitMode.NO_REPORT, 7),
+                (ExitMode.NO_REPORT, 0xC000013A),
+            ):
+                with mock.patch.object(bg_watchdog.subprocess, "Popen") as create:
+                    self.assertEqual(
+                        bg_watchdog.launch_crash_cleanup(s, mode, code, [sys.executable], {}, folder, "", root), ""
+                    )
+                    create.assert_not_called()
+            with mock.patch.object(bg_watchdog.threading, "Thread") as waiter:
+                notice = bg_watchdog.launch_crash_cleanup(
+                    s,
+                    ExitMode.NO_REPORT,
+                    0xC0000005,
+                    [sys.executable],
+                    dict(os.environ),
+                    folder,
+                    str(root / "app.log"),
+                    root,
+                )
+                child = waiter.call_args.kwargs["target"].__self__
+                self.assertEqual(child.wait(timeout=10), 0)
+            self.assertIn("cleanup started", notice)
+            output = (root / "app.recovery.log").read_text(encoding="utf-8")
+            self.assertIn(str(0xC0000005), output)
+            self.assertIn(folder, output)
+            (root / paths.STOP_REQUEST_FILE_NAME).write_text("stop", encoding="utf-8")
+            with mock.patch.object(bg_watchdog.subprocess, "Popen") as create:
+                self.assertEqual(
+                    bg_watchdog.launch_crash_cleanup(
+                        s, ExitMode.NO_REPORT, 0xC0000005, [sys.executable], {}, folder, "", root
+                    ),
+                    "",
+                )
+                create.assert_not_called()
+
     def test_completion_prints_the_actual_unique_log_immediately_after_the_report(self):
         def print_traceback(_report: object) -> None:
             print("TRACEBACK")

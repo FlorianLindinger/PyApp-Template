@@ -55,6 +55,11 @@ remain manual checks in [the release checklist](../docs/RELEASE_CHECKLIST.md).
 | `test_fallback.py` | `actions/start_without_launcher.py` from a copy that has nothing else of the launcher: settings, arguments, environment, exit code, missing packages, unreadable settings; Linux shell LF, system/configured/versioned Python, relative paths, ignored generated environments and missing-Python/helper messages (shell execution on POSIX only) |
 | `test_windows.py` | Windows only: registry records with job names, Stop ends the whole job (incl. grandchildren), graceful Stop via Ctrl+C, file lock |
 
+Runtime-setting regressions also cover absolute/relative working folders and missing-directory
+errors, real SIGINT plus ignored/confirmed/reentrant handling and Stop bypass, crash-cleanup
+gating and real output capture, and per-mode Startup shortcut ownership/removal in temporary
+folders. They do not register an actual Windows sign-in entry or display a Ctrl+C dialog.
+
 ### `setup`: settings, environment, uv and Python
 
 | File | Covers |
