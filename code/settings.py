@@ -1,5 +1,11 @@
 """Define optional end-user settings; access them in main.py with ``import settings``."""
 
+# ========================================
+
+# PLACE YOUR SETTINGS HERE
+
+# ========================================
+
 # Open this file in an editor when run directly (e.g. double-clicked in Explorer).
 if __name__ == "__main__":
     import os

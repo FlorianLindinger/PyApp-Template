@@ -1,8 +1,12 @@
 """A minimal example GUI. Replace this file with your application."""
 
+# ========================================
+
 import os
 import tkinter as tk
 from tkinter import ttk
+
+# ========================================
 
 
 def main():
@@ -18,6 +22,8 @@ def main():
 
     root.mainloop()
 
+
+# ========================================
 
 if __name__ == "__main__":
     main()

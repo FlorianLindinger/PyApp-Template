@@ -1,6 +1,8 @@
 # TODO
 
+review dev settings
 
+improve githook clarity message for quicklly getting problem. presentiaotn improvement
 
 start usign changelog.md
 
