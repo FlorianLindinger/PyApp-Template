@@ -26,6 +26,11 @@ extra console windows. The taskbar/console API probe stays hidden while exercisi
 APIs. Captured checker output is forwarded explicitly, preserving diagnostics and exit codes.
 No tests are skipped, assertions are retained, and parallelism is unchanged.
 
+The caption/opacity/topmost probe uses an off-screen, nonactivating tool window with
+`WS_VISIBLE`: a hidden window can accept a topmost request without acquiring `WS_EX_TOPMOST`.
+It has no taskbar entry and retains immediate native style assertions. The real conhost API
+probe also asserts its configured topmost state.
+
 The tray lifecycle probe still briefly restores/maximizes its real conhost window. Suppressing
 or isolating that window changes Windows behavior and made the native checks unreliable, so
 its real desktop behavior is retained. Its notification balloons remain intercepted. To inspect

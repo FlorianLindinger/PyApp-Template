@@ -1,5 +1,6 @@
 # TODO
 
+- Improve git fail clarity.
 - improve Windows notification on tray text
 - are windows notification on x implemented? test them
 - Opus: add many comments to many points in the code that someone not experienced in batch and Python fully understand what's happening where
@@ -57,7 +58,7 @@ compilation:
 - Ask AI what all I have to test and do before release 1.0.0
 - Ask AI: general improvements, robustness, speed, comments, docstrings, more fail checks and error prints, ideas for the whole thing. find problems. Feature ideas.
 - Ask AI what features I am not mentioning in README.
-- Ask AI if I should add or remove tests and when they run. For backend and app.
+- Ask AI if I should add or remove tests and when they run. For backend and app. Are they up-to-date?
 - Run `DONT_CHANGE/tests/run_launcher_tests.cmd` on Windows (`test_windows.py` and the batch/Stop paths
   are skipped elsewhere) and `pyapp_tools/verify_launcher.bat`.
 - Review all READMEs

@@ -7,7 +7,6 @@ import os
 import subprocess
 import sys
 import tempfile
-import time
 import unittest
 from ctypes import wintypes
 from pathlib import Path
@@ -82,6 +81,9 @@ class NativeWindow(unittest.TestCase):
                 "hwnd = terminal_window(include_hidden=True); assert hwnd; "
                 "[set_progress(hwnd, state) for state in (1, 2, 4, 0)]; flash(hwnd); "
                 "import ctypes; from ctypes import wintypes; "
+                "user = ctypes.WinDLL('user32'); "
+                "user.GetWindowLongW.argtypes = [wintypes.HWND, ctypes.c_int]; "
+                "assert user.GetWindowLongW(hwnd, -20) & 8, 'conhost is not topmost'; "
                 "from pyapp.DONT_CHANGE.scripts.console_tools import set_terminal_wrap; "
                 "kernel = ctypes.WinDLL('kernel32'); kernel.GetStdHandle.restype = wintypes.HANDLE; "
                 "handle = kernel.GetStdHandle(-11); before = wintypes.DWORD(); "
@@ -140,9 +142,23 @@ class NativeWindow(unittest.TestCase):
             ctypes.POINTER(wintypes.BYTE),
             ctypes.POINTER(wintypes.DWORD),
         ]
-        # A hidden, disposable overlapped window: no changes to the developer's own terminal.
+        # Exercise z-order on a visible window: Windows can accept HWND_TOPMOST for a hidden
+        # window without setting WS_EX_TOPMOST. Keep it off-screen, out of the taskbar and
+        # nonactivating so the probe does not disturb the developer's terminal or focus.
+        ws_ex_toolwindow, ws_ex_noactivate, ws_visible = 0x80, 0x08000000, 0x10000000
         hwnd = user.CreateWindowExW(
-            0, "STATIC", "PyApp window settings test", 0x00CF0000, 0, 0, 200, 100, None, None, None, None
+            ws_ex_toolwindow | ws_ex_noactivate,
+            "STATIC",
+            "PyApp window settings test",
+            0x00CF0000 | ws_visible,
+            -32000,
+            -32000,
+            200,
+            100,
+            None,
+            None,
+            None,
+            None,
         )
         self.assertTrue(hwnd, ctypes.get_last_error())
         self.addCleanup(user.DestroyWindow, hwnd)
@@ -160,10 +176,6 @@ class NativeWindow(unittest.TestCase):
             )
             style = user.GetWindowLongW(hwnd, window.GWL_STYLE)
             self.assertFalse(style & (window.WS_MINIMIZEBOX | window.WS_MAXIMIZEBOX))
-            # Allow a pending layered-window z-order update to settle under desktop load. Observe the actual flag, without weakening its assertion.
-            deadline = time.monotonic() + 1
-            while not user.GetWindowLongW(hwnd, window.GWL_EXSTYLE) & 0x00000008 and time.monotonic() < deadline:
-                time.sleep(0.005)
             self.assertTrue(user.GetWindowLongW(hwnd, window.GWL_EXSTYLE) & 0x00000008)  # WS_EX_TOPMOST
             menu = user.GetSystemMenu(hwnd, False)
             self.assertTrue(user.GetMenuState(menu, window.SC_CLOSE, 0) & window.MF_GRAYED)
