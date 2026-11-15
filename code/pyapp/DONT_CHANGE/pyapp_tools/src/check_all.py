@@ -174,6 +174,7 @@ def run_step(step: Step, refs: str, *, hook: bool = False) -> int:
             stderr=subprocess.STDOUT if hook else None,
             check=False,
             env=env,
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0) if hook else 0,
         )
     except OSError as error:
         if not hook:

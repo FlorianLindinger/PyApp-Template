@@ -70,6 +70,7 @@ class CheckAllTests(unittest.TestCase):
         self.assertIn('Click "Show Command Output" for details.', output.getvalue().splitlines()[0])
         self.assertIn("app.py:12:3: error", output.getvalue())
         self.assertEqual(run.call_args.kwargs["stderr"], tool.subprocess.STDOUT)
+        self.assertEqual(run.call_args.kwargs["creationflags"], getattr(tool.subprocess, "CREATE_NO_WINDOW", 0))
 
     def test_other_check_failures_name_the_cause_before_the_full_output(self):
         cases = (

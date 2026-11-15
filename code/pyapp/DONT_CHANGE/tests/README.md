@@ -21,6 +21,19 @@ uses it). `src/groups.py` defines the groups; a new test file must be added to o
 
 `test_windows.py` runs on Windows only. Deleting this folder does not affect the launcher.
 
+Validation keeps captured-output workers, Git/checker children and WPF helpers from opening
+extra console windows. The taskbar/console API probe stays hidden while exercising its real
+APIs. Captured checker output is forwarded explicitly, preserving diagnostics and exit codes.
+No tests are skipped, assertions are retained, and parallelism is unchanged.
+
+The tray lifecycle probe still briefly restores/maximizes its real conhost window. Suppressing
+or isolating that window changes Windows behavior and made the native checks unreliable, so
+its real desktop behavior is retained. Its notification balloons remain intercepted. To inspect
+the normally hidden taskbar/API probe visibly, set `PYAPP_TEST_VISIBLE_WINDOWS=1` for the run
+(PowerShell: `$env:PYAPP_TEST_VISIBLE_WINDOWS = '1'`; remove it afterwards with
+`Remove-Item Env:PYAPP_TEST_VISIBLE_WINDOWS`). Actual appearance and other desktop rendering
+remain manual checks in [the release checklist](../docs/RELEASE_CHECKLIST.md).
+
 ### `app`: starting and ending an app
 
 | File | Covers |
@@ -32,9 +45,9 @@ uses it). `src/groups.py` defines the groups; a new test file must be added to o
 | `test_output_logs.py` | crash logs contain the app's prints; the raw output file is only kept after failures; the hidden completion handler never waits |
 | `test_logs.py` | log paths, unique names, diagnostics log, `clean` (only the launcher's own logs, files in use, run folders), crash exit codes, unreadable process records |
 | `test_shortcuts.py` | shortcut file names and order, outdated shortcut targets, taskbar identity per folder, removing shortcuts |
-| `test_console_colors.py` | only hexadecimal color arguments can reach the Windows color command; a failure turns the window black; the `wt.exe` command line |
-| `test_terminal_window.py` | close-policy capabilities, dedicated WT windows, native alpha/caption/topmost/Close styles and a real conhost launch |
-| `test_system_tray.py` | repeat notifications, icon-before-hide recovery, Restore/Stop, owner safety, external/duplicate restore, simulated Explorer restart, native conhost geometry/maximized restoration and quiet cleanup |
+| `test_console_colors.py` | only hexadecimal color arguments can reach the color command; failure colors, native wrapping skips redirected output and reports denied modes; the `wt.exe` command line |
+| `test_terminal_window.py` | close-policy capabilities, dedicated WT windows, native alpha/caption/topmost/Close styles and real conhost launch/wrap-mode toggles preserving other flags |
+| `test_system_tray.py` | app-name/icon notification payloads and repeat counts (balloon delivery intercepted), icon-before-hide recovery, Restore/Stop, owner safety, external/duplicate restore, simulated Explorer restart, native conhost geometry/maximized restoration and quiet cleanup |
 | `test_completion_attention.py` | hidden native-window completion/focus, close/recovery/foreground outcome combinations, taskbar activity/highlight/flash, notification safety/text/delivery and defaults |
 | `test_banner.py` | the banner font renders the app name, supports German letters and Latin-1, skips missing characters; the console font it needs |
 | `test_icons.py` | icons always use the bundled overlays; generated icons update silently, a question per icon for placed ones; small sizes in linear light; every `.ico` size |

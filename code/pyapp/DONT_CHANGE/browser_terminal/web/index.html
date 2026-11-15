@@ -9,7 +9,7 @@
 <style>
   :root { --bg: #0c0c0c; --fg: #cccccc; }
   html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); color: var(--fg); }
-  #terminal { position: absolute; inset: 0; padding: 4px 0 0 8px; }
+  #terminal { position: absolute; inset: 0; padding: 4px 0 0 8px; overflow-x: auto; overflow-y: hidden; }
   #terminal .xterm-viewport { scrollbar-color: #8888 transparent; }
   #terminal .xterm { cursor: default; }
   #terminal .xterm.xterm-cursor-pointer, #terminal .xterm .xterm-cursor-pointer { cursor: pointer; }
@@ -120,6 +120,7 @@
 <div id="view-panel" class="panel" role="dialog" aria-label="Terminal options" tabindex="-1" hidden>
   <section aria-labelledby="view-heading">
   <h2 id="view-heading">View</h2>
+  <label title="Off: horizontal scrolling, up to 1,000 columns. Changes the terminal size for the running program."><input id="opt-wrap" type="checkbox" checked> Wrap lines to the window width</label>
   <label><input id="opt-highlight" type="checkbox" checked> Light up new output for a moment</label>
   <label><input id="opt-follow" type="checkbox" checked> Follow new output <span class="dim">(pauses while scrolled up)</span></label>
   <label><input id="opt-front" type="checkbox"> Bring the browser to the front when the program asks for input</label>

@@ -234,31 +234,35 @@
   const optHighlight = document.getElementById("opt-highlight");
   const optFollow = document.getElementById("opt-follow");
   const optFront = document.getElementById("opt-front");
+  const optWrap = document.getElementById("opt-wrap");
   // settings.py's defaults, until the user changes a switch in this browser.
   optHighlight.checked = options.highlight;
   optFollow.checked = options.follow;
   optFront.checked = options.frontOnInput;
+  optWrap.checked = config.wrap_output !== false;
   try {
     const saved = JSON.parse(localStorage.getItem(VIEW) || "{}");
     if (typeof saved.highlight === "boolean") optHighlight.checked = saved.highlight;
     if (typeof saved.follow === "boolean") optFollow.checked = saved.follow;
     if (typeof saved.front === "boolean") optFront.checked = saved.front;
+    if (typeof saved.wrap === "boolean") optWrap.checked = saved.wrap;
   } catch (error) {
     // Defaults.
   }
   // The host brings the browser window to the front (a page cannot); it needs to know.
   const sendPreferences = () => send({ t: "p", frontOnInput: optFront.checked });
-  for (const option of [optHighlight, optFollow, optFront]) {
+  for (const option of [optHighlight, optFollow, optFront, optWrap]) {
     option.addEventListener("change", () => {
       try {
         localStorage.setItem(
           VIEW,
-          JSON.stringify({ highlight: optHighlight.checked, follow: optFollow.checked, front: optFront.checked }),
+          JSON.stringify({ highlight: optHighlight.checked, follow: optFollow.checked, front: optFront.checked, wrap: optWrap.checked }),
         );
       } catch (error) {
         // Not remembered, but on for this page.
       }
       sendPreferences();
+      if (option === optWrap) resizeTerminal();
     });
   }
 
@@ -449,7 +453,7 @@
     socket.binaryType = "arraybuffer";
     socket.onopen = () => {
       showNotice("");
-      fit.fit();
+      resizeTerminal();
       sendSize();
       sendPreferences();
       setTimeout(() => (history = false), 1000);
@@ -484,10 +488,20 @@
   // a burst of sizes (a touchpad pinch sends dozens a second) makes those repaints land on
   // a different size than they were made for, which duplicates or garbles printed lines.
   const SETTLE_MS = 150;
+  // Keep xterm and ConPTY at the same width. With wrapping off, a wider screen retains
+  // long lines for horizontal scrolling instead of disabling autowrap and losing text.
+  // 1,000 columns is the pseudoconsole host's existing maximum, not an unlimited line buffer.
+  const resizeTerminal = () => {
+    const dimensions = fit.proposeDimensions();
+    if (!dimensions) return;
+    const columns = optWrap.checked ? Math.min(1000, Math.max(2, dimensions.cols)) : 1000;
+    term.resize(columns, Math.max(2, dimensions.rows));
+    if (optWrap.checked) document.getElementById("terminal").scrollLeft = 0;
+  };
   let fitTimer = 0;
   const scheduleFit = () => {
     clearTimeout(fitTimer);
-    fitTimer = setTimeout(() => fit.fit(), SETTLE_MS);
+    fitTimer = setTimeout(resizeTerminal, SETTLE_MS);
   };
   new ResizeObserver(scheduleFit).observe(document.getElementById("terminal"));
 

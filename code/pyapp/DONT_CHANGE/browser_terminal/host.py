@@ -62,6 +62,7 @@ SETTING_DEFAULTS: Dict[str, Any] = {
     "SCROLL_LINES": 5,
     "FAST_SCROLL_FACTOR": 5,
     "SCROLLBACK_LINES": 9001,
+    "WRAP_OUTPUT": True,
     "HIGHLIGHT_NEW_OUTPUT": True,
     "FOLLOW_NEW_OUTPUT": True,
     "FRONT_ON_INPUT": False,
@@ -1011,7 +1012,17 @@ def make_handler(session: Session, token: str, hosts: Set[str]) -> type:
             page = (STATIC_DIR / "index.html").read_text(encoding="utf-8")
             settings = {
                 key: session.config[key]
-                for key in ("title", "marker", "theme", "font", "windowsBuild", "scroll", "options", "confirm_on_close")
+                for key in (
+                    "title",
+                    "marker",
+                    "theme",
+                    "font",
+                    "windowsBuild",
+                    "scroll",
+                    "options",
+                    "confirm_on_close",
+                    "wrap_output",
+                )
             }
             settings["startLink"] = session.config["start_link"]
             settings["info"] = session.config["info"]
@@ -1149,6 +1160,8 @@ def complete_config(config: Dict[str, Any], command: List[str]) -> Dict[str, Any
     hidden_env_prefixes   variables with these prefixes are not passed on to the browser
     options           the page's behavior (zoom, scrollback, cursor, the gear menu's defaults);
                       default: from settings.py, which also gives theme, font and scroll their defaults
+    wrap_output       initial live Wrap lines preference (default: settings.py WRAP_OUTPUT);
+                      off uses a horizontally scrollable 1,000-column terminal
     info              [label, text] pairs the page's info panel lists (default: the command line
                       and the working folder); the start and end times are added to them
     code_file, settings_file, log_path, crash_log_path
@@ -1177,6 +1190,7 @@ def complete_config(config: Dict[str, Any], command: List[str]) -> Dict[str, Any
     if not config.get("key"):
         config["key"] = secrets.token_urlsafe(24)
     chosen = load_settings()
+    config.setdefault("wrap_output", chosen["WRAP_OUTPUT"])
     config["theme"] = {**ui.DEFAULT_THEME, **chosen["COLORS"], **(config.get("theme") or {})}
     font = {"family": chosen["FONT_FAMILY"], "size": chosen["FONT_SIZE"]}
     config["font"] = {**font, **(config.get("font") or {})}

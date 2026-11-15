@@ -332,6 +332,10 @@ def main() -> None:
         script = main_script_path(settings)
         if has_terminal:
             set_settings_colors()
+            if launch_mode in ("conhost", "wt"):
+                from pyapp.DONT_CHANGE.scripts.console_tools import set_terminal_wrap
+
+                set_terminal_wrap(settings.wrap_terminal_output)
             set_terminal_title(settings.program_name)
             set_terminal_app_id(app_id)
             if launch_mode in ("wt", "conhost"):

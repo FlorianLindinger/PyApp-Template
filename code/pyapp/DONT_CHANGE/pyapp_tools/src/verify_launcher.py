@@ -62,7 +62,18 @@ def tool_command(tool: str) -> List[str]:
 def run_check(label: str, command: List[str]) -> bool:
     _ui.heading(label)
     # Execute the Ruff/Pyrefly command resolved from local PATH or uvx.
-    code = subprocess.run(command, cwd=DONT_CHANGE_DIR, check=False).returncode  # noqa: S603
+    quiet = not _ui.interactive()
+    completed = subprocess.run(  # noqa: S603
+        command,
+        cwd=DONT_CHANGE_DIR,
+        check=False,
+        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0) if quiet else 0,
+        stdout=subprocess.PIPE if quiet else None,
+        stderr=subprocess.STDOUT if quiet else None,
+    )
+    if quiet and completed.stdout:
+        _ui.info(completed.stdout.decode("utf-8", "replace").rstrip())
+    code = completed.returncode
     if code == 1:
         _ui.warn(f"{label} reported problems; see the diagnostics above.")
     elif code != 0:

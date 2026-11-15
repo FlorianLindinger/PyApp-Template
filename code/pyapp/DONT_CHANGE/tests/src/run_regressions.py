@@ -63,6 +63,7 @@ def run_file(path: Path) -> Tuple[Path, int, str]:
         encoding="utf-8",
         errors="replace",
         env={**os.environ, "PYTHONIOENCODING": "utf-8"},
+        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
         check=False,
     )
     return path, completed.returncode, completed.stdout + completed.stderr

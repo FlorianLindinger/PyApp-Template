@@ -17,12 +17,27 @@ with mock.patch.object(sys, "path", [str(DONT_CHANGE / "pyapp_tools" / "src"), *
 
 
 class VerifyLauncherTests(unittest.TestCase):
+    def test_background_verification_preserves_the_actual_tool_diagnostics(self):
+        output = io.StringIO()
+        with mock.patch.object(verify_launcher.subprocess, "run") as run, contextlib.redirect_stdout(output):
+            run.return_value = subprocess.CompletedProcess(["ruff"], 1, stdout=b"example.py:9:2: diagnostic\n")
+            self.assertFalse(verify_launcher.run_check("Ruff lint", ["ruff", "check", "."]))
+        self.assertIn("example.py:9:2: diagnostic", output.getvalue())
+        self.assertIn("Ruff lint reported problems", output.getvalue())
+
     def test_check_reports_warning_for_diagnostics(self):
         output = io.StringIO()
         with mock.patch.object(verify_launcher.subprocess, "run") as run, contextlib.redirect_stdout(output):
             run.return_value = subprocess.CompletedProcess(["ruff"], 1)
             self.assertFalse(verify_launcher.run_check("Ruff lint", ["ruff", "check", "."]))
-        run.assert_called_once_with(["ruff", "check", "."], cwd=DONT_CHANGE, check=False)
+        run.assert_called_once_with(
+            ["ruff", "check", "."],
+            cwd=DONT_CHANGE,
+            check=False,
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+        )
         self.assertIn("Ruff lint reported problems", output.getvalue())
 
     def test_check_reports_tool_error_separately(self):

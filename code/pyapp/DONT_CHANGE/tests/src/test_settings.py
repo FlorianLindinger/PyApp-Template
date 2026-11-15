@@ -58,7 +58,7 @@ class ValidationTests(unittest.TestCase):
                 config.validate(load())
 
     def test_window_switches_and_close_choices(self):
-        for name in ("always_on_top", "hide_minimize_button", "hide_maximize_button"):
+        for name in ("always_on_top", "hide_minimize_button", "hide_maximize_button", "wrap_terminal_output"):
             with self.subTest(name=name), support.temporary_settings(append([f'{name} = "yes"'])) as (
                 _,
                 load,

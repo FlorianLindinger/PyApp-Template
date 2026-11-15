@@ -121,6 +121,13 @@ start_minimized = False
 # Hidden starts stay hidden; native Windows Terminal focus is unsupported. Windows may restrict focus.
 foreground_on_first_print = False
 
+# --- Terminal output ---
+# Wrap long output lines (conhost and WT). False uses Windows native no-wrap mode:
+# characters at the right edge may be overwritten; this does not add horizontal scrolling.
+# Browser: default for its live Wrap lines switch; off uses horizontal scrolling up to
+# 1,000 columns. The browser remembers a user override. Log files keep the full output.
+wrap_terminal_output = True
+
 # --- Native window controls ---
 # Native terminal window (conhost and Windows Terminal); browser windows are left alone.
 # Alpha affects the entire window, including text: 1 = opaque, 0.8 = 80% opaque; 0 < value <= 1.

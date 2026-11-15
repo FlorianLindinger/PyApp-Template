@@ -30,7 +30,11 @@ NIF_MESSAGE = 1
 NIF_ICON = 2
 NIF_TIP = 4
 NIF_INFO = 0x10
+NIF_REALTIME = 0x40
 NIF_SHOWTIP = 0x80
+NIIF_USER = 4
+NIIF_NOSOUND = 0x10
+NIIF_LARGE_ICON = 0x20
 SW_HIDE = 0
 SW_RESTORE = 9
 SW_SHOWMINNOACTIVE = 7
@@ -202,14 +206,16 @@ class MinimizeToTray:
             self._add_icon()
         self.user.ShowWindow(self.target, SW_HIDE)
         self.hidden = True
-        data = self._data(NIF_INFO)
-        data.szInfoTitle = _short_text(self.name + " is in the system tray", 63)
+        # A queued notice would be misleading after restore; let Shell discard it if busy.
+        data = self._data(NIF_INFO | NIF_REALTIME)
+        data.szInfoTitle = _short_text(self.name, 63)
         data.szInfo = (
             "The window moved to the system tray beside the clock (possibly under the hidden-icons arrow). "
             "Minimizing does not stop the program. Click its icon or this notification to restore it. "
             "Right-click for Restore / Stop."
         )
-        data.dwInfoFlags = 1 | 0x10  # NIIF_INFO | NIIF_NOSOUND; completion sound settings stay independent.
+        data.hBalloonIcon = self.icon
+        data.dwInfoFlags = NIIF_USER | NIIF_LARGE_ICON | NIIF_NOSOUND
         if not self.shell.Shell_NotifyIconW(NIM_MODIFY, ctypes.byref(data)):
             self.restore()
             note_ignored("send minimize-to-tray notification")
@@ -313,7 +319,9 @@ class MinimizeToTray:
             self.hwnd = self.user.CreateWindowExW(0, name, "", 0, 0, 0, 0, 0, None, None, instance, None)
             if not self.hwnd:
                 raise ctypes.WinError(ctypes.get_last_error())
-            self.icon = self.user.LoadImageW(None, self.icon_path, 1, 16, 16, 0x10)
+            # LR_LOADFROMFILE | LR_DEFAULTSIZE loads the system large-icon size for the
+            # notification title; Shell scales that same app icon down for the tray.
+            self.icon = self.user.LoadImageW(None, self.icon_path, 1, 0, 0, 0x10 | 0x40)
             self.owns_icon = bool(self.icon)
             if not self.icon:
                 self.icon = self.user.LoadIconW(None, ctypes.c_void_p(32512))  # shared application icon

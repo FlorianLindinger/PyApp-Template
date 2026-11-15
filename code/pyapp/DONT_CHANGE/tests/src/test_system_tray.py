@@ -51,6 +51,11 @@ class TrayLogicTests(unittest.TestCase):
         args = shell.Shell_NotifyIconW.call_args[0]
         self.assertEqual(args[0], tray.NIM_MODIFY)
         data = args[1]._obj
+        self.assertEqual(data.szInfoTitle, "Example")
+        self.assertEqual(data.hBalloonIcon, controller.icon)
+        self.assertEqual(data.dwInfoFlags & 0xF, 4)  # NIIF_USER, rather than Windows' generic info icon
+        self.assertTrue(data.dwInfoFlags & 0x20)  # NIIF_LARGE_ICON
+        self.assertTrue(data.uFlags & 0x40)  # NIF_REALTIME: do not queue a stale restore notice
         self.assertIn("hidden-icons arrow", data.szInfo)
         self.assertIn("restore", data.szInfo)
         self.assertLess(len(data.szInfo), 256)
@@ -159,7 +164,7 @@ class NativeTrayTests(unittest.TestCase):
                 "import ctypes, sys, time, traceback\n"
                 "from ctypes import wintypes\nfrom pathlib import Path\n"
                 f"sys.path.insert(0, {str(CODE)!r})\n"
-                "from pyapp.DONT_CHANGE.scripts.system_tray import MinimizeToTray, WM_TRAY, SW_RESTORE\n"
+                "from pyapp.DONT_CHANGE.scripts.system_tray import MinimizeToTray, WM_TRAY, SW_RESTORE, NIF_INFO, NIF_REALTIME, NIIF_USER\n"
                 "user = ctypes.WinDLL('user32', use_last_error=True)\n"
                 "kernel = ctypes.WinDLL('kernel32', use_last_error=True)\n"
                 "kernel.GetConsoleWindow.restype = wintypes.HWND\n"
@@ -172,12 +177,28 @@ class NativeTrayTests(unittest.TestCase):
                 "user.SendMessageTimeoutW.argtypes = [wintypes.HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM, wintypes.UINT, wintypes.UINT, ctypes.POINTER(ctypes.c_size_t)]\n"
                 "user.SendMessageTimeoutW.restype = ctypes.c_ssize_t\n"
                 "hwnd = kernel.GetConsoleWindow()\n"
+                f"icon_path = {str(CODE / 'pyapp/icons/icon.ico')!r}\n"
+                # Keep real icon/message-loop operations, intercept only the visible balloon request.
+                "class QuietTray(MinimizeToTray):\n"
+                "    def __init__(self, *args):\n"
+                "        super().__init__(*args)\n"
+                "        self.notices = 0\n"
+                "        native_notify = self.shell.Shell_NotifyIconW\n"
+                "        def notify(command, pointer):\n"
+                "            data = pointer._obj\n"
+                "            if data.uFlags & NIF_INFO:\n"
+                "                assert data.szInfoTitle == self.name and data.hBalloonIcon == self.icon\n"
+                "                assert data.uFlags & NIF_REALTIME and data.dwInfoFlags & 0xF == NIIF_USER\n"
+                "                self.notices += 1\n"
+                "                return True\n"
+                "            return native_notify(command, pointer)\n"
+                "        self.shell.Shell_NotifyIconW = notify\n"
                 # Delay dispatch to reproduce a busy desktop: a fixed sleep cannot acknowledge a callback.
-                "class DelayedTray(MinimizeToTray):\n"
+                "class DelayedTray(QuietTray):\n"
                 "    def _message(self, hwnd, message, wparam, lparam):\n"
                 "        if message == WM_TRAY: time.sleep(.15)\n"
                 "        return super()._message(hwnd, message, wparam, lparam)\n"
-                "controller = DelayedTray(hwnd, 'PyApp tray test', '', lambda: None)\n"
+                "controller = DelayedTray(hwnd, 'PyApp tray test', icon_path, lambda: None)\n"
                 "def send(message, lparam=0):\n"
                 "    result = ctypes.c_size_t()\n"
                 "    assert user.SendMessageTimeoutW(controller.hwnd, message, 0, lparam, 2, 5000, ctypes.byref(result)), 'native callback timed out'\n"
@@ -191,6 +212,7 @@ class NativeTrayTests(unittest.TestCase):
                 "    before = wintypes.RECT(); user.GetWindowRect(hwnd, ctypes.byref(before))\n"
                 "    geometry = lambda rect: (rect.left, rect.top, rect.right, rect.bottom)\n"
                 "    controller.start()\n"
+                "    assert controller.owns_icon, 'the application icon was not loaded'\n"
                 "    for maximized in (False, True):\n"
                 "        if maximized: user.ShowWindow(hwnd, 3)\n"
                 "        user.ShowWindow(hwnd, 6)\n"
@@ -216,13 +238,15 @@ class NativeTrayTests(unittest.TestCase):
                 "    controller.close()\n"
                 "    assert user.IsWindowVisible(hwnd), 'cleanup left terminal hidden'\n"
                 "    assert not controller.thread.is_alive() and not controller.added\n"
-                "    controller = MinimizeToTray(hwnd, 'PyApp quiet cleanup test', '', lambda: None)\n"
+                "    assert controller.notices == 4, 'expected one notification request per minimize'\n"
+                "    controller = QuietTray(hwnd, 'PyApp quiet cleanup test', icon_path, lambda: None)\n"
                 "    controller.start()\n"
                 "    user.ShowWindow(hwnd, 6)\n"
                 "    wait(lambda: controller.hidden and not user.IsWindowVisible(hwnd))\n"
                 "    controller.close(activate=False)\n"
                 "    assert user.IsWindowVisible(hwnd) and user.IsIconic(hwnd), 'quiet cleanup did not return window minimized'\n"
                 "    assert not controller.thread.is_alive() and not controller.added\n"
+                "    assert controller.notices == 1, 'quiet cleanup repeated a notification'\n"
                 f"    Path({str(result)!r}).write_text('passed', encoding='utf-8')\n"
                 "except BaseException:\n"
                 f"    Path({str(result)!r}).write_text(traceback.format_exc(), encoding='utf-8')\n"
@@ -235,7 +259,9 @@ class NativeTrayTests(unittest.TestCase):
             conhost = str(Path(os.environ.get("WINDIR", "C:\\Windows")) / "System32" / "conhost.exe")
             python = getattr(sys, "_base_executable", sys.executable)
             # Fixed system conhost/current interpreter and a test script created just above.
-            with subprocess.Popen([conhost, python, str(script)], startupinfo=startup) as child:  # noqa: S603
+            with subprocess.Popen(  # noqa: S603
+                [conhost, python, str(script)], startupinfo=startup, creationflags=subprocess.CREATE_NEW_CONSOLE
+            ) as child:
                 try:
                     child.wait(timeout=25)
                 finally:

@@ -38,6 +38,8 @@ SCROLL_LINES = 5
 FAST_SCROLL_FACTOR = 5
 # Lines kept for scrolling back (the classic console keeps 9001).
 SCROLLBACK_LINES = 9001
+# Default for the live Wrap lines switch; off uses a horizontally scrollable 1,000-column terminal.
+WRAP_OUTPUT = True
 
 # --- New output (the page's gear menu changes and remembers these) ---
 # Light up new output for a moment.

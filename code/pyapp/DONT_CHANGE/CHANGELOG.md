@@ -9,6 +9,9 @@ The first versioned release; it contains every change below.
 
 ### 2026-11-15
 
+- Make validation less disruptive without skipping checks: hide captured-output worker/Git/WPF/verifier consoles and preserve diagnostics explicitly. Keep the native API probe hidden by default, with an opt-in visible mode for manual inspection. Retain the real tray window lifecycle checks because hiding/isolating their target changes Windows behavior. Wait briefly for the actual topmost flag under load while retaining its assertion.
+- Add wrap_terminal_output=True with native conhost/WT console-mode control and a remembered live browser Wrap lines switch. Native no-wrap can overwrite the rightmost cell; browser no-wrap uses horizontal scrolling up to the existing 1,000-column host limit. Preserve other console flags and full log text; cover validation, native mode toggles, browser defaults, saved preferences and resizing.
+- Use the app name and large app icon in minimize-to-tray notification titles; discard notices that cannot be displayed immediately instead of queueing stale instructions. Intercept balloon delivery in native regression probes while checking payloads/counts and retaining real tray/window lifecycle coverage, so validation no longer floods Windows notifications.
 - Fix a race in the native conhost tray regression: acknowledge simulated Shell callbacks before starting the next minimize cycle instead of relying on a 50 ms sleep. Exercise delayed callbacks, retain all lifecycle assertions, and include window/controller state in timeout diagnostics.
 - Move TODO, window lifecycle rules and the release checklist into docs; rename data/docs to data/readme_resources and update links. Keep documentation-only TODO edits exempt from the main-branch changelog gate.
 

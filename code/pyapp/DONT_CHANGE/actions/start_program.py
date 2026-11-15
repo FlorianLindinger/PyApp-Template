@@ -121,6 +121,7 @@ def browser_command(s: Union[ModuleType, SimpleNamespace], run_dir: Path, comman
     ]
     config = {
         "confirm_on_close": s.confirm_on_close,
+        "wrap_output": s.wrap_terminal_output,
         "title": s.program_name,
         "info": info,
         "code_file": targets["open_code"] if s.open_code_shortcut_name else "",

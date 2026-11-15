@@ -1,12 +1,29 @@
 # TODO
 
-improve Windows notification on tray. icon on notification? name name?
+improve Windows notification on tray text
 
-add many comments to many points in the code that someone not experienced in batch and Python fully understand what's happening where
+are windows notification on x implemented? test them
 
-make sub icons more visible; make the log icon darker for more differentiation; a folder sub icon for the folder shortcuts.
+Opus: add many comments to many points in the code that someone not experienced in batch and Python fully understand what's happening where
 
-wrap text in terminal prints as a setting. can I change for WT and conhost? live setting for browser
+review dev settings
+
+- re-enable the X button on finish?
+
+- can I set the venv for VS Code in the repo? (e.g. .vscode/settings.json -> code/pyapp/generated/.venv)
+- shortcuts that pass extra arguments: option to generate .lnk and/or .cmd for end users, where the .cmd allows adding args and passes them on. can the shortcut pass the remaining args? 
+- add: restart_on_crash / restart_on_failure, with detection of an immediate fail again, max retries and max allowed in some time interval.
+
+browser:
+- are all settings in developer_settings implemented as much as possible?
+- reorder button
+- live print input prepend on/off: make timestamps toggleable? kind of problematic to sync with input unless I have it all running in browser logic
+- is it open log or open log folder. I guess I can have both. 
+- wrap text option as live button and default
+- some kind of indicator bulb if still running or done ? not sure what color code should be. or maybe just busy indicator with animator to indicate running
+- is it setting what buttons appear?
+- ask AI: any more feature ideas for browser terminal?
+- Resource monitor — display CPU, memory, and disk usage; optionally warn above thresholds. only if cheap or hidden by default
 
 ## 1. Release validation and publishing
 
@@ -83,68 +100,36 @@ Flowcharts?
 
 ## 3. Features
 
-- batch to compile (Nuitka): how to install Nuitka? auto icon. a Python file for args and files for presets (AV safe, small, fast startup). compilation folder under dev_tools; a batch to clean it.
+- can i have it easily run on linux by disabling all code parts for windows by kernel checking all. can it run if uv is installed global in linux. maybe make more compatible with linux and AI should ask what features it should do that are not easily implemented already. it should mention somewhere what all doesn't work on linux. Compilation settings. Compile for linux and mac? Can compile have problems with long paths? Batch to compile (Nuitka): how to install Nuitka? auto icon. a Python file for args and files for presets (AV safe, small, fast startup). compilation folder under dev_tools; a batch to clean it.
     - in compilation, have a script not meant to be changed with the defaults, copied over to the active compilation scripts? compilation script accessible to the developer (inside the dev folder).
     - make a batch that compiles main_script with its dependencies using the managed Python -> output with and without terminal. or something that converts the folder to a clickable app.
     - compile via GitHub Action as proof of exe content?
     - is there a way to make compiling faster when repeated?
     - do I need the unbuffered flag or other flags in the Nuitka compile? how to have faulthandler in compiled?
-- is startup as lazy as reasonable?
-- ask AI if the logging package is useful here. google drawbacks of -u.
 - can Python somehow plot in the terminal?
-- after interpreter crash backup Python script launch
 - File associations — open supported file types directly in the application. I guess I should not force VS Code. just start with default app for .py. or is that Python exe?? maybe have setting what it should be and mention.
-- Graceful stop callback — let the app save data and release hardware before forced termination. 
+- Graceful stop callback — let the app save data and release hardware before forced termination. Maybe I want support code that main.py can import (e.g. graceful shutdown, see future/graceful_shutdown). Ask AI for useful ideas.
 - Automatic restart — restart after crashes with a delay, retry limit, and crash-loop protection. What is point actually? only helps for interpreter crash. maybe only do that then and mention
 - Progress API — let application code report percentage, current operation, and estimated remaining time.
 - Execution timeout — stop a stalled run after a configurable duration.
-- Start on Windows start option
-- can I set the venv for VS Code in the repo? (e.g. .vscode/settings.json -> code/pyapp/generated/.venv)
-- maybe I want support code that main.py can import (e.g. graceful shutdown, see future/graceful_shutdown). Ask AI for useful ideas.
-- is there something useful I can do with communication of main.py and the backend?
-- shortcuts that pass extra arguments: option to generate .lnk and/or .cmd for end users, where the .cmd allows adding args and passes them on. can the shortcut pass the remaining args? 
-- add setting to start main in a specific abs or rel folder (today only: script folder or shortcut folder).
-- add: restart_on_crash / restart_on_failure, with detection of an immediate fail again, max retries and max allowed in some time interval.
-- prevent KeyboardInterrupt option: with option how to handle
-- update check for final app: check for a template/launcher update on start (link, changelog), with options: don't check again / skip this version / show changes / install. setting for it; maybe only an info print with a link. maybe a shortcut for it.
+- git update check for final app: check for a template/launcher update on start (link, changelog), with options: don't check again / skip this version / show changes / install. setting for it; maybe only an info print with a link. maybe a shortcut for it.
 
 ## 4. Error reporting, terminal output & traceback
 
-- Should I recognise more crash codes (0xC0000374 heap corruption, 0xC0000135 missing DLL, divide-by-zero).
-Should I add package list to crash report? ... more
+- Should I add package list to crash report? ... more
 - clickable links in error reports: path:line to the failing line (per frame), and a link to open the main script (Windows Terminal; not possible in conhost?). open on the specific line with VS Code / Notepad++ / PyCharm; setting for which program.
 
 ## 5. Windows integration
 
 - Windows also offers percentage progress, overlay badges, and thumbnail controls. Microsoft taskbar API
 - all prints to Windows notification option?
-- maximize on start option
-- prevent sleep option. ask what default behavior is atm
-also option to keep display awake
 - Actual progress percentage and status badges in the taskbar. Taskbar API. somehow integration with program
-- does it have option to hide x button?
 - is there other option for minimize to tray than replacing minimize button?
 - Windows notification: show under the program name and the correct app ID (also prevents spam)
 - Windows notification:clickable notification
 - Windows notification: warn if notifications are not allowed by Windows and mention where that setting is
-- re-enable the X button on finish?
 - can I modify what appears when I right click a shortcut?
 - I can modify what appear when I hover over something in Windows taskbar when opened: add buttons?
-- system tray:does "stop program" option in system tray respect the close rules?
-- system tray:foreground should always unminimize and restore from tray
-- system tray:make sure the tray remembers the position 
 
-## 6. Browser terminal
-
-- reorder button
-- are all settings in developer_settings implemented as much as possible?
-- live print input prepend on/off: make timestamps toggleable? kind of problematic to sync with input unless I have it all running in browser logic
-- is it open log or open log folder. I guess I can have both. 
-- wrap text option as live button and default
-- some kind of indicator bulb if still running or done ? not sure what color code should be. or maybe just busy indicator with animator to indicate running
-- is it setting what buttons appear?
-- ask AI: any more feature ideas for browser terminal?
-- Resource monitor — display CPU, memory, and disk usage; optionally warn above thresholds. only if cheap or hidden by default
-
-## 7. Future
+## 6. Future
 

@@ -55,6 +55,7 @@ SHORTCUT_KINDS = (
 # GitHub Actions an app can choose in github_actions; one data/workflows/<name>.yml each.
 APP_WORKFLOWS = ("leaks",)
 BOOLEANS = (
+    "wrap_terminal_output",
     "replace_minimize_with_minimize_to_system_tray",
     "allow_minimize",
     "allow_maximize",

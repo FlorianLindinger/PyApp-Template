@@ -205,6 +205,7 @@ PROTECTED_SETTING_NAMES = [
     "stop_timeout_seconds",
     "tab_bar_color",
     "terminal_bg_color",
+    "wrap_terminal_output",
     "terminal_shortcut_name",
     "terminal_text_color",
     "use_classic_terminal",

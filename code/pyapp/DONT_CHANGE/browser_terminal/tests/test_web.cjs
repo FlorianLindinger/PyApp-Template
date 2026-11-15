@@ -271,3 +271,48 @@ test("a touchpad movement during an asynchronous write overrides its saved viewp
   page.writes[0]();
   assert.deepEqual(page.moves, []);
 });
+const wrapStart = source.indexOf('const resizeTerminal =');
+const wrapEnd = source.indexOf('let fitTimer', wrapStart);
+
+test('wrapping fits the viewport and wide mode keeps xterm and ConPTY sizes aligned', () => {
+  const sizes = [];
+  const viewport = { scrollLeft: 100 };
+  const context = vm.createContext({
+    fit: { proposeDimensions: () => ({ cols: 80, rows: 24 }) },
+    optWrap: { checked: true }, term: { resize: (cols, rows) => sizes.push([cols, rows]) },
+    document: { getElementById: () => viewport },
+  });
+  vm.runInContext(source.slice(wrapStart, wrapEnd), context);
+  vm.runInContext('resizeTerminal()', context);
+  assert.deepEqual(sizes.pop(), [80, 24]);
+  assert.equal(viewport.scrollLeft, 0);
+  context.optWrap.checked = false;
+  vm.runInContext('resizeTerminal()', context);
+  assert.deepEqual(sizes.pop(), [1000, 24]);
+  context.fit.proposeDimensions = () => ({ cols: 50, rows: 30 });
+  vm.runInContext('resizeTerminal()', context);
+  assert.deepEqual(sizes.pop(), [1000, 30]);
+  context.optWrap.checked = true;
+  vm.runInContext('resizeTerminal()', context);
+  assert.deepEqual(sizes.pop(), [50, 30]);
+});
+
+test('live wrap switch restores a boolean override, saves changes and resizes immediately', () => {
+  const controls = {};
+  const storage = { value: JSON.stringify({ wrap: false }) };
+  let resized = 0;
+  const context = vm.createContext({
+    config: { wrap_output: true }, options: { highlight: true, follow: true, frontOnInput: false },
+    document: { getElementById: (id) => controls[id] ||= { addEventListener: (_name, handler) => { controls[id].change = handler; } } },
+    localStorage: { getItem: () => storage.value, setItem: (_key, value) => { storage.value = value; } },
+    send() {}, resizeTerminal: () => resized++,
+  });
+  const start = source.indexOf('const VIEW =');
+  const end = source.indexOf('// ------------------------------------------------------------ touchpad scrolling', start);
+  vm.runInContext(source.slice(start, end), context);
+  assert.equal(controls['opt-wrap'].checked, false);
+  controls['opt-wrap'].checked = true;
+  controls['opt-wrap'].change();
+  assert.equal(resized, 1);
+  assert.equal(JSON.parse(storage.value).wrap, true);
+});

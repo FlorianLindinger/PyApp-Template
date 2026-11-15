@@ -7,6 +7,7 @@ import os
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from ctypes import wintypes
 from pathlib import Path
@@ -78,17 +79,30 @@ class NativeWindow(unittest.TestCase):
                 "hide_minimize_button=True, hide_maximize_button=True, allow_minimize=False, allow_maximize=False, confirm_on_close='block'); "
                 "configure(s, 'conhost'); "
                 "from pyapp.DONT_CHANGE.scripts.taskbar_status import terminal_window, set_progress, flash; "
-                "hwnd = terminal_window(); assert hwnd; "
+                "hwnd = terminal_window(include_hidden=True); assert hwnd; "
                 "[set_progress(hwnd, state) for state in (1, 2, 4, 0)]; flash(hwnd); "
+                "import ctypes; from ctypes import wintypes; "
+                "from pyapp.DONT_CHANGE.scripts.console_tools import set_terminal_wrap; "
+                "kernel = ctypes.WinDLL('kernel32'); kernel.GetStdHandle.restype = wintypes.HANDLE; "
+                "handle = kernel.GetStdHandle(-11); before = wintypes.DWORD(); "
+                "kernel.GetConsoleMode.argtypes = [wintypes.HANDLE, ctypes.POINTER(wintypes.DWORD)]; "
+                "assert kernel.GetConsoleMode(handle, ctypes.byref(before)); "
+                "set_terminal_wrap(False); after = wintypes.DWORD(); "
+                "assert kernel.GetConsoleMode(handle, ctypes.byref(after)); "
+                "assert not after.value & 2 and after.value & ~2 == before.value & ~2; "
+                "set_terminal_wrap(True); assert kernel.GetConsoleMode(handle, ctypes.byref(after)); "
+                "assert after.value & 2 and after.value & ~2 == before.value & ~2; "
                 f"Path({str(result)!r}).write_text('configured', encoding='utf-8')"
             )
             startup = subprocess.STARTUPINFO()
             startup.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-            startup.wShowWindow = 7  # minimized; only the disposable console is changed
+            startup.wShowWindow = 7 if os.environ.get("PYAPP_TEST_VISIBLE_WINDOWS") == "1" else 0
             conhost = str(Path(os.environ.get("WINDIR", "C:\\Windows")) / "System32" / "conhost.exe")
             python = getattr(sys, "_base_executable", sys.executable)
             # Only the system conhost, this interpreter and fixed test code are executed.
-            with subprocess.Popen([conhost, python, "-c", script], startupinfo=startup) as child:  # noqa: S603
+            with subprocess.Popen(  # noqa: S603
+                [conhost, python, "-c", script], startupinfo=startup, creationflags=subprocess.CREATE_NEW_CONSOLE
+            ) as child:
                 try:
                     self.assertEqual(child.wait(timeout=15), 0)
                 finally:
@@ -146,6 +160,10 @@ class NativeWindow(unittest.TestCase):
             )
             style = user.GetWindowLongW(hwnd, window.GWL_STYLE)
             self.assertFalse(style & (window.WS_MINIMIZEBOX | window.WS_MAXIMIZEBOX))
+            # Allow a pending layered-window z-order update to settle under desktop load. Observe the actual flag, without weakening its assertion.
+            deadline = time.monotonic() + 1
+            while not user.GetWindowLongW(hwnd, window.GWL_EXSTYLE) & 0x00000008 and time.monotonic() < deadline:
+                time.sleep(0.005)
             self.assertTrue(user.GetWindowLongW(hwnd, window.GWL_EXSTYLE) & 0x00000008)  # WS_EX_TOPMOST
             menu = user.GetSystemMenu(hwnd, False)
             self.assertTrue(user.GetMenuState(menu, window.SC_CLOSE, 0) & window.MF_GRAYED)

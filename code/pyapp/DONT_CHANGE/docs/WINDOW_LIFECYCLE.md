@@ -11,6 +11,14 @@ WT uses a dedicated window for window-wide options; other WT tabs/windows must r
 Browser close/prompt/hide behavior belongs to the browser terminal; native tray, taskbar,
 alpha and topmost controls do not manage the browser or an application's own GUI.
 
+`wrap_terminal_output` defaults to True. For conhost/WT the watchdog sets the native
+`ENABLE_WRAP_AT_EOL_OUTPUT` mode before starting the app, preserving other console flags.
+False can overwrite the rightmost buffer cell; it does not create horizontal scrolling.
+The browser instead resizes its xterm/ConPTY pair together: wrapping fits the viewport,
+while off uses a horizontally scrollable 1,000-column terminal. The live gear-menu switch
+is remembered and overrides the developer default. Longer lines still wrap at 1,000 columns.
+Redirected files/pipes and the full text saved in logs are not reformatted by this setting.
+
 `allow_minimize=False` disables the normal conhost minimize route. Hiding its minimize button
 removes that route too. Tray replacement observes an actual minimized window; it does not
 override those restrictions or turn browser hide into native minimize-to-tray.
@@ -20,7 +28,7 @@ override those restrictions or turn browser hide into native minimize-to-tray.
 | Starting state / event | Next state and required effects |
 | --- | --- |
 | Visible normal or maximized; minimize with tray replacement off | Ordinary Windows minimized state; no launcher tray icon. |
-| Visible normal or maximized; minimize with tray replacement on (including start minimized) | Register a recovery icon **before** hiding. Preserve Windows' normal placement/maximized restore state. Request one explanatory tray notification per minimize cycle. |
+| Visible normal or maximized; minimize with tray replacement on (including start minimized) | Register a recovery icon **before** hiding. Preserve Windows' normal placement/maximized restore state. Request one explanatory tray notification per minimize cycle, titled with the app name and using its icon. Request immediate delivery; discard rather than queue stale notices. |
 | Icon creation or notification request fails | Keep/restore access to the terminal; record diagnostics. Never leave it hidden without a recovery route. Windows may accept a notification but suppress its banner. |
 | Hidden; tray icon/notification click or Restore menu | Restore and request foreground; remove the tray icon. A second restore callback must not unmaximize an already visible maximized window. |
 | Hidden; another launcher foreground request restores it | The timer notices visibility and removes the icon. No second minimize/restore cycle is required. |
@@ -61,6 +69,15 @@ Its live conhost probe checks normal geometry, maximized restoration, duplicate 
 simulated Explorer recovery, and quiet shutdown. It deliberately delays tray callbacks and
 acknowledges their completion before the next transition; fixed sleeps do not establish event
 ordering on a busy desktop. It does not restart the user's Explorer.
+The native probe intercepts balloon-delivery requests while validating their app title/icon
+and count; icon creation/removal and window operations still use Windows. Automated validation
+does not display tray balloons. Real banner appearance remains a manual release check.
+The separate native taskbar/console API probe stays hidden by default; set
+`PYAPP_TEST_VISIBLE_WINDOWS=1` to inspect it visibly. The tray lifecycle probe retains its
+real visible minimize/restore/maximize operations: hiding or isolating its target changes
+Windows behavior and made the check unreliable. No native assertions are skipped to make
+validation quieter. Background checker/WPF workers do not open extra consoles, and their
+captured diagnostics are preserved.
 
 `tests/src/test_completion_attention.py` checks close/keep-open/foreground combinations for all
 three outcomes, hidden-window taskbar completion, activity/highlight/flash and notifications.

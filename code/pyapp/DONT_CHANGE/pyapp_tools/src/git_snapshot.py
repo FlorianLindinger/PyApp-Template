@@ -53,6 +53,7 @@ def git(
         env=env,
         input=data,
         capture_output=True,
+        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
         check=False,
     )
     if completed.returncode:
@@ -143,6 +144,7 @@ def run(
         env=env,
         input=refs.encode("utf-8") if refs is not None else None,
         capture_output=True,
+        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
         check=False,
     )
     output = (completed.stdout + completed.stderr).decode("utf-8", "replace")

@@ -35,6 +35,7 @@ def _run_wpf_powershell(script: str, **extra_env: str) -> str:
         capture_output=True,
         text=True,
         check=False,
+        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
         env=environment,
     )
     if completed.returncode:

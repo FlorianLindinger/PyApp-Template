@@ -5,6 +5,7 @@ The package itself has its own tests in browser_terminal/tests; run_browser_test
 
 from __future__ import annotations
 
+import json
 import os
 import shutil
 import sys
@@ -26,6 +27,19 @@ PYTHON = getattr(sys, "_base_executable", sys.executable)
 
 
 class LaunchModeTest(unittest.TestCase):
+    @unittest.skipUnless(os.name == "nt", "Windows browser launcher")
+    def test_developer_wrapping_default_reaches_the_browser_config(self):
+        from pyapp.DONT_CHANGE.scripts.config import fill_missing_settings
+
+        s = SimpleNamespace(program_name="Example", wrap_terminal_output=False)
+        fill_missing_settings(s)
+        with tempfile.TemporaryDirectory() as folder, mock.patch(
+            "pyapp.DONT_CHANGE.scripts.browser_links.address", return_value=("127.0.0.1", 8765, "fixture")
+        ), mock.patch("pyapp.DONT_CHANGE.scripts.shortcuts.read_start_link", return_value=""):
+            command = start_program.browser_command(s, Path(folder), ["child.exe"])
+            config_path = Path(command[command.index("--config") + 1])
+            self.assertIs(json.loads(config_path.read_text(encoding="utf-8"))["wrap_output"], False)
+
     def test_only_its_own_shortcut_starts_the_browser_terminal(self):
         if os.name != "nt":
             self.skipTest("Windows only")

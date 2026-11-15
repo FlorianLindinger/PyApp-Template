@@ -343,6 +343,7 @@ All in `developer_settings.py`. Mistakes are reported with the setting's name wh
 | `hide_minimize_button`, `hide_maximize_button` | Remove classic conhost caption styles; Windows may disable a single button instead of hiding it |
 | `confirm_on_close` | `"close"` everywhere; `"block"` for conhost; `"prompt"` / `"hide"` for the browser |
 | `allow_minimize`, `allow_maximize` | Permit classic-console minimize/maximize actions; independent of hiding caption buttons |
+| `wrap_terminal_output` | Wrap terminal output (default `True`); browser gear menu can change it live. Native `False` can overwrite the rightmost column; browser `False` uses horizontal scrolling up to 1,000 columns. Logs retain full lines. |
 | `replace_minimize_with_minimize_to_system_tray` | Hide the minimized native terminal from the taskbar into the system tray; request a Windows notification on every minimize |
 | `highlight_on_success`, `highlight_on_failure` | Steady green/red taskbar indicator while the completion window stays open |
 | `flash_on_success`, `flash_on_failure` | Windows taskbar attention flashing until the terminal is activated |

@@ -140,6 +140,8 @@ class SettingsFileTest(unittest.TestCase):
         self.assertEqual(config["scroll"], 3)
         self.assertAlmostEqual(config["options"]["zoomStep"], 1.2)
         self.assertEqual(config["theme"]["red"], "#aa0000")  # the caller's theme over settings.py's colors
+        self.assertIs(config["wrap_output"], True)
+        self.assertIs(browser_terminal.complete_config({"wrap_output": False}, ["prog.exe"])["wrap_output"], False)
 
 
 class OpenInEditorTest(unittest.TestCase):

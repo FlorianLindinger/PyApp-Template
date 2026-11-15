@@ -43,6 +43,32 @@ def enable_ansi() -> None:
         note_ignored("enable_ansi")
 
 
+def set_terminal_wrap(enabled: bool) -> None:
+    """Set native conhost/ConPTY autowrap; no-wrap overwrites the rightmost cell, not a scroll buffer.
+
+    The watchdog calls this before starting the app. Pipes/files have no console mode and are
+    deliberately skipped, so logging and redirected output are never truncated or reformatted.
+    """
+    try:
+        import ctypes
+        from ctypes import wintypes
+
+        kernel = ctypes.WinDLL("kernel32", use_last_error=True)
+        kernel.GetStdHandle.argtypes = [wintypes.DWORD]
+        kernel.GetStdHandle.restype = wintypes.HANDLE
+        kernel.GetConsoleMode.argtypes = [wintypes.HANDLE, ctypes.POINTER(wintypes.DWORD)]
+        kernel.SetConsoleMode.argtypes = [wintypes.HANDLE, wintypes.DWORD]
+        for handle_id in (-11, -12):
+            handle = kernel.GetStdHandle(handle_id)
+            mode = wintypes.DWORD()
+            if kernel.GetConsoleMode(handle, ctypes.byref(mode)):
+                desired = mode.value | 2 if enabled else mode.value & ~2  # ENABLE_WRAP_AT_EOL_OUTPUT
+                if not kernel.SetConsoleMode(handle, desired):
+                    raise ctypes.WinError(ctypes.get_last_error())
+    except Exception:
+        note_ignored("set terminal output wrapping")
+
+
 def show_console() -> None:
     """Restore and focus this process's console window (shortcuts start it minimized)."""
     unminimize_terminal()

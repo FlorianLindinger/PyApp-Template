@@ -55,6 +55,14 @@ between notifications, and whether opened files and folders come to the front. A
 starts the terminal can still pass its own theme, font or scroll; those win. A value of the wrong
 type falls back to the built-in default.
 
+**Wrapping:** `WRAP_OUTPUT=True` in `settings.py` (or `wrap_output` in the caller's config)
+sets the default for **Wrap lines to the window width** in the gear menu. The browser remembers
+a user's override and applies it immediately, including on reconnect. Off uses horizontal
+scrolling with a 1,000-column terminal; longer lines still wrap at that limit. Switching or
+resizing changes the terminal dimensions seen by the running program, which may redraw its
+output. The launcher passes `wrap_terminal_output` as the initial default. This changes the
+terminal display, without inserting line breaks into the app's saved log.
+
 From Python: `from browser_terminal import host; host.run({"title": "My tool"}, ["python", "my_tool.py"])`.
 
 By default, closing the tab ends the program (after 5 seconds, so a reload does not),

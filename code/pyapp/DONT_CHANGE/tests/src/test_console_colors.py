@@ -1,5 +1,7 @@
 """The console window: only hexadecimal color codes reach the color command, outcome colors, the wt.exe command line."""
 
+import ctypes
+import os
 import unittest
 from typing import List
 from unittest import mock
@@ -7,7 +9,24 @@ from unittest import mock
 import project_location  # noqa: F401 - make this checkout's code importable
 from pyapp.DONT_CHANGE.backend_settings import CMD_EXE
 from pyapp.DONT_CHANGE.scripts.config import fill_missing_settings
-from pyapp.DONT_CHANGE.scripts.console_tools import set_terminal_colors
+from pyapp.DONT_CHANGE.scripts.console_tools import set_terminal_colors, set_terminal_wrap
+
+
+class WrappingTests(unittest.TestCase):
+    @unittest.skipUnless(os.name == "nt", "Windows console modes")
+    def test_redirected_output_is_untouched_and_denied_mode_changes_are_diagnostic(self):
+        kernel = mock.Mock()
+        kernel.GetConsoleMode.return_value = False
+        with mock.patch.object(ctypes, "WinDLL", return_value=kernel):
+            set_terminal_wrap(False)
+            kernel.SetConsoleMode.assert_not_called()
+        kernel.GetConsoleMode.return_value = True
+        kernel.SetConsoleMode.return_value = False
+        with mock.patch.object(ctypes, "WinDLL", return_value=kernel), mock.patch(
+            "pyapp.DONT_CHANGE.scripts.console_tools.note_ignored"
+        ) as ignored:
+            set_terminal_wrap(True)
+            ignored.assert_called_once_with("set terminal output wrapping")
 
 
 class ConsoleColorTests(unittest.TestCase):
