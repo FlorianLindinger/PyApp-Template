@@ -369,7 +369,8 @@
   const handleControl = (message) => {
     switch (message.t) {
       case "hello":
-        if (message.started) showInfo({ started: message.started });
+        if (message.info) config.info = message.info;
+        showInfo({ started: message.started || 0 });
         setColors(message.colors);
         if (message.iconVersion) favicon.href = "icon?v=" + message.iconVersion;
         if (message.ready) {
@@ -404,6 +405,10 @@
         break;
       case "started":
         showInfo({ started: message.at });
+        break;
+      case "info":
+        config.info = message.info;
+        showInfo({});
         break;
       case "exit":
         ended = true;

@@ -1,6 +1,36 @@
 # TODO
 
-Open items for the launcher and the template. Done items are removed; Longer-term ideas: `future/future_TODO.md`.
+
+
+start usign changelog.md
+
+any more feature ideas for browser terminal? 
+test new buttons: labels, icons
+reorder button
+forgound on finish?
+
+think of hooks and worksflow 
+git hooks: valideate dev settings ....
+wheret to put: DONT_CHANGE\pyapp_tools\src\git_hooks 
+ask AI what hooks/workflows i should offer to dev and git tools and so on. .... Should i move dev tools to subfolders?
+add validate_dev_settings for app as tool and as wrokflow
+ask for more workfloas and actions
+add pre commit hooks for example for jsut warning for leaks adn asking for convfinmration or someihing
+do i want some tool of the git tools in dev hlper? or github actions? 
+shjpuw i spawn the githuib wrkflows only when acitaved and or detectin tempalte repo so it does nto spam root folder unnecestily 
+can i revewi all git hooks and github worklfows
+
+ask ai waht it would simplify or remove
+
+ask for more feature ideas
+
+manually look at all tools and see if need imrovemtns
+
+readme:
+it puts icon on opened terminal automaically. i guess one cant do normally if one want temrinal to stay open on crash? bc shortcut to cmd? right?
+background invisibal app viwh log adn crash log and stop button
+auto good icon creation
+combindation wiht starter in taskbar auto for gui code
 
 ## Before the 1.0.0 release
 

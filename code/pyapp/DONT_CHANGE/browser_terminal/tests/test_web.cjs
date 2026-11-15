@@ -7,6 +7,23 @@ const { test } = require("node:test");
 
 const source = fs.readFileSync(path.join(__dirname, "../web/terminal.js"), "utf8");
 
+test("live info updates and reconnects refresh the displayed application metadata", () => {
+  const config = { info: [["Tool", "example"]] };
+  const shown = [];
+  const context = vm.createContext({ config, showInfo: (value) => shown.push(value), setColors() {}, favicon: {} });
+  const start = source.indexOf("const handleControl =");
+  const end = source.indexOf("let history =", start);
+  vm.runInContext(source.slice(start, end) + "\nglobalThis.handleControl = handleControl;", context);
+  const info = [["Tool", "example"], ["Current log file", "run-123.log"]];
+  context.handleControl({ t: "info", info });
+  assert.equal(config.info, info);
+  assert.equal(shown.length, 1);
+  const refreshed = [["Tool", "reconnected"]];
+  context.handleControl({ t: "hello", info: refreshed, started: 123 });
+  assert.equal(config.info, refreshed);
+  assert.equal(shown[1].started, 123);
+});
+
 function selectionPage(texts, range, viewportY = 0) {
   const layer = { style: {} };
   const screen = { querySelector: () => layer, getBoundingClientRect: () => ({ width: 100, height: 80 }) };

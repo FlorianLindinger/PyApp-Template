@@ -1,10 +1,3 @@
-# while True:
-#     m = input()
-#     if m != "q":
-#         print(m)
-#     else:
-#         break
-
 """A minimal example GUI. Replace this file with your application."""
 
 import os

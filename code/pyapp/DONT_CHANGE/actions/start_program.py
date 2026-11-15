@@ -106,8 +106,15 @@ def browser_command(s: Union[ModuleType, SimpleNamespace], run_dir: Path, comman
         ["Python", paths.VENV_PYTHON_EXE + _python_version_note()],
         ["Environment", paths.VENV_DIR],
         ["Project", str(Path(paths.BACKEND_DIR).parents[1])],
+        ["Working folder", "starting..."],
+        ["Settings file", targets["settings"] or "off"],
+        ["Developer settings", paths.DEV_SETTINGS_PATH],
         ["Logs", log_folder or "off"],
+        ["Crash logs", crash_folder or "off"],
+        ["Current log file", "starting..."],
         ["Launcher", "PyApp-Template " + paths.LAUNCHER_VERSION],
+        ["Browser terminal", str(Path(paths.DONT_CHANGE_DIR) / "browser_terminal")],
+        ["Browser terminal settings", str(Path(paths.DONT_CHANGE_DIR) / "browser_terminal" / "settings.py")],
     ]
     config = {
         "title": s.program_name,

@@ -274,6 +274,16 @@ def main() -> None:
             if settings.start_in_shortcut_folder
             else str(Path(script).parent)
         )
+        if launch_mode == "browser":
+            from pyapp.DONT_CHANGE.browser_terminal import ui
+
+            try:
+                ui.request(
+                    env_var=paths.BROWSER_UI_ENV_VAR,
+                    info={"Working folder": cwd, "Current log file": log_path or "off"},
+                )
+            except (OSError, KeyError):
+                note_ignored("browser terminal: report working folder and current log")
         config = {
             "script": script,
             "args": list(settings.args_for_main_py),

@@ -226,6 +226,31 @@ class PageButtonsTest(unittest.TestCase):
     def session(self, **config: Any) -> Any:
         return browser_terminal.Session(browser_terminal.complete_config(config, ["prog.exe", "a b"]))
 
+    def test_info_updates_replace_values_and_keep_other_fields_on_reconnect(self):
+        session = self.session(info=[["Project", "tool"], ["Current log file", "starting..."]])
+        with tempfile.TemporaryDirectory() as folder:
+            request_file = Path(folder) / "ui.jsonl"
+            with mock.patch.dict(os.environ, {ui.ENV_VAR: str(request_file)}):
+                ui.request(info={"Current log file": "run-123.log", "Working folder": "work"})
+            with mock.patch.object(session, "broadcast") as broadcast:
+                session.read_ui_requests(request_file)
+        expected = [["Project", "tool"], ["Current log file", "run-123.log"], ["Working folder", "work"]]
+        self.assertEqual(session.config["info"], expected)
+        broadcast.assert_called_once_with({"t": "info", "info": expected})
+        session.ever_connected.set()  # No browser-window search is needed for this reconnect.
+        page = mock.Mock()
+        session.connect(page)
+        self.assertEqual(page.send_json.call_args_list[0].args[0]["info"], expected)
+
+    def test_invalid_info_updates_do_not_replace_existing_fields(self):
+        session = self.session(info=[["Project", "tool"]])
+        invalid_updates: List[object] = [["not a mapping"], {"Project": None}, {1: "not a label"}]
+        with mock.patch.object(session, "broadcast") as broadcast:
+            for info in invalid_updates:
+                session._apply_ui_request({"info": info})
+        self.assertEqual(session.config["info"], [["Project", "tool"]])
+        broadcast.assert_not_called()
+
     def test_a_button_opens_only_the_path_from_the_config(self):
         with tempfile.TemporaryDirectory() as folder:
             code = Path(folder) / "main.py"

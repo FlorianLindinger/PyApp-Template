@@ -694,6 +694,7 @@ class Session:
             "colors": self.colors,
             "ready": self.window_ready.is_set(),
             "started": self.started_at,
+            "info": self.config["info"],
         }
         with self.lock:
             client.send_json(hello)
@@ -820,6 +821,15 @@ class Session:
                     report_ignored("browser terminal: UI request")
 
     def _apply_ui_request(self, request: Dict[str, Any]) -> None:
+        info = request.get("info")
+        if isinstance(info, dict) and all(
+            isinstance(label, str) and isinstance(text, str) for label, text in info.items()
+        ):
+            # Applications own the labels and values; the terminal only merges and displays them.
+            updated = dict(self.config["info"])
+            updated.update(info)
+            self.config["info"] = [[label, text] for label, text in updated.items()]
+            self.broadcast({"t": "info", "info": self.config["info"]})
         icon = request.get("icon")
         if isinstance(icon, str) and Path(icon).suffix.lower() in ICON_TYPES:
             self.icon_path = icon

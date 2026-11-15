@@ -77,7 +77,13 @@ if ui.inside():
     ui.request(icon=r"C:\icons\done.ico", colors=ui.colors_from_code("2F"))
     ui.request(notify="Export finished", failed=False)  # a notification, if switched on
     ui.request(waiting_for_input=True)  # before input(): may bring the browser to the front
+    ui.request(info={"Current log file": r"C:\logs\run-123.log"})  # update a run-info field
 ```
+
+The host application supplies its own labels and paths through the `info` config and can update
+them with `ui.request(info={...})`. Existing labels are replaced and new labels appended; updates
+are also sent when a page reconnects. Keep application-specific configuration paths and logging
+decisions in the caller so this folder stays reusable on its own.
 
 ## Tests
 

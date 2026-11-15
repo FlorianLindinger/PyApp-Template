@@ -9,6 +9,8 @@ The first versioned release; it contains every change below.
 
 ### 2026-11-15
 
+- Add working folder, settings paths, crash-log folder, and the actual per-run log file to browser run info. Supply launcher metadata through a generic info-update API so the browser-terminal package remains reusable.
+- Show the browser-terminal package folder in the browser run-info panel.
 - Use `</>` for the browser code button and document symbols for logs and crash logs; add a crash-log folder button when its shortcut is enabled.
 - Move notification options into their own section of the browser gear menu and remove the separate bell button.
 - Add an OK button to dismiss the browser bookmark panel and return focus to the terminal.

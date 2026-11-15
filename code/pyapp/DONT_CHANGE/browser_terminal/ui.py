@@ -97,12 +97,15 @@ def request(
     notify: Optional[str] = None,
     failed: bool = False,
     waiting_for_input: bool = False,
+    info: Optional[Dict[str, str]] = None,
 ) -> None:
-    """Ask the page for a new icon (.ico or .png file) and/or colors ({"background", "foreground"}).
+    """Request page appearance changes, notifications, input attention, or run-info updates.
 
+    icon: path to an .ico or .png file; colors: a mapping of background/foreground colors.
     notify: how the program ended (e.g. "main.py failed: ..."); the page shows it as a desktop
     notification if the user switched those on and is looking elsewhere.
     waiting_for_input: the program is about to read input (the page can come to the front).
+    info: update or append labeled text fields in the run-info panel.
     """
     fields: Dict[str, object] = {}
     if icon is not None:
@@ -114,5 +117,7 @@ def request(
         fields["failed"] = failed
     if waiting_for_input:
         fields["input"] = True
+    if info is not None:
+        fields["info"] = info
     with Path(os.environ[env_var]).open("a", encoding="utf-8") as stream:
         stream.write(json.dumps(fields) + "\n")
