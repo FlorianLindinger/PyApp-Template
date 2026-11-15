@@ -16,6 +16,7 @@ def main():
     root.geometry("360x180")
     ttk.Label(root, text="Example GUI", padding=40).pack(expand=True)
 
+    # app name and icon path are passed via global variables:
     root.title(os.environ.get("PROGRAM_NAME", "Example GUI"))
     if os.environ.get("ICON_PATH"):
         root.iconbitmap(os.environ["ICON_PATH"])
