@@ -368,13 +368,14 @@ Task Manager still work. The defaults preserve existing behavior.
 With `replace_minimize_with_minimize_to_system_tray = True`, minimizing the native terminal
 (including `start_minimized`) hides its window while the app continues running. Its tray icon
 is beside the clock, possibly inside the hidden-icons arrow: click it or its notification to
-restore the window, or right-click for **Restore / Stop program**. Stop affects only that run
+restore the window, or right-click for **Restore / Stop program**. Restoring removes the tray
+icon; the next minimize recreates it before hiding the window. Stop affects only that run
 and uses `stop_timeout_seconds` before terminating its remaining app processes. A Windows tray
 notification explains where the window went on every minimize, independently of completion
 notification switches and without needing PowerShell or a Start Menu shortcut. Windows notification
 settings / Do not disturb can suppress the banner. The icon is created before hiding; startup
 failure leaves normal minimize behavior, and controller cleanup restores a hidden window. Explorer
-restart restores the window before recreating the icon. WT gets a dedicated window; browser and
+restart restores the window, with a fresh icon created only on the next minimize. WT gets a dedicated window; browser and
 GUI-created windows are untouched. `allow_minimize=False` still disables normal conhost minimize
 actions, and `hide_minimize_button=True` removes the button route. The default is `False`.
 

@@ -64,6 +64,7 @@ def needs_window(s: Union[ModuleType, SimpleNamespace]) -> bool:
         or any(
             getattr(s, name, False)
             for name in (
+                "replace_minimize_with_minimize_to_system_tray",
                 "have_running_animation_in_taskbar",
                 "highlight_on_success",
                 "highlight_on_failure",

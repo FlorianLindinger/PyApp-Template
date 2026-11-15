@@ -135,6 +135,13 @@ hide_maximize_button = False
 # Permit the corresponding system-menu commands and caption actions (classic conhost only):
 allow_minimize = True
 allow_maximize = True
+# True: minimizing the native terminal hides it from the taskbar into the system tray near the clock.
+# It keeps running. Click its tray icon (possibly under the hidden-icons arrow) to restore it;
+# right-click for Restore / Stop program. Every minimize requests a Windows notification explaining this.
+# Windows / Do not disturb may suppress the banner; the tray icon still restores the window.
+# Works for conhost and a dedicated WT window, including start_minimized. Browser/GUI windows are untouched.
+# allow_minimize=False still disables the normal conhost minimize action; hiding its button removes that route.
+replace_minimize_with_minimize_to_system_tray = False
 # Closing a terminal/tab while the program runs:
 #   "close"   end the program as usual (all hosts)
 #   "block"   disable the classic console's Close command (conhost only; Stop still works)

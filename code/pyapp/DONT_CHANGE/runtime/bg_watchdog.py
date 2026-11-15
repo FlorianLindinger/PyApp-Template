@@ -53,6 +53,8 @@ from pyapp.DONT_CHANGE.scripts.runtime_state import (
 
 # Popen became subscriptable in 3.9; runtime inspection (typing.get_type_hints) on 3.8 uses the class.
 if TYPE_CHECKING:
+    from pyapp.DONT_CHANGE.scripts.system_tray import MinimizeToTray
+
     BinaryProcess = subprocess.Popen[bytes]
 else:
     BinaryProcess = subprocess.Popen
@@ -125,6 +127,26 @@ def end_started_app(child: Optional[BinaryProcess]) -> None:
         child.wait(timeout=10)
     except Exception:
         note_ignored("end the app after a watchdog error")
+
+
+def stop_from_tray(child: Optional[BinaryProcess], run_dir: Path, timeout: float) -> None:
+    """Stop only this run, keeping the watchdog alive to remove its tray icon and registration."""
+    if child is None or child.poll() is not None:
+        return
+    try:
+        (run_dir / paths.STOP_REQUEST_FILE_NAME).write_text("stop", encoding="utf-8")
+        if timeout > 0:
+            from pyapp.DONT_CHANGE.scripts.runtime_state import request_close
+
+            request_close({"pid": os.getpid(), "child": {"pid": child.pid}})
+            try:
+                child.wait(timeout=timeout)
+                return
+            except subprocess.TimeoutExpired:
+                pass
+        end_started_app(child)
+    except Exception:
+        note_ignored("stop this app from the system tray")
 
 
 def acknowledge(run_dir: Path, **payload: object) -> None:
@@ -299,6 +321,7 @@ def main() -> None:
     registered = False
     exit_handled = False
     child: Optional[BinaryProcess] = None
+    tray: Optional[MinimizeToTray] = None
     try:
         if launch_mode not in ("wt", "conhost", "browser", "no_terminal"):
             raise ValueError("Unknown launch mode: " + launch_mode)
@@ -437,6 +460,31 @@ def main() -> None:
                 set_terminal_icon(paths.ICON_PATH)
             except Exception:
                 note_ignored("set_terminal_icon")
+        if settings.replace_minimize_with_minimize_to_system_tray and launch_mode in ("conhost", "wt"):
+            from pyapp.DONT_CHANGE.scripts.system_tray import MinimizeToTray
+            from pyapp.DONT_CHANGE.scripts.taskbar_status import terminal_window
+
+            stopping = threading.Event()
+
+            def stop_run() -> None:
+                if not stopping.is_set():
+                    stopping.set()
+                    threading.Thread(
+                        target=stop_from_tray, args=(child, run_dir, settings.stop_timeout_seconds), daemon=True
+                    ).start()
+
+            try:
+                hwnd = terminal_window()
+                if not hwnd:
+                    raise RuntimeError("No native terminal window was available for the system tray.")
+                tray = MinimizeToTray(hwnd, settings.program_name, paths.ICON_PATH, stop_run)
+                tray.start()
+            except Exception:
+                # Minimize remains ordinary if the shell cannot provide a recovery icon.
+                note_ignored("start minimize-to-system-tray")
+                from pyapp.DONT_CHANGE.scripts.console_tools import print_warn
+
+                print_warn("Minimize to system tray is unavailable; the terminal stays accessible on the taskbar.")
         try:
             code = child.wait()
         finally:
@@ -487,6 +535,8 @@ def main() -> None:
         if not exit_handled:
             handle_exit(settings, ExitMode.WATCHDOG_ERROR, app_id, has_terminal, log_path, script, run_dir)
     finally:
+        if tray is not None:
+            tray.close()
         if registered:
             registry.remove()
 

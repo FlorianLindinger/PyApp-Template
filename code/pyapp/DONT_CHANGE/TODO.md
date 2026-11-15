@@ -18,6 +18,7 @@
 - Apply template to an app to see if problems
 - Test on Linux
 - Test all error handling paths. Build in errors to files.
+- Test no-terminal error handling of custom GUI and no GUI
 - Ask AI if i should change anything regarding git hooks and github workflow for backend and dev or what i could add
 - Ask AI what it would simplify or remove
 - Ask AI what all i have to test and do before release 1.0.0
@@ -149,8 +150,6 @@ does it accept and warn if the log is not accessible? make log.txt visible in th
 
 is sound playing + log opening + remain open on success somewhat slow?
 
-do i even want a setting for faulthandler? test what faulthandler changes.
-
 how is a PySide6 crash handled / caught?
 
 use more input success/warn styles.
@@ -191,7 +190,20 @@ make all prints homogeneous (ask AI, let it ask me which way i want).
 
 ## 8. Windows integration
 
-is there otehr option for minimize to tray than replaceing minimize button?
+Windows also offers percentage progress, overlay badges, and thumbnail controls. Microsoft taskbar API
+
+print all to windows notification option?
+
+maximize on start option
+
+prevent sleep option. ask what defaultt bhavior is atm
+also option to keep display awake
+
+Actual progress percentage and status badges in the taskbar. Taskbar API. somehow integration with program
+
+does it have option to hide x button?
+
+is there other option for minimize to tray than replacing minimize button?
 
 Windows notification:
 - show under the program name and the correct app ID (also prevents spam)
@@ -205,6 +217,7 @@ can i modify what appears when i right click a shortcut?
 i can modify what appear when i hover over something in windows taskbar when opened: add buttons?
 
 system tray:
+- does "stop program" option in system tray respect the close rules?
 - foreground should always unminimize and restore from tray
 - make sure the tray remembers the position 
 

@@ -27,6 +27,7 @@ GROUPS: Dict[str, Tuple[str, ...]] = {
         "test_shortcuts.py",
         "test_console_colors.py",
         "test_terminal_window.py",
+        "test_system_tray.py",
         "test_completion_attention.py",
         "test_banner.py",
         "test_icons.py",
