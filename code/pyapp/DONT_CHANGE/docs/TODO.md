@@ -1,146 +1,154 @@
 # TODO
 
-Sections and items are ordered by priority: release blockers and reliability first,
-then documentation, usability, integrations, and optional future features.
-Questions are review tasks, not claims that a feature is missing or already implemented.
+improve windows notification on tray
+
+add many comments to many points in the code that someone not experienced in batch and python fully understand whats happening where
+
+make sub icons more visible; make the log icon darker for more differentiation; a folder sub icon for the folder shortcuts.
+
+wrap text in terminal prints as a setting. can i change for wt and conhost? live setting for browser
 
 ## 1. Release validation and publishing
 
-- Complete [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md) for the exact release candidate;
-  record results and unresolved issues before release 1.0.0.
-- Build the release ZIP with `pyapp_tools/release.bat`, verify it against the final tested
-  commit, and attach it to the corresponding GitHub release.
-- Test a fresh download, new app creation, and first use by someone else. Test moved and
-  copied project folders and conversion of the template into an application.
-- Test on Windows: Setup, first and second starts (the second should be fast), Stop on the
-  example window, Logs/Settings/Edit-Code shortcuts, `status.cmd`, `change_python`,
-  `make_self_contained`, and a failing `main.py` (black window, traceback, and No-Terminal grouping).
-- Run `tests/run_launcher_tests.cmd` on Windows (`test_windows.py` and the batch/Stop paths
+- Test: Silent crash while minimized: no earlier prints, then an exception. Verify foreground_after_failure restores the window.
+- Test on Windows: Setup, start twice (second start fast), Stop on the example window (closes
+  by itself), Logs/Settings/Edit main.py shortcuts, `status.cmd`, `change_python`,
+  `make_self_contained`, a failing `main.py` (black window, traceback, "(no Terminal)" grouping).
+- Test a fresh download / new app creation / first use by someone else, and a moved and a
+  copied project folder.
+- Test dev settings appearance
+- Test all browser-terminal buttons: labels, icons, button order, touchpad resizing
+- Test all ways to crash a python script/interpreter
+- Test all dev and backend tools
+- Test template to an app to see if problems
+- Test on Linux
+- Test all error handling paths. Build in errors to files.
+- Test no-terminal error handling of custom GUI and no GUI
+- Test if really portable for all local installs if no internet
+- Test if log file is live print and viewable during run
+- Test how is a PySide6 crash handled / caught?
+- Test if it is safe for aborted installation of stuff
+- Test that multiprocessing works in main.py under the wrapper, which is a common thing app authors will try.
+- Ask AI if all launch options have the same features as much as possible
+- Ask AI if i should change anything regarding git hooks and github workflow for backend and dev or what i could add
+- Ask AI what it would simplify or remove
+- Ask AI what all i have to test and do before release 1.0.0
+- Ask AI: general improvements, robustness, speed, comments, docstrings, more fail checks and error prints, ideas for the whole thing. find problems
+- Run `DONT_CHANGE/tests/run_launcher_tests.cmd` on Windows (`test_windows.py` and the batch/Stop paths
   are skipped elsewhere) and `pyapp_tools/verify_launcher.bat`.
-- Test all developer and backend tools.
-- Test offline portability of local installations and self-contained distributions.
-- Test interrupted installations and verify that retrying leaves a working environment.
-- Test multiprocessing in `main.py` under the wrapper.
-- Test the supported Linux fallback behavior.
-- Review Git hooks and GitHub workflows for the launcher and developer tools.
-- Review simplification opportunities, robustness, startup speed, comments, docstrings,
-  missing checks, and actionable error messages. Compare features across launch modes
-  where the hosts support them.
-- Tag the release on GitHub and review the repository description and topics.
+- Review all readmes
+- Tag the release on GitHub, update the repository topics/description (ask AI)
 
-## 2. Error handling and window lifecycle
+## 2. Documentation & READMEs
 
-- Test all Python-script and interpreter crash paths, including deliberately broken files,
-  no-terminal runs with and without a custom GUI, and PySide6 crashes.
-- Test a silent failure while minimized: no earlier prints, then an exception.
-  Verify that `foreground_after_failure` restores the window.
-- Validate the combinations in [WINDOW_LIFECYCLE.md](WINDOW_LIFECYCLE.md), especially
-  foreground restoring from the tray and preserving normal/maximized placement.
-- Check whether the tray's Stop action respects the intended stop/completion rules.
-- Check whether a blocked X button should be re-enabled after completion.
-- Review additional interpreter crash codes, including `0xC0000374` (heap corruption),
-  `0xC0000135` (missing DLL), and divide-by-zero failures.
-- Consider adding the package list and other useful environment details to crash reports.
-- Verify that logs update live and remain viewable while the program runs.
-- Review use of Python's `logging` package and the drawbacks of `-u`.
-- Improve clickable traceback links in Windows Terminal: open `path:line` and the main
-  script in a configurable editor (VS Code, Notepad++, or PyCharm). Check conhost limitations.
-- Consider a graceful-stop callback so the app can save data and release hardware before
-  forced termination; review `future/graceful_shutdown` and other useful app/backend helpers.
+readme mentions:
+mentuion in readme workflows and tools,auto package mapping for missong imports,...
+remove maxi from screenshots and all data? ask AI if anything leaks?
+comparison image: launcher batch,terminal,tkinter base icon and name with just my app on taskbar
+why no compilation: cant inspect and modify code and AV trigger and slow start and hard to git share license and ... ask AI, transfer large file,  slow first run if compile at user end,...
+No need for terminal for debug runs,.
+easy close of bg only apps
+LOG and crash log automatically
+chick installation with uv compared to classic pip installation
+no python ior uv installation needed and easily gast python version switch
+robust again global python changes since auto installation and local venv
+easily made portable
+plug and play licensing and gitignore rules
+low space launcher
+Python version supported
+better traceback that cut out wrapper code of this launcher
+implemented settings.py file with shortcut to it
+portable folder (including local venv and all)
+automatic shortcut creation with possibility to generate also on desktop and start menu including automatic icon
+easy good icon creation from png image include sub variants for different shortcut options.
+auto name and icon change on failure and success (for terminal interface)
+ready global variables for custom GUI scripts where they find path and app name  ...
+made as compatible as possible with restrictive company controlled Windows settings
+deliberately short names of backend to avoid problems with Windows legacy path length limitation when repository is placed very deep
+it puts icon on opened terminal automatically. i guess one cant do normally if one want terminal to stay open on crash? bc shortcut to cmd? right?
+background invisible app with log and crash log and stop button
+auto good icon creation
+combination with starter in taskbar auto for gui code
+do i menation in readme htat otehjrwise combining wiht launcher woild have to pass ome kind of app id that has to be baked into the shrotcut and is not trivial to do
+own icons for sucess and failure....
+mention minimal linux comatilbity -> settings in linux file for python path?
+Screenshots/GIF: shortcut icons, terminal appearance, taskbar grouping, colored traceback.
+Feature list: "fully reviewable code, no black box"; uv (shared cache, portable mode).
+Explain how main.py can use the launcher's environment variables (PROGRAM_NAME, ICON_PATH,
+  LOG_PATH, APP_ID, PROGRAM_HAS_TERMINAL, ...), with small Tkinter / Qt examples.
 
-## 3. Documentation and onboarding
+Your pyproject question: yes, you can do that. Moving .venv, uv.lock, .python-version and pyproject.toml into code\backend is easy, because uv just treats backend as the project folder. Two costs:
+VS Code and PyCharm won’t find the environment by themselves any more. You’d select the interpreter once (or Setup could write .vscode settings).
+uv add typed in code\ won’t find the project; it would have to be run in backend\. The dev tools would handle that.
+-> mention that people have to select?
 
-- Review all READMEs and check that the following existing features are explained clearly:
-  - Developer tools, GitHub workflows, and automatic package mapping for missing imports.
-  - Fast uv setup compared with classic pip installation; no preinstalled Python or uv;
-    easy Python-version switching; isolation from global Python changes.
-  - Supported Python versions, shared caches, small launcher footprint, and offline portability,
-    including the environment and other files needed for a self-contained folder.
-  - Minimal Linux support and selecting the Python executable in the Linux fallback script.
-  - Ready-to-use licensing and Git ignore rules.
-  - Fully reviewable, editable source and the tradeoffs of compilation: antivirus warnings,
-    startup/build time, redistribution size, Git sharing, and bundled licenses.
-  - Debugging and running without a terminal; stopping invisible background apps;
-    automatic output logs and crash reports.
-  - Readable tracebacks with launcher frames hidden, and status titles/icons after success or failure.
-  - `settings.py` and its shortcut; exported app name, paths, and other environment variables,
-    with small Tkinter/Qt examples (`PROGRAM_NAME`, `ICON_PATH`, `LOG_PATH`, `APP_ID`,
-    `PROGRAM_HAS_TERMINAL`, and others).
-  - Automatic shortcut creation in the project folder, Start Menu, and desktop;
-    generating icons and variants from a PNG, and replacing individual `.ico` files.
-  - Terminal/GUI taskbar grouping and the AppUserModelID carried by shortcuts;
-    explain why integrating a custom launcher requires more than setting a window icon.
-  - Compatibility with restrictive company-managed Windows settings.
-  - Short internal paths to reduce legacy Windows path-length problems in deeply nested projects.
-- Check screenshots and other published data for personal names or unintended information.
-- Review screenshots/GIFs of shortcut icons, terminal appearance, taskbar grouping, and
-  colored tracebacks. Check the comparison image of batch/terminal/Tkinter entries versus
-  the app's single taskbar entry.
-- Explain editor interpreter selection for `code/pyapp/generated/.venv`; VS Code/PyCharm may
-  need explicit selection, and `uv add` must run in the generated project folder or through
-  the developer tools.
-- Add comments where Python or batch behavior is difficult for inexperienced readers to follow.
-- Consider flowcharts for the launch and recovery paths.
+Flowcharts?
 
-## 4. Terminal and browser usability
+## 3. Features
 
-- Improve Windows tray notifications and their recovery instructions.
-- Make overlay icons more visible, darken the log icon for differentiation, and consider
-  a folder overlay for folder shortcuts.
-- Test developer-settings readability and organization.
-- Test all browser-terminal buttons: labels, icons, order, and touchpad resizing; adjust
-  the button order and consider configurable button visibility.
-- Add configurable text wrapping where supported by conhost/WT, with a live browser toggle
-  and a browser default setting.
-- Review whether each developer setting is supported as far as possible in the browser terminal.
-- Consider live toggles for print/input prefixes and timestamps; account for input synchronization
-  and whether formatting must run in browser logic.
-- Offer both Open Log and Open Log Folder if useful.
-- Consider a clear running/completed indicator or busy animation; review its colors and meaning.
-- Review additional browser-terminal feature ideas.
+- batch to compile (Nuitka): how to install Nuitka? auto icon. a python file for args and files for presets (AV safe, small, fast startup). compilation folder under dev_tools; a batch to clean it.
+    - in compilation, have a script not meant to be changed with the defaults, copied over to the active compilation scripts? compilation script accessible to the developer (inside the dev folder).
+    - make a batch that compiles main_script with its dependencies using the managed Python -> output with and without terminal. or something that converts the folder to a clickable app.
+    - compile via GitHub Action as proof of exe content?
+    - is there a way to make compiling faster when repeated?
+    - do i need the unbuffered flag or other flags in the Nuitka compile? how to have faulthandler in compiled?
+    - presets for compilation
+- is startup as lazy as reasonable?
+- ask AI if the logging package is useful here. google drawbacks of -u.
+- can python somehow plot in the terminal?
+- after interpreter crash backup python script launch
+- File associations — open supported file types directly in the application. I fguess i should not force vscode. just satrt viwth default app for .py. or is that python exe?? maybe have setting what it shoudlk be and mention.
+- Graceful stop callback — let the app save data and release hardware before forced termination. 
+- Automatic restart — restart after crashes with a delay, retry limit, and crash-loop protection. What is point actually? only helps ofr interpreter crash. maybe only do that then and mention
+- Progress API — let application code report percentage, current operation, and estimated remaining time.
+- Execution timeout — stop a stalled run after a configurable duration.
+- Start on windows start option
+- can i set the venv for VS Code in the repo? (e.g. .vscode/settings.json -> code/pyapp/generated/.venv)
+- maybe i want support code that main.py can import (e.g. graceful shutdown, see future/graceful_shutdown). Ask AI for useful ideas.
+- is there something useful i can do with communication of main.py and the backend?
+- shortcuts that pass extra arguments: option to generate .lnk and/or .cmd for end users, where the .cmd allows adding args and passes them on. can the shortcut pass the remaining args? 
+- add setting to start main in a specific abs or rel folder (today only: script folder or shortcut folder).
+- add: restart_on_crash / restart_on_failure, with detection of an immediate fail again, max retries and max allowed in some time interval.
+- prevent keyboradinterrup option: with option how to handlöe
+- update check for final app: check for a template/launcher update on start (link, changelog), with options: don't check again / skip this version / show changes / install. setting for it; maybe only an info print with a link. maybe a shortcut for it.
+
+## 4. Error reporting, terminal output & traceback
+
+- Should i recognise more crash codes (0xC0000374 heap corruption, 0xC0000135 missing DLL, divide-by-zero).
+Should i add package list to crash report? ... more
+- clickable links in error reports: path:line to the failing line (per frame), and a link to open the main script (Windows Terminal; not possible in conhost?). open on the specific line with VS Code / Notepad++ / PyCharm; setting for which program.
 
 ## 5. Windows integration
 
-- Add actual taskbar progress percentages and status/overlay badges through an app-facing
-  progress API (percentage, current operation, and estimated remaining time).
-- Consider taskbar thumbnail controls, hover buttons, and shortcut context-menu customization.
-- Check whether the X button can be hidden where supported.
-- Consider a tray-minimize action separate from replacing the normal minimize action.
-- Consider a maximize-on-start setting.
-- Consider preventing sleep and optionally keeping the display awake; first document current behavior.
-- Review Windows notifications: correct program name/AppUserModelID, clickable actions,
-  and guidance when Windows blocks delivery. Check whether identity affects notification grouping.
-- Consider an option to forward printed output to Windows notifications.
-- Consider starting the app with Windows.
-- Review opening code with the default associated application versus a configurable editor;
-  ensure a `.py` association does not accidentally execute the script.
-- Consider file associations for opening supported data files directly in the app.
+- Windows also offers percentage progress, overlay badges, and thumbnail controls. Microsoft taskbar API
+- all prints to windows notification option?
+- maximize on start option
+- prevent sleep option. ask what default behavior is atm
+also option to keep display awake
+- Actual progress percentage and status badges in the taskbar. Taskbar API. somehow integration with program
+- does it have option to hide x button?
+- is there other option for minimize to tray than replacing minimize button?
+- Windows notification: show under the program name and the correct app ID (also prevents spam)
+- Windows notification:clickable notification
+- Windows notification: warn if notifications are not allowed by Windows and mention where that setting is
+- re-enable the X button on finish?
+- can i modify what appears when i right click a shortcut?
+- i can modify what appear when i hover over something in windows taskbar when opened: add buttons?
+- system tray:does "stop program" option in system tray respect the close rules?
+- system tray:foreground should always unminimize and restore from tray
+- system tray:make sure the tray remembers the position 
 
-## 6. Optional features
+## 6. Browser terminal
 
-- Review startup laziness and measure opportunities to reduce startup work.
-- Consider `restart_on_crash` / `restart_on_failure`, including an optional interpreter-crash
-  recovery script, delay, retry limits, a time window, and immediate-failure/crash-loop protection.
-  Clarify which failures benefit from automatic restart.
-- Consider an execution timeout for stalled runs.
-- Consider a setting for how to handle or prevent `KeyboardInterrupt`.
-- Consider app/backend communication helpers beyond graceful shutdown and progress reporting.
-- Add shortcuts with extra arguments: configurable `.lnk` and/or editable `.cmd` launchers;
-  verify how additional arguments are forwarded.
-- Add an explicit absolute/relative working-directory setting beyond script/shortcut folder selection.
-- Consider generating VS Code interpreter settings for `code/pyapp/generated/.venv`.
-- Consider a launcher update check with a link/changelog, skip-version and disable options,
-  optional installation, and possibly a shortcut.
-- Explore plotting directly in the terminal.
-- Consider an optional, inexpensive browser resource monitor for CPU, memory, and disk usage,
-  hidden by default or with configurable warning thresholds.
+- reorder button
+- are all settings in developer_settings implemented as much as possible?
+- live print input prepend on/off: make timestampos tolgglealbe? kind of problmatic to sync withj input unless i have it all running in browser logic
+- is it open log or open log folder. i guess i can have both. 
+- wrap text option as live button and deauflt
+- some kind of indicaor bulb if still running or done ? not sure waht colro code shoudl eb. or maybe just busy indicator with animator to indicate runnoing
+- is it setting what buttons appear?
+- ask AI: any more feature ideas for browser terminal?
+- Resource monitor — display CPU, memory, and disk usage; optionally warn above thresholds. only if cheap or hidden by default
 
-## 7. Compilation experiments
+## 7. Future
 
-- Explore a Nuitka build command using the managed Python and `main_script`, with dependencies,
-  the app icon, console/no-console outputs, and a cleanup command under `dev_tools`.
-- Decide how to install Nuitka and expose editable compilation arguments/file lists while keeping
-  a separate defaults script that can be copied into the developer's compilation configuration.
-- Provide build presets for antivirus compatibility, small output, and fast startup.
-- Consider GitHub Actions builds so the executable's relationship to the source is reviewable.
-- Investigate faster repeated builds and the appropriate buffering/faulthandler/compiler options.
