@@ -58,7 +58,9 @@ the browser UI, and a no-terminal run has no native terminal to restore.
 `tests/src/test_system_tray.py` covers repeated cycles, external/duplicate restore, icon and
 notification failures, owner safety, Explorer's restart message and native conhost cleanup.
 Its live conhost probe checks normal geometry, maximized restoration, duplicate callbacks,
-simulated Explorer recovery, and quiet shutdown. It does not restart the user's Explorer.
+simulated Explorer recovery, and quiet shutdown. It deliberately delays tray callbacks and
+acknowledges their completion before the next transition; fixed sleeps do not establish event
+ordering on a busy desktop. It does not restart the user's Explorer.
 
 `tests/src/test_completion_attention.py` checks close/keep-open/foreground combinations for all
 three outcomes, hidden-window taskbar completion, activity/highlight/flash and notifications.

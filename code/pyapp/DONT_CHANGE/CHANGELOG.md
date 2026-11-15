@@ -9,6 +9,7 @@ The first versioned release; it contains every change below.
 
 ### 2026-11-15
 
+- Fix a race in the native conhost tray regression: acknowledge simulated Shell callbacks before starting the next minimize cycle instead of relying on a 50 ms sleep. Exercise delayed callbacks, retain all lifecycle assertions, and include window/controller state in timeout diagnostics.
 - Move TODO, window lifecycle rules and the release checklist into docs; rename data/docs to data/readme_resources and update links. Keep documentation-only TODO edits exempt from the main-branch changelog gate.
 
 - Run every Git-hook check against an isolated submitted checkout: commit checks use the index (including temporary path-only commit indexes); push checks use each distinct submitted commit's code, configuration and files. Preserve source refs for history checks, checkout line endings and local work/index; add real disposable Git regressions.

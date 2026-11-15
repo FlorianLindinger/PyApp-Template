@@ -38,6 +38,7 @@ wrap text in terminal prints as a setting. can I change for WT and conhost? live
   are skipped elsewhere) and `pyapp_tools/verify_launcher.bat`.
 - Review all READMEs
 - Tag the release on GitHub, update the repository topics/description (ask AI)
+- Reset the CHANGELOG.md
 
 ## 2. Documentation & READMEs
 
