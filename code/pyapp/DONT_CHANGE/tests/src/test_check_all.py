@@ -252,6 +252,15 @@ class CheckAllTests(unittest.TestCase):
         self.assertEqual(output.getvalue(), "")
         self.assertIsNone(run.call_args.kwargs["input"])
 
+    def test_push_tests_receive_exact_refs_but_manual_tests_ignore_inherited_refs(self):
+        step = next(item for item in tool.STEPS if item.label == "Tests")
+        with mock.patch.object(tool.subprocess, "run", return_value=mock.Mock(returncode=0)) as run:
+            tool.run_step(step, "exact pushed refs", hook=True)
+            self.assertEqual(run.call_args.kwargs["env"]["PYAPP_SETTINGS_PUSH_REFS"], "exact pushed refs")
+            with mock.patch.dict(tool.os.environ, {"PYAPP_SETTINGS_PUSH_REFS": "stale"}):
+                tool.run_step(step, "ignored", hook=False)
+            self.assertNotIn("PYAPP_SETTINGS_PUSH_REFS", run.call_args.kwargs["env"])
+
     def test_leak_summary_is_kept_without_another_summary_in_front(self):
         output = io.StringIO()
         message = b"Push blocked: secret at app.py:12\nDetails\n"

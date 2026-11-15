@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import ast
-import difflib
 import importlib.util
 import os
 import py_compile
@@ -22,6 +21,7 @@ from project_location import CODE, DONT_CHANGE
 
 from pyapp.DONT_CHANGE.scripts import config, entrypoint
 from pyapp.DONT_CHANGE.scripts.errors import SettingsError
+from pyapp.DONT_CHANGE.scripts.settings_defaults import comparison_revisions, settings_difference
 
 
 def append(lines: Iterable[str]) -> Callable[[str], str]:
@@ -271,37 +271,12 @@ class DefaultsTests(unittest.TestCase):
         with support.temporary_settings(lambda text: defaults) as (_, load):
             config.validate(load())
 
-    @staticmethod
-    def settings_part(path: Path):
-        """Compare values and comments; internal defaults may annotate otherwise untyped empty containers."""
-        text = path.read_text(encoding="utf-8")
-        text = text[text.index("# IMPORTANT:\n") :]
-        text = re.sub(r"(?m)^(\w+): [^=\n]+ =", r"\1 =", text)
-        end = text.find("# open this file if someone runs it")
-        return re.sub(r"\s*# =+\s*$", "", (text if end < 0 else text[:end]).rstrip())
-
     def test_defaults_file_is_identical_to_the_shipped_settings(self):
-        project = CODE / "pyapp" / "developer_settings.py"
-        if not re.search(r'(?m)^program_name = "PyApp-Template"', project.read_text(encoding="utf-8")):
-            self.skipTest("a project made from the template has its own settings")
-        project_lines = self.settings_part(project).splitlines()
-        default_lines = self.settings_part(self.DEFAULTS).splitlines()
-        if project_lines != default_lines:
-            difference = "\n".join(
-                difflib.unified_diff(
-                    default_lines,
-                    project_lines,
-                    fromfile="code/pyapp/DONT_CHANGE/data/dev_settings_default.py (fallback)",
-                    tofile="code/pyapp/developer_settings.py",
-                    lineterm="",
-                )
-            )
-            self.fail(
-                "Settings mismatch: developer_settings.py does not match the fallback developer settings "
-                "(dev_settings_default.py).\n"
-                "The shipped template must match in settings, values and comments. "
-                "Remove accidental edits, or update both files for intentional template-default changes.\n" + difference
-            )
+        for revision in comparison_revisions():
+            with self.subTest(revision=revision):
+                difference = settings_difference(CODE.parent, revision)
+                if difference:
+                    self.fail(difference)
 
     def test_missing_settings_get_their_defaults(self):
         def drop(text: str):

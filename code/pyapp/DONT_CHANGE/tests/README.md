@@ -65,6 +65,7 @@ uses it). `src/groups.py` defines the groups; a new test file must be added to o
 
 | File | Covers |
 | --- | --- |
+| `test_settings_snapshots.py` | real disposable Git index/commit comparisons, unstaged overrides, multiple push refs and staged-check CLI diagnostics |
 | `test_git.py` | no ignore rule hides a launcher file |
 | `test_git_hooks.py` | Real shell hooks in disposable repositories: failure diagnostics reach stderr and push refs reach the check |
 | `test_git_leaks.py` | `pyapp_tools/check_git_leaks`: what counts as a leak; secrets are never printed in full |

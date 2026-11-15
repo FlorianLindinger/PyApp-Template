@@ -430,6 +430,7 @@ ASCII art (`scripts/banner.py`). The batch/Python bootstrap and the
 | `windows_focus.py` | Finds and activates the windows of a running instance. |
 | `terminal_window.py` | Native terminal alpha, caption buttons, always-on-top and supported close policies; identifies a dedicated WT window by a temporary random title. |
 | `system_tray.py` | Native terminal minimize-to-tray, Shell notifications on every minimize, Restore/Stop menu, Explorer recovery and icon cleanup. |
+| `settings_defaults.py` | Compare template settings in working files, the staged Git index or pushed commit tips without executing or modifying settings. |
 | `taskbar_status.py` | ITaskbarList3 activity and green/red completion indicators, FlashWindowEx attention, and validated native-terminal handle handoff. |
 | `windows_notifications.py` | Silent Windows toasts through a fixed PowerShell WinRT script, escaped plain-text XML, per-outcome switches/templates and blocked-notification diagnostics. |
 | `template_workflows.py` | Removes the template's own `.github/workflows/pyapp-template-*.yml` from an app, only when they are unchanged and alone. |

@@ -30,14 +30,16 @@ class HookOutputTests(unittest.TestCase):
             source.mkdir(parents=True)
             (launcher / "tmp").mkdir()
             (launcher / "tmp" / "runtime.cmd").write_text(f'set "PYAPP_PYTHON={sys.executable}"\n', encoding="utf-8")
-            for tool in ("check_git_leaks", "check_staged_ruff", "check_protected", "check_all"):
+            for tool in ("check_git_leaks", "check_staged_ruff", "settings_defaults", "check_protected", "check_all"):
                 script = ""
                 if tool == failing_tool:
                     script = "import sys\n"
                     if name == "pre-push":
                         script += "assert sys.stdin.read().strip() == 'fixture refs'\n"
                     script += "print('Blocked: fixture.py:12:3: problem')\nraise SystemExit(1)\n"
-                (source / (tool + ".py")).write_text(script, encoding="utf-8")
+                target = launcher / "scripts" if tool == "settings_defaults" else source
+                target.mkdir(exist_ok=True)
+                (target / (tool + ".py")).write_text(script, encoding="utf-8")
             # Execute the real hook, with local fixture tools in place of the application checks.
             return subprocess.run(  # noqa: S603
                 [shell, str(DONT_CHANGE / "pyapp_tools" / "src" / "git_hooks" / name)],
@@ -66,6 +68,9 @@ class HookOutputTests(unittest.TestCase):
 
     def test_commit_protected_diagnostics_reach_stderr(self):
         self.assert_failure_is_visible(self.run_hook("pre-commit", "check_protected"))
+
+    def test_commit_settings_diagnostics_reach_stderr(self):
+        self.assert_failure_is_visible(self.run_hook("pre-commit", "settings_defaults"))
 
     def test_a_passing_commit_is_silent_outside_a_terminal(self):
         # The success line is only for terminals; editors' Git output stays empty.

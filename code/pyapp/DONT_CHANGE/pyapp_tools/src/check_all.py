@@ -12,6 +12,7 @@ verify_launcher is skipped rather than failed. Exit code 1 means a check failed.
 from __future__ import annotations
 
 import argparse
+import os
 import re
 import subprocess
 import sys
@@ -161,12 +162,18 @@ def failure_reason(step: Step, code: int, output: str) -> str:
 def run_step(step: Step, refs: str, *, hook: bool = False) -> int:
     """Stream manual checks; buffer hook checks so a later failure gets the first output line."""
     try:
+        env = os.environ.copy()
+        if hook and step.label == "Tests":
+            env["PYAPP_SETTINGS_PUSH_REFS"] = refs
+        else:
+            env.pop("PYAPP_SETTINGS_PUSH_REFS", None)
         completed = subprocess.run(  # noqa: S603
             step.command,
             input=refs.encode("utf-8") if step.reads_refs else None,
             stdout=subprocess.PIPE if hook else None,
             stderr=subprocess.STDOUT if hook else None,
             check=False,
+            env=env,
         )
     except OSError as error:
         if not hook:
