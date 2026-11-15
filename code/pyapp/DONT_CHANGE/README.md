@@ -336,7 +336,9 @@ move, so a copied folder works offline on another PC.
   interpreter crash such as an access violation, no report written, or a launcher error) and
   `keyboard_interrupt`. Each has `close_after_*` and `open_log_file_after_*`; success and failure
   have `play_sound_after_*`, and failure has `open_crash_log_after_failure`. Window titles are
-  `TITLE_AFTER_*` in `backend_settings.py`. Failures turn the window black. Every non-success
+  `title_after_*` f-strings evaluated directly in `developer_settings.py`; no later title formatting.
+  `sound_after_success` / `sound_after_failure`
+  select the WAV files (empty disables playback). Failures turn the window black. Every non-success
   writes a crash log unless `enable_crash_log = False`.
 - **Missing packages**: a `ModuleNotFoundError` for an import that is not one of the app's own
   modules offers to add the package (`uv add`), install it without recording it, find all
@@ -426,6 +428,10 @@ ASCII art (`scripts/banner.py`). The batch/Python bootstrap and the
 | `runtime_state.py` | File lock, atomic JSON, process identities, the instance registry, job objects, process-tree termination, unique log names, interpreter-crash exit codes. |
 | `instance_policy.py` | What to do when the app is already running (message boxes). |
 | `windows_focus.py` | Finds and activates the windows of a running instance. |
+| `terminal_window.py` | Native terminal alpha, caption buttons, always-on-top and supported close policies; identifies a dedicated WT window by a temporary random title. |
+| `system_tray.py` | Native terminal minimize-to-tray, Shell notifications on every minimize, Restore/Stop menu, Explorer recovery and icon cleanup. |
+| `taskbar_status.py` | ITaskbarList3 activity and green/red completion indicators, FlashWindowEx attention, and validated native-terminal handle handoff. |
+| `windows_notifications.py` | Silent Windows toasts through a fixed PowerShell WinRT script, escaped plain-text XML, per-outcome switches/templates and blocked-notification diagnostics. |
 | `template_workflows.py` | Removes the template's own `.github/workflows/pyapp-template-*.yml` from an app, only when they are unchanged and alone. |
 | `shortcuts.py` | Creates `.lnk` files (via COM), their targets and taskbar identity, the record of created shortcuts, removal of stale ones. |
 | `com_tools.py` | Minimal COM helpers with `ctypes` (GUIDs, property store, AppUserModelID). |

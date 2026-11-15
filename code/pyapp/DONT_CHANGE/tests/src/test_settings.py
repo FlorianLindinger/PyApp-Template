@@ -29,6 +29,52 @@ def append(lines: Iterable[str]) -> Callable[[str], str]:
 
 
 class ValidationTests(unittest.TestCase):
+    def test_settings_fstrings_resolve_program_name_once_and_missing_titles_use_project_name(self):
+        def renamed(text: str) -> str:
+            return text.replace('program_name = "PyApp-Template"', 'program_name = "Example {app}"')
+
+        with support.temporary_settings(renamed) as (_, load):
+            s = load()
+            config.validate(s)
+            self.assertEqual(s.title_after_success, "[Finished] Example {app}")
+            self.assertEqual(s.windows_notification_title, "Example {app}")
+            self.assertEqual(s.windows_notification_message_on_success, "Example {app} finished successfully.")
+        old = types.SimpleNamespace(program_name="Older {app}")
+        config.fill_missing_settings(old)
+        self.assertIsNone(old.terminal_alpha)
+        self.assertEqual(old.title_after_failure, "[Failure] Older {app}")
+
+    def test_terminal_alpha_range_and_types(self):
+        for value in (None, 0.001, 0.8, 1):
+            with self.subTest(value=value), support.temporary_settings(append([f"terminal_alpha = {value!r}"])) as (
+                _,
+                load,
+            ):
+                config.validate(load())
+        for expression in ('"0.8"', '""', "True", "0", "-0.1", "1.01", 'float("nan")', 'float("inf")'):
+            with self.subTest(expression=expression), support.temporary_settings(
+                append([f"terminal_alpha = {expression}"])
+            ) as (_, load), self.assertRaisesRegex(SettingsError, "terminal_alpha"):
+                config.validate(load())
+
+    def test_window_switches_and_close_choices(self):
+        for name in ("always_on_top", "hide_minimize_button", "hide_maximize_button"):
+            with self.subTest(name=name), support.temporary_settings(append([f'{name} = "yes"'])) as (
+                _,
+                load,
+            ), self.assertRaisesRegex(SettingsError, name):
+                config.validate(load())
+        for value in ("prompt", "block", "close", "hide"):
+            with self.subTest(value=value), support.temporary_settings(append([f"confirm_on_close = {value!r}"])) as (
+                _,
+                load,
+            ):
+                config.validate(load())
+        with support.temporary_settings(append(['confirm_on_close = "ask"'])) as (_, load), self.assertRaisesRegex(
+            SettingsError, "confirm_on_close"
+        ):
+            config.validate(load())
+
     def test_start_position_requires_a_boolean(self):
         with support.temporary_settings(append(['start_in_shortcut_position = "yes"'])) as (_, load):
             with self.assertRaises(SettingsError) as raised:

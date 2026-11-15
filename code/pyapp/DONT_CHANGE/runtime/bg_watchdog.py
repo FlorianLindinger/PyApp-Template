@@ -83,8 +83,8 @@ def app_environment(
         LOG_ICON_PATH=paths.LOG_ICON_PATH,
         CRASH_LOG_ICON_PATH=paths.CRASH_LOG_ICON_PATH,
         OPEN_CODE_ICON_PATH=paths.OPEN_CODE_ICON_PATH,
-        TITLE_AFTER_SUCCESS=paths.TITLE_AFTER_SUCCESS.format(program_name=settings.program_name),
-        TITLE_AFTER_FAILURE=paths.TITLE_AFTER_FAILURE.format(program_name=settings.program_name),
+        TITLE_AFTER_SUCCESS=settings.title_after_success,
+        TITLE_AFTER_FAILURE=settings.title_after_failure,
         USER_SETTINGS_PATH=(
             make_abs_path_relative_to_file(settings.user_settings_path, paths.DEV_SETTINGS_PATH)
             if settings.user_settings_path
@@ -284,6 +284,9 @@ def main() -> None:
     except Exception as error:
         acknowledge(run_dir, status="failed", message=f"developer_settings.py could not be loaded: {error}")
         raise
+    # Discard inherited launch state: only this run may provide a terminal handle to completion.
+    os.environ.pop("PYAPP_TERMINAL_WINDOW", None)
+    os.environ.pop("PYAPP_TASKBAR_ACTIVITY", None)
     has_terminal = launch_mode in ("wt", "conhost", "browser")
     registry = ProcessRegistry(paths.PROCESS_REGISTRY_DIR)
     try:
@@ -299,11 +302,19 @@ def main() -> None:
     try:
         if launch_mode not in ("wt", "conhost", "browser", "no_terminal"):
             raise ValueError("Unknown launch mode: " + launch_mode)
+        from pyapp.DONT_CHANGE.scripts.terminal_window import configure, validate_close_mode
+
+        validate_close_mode(settings, launch_mode)
+        configure(settings, launch_mode)
         script = main_script_path(settings)
         if has_terminal:
             set_settings_colors()
             set_terminal_title(settings.program_name)
             set_terminal_app_id(app_id)
+            if launch_mode in ("wt", "conhost"):
+                from pyapp.DONT_CHANGE.scripts.taskbar_status import start
+
+                start(settings)
         if not register_with_policy(settings, registry, run_dir):
             return
         registered = True

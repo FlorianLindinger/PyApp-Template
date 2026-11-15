@@ -6,6 +6,7 @@ from unittest import mock
 
 import project_location  # noqa: F401 - make this checkout's code importable
 from pyapp.DONT_CHANGE.backend_settings import CMD_EXE
+from pyapp.DONT_CHANGE.scripts.config import fill_missing_settings
 from pyapp.DONT_CHANGE.scripts.console_tools import set_terminal_colors
 
 
@@ -46,6 +47,7 @@ class OutcomeColorTests(unittest.TestCase):
                 "play_sound_after_" + outcome: False,
             },
         )
+        fill_missing_settings(s)
         with mock.patch.multiple(
             process_exit,
             settings=mock.Mock(return_value=s),
@@ -76,6 +78,7 @@ class OutcomeColorTests(unittest.TestCase):
                 program_name="App",
                 **{"close_after_" + outcome: True, "play_sound_after_" + outcome: False},
             )
+            fill_missing_settings(s)
             with self.subTest(outcome=outcome), mock.patch.multiple(
                 process_exit,
                 settings=mock.Mock(return_value=s),
@@ -88,9 +91,7 @@ class OutcomeColorTests(unittest.TestCase):
                 wait_for_report=mock.DEFAULT,
             ) as patched:
                 process_exit.complete(outcome, None)
-                patched["set_terminal_title"].assert_called_once_with(
-                    process_exit.OUTCOMES[outcome]["title"].format(program_name="App")
-                )
+                patched["set_terminal_title"].assert_called_once_with(getattr(s, "title_after_" + outcome))
                 patched["set_terminal_icon"].assert_called_once_with(process_exit.OUTCOMES[outcome]["icon"])
                 patched["set_terminal_colors"].assert_not_called()
                 patched["wait_for_report"].assert_not_called()

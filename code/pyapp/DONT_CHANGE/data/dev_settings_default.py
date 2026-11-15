@@ -17,11 +17,11 @@ from typing import Dict, List
 # ==================================================================
 
 # IMPORTANT:
-#   what almost every project sets: name, Python, packages, logging on/off, running twice.
+#   program identity, Python/packages, logging switches, and multiple instances.
 # MEDIUM:
-#   behavior you sometimes want different: program end, window, start and stop, log files.
+#   launch/window behavior, completion actions, taskbar/notifications, shortcuts and logs.
 # LOW:
-#   special cases and cosmetics: shortcut names, uv, certificates, error report details.
+#   appearance, shortcut names, Python/uv installation and optional integrations.
 
 # ========================================
 # ==== IMPORTANT =========================
@@ -83,6 +83,76 @@ instance_policy = "allow"
 # ==== MEDIUM ============================
 # ========================================
 
+# --- Starting and stopping ---
+# The Python file the launcher runs. It must be inside the code folder, but not in code/pyapp.
+# Imports start from its folder, like `python main.py`. Run Setup again after changing it (for the Edit Code shortcut).
+# The code folder is also on the import path, after the main script's folder.
+main_script_path = "..\\main.py"
+
+# String arguments passed to main.py:
+args_for_main_py: List[str] = []
+
+# Environment variables set for main.py, e.g. {"MY_SETTING": "1"}.
+# PYTHON* variables have no effect on main.py itself, because it runs with -E.
+environment_for_main_py: Dict[str, str] = {}
+
+# Working folder. True: keep the folder Windows starts the shortcut in; False: main script folder.
+# Setup leaves "Start in" empty so it does not pin a moved shortcut to its old folder.
+# Windows chooses the starting folder; True does not locate the .lnk file itself.
+start_in_shortcut_position = False
+
+# Stop shortcut and instance_policy "replace": seconds a running instance gets to close by itself
+# (its windows receive a normal close request, a console app gets Ctrl+C) before it is terminated.
+# 0 terminates immediately.
+stop_timeout_seconds: float = 3
+
+# --- Terminal host ---
+# True:  classic console (conhost.exe). No tabs, looks more like an app, but text rendering and zoom are worse.
+# False: Windows Terminal (wt.exe). Tabs, better text rendering and zoom.
+#        Falls back to the classic console with a warning if Windows Terminal is not installed.
+use_classic_terminal = True
+# The browser terminal shortcut (browser_terminal_shortcut_name) shows the console as a terminal in a new tab of your
+# default browser instead, with the same input, Ctrl+C, colors and titles: sharp text, zoom with Ctrl+wheel or
+# Ctrl+/-, clickable links, copy and paste like Windows Terminal. By default, closing the tab ends the program
+# (see confirm_on_close). Needs Windows 10 1809 or newer.
+# Its address stays the same, so it can be bookmarked (works while the program runs); Setup shows it.
+#   ""  automatic: http://<program name>.localhost:<port of this project folder>/<key>/
+#   e.g. "http://my-app.localhost:8765" or "http://127.0.0.1:8765" (the key is added; it is kept per PC
+#   in pyapp/generated and never committed). Setup also registers the start link <program name>://start,
+#   which starts the program in the browser terminal, e.g. from a bookmark.
+browser_terminal_address = ""
+
+# --- Startup ---
+# Start with the window minimized:
+start_minimized = False
+# Restore the classic console/browser terminal on the app's first print/error output (once).
+# Hidden starts stay hidden; native Windows Terminal focus is unsupported. Windows may restrict focus.
+foreground_on_first_print = False
+
+# --- Native window controls ---
+# Native terminal window (conhost and Windows Terminal); browser windows are left alone.
+# Alpha affects the entire window, including text: 1 = opaque, 0.8 = 80% opaque; 0 < value <= 1.
+# None preserves the host's default opacity.
+terminal_alpha = None
+# Keep the native terminal above other windows (does not repeatedly take keyboard focus).
+always_on_top = False
+# Classic conhost only; Windows may disable a single button rather than hide it.
+# Windows Terminal draws its own caption buttons, so these do not apply there.
+hide_minimize_button = False
+hide_maximize_button = False
+# Permit the corresponding system-menu commands and caption actions (classic conhost only):
+allow_minimize = True
+allow_maximize = True
+# Closing a terminal/tab while the program runs:
+#   "close"   end the program as usual (all hosts)
+#   "block"   disable the classic console's Close command (conhost only; Stop still works)
+#   "prompt"  browser's leave-page confirmation (browser only; requires interaction with the page)
+#   "hide"    close the browser tab but keep running; reopen its address to reconnect (browser only)
+# Unsupported close modes fail before starting. Browser prompts also apply to reload/navigation;
+# browsers may suppress them. Native console close notifications cannot cancel a close.
+# This does not change close_after_* at program completion, Ctrl+C, Stop or Task Manager.
+confirm_on_close = "close"
+
 # --- When the program ends ---
 # success            end of file, sys.exit(0) or sys.exit()
 # failure            anything that went wrong: an unhandled exception (including SyntaxError and missing packages),
@@ -113,63 +183,42 @@ open_crash_log_after_failure = False
 play_sound_after_success = False
 play_sound_after_failure = True
 
-# --- Window ---
-# True:  classic console (conhost.exe). No tabs, looks more like an app, but text rendering and zoom are worse.
-# False: Windows Terminal (wt.exe). Tabs, better text rendering and zoom.
-#        Falls back to the classic console with a warning if Windows Terminal is not installed.
-use_classic_terminal = True
-# The browser terminal shortcut (browser_terminal_shortcut_name) shows the console as a terminal in a new tab of your
-# default browser instead, with the same input, Ctrl+C, colors and titles: sharp text, zoom with Ctrl+wheel or
-# Ctrl+/-, clickable links, copy and paste like Windows Terminal. Closing the tab ends the program, like closing a
-# console window. Needs Windows 10 1809 or newer.
-# Its address stays the same, so it can be bookmarked (works while the program runs); Setup shows it.
-#   ""  automatic: http://<program name>.localhost:<port of this project folder>/<key>/
-#   e.g. "http://my-app.localhost:8765" or "http://127.0.0.1:8765" (the key is added; it is kept per PC
-#   in pyapp/generated and never committed). Setup also registers the start link <program name>://start,
-#   which starts the program in the browser terminal, e.g. from a bookmark.
-browser_terminal_address = ""
+# Sound files; relative paths start at this file, %WINDIR% and other environment variables expand.
+# "" means no sound. The play_sound_after_* switches above still choose when it plays.
+sound_after_success = r"%WINDIR%\Media\notify.wav"
+sound_after_failure = r"%WINDIR%\Media\Windows Critical Stop.wav"
+# Completion titles are evaluated here; use f-strings to include program_name.
+title_after_success = f"[Finished] {program_name}"
+title_after_failure = f"[Failure] {program_name}"
+title_after_keyboard_interrupt = f"[KeyboardInterrupt] {program_name}"
 
-# Background color: 0=Black,1=Blue,2=Green,3=Aqua,4=Red,5=Purple,6=Yellow,7=White,8=Gray,9=LightBlue. "" for default:
-terminal_bg_color = "0"
-# Text color: A=LightGreen,B=LightAqua,C=LightRed,D=LightPurple,E=LightYellow,F=BrightWhite. "" for default:
-terminal_text_color = "F"
+# --- Taskbar status (native conhost / dedicated Windows Terminal window) ---
+# Show Windows' moving, indeterminate progress indicator while the program runs.
+# This is activity, not a percentage; it is cleared/replaced when the app ends.
+have_running_animation_in_taskbar = False
 
-# --- Starting and stopping ---
-# The Python file the launcher runs. It must be inside the code folder, but not in code/pyapp.
-# Imports start from its folder, like `python main.py`. Run Setup again after changing it (for the Edit Code shortcut).
-# The code folder is also on the import path, after the main script's folder.
-main_script_path = "..\\main.py"
 
-# String arguments passed to main.py:
-args_for_main_py: List[str] = []
+# A steady green (success) or red (failure) indicator, while the completion window stays open:
+highlight_on_success = False
+highlight_on_failure = False
+# Request Windows' attention flashing until the window is activated; does not take focus:
+flash_on_success = False
+flash_on_failure = False
 
-# Environment variables set for main.py, e.g. {"MY_SETTING": "1"}.
-# PYTHON* variables have no effect on main.py itself, because it runs with -E.
-environment_for_main_py: Dict[str, str] = {}
-
-# Working folder. True: keep the folder Windows starts the shortcut in; False: main script folder.
-# Setup leaves "Start in" empty so it does not pin a moved shortcut to its old folder.
-# Windows chooses the starting folder; True does not locate the .lnk file itself.
-start_in_shortcut_position = False
-
-# Stop shortcut and instance_policy "replace": seconds a running instance gets to close by itself
-# (its windows receive a normal close request, a console app gets Ctrl+C) before it is terminated.
-# 0 terminates immediately.
-stop_timeout_seconds: float = 3
-
-# --- Where uv and Python come from ---
-# The dev tool make_self_contained sets these three to "local" and puts uv, Python and all packages into
-# code/pyapp/generated: the folder then runs on other PCs without internet or installing anything.
-# More uv settings: see "uv" further down.
-# [bootstrap] Where the app's Python comes from:
-#   "local"    uv installs it inside this project (code/pyapp/generated/pythons).
-#   "uv_user"  uv installs it in its per-user folder, shared by projects.
-#   "system"   a Python already installed on this PC, e.g. by your IT department. Nothing is downloaded.
-python_source = "uv_user"
-# [bootstrap] Which uv to use when both a global (on PATH) and a local (code/pyapp/generated/uv) uv exist: "global" | "local"
-uv_prefer = "global"
-# [bootstrap] Where uv is installed when none is found: "global" (for your Windows user, added to your user PATH) | "local" | "never"
-uv_install_if_missing = "global"
+# --- Windows desktop notifications ---
+# Independent of close_after_* and the browser's own switches.
+# Requires Windows PowerShell and an enabled Start Menu start shortcut (run Setup after changing shortcuts).
+# Windows notification settings / Do not disturb can suppress the banner. No extra notification sound.
+windows_notification_on_success = False
+windows_notification_on_failure = False
+windows_notification_on_keyboard_interrupt = False
+# Use f-strings here for program_name. Only details known at exit are substituted later:
+# {outcome}, {message}, {log_path}, {crash_log_path}. Other braces stay literal.
+# The title and message are plain text; quotes, &, < and non-ASCII characters are safe.
+windows_notification_title = f"{program_name}"
+windows_notification_message_on_success = f"{program_name} finished successfully."
+windows_notification_message_on_failure = "{message}"
+windows_notification_message_on_keyboard_interrupt = f"{program_name} was interrupted."
 
 # --- Settings file and shortcut locations ---
 # File that the Settings shortcut opens, for the people using the app (any file type; "" to disable).
@@ -203,9 +252,23 @@ crash_log_path = "..\\..\\crash logs\\crash_log_%Y-%m-%d_%H-%M-%S.txt"
 # A relative crash_log_path starts at: False = this file, True = the folder of the starting shortcut.
 crash_log_path_is_relative_to_start_folder_if_relative = False
 
+# --- Error reports ---
+# Date format in crash reports:
+error_date_format = "%Y-%m-%d %H:%M:%S"
+
 # ========================================
 # ==== LOW ===============================
 # ========================================
+
+# --- Terminal colors ---
+# Background color: 0=Black,1=Blue,2=Green,3=Aqua,4=Red,5=Purple,6=Yellow,7=White,8=Gray,9=LightBlue. "" for default:
+terminal_bg_color = "0"
+# Text color: A=LightGreen,B=LightAqua,C=LightRed,D=LightPurple,E=LightYellow,F=BrightWhite. "" for default:
+terminal_text_color = "F"
+
+# --- Windows Terminal only (use_classic_terminal = False) ---
+# Tab bar color, e.g. "#3B78FF". "" for Windows default.
+tab_bar_color = "#3B78FF"
 
 # --- Shortcut names ---
 # Shortcut names. "" to disable.
@@ -218,12 +281,19 @@ open_log_folder_shortcut_name = f"{program_name} (Logs)"
 open_crash_log_folder_shortcut_name = f"{program_name} (Crash-Logs)"
 open_code_shortcut_name = f"{program_name} (Edit-Code)"
 
-# --- Startup ---
-# Start with the window minimized:
-start_minimized = False
-# Restore the classic console/browser terminal on the app's first print/error output (once).
-# Hidden starts stay hidden; native Windows Terminal focus is unsupported. Windows may restrict focus.
-foreground_on_first_print = False
+# --- Where uv and Python come from ---
+# The dev tool make_self_contained sets these three to "local" and puts uv, Python and all packages into
+# code/pyapp/generated: the folder then runs on other PCs without internet or installing anything.
+# More uv settings: see "uv" further down.
+# [bootstrap] Where the app's Python comes from:
+#   "local"    uv installs it inside this project (code/pyapp/generated/pythons).
+#   "uv_user"  uv installs it in its per-user folder, shared by projects.
+#   "system"   a Python already installed on this PC, e.g. by your IT department. Nothing is downloaded.
+python_source = "uv_user"
+# [bootstrap] Which uv to use when both a global (on PATH) and a local (code/pyapp/generated/uv) uv exist: "global" | "local"
+uv_prefer = "global"
+# [bootstrap] Where uv is installed when none is found: "global" (for your Windows user, added to your user PATH) | "local" | "never"
+uv_install_if_missing = "global"
 
 # --- uv ---
 # uv_prefer and uv_install_if_missing: see "Where uv and Python come from" above.
@@ -247,14 +317,6 @@ use_system_certificates = False
 # GitHub Actions for this app; Setup creates or removes their files in .github/workflows:
 #   "leaks"    on every push and PR to main: look for secrets and personal data
 github_actions: List[str] = []
-
-# --- Error reports ---
-# Date format in crash reports:
-error_date_format = "%Y-%m-%d %H:%M:%S"
-
-# --- Windows Terminal only (use_classic_terminal = False) ---
-# Tab bar color, e.g. "#3B78FF". "" for Windows default.
-tab_bar_color = "#3B78FF"
 
 # ========================================
 

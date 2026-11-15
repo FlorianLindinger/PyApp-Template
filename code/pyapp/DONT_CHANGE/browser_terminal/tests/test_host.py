@@ -447,6 +447,28 @@ class PageClient:
 
 @unittest.skipUnless(os.name == "nt", "Windows only")
 class HostTest(unittest.TestCase):
+    def test_hide_keeps_program_running_and_allows_reconnection(self):
+        path, port, result = self.start(
+            "name = input('ready? '); print('resumed ' + name, flush=True)", confirm_on_close="hide"
+        )
+        with mock.patch.object(browser_terminal, "RECONNECT_GRACE_SECONDS", 0.1):
+            page = PageClient(port, path + "ws")
+            page.send({"t": "r", "c": 80, "r": 24})
+            # ConPTY may encode the prompt's trailing space as a cursor movement.
+            self.assertTrue(page.wait_for(b"ready?"), page.output)
+            page.socket.shutdown(socket.SHUT_RDWR)
+            page.close()
+            time.sleep(0.8)
+            self.assertNotIn("code", result)
+            reconnected = PageClient(port, path + "ws")
+            self.addCleanup(reconnected.close)
+            reconnected.send({"t": "i", "d": "Bob\r"})
+            self.assertTrue(reconnected.wait_for(b"resumed Bob"), reconnected.output)
+            deadline = time.monotonic() + 10
+            while "code" not in result and time.monotonic() < deadline:
+                time.sleep(0.02)
+            self.assertEqual(result.get("code"), 0)
+
     def start(self, program: str, **settings: Any) -> Tuple[str, int, Dict[str, int]]:
         """Run program in the host; returns (token path, port, {"code": ...} once it ended)."""
         run_dir = tempfile.mkdtemp()

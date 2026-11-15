@@ -35,6 +35,7 @@ BOOTSTRAP_SETTINGS = (
 )
 
 CHOICES = {
+    "confirm_on_close": ("prompt", "block", "close", "hide"),
     "python_source": ("local", "uv_user", "system"),
     "uv_prefer": ("global", "local"),
     "uv_install_if_missing": ("global", "local", "never"),
@@ -54,6 +55,19 @@ SHORTCUT_KINDS = (
 # GitHub Actions an app can choose in github_actions; one data/workflows/<name>.yml each.
 APP_WORKFLOWS = ("leaks",)
 BOOLEANS = (
+    "allow_minimize",
+    "allow_maximize",
+    "highlight_on_success",
+    "highlight_on_failure",
+    "flash_on_success",
+    "flash_on_failure",
+    "have_running_animation_in_taskbar",
+    "windows_notification_on_success",
+    "windows_notification_on_failure",
+    "windows_notification_on_keyboard_interrupt",
+    "hide_minimize_button",
+    "hide_maximize_button",
+    "always_on_top",
     "uv_user_python_visible_globally",
     "use_system_certificates",
     "start_menu_shortcuts",
@@ -376,6 +390,11 @@ def validate(module: Optional[Union[ModuleType, SimpleNamespace]] = None) -> Non
         need(name, lambda v, c=choices: v in c, "use one of " + ", ".join(repr(c) for c in choices))
     for name in BOOLEANS:
         need(name, lambda v: isinstance(v, bool), "use True or False")
+    need(
+        "terminal_alpha",
+        lambda v: v is None or (_number(v) and math.isfinite(v) and 0 < v <= 1),
+        "use None for the host default or a finite number greater than 0 and at most 1 (opaque)",
+    )
     need("program_name", lambda v: isinstance(v, str) and v.strip(), "use a non-empty text")
     need("python_version", lambda v: isinstance(v, str), 'use text such as "3.14" or "" for the newest')
     python_version = get("python_version")
@@ -467,6 +486,21 @@ def validate(module: Optional[Union[ModuleType, SimpleNamespace]] = None) -> Non
     for outcome in OUTCOMES:
         for prefix in ("close_after_", "open_log_file_after_"):
             need(prefix + outcome, lambda v: isinstance(v, bool), "use True or False")
+        title = "title_after_" + outcome
+        need(
+            title,
+            lambda v: isinstance(v, str),
+            "use text; evaluate program_name with an f-string in developer_settings.py",
+        )
+        notification = "windows_notification_message_on_" + outcome
+        need(notification, lambda v: isinstance(v, str), "use text with optional runtime notification fields")
+    need(
+        "windows_notification_title",
+        lambda v: isinstance(v, str),
+        "use text; evaluate program_name with an f-string in developer_settings.py",
+    )
+    for name in ("sound_after_success", "sound_after_failure"):
+        need(name, lambda v: isinstance(v, str), 'use a .wav path or "" for no sound')
     for outcome in ("success", "failure"):
         need("foreground_after_" + outcome, lambda v: isinstance(v, bool), "use True or False")
     for name in (

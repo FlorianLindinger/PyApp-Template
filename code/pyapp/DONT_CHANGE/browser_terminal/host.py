@@ -10,8 +10,9 @@ README.md); run(config, command) is the same from Python. It
     can be fixed (config "host_name", "port", "key"), so the address can be bookmarked;
   * opens the page in a new tab of the default browser and brings that browser to the front.
 
-Like closing a console window, closing the page ends the command (after a short grace period, so
-reloading the page does not). When the command ends, the page closes itself.
+By default, closing the page ends the command after a short grace period (so reloads do not).
+confirm_on_close can request a browser prompt or keep the command running without a page.
+When the command ends, the page closes itself.
 
 Window icon and color changes cannot pass through a pseudoconsole: processes in the console ask
 for them through a JSON-lines file instead (see ui.py). Standard library only, Python 3.8+, and
@@ -1010,7 +1011,7 @@ def make_handler(session: Session, token: str, hosts: Set[str]) -> type:
             page = (STATIC_DIR / "index.html").read_text(encoding="utf-8")
             settings = {
                 key: session.config[key]
-                for key in ("title", "marker", "theme", "font", "windowsBuild", "scroll", "options")
+                for key in ("title", "marker", "theme", "font", "windowsBuild", "scroll", "options", "confirm_on_close")
             }
             settings["startLink"] = session.config["start_link"]
             settings["info"] = session.config["info"]
@@ -1127,6 +1128,8 @@ def complete_config(config: Dict[str, Any], command: List[str]) -> Dict[str, Any
     """The configuration with every missing setting filled in. All settings are optional:
 
     title             page title until the command sets its own (default: the command's name)
+    confirm_on_close  "close" (default), "prompt" (browser leave-page dialog), or "hide"
+                      (keep running when no tabs are connected; reopen the address to reconnect)
     cwd               working folder of the command (default: the current one)
     icon              .ico or .png file shown as the page's icon
     theme, font       xterm.js theme (default: the classic console's palette) and {"family", "size"}
@@ -1153,6 +1156,9 @@ def complete_config(config: Dict[str, Any], command: List[str]) -> Dict[str, Any
                       Notepad, a folder in Explorer (default: none, and no button)
     """
     config = dict(config)
+    config.setdefault("confirm_on_close", "close")
+    if config["confirm_on_close"] not in ("close", "prompt", "hide"):
+        raise ValueError('confirm_on_close must be "close", "prompt" or "hide" for the browser terminal')
     if not config.get("state_dir"):
         import tempfile
 
@@ -1252,7 +1258,11 @@ def run(config: Dict[str, Any], command: List[str]) -> int:
         with session.lock:
             connected = bool(session.clients)
             last_disconnect = session.last_disconnect
-        if not connected and time.monotonic() - last_disconnect > RECONNECT_GRACE_SECONDS:
+        if (
+            config["confirm_on_close"] != "hide"
+            and not connected
+            and time.monotonic() - last_disconnect > RECONNECT_GRACE_SECONDS
+        ):
             # The window was closed: end the program like a closed console window does.
             _end_unseen(console)
             return 1

@@ -33,6 +33,9 @@ uses it). `src/groups.py` defines the groups; a new test file must be added to o
 | `test_logs.py` | log paths, unique names, diagnostics log, `clean` (only the launcher's own logs, files in use, run folders), crash exit codes, unreadable process records |
 | `test_shortcuts.py` | shortcut file names and order, outdated shortcut targets, taskbar identity per folder, removing shortcuts |
 | `test_console_colors.py` | only hexadecimal color arguments can reach the Windows color command; a failure turns the window black; the `wt.exe` command line |
+| `test_terminal_window.py` | close-policy capabilities, dedicated WT windows, native alpha/caption/topmost/Close styles and a real conhost launch |
+| `test_system_tray.py` | repeat minimize notifications, icon-before-hide recovery, Restore/Stop, Explorer restart and native conhost tray/message-loop cleanup |
+| `test_completion_attention.py` | taskbar activity/highlight/flash transitions, notification XML/script safety, custom text/titles/sounds, blocked delivery and defaults/validation |
 | `test_banner.py` | the banner font renders the app name, supports German letters and Latin-1, skips missing characters; the console font it needs |
 | `test_icons.py` | icons always use the bundled overlays; generated icons update silently, a question per icon for placed ones; small sizes in linear light; every `.ico` size |
 | `test_dev_menu.py` | the dev tools menu offers every command exactly once; every prompt can be cancelled; missing-package recovery; `run-tests` finds the app's tests folders (never the launcher's) and runs them with pytest or unittest |

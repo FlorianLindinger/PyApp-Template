@@ -276,7 +276,9 @@ window.
   (0) and red otherwise, and the tab title gets a ✓ or ✗.
 
 It is served on `127.0.0.1` only, behind a secret key in the address, and only its own page may
-connect. Closing the tab ends the program, like closing a console window; reloading it does not.
+connect. By default, closing the tab ends the program; reloading it does not. `confirm_on_close = "prompt"`
+requests the browser's leave-page confirmation (also on reload/navigation; browsers may suppress it).
+`"hide"` keeps the program running when the tab closes; reopen its address to reconnect.
 
 The launcher's `close_after_success`, `close_after_failure` and `close_after_keyboard_interrupt`
 settings also apply here. With `False`, the report stays until Enter is pressed. When the
@@ -336,12 +338,61 @@ All in `developer_settings.py`. Mistakes are reported with the setting's name wh
 | `close_after_success`, `close_after_failure` | Whether the window closes or waits for Enter |
 | `open_crash_log_after_failure`, `play_sound_after_failure` | What happens after an error |
 | `use_classic_terminal` | Classic console, or Windows Terminal with tabs |
+| `terminal_alpha` | Entire native window opacity: `None` keeps the host default, `0.8` means 80%, `1` is opaque |
+| `always_on_top` | Keep the native terminal above other windows without taking keyboard focus |
+| `hide_minimize_button`, `hide_maximize_button` | Remove classic conhost caption styles; Windows may disable a single button instead of hiding it |
+| `confirm_on_close` | `"close"` everywhere; `"block"` for conhost; `"prompt"` / `"hide"` for the browser |
+| `allow_minimize`, `allow_maximize` | Permit classic-console minimize/maximize actions; independent of hiding caption buttons |
+| `replace_minimize_with_minimize_to_system_tray` | Hide the minimized native terminal from the taskbar into the system tray; request a Windows notification on every minimize |
+| `highlight_on_success`, `highlight_on_failure` | Steady green/red taskbar indicator while the completion window stays open |
+| `flash_on_success`, `flash_on_failure` | Windows taskbar attention flashing until the terminal is activated |
+| `have_running_animation_in_taskbar` | Moving indeterminate taskbar progress indicator while the app runs |
+| `title_after_success`, `title_after_failure`, `title_after_keyboard_interrupt` | Completion titles evaluated as f-strings directly in developer settings |
+| `sound_after_success`, `sound_after_failure` | WAV paths used by `play_sound_after_*`; `""` disables, environment variables expand |
+| `windows_notification_on_success`, `windows_notification_on_failure`, `windows_notification_on_keyboard_interrupt` | Windows completion notification switches, including runs that close immediately |
+| `windows_notification_title`, `windows_notification_message_on_*` | Use f-strings for the program name; optional runtime fields: `{outcome}`, `{message}`, `{log_path}`, `{crash_log_path}` |
 | `browser_terminal_address` | The browser terminal's address (`""`: automatic and stable) |
 | `print_prepend`, `input_prepend` | Timestamps or other text before each line |
 | `log_path`, `crash_log_path` | Log locations; both accept date codes |
 | `stop_timeout_seconds` | How long the app gets to close before it is terminated |
 | `main_script_path` | Which file to run, if not `main.py` |
 | `packages`, `requirements_path` | The packages the app needs |
+
+Native window options leave browser windows alone. Alpha, always-on-top or taskbar status opens Windows Terminal
+in a dedicated window so unrelated tabs are unaffected. WT draws its own caption buttons, so
+the hide-button settings apply only to conhost. Unsupported close modes report an error before
+launch: external console close notifications cannot cancel closing for a prompt or hide action.
+`"block"` disables conhost's Close command; Ctrl+C, the Stop shortcut, program completion and
+Task Manager still work. The defaults preserve existing behavior.
+
+With `replace_minimize_with_minimize_to_system_tray = True`, minimizing the native terminal
+(including `start_minimized`) hides its window while the app continues running. Its tray icon
+is beside the clock, possibly inside the hidden-icons arrow: click it or its notification to
+restore the window, or right-click for **Restore / Stop program**. Stop affects only that run
+and uses `stop_timeout_seconds` before terminating its remaining app processes. A Windows tray
+notification explains where the window went on every minimize, independently of completion
+notification switches and without needing PowerShell or a Start Menu shortcut. Windows notification
+settings / Do not disturb can suppress the banner. The icon is created before hiding; startup
+failure leaves normal minimize behavior, and controller cleanup restores a hidden window. Explorer
+restart restores the window before recreating the icon. WT gets a dedicated window; browser and
+GUI-created windows are untouched. `allow_minimize=False` still disables normal conhost minimize
+actions, and `hide_minimize_button=True` removes the button route. The default is `False`.
+
+Taskbar indicators affect native conhost/WT terminals; they do not modify the shared browser window
+or windows created by your GUI code. Activity is cleared at completion (including Ctrl+C); steady
+success/failure colour and flashing require the completion window to stay open. Windows controls
+the final appearance, flash cadence and grouping. The standard activity indicator conveys running
+status, not a measured completion percentage. Caption allow/hide controls apply only to conhost.
+
+Windows notifications use the built-in Windows PowerShell, with no additional Python packages.
+Enable the corresponding Start Menu start shortcut and run Setup so its AppUserModelID is registered.
+They work for terminal, browser and no-terminal starts and do not require keeping a terminal open.
+Windows notification settings, Do not disturb, or policy may suppress banners; the launcher reports
+blocked notifications when Windows exposes the reason. Toast audio is silent so `play_sound_after_*`
+controls sound. The browser's own notification switches remain independent. Completion titles and
+program-name expressions are evaluated once in developer settings; they are not formatted again.
+Only the four named runtime notification fields are substituted at exit, in one pass; other braces
+and braces inside substituted values remain literal. Text is escaped, never executed as PowerShell.
 
 <details>
 <summary><b>Where uv, Python and the packages live</b></summary>

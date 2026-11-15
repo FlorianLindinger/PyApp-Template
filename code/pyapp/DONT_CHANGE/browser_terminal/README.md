@@ -57,9 +57,16 @@ type falls back to the built-in default.
 
 From Python: `from browser_terminal import host; host.run({"title": "My tool"}, ["python", "my_tool.py"])`.
 
-Like a console window, closing the tab ends the program (after 5 seconds, so a reload does not),
+By default, closing the tab ends the program (after 5 seconds, so a reload does not),
 and the tab closes when the program ends. The page is served on 127.0.0.1 only, behind a secret
 key in the address, and only that page may connect.
+
+The config option `confirm_on_close` accepts `"close"` (default), `"prompt"`, and `"hide"`.
+`"prompt"` requests the browser's leave-page confirmation while the command runs, including
+reloads and navigation. Browsers control the wording and may suppress it without prior page
+interaction. `"hide"` keeps the command running after the tab closes; reopen the same address
+to reconnect. A browser tab cannot unconditionally block closing or control its window's
+opacity, minimize/maximize buttons, or always-on-top state without affecting other tabs.
 
 By default the address is new for every run. With `--host-name`, `--port` and `--key` (or the
 same settings in `--config`) it stays the same, so it can be bookmarked while the program runs:

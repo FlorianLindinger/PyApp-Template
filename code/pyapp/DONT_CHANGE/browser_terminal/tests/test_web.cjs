@@ -7,6 +7,29 @@ const { test } = require("node:test");
 
 const source = fs.readFileSync(path.join(__dirname, "../web/terminal.js"), "utf8");
 
+test("close prompts only while running and only for the prompt policy", () => {
+  for (const policy of ["close", "hide", "prompt"]) {
+    let handler;
+    const context = vm.createContext({
+      config: { confirm_on_close: policy },
+      window: { addEventListener: (name, callback) => { assert.equal(name, "beforeunload"); handler = callback; } },
+    });
+    const start = source.indexOf("let ended = false;");
+    const end = source.indexOf("\n  let ", start + 1);
+    // Limit the executed code to the beforeunload handler itself.
+    const handlerEnd = source.indexOf("\n  });", start) + "\n  });".length;
+    assert.ok(handlerEnd < end || end === -1);
+    vm.runInContext(source.slice(start, handlerEnd), context);
+    let prevented = 0;
+    const event = { preventDefault: () => prevented++ };
+    handler(event);
+    assert.equal(prevented, policy === "prompt" ? 1 : 0);
+    vm.runInContext("ended = true", context);
+    handler(event);
+    assert.equal(prevented, policy === "prompt" ? 1 : 0);
+  }
+});
+
 test("wrapped crash-log paths with spaces open the actual file through the host", () => {
   const file = "C:\\My App\\crash logs\\crash_123456abcdef.txt";
   const text = "Crash log: " + file;

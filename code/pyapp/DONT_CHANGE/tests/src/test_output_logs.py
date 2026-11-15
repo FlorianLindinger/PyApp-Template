@@ -17,6 +17,7 @@ import project_location  # also makes this checkout's code importable
 from pyapp.DONT_CHANGE import backend_settings as paths
 from pyapp.DONT_CHANGE.runtime import bg_watchdog, process_exit
 from pyapp.DONT_CHANGE.runtime._pyapp import ExitMode
+from pyapp.DONT_CHANGE.scripts.config import fill_missing_settings
 
 SETTINGS = types.SimpleNamespace(
     enable_crash_log=True,
@@ -226,6 +227,7 @@ class CompletionForegroundTests(unittest.TestCase):
         fail: bool = False,
     ):
         s = types.SimpleNamespace(program_name="Example", open_crash_log_after_failure=False)
+        fill_missing_settings(s)
         for name in ("success", "failure", "keyboard_interrupt"):
             setattr(s, "close_after_" + name, close)
             setattr(s, "open_log_file_after_" + name, False)

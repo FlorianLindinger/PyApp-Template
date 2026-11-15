@@ -3,9 +3,9 @@
 Every launcher script must keep running on Python 3.8+ (the oldest Python uv can
 install on Windows), so this module only uses 3.8-compatible syntax.
 
-Sections: version, folders, protected (what existing projects rely on), settings files, Windows programs, uv/Python and the
+Sections: version, behavior, folders, protected (what existing projects rely on), settings files, Windows programs, uv/Python and the
 app environment, temporary state, launcher scripts, browser terminal, shortcuts, icons, dev tools
-and data, behavior.
+and data.
 """
 
 # fmt: off
@@ -30,6 +30,19 @@ def make_abs(x: str) -> str:
 #   MAJOR: something breaks; replace DONT_CHANGE and follow the steps in CHANGELOG.md
 LAUNCHER_VERSION = "0.0.1"
 MINIMUM_PYTHON = (3, 8)                             # oldest Python the launcher code supports
+
+# ------------------------
+# behavior
+
+# Seconds a start waits for the watchdog's acknowledgement, and the watchdog for the app's
+# interpreter to load the wrapper. Generous: the first start of a fresh environment on a slow
+# disk with real-time scanning can take long, and both waits end early when the process exits.
+STARTUP_ACKNOWLEDGEMENT_TIMEOUT_SECONDS = 180
+WRAPPER_READY_TIMEOUT_SECONDS = 120
+# Source lines of your own code shown before and after each failing line (0: none).
+# Library code always shows just the failing line, like Python does.
+traceback_lines_before: int = 3
+traceback_lines_after: int = 3
 
 # ------------------------
 # folders
@@ -120,6 +133,31 @@ PROTECTED_DEV_TOOL_COMMANDS = [
 # Settings of developer_settings.py: a renamed or removed one silently stops working in existing
 # files (a new setting may be added: older files get its default from data/dev_settings_default.py).
 PROTECTED_SETTING_NAMES = [
+    "replace_minimize_with_minimize_to_system_tray",
+    "sound_after_success",
+    "sound_after_failure",
+    "title_after_success",
+    "title_after_failure",
+    "title_after_keyboard_interrupt",
+    "highlight_on_success",
+    "highlight_on_failure",
+    "flash_on_success",
+    "flash_on_failure",
+    "have_running_animation_in_taskbar",
+    "windows_notification_on_success",
+    "windows_notification_on_failure",
+    "windows_notification_on_keyboard_interrupt",
+    "windows_notification_title",
+    "windows_notification_message_on_success",
+    "windows_notification_message_on_failure",
+    "windows_notification_message_on_keyboard_interrupt",
+    "allow_minimize",
+    "allow_maximize",
+    "terminal_alpha",
+    "confirm_on_close",
+    "hide_minimize_button",
+    "hide_maximize_button",
+    "always_on_top",
     "args_for_main_py",
     "close_after_failure",
     "close_after_keyboard_interrupt",
@@ -247,6 +285,9 @@ RAW_OUTPUT_FILE_NAME = "output.log"
 # ------------------------
 # launcher scripts
 
+# Launch-protocol marker: batch argument handling must distinguish an empty app ID from no argument.
+EMPTY_ARG_INDICATOR = "__EMPTY__"
+
 ENTRYPOINT_PATH = SCRIPTS_DIR + "\\entrypoint.py"        # runs every tool: entrypoint.py <tool.py> [args]
 START_PROGRAM_PATH = APP_ACTIONS_DIR + "\\start_program.py"
 RESOLVE_RUNTIME_PATH = DONT_CHANGE_DIR + "\\bootstrap\\resolve_runtime.py"
@@ -345,26 +386,6 @@ EXCLUDED_FOLDERS_FOR_IMPORT_SEARCH = [
     # recognized by their pyvenv.cfg. Not "build" or "dist": those can be app packages.
     "site-packages",
 ]
-
-# ------------------------
-# behavior
-
-# Seconds a start waits for the watchdog's acknowledgement, and the watchdog for the app's
-# interpreter to load the wrapper. Generous: the first start of a fresh environment on a slow
-# disk with real-time scanning can take long, and both waits end early when the process exits.
-STARTUP_ACKNOWLEDGEMENT_TIMEOUT_SECONDS = 180
-WRAPPER_READY_TIMEOUT_SECONDS = 120
-EMPTY_ARG_INDICATOR = "__EMPTY__"
-DEFAULT_SOUND_AFTER_FAILURE = WINDOWS_DIR + "\\Media\\Windows Critical Stop.wav"
-DEFAULT_SOUND_AFTER_SUCCESS = WINDOWS_DIR + "\\Media\\notify.wav"
-# Window titles after the program ended ({program_name} is filled in).
-TITLE_AFTER_SUCCESS = "[Finished] {program_name}"
-TITLE_AFTER_FAILURE = "[Failure] {program_name}"
-TITLE_AFTER_KEYBOARD_INTERRUPT = "[KeyboardInterrupt] {program_name}"
-# Source lines of your own code shown before and after each failing line (0: none).
-# Library code always shows just the failing line, like Python does.
-traceback_lines_before: int = 3
-traceback_lines_after: int = 3
 
 # ==================================================================
 

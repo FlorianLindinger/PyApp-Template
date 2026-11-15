@@ -58,14 +58,17 @@ def _hint_outdated_shortcuts(s: Union[ModuleType, SimpleNamespace]) -> None:
         note_ignored("outdated shortcut check")
 
 
-def wt_command(title: str, tab_color: Optional[str], command: List[str]) -> List[str]:
+def wt_command(title: str, tab_color: Optional[str], command: List[str], dedicated_window: bool = False) -> List[str]:
     """The wt.exe command line that runs `command` in a new Windows Terminal tab.
 
     wt.exe splits its own command line at ";" into several subcommands, so a ";" in the title or
     in a path (e.g. a project folder "R;D") is escaped as "\\;", which wt.exe passes on as ";".
     """
     arguments = [title, *(["--tabColor", tab_color] if tab_color else []), *command]
-    return ["wt.exe", "--title", *(argument.replace(";", "\\;") for argument in arguments)]
+    # Window-wide styles must never affect another app's tabs. Application titles let the
+    # watchdog identify its window by a temporary random title before app startup.
+    window = ["--window", "new", "new-tab", "--useApplicationTitle"] if dedicated_window else []
+    return ["wt.exe", *window, "--title", *(argument.replace(";", "\\;") for argument in arguments)]
 
 
 def _python_version_note() -> str:
@@ -117,6 +120,7 @@ def browser_command(s: Union[ModuleType, SimpleNamespace], run_dir: Path, comman
         ["Browser terminal settings", str(Path(paths.DONT_CHANGE_DIR) / "browser_terminal" / "settings.py")],
     ]
     config = {
+        "confirm_on_close": s.confirm_on_close,
         "title": s.program_name,
         "info": info,
         "code_file": targets["open_code"] if s.open_code_shortcut_name else "",
@@ -150,6 +154,15 @@ def main() -> int:
     s = settings()
     validate(s)
     mode = resolve_mode(s, requested)
+    from pyapp.DONT_CHANGE.scripts.terminal_window import needs_window, validate_close_mode
+
+    validate_close_mode(s, mode)
+    if mode == "wt" and (
+        s.hide_minimize_button or s.hide_maximize_button or not s.allow_minimize or not s.allow_maximize
+    ):
+        print_warn(
+            "Windows Terminal owns its caption actions; hide/allow minimize/maximize settings apply only to conhost."
+        )
     # This (minimized) window shows progress while the environment is prepared: give it the
     # app's title, icon and taskbar group.
     set_terminal_appearance_once(app_id)
@@ -198,7 +211,7 @@ def main() -> int:
         startup.dwFlags |= subprocess.STARTF_USESHOWWINDOW
         startup.wShowWindow = 7
     if mode == "wt":
-        args = wt_command(s.program_name, s.tab_bar_color, args)
+        args = wt_command(s.program_name, s.tab_bar_color, args, dedicated_window=needs_window(s))
     elif mode == "conhost":
         args = [paths.CONHOST_EXE, *args]
     elif mode == "browser":

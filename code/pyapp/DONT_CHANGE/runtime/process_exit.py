@@ -84,19 +84,13 @@ FAILURE_COLORS = "0F"
 OUTCOMES = {
     "success": {
         "icon": paths.SUCCESS_ICON_PATH,
-        "sound": paths.DEFAULT_SOUND_AFTER_SUCCESS,
-        "title": paths.TITLE_AFTER_SUCCESS,
     },
     "failure": {
         "icon": paths.FAILURE_ICON_PATH,
-        "sound": paths.DEFAULT_SOUND_AFTER_FAILURE,
-        "title": paths.TITLE_AFTER_FAILURE,
     },
     # Ctrl+C shows the failure icon too and has no sound.
     "keyboard_interrupt": {
         "icon": paths.FAILURE_ICON_PATH,
-        "sound": "",
-        "title": paths.TITLE_AFTER_KEYBOARD_INTERRUPT,
     },
 }
 
@@ -399,7 +393,7 @@ def complete(
     stays_open = close is False or keep_open
     if stays_open or in_browser_terminal():
         # First: changing the window colors repaints everything already printed.
-        set_terminal_title(OUTCOMES[outcome]["title"].format(program_name=s.program_name))
+        set_terminal_title(getattr(s, "title_after_" + outcome))
         if stays_open and outcome in ("failure", "keyboard_interrupt"):  # both show a traceback
             set_terminal_colors(FAILURE_COLORS)
         set_terminal_icon(OUTCOMES[outcome]["icon"])
@@ -430,8 +424,17 @@ def complete(
                 os.startfile(crash_log)  # noqa: S606
             except Exception as error:
                 print_error(f"Failed to open crash log: {error}")
-    if OUTCOMES[outcome]["sound"] and getattr(s, "play_sound_after_" + outcome):
-        play_sound(OUTCOMES[outcome]["sound"], wait=not keep_open)
+    if outcome in ("success", "failure") and getattr(s, "play_sound_after_" + outcome):
+        wav = getattr(s, "sound_after_" + outcome)
+        if wav:
+            from pyapp.DONT_CHANGE.scripts.file_tools import make_abs_path_relative_to_file
+
+            play_sound(
+                make_abs_path_relative_to_file(os.path.expandvars(wav), paths.DEV_SETTINGS_PATH), wait=not keep_open
+            )
+    from pyapp.DONT_CHANGE.scripts import taskbar_status, windows_notifications
+
+    windows_notifications.complete(s, outcome, message, log_path, crash_log)
     if stays_open and outcome in ("success", "failure") and getattr(s, "foreground_after_" + outcome, False):
         try:
             if in_browser_terminal():
@@ -442,6 +445,7 @@ def complete(
         except Exception:
             # Attention is cosmetic; reporting and recovery must still run if Windows denies it.
             note_ignored("foreground after " + outcome)
+    taskbar_status.finish(s, outcome, stays_open)
     if stays_open and not keep_open:
         wait_for_report(report, crash_log)
     return crash_log
@@ -452,6 +456,12 @@ def main() -> None:
     _, exit_mode, app_id, new_terminal_was_created, log_path, script_path = sys.argv
     exit_mode = int(exit_mode)
     new_terminal_was_created = new_terminal_was_created.lower() == "true"
+    suffix = (
+        paths.BROWSER_APP_ID_SUFFIX
+        if in_browser_terminal()
+        else (paths.NO_TERMINAL_APP_ID_SUFFIX if new_terminal_was_created else "")
+    )
+    os.environ["PYAPP_NOTIFICATION_APP_ID"] = app_id + suffix if app_id else ""
     script_name = Path(script_path).name
     if new_terminal_was_created and app_id:
         # Started by the "(no Terminal)" shortcut: group this window with that shortcut.

@@ -1,21 +1,5 @@
 # TODO
 
-add the windwos taskbar color thing and porgess and so on
-
-minimize to tray and button replacement or disabling
-
-always ontop opton wiht allow minizie if allwoed
-
-hihglihgt settigns
-
-windwos notifaction settings
-
-confirm on close
-
-terminal alpha?
-
-can i make all temrinals soemhiow have lclikcable links
-
 ## 1. Release validation and publishing
 
 - Test on Windows: Setup, start twice (second start fast), Stop on the example window (closes
@@ -25,29 +9,26 @@ can i make all temrinals soemhiow have lclikcable links
   are skipped elsewhere) and `pyapp_tools/verify_launcher.bat`.
 - Test a fresh download / new app creation / first use by someone else, and a moved and a
   copied project folder.
-- Test new browser-terminal buttons: labels, icons.
-- Spell-check READMEs, comments and messages.
+- Test all browser-terminal buttons: labels, icons, button order, touchpad resizing
 - Tag the release on GitHub, update the repository topics/description, then keep developing on
   a dev branch (main only for releases and quick fixes).
-- ask what all i have to test and do before release 1.0.0
+- Review dev settings appearance
+- Review all readmes
+- Test all dev and backend tools
+- Apply template to an app to see if problems
+- Test on Linux
+- Test all error handling paths. Build in errors to files.
+- Ask AI if i should change anything regarding git hooks and github workflow for backend and dev or what i could add
+- Ask AI what it would simplify or remove
+- Ask AI what all i have to test and do before release 1.0.0
+- Ask AI to find problems
 
 ## 2. Reliability and safety reviews (older reports; verify current behavior)
 
 ```text
 
+is it somehow safe for aborted installation of stuff
 
-do full install venv and delete venv test in all python version. kind of benchmark without adding global paths.
-
-make it somehow safer for aborted installation of stuff. maybe folder deletion and end file signal creation
-
-when python install fails how does it indicate? maybe just create something in end to show success?? not working at the moment. maybe really create a successful Python installation file that gets removed with delete_distro -> yes
-might as well do success install indicator in python file in case someone delete all entries for better check then. maybe also still check for python.exe additionally
-
-when it sees that 3.4 does not exist online. it has already delete the last. Only delete indicator and dist at last point
-
-the python version indicated by the python file did not update for failed reinstall from m3.6 to 3.5. but py_dist was 3.5 . So either update even for failed or removed the old indication when i delete old? and make it possible for no python version indicator file
-
-never close on backend failure: should be already? ask AI if could happen. THat should not happen. always open a new terminal to report. I guess no log then.
 
 does it not stay open for start failure? is it most batch safe for any mistake in python scripts?
 
@@ -55,25 +36,6 @@ test if really portable for all local installs if no internet
 
 Check that multiprocessing works in main.py under the wrapper, which is a common thing app authors will try.
 ```
-
-## 3. Settings, hooks and tool reviews
-
-review dev settings
-
-think of hooks and workflow
-git hooks: validate dev settings ....
-where to put: DONT_CHANGE\pyapp_tools\src\git_hooks
-ask AI what hooks/workflows i should offer to dev and git tools and so on. .... Should i move dev tools to subfolders?
-add validate_dev_settings for app as tool and as workflow
-ask for more workflows and actions
-add pre commit hooks for example for just warning for leaks and asking for confirmation or something
-do i want some tool of the git tools in dev helper? or github actions?
-should i spawn the GitHub workflows only when activated and or detecting template repo so it does not spam root folder unnecessarily
-can i review all git hooks and github workflows
-
-ask ai what it would simplify or remove
-
-manually look at all tools and see if need improvements
 
 ## 4. Documentation
 
@@ -143,6 +105,7 @@ Export stress cases: recursive containers, huge arrays, broken __repr__, Unicode
 Moved project: paths containing spaces, Unicode and %; verify interpreter repair, logs, icons and shortcuts.
 Cold offline start: test both an ordinary clone and a self-contained copy, with missing or broken Python.
 
+is it mentioned that one can hardcode specific icons be replcing a .ico in icons folder?
 
 ## 6. Launcher features
 
@@ -168,15 +131,9 @@ and explain that "" prints nothing.
 
 setting how to deal with KeyboardInterrupt? (check what the keyboard_interrupt settings already cover)
 
-maybe launch-mode dependent wait time before the "no launch" warning.
-
-setting to run in admin mode? does anything require admin?
-
 add info print if settings don't make sense together.
 
 update check: check for a template/launcher update on start (link, changelog), with options: don't check again / skip this version / show changes / install. setting for it; maybe only an info print with a link. maybe a shortcut for it.
-
-add "enter y to open xyz".
 
 prompt more fancy with prompt windows? confirmation question via Windows popup? fragile?
 
@@ -234,55 +191,26 @@ make all prints homogeneous (ask AI, let it ask me which way i want).
 
 ## 8. Windows integration
 
-system tray would still be nice but how to trigger? do i replace the x button. i guess generally the button features
+is there otehr option for minimize to tray than replaceing minimize button?
 
-Windows notifications: add setting "windows notification on <outcome> = 'Message'" (success/failure/crash).
+Windows notification:
 - show under the program name and the correct app ID (also prevents spam)
 - clickable notification
 - warn if notifications are not allowed by Windows and mention where that setting is
-- setting for a window prompt instead of the notification area?
-- test notifications
-
-flash in taskbar setting. what are all options for the taskbar appearance? colors and progress states (cycling, any % accent, yellow, red, none)? does taskbar highlighting have a color? highlight green on finished?
-
-change title bar bg, text and border color on finish (green / red), also colors for the start settings. setting for title bar color and text color. is title color a better default than bg color?
 
 re-enable the X button on finish?
 
+can i modify what appears when i right click a shortcut?
+
+i can modify what appear when i hover over something in windows taskbar when opened: add buttons?
+
 system tray:
-- prompt for minimize to tray (first time? setting)
-- X button: option to prompt close / minimize to tray / cancel (could be annoying if assumed falsely)
-- can i implement the tray as an intercepted command? replace the minimize button? avoid packages
 - foreground should always unminimize and restore from tray
-- make sure the tray remembers the position on overflow
-- minimize via thumbnail buttons; also buttons for log, main script
-
-jump list for right click on shortcut.
-
-Stable window/layout profile IDs: save window position, opacity, shape, on-top state, etc. under a GUID.
-Rule of thumb: use uuid.uuid5(...) when Windows should remember something across runs; use uuid.uuid4() when you want a new unique ID for this run only.
-
-do i want to define the shape in conhost? via cols and lines, or a setting like a ratio?
-
-check if i still need hwnd_candidates / get_candidate_hwnds()[0].
-
-make a quick generate_shortcut.py that gets the app ID (and maybe the Python path) as a flag; bake in icon, minimized and so on; it should find the .py if not given and prefer main.py, main_script.py, start.py. write a line on how to change the app ID.
-
-Windows Terminal: change the tab color for error or finish (green for success?); i can choose the tab title; also set a newly opened terminal to the warn appearance.
-
-check if i still need the elaborate app ID setting or if a simple one works for both. check if setting the terminal app ID in a thread is actually faster. do i even need it if i stay in the original terminal?
-
-test if taskbar grouping works for subprocess.Popen([python_exe, script_path], creationflags=subprocess.CREATE_NEW_CONSOLE).
+- make sure the tray remembers the position 
 
 ## 9. Icons
 
 make sub icons more visible; make the log icon darker for more differentiation; a folder sub icon for the folder shortcuts.
-
-simplify icon generation; check HOW_TO_CHANGE_ICONS.txt.
-
-make sub icons easier to change, outside the .py (in developer settings, not in DONT_CHANGE).
-
-allow disabling sub icons by deleting them; print that one is missing.
 
 ## 10. Browser terminal
 
@@ -295,6 +223,9 @@ make timestampos tolgglealbe? kind of problmatic to sync withj input unless i ha
 is it open log or open log folder. i guess i can have both. 
 is it setting what buttons appear?
 ask AI: any more feature ideas for browser terminal?
+
+## 11. Future
+
 
 
 ## 13. Older notes to verify

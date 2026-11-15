@@ -358,6 +358,14 @@
 
   let socket = null;
   let ended = false;
+  // A browser owns this dialog: custom text and an unconditional block are unavailable.
+  // Browsers may suppress it without prior page interaction. Reload/navigation also triggers it.
+  window.addEventListener("beforeunload", (event) => {
+    if (!ended && config.confirm_on_close === "prompt") {
+      event.preventDefault();
+      event.returnValue = "";
+    }
+  });
   const send = (message) => {
     if (socket && socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify(message));
   };

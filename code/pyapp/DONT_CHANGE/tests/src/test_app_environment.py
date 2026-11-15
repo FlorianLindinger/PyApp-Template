@@ -28,6 +28,8 @@ class AppEnvironmentTests(unittest.TestCase):
         return SimpleNamespace(
             **{
                 "program_name": "Example {app}",
+                "title_after_success": "[Finished] Example {app}",
+                "title_after_failure": "[Failure] Example {app}",
                 "environment_for_main_py": {"CUSTOM": "kept", "PROGRAM_NAME": "overridden"},
                 "user_settings_path": "../settings.py",
                 "enable_crash_log": True,
