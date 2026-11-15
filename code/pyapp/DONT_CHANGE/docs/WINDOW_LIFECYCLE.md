@@ -66,7 +66,10 @@ the browser UI, and a no-terminal run has no native terminal to restore.
 `tests/src/test_system_tray.py` covers repeated cycles, external/duplicate restore, icon and
 notification failures, owner safety, Explorer's restart message and native conhost cleanup.
 Its live conhost probe checks normal geometry, maximized restoration, duplicate callbacks,
-simulated Explorer recovery, and quiet shutdown. It deliberately delays tray callbacks and
+and drives caption-system commands through `SendMessageTimeoutW` to acknowledge the conhost
+UI thread. It observes the restored/maximized state before advancing; acknowledging the tray
+thread alone does not establish the console window's transition order. It also checks
+simulated Explorer recovery and quiet shutdown. It deliberately delays tray callbacks and
 acknowledges their completion before the next transition; fixed sleeps do not establish event
 ordering on a busy desktop. It does not restart the user's Explorer.
 The native probe intercepts balloon-delivery requests while validating their app title/icon

@@ -76,12 +76,14 @@ def show_console() -> None:
 
 
 def styled(msg: Any, style: str) -> str:
-    """Color only for an interactive console; redirected output stays plain."""
+    """Color supported terminals/CI logs; respect explicit color opt-in and opt-out."""
     try:
         interactive = sys.stdout is not None and sys.stdout.isatty()
     except Exception:
         interactive = False
-    if not interactive:
+    forced = os.environ.get("FORCE_COLOR", "")
+    color = interactive or forced not in ("", "0") or os.environ.get("GITHUB_ACTIONS") == "true"
+    if "NO_COLOR" in os.environ or forced == "0" or not color:
         return str(msg)
     enable_ansi()
     return f"{style}{msg}{ANSI_RESET}"
@@ -362,7 +364,18 @@ def foreground_terminal() -> None:
             hwnd = int(kernel32.GetConsoleWindow() or 0)
         if not hwnd:
             return
-        ctypes.windll.user32.SetForegroundWindow(hwnd)
+        # A foreground request must also recover a tray-hidden or minimized window.
+        # Avoid SW_RESTORE for an already visible window so maximization is preserved.
+        user = ctypes.WinDLL("user32", use_last_error=True)
+        from ctypes import wintypes
+
+        user.IsWindowVisible.argtypes = [wintypes.HWND]
+        user.IsIconic.argtypes = [wintypes.HWND]
+        user.ShowWindow.argtypes = [wintypes.HWND, ctypes.c_int]
+        user.SetForegroundWindow.argtypes = [wintypes.HWND]
+        if not user.IsWindowVisible(hwnd) or user.IsIconic(hwnd):
+            user.ShowWindow(hwnd, 9)
+        user.SetForegroundWindow(hwnd)
     except Exception:
         note_ignored("foreground_terminal")
 
@@ -467,6 +480,7 @@ def browser_terminal_ui(
     failed: bool = False,
     foreground: bool = False,
     title: Optional[str] = None,
+    status: Optional[str] = None,
 ) -> None:
     """Request browser-terminal appearance, a notification, or explicit foreground attention."""
     try:
@@ -481,6 +495,7 @@ def browser_terminal_ui(
             failed=failed,
             foreground=foreground,
             title=title,
+            status=status,
         )
     except Exception:
         note_ignored("browser_terminal_ui")

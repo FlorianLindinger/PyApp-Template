@@ -1,5 +1,9 @@
 # Dev tools
 
+Compilation tools: `validate_syntax.cmd`, `compile_app.cmd` and `clean_compilation.cmd`.
+See [COMPILATION.md](COMPILATION.md) for variants, compiler prerequisites, developer-owned
+`compilation_settings.json`, generated output and validation limits.
+
 Double-click a tool, or run it from a terminal with arguments (e.g. `add_packages.cmd requests "numpy>=2"`; quote requirements with `<`, `>` or `|`, which the command prompt would otherwise treat as redirection).
 [`Developer Tools.cmd`](../Developer%20Tools.cmd) in the parent folder lists all of them. Every tool validates `developer_settings.py` first and
 prepares the environment if needed. Close running app instances before changing packages

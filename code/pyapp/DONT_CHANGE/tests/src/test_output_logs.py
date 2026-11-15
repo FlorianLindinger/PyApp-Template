@@ -27,6 +27,7 @@ SETTINGS = types.SimpleNamespace(
 )
 
 
+@mock.patch.dict(os.environ, {"NO_COLOR": "1"})
 class CrashLogTests(unittest.TestCase):
     def test_a_missing_cleanup_script_does_not_replace_the_crash_report(self):
         with tempfile.TemporaryDirectory() as folder, mock.patch.object(bg_watchdog, "note_ignored"), mock.patch.object(
@@ -180,6 +181,7 @@ class CrashLogTests(unittest.TestCase):
         print_path.assert_not_called()
 
 
+@mock.patch.dict(os.environ, {"NO_COLOR": "1"})
 class VariableExportTests(unittest.TestCase):
     def report(self):
         return {
@@ -275,6 +277,7 @@ class VariableExportTests(unittest.TestCase):
             open_file.assert_not_called()
 
 
+@mock.patch.dict(os.environ, {"NO_COLOR": "1"})
 class CompletionForegroundTests(unittest.TestCase):
     def complete(
         self,
@@ -355,6 +358,7 @@ class CompletionForegroundTests(unittest.TestCase):
         mocks["wait_for_enter"].assert_called_once()
 
 
+@mock.patch.dict(os.environ, {"NO_COLOR": "1"})
 class HiddenCompletionTests(unittest.TestCase):
     """After a successful run without a terminal, the completion handler runs in a hidden console."""
 
@@ -402,6 +406,7 @@ class HiddenCompletionTests(unittest.TestCase):
         self.assertIn("Unknown exit mode 99", completed.stdout)
 
 
+@mock.patch.dict(os.environ, {"NO_COLOR": "1"})
 class RawOutputTests(unittest.TestCase):
     """The raw output stays in the run folder while the app runs; only a failure's is kept by the log."""
 

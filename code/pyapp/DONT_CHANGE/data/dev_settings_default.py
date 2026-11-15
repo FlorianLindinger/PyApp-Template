@@ -117,7 +117,9 @@ keyboard_interrupt_action = "interrupt"
 # Optional non-interactive cleanup script after a detected hard interpreter crash. "" disables it.
 # Absolute, or relative to this file; runs once in a fresh managed Python with the app's working
 # folder/environment. Its stdout/stderr go to a separate .recovery.log; normal crash reporting stays.
-# This is a direct cleanup script, not a managed replacement app or automatic restart loop.
+# May point to main.py to rerun it once. Receives args_for_main_py + launch arguments + a final "crashed".
+# The recovery is noninteractive and unwrapped; its own crash is never recovered. An inherited
+# marker also prevents recovery if it invokes the launcher. Use the launcher for a normal later run.
 after_interpreter_crash_script = ""
 
 # --- Terminal host ---
@@ -143,6 +145,14 @@ start_on_windows_start = False
 windows_startup_launch_mode = "no_terminal"
 # Start with the window minimized:
 start_minimized = False
+# Maximize the managed native terminal/browser window on start; takes precedence over start_minimized.
+# This does not resize application-created GUI windows.
+start_maximized = False
+
+# While main.py runs, request protection against automatic idle sleep / display timeout.
+# Both off: Windows power settings apply. Explicit Sleep, lid actions and policy still apply.
+prevent_sleep = False
+keep_display_awake = False
 # Restore the classic console/browser terminal on the app's first print/error output (once).
 # Hidden starts stay hidden; native Windows Terminal focus is unsupported. Windows may restrict focus.
 foreground_on_first_print = False
@@ -261,6 +271,10 @@ user_settings_path = "..\\settings.py"
 # The project folder always gets all enabled shortcuts. Setup removes earlier ones that are no longer wanted.
 # Start Menu: a folder named after program_name with all enabled shortcuts:
 start_menu_shortcuts = True
+# Setup also creates matching .cmd entry points in root/batch_shortcuts (same enabled shortcuts).
+# Start batches append their command-line arguments to args_for_main_py. No-terminal batches wait
+# for startup acknowledgement; they can briefly show their calling console. Run Setup to apply.
+generate_batch_shortcuts_for_args_launch = False
 # Desktop: a list of "terminal", "no_terminal", "browser_terminal", "stop", "settings", "logs", "crash_logs", "open_code". Example: ["no_terminal"]
 desktop_shortcuts: List[str] = []
 

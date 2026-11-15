@@ -56,7 +56,7 @@ compilation:
 - Ask AI if I should change anything regarding git hooks and GitHub workflow for backend and dev or what I could add
 - Ask AI what it would simplify or remove
 - Ask AI what all I have to test and do before release 1.0.0
-- Ask AI: general improvements, robustness, speed, comments, docstrings, more fail checks and error prints, ideas for the whole thing. find problems. Feature ideas.
+- Ask AI: general improvements, robustness, speed, comments, docstrings, more fail checks and error prints, ideas for the whole thing. find problems. Feature ideas. Code style improvements. Implementation improvements. Speed improvements.
 - Ask AI what features I am not mentioning in README.
 - Ask AI if I should add or remove tests and when they run. For backend and app. Are they up-to-date?
 - Run `DONT_CHANGE/tests/run_launcher_tests.cmd` on Windows (`test_windows.py` and the batch/Stop paths

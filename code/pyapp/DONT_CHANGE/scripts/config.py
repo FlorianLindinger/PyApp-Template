@@ -57,6 +57,10 @@ SHORTCUT_KINDS = (
 # GitHub Actions an app can choose in github_actions; one data/workflows/<name>.yml each.
 APP_WORKFLOWS = ("leaks",)
 BOOLEANS = (
+    "start_maximized",
+    "prevent_sleep",
+    "keep_display_awake",
+    "generate_batch_shortcuts_for_args_launch",
     "start_on_windows_start",
     "wrap_terminal_output",
     "replace_minimize_with_minimize_to_system_tray",

@@ -72,13 +72,14 @@ def with_links(output: str) -> str:
     # A traceback's link waits until its source line and ~~~^^^ markers (indented deeper) are shown.
     pending, pending_indent = "", 0
     for line in output.splitlines():
-        indent = len(line) - len(line.lstrip())
-        if pending and (not line.strip() or indent <= pending_indent):
+        plain = _ui.strip_ansi(line)
+        indent = len(plain) - len(plain.lstrip())
+        if pending and (not plain.strip() or indent <= pending_indent):
             lines.append(pending)
             pending = ""
         lines.append(line)
-        traceback = TRACEBACK_LOCATION.match(line)
-        match = traceback or DIAGNOSTIC_LOCATION.match(line)
+        traceback = TRACEBACK_LOCATION.match(plain)
+        match = traceback or DIAGNOSTIC_LOCATION.match(plain)
         if not match:
             continue
         for base in (Path(), DONT_CHANGE_DIR, PROJECT_ROOT):
@@ -97,6 +98,7 @@ def with_links(output: str) -> str:
 
 def test_failure_reason(output: str, code: int) -> str:
     """Translate common failed contracts into repairs; retain test names for unknown failures."""
+    output = _ui.strip_ansi(output)
     mismatch = re.search(r"^AssertionError: (Settings mismatch: .+)$", output, re.MULTILINE)
     if mismatch:
         return mismatch.group(1) + " Review both settings files and commit the correction."
@@ -129,6 +131,7 @@ def test_failure_reason(output: str, code: int) -> str:
 
 def failure_reason(step: Step, code: int, output: str) -> str:
     """A short cause for the popup; keep full diagnostics in the expanded output."""
+    output = _ui.strip_ansi(output)
     if step.label == "Tests":
         return test_failure_reason(output, code)
     if step.label.startswith("Verify launcher"):

@@ -140,9 +140,15 @@ def app_windows(pids: Set[int]) -> List[int]:
 def focus_window(hwnd: int) -> bool:
     """Restore and activate a window; Windows may only flash its taskbar button."""
     user32 = ctypes.WinDLL("user32", use_last_error=True)
+    user32.IsWindow.argtypes = [wintypes.HWND]
+    user32.IsIconic.argtypes = [wintypes.HWND]
+    user32.IsWindowVisible.argtypes = [wintypes.HWND]
+    user32.ShowWindow.argtypes = [wintypes.HWND, ctypes.c_int]
+    user32.SetForegroundWindow.argtypes = [wintypes.HWND]
+    user32.FlashWindow.argtypes = [wintypes.HWND, wintypes.BOOL]
     if not hwnd or not user32.IsWindow(hwnd):
         return False
-    if user32.IsIconic(hwnd):
+    if user32.IsIconic(hwnd) or not user32.IsWindowVisible(hwnd):
         user32.ShowWindow(hwnd, SW_RESTORE)
     user32.AllowSetForegroundWindow(ASFW_ANY)
     if user32.SetForegroundWindow(hwnd):

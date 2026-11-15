@@ -111,6 +111,9 @@ PROTECTED_PROJECT_FILES = [
 PROTECTED_RUN_COMMANDS = ["setup", "icons", "icons-help", "dev"]
 # ... and to "run.bat dev" (the files in code/pyapp/dev_tools); "menu" is the dev menu itself.
 PROTECTED_DEV_TOOL_COMMANDS = [
+    "compile-app",
+    "validate-syntax",
+    "clean-compilation",
     "menu",
     "list-packages",
     "run-tests",
@@ -133,6 +136,10 @@ PROTECTED_DEV_TOOL_COMMANDS = [
 # Settings of developer_settings.py: a renamed or removed one silently stops working in existing
 # files (a new setting may be added: older files get its default from data/dev_settings_default.py).
 PROTECTED_SETTING_NAMES = [
+    "start_maximized",
+    "prevent_sleep",
+    "keep_display_awake",
+    "generate_batch_shortcuts_for_args_launch",
     "replace_minimize_with_minimize_to_system_tray",
     "sound_after_success",
     "sound_after_failure",

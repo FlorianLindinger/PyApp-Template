@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import io
+import os
 import sys
 import unittest
 from typing import List, Tuple
@@ -17,6 +18,7 @@ with mock.patch.object(sys, "path", [str(DONT_CHANGE / "pyapp_tools" / "src"), *
 PREFIX = "code/pyapp/DONT_CHANGE/"
 
 
+@mock.patch.dict(os.environ, {"NO_COLOR": "1"})
 class StagedRuffTests(unittest.TestCase):
     def test_lint_diagnostics_include_the_actual_staged_source_line(self):
         diagnostic = PREFIX + "a.py:2:8: F401 unused import"

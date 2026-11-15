@@ -33,6 +33,7 @@ KNOWN_TEMPLATE_WORKFLOWS: Dict[str, FrozenSet[str]] = {
             "1c1f136a6f4cfa4bb7537f6b1de566e8ccacad9b76f98149d824e11ebce01719",
             "73e264f0ebaf22ebc439c1556a5d97b8c9184eff3b9b5057ab8c243a988dcb91",
             "c387fc41e5076d3d22e366a8d6d50b93f90af5748beafeed9eca15d2f8e05b44",
+            "d7b6c93feb14826b61ca9ed7ec142c39486041468cdbe94fc853415424432e34",
         }
     ),
     "pyapp-template-launcher-tests.yml": frozenset(
@@ -40,6 +41,7 @@ KNOWN_TEMPLATE_WORKFLOWS: Dict[str, FrozenSet[str]] = {
             "689a41b349d0d189080ddda94e797c14157bd4003c18ef880ca4348e8397ba6c",
             "926434145c2b828934965e7c70f4da896802a097a9aaf9576f48f0c40e9281ef",
             "ec69714227283873c6088f9590f1b02bef6ad5e511da8bd4f8a9a512f9cc5730",
+            "eaa87bbe6d8bd9d189e76f98c6dab0d108112b1f6a3d8ea778f0132a0bf87b66",
         }
     ),
     "pyapp-template-weekly.yml": frozenset(

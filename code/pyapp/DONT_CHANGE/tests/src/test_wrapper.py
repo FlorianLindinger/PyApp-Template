@@ -22,6 +22,26 @@ WRAPPER = DONT_CHANGE / "runtime" / "script_wrapper.py"
 
 
 class WrapperTests(unittest.TestCase):
+    def test_public_browser_channel_and_recovery_guard_survive_private_protocol_cleanup(self):
+        with tempfile.TemporaryDirectory() as folder:
+            channel = Path(folder) / "ui.jsonl"
+            source = (
+                "import os\nfrom pathlib import Path\n"
+                "assert os.environ['CRASH_RECOVERY'] == '1'\n"
+                "assert 'PYAPP_SECRET' not in os.environ\n"
+                "Path(os.environ['BROWSER_TERMINAL_UI']).write_text('message', encoding='utf-8')\n"
+            )
+            code, output, _ = self.run_app(
+                source, browser_ui=str(channel), env={"CRASH_RECOVERY": "1", "PYAPP_SECRET": "hidden"}
+            )
+            self.assertEqual(code, 0, output)
+            self.assertEqual(channel.read_text(encoding="utf-8"), "message")
+        code, output, _ = self.run_app(
+            "import os; assert 'BROWSER_TERMINAL_UI' not in os.environ\n",
+            env={"BROWSER_TERMINAL_UI": "stale channel"},
+        )
+        self.assertEqual(code, 0, output)
+
     def test_interrupt_policy_ignores_or_confirms_ctrl_c_but_stop_always_interrupts(self):
         with mock.patch.object(sys, "path", [str(WRAPPER.parent), *sys.path]):
             wrapper = runpy.run_path(str(WRAPPER), run_name="interrupt_policy_test")

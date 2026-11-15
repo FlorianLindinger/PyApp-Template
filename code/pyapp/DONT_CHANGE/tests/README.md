@@ -31,8 +31,10 @@ The caption/opacity/topmost probe uses an off-screen, nonactivating tool window 
 It has no taskbar entry and retains immediate native style assertions. The real conhost API
 probe also asserts its configured topmost state.
 
-The tray lifecycle probe still briefly restores/maximizes its real conhost window. Suppressing
-or isolating that window changes Windows behavior and made the native checks unreliable, so
+The tray lifecycle probe still briefly restores/maximizes its real conhost window. It uses
+acknowledged caption-system commands to order console transitions, retaining every native
+lifecycle assertion. Hiding or isolating that window changes Windows behavior and made the
+native checks unreliable, so
 its real desktop behavior is retained. Its notification balloons remain intercepted. To inspect
 the normally hidden taskbar/API probe visibly, set `PYAPP_TEST_VISIBLE_WINDOWS=1` for the run
 (PowerShell: `$env:PYAPP_TEST_VISIBLE_WINDOWS = '1'`; remove it afterwards with
@@ -52,6 +54,7 @@ remain manual checks in [the release checklist](../docs/RELEASE_CHECKLIST.md).
 | `test_shortcuts.py` | shortcut file names and order, outdated shortcut targets, taskbar identity per folder, removing shortcuts |
 | `test_console_colors.py` | only hexadecimal color arguments can reach the color command; failure colors, native wrapping skips redirected output and reports denied modes; the `wt.exe` command line |
 | `test_terminal_window.py` | close-policy capabilities, dedicated WT windows, native alpha/caption/topmost/Close styles and real conhost launch/wrap-mode toggles preserving other flags |
+| `test_runtime_options.py` | power flags/release, maximize startup, hidden-window focus, crash codes/recovery arguments and recursion guard, generated batch ownership, live console prefixes, syntax/build tools and color opt-out |
 | `test_system_tray.py` | app-name/icon notification payloads and repeat counts (balloon delivery intercepted), icon-before-hide recovery, Restore/Stop, owner safety, external/duplicate restore, simulated Explorer restart, native conhost geometry/maximized restoration and quiet cleanup |
 | `test_completion_attention.py` | hidden native-window completion/focus, close/recovery/foreground outcome combinations, taskbar activity/highlight/flash, notification safety/text/delivery and defaults |
 | `test_banner.py` | the banner font renders the app name, supports German letters and Latin-1, skips missing characters; the console font it needs |

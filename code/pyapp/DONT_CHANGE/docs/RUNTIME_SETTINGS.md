@@ -52,6 +52,11 @@ Write a short, bounded repair/cleanup routine. This is not a replacement managed
 not supervised by Stop, does not recursively invoke crash recovery, and does not restore lost
 in-memory state. It can outlive the original watchdog; its log is not a completion report.
 
+Recovery scripts also receive the original configured/batch launch arguments and a final
+`"crashed"`. `after_interpreter_crash_script` may point to `main.py` for one noninteractive
+retry. Its own crash and launcher descendants marked `CRASH_RECOVERY=1` never trigger
+recovery. See [runtime options](RUNTIME_OPTIONS.md#one-recovery-attempt).
+
 ## Start when signing in to Windows
 
 Set `start_on_windows_start = True` and run Setup. `windows_startup_launch_mode` selects

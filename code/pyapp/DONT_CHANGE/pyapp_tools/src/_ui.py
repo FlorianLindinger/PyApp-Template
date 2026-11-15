@@ -7,6 +7,7 @@ launcher code it checks is broken.
 from __future__ import annotations
 
 import os
+import re
 import sys
 from pathlib import Path
 from typing import Callable, Iterable, Optional, Sequence, Tuple
@@ -17,6 +18,11 @@ WARNING = "\x1b[1;30;43m"  # black on yellow
 ERROR = "\x1b[1;37;41m"  # white on red
 DIM = "\x1b[90m"  # grey
 RESET = "\x1b[0m"
+
+
+def strip_ansi(text: str) -> str:
+    """Remove terminal CSI sequences when parsing colored diagnostics; retain original display text."""
+    return re.sub(r"\x1b\[[0-?]*[ -/]*[@-~]", "", text)
 
 
 def use_utf8(stream: object) -> None:
@@ -86,8 +92,10 @@ def _prepare_console() -> None:
 
 
 def styled(text: object, style: str) -> str:
-    """Color only for an interactive console; redirected output stays plain."""
-    if not _interactive():
+    """Color terminals and opted-in CI logs; respect NO_COLOR and FORCE_COLOR=0."""
+    forced = os.environ.get("FORCE_COLOR", "")
+    color = _interactive() or forced not in ("", "0") or os.environ.get("GITHUB_ACTIONS") == "true"
+    if "NO_COLOR" in os.environ or forced == "0" or not color:
         return str(text)
     _prepare_console()
     return f"{style}{text}{RESET}"

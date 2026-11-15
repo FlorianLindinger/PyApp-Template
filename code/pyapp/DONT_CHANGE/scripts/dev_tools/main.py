@@ -25,6 +25,7 @@ from pyapp.DONT_CHANGE.scripts.console_tools import (
     wait_for_enter,
 )
 from pyapp.DONT_CHANGE.scripts.dev_tools.app_tests import cmd_run_tests
+from pyapp.DONT_CHANGE.scripts.dev_tools.compilation import cmd_clean_compilation, cmd_compile_app, cmd_validate_syntax
 from pyapp.DONT_CHANGE.scripts.dev_tools.housekeeping import cmd_clean, cmd_remove_shortcuts, cmd_status, cmd_test
 from pyapp.DONT_CHANGE.scripts.dev_tools.package_list import cmd_list_packages
 from pyapp.DONT_CHANGE.scripts.dev_tools.packages import (
@@ -46,6 +47,9 @@ from pyapp.DONT_CHANGE.scripts.entrypoint import expected_problem
 NO_PAUSE = {"menu", "terminal"}
 
 COMMANDS = {
+    "compile-app": cmd_compile_app,
+    "validate-syntax": cmd_validate_syntax,
+    "clean-compilation": cmd_clean_compilation,
     "list-packages": cmd_list_packages,
     "add": cmd_add,
     "remove": cmd_remove,
@@ -85,6 +89,7 @@ MENU_GROUPS = (
         ),
     ),
     ("Python", ("change-python", "update-python")),
+    ("Compilation", ("validate-syntax", "compile-app", "clean-compilation")),
     ("Project", ("run-tests", "status", "clean", "remove-shortcuts", "make-self-contained", "test")),
 )
 # For the commands that do not start with a heading of their own.

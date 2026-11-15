@@ -34,6 +34,7 @@ args = parser.parse_args()
 sys.path.insert(0, str(TESTS))
 from groups import FOLDERS, GROUPS, all_test_files, group_files
 from project_location import PROJECT_ROOT
+from pyapp.DONT_CHANGE.pyapp_tools.src import _ui
 
 
 def selected_files() -> List[Path]:
@@ -80,11 +81,12 @@ def run_in_parallel(files: List[Path], jobs: int) -> bool:
         tests += int(counted.group(1)) if counted else 0
         if code:
             failed.append(path)
-            print(f"\n=== {path.name} ===\n{output.rstrip()}")
+            print(_ui.styled(f"\n=== {path.name} ===", _ui.ERROR) + f"\n{output.rstrip()}")
     # The same summary as unittest's, which other tools (test_all_pythons) read.
     print("-" * 70)
     print(f"Ran {tests} tests in {time.monotonic() - start:.3f}s\n")
-    print(f"FAILED ({len(failed)} of {len(files)} files: {', '.join(p.name for p in failed)})" if failed else "OK")
+    summary = f"FAILED ({len(failed)} of {len(files)} files: {', '.join(p.name for p in failed)})" if failed else "OK"
+    print(_ui.styled(summary, _ui.ERROR if failed else _ui.GOOD))
     return not failed
 
 
@@ -93,7 +95,9 @@ if args.list:
         print(f"{group:<10}{', '.join(names)}")
     raise SystemExit(0)
 files = selected_files()
-print(f"Testing the launcher of {PROJECT_ROOT} with Python {sys.version.split()[0]}", flush=True)
+print(
+    _ui.styled(f"Testing the launcher of {PROJECT_ROOT} with Python {sys.version.split()[0]}", _ui.HEADING), flush=True
+)
 if args.jobs != 1 and len(files) > 1:
     raise SystemExit(not run_in_parallel(files, args.jobs or os.cpu_count() or 1))
 # One discovery per file: a selection may mix files of both folders. A new loader each time:

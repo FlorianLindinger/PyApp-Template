@@ -181,6 +181,11 @@ def main() -> None:
     removed = remove_shortcuts(previous, keep=created)
     start_link = sync_start_link(s, app_id)
     write_created_shortcuts(created + leftover_shortcuts(previous, removed + created), targets_by_kind, start_link)
+    from pyapp.DONT_CHANGE.scripts.batch_shortcuts import sync
+
+    batches = sync(s, app_id, Path(SHORTCUT_OUTPUT_DIR))
+    if batches:
+        print_success(f"Created {len(batches)} batch entry points in batch_shortcuts.")
     for path in removed:
         print(f"  {styled('-', ANSI_DIM)} {styled('removed ' + _short(path), ANSI_DIM)}")
     if s.browser_terminal_shortcut_name:

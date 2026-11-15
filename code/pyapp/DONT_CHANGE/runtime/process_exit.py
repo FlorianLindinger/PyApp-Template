@@ -399,7 +399,7 @@ def complete(
         set_terminal_icon(OUTCOMES[outcome]["icon"])
     if message and in_browser_terminal():
         # A desktop notification in the browser terminal, if switched on there.
-        browser_terminal_ui(notify=message, failed=outcome != "success")
+        browser_terminal_ui(notify=message, failed=outcome != "success", status=outcome)
     if message:
         print()
         if outcome != "success":

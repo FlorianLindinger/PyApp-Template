@@ -85,6 +85,16 @@
   /* Lines just printed light up and fade, so a repeated line can be told from the same old one. */
   .fresh { animation: fresh 1.4s ease-out forwards; }
   @keyframes fresh { from { background: #ffd75e55; } to { background: transparent; } }
+  #tools button[aria-pressed="true"] { background: #fff2; color: #fff; }
+  #run-status { display: inline-flex; gap: 7px; align-items: center; font: 12px "Segoe UI", sans-serif; padding: 0 8px; }
+  #run-status::before { content: ""; width: 10px; height: 10px; border: 2px solid currentColor; border-radius: 50%; }
+  #run-status.running { color: #7cb7ff; }
+  #run-status.running::before { border-right-color: transparent; animation: busy-spin 1s linear infinite; }
+  #run-status.success { color: #3fb950; }
+  #run-status.failure { color: #f85149; }
+  #run-status.keyboard_interrupt { color: #e3b341; }
+  @keyframes busy-spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { #run-status.running::before { animation: none; } }
 </style>
 </head>
 <body>
@@ -92,9 +102,13 @@
 <div id="notice" role="status" hidden></div>
 
 <div id="tools">
+  <span id="run-status" class="running" role="status" aria-live="polite">Running</span>
   <button id="search-button" type="button" title="Search (Ctrl+F)" aria-label="Search">&#128269;&#xFE0E;</button>
   <button id="save-button" type="button" title="Save the output as a text file (Ctrl+S)" aria-label="Save the output">&#10515;</button>
   <button id="clear-button" type="button" title="Clear the output" aria-label="Clear the output">&#128465;&#xFE0E;</button>
+  <button id="wrap-button" type="button" title="Toggle line wrapping" aria-label="Wrap lines" aria-pressed="true">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18 M3 10h14a4 4 0 0 1 0 8h-5 M15 15l-3 3 3 3 M3 15h4"/></svg>
+  </button>
   <button id="open-code" class="open" type="button" data-what="code" data-label="Open the code" hidden>&lt;/&gt;</button>
   <button id="open-settings" class="open" type="button" data-what="settings" data-label="Open the settings" hidden>&#128295;&#xFE0E;</button>
   <button id="open-logs" class="open" type="button" data-what="logs" data-label="Open the logs" hidden>
@@ -124,6 +138,8 @@
   <label><input id="opt-highlight" type="checkbox" checked> Light up new output for a moment</label>
   <label><input id="opt-follow" type="checkbox" checked> Follow new output <span class="dim">(pauses while scrolled up)</span></label>
   <label><input id="opt-front" type="checkbox"> Bring the browser to the front when the program asks for input</label>
+  <label id="print-prefix-control"><input id="opt-print-prefix" type="checkbox" checked> Show print prefixes / timestamps on future output</label>
+  <label id="input-prefix-control"><input id="opt-input-prefix" type="checkbox" checked> Show input prefixes / timestamps on future prompts</label>
   </section>
   <section aria-labelledby="notify-heading">
   <h2 id="notify-heading">Notifications</h2>

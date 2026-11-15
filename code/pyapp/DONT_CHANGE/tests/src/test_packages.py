@@ -1,6 +1,7 @@
 """Generated pyproject.toml: round trip of the package list and copying `uv add` changes back."""
 
 import contextlib
+import os
 import sys
 import tempfile
 import unittest
@@ -18,6 +19,7 @@ from pyapp.DONT_CHANGE.scripts.env import pyproject, python_request, venv
 from pyapp.DONT_CHANGE.scripts.errors import SettingsError, SetupError
 
 
+@mock.patch.dict(os.environ, {"NO_COLOR": "1"})
 class PyprojectTests(unittest.TestCase):
     def test_requirements_with_quotes_survive_restarts(self):
         packages = ['pywin32; sys_platform == "win32"', "pkg[extra] ; python_version < '3.12'", "requests>=2"]
@@ -120,6 +122,7 @@ class PyprojectTests(unittest.TestCase):
             self.assertFalse(pyproject.version_satisfies_requires((3, 13, 0), "==3.12.*"))
 
 
+@mock.patch.dict(os.environ, {"NO_COLOR": "1"})
 class TypedPackagesTests(unittest.TestCase):
     def split(self, text: str):
         from pyapp.DONT_CHANGE.scripts.dev_tools.common import split_package_entries
@@ -153,6 +156,7 @@ class TypedPackagesTests(unittest.TestCase):
         self.assertEqual(self.split("  , "), [])
 
 
+@mock.patch.dict(os.environ, {"NO_COLOR": "1"})
 class RequirementsFileTests(unittest.TestCase):
     """requirements_path: packages from a file, in addition to "packages"; the launcher only reads it."""
 
@@ -211,6 +215,7 @@ class RequirementsFileTests(unittest.TestCase):
         prepare.assert_not_called()
 
 
+@mock.patch.dict(os.environ, {"NO_COLOR": "1"})
 class RunningInstanceTests(unittest.TestCase):
     """Nothing changes the environment while the app runs (its files are in use)."""
 
@@ -271,6 +276,7 @@ class RunningInstanceTests(unittest.TestCase):
             venv.ensure_environment()
 
 
+@mock.patch.dict(os.environ, {"NO_COLOR": "1"})
 class PythonRequestTests(unittest.TestCase):
     """Loose python_version requests record the Python they resolved to (audit F18)."""
 
@@ -356,6 +362,7 @@ class PythonRequestTests(unittest.TestCase):
         self.assertEqual(written, ["3.14"])
 
 
+@mock.patch.dict(os.environ, {"NO_COLOR": "1"})
 class FingerprintTests(unittest.TestCase):
     def test_fingerprint_is_stable_and_sees_lock_changes(self):
         with support.temporary_settings() as (_, load):
@@ -409,6 +416,7 @@ rich==15.0.0
 """
 
 
+@mock.patch.dict(os.environ, {"NO_COLOR": "1"})
 class PackageListTests(unittest.TestCase):
     """dev tool list-packages: main packages and dependencies from uv's own data."""
 

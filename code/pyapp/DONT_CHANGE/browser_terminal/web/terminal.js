@@ -6,6 +6,15 @@
 (() => {
   "use strict";
   const config = JSON.parse(document.getElementById("config").textContent);
+  const runStatus = document.getElementById("run-status");
+  let applicationStatus = "running";
+  const updateStatus = (status) => {
+    const labels = { running: "Running", success: "Finished", failure: "Failed", keyboard_interrupt: "Interrupted" };
+    if (!labels[status]) return;
+    applicationStatus = status;
+    runStatus.className = status;
+    runStatus.textContent = labels[status];
+  };
   const notice = document.getElementById("notice");
   const favicon = document.getElementById("favicon");
   const DEFAULT_FONT_SIZE = config.font.size;
@@ -235,6 +244,11 @@
   const optFollow = document.getElementById("opt-follow");
   const optFront = document.getElementById("opt-front");
   const optWrap = document.getElementById("opt-wrap");
+  const optPrintPrefix = document.getElementById("opt-print-prefix");
+  const optInputPrefix = document.getElementById("opt-input-prefix");
+  for (const id of ["print-prefix-control", "input-prefix-control"]) {
+    document.getElementById(id).hidden = !config.prefix_controls;
+  }
   // settings.py's defaults, until the user changes a switch in this browser.
   optHighlight.checked = options.highlight;
   optFollow.checked = options.follow;
@@ -246,25 +260,38 @@
     if (typeof saved.follow === "boolean") optFollow.checked = saved.follow;
     if (typeof saved.front === "boolean") optFront.checked = saved.front;
     if (typeof saved.wrap === "boolean") optWrap.checked = saved.wrap;
+    if (typeof saved.printPrefix === "boolean") optPrintPrefix.checked = saved.printPrefix;
+    if (typeof saved.inputPrefix === "boolean") optInputPrefix.checked = saved.inputPrefix;
   } catch (error) {
     // Defaults.
   }
   // The host brings the browser window to the front (a page cannot); it needs to know.
-  const sendPreferences = () => send({ t: "p", frontOnInput: optFront.checked });
-  for (const option of [optHighlight, optFollow, optFront, optWrap]) {
+  const sendPreferences = () => send({ t: "p", frontOnInput: optFront.checked,
+    printPrefix: optPrintPrefix.checked, inputPrefix: optInputPrefix.checked });
+  for (const option of [optHighlight, optFollow, optFront, optWrap, optPrintPrefix, optInputPrefix]) {
     option.addEventListener("change", () => {
       try {
         localStorage.setItem(
           VIEW,
-          JSON.stringify({ highlight: optHighlight.checked, follow: optFollow.checked, front: optFront.checked, wrap: optWrap.checked }),
+          JSON.stringify({ highlight: optHighlight.checked, follow: optFollow.checked, front: optFront.checked, wrap: optWrap.checked,
+            printPrefix: optPrintPrefix.checked, inputPrefix: optInputPrefix.checked }),
         );
       } catch (error) {
         // Not remembered, but on for this page.
       }
       sendPreferences();
-      if (option === optWrap) resizeTerminal();
+      if (option === optWrap) {
+        resizeTerminal();
+        document.getElementById("wrap-button").setAttribute("aria-pressed", String(optWrap.checked));
+      }
     });
   }
+
+  // The toolbar button and gear checkbox share the same saved preference and resize path.
+  const wrapButton = document.getElementById("wrap-button");
+  const showWrapState = () => wrapButton.setAttribute("aria-pressed", String(optWrap.checked));
+  showWrapState();
+  wrapButton.addEventListener("click", () => optWrap.click());
 
   // ------------------------------------------------------------ touchpad scrolling
 
@@ -385,6 +412,7 @@
         term.focus();
         break;
       case "hello":
+        if (message.status) updateStatus(message.status);
         if (message.title) showTitle(message.title);
         if (message.info) config.info = message.info;
         showInfo({ started: message.started || 0 });
@@ -398,6 +426,9 @@
       case "ready":
         windowFound = true;
         applyTitle();
+        break;
+      case "status":
+        updateStatus(message.status);
         break;
       case "icon":
         favicon.href = message.url || "icon?v=" + message.v;
@@ -432,6 +463,7 @@
         break;
       case "exit":
         ended = true;
+        if (applicationStatus === "running") updateStatus(message.code === 0 ? "success" : "failure");
         showInfo({ ended: message.at, code: message.code });
         endMark = message.code === 0 ? "\u2713 " : "\u2717 ";
         applyTitle();
@@ -468,7 +500,13 @@
     };
     socket.onclose = () => {
       socket = null;
-      if (!ended) showNotice("The connection to the program was lost.");
+      if (!ended) {
+        showNotice("The connection to the program was lost.");
+        if (applicationStatus === "running") {
+          runStatus.className = "keyboard_interrupt";
+          runStatus.textContent = "Disconnected";
+        }
+      }
     };
   };
 
@@ -731,6 +769,15 @@
     button.title = `${button.dataset.label} (${path})`;
     button.setAttribute("aria-label", button.dataset.label);
     button.addEventListener("click", () => send({ t: "open", what: button.dataset.what }));
+  }
+  // The standalone package controls visibility independently of the app's shortcut settings.
+  const toolbarButtons = { search: "search-button", save: "save-button", clear: "clear-button", wrap: "wrap-button",
+    code: "open-code", settings: "open-settings", logs: "open-logs", crash_logs: "open-crash-logs",
+    info: "info-button", view: "view-button", bookmark: "bookmark" };
+  if (Array.isArray(config.buttons)) {
+    for (const [name, id] of Object.entries(toolbarButtons)) {
+      if (!config.buttons.includes(name)) document.getElementById(id).hidden = true;
+    }
   }
 
   // ------------------------------------------------------------ file paths

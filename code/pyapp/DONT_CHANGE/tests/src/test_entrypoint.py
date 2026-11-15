@@ -21,6 +21,7 @@ from pyapp.DONT_CHANGE.scripts import entrypoint
 from pyapp.DONT_CHANGE.scripts.errors import SetupError
 
 
+@mock.patch.dict(os.environ, {"NO_COLOR": "1"})
 class RunFileTests(unittest.TestCase):
     def tool(self, source: str):
         directory = tempfile.TemporaryDirectory()
@@ -64,6 +65,7 @@ class RunFileTests(unittest.TestCase):
         self.assertIsNone(entrypoint.expected_problem(RuntimeError("bug")))
 
 
+@mock.patch.dict(os.environ, {"NO_COLOR": "1"})
 class RunnerProcessTests(unittest.TestCase):
     def test_runner_as_bootstrap_runs_it(self):
         with tempfile.TemporaryDirectory() as folder:

@@ -100,6 +100,7 @@ def request(
     info: Optional[Dict[str, str]] = None,
     foreground: bool = False,
     title: Optional[str] = None,
+    status: Optional[str] = None,
 ) -> None:
     """Request page appearance changes, notifications, input attention, or run-info updates.
 
@@ -110,8 +111,11 @@ def request(
     info: update or append labeled text fields in the run-info panel.
     foreground: explicitly restore/focus the browser window and terminal tab.
     title: explicit page title, independent of pseudoconsole title sequences.
+    status: running, success, failure, or keyboard_interrupt for the activity indicator.
     """
     fields: Dict[str, object] = {}
+    if status is not None:
+        fields["status"] = status
     if title is not None:
         fields["title"] = title
     if icon is not None:

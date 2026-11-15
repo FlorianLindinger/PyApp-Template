@@ -110,7 +110,7 @@ test("completion keeps the explicit outcome title and embedded icon when closing
   const favicon = {};
   let closes = 0;
   const context = vm.createContext({
-    favicon, showTitle: (value) => titles.push(value), showInfo() {}, applyTitle() {},
+    favicon, applicationStatus: "running", showTitle: (value) => titles.push(value), showInfo() {}, applyTitle() {}, updateStatus() {},
     notifyEnd: { checked: false }, window: { close: () => closes++ },
     setTimeout: (callback) => callback(), showNotice() {}, endText: () => "Finished",
   });
@@ -303,7 +303,7 @@ test('live wrap switch restores a boolean override, saves changes and resizes im
   let resized = 0;
   const context = vm.createContext({
     config: { wrap_output: true }, options: { highlight: true, follow: true, frontOnInput: false },
-    document: { getElementById: (id) => controls[id] ||= { addEventListener: (_name, handler) => { controls[id].change = handler; } } },
+    document: { getElementById: (id) => controls[id] ||= { setAttribute() {}, addEventListener: (_name, handler) => { controls[id].change = handler; } } },
     localStorage: { getItem: () => storage.value, setItem: (_key, value) => { storage.value = value; } },
     send() {}, resizeTerminal: () => resized++,
   });
@@ -315,4 +315,55 @@ test('live wrap switch restores a boolean override, saves changes and resizes im
   controls['opt-wrap'].change();
   assert.equal(resized, 1);
   assert.equal(JSON.parse(storage.value).wrap, true);
+  controls['opt-wrap'].click = () => {
+    controls['opt-wrap'].checked = !controls['opt-wrap'].checked;
+    controls['opt-wrap'].change();
+  };
+  controls['wrap-button'].change();
+  assert.equal(JSON.parse(storage.value).wrap, false);
+  assert.equal(resized, 2);
+});
+
+test('application failure and interruption indicators survive a successful watchdog exit', () => {
+  const indicator = {};
+  const context = vm.createContext({
+    document: { getElementById: () => indicator }, config: {}, favicon: {},
+    showTitle() {}, showInfo() {}, applyTitle() {}, setColors() {}, notifyEnd: { checked: false },
+    window: { close() {} }, setTimeout: (callback) => callback(), showNotice() {}, endText: () => "Finished",
+  });
+  vm.runInContext(source.slice(source.indexOf('const runStatus ='), source.indexOf('const notice =')), context);
+  vm.runInContext(source.slice(source.indexOf('const handleControl ='), source.indexOf('let history ='))
+    + '\nglobalThis.handleControl = handleControl;', context);
+  for (const [status, label] of [['failure', 'Failed'], ['keyboard_interrupt', 'Interrupted'], ['success', 'Finished']]) {
+    context.handleControl({ t: 'status', status });
+    context.handleControl({ t: 'exit', code: 0 });
+    assert.equal(indicator.textContent, label);
+    assert.equal(indicator.className, status);
+  }
+  context.handleControl({ t: 'hello', status: 'running' });
+  assert.equal(indicator.textContent, 'Running');
+});
+
+test('print and input prefix switches send and remember independent live preferences', () => {
+  const controls = {};
+  const sent = [];
+  let saved;
+  const context = vm.createContext({
+    config: { prefix_controls: true }, options: {},
+    document: { getElementById: (id) => controls[id] ||= { checked: true, setAttribute() {},
+      addEventListener: (_name, callback) => { controls[id].change = callback; } } },
+    localStorage: { getItem: () => JSON.stringify({ printPrefix: false, inputPrefix: true }),
+      setItem: (_key, value) => { saved = JSON.parse(value); } },
+    send: (value) => sent.push(value), resizeTerminal() {},
+  });
+  const start = source.indexOf('const VIEW =');
+  const end = source.indexOf('// ------------------------------------------------------------ touchpad scrolling', start);
+  vm.runInContext(source.slice(start, end), context);
+  assert.equal(controls['opt-print-prefix'].checked, false);
+  assert.equal(controls['opt-input-prefix'].checked, true);
+  controls['opt-input-prefix'].checked = false;
+  controls['opt-input-prefix'].change();
+  assert.equal(saved.inputPrefix, false);
+  assert.equal(sent.at(-1).printPrefix, false);
+  assert.equal(sent.at(-1).inputPrefix, false);
 });

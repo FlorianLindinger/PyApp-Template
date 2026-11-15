@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import io
+import os
 import sys
 import unittest
 from unittest import mock
@@ -21,6 +22,7 @@ def kinds(line: str, path: str = "app.py"):
     return [finding.kind for finding in tool.line_findings(line, path, path + ":1")]
 
 
+@mock.patch.dict(os.environ, {"NO_COLOR": "1"})
 class LeakPatternTests(unittest.TestCase):
     def test_token_formats_are_found(self):
         self.assertEqual(kinds(f'key = "{AWS_KEY}"'), ["AWS access key"])
@@ -93,6 +95,7 @@ class LeakPatternTests(unittest.TestCase):
         self.assertEqual(tool.file_name_findings("main.py", "x"), [])
 
 
+@mock.patch.dict(os.environ, {"NO_COLOR": "1"})
 class ReportTests(unittest.TestCase):
     def test_source_lines_are_printed_with_recognized_secrets_masked(self):
         line = f'    api_key = "{GITHUB_TOKEN}"; backup = "{AWS_KEY}"'
@@ -149,6 +152,7 @@ class ReportTests(unittest.TestCase):
         )
 
 
+@mock.patch.dict(os.environ, {"NO_COLOR": "1"})
 class PushTests(unittest.TestCase):
     LOCAL = "a" * 40
     REMOTE = "b" * 40
@@ -192,6 +196,7 @@ class PushTests(unittest.TestCase):
             self.assertEqual(tool.check_push("input"), 1)
 
 
+@mock.patch.dict(os.environ, {"NO_COLOR": "1"})
 class CommitTests(unittest.TestCase):
     """git_hooks/pre-commit: the staged changes, before they are in any commit."""
 
@@ -256,6 +261,7 @@ class CommitTests(unittest.TestCase):
         self.assertEqual(self.check(""), 0)
 
 
+@mock.patch.dict(os.environ, {"NO_COLOR": "1"})
 class HistoryTests(unittest.TestCase):
     LOG = f"""commit abc1234
 

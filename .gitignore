@@ -56,3 +56,6 @@ nuitka-crash-report.xml
 /logs/*
 # contents of "crash logs" folder in this folder:
 /crash logs/*
+
+# Optional Setup-generated command-line entry points.
+/batch_shortcuts/

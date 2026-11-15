@@ -13,6 +13,9 @@ For release validation, use [RELEASE_CHECKLIST.md](docs/RELEASE_CHECKLIST.md).
 The [window lifecycle rules](docs/WINDOW_LIFECYCLE.md) define tray, foreground and completion transitions.
 See [runtime settings](docs/RUNTIME_SETTINGS.md) for working folders, Ctrl+C policies,
 interpreter-crash cleanup, Windows sign-in startup and logging/performance notes.
+See [runtime options and host support](docs/RUNTIME_OPTIONS.md) for maximize/power options,
+bounded recovery arguments, batch entry points, browser controls and app/backend communication;
+[app compilation](../dev_tools/COMPILATION.md) covers Nuitka builds and syntax validation.
 
 - [Overview](#overview)
 - [Design rules](#design-rules)
@@ -443,11 +446,14 @@ ASCII art (`scripts/banner.py`). The batch/Python bootstrap and the
 | `windows_notifications.py` | Silent Windows toasts through a fixed PowerShell WinRT script, escaped plain-text XML, per-outcome switches/templates and blocked-notification diagnostics. |
 | `template_workflows.py` | Removes the template's own `.github/workflows/pyapp-template-*.yml` from an app, only when they are unchanged and alone. |
 | `shortcuts.py` | Creates `.lnk` files (via COM), their targets and taskbar identity, the record of created shortcuts, removal of stale ones. |
+| `batch_shortcuts.py` | Optional matching `.cmd` entry points with app arguments; preserves unrelated files. |
+| `power.py` | Per-thread system/display idle-timer requests, released at app completion. |
 | `com_tools.py` | Minimal COM helpers with `ctypes` (GUIDs, property store, AppUserModelID). |
 | `file_tools.py` | Safe folder removal (refuses paths outside the expected parent, junction-aware), path helpers, file-name sanitizing. |
 | `image_tools.py` | PNG checks and ICO generation through Windows' own WPF (no Pillow). |
 | `import_finder.py` | Offline import finder: scans the code folder with `ast`, drops the standard library and the app's own modules, maps imports to PyPI names (installed metadata, then `data/import_to_package.txt`, else a guess); imports guarded by `try/except ImportError` are optional. |
 | `dev_tools/main.py` | Entry point of all dev tools: the command table, the menu, `NO_PAUSE`. |
+| `dev_tools/compilation.py` | Managed-Python app syntax validation, explicit Nuitka build variants, owned-output cleanup. |
 | `dev_tools/common.py` | Shared helpers of the dev tools (`confirm`, `prepare`, requirement names). |
 | `dev_tools/packages.py` | add, remove, upgrade, sync, find imports, package terminal, export requirements. |
 | `dev_tools/py_vers.py` | change_python, update_python. |

@@ -216,6 +216,34 @@ class StandaloneTest(unittest.TestCase):
 
 @unittest.skipUnless(os.name == "nt", "Windows only")
 class PageButtonsTest(unittest.TestCase):
+    def test_live_prefix_preferences_are_written_only_for_managed_wrappers(self):
+        with tempfile.TemporaryDirectory() as folder:
+            request = Path(folder) / "ui.jsonl"
+            session = self.session(ui_file=str(request), prefix_controls=True)
+            session.handle_message(1, json.dumps({"t": "p", "printPrefix": False, "inputPrefix": True}).encode())
+            path = request.with_suffix(".preferences.json")
+            self.assertEqual(json.loads(path.read_text(encoding="utf-8")), {"printPrefix": False, "inputPrefix": True})
+            path.unlink()
+            session.config["prefix_controls"] = False
+            session.handle_message(1, json.dumps({"t": "p", "printPrefix": True}).encode())
+            self.assertFalse(path.exists())
+
+    def test_application_status_survives_a_reconnect(self):
+        session = self.session()
+        with mock.patch.object(session, "broadcast") as broadcast:
+            session._apply_ui_request({"status": "failure"})
+            broadcast.assert_called_once_with({"t": "status", "status": "failure"})
+        session.ever_connected.set()
+        page = mock.Mock()
+        session.connect(page)
+        self.assertEqual(page.send_json.call_args_list[0].args[0]["status"], "failure")
+
+    def test_standalone_toolbar_can_be_selected_and_validates_names(self):
+        session = self.session(buttons=["info", "view"])
+        self.assertEqual(session.config["buttons"], ["info", "view"])
+        with self.assertRaisesRegex(ValueError, "buttons"):
+            self.session(buttons=["unsupported"])
+
     """The page's clear and open buttons, handled by the host."""
 
     # typing.override requires Python 3.12; keep this override dependency-free on 3.8.

@@ -596,6 +596,11 @@ def exit_code_looks_like_interpreter_crash(exit_code: object) -> bool:
         0xC0000409,  # stack buffer overrun
         0xC0000374,  # heap corruption
         0xC0000094,  # integer division by zero
+        0xC000008E,  # floating-point division by zero
+        0xC0000090,  # invalid floating-point operation
+        0xC0000091,  # floating-point overflow
+        0xC0000095,  # integer overflow
+        0xC0000006,  # in-page error (e.g. failed DLL paging)
         0xC0000135,  # DLL not found
         0xC0000142,  # DLL failed to initialize
         0xE06D7363,  # unhandled C++ exception

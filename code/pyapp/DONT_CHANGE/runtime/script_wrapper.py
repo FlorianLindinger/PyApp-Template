@@ -10,6 +10,7 @@ from __future__ import annotations
 import codecs
 import contextlib
 import io
+import json
 import os
 import re
 import runpy
@@ -101,6 +102,28 @@ class PipeSplitter:
         self._at_line_start = True
         self._lock = threading.RLock()
         self.on_output: Optional[Callable[[], None]] = None
+        self.browser_preferences: Optional[Path] = None
+        self._preference_stamp = -1
+        self._print_prefix = True
+        self._input_prefix = True
+
+    def _console_prepend(self, fmt: Optional[str], *, for_input: bool = False) -> str:
+        """Refresh browser preferences only when changed; preserve configured log prefixes."""
+        if self.browser_preferences is not None:
+            try:
+                stamp = self.browser_preferences.stat().st_mtime_ns
+                if stamp != self._preference_stamp:
+                    values = json.loads(self.browser_preferences.read_text(encoding="utf-8"))
+                    if isinstance(values, dict):
+                        if isinstance(values.get("printPrefix"), bool):
+                            self._print_prefix = values["printPrefix"]
+                        if isinstance(values.get("inputPrefix"), bool):
+                            self._input_prefix = values["inputPrefix"]
+                    self._preference_stamp = stamp
+            except (OSError, ValueError):
+                pass  # A preference never interrupts application output.
+        enabled = self._input_prefix if for_input else self._print_prefix
+        return _format_prepend(fmt) if enabled else ""
 
     def _write_console(self, text: str) -> None:
         """A hidden/pythonw launch can have no original console stream."""
@@ -123,7 +146,7 @@ class PipeSplitter:
         with self._lock:
             for part in data.splitlines(True) or [data]:
                 if self._at_line_start:
-                    prefix = _format_prepend(self.print_timestamp_format)
+                    prefix = self._console_prepend(self.print_timestamp_format)
                     if prefix:
                         self._write_console(prefix)
                     log_prefix = _format_prepend(self.log_timestamp_format)
@@ -149,7 +172,7 @@ class PipeSplitter:
             self.on_output()
         _take_native_output()
         with self._lock:
-            self._write_console(_format_prepend(self.input_timestamp_format) + prompt)
+            self._write_console(self._console_prepend(self.input_timestamp_format, for_input=True) + prompt)
             if self.log_stream is not None:
                 self.log_stream.write(_format_prepend(self.log_input_timestamp_format) + _ANSI_ESCAPE.sub("", prompt))
             self._at_line_start = prompt.endswith("\n")
@@ -651,6 +674,16 @@ def main() -> None:
         except Exception as error:
             print(f"Warning: could not set the taskbar identity of this window: {error}")
     browser_ui = config.get("browser_ui") or ""
+    # The public browser_terminal.ui API is usable by main.py; private PYAPP_* protocol
+    # variables stay hidden. Clear an inherited channel when this is not a browser run.
+    if browser_ui:
+        os.environ["BROWSER_TERMINAL_UI"] = browser_ui
+    else:
+        os.environ.pop("BROWSER_TERMINAL_UI", None)
+    if browser_ui:
+        for stream in (sys.stdout, sys.stderr):
+            if isinstance(stream, PipeSplitter):
+                stream.browser_preferences = Path(browser_ui).with_suffix(".preferences.json")
     if input_prepend or log_input_prepend or browser_ui or hasattr(sys.stdout, "complete_input_line"):
         install_input_prefix(input_prepend, browser_ui)
 

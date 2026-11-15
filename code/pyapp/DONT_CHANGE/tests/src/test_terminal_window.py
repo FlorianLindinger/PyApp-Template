@@ -188,7 +188,9 @@ class NativeWindow(unittest.TestCase):
             self.assertEqual(actual_alpha.value, max(1, round(alpha * 255)))
             self.assertEqual(flags.value, window.LWA_ALPHA)
         window.apply_window_settings(hwnd, settings(allow_minimize=False, allow_maximize=False), classic=True)
+        window.enable_close(hwnd)
         menu = user.GetSystemMenu(hwnd, False)
+        self.assertFalse(user.GetMenuState(menu, window.SC_CLOSE, 0) & window.MF_GRAYED)
         for command in (window.SC_MINIMIZE, window.SC_MAXIMIZE):
             self.assertTrue(user.GetMenuState(menu, command, 0) & window.MF_GRAYED)
 

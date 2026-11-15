@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import io
+import os
 import re
 import shutil
 import subprocess
@@ -25,7 +26,19 @@ with mock.patch.object(sys, "path", [str(DONT_CHANGE / "pyapp_tools" / "src"), *
 VERIFY = next(step for step in tool.STEPS if step.label.startswith("Verify launcher"))
 
 
+@mock.patch.dict(os.environ, {"NO_COLOR": "1"})
 class CheckAllTests(unittest.TestCase):
+    def test_colored_failures_keep_the_same_summary_and_source_links(self):
+        text = "\x1b[31mFAIL\x1b[0m: test_example (example.Tests.test_example)\n"
+        self.assertEqual(tool.test_failure_reason(text, 1), tool.test_failure_reason(tool._ui.strip_ansi(text), 1))
+        with tempfile.TemporaryDirectory() as folder:
+            source = Path(folder) / "source.py"
+            source.write_text("raise ValueError()\n", encoding="utf-8")
+            traceback = f'  File \x1b[35m"{source}"\x1b[0m, line \x1b[35m1\x1b[0m, in example\n'
+            linked = tool.with_links(traceback)
+            self.assertIn(source.resolve().as_uri(), linked)
+            self.assertIn("\x1b[35m", linked)
+
     def test_settings_mismatch_is_explained_on_the_first_line(self):
         step = next(step for step in tool.STEPS if step.label == "Tests")
         reason = (
@@ -323,6 +336,7 @@ class CheckAllTests(unittest.TestCase):
 
 
 @unittest.skipIf(shutil.which("git") is None, "needs Git")
+@mock.patch.dict(os.environ, {"NO_COLOR": "1"})
 class ChangelogTests(unittest.TestCase):
     """pyapp_tools/check_changelog: a push to main that changes the launcher must touch its CHANGELOG.md."""
 

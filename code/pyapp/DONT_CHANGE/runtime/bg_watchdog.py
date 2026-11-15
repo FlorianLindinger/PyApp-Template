@@ -83,6 +83,8 @@ def app_environment(
         if key.startswith("PYAPP_"):
             env.pop(key)
     env.update(settings.environment_for_main_py)
+    if os.environ.get("CRASH_RECOVERY") == "1":
+        env["CRASH_RECOVERY"] = "1"
     script_directory = not settings.start_in_shortcut_position
     if getattr(settings, "working_directory", ""):
         main_script = main_script_path(settings)
@@ -233,6 +235,7 @@ def launch_crash_cleanup(
     cwd: str,
     log_path: str,
     run_dir: Path,
+    extra_args: Optional[List[str]] = None,
 ) -> str:
     """Launch one optional cleanup after a recognized hard crash, never after an ordinary error.
 
@@ -243,6 +246,8 @@ def launch_crash_cleanup(
     configured = getattr(settings, "after_interpreter_crash_script", "")
     if not configured or mode != ExitMode.NO_REPORT or not exit_code_looks_like_interpreter_crash(native_code):
         return ""
+    if env.get("CRASH_RECOVERY") == "1":
+        return ""  # A recovery script may invoke the launcher; never recover that child again.
     if (run_dir / paths.STOP_REQUEST_FILE_NAME).exists():
         return ""
     script = Path(make_abs_path_relative_to_file(configured, paths.DEV_SETTINGS_PATH))
@@ -256,10 +261,11 @@ def launch_crash_cleanup(
             "CRASH_EXIT_CODE": str(native_code),
             "CRASH_MAIN_SCRIPT": main_script_path(settings),
             "CRASH_RECOVERY_LOG": str(output),
+            "CRASH_RECOVERY": "1",
         }
         with output.open("ab") as stream:
             child = subprocess.Popen(  # noqa: S603 - explicit developer-configured Python script, no shell
-                [*python, str(script)],
+                [*python, str(script), *getattr(settings, "args_for_main_py", []), *(extra_args or []), "crashed"],
                 cwd=cwd,
                 env=recovery_env,
                 stdin=subprocess.DEVNULL,
@@ -359,7 +365,7 @@ def register_with_policy(
 def main() -> None:
     """Own registration, launch, logging and completion handling for one application run."""
     app_id, launch_mode = sys.argv[1:3]
-    os.environ.pop("PYAPP_CRASH_RECOVERY_NOTICE", None)
+    os.environ.pop("CRASH_RECOVERY_NOTICE", None)
     if app_id == paths.EMPTY_ARG_INDICATOR:
         app_id = ""
     run_dir = Path(os.environ["PYAPP_RUN_DIR"])
@@ -367,6 +373,7 @@ def main() -> None:
     # can change in between. The waiting launcher then shows why instead of a bare timeout.
     try:
         settings = load_settings()
+        extra_args = json.loads(os.environ.pop("PYAPP_EXTRA_ARGS", "[]"))
     except Exception as error:
         acknowledge(run_dir, status="failed", message=f"developer_settings.py could not be loaded: {error}")
         raise
@@ -386,6 +393,9 @@ def main() -> None:
     exit_handled = False
     child: Optional[BinaryProcess] = None
     tray: Optional[MinimizeToTray] = None
+    power_requested = False
+    from pyapp.DONT_CHANGE.scripts.power import set_awake
+
     try:
         if launch_mode not in ("wt", "conhost", "browser", "no_terminal"):
             raise ValueError("Unknown launch mode: " + launch_mode)
@@ -439,7 +449,7 @@ def main() -> None:
                 note_ignored("browser terminal: report working folder and current log")
         config = {
             "script": script,
-            "args": list(settings.args_for_main_py),
+            "args": [*settings.args_for_main_py, *extra_args],
             "app_id": window_app_id,
             "app_root": paths.PYTHON_SCRIPTS_DIR,
             "traceback_lines_before": paths.traceback_lines_before,
@@ -469,6 +479,9 @@ def main() -> None:
             Path(log_path).parent.mkdir(parents=True, exist_ok=True)
         # From before the app exists: a Ctrl+C during its start-up must not end this watchdog.
         previous = signal.signal(signal.SIGINT, signal.SIG_IGN)
+        if settings.prevent_sleep or settings.keep_display_awake:
+            set_awake(settings.prevent_sleep, settings.keep_display_awake)
+            power_requested = True
         # Run the launcher helper or configured app interpreter with a controlled argument list.
         child = subprocess.Popen(  # noqa: S603
             [
@@ -560,6 +573,12 @@ def main() -> None:
             code = child.wait()
         finally:
             signal.signal(signal.SIGINT, previous)
+            if power_requested:
+                try:
+                    set_awake(False, False)
+                except OSError:
+                    note_ignored("release power request after application completion")
+                power_requested = False
         if pump:
             pump.join(timeout=5)
         save_early_output(raw_path, bytes(early_output))
@@ -585,12 +604,22 @@ def main() -> None:
         registry.remove()
         registered = False
         exit_handled = True
+        if launch_mode == "conhost" and settings.confirm_on_close == "block":
+            try:
+                from pyapp.DONT_CHANGE.scripts.taskbar_status import terminal_window
+                from pyapp.DONT_CHANGE.scripts.terminal_window import enable_close
+
+                hwnd = terminal_window(include_hidden=True)
+                if hwnd:
+                    enable_close(hwnd)
+            except Exception:
+                note_ignored("restore Close after application completion")
         if (run_dir / paths.STOP_REQUEST_FILE_NAME).exists():
             # Stopped by the Stop shortcut or a replacing launch: no sounds, menus or prompts.
             print_info("Stopped on request.")
             return
         recovery_notice = launch_crash_cleanup(
-            settings, mode, native, [app_python["exe"], *app_python["flags"]], env, cwd, log_path, run_dir
+            settings, mode, native, [app_python["exe"], *app_python["flags"]], env, cwd, log_path, run_dir, extra_args
         )
         if recovery_notice:
             os.environ["PYAPP_CRASH_RECOVERY_NOTICE"] = recovery_notice
@@ -611,6 +640,11 @@ def main() -> None:
         if not exit_handled:
             handle_exit(settings, ExitMode.WATCHDOG_ERROR, app_id, has_terminal, log_path, script, run_dir)
     finally:
+        if power_requested:
+            try:
+                set_awake(False, False)
+            except OSError:
+                note_ignored("release power request after watchdog failure")
         if tray is not None:
             tray.close(activate=False)
         if registered:

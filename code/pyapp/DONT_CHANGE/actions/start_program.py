@@ -120,8 +120,10 @@ def browser_command(s: Union[ModuleType, SimpleNamespace], run_dir: Path, comman
         ["Browser terminal settings", str(Path(paths.DONT_CHANGE_DIR) / "browser_terminal" / "settings.py")],
     ]
     config = {
+        "start_maximized": getattr(s, "start_maximized", False),
         "confirm_on_close": s.confirm_on_close,
         "wrap_output": s.wrap_terminal_output,
+        "prefix_controls": True,
         "title": s.program_name,
         "info": info,
         "code_file": targets["open_code"] if s.open_code_shortcut_name else "",
@@ -195,6 +197,10 @@ def main() -> int:
     env["PYAPP_RUN_DIR"] = str(run_dir)
     env["PYAPP_START_DIR"] = env.get("PYAPP_START_DIR", str(Path.cwd()))
     env["PYAPP_APP_PYTHON"] = json.dumps({"exe": app.exe, "flags": list(app.flags)})
+    # Shortcut argument 1 is the app ID. Batch launchers use the same protocol and append
+    # application arguments; JSON preserves empty strings and quoted spaces across hosts.
+    extra = sys.argv[2:] if os.environ.pop("PYAPP_BATCH_ARGUMENTS", "") == "1" else []
+    env["PYAPP_EXTRA_ARGS"] = json.dumps(extra)
     args = [
         sys.executable,
         "-I",
@@ -208,7 +214,7 @@ def main() -> int:
         mode,
     ]
     startup = subprocess.STARTUPINFO()
-    if s.start_minimized:
+    if s.start_minimized and not s.start_maximized:
         startup.dwFlags |= subprocess.STARTF_USESHOWWINDOW
         startup.wShowWindow = 7
     if mode == "wt":

@@ -61,6 +61,7 @@ def needs_window(s: Union[ModuleType, SimpleNamespace]) -> bool:
     return (
         s.terminal_alpha is not None
         or s.always_on_top
+        or getattr(s, "start_maximized", False)
         or any(
             getattr(s, name, False)
             for name in (
@@ -202,3 +203,21 @@ def configure(s: Union[ModuleType, SimpleNamespace], mode: str) -> None:
     from pyapp.DONT_CHANGE.scripts.taskbar_status import remember_window
 
     remember_window(hwnd)
+    if getattr(s, "start_maximized", False):
+        user = ctypes.WinDLL("user32", use_last_error=True)
+        user.ShowWindow.argtypes = [wintypes.HWND, ctypes.c_int]
+        user.ShowWindow(hwnd, 3)  # SW_MAXIMIZE; host-owned window, never an application's GUI.
+
+
+def enable_close(hwnd: int) -> None:
+    """Restore conhost's Close command after the application has ended."""
+    user = ctypes.WinDLL("user32", use_last_error=True)
+    user.GetSystemMenu.argtypes = [wintypes.HWND, wintypes.BOOL]
+    user.GetSystemMenu.restype = wintypes.HMENU
+    user.EnableMenuItem.argtypes = [wintypes.HMENU, wintypes.UINT, wintypes.UINT]
+    user.EnableMenuItem.restype = wintypes.UINT
+    user.DrawMenuBar.argtypes = [wintypes.HWND]
+    menu = user.GetSystemMenu(hwnd, False)
+    if not menu or user.EnableMenuItem(menu, SC_CLOSE, 0) == 0xFFFFFFFF:
+        raise ctypes.WinError(ctypes.get_last_error())
+    user.DrawMenuBar(hwnd)

@@ -41,6 +41,11 @@ SCROLLBACK_LINES = 9001
 # Default for the live Wrap lines switch; off uses a horizontally scrollable 1,000-column terminal.
 WRAP_OUTPUT = True
 
+# Toolbar controls to show, in their normal order. [] hides the toolbar buttons.
+# Open buttons also require their corresponding configured paths. The running-status
+# indicator stays visible. These settings also work when this folder runs on its own.
+BUTTONS = ["search", "save", "clear", "wrap", "code", "settings", "logs", "crash_logs", "info", "view", "bookmark"]
+
 # --- New output (the page's gear menu changes and remembers these) ---
 # Light up new output for a moment.
 HIGHLIGHT_NEW_OUTPUT = True

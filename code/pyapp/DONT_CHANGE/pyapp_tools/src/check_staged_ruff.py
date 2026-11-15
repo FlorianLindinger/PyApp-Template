@@ -64,7 +64,7 @@ def problems_in(ruff: List[str], name: str, content: bytes) -> List[str]:
         details: List[str] = []
         for diagnostic in output.splitlines():
             details.append(diagnostic)
-            location = re.match(r"^.+:(\d+):\d+: ", diagnostic)
+            location = re.match(r"^.+:(\d+):\d+: ", _ui.strip_ansi(diagnostic))
             if location and 1 <= int(location.group(1)) <= len(source_lines):
                 number = int(location.group(1))
                 details.append("    | " + redacted_source(source_lines[number - 1]))
@@ -103,7 +103,7 @@ def main(ruff: Optional[List[str]] = None) -> int:
     else:
         # Keep the exact location for lint errors; formatting alone needs only a short count.
         diagnostic = next(problem for problem in problems if not problem.splitlines()[0].endswith(": not formatted"))
-        reason = "Ruff: " + diagnostic.splitlines()[0] + "."
+        reason = "Ruff: " + _ui.strip_ansi(diagnostic.splitlines()[0]) + "."
     action = (
         "Run verify_launcher.bat --fix, review and stage the files."
         if format_only

@@ -58,12 +58,12 @@ class TaskbarTests(unittest.TestCase):
             taskbar, "terminal_window", return_value=123
         ) as window, mock.patch.object(console_tools, "note_ignored"), mock.patch.object(
             taskbar.ctypes, "windll"
-        ) as native:
+        ) as native, mock.patch.object(ctypes, "WinDLL", return_value=native.user32):
             native.user32.IsIconic.return_value = True
             console_tools.unminimize_terminal()
             console_tools.foreground_terminal()
             self.assertEqual(window.call_args_list, [mock.call(include_hidden=True)] * 2)
-            native.user32.ShowWindow.assert_called_once_with(123, 9)
+            self.assertEqual(native.user32.ShowWindow.call_args_list, [mock.call(123, 9)] * 2)
             native.user32.SetForegroundWindow.assert_called_once_with(123)
             native.user32.reset_mock()
             window.return_value = 0

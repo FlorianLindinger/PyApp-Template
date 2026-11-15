@@ -63,6 +63,19 @@ SETTING_DEFAULTS: Dict[str, Any] = {
     "FAST_SCROLL_FACTOR": 5,
     "SCROLLBACK_LINES": 9001,
     "WRAP_OUTPUT": True,
+    "BUTTONS": [
+        "search",
+        "save",
+        "clear",
+        "wrap",
+        "code",
+        "settings",
+        "logs",
+        "crash_logs",
+        "info",
+        "view",
+        "bookmark",
+    ],
     "HIGHLIGHT_NEW_OUTPUT": True,
     "FOLLOW_NEW_OUTPUT": True,
     "FRONT_ON_INPUT": False,
@@ -692,6 +705,7 @@ class Session:
         """Bring a new page up to date: settings, the output so far, and whether its window is known."""
         hello: Dict[str, Any] = {
             "t": "hello",
+            "status": self.config.get("run_status", "running"),
             "iconVersion": self.icon_version,
             "colors": self.colors,
             "ready": self.window_ready.is_set(),
@@ -740,6 +754,16 @@ class Session:
         elif kind == "p":
             # The page's preferences that the host acts on.
             self.front_on_input = message.get("frontOnInput") is True
+            if self.config.get("prefix_controls"):
+                values = {
+                    key: message[key] for key in ("printPrefix", "inputPrefix") if isinstance(message.get(key), bool)
+                }
+                if values:
+                    path = Path(self.config["ui_file"]).with_suffix(".preferences.json")
+                    with self._ui_lock:
+                        temporary = path.with_suffix(".tmp")
+                        temporary.write_text(json.dumps(values), encoding="utf-8")
+                        temporary.replace(path)
         elif kind == "front" and self.window:
             # A click on one of the page's notifications: the page can switch to its tab, but
             # only this host can raise the browser window above the others.
@@ -787,6 +811,8 @@ class Session:
                 time.sleep(0.05)
         if found:
             self.window = found
+            if self.config.get("start_maximized"):
+                user32.ShowWindow(found, 3)
             try:
                 bring_to_front(found)
             except Exception:
@@ -824,6 +850,10 @@ class Session:
                     report_ignored("browser terminal: UI request")
 
     def _apply_ui_request(self, request: Dict[str, Any]) -> None:
+        status = request.get("status")
+        if status in ("running", "success", "failure", "keyboard_interrupt"):
+            self.config["run_status"] = status
+            self.broadcast({"t": "status", "status": status})
         title = request.get("title")
         if isinstance(title, str):
             self.config["title"] = title
@@ -1022,6 +1052,8 @@ def make_handler(session: Session, token: str, hosts: Set[str]) -> type:
                     "options",
                     "confirm_on_close",
                     "wrap_output",
+                    "buttons",
+                    "prefix_controls",
                 )
             }
             settings["startLink"] = session.config["start_link"]
@@ -1191,6 +1223,11 @@ def complete_config(config: Dict[str, Any], command: List[str]) -> Dict[str, Any
         config["key"] = secrets.token_urlsafe(24)
     chosen = load_settings()
     config.setdefault("wrap_output", chosen["WRAP_OUTPUT"])
+    config.setdefault("prefix_controls", False)
+    config.setdefault("buttons", chosen["BUTTONS"])
+    allowed_buttons = SETTING_DEFAULTS["BUTTONS"]
+    if not isinstance(config["buttons"], list) or any(name not in allowed_buttons for name in config["buttons"]):
+        raise ValueError("buttons must be a list of supported toolbar button names")
     config["theme"] = {**ui.DEFAULT_THEME, **chosen["COLORS"], **(config.get("theme") or {})}
     font = {"family": chosen["FONT_FAMILY"], "size": chosen["FONT_SIZE"]}
     config["font"] = {**font, **(config.get("font") or {})}
