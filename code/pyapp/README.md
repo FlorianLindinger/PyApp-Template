@@ -15,7 +15,7 @@ environment it runs in, its icons and tools. Your own code lives one folder up, 
 | [tests/](tests/test_example.py) | The app's own tests (`test_*.py`) | add tests | commit |
 | [generated/](generated/README.md) | What the launcher creates: the locked packages, the Python version, the environment | leave alone | partly |
 | [Start without launcher.cmd](Start%20without%20launcher.cmd) | Starts the app when the launcher itself is broken | use if needed | commit |
-| [Start without launcher --LINUX.sh](Start%20without%20launcher%20--LINUX.sh) | Direct Linux start using a Linux virtual environment or system Python | use on Linux | commit |
+| [Start without launcher --LINUX.sh](Start%20without%20launcher%20--LINUX.sh) | Direct Linux start with Python chosen in the shell file | use on Linux | commit |
 | [DONT_CHANGE/](DONT_CHANGE/README.md) | The launcher; replaced as a whole to update it | don't edit | commit |
 | `.gitignore` | Keeps the environment, caches and per-PC files out of Git | rarely | commit |
 
@@ -51,11 +51,22 @@ sh "Start without launcher --LINUX.sh"
 ```
 
 You can also pass its full path from another working folder. Arguments after the filename are
-passed unchanged to the app. It prefers `generated/.venv/bin/python`, then a working `python3`
-or `python` on PATH (Python 3.8+). Windows virtual environments cannot be reused on Linux;
-create a Linux environment or install the app's dependencies in the selected Linux Python.
+passed unchanged to the app. Choose Python at the top of the shell file (Python 3.8+):
+
+```sh
+python_command=""                         # first working python3/python on PATH
+python_command="python3.12"               # an installed version on PATH
+python_command="/usr/bin/python3"         # an explicit executable
+python_command="/home/me/my env/bin/python" # an existing environment, if you want one
+```
+
+Use one executable without arguments; relative paths containing `/` start at the shell file's
+folder. An invalid explicit selection reports an error rather than choosing another Python.
+The script does not inspect or create `generated/.venv`, install Python or install packages.
+The selected Python must already have the app's dependencies installed.
 The script reads literal settings for the main file, arguments, environment and package list
 without executing `developer_settings.py`, then runs the app from the main script's folder.
+The `code` folder is included on the import path after the main script's folder, matching the launcher.
 Windows backslashes in configured relative file paths are accepted. This direct start does
 not install packages or provide the Windows launcher's shortcuts, logs or crash handling.
 The app itself must support Linux. The Windows `.ico` is not injected into the Linux app environment.

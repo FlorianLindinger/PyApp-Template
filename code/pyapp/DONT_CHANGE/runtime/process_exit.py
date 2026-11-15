@@ -44,6 +44,7 @@ try:
     )
     from pyapp.DONT_CHANGE.scripts.config import main_script_path, settings
     from pyapp.DONT_CHANGE.scripts.console_tools import (
+        ANSI_BOLD,
         ask,
         browser_terminal_ui,
         enable_ansi,
@@ -58,6 +59,7 @@ try:
         set_terminal_colors,
         set_terminal_icon,
         set_terminal_title,
+        styled,
         unminimize_terminal,
         wait_for_enter,
     )
@@ -150,6 +152,17 @@ def append_printed_output(crash_log: str, log_path: Optional[str]) -> None:
             shutil.copyfileobj(source, target)
     except OSError:
         note_ignored("append the printed output to the crash log")  # the report itself is already saved
+
+
+def print_crash_log_path(path: str) -> None:
+    """Show the saved filename, with an OSC 8 file link in Windows Terminal; other output stays plain."""
+    target = Path(path).absolute()
+    label = str(target)
+    if os.environ.get("WT_SESSION") and sys.stdout is not None and sys.stdout.isatty() and not in_browser_terminal():
+        enable_ansi()
+        label = f"\x1b]8;;{target.as_uri()}\x1b\\{label}\x1b]8;;\x1b\\"
+    # The browser terminal recognizes this labeled path and opens it through its local host.
+    print(styled("Crash log:", ANSI_BOLD) + " " + label)
 
 
 def write_crash_log(
@@ -384,10 +397,10 @@ def complete(
         except Exception as error:
             print_error(f"Failed to open log: {error}")
     stays_open = close is False or keep_open
-    if stays_open:
+    if stays_open or in_browser_terminal():
         # First: changing the window colors repaints everything already printed.
         set_terminal_title(OUTCOMES[outcome]["title"].format(program_name=s.program_name))
-        if outcome in ("failure", "keyboard_interrupt"):  # both show a traceback
+        if stays_open and outcome in ("failure", "keyboard_interrupt"):  # both show a traceback
             set_terminal_colors(FAILURE_COLORS)
         set_terminal_icon(OUTCOMES[outcome]["icon"])
     if message and in_browser_terminal():
@@ -409,6 +422,8 @@ def complete(
         except OSError as error:
             print_error(f"Failed to write the crash log: {error}")
             crash_log = None
+        if crash_log:
+            print_crash_log_path(crash_log)
         if crash_log and outcome == "failure" and s.open_crash_log_after_failure:
             try:
                 # Run the launcher restart helper or open the configured local log file.
@@ -417,7 +432,7 @@ def complete(
                 print_error(f"Failed to open crash log: {error}")
     if OUTCOMES[outcome]["sound"] and getattr(s, "play_sound_after_" + outcome):
         play_sound(OUTCOMES[outcome]["sound"], wait=not keep_open)
-    if stays_open and getattr(s, "foreground_after_" + outcome, False):
+    if stays_open and outcome in ("success", "failure") and getattr(s, "foreground_after_" + outcome, False):
         try:
             if in_browser_terminal():
                 browser_terminal_ui(foreground=True)

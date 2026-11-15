@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import importlib.util
 import os
+import shlex
 import shutil
 import subprocess
 import sys
@@ -35,6 +36,13 @@ def load_script():
 
 
 class FallbackStartTests(unittest.TestCase):
+    def select_linux_python(self, code: Path, command: str) -> None:
+        shell = code / "pyapp" / LINUX_START.name
+        shell.write_text(
+            shell.read_text(encoding="utf-8").replace('python_command=""', "python_command=" + shlex.quote(command)),
+            encoding="utf-8",
+        )
+
     def test_linux_shell_entrypoint_has_lf_line_endings(self):
         raw = LINUX_START.read_bytes()
         self.assertNotIn(b"\r", raw)
@@ -105,6 +113,26 @@ class FallbackStartTests(unittest.TestCase):
         self.assertEqual(exit_code, 1, output)
         self.assertIn("could not be read", output)
         self.assertIn("The main script does not exist", output)
+        self.assertIn("Change main_script_path in developer_settings.py", output)
+        self.assertIn("make sure the Python file exists at this path", output)
+
+    def test_nested_main_imports_code_root_without_losing_local_or_existing_pythonpath(self):
+        code = self.project('main_script_path = "../app/run.py"\n')
+        (code / "root_helper.py").write_text('VALUE = "root"\n', encoding="utf-8")
+        (code / "app" / "local_helper.py").write_text('VALUE = "local"\n', encoding="utf-8")
+        (code / "collision.py").write_text('VALUE = "wrong priority"\n', encoding="utf-8")
+        (code / "app" / "collision.py").write_text('VALUE = "script first"\n', encoding="utf-8")
+        external = code / "extra imports"
+        external.mkdir()
+        (external / "extra_helper.py").write_text('VALUE = "extra"\n', encoding="utf-8")
+        (code / "app" / "run.py").write_text(
+            "import root_helper, local_helper, collision, extra_helper\n"
+            "print(root_helper.VALUE, local_helper.VALUE, collision.VALUE, extra_helper.VALUE)\n",
+            encoding="utf-8",
+        )
+        status, output = self.start(code, env={"PYTHONPATH": str(external)})
+        self.assertEqual(status, 0, output)
+        self.assertIn("root local script first extra", output)
 
     def test_requirement_names(self):
         names = load_script().requirement_names(
@@ -124,24 +152,58 @@ class FallbackStartTests(unittest.TestCase):
         self.assertIn("system Python", output)
 
     @unittest.skipUnless(os.name == "posix", "Linux/POSIX shell")
-    def test_linux_shell_prefers_a_working_linux_venv(self):
+    def test_linux_shell_uses_an_explicit_python_path_with_spaces(self):
         code = self.project('main_script_path = "../app/run.py"\n')
-        environment = code / "pyapp" / "generated" / ".venv"
+        environment = code / "chosen environment"
         venv.EnvBuilder(with_pip=False).create(environment)
+        self.select_linux_python(code, str(environment / "bin" / "python"))
         status, output = self.start(code, linux=True)
         self.assertEqual(status, 3, output)
         self.assertIn(str(environment / "bin" / "python"), output)
-        self.assertIn("the app's environment", output)
+        self.assertIn("Python selected by python_command", output)
 
     @unittest.skipUnless(os.name == "posix", "Linux/POSIX shell")
-    def test_linux_shell_explains_a_copied_windows_venv(self):
+    def test_linux_shell_ignores_the_generated_environment(self):
         code = self.project('main_script_path = "../app/run.py"\n')
-        windows_python = code / "pyapp" / "generated" / ".venv" / "Scripts" / "python.exe"
-        windows_python.parent.mkdir(parents=True)
-        windows_python.touch()
+        generated_python = code / "pyapp" / "generated" / ".venv" / "bin" / "python"
+        generated_python.parent.mkdir(parents=True)
+        generated_python.write_text("#!/bin/sh\nexit 99\n", encoding="utf-8")
+        generated_python.chmod(0o755)
         status, output = self.start(code, linux=True)
         self.assertEqual(status, 3, output)
-        self.assertIn("Windows virtual environment cannot run on Linux", output)
+        self.assertIn("system Python", output)
+        self.assertNotIn("the app's environment", output)
+
+    @unittest.skipUnless(os.name == "posix", "Linux/POSIX shell")
+    def test_linux_shell_selects_a_versioned_command_on_path(self):
+        code = self.project('main_script_path = "../app/run.py"\n')
+        commands = code / "commands"
+        commands.mkdir()
+        command = f"python{sys.version_info.major}.{sys.version_info.minor}"
+        (commands / command).symlink_to(sys.executable)
+        self.select_linux_python(code, command)
+        status, output = self.start(code, linux=True, env={"PATH": str(commands)})
+        self.assertEqual(status, 3, output)
+        self.assertIn("Python selected by python_command", output)
+
+    @unittest.skipUnless(os.name == "posix", "Linux/POSIX shell")
+    def test_linux_shell_resolves_relative_python_paths_from_its_own_folder(self):
+        code = self.project('main_script_path = "../app/run.py"\n')
+        commands = code / "pyapp" / "my python $(literal)"
+        commands.mkdir()
+        (commands / "python").symlink_to(sys.executable)
+        self.select_linux_python(code, "my python $(literal)/python")
+        status, output = self.start(code, linux=True, cwd=code.parent)
+        self.assertEqual(status, 3, output)
+
+    @unittest.skipUnless(os.name == "posix", "Linux/POSIX shell")
+    def test_linux_shell_does_not_substitute_system_python_for_an_invalid_selection(self):
+        code = self.project('main_script_path = "../app/run.py"\n')
+        self.select_linux_python(code, "no-such-python-pyapp")
+        status, output = self.start(code, linux=True)
+        self.assertEqual(status, 1, output)
+        self.assertIn("Selected Python does not start or is older than 3.8", output)
+        self.assertIn("Change python_command", output)
 
     @unittest.skipUnless(os.name == "posix", "Linux/POSIX shell")
     def test_linux_shell_reports_missing_python_and_missing_helper(self):

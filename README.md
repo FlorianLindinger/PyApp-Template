@@ -143,6 +143,21 @@ You normally edit three files:
 | `code/pyapp/developer_settings.py` | Name, Python, packages, logging and behavior. Sorted from important to rarely needed; every setting is explained in it. |
 | `code/settings.py` | Optional settings for the people using your app. Read them with `import settings`; the *(Settings)* shortcut opens this file. |
 
+The example simply reads a line with `input()` and echoes it with `print()`. Ctrl+C stops it;
+end-of-input closes it normally. It does not execute commands.
+`user_settings_path` in `developer_settings.py` selects the file opened by the Settings shortcut;
+its resolved path is available as `USER_SETTINGS_PATH`. It does not change imports or add its
+folder to `sys.path`. The launcher and fallback starts always include the `code` folder on the
+app's import path, even when the main script is in a subfolder; the main script's folder takes
+precedence. This lets a nested entry script use `import settings` for `code/settings.py`.
+`start_in_shortcut_position = True` keeps the starting folder Windows supplies; `False` uses
+the main script's folder. Setup leaves shortcuts' **Start in** empty, avoiding a saved folder
+that becomes stale when a shortcut moves. Windows chooses that initial folder; the launcher
+does not locate the shortcut itself. This setting does not affect import order. Adding an
+arbitrary settings folder to `sys.path` could let its modules shadow other imports. A Python
+settings file itself also executes code when imported; use a data format such as JSON or TOML
+when the settings must contain data only.
+
 ### Packages
 
 List them in `developer_settings.py`; the next start installs them:
@@ -212,6 +227,24 @@ icon_path = os.environ.get("ICON_PATH")  # None without the launcher
 Taskbar grouping is already set up. To pass your own values, use `args_for_main_py` and
 `environment_for_main_py`.
 
+### Readable tracebacks
+
+The launcher shows the failing source line with surrounding context, followed by the error and
+run details. These images show output from the actual traceback renderer, with example paths.
+When a crash log is written, `Crash log: ...` immediately below the traceback gives its actual
+unique filename. Click it in Windows Terminal or the browser terminal to open the file; other
+terminals and redirected output show the plain path.
+
+<p align="center">
+  <img src="code/pyapp/DONT_CHANGE/data/docs/traceback-source.png" alt="Colored ZeroDivisionError report with source context and the failing line marked." width="960">
+</p>
+
+Chained exceptions retain the original error and explain how it led to the final exception:
+
+<p align="center">
+  <img src="code/pyapp/DONT_CHANGE/data/docs/traceback-chain.png" alt="Chained ValueError report showing the original conversion error, its direct-cause relationship and the application's explanatory error." width="960">
+</p>
+
 ## The browser terminal
 
 The **(Browser)** shortcut starts your app with its console in a tab of your default browser
@@ -244,6 +277,14 @@ window.
 
 It is served on `127.0.0.1` only, behind a secret key in the address, and only its own page may
 connect. Closing the tab ends the program, like closing a console window; reloading it does not.
+
+The launcher's `close_after_success`, `close_after_failure` and `close_after_keyboard_interrupt`
+settings also apply here. With `False`, the report stays until Enter is pressed. When the
+launcher exits, the page tries to close its tab. If the browser refuses, the page keeps its
+output and shows a completion notice; it does not deliberately clear the output. The tab gets
+the configured `[Finished]`, `[Failure]` or `[KeyboardInterrupt]` title and corresponding status icon,
+including when it is about to close. The final icon is embedded so it survives server shutdown.
+Refreshing after shutdown cannot reload the page because the local server has stopped.
 
 The browser terminal is a self-contained folder (`code/pyapp/DONT_CHANGE/browser_terminal`, standard
 library only, with its own tests). Copy it into any project to run console programs in a browser:

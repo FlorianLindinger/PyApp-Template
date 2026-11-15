@@ -603,9 +603,11 @@ def main() -> None:
     if input_prepend or log_input_prepend or browser_ui or hasattr(sys.stdout, "complete_input_line"):
         install_input_prefix(input_prepend, browser_ui)
 
-    # Make the application's folder sys.path[0], exactly like `python main.py`,
-    # instead of this launcher folder.
+    # Keep script-local imports first; code-root modules remain importable from nested entry scripts.
     sys.path[0] = str(Path(os.path.normpath(str(Path(script_path).absolute()))).parent)
+    code_folder = os.path.normpath(str(Path(app_root).absolute()))
+    if os.path.normcase(code_folder) != os.path.normcase(sys.path[0]):
+        sys.path.insert(1, code_folder)
 
     pending_background_error = capture_background_errors(
         script_path, report_path + ".background", app_root, context_lines

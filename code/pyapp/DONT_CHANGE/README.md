@@ -125,7 +125,8 @@ Three Pythons can be involved, but usually they are the same installation:
    window only appears when something needs to be shown.
 9. **`runtime\script_wrapper.py`** runs inside the app Python. It removes the launcher's
    variables from the environment, sets `sys.argv` (`args_for_main_py`) and `sys.path[0]` exactly
-   like `python main.py`, sets up the log and the print/input prefixes, writes `ready`, and runs
+   like `python main.py`, adds the `code` folder immediately after the main script's folder
+   when they differ, sets up the log and the print/input prefixes, writes `ready`, and runs
    `main.py` with `runpy`. It records the outcome in `result.json` and, for exceptions
    (including `SystemExit` with an error code and errors in worker threads or Tkinter callbacks),
    a traceback report in `traceback.json` (format in `runtime\_pyapp.py`).
@@ -166,8 +167,9 @@ focus is not supported by this option: its pseudoconsole window is deliberately 
 Windows/browser focus policies may refuse activation. Merely starting or logging silently
 does not trigger it; startup output from the launcher does not count as app output.
 
-Completion has separate `foreground_after_success`, `foreground_after_failure` and
-`foreground_after_keyboard_interrupt` settings, all `False` by default. They restore/request
+Completion has `foreground_after_success = False` and `foreground_after_failure = True`
+by default. Ctrl+C does not count as failure for foreground attention and never requests it
+on completion. These settings restore/request
 focus for the classic console or browser terminal after the report, log-opening and sound
 actions, when the window stays open. They do not override `close_after_*`: for example, use
 `close_after_success = False` with `foreground_after_success = True` to show the finished window.
@@ -196,13 +198,15 @@ threads absent from the traceback cannot provide their variables.
 
 ## The other shortcuts
 
-With `start_in_shortcut_folder = True`, the app uses the shortcut's containing folder as
-recorded by Setup in its **Start in** property. Each project, Desktop and Start Menu shortcut
-gets its own containing folder, rather than all links starting in the project root.
-Run Setup to update existing shortcuts. With `False`, the app runs from the main script's folder.
-If a `.lnk` is manually moved or copied later, update **Properties → Start in** to its new folder:
-the current batch/conhost launch chain cannot reliably recover the moved link's physical path.
-Direct batch starts, without a shortcut, use the caller's starting folder when this setting is enabled.
+Setup leaves each generated shortcut's **Start in** property empty, so it does not retain an
+old folder after the link is moved. With `start_in_shortcut_position = True`, the app keeps
+the starting folder Windows supplies. This uses the shortcut's position when Windows starts
+it there; the launcher does not determine the `.lnk` file's physical location. With `False`,
+the app switches to the main script's folder. Direct batch starts keep the caller's starting
+folder when enabled. Import paths are independent of this setting.
+Run Setup to clear **Start in** on existing generated shortcuts. Explicit `wdir` overrides
+passed to the shortcut generator are still honored. The old `start_in_shortcut_position` name
+is accepted for older projects; `start_in_shortcut_position` takes precedence.
 
 | Shortcut | Target | What it does |
 | --- | --- | --- |
@@ -394,7 +398,7 @@ ASCII art (`scripts/banner.py`). The batch/Python bootstrap and the
 | `stop_program.py` | The Stop shortcut. |
 | `setup.py` | Setup: banner, environment, shortcuts (project folder, Start Menu, Desktop), removal of stale ones. |
 | `open_file.py`, `open_folder.py` | Fallbacks of the "open" shortcuts (resolve the target from the settings). |
-| `start_without_launcher.py` | Not run by `entrypoint.py`: used by `code/pyapp/Start without launcher.cmd` and `Start without launcher --LINUX.sh`. Runs the main script directly with a working app `.venv` Python or system Python, after showing the script, Python, packages and their folders. The Linux entry accepts Windows separators in relative settings paths and detects copied Windows environments. Standard library only and independent of every other launcher file; a protected path. |
+| `start_without_launcher.py` | Not run by `entrypoint.py`: used by `code/pyapp/Start without launcher.cmd` and `Start without launcher --LINUX.sh`. Runs the main script directly after showing the script, Python, packages and their folders. Windows tries the app `.venv` before system Python; Linux uses `python_command` in the shell file or system Python on PATH, without inspecting the generated environment. The Linux entry accepts Windows separators in relative settings paths. Standard library only and independent of every other launcher file; a protected path. |
 | `gen_icons.py` | Builds the `.ico` files in `code/pyapp/icons` from `icon.png` and the bundled overlays; asks per icon before replacing an `.ico` it did not make (`generated/auto_generated_icons.json`). |
 
 ### `runtime/` – the running app
@@ -402,7 +406,7 @@ ASCII art (`scripts/banner.py`). The batch/Python bootstrap and the
 | File | Purpose |
 | --- | --- |
 | `bg_watchdog.py` | Owns one run: job object, registry, console appearance, log, starts the wrapper, copies output, hands the outcome to `process_exit.py`. |
-| `script_wrapper.py` | Runs inside the app Python: clean environment, `sys.argv`/`sys.path` like `python main.py`, logging and prefixes, runs `main.py`, writes the result and traceback report. |
+| `script_wrapper.py` | Runs inside the app Python: clean environment, `sys.argv` like `python main.py`, main-script folder first on `sys.path` followed by the code folder, logging and prefixes, runs `main.py`, writes the result and traceback report. |
 | `_pyapp.py` | The protocol shared by wrapper and watchdog (exit codes, traceback reports). Imported in the app process as the top-level module `_pyapp`, a name that cannot shadow the app's modules. |
 | `process_exit.py` | Completion handling per outcome; missing-package menu and restart. |
 | `send_ctrl_c.py` | Helper that attaches to another console and sends Ctrl+C (graceful Stop of console apps). |

@@ -110,7 +110,9 @@ def main() -> None:
         if not Path(settings_file).exists():
             print()
             print_warn(
-                f'The user settings file does not exist: "{settings_file}". Its shortcut will show an error until the file exists.'
+                f'The user settings file does not exist: "{settings_file}". '
+                "Change user_settings_path in developer_settings.py, or make sure the file exists at this path. "
+                'Set user_settings_path = "" to disable the Settings shortcut.'
             )
     for kind in ("logs", "crash_logs"):
         if targets_by_kind[kind]:

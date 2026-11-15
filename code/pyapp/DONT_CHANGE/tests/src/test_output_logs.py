@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import io
 import os
 import subprocess
 import sys
@@ -26,6 +27,51 @@ SETTINGS = types.SimpleNamespace(
 
 
 class CrashLogTests(unittest.TestCase):
+    def test_completion_prints_the_actual_unique_log_immediately_after_the_report(self):
+        def print_traceback(_report: object) -> None:
+            print("TRACEBACK")
+
+        settings = types.SimpleNamespace(
+            **vars(SETTINGS),
+            close_after_failure=True,
+            open_log_file_after_failure=False,
+            open_crash_log_after_failure=False,
+            play_sound_after_failure=False,
+        )
+        for enabled in (True, False):
+            settings.enable_crash_log = enabled
+            with self.subTest(enabled=enabled), tempfile.TemporaryDirectory() as folder:
+                base = Path(folder, "crash report.txt")
+                output = io.StringIO()
+                with mock.patch.object(process_exit, "settings", return_value=settings), mock.patch.object(
+                    process_exit, "get_log_path", return_value=str(base)
+                ), mock.patch.object(process_exit, "in_browser_terminal", return_value=False), mock.patch.object(
+                    process_exit, "print_report", side_effect=print_traceback
+                ), mock.patch.object(sys, "stdout", output):
+                    saved = process_exit.complete("failure", None, {"chain": []})
+                if enabled:
+                    self.assertIsNotNone(saved)
+                    self.assertNotEqual(saved, str(base))
+                    self.assertTrue(Path(saved or "").is_file())
+                    self.assertEqual(output.getvalue(), f"TRACEBACK\nCrash log: {saved}\n")
+                else:
+                    self.assertIsNone(saved)
+                    self.assertEqual(output.getvalue(), "TRACEBACK\n")
+
+    def test_windows_terminal_link_encodes_spaces_but_displays_the_actual_path(self):
+        output = mock.Mock()
+        output.isatty.return_value = True
+        path = Path("crash logs", "crash report_unique.txt").absolute()
+        with mock.patch.dict(os.environ, {"WT_SESSION": "test"}), mock.patch.object(
+            sys, "stdout", output
+        ), mock.patch.object(process_exit, "enable_ansi"), mock.patch.object(
+            process_exit, "in_browser_terminal", return_value=False
+        ):
+            process_exit.print_crash_log_path(str(path))
+        text = "".join(call.args[0] for call in output.write.call_args_list)
+        self.assertIn(f"\x1b]8;;{path.as_uri()}\x1b\\{path}\x1b]8;;\x1b\\", text)
+        self.assertIn("%20", text)
+
     def write(self, folder: str, log_path: str):
         with mock.patch.object(process_exit, "settings", return_value=SETTINGS), mock.patch.object(
             process_exit, "get_log_path", return_value=str(Path(folder) / "crash.txt")
@@ -64,11 +110,14 @@ class CrashLogTests(unittest.TestCase):
                 process_exit, "get_log_path", return_value=str(blocker / "crash.txt")
             ), mock.patch.object(process_exit, "print_report") as print_report, mock.patch.object(
                 process_exit, "print_error"
-            ) as print_error, mock.patch.object(process_exit.os, "startfile", create=True) as startfile:
+            ) as print_error, mock.patch.object(
+                process_exit.os, "startfile", create=True
+            ) as startfile, mock.patch.object(process_exit, "print_crash_log_path") as print_path:
                 process_exit.complete("failure", None, report)
         print_report.assert_called_once_with(report)
         self.assertIn("Failed to write the crash log", print_error.call_args_list[-1][0][0])
         startfile.assert_not_called()
+        print_path.assert_not_called()
 
 
 class VariableExportTests(unittest.TestCase):
@@ -179,9 +228,10 @@ class CompletionForegroundTests(unittest.TestCase):
         s = types.SimpleNamespace(program_name="Example", open_crash_log_after_failure=False)
         for name in ("success", "failure", "keyboard_interrupt"):
             setattr(s, "close_after_" + name, close)
-            setattr(s, "foreground_after_" + name, enabled if name == outcome else False)
             setattr(s, "open_log_file_after_" + name, False)
             setattr(s, "play_sound_after_" + name, False)
+        for name in ("success", "failure"):
+            setattr(s, "foreground_after_" + name, enabled if outcome in (name, "keyboard_interrupt") else False)
         with mock.patch.multiple(
             process_exit,
             settings=mock.Mock(return_value=s),
@@ -203,7 +253,7 @@ class CompletionForegroundTests(unittest.TestCase):
         return mocks
 
     def test_each_outcome_has_an_independent_opt_in(self):
-        for outcome in ("success", "failure", "keyboard_interrupt"):
+        for outcome in ("success", "failure"):
             for enabled in (False, True):
                 with self.subTest(outcome=outcome, enabled=enabled):
                     mocks = self.complete(outcome, enabled, False)
@@ -211,6 +261,16 @@ class CompletionForegroundTests(unittest.TestCase):
                     self.assertEqual(mocks["foreground_terminal"].call_count, int(enabled))
                     mocks["browser_terminal_ui"].assert_not_called()
                     mocks["print_report"].assert_called_once()
+
+    def test_keyboard_interrupt_does_not_use_success_or_failure_foreground_settings(self):
+        for browser in (False, True):
+            with self.subTest(browser=browser):
+                mocks = self.complete("keyboard_interrupt", True, False, browser=browser)
+                mocks["foreground_terminal"].assert_not_called()
+                mocks["unminimize_terminal"].assert_not_called()
+                mocks["browser_terminal_ui"].assert_not_called()
+                mocks["print_report"].assert_called_once()
+                mocks["wait_for_enter"].assert_called_once()
 
     def test_closing_window_does_not_flash_into_the_foreground(self):
         mocks = self.complete("success", True, True)

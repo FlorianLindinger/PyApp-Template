@@ -152,6 +152,8 @@ def set_terminal_title(title: Optional[str]) -> None:
         import ctypes
 
         clean_name = title.replace("\r", "").replace("\n", "")
+        if in_browser_terminal():
+            browser_terminal_ui(title=clean_name)
         ctypes.windll.kernel32.SetConsoleTitleW(clean_name)
     except Exception:
         note_ignored("set_terminal_title")
@@ -428,6 +430,7 @@ def browser_terminal_ui(
     notify: Optional[str] = None,
     failed: bool = False,
     foreground: bool = False,
+    title: Optional[str] = None,
 ) -> None:
     """Request browser-terminal appearance, a notification, or explicit foreground attention."""
     try:
@@ -441,6 +444,7 @@ def browser_terminal_ui(
             notify=notify,
             failed=failed,
             foreground=foreground,
+            title=title,
         )
     except Exception:
         note_ignored("browser_terminal_ui")

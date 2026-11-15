@@ -1,7 +1,8 @@
 """Fallback start: run the app's main script without the launcher, for when the launcher is broken.
 
 Started by code/pyapp/"Start without launcher.cmd" or "Start without launcher --LINUX.sh".
-They choose the app's environment (generated/.venv) if its Python starts, otherwise a system Python. This file is the
+The Windows script tries the app's environment before system Python; the Linux script uses its
+python_command setting or system Python on PATH. This file is the
 only one of DONT_CHANGE that runs: it imports nothing else from the launcher, and
 developer_settings.py is only read, never executed, so a broken launcher or a mistake in the
 settings cannot stop this start.
@@ -52,13 +53,11 @@ SOURCES = {
     "path": "global Python on PATH",
     "python3": "system Python (python3 on PATH)",
     "python": "system Python (python on PATH)",
+    "configured": "Python selected by python_command in the Linux shell file",
 }
 VENV_STATES = {
-    "missing": "the app's environment does not exist yet (Setup creates it)"
-    if os.name == "nt"
-    else "the app's Linux environment does not exist yet; using system Python",
+    "missing": "the app's environment does not exist yet (Setup creates it)",
     "broken": "the app's environment exists, but its Python does not start (moved or removed base Python?)",
-    "windows": "the project's Windows virtual environment cannot run on Linux; using system Python instead",
 }
 
 USE_COLOR = sys.stdout.isatty()
@@ -242,17 +241,23 @@ def main() -> int:
         print(
             "    or repair the launcher (Setup) to get the app's own environment back."
             if os.name == "nt"
-            else "    or create a Linux virtual environment at generated/.venv with the app's packages."
+            else "    or set python_command in the Linux shell file to a Python with the app's packages."
         )
 
     if not main_script.is_file():
         print()
         print(style(f" ERROR  The main script does not exist: {main_script}", "1;31"))
-        print("        Check main_script_path in developer_settings.py.")
+        print(
+            "        Change main_script_path in developer_settings.py, or make sure the Python file exists at this path."
+        )
         return 1
 
     env = {k: v for k, v in os.environ.items() if not k.startswith("PYAPP_")}
     env.update(extra_env)
+    # Direct Python keeps the script folder first; add code next and preserve existing extra imports.
+    code_folder = str(PYAPP_DIR.parent)
+    existing_pythonpath = env.get("PYTHONPATH", "")
+    env["PYTHONPATH"] = code_folder + (os.pathsep + existing_pythonpath if existing_pythonpath else "")
     # The variables the launcher gives the app, as far as they make sense without it.
     env.update(PROGRAM_NAME=program, PROGRAM_HAS_TERMINAL="1", WDIR_IS_SCRIPT_DIR="1", LOG_PATH="")
     if os.name == "nt" and ICON_PATH.is_file():

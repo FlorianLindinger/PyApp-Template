@@ -66,6 +66,35 @@ class OutcomeColorTests(unittest.TestCase):
     def test_success_keeps_the_colors(self):
         self.assertEqual(self.colors_after("success"), [])
 
+    def test_closing_browser_run_still_gets_the_outcome_title_and_icon(self):
+        from types import SimpleNamespace
+
+        from pyapp.DONT_CHANGE.runtime import process_exit
+
+        for outcome in ("success", "failure", "keyboard_interrupt"):
+            s = SimpleNamespace(
+                program_name="App",
+                **{"close_after_" + outcome: True, "play_sound_after_" + outcome: False},
+            )
+            with self.subTest(outcome=outcome), mock.patch.multiple(
+                process_exit,
+                settings=mock.Mock(return_value=s),
+                in_browser_terminal=mock.Mock(return_value=True),
+                set_terminal_title=mock.DEFAULT,
+                set_terminal_icon=mock.DEFAULT,
+                set_terminal_colors=mock.DEFAULT,
+                print_report=mock.DEFAULT,
+                write_crash_log=mock.Mock(return_value=None),
+                wait_for_report=mock.DEFAULT,
+            ) as patched:
+                process_exit.complete(outcome, None)
+                patched["set_terminal_title"].assert_called_once_with(
+                    process_exit.OUTCOMES[outcome]["title"].format(program_name="App")
+                )
+                patched["set_terminal_icon"].assert_called_once_with(process_exit.OUTCOMES[outcome]["icon"])
+                patched["set_terminal_colors"].assert_not_called()
+                patched["wait_for_report"].assert_not_called()
+
 
 class WindowsTerminalTests(unittest.TestCase):
     def test_semicolons_do_not_split_the_wt_command_line(self):

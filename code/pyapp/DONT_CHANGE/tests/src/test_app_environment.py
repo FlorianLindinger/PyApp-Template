@@ -12,6 +12,18 @@ from pyapp.DONT_CHANGE.runtime import bg_watchdog as watchdog
 
 
 class AppEnvironmentTests(unittest.TestCase):
+    def test_working_folder_keeps_windows_start_or_switches_to_main_script_folder(self):
+        script = project_location.CODE / "nested" / "main.py"
+        inherited = str(project_location.PROJECT_ROOT / "shortcut location")
+        with mock.patch.dict(os.environ, {"PYAPP_START_DIR": inherited}):
+            self.assertEqual(
+                watchdog.app_working_folder(self.settings(start_in_shortcut_position=True), str(script)), inherited
+            )
+            self.assertEqual(
+                watchdog.app_working_folder(self.settings(start_in_shortcut_position=False), str(script)),
+                str(script.parent),
+            )
+
     def settings(self, **changes: object) -> SimpleNamespace:
         return SimpleNamespace(
             **{
@@ -21,7 +33,7 @@ class AppEnvironmentTests(unittest.TestCase):
                 "enable_crash_log": True,
                 "crash_log_path": "crashes/report.txt",
                 "crash_log_path_is_relative_to_start_folder_if_relative": True,
-                "start_in_shortcut_folder": False,
+                "start_in_shortcut_position": False,
                 "close_after_failure": False,
                 "close_after_success": True,
                 **changes,
@@ -77,7 +89,7 @@ class AppEnvironmentTests(unittest.TestCase):
         with mock.patch.dict(os.environ, {}, clear=True), mock.patch.object(
             watchdog, "clean_python_environment", return_value={"PYAPP_RUN_DIR": "internal", "OTHER": "kept"}
         ):
-            env = watchdog.app_environment(self.settings(start_in_shortcut_folder=True), True, "", "")
+            env = watchdog.app_environment(self.settings(start_in_shortcut_position=True), True, "", "")
         self.assertEqual(env["START_DIR"], str(Path.cwd()))
         self.assertEqual(env["WDIR_IS_SCRIPT_DIR"], "0")
         self.assertNotIn("PYAPP_RUN_DIR", env)

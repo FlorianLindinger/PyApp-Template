@@ -92,7 +92,7 @@
     "program_name",
     "python_source",
     "python_version",
-    "start_in_shortcut_folder",
+    "start_in_shortcut_position",
     "start_menu_shortcuts",
     "start_minimized",
     "stop_running_shortcut_name",

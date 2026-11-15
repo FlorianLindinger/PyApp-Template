@@ -89,9 +89,9 @@ close_after_keyboard_interrupt = False
 
 # Restore and bring the classic console/browser terminal forward when it stays open:
 # These do not override close_after_*; native Windows Terminal focus is unsupported.
+# Ctrl+C does not request foreground attention.
 foreground_after_success = False
-foreground_after_failure = False
-foreground_after_keyboard_interrupt = False
+foreground_after_failure = True
 
 # Open the normal log file:
 open_log_file_after_success = False
@@ -122,13 +122,14 @@ use_classic_terminal = True
 browser_terminal_address = ""
 
 # Background color: 0=Black,1=Blue,2=Green,3=Aqua,4=Red,5=Purple,6=Yellow,7=White,8=Gray,9=LightBlue. "" for default:
-terminal_bg_color = "9"
+terminal_bg_color = "0"
 # Text color: A=LightGreen,B=LightAqua,C=LightRed,D=LightPurple,E=LightYellow,F=BrightWhite. "" for default:
 terminal_text_color = "F"
 
 # --- Starting and stopping ---
 # The Python file the launcher runs. It must be inside the code folder, but not in code/pyapp.
 # Imports start from its folder, like `python main.py`. Run Setup again after changing it (for the Edit Code shortcut).
+# The code folder is also on the import path, after the main script's folder.
 main_script_path = "..\\main.py"
 
 # String arguments passed to main.py:
@@ -138,9 +139,10 @@ args_for_main_py = []
 # PYTHON* variables have no effect on main.py itself, because it runs with -E.
 environment_for_main_py = {}
 
-# Working folder. False: main script folder. True: shortcut folder (its "Start in" field, set by Setup).
-# If you manually move a .lnk later, update its "Start in" folder in Properties too.
-start_in_shortcut_folder = True
+# Working folder. True: keep the folder Windows starts the shortcut in; False: main script folder.
+# Setup leaves "Start in" empty so it does not pin a moved shortcut to its old folder.
+# Windows chooses the starting folder; True does not locate the .lnk file itself.
+start_in_shortcut_position = False
 
 # Stop shortcut and instance_policy "replace": seconds a running instance gets to close by itself
 # (its windows receive a normal close request, a console app gets Ctrl+C) before it is terminated.
@@ -163,6 +165,7 @@ uv_install_if_missing = "global"
 
 # --- Settings file and shortcut locations ---
 # File that the Settings shortcut opens, for the people using the app (any file type; "" to disable).
+# This does not change Python imports or sys.path. Keep importable Python settings beside your app.
 # Run Setup again after changing it:
 user_settings_path = "..\\settings.py"
 

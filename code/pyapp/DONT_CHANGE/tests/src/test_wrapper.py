@@ -106,6 +106,7 @@ class WrapperTests(unittest.TestCase):
         extra_files: Optional[Dict[str, str]] = None,
         env: Optional[Dict[str, str]] = None,
         stdin: Optional[str] = None,
+        main_relative: str = "main.py",
         **config: object,
     ):
         """Run `source` as main.py through the wrapper; return (exit code, stdout, run folder)."""
@@ -114,11 +115,15 @@ class WrapperTests(unittest.TestCase):
         run = folder / "run"
         app.mkdir()
         run.mkdir()
-        (app / "main.py").write_text(textwrap.dedent(source), encoding="utf-8")
+        script = app / main_relative
+        script.parent.mkdir(parents=True, exist_ok=True)
+        script.write_text(textwrap.dedent(source), encoding="utf-8")
         for name, text in (extra_files or {}).items():
-            (app / name).write_text(text, encoding="utf-8")
+            path = app / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(text, encoding="utf-8")
         settings = {
-            "script": str(app / "main.py"),
+            "script": str(script),
             "args": list(args),
             "traceback": str(run / "traceback.json"),
             "result": str(run / "result.json"),
@@ -154,6 +159,23 @@ class WrapperTests(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertEqual(json.loads((run / "result.json").read_text())["wrapper_exit_code"], 0)
         self.assertTrue((run / "ready").exists())
+
+    def test_nested_main_can_import_code_root_and_keeps_local_import_priority(self):
+        code, output, _ = self.run_app(
+            "import sys, root_helper, local_helper, collision\n"
+            "from pathlib import Path\n"
+            "assert sys.path[:2] == [str(Path(__file__).parent), str(Path(__file__).parent.parent)]\n"
+            "print(root_helper.VALUE, local_helper.VALUE, collision.VALUE)\n",
+            main_relative="nested/main.py",
+            extra_files={
+                "root_helper.py": 'VALUE = "root"\n',
+                "nested/local_helper.py": 'VALUE = "local"\n',
+                "collision.py": 'VALUE = "wrong priority"\n',
+                "nested/collision.py": 'VALUE = "script first"\n',
+            },
+        )
+        self.assertEqual(code, 0, output)
+        self.assertIn("root local script first", output)
 
     def test_log_records_input_after_every_kind_of_prompt(self):
         log = Path(self.temporary_folder()) / "app.log"

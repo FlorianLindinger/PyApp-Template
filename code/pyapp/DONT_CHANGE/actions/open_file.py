@@ -29,5 +29,10 @@ def main() -> None:
     else:
         path = main_script_path()
     if not Path(path).is_file():
-        raise SettingsError(f'The file does not exist: "{path}"')
+        setting_name = "user_settings_path" if kind == "settings" else "main_script_path"
+        raise SettingsError(
+            f'The file does not exist or is not a file: "{path}".\n'
+            f'Change {setting_name} in "{DEV_SETTINGS_PATH}", or make sure the file exists at this path.\n'
+            "Run Setup again after changing the setting to update the shortcuts."
+        )
     open_in_editor(path)

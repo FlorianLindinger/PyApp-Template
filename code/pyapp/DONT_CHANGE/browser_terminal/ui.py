@@ -99,6 +99,7 @@ def request(
     waiting_for_input: bool = False,
     info: Optional[Dict[str, str]] = None,
     foreground: bool = False,
+    title: Optional[str] = None,
 ) -> None:
     """Request page appearance changes, notifications, input attention, or run-info updates.
 
@@ -108,8 +109,11 @@ def request(
     waiting_for_input: the program is about to read input (the page can come to the front).
     info: update or append labeled text fields in the run-info panel.
     foreground: explicitly restore/focus the browser window and terminal tab.
+    title: explicit page title, independent of pseudoconsole title sequences.
     """
     fields: Dict[str, object] = {}
+    if title is not None:
+        fields["title"] = title
     if icon is not None:
         fields["icon"] = icon
     if colors is not None:

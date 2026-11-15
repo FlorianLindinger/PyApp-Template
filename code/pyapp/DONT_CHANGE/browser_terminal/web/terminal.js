@@ -373,6 +373,7 @@
         term.focus();
         break;
       case "hello":
+        if (message.title) showTitle(message.title);
         if (message.info) config.info = message.info;
         showInfo({ started: message.started || 0 });
         setColors(message.colors);
@@ -387,7 +388,10 @@
         applyTitle();
         break;
       case "icon":
-        favicon.href = "icon?v=" + message.v;
+        favicon.href = message.url || "icon?v=" + message.v;
+        break;
+      case "title":
+        showTitle(message.title);
         break;
       case "colors":
         setColors(message.colors);
@@ -712,6 +716,7 @@
   // "C:\folder\file.py:9" (the launcher's reports) and 'File "C:\folder\file.py", line 9' (Python)
   // become links; a click opens the file in the editor at that line (host.py: open_in_editor).
   const PATH_PATTERNS = [
+    /^Crash log: ((?:[A-Za-z]:\\|\\\\).+)$/g,
     /File "((?:[A-Za-z]:|\\\\)[^"]+)", line (\d+)/g,
     /((?:[A-Za-z]:|\\\\)\\[^\s"'<>|*?:]*[^\s"'<>|*?:.,;)\]]):(\d+)/g,
   ];
@@ -739,7 +744,7 @@
           const range = { start: at(start), end: at(end - 1) };
           if (range.start.y > lineNumber || range.end.y < lineNumber) continue; // on other rows
           const path = match[1];
-          const number = Number(match[2]);
+          const number = Number(match[2] || 0);
           links.push({
             range,
             text: match[0],

@@ -57,7 +57,7 @@ BOOLEANS = (
     "uv_user_python_visible_globally",
     "use_system_certificates",
     "start_menu_shortcuts",
-    "start_in_shortcut_folder",
+    "start_in_shortcut_position",
     "start_minimized",
     "foreground_on_first_print",
     "use_classic_terminal",
@@ -118,7 +118,10 @@ def _main_script_problem(value: str) -> Optional[str]:
     """Tracebacks, the import finder and the launcher's own folders all assume this location."""
     path = _resolve_main_script(value)
     if not Path(path).is_file():
-        return f'main_script_path: "{path}" does not exist.'
+        return (
+            f'main_script_path: "{path}" does not exist or is not a file.\n'
+            "    Change main_script_path in developer_settings.py, or make sure the Python file exists at this path."
+        )
     root = os.path.normcase(os.path.normpath(str(Path(PYTHON_SCRIPTS_DIR).absolute()))) + os.sep
     full = os.path.normcase(os.path.normpath(str(Path(path).absolute())))
     if not full.startswith(root) or full[len(root) :].split(os.sep, 1)[0] == "pyapp":
@@ -162,7 +165,11 @@ def requirements_file_entries(s: Union[ModuleType, SimpleNamespace]) -> List[str
     try:
         text = Path(path).read_text(encoding="utf-8-sig")
     except OSError as error:
-        raise SettingsError(f'requirements_path: "{path}" cannot be read ({error.strerror or error}).') from None
+        raise SettingsError(
+            f'requirements_path: "{path}" cannot be read ({error.strerror or error}).\n'
+            "    Change requirements_path in developer_settings.py, or make sure the file exists and is readable "
+            'at this path. Set requirements_path = "" if no requirements file is needed.'
+        ) from None
     return parse_requirements(text)
 
 
@@ -220,6 +227,10 @@ def fill_missing_settings(module: Union[ModuleType, SimpleNamespace]) -> List[st
     """
     if hasattr(module, "MISSING_SETTINGS_FILLED_IN"):
         return module.MISSING_SETTINGS_FILLED_IN
+    # The renamed setting wins; older project files can keep their previous spelling.
+    values = vars(module)
+    if "start_in_shortcut_position" not in values and "start_in_shortcut_position" in values:
+        values["start_in_shortcut_position"] = values["start_in_shortcut_position"]
     filled = []
     try:
         expressions = default_setting_expressions()
@@ -454,8 +465,10 @@ def validate(module: Optional[Union[ModuleType, SimpleNamespace]] = None) -> Non
     for name in SHORTCUT_NAME_SETTINGS:
         need(name, lambda v: isinstance(v, str) and (v == "" or v.strip()), 'use a name or "" to disable')
     for outcome in OUTCOMES:
-        for prefix in ("close_after_", "open_log_file_after_", "foreground_after_"):
+        for prefix in ("close_after_", "open_log_file_after_"):
             need(prefix + outcome, lambda v: isinstance(v, bool), "use True or False")
+    for outcome in ("success", "failure"):
+        need("foreground_after_" + outcome, lambda v: isinstance(v, bool), "use True or False")
     for name in (
         "print_prepend",
         "input_prepend",
@@ -476,7 +489,9 @@ def validate(module: Optional[Union[ModuleType, SimpleNamespace]] = None) -> Non
 
     if problems:
         raise SettingsError(
-            "Please fix developer_settings.py:\n  " + "\n  ".join(problems) + f'\n  File: "{DEV_SETTINGS_PATH}"'
+            "Please check these settings and any referenced files:\n  "
+            + "\n  ".join(problems)
+            + f'\n  Settings file: "{DEV_SETTINGS_PATH}"'
         )
 
 

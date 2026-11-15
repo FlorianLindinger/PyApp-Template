@@ -185,6 +185,9 @@ class RequirementsFileTests(unittest.TestCase):
         with self.assertRaises(SettingsError) as raised:
             config.validate(load())
         self.assertIn("cannot be read", str(raised.exception))
+        self.assertIn("Change requirements_path in developer_settings.py", str(raised.exception))
+        self.assertIn("make sure the file exists and is readable", str(raised.exception))
+        self.assertIn('requirements_path = ""', str(raised.exception))
 
     def test_uv_add_is_copied_into_packages_but_never_the_file_packages(self):
         _, load = self.settings_with("numpy>=2\n")

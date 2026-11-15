@@ -7,6 +7,33 @@ const { test } = require("node:test");
 
 const source = fs.readFileSync(path.join(__dirname, "../web/terminal.js"), "utf8");
 
+test("wrapped crash-log paths with spaces open the actual file through the host", () => {
+  const file = "C:\\My App\\crash logs\\crash_123456abcdef.txt";
+  const text = "Crash log: " + file;
+  const cols = 20;
+  const lines = [];
+  for (let index = 0; index < text.length; index += cols) {
+    lines.push({ isWrapped: index > 0, translateToString: () => text.slice(index, index + cols) });
+  }
+  let provider;
+  const sent = [];
+  const context = vm.createContext({
+    term: { cols, buffer: { active: { getLine: (index) => lines[index] } },
+      registerLinkProvider: (value) => { provider = value; } },
+    send: (value) => sent.push(value),
+  });
+  const start = source.indexOf("const PATH_PATTERNS =");
+  const end = source.indexOf("// ------------------------------------------------------------ keys", start);
+  vm.runInContext(source.slice(start, end), context);
+  provider.provideLinks(2, (links) => {
+    assert.equal(links.length, 1);
+    links[0].activate();
+  });
+  assert.equal(sent[0].path, file);
+  assert.equal(sent[0].line, 0);
+  assert.equal(sent[0].t, "o");
+});
+
 test("live info updates and reconnects refresh the displayed application metadata", () => {
   const config = { info: [["Tool", "example"]] };
   const shown = [];
@@ -54,6 +81,28 @@ function selectionPage(texts, range, viewportY = 0) {
     column: () => { columnSelection = true; },
   };
 }
+
+test("completion keeps the explicit outcome title and embedded icon when closing is denied", () => {
+  const titles = [];
+  const favicon = {};
+  let closes = 0;
+  const context = vm.createContext({
+    favicon, showTitle: (value) => titles.push(value), showInfo() {}, applyTitle() {},
+    notifyEnd: { checked: false }, window: { close: () => closes++ },
+    setTimeout: (callback) => callback(), showNotice() {}, endText: () => "Finished",
+  });
+  const start = source.indexOf("const handleControl =");
+  const end = source.indexOf("let history =", start);
+  vm.runInContext(source.slice(start, end) + "\nglobalThis.handleControl = handleControl;", context);
+  for (const [title, code] of [["[Finished] App", 0], ["[Failure] App", 1]]) {
+    context.handleControl({ t: "title", title });
+    context.handleControl({ t: "icon", v: 2, url: "data:image/png;base64,aWNvbg==" });
+    context.handleControl({ t: "exit", code });
+    assert.equal(titles.at(-1), title);
+    assert.equal(favicon.href, "data:image/png;base64,aWNvbg==");
+  }
+  assert.equal(closes, 2);
+});
 
 test("selection highlights text on each line, excluding blank rows and unused trailing cells", () => {
   const page = selectionPage(["abc", "", "x y", ""], { start: { x: 0, y: 0 }, end: { x: 7, y: 3 } });

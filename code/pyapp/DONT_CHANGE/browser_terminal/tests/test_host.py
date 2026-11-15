@@ -226,6 +226,24 @@ class PageButtonsTest(unittest.TestCase):
     def session(self, **config: Any) -> Any:
         return browser_terminal.Session(browser_terminal.complete_config(config, ["prog.exe", "a b"]))
 
+    def test_explicit_title_is_broadcast_and_kept_for_reconnect(self):
+        session = self.session()
+        with mock.patch.object(session, "broadcast") as broadcast:
+            session._apply_ui_request({"title": "[Finished] App"})
+        self.assertEqual(session.config["title"], "[Finished] App")
+        broadcast.assert_called_once_with({"t": "title", "title": "[Finished] App"})
+
+    def test_icon_message_embeds_the_file_for_server_shutdown(self):
+        session = self.session()
+        with tempfile.TemporaryDirectory() as folder:
+            icon = Path(folder, "success.ico")
+            icon.write_bytes(b"example icon")
+            with mock.patch.object(session, "broadcast") as broadcast:
+                session._apply_ui_request({"icon": str(icon)})
+        message = broadcast.call_args.args[0]
+        self.assertEqual(base64.b64decode(message["url"].split(",", 1)[1]), b"example icon")
+        self.assertEqual(message["v"], 1)
+
     def test_info_updates_replace_values_and_keep_other_fields_on_reconnect(self):
         session = self.session(info=[["Project", "tool"], ["Current log file", "starting..."]])
         with tempfile.TemporaryDirectory() as folder:

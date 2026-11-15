@@ -58,6 +58,13 @@ else:
     BinaryProcess = subprocess.Popen
 
 
+def app_working_folder(settings: Union[ModuleType, SimpleNamespace], script: str) -> str:
+    """Keep the inherited starting folder when requested; otherwise use the main script's folder."""
+    if settings.start_in_shortcut_position:
+        return os.environ.get("PYAPP_START_DIR", str(Path.cwd()))
+    return str(Path(script).parent)
+
+
 def app_environment(
     settings: Union[ModuleType, SimpleNamespace], has_terminal: bool, log_path: str, app_id: str
 ) -> Dict[str, str]:
@@ -97,7 +104,7 @@ def app_environment(
         PROGRAM_HAS_TERMINAL="1" if has_terminal else "0",
         LOG_PATH=log_path,
         APP_ID=app_id,
-        WDIR_IS_SCRIPT_DIR="0" if settings.start_in_shortcut_folder else "1",
+        WDIR_IS_SCRIPT_DIR="0" if settings.start_in_shortcut_position else "1",
         CLOSE_AFTER_FAILURE="1" if settings.close_after_failure else "0",
         CLOSE_AFTER_SUCCESS="1" if settings.close_after_success else "0",
     )
@@ -317,11 +324,7 @@ def main() -> None:
             )
         # In the run folder while the app runs; next to the log only if kept (keep_raw_output).
         raw_path = str(run_dir / paths.RAW_OUTPUT_FILE_NAME) if log_path else ""
-        cwd = (
-            os.environ.get("PYAPP_START_DIR", str(Path.cwd()))
-            if settings.start_in_shortcut_folder
-            else str(Path(script).parent)
-        )
+        cwd = app_working_folder(settings, script)
         if launch_mode == "browser":
             from pyapp.DONT_CHANGE.browser_terminal import ui
 

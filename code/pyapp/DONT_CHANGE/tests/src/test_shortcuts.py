@@ -23,13 +23,15 @@ from pyapp.DONT_CHANGE.scripts.dev_tools import housekeeping
 
 class ShortcutTests(unittest.TestCase):
     @unittest.skipUnless(os.name == "nt", "Windows shell links")
-    def test_shortcut_default_start_folder_is_its_own_output_folder(self):
+    def test_shortcut_default_start_in_is_empty(self):
         with tempfile.TemporaryDirectory() as folder:
             output = Path(folder, "shortcut location")
             shortcut = shortcuts.generate_shortcut(
                 "Working folder probe", None, str(Path(folder, "target.cmd")), output_dir=str(output)
             )
-            self.assertIn(str(output).encode("utf-16le"), Path(shortcut).read_bytes())
+            # IShellLink's HasWorkingDir flag (bit 4 of LinkFlags at byte 20).
+            flags = int.from_bytes(Path(shortcut).read_bytes()[20:24], "little")
+            self.assertEqual(flags & 0x10, 0)
 
     @unittest.skipUnless(os.name == "nt", "Windows shell links")
     def test_explicit_shortcut_start_folder_is_preserved(self):

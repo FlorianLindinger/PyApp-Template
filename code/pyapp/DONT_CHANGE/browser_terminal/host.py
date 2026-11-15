@@ -695,6 +695,7 @@ class Session:
             "ready": self.window_ready.is_set(),
             "started": self.started_at,
             "info": self.config["info"],
+            "title": self.config["title"],
         }
         with self.lock:
             client.send_json(hello)
@@ -821,6 +822,10 @@ class Session:
                     report_ignored("browser terminal: UI request")
 
     def _apply_ui_request(self, request: Dict[str, Any]) -> None:
+        title = request.get("title")
+        if isinstance(title, str):
+            self.config["title"] = title
+            self.broadcast({"t": "title", "title": title})
         info = request.get("info")
         if isinstance(info, dict) and all(
             isinstance(label, str) and isinstance(text, str) for label, text in info.items()
@@ -834,7 +839,14 @@ class Session:
         if isinstance(icon, str) and Path(icon).suffix.lower() in ICON_TYPES:
             self.icon_path = icon
             self.icon_version += 1
-            self.broadcast({"t": "icon", "v": self.icon_version})
+            message: Dict[str, Any] = {"t": "icon", "v": self.icon_version}
+            try:
+                # Keep the final favicon usable after the local server shuts down.
+                encoded = base64.b64encode(Path(icon).read_bytes()).decode("ascii")
+                message["url"] = f"data:{ICON_TYPES[Path(icon).suffix.lower()]};base64,{encoded}"
+            except OSError:
+                report_ignored("browser terminal: read icon")
+            self.broadcast(message)
         colors = request.get("colors")
         if isinstance(colors, dict):
             self.colors = {key: value for key, value in colors.items() if key in ("background", "foreground")}

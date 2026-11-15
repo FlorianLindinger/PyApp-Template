@@ -29,11 +29,17 @@ def append(lines: Iterable[str]) -> Callable[[str], str]:
 
 
 class ValidationTests(unittest.TestCase):
-    def test_completion_foreground_settings_default_off_and_require_booleans(self):
-        for outcome in config.OUTCOMES:
+    def test_start_position_requires_a_boolean(self):
+        with support.temporary_settings(append(['start_in_shortcut_position = "yes"'])) as (_, load):
+            with self.assertRaises(SettingsError) as raised:
+                config.validate(load())
+            self.assertIn("start_in_shortcut_position", str(raised.exception))
+
+    def test_completion_foreground_defaults_and_boolean_validation(self):
+        for outcome, default in (("success", False), ("failure", True)):
             name = "foreground_after_" + outcome
             with self.subTest(name=name), support.temporary_settings(lambda text: text) as (_, load):
-                self.assertIs(getattr(load(), name), False)
+                self.assertIs(getattr(load(), name), default)
             with self.subTest(name=name), support.temporary_settings(append([f'{name} = "yes"'])) as (_, load):
                 with self.assertRaises(SettingsError) as raised:
                     config.validate(load())
@@ -319,6 +325,31 @@ class MainScriptTests(unittest.TestCase):
         ), self.assertRaises(SettingsError) as raised:
             config.validate(load())
         self.assertIn("does not exist", str(raised.exception))
+        self.assertIn("Please check these settings and any referenced files", str(raised.exception))
+        self.assertIn("Change main_script_path in developer_settings.py", str(raised.exception))
+        self.assertIn("make sure the Python file exists at this path", str(raised.exception))
+
+    def test_a_directory_is_not_reported_as_a_missing_path(self):
+        with tempfile.TemporaryDirectory(suffix=".py") as folder:
+            problem = config._main_script_problem(folder)
+        self.assertIsNotNone(problem)
+        self.assertIn("or is not a file", problem or "")
+
+    def test_missing_shortcut_target_names_the_setting_and_both_remedies(self):
+        from pyapp.DONT_CHANGE.actions import open_file
+
+        for kind, setting_name in (("settings", "user_settings_path"), ("open_code", "main_script_path")):
+            with self.subTest(kind=kind), support.temporary_settings(
+                append([f'{setting_name} = "..\\\\no_such_file.py"'])
+            ) as (_, load), mock.patch.object(open_file, "settings", load), mock.patch.object(
+                open_file, "main_script_path", return_value="no_such_file.py"
+            ), mock.patch.object(open_file.sys, "argv", ["open_file.py", kind]), self.assertRaises(
+                SettingsError
+            ) as raised:
+                open_file.main()
+            self.assertIn(f"Change {setting_name}", str(raised.exception))
+            self.assertIn("make sure the file exists at this path", str(raised.exception))
+            self.assertIn("Run Setup again", str(raised.exception))
 
 
 class EditingTests(unittest.TestCase):
