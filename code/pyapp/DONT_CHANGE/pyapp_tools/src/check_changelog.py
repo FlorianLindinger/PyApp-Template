@@ -20,7 +20,7 @@ from _paths import PROJECT_ROOT
 LAUNCHER = "code/pyapp/DONT_CHANGE/"
 CHANGELOG = LAUNCHER + "CHANGELOG.md"
 RELEASE_BRANCH = "refs/heads/main"
-NOT_LAUNCHER = ("TODO.md", "future_TODO.md", "AGENT_CHANGELOG.md")  # notes, relative to DONT_CHANGE
+NOT_LAUNCHER = ("TODO.md", "docs/TODO.md", "future_TODO.md", "AGENT_CHANGELOG.md")  # notes, relative to DONT_CHANGE
 NO_COMMIT = "0" * 40
 
 

@@ -49,6 +49,7 @@ GROUPS: Dict[str, Tuple[str, ...]] = {
     "browser": ("test_browser_terminal.py", "test_host.py"),
     # The Git hooks and the checks they run.
     "git": (
+        "test_git_snapshots.py",
         "test_settings_snapshots.py",
         "test_git.py",
         "test_git_hooks.py",

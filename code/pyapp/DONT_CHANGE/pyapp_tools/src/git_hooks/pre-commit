@@ -26,10 +26,8 @@ fi
 
 started=$(date +%s%N 2>/dev/null)
 # Keep diagnostics on the stream Git clients display when a command fails.
-"$python" -B "$launcher/pyapp_tools/src/check_git_leaks.py" --committing >&2 || exit 1
-"$python" -B "$launcher/pyapp_tools/src/check_staged_ruff.py" >&2 || exit 1
-"$python" -B "$launcher/scripts/settings_defaults.py" --staged >&2 || exit 1
-"$python" -B "$launcher/pyapp_tools/src/check_protected.py" >&2 || exit 1
+# The staged checker code, configuration and files run together in a disposable Git checkout.
+"$python" -B "$launcher/pyapp_tools/src/git_snapshot.py" --committing >&2 || exit 1
 
 # Silent in editors; in a terminal one line, so a passing commit is visibly checked.
 if [ -t 2 ]; then

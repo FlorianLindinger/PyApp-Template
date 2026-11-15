@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 import base64
+import ctypes
 import io
+import json
 import os
 import subprocess
 import unittest
 from types import SimpleNamespace
+from typing import Protocol
 from unittest import mock
 from xml.etree import ElementTree as ET
 
@@ -16,7 +19,7 @@ from project_location import CODE
 # isort: split
 
 from pyapp.DONT_CHANGE.runtime import process_exit
-from pyapp.DONT_CHANGE.scripts import config
+from pyapp.DONT_CHANGE.scripts import config, console_tools
 from pyapp.DONT_CHANGE.scripts import taskbar_status as taskbar
 from pyapp.DONT_CHANGE.scripts import windows_notifications as notifications
 
@@ -42,7 +45,54 @@ def settings(**changes: object) -> SimpleNamespace:
     return result
 
 
+class DwordReference(Protocol):
+    """The DWORD buffer exposed by ctypes.byref() to the fake native callback."""
+
+    _obj: ctypes.c_ulong
+
+
 class TaskbarTests(unittest.TestCase):
+    @unittest.skipUnless(os.name == "nt", "Windows native window handles")
+    def test_foreground_uses_owned_hidden_wt_window_and_rejects_stale_handles(self):
+        with mock.patch.dict(os.environ, {taskbar.WINDOW_ENV: "record"}), mock.patch.object(
+            taskbar, "terminal_window", return_value=123
+        ) as window, mock.patch.object(console_tools, "note_ignored"), mock.patch.object(
+            taskbar.ctypes, "windll"
+        ) as native:
+            native.user32.IsIconic.return_value = True
+            console_tools.unminimize_terminal()
+            console_tools.foreground_terminal()
+            self.assertEqual(window.call_args_list, [mock.call(include_hidden=True)] * 2)
+            native.user32.ShowWindow.assert_called_once_with(123, 9)
+            native.user32.SetForegroundWindow.assert_called_once_with(123)
+            native.user32.reset_mock()
+            window.return_value = 0
+            console_tools.unminimize_terminal()
+            console_tools.foreground_terminal()
+            native.user32.ShowWindow.assert_not_called()
+            native.user32.SetForegroundWindow.assert_not_called()
+
+    @unittest.skipUnless(os.name == "nt", "Windows native window handles")
+    def test_completion_updates_activity_even_while_the_remembered_terminal_is_hidden(self):
+        user = mock.Mock()
+        user.IsWindow.return_value = True
+        user.IsWindowVisible.return_value = False
+
+        def owner(_hwnd: int, ptr: DwordReference) -> None:
+            ptr._obj.value = 10
+
+        def class_name(_hwnd: int, buffer: ctypes.Array[ctypes.c_wchar], _length: int) -> None:
+            buffer.value = "ConsoleWindowClass"
+
+        user.GetWindowThreadProcessId.side_effect = owner
+        user.GetClassNameW.side_effect = class_name
+        with mock.patch.object(taskbar.ctypes, "WinDLL", return_value=user), mock.patch.dict(
+            os.environ, {taskbar.WINDOW_ENV: json.dumps({"hwnd": 123, "pid": 10}), taskbar.ACTIVITY_ENV: "1"}
+        ), mock.patch.object(taskbar, "set_progress") as progress:
+            taskbar.finish(settings(have_running_animation_in_taskbar=True), "success", stays_open=True)
+            progress.assert_called_once_with(123, taskbar.TBPF_NOPROGRESS)
+            self.assertNotIn(taskbar.ACTIVITY_ENV, os.environ)
+
     def test_running_animation_then_each_completion_policy(self):
         s = settings(
             have_running_animation_in_taskbar=True,
@@ -176,6 +226,42 @@ class NotificationTests(unittest.TestCase):
 
 
 class CompletionSettingsTests(unittest.TestCase):
+    def test_completion_focus_and_wait_policy_for_each_outcome_close_and_recovery_combination(self):
+        # A hidden terminal is restored only by an explicit completion foreground request.
+        for outcome in ("success", "failure", "keyboard_interrupt"):
+            for close in (False, True):
+                for foreground in (False, True):
+                    for recovery in (False, True):
+                        s = settings(
+                            **{
+                                "close_after_" + outcome: close,
+                                "foreground_after_success": foreground,
+                                "foreground_after_failure": foreground,
+                            }
+                        )
+                        with self.subTest(
+                            outcome=outcome, close=close, foreground=foreground, recovery=recovery
+                        ), mock.patch.object(process_exit, "settings", return_value=s), mock.patch.object(
+                            process_exit, "in_browser_terminal", return_value=False
+                        ), mock.patch.object(process_exit, "set_terminal_title"), mock.patch.object(
+                            process_exit, "set_terminal_icon"
+                        ), mock.patch.object(process_exit, "set_terminal_colors"), mock.patch.object(
+                            process_exit, "print_report"
+                        ), mock.patch.object(process_exit, "write_crash_log", return_value=None), mock.patch.object(
+                            process_exit, "unminimize_terminal"
+                        ) as restore, mock.patch.object(
+                            process_exit, "foreground_terminal"
+                        ) as focus, mock.patch.object(process_exit, "wait_for_report") as wait, mock.patch.object(
+                            taskbar, "finish"
+                        ) as finish:
+                            process_exit.complete(outcome, None, keep_open=recovery)
+                            stays_open = not close or recovery
+                            expected_focus = stays_open and foreground and outcome != "keyboard_interrupt"
+                            self.assertEqual(restore.call_count, int(expected_focus))
+                            self.assertEqual(focus.call_count, int(expected_focus))
+                            self.assertEqual(wait.call_count, int(stays_open and not recovery))
+                            finish.assert_called_once_with(s, outcome, stays_open)
+
     def test_custom_titles_and_sound_paths_are_used(self):
         s = settings(
             close_after_success=False,

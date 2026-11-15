@@ -369,7 +369,9 @@ class ChangelogTests(unittest.TestCase):
         self.assertEqual(self.push(), [])
 
     def test_other_branches_notes_and_app_files_are_not_checked(self):
-        self.commit({"code/pyapp/DONT_CHANGE/TODO.md": "x", "code/main.py": "x"})
+        self.commit(
+            {"code/pyapp/DONT_CHANGE/TODO.md": "x", "code/pyapp/DONT_CHANGE/docs/TODO.md": "x", "code/main.py": "x"}
+        )
         self.assertEqual(self.push(), [])
         self.commit({"code/pyapp/DONT_CHANGE/scripts/a.py": "x"})
         self.assertEqual(self.push("dev"), [])

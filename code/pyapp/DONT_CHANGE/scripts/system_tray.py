@@ -33,6 +33,7 @@ NIF_INFO = 0x10
 NIF_SHOWTIP = 0x80
 SW_HIDE = 0
 SW_RESTORE = 9
+SW_SHOWMINNOACTIVE = 7
 
 
 def _short_text(text: str, units: int) -> str:
@@ -90,6 +91,7 @@ class MinimizeToTray:
         self.hidden = False
         self.ready = threading.Event()
         self.closing = threading.Event()
+        self.activate_on_close = True
         self.error: Optional[Exception] = None
         self.thread = threading.Thread(target=self._run, name="PyApp system tray", daemon=True)
         self.user = ctypes.WinDLL("user32", use_last_error=True)
@@ -215,7 +217,9 @@ class MinimizeToTray:
     def restore(self) -> None:
         """Show the terminal and remove its tray entry; the next minimize recreates it."""
         if self._valid():
-            self.user.ShowWindow(self.target, SW_RESTORE)
+            # Duplicate Shell callbacks must not unmaximize an already-restored window.
+            if self.user.IsIconic(self.target) or not self.user.IsWindowVisible(self.target):
+                self.user.ShowWindow(self.target, SW_RESTORE)
             self.user.SetForegroundWindow(self.target)
         self.hidden = False
         self._remove_icon()
@@ -334,7 +338,14 @@ class MinimizeToTray:
             note_ignored("system tray controller")
         finally:
             if self.hidden:
-                self.restore()
+                if self.activate_on_close:
+                    self.restore()
+                else:
+                    # Normal watchdog exit must not steal focus or flash the terminal open.
+                    # A surviving console (e.g. a child still attached) remains recoverable.
+                    if self._valid():
+                        self.user.ShowWindow(self.target, SW_SHOWMINNOACTIVE)
+                    self.hidden = False
             self._remove_icon()
             if self.hwnd and self.user.IsWindow(self.hwnd):
                 self.user.KillTimer(self.hwnd, 1)
@@ -354,8 +365,9 @@ class MinimizeToTray:
         if self.error:
             raise self.error
 
-    def close(self) -> None:
-        """Remove the icon on its owning thread; restore a still-running terminal before leaving."""
+    def close(self, *, activate: bool = True) -> None:
+        """Remove the icon; normal watchdog shutdown returns hidden windows to the taskbar quietly."""
+        self.activate_on_close = activate
         self.closing.set()
         if self.hwnd:
             self.user.PostMessageW(self.hwnd, WM_CLOSE, 0, 0)

@@ -9,6 +9,9 @@ replaced as a whole when the template is updated.
 This document explains how it works, file by file, for anyone who wants to understand, review
 or change it.
 
+For release validation, use [RELEASE_CHECKLIST.md](docs/RELEASE_CHECKLIST.md).
+The [window lifecycle rules](docs/WINDOW_LIFECYCLE.md) define tray, foreground and completion transitions.
+
 - [Overview](#overview)
 - [Design rules](#design-rules)
 - [What happens when you start the app](#what-happens-when-you-start-the-app)
@@ -363,7 +366,9 @@ ASCII art (`scripts/banner.py`). The batch/Python bootstrap and the
 | --- | --- |
 | `README.md` | This document. |
 | `CHANGELOG.md` | Changes per version; the newest heading matches `LAUNCHER_VERSION`. |
-| `TODO.md` | Open items and ideas. |
+| `docs/RELEASE_CHECKLIST.md` | Repeatable candidate, automated, desktop and artifact validation with recorded evidence. |
+| `docs/WINDOW_LIFECYCLE.md` | Host capabilities and explicit window/tray/completion state transitions and coverage. |
+| `docs/TODO.md` | Open items and ideas. |
 | `LICENSE.md` | License of this folder (MIT), which also covers the bundled banner font. |
 | `backend_settings.py` | Every internal path and constant (`LAUNCHER_VERSION`, folders, icon paths, file names, defaults). Imported by almost everything; changes nothing on import. |
 | `ruff.toml`, `pyrefly.toml` | Lint and type-check settings for this folder only (Python 3.8, Windows, 120 columns). |
@@ -460,6 +465,7 @@ ASCII art (`scripts/banner.py`). The batch/Python bootstrap and the
 | `data/dev_settings_default.py` | The settings file this version ships with: defaults for settings a project's `developer_settings.py` lacks (see [Versions](#versions)). Read with `ast`, never imported. |
 | `data/protected_baseline.json` | The `PROTECTED_*` lists of `backend_settings.py` as of the last release, saved by `pyapp_tools/release`. Until the next MAJOR version, `tests/src/test_template_contract.py` (also run before each commit) refuses to take an entry off. Do not edit by hand. |
 | `data/fonts/` | Banner font, an original drawing made for this project (see [Licensing](#licensing)). |
+| `data/readme_resources/` | Screenshots and images used by the project README. |
 | `data/icons/` | Bundled default PNGs: the default base image (used when the project's `icon.png` in `code/pyapp/icons` is missing or unchanged) and the overlays. How to change the icons is in `code/pyapp/icons/README.md` (`run.bat icons-help` opens it). |
 | `tests/` | Regression tests for this folder; the launchers (`run_*_tests.cmd`) are in `tests/`, the code in `tests/src`; see `tests/README.md`. |
 

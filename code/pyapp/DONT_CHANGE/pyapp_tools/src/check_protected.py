@@ -2,7 +2,8 @@
 
 Runs tests/src/test_template_contract.py (well under a second) when the staged changes touch
 code/pyapp: the lists in backend_settings (PROTECTED_*) must still match the code, and nothing
-may be taken off them before a new MAJOR version. It checks the files on disk, like the tests.
+may be taken off them before a new MAJOR version. The hook runs this in an isolated staged
+checkout; direct invocation checks the working files.
 
 Usage: check_protected.py   (exit code 1: something existing projects rely on would break)
 """

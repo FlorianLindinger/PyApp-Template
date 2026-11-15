@@ -303,12 +303,17 @@ def set_terminal_app_id(app_id: str) -> None:
 
 
 def unminimize_terminal() -> None:
-    """Restore the current console window when Windows exposes its handle."""
+    """Restore the owned terminal, including a hidden dedicated WT window, without shrinking it."""
     try:
         import ctypes
 
-        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
-        hwnd = int(kernel32.GetConsoleWindow() or 0)
+        if "PYAPP_TERMINAL_WINDOW" in os.environ:
+            from pyapp.DONT_CHANGE.scripts.taskbar_status import terminal_window
+
+            hwnd = terminal_window(include_hidden=True)
+        else:
+            kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+            hwnd = int(kernel32.GetConsoleWindow() or 0)
         # Only a minimized window: SW_RESTORE would also shrink a window the user maximized.
         if not hwnd or not ctypes.windll.user32.IsIconic(hwnd):
             return
@@ -322,8 +327,13 @@ def foreground_terminal() -> None:
     try:
         import ctypes
 
-        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
-        hwnd = int(kernel32.GetConsoleWindow() or 0)
+        if "PYAPP_TERMINAL_WINDOW" in os.environ:
+            from pyapp.DONT_CHANGE.scripts.taskbar_status import terminal_window
+
+            hwnd = terminal_window(include_hidden=True)
+        else:
+            kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+            hwnd = int(kernel32.GetConsoleWindow() or 0)
         if not hwnd:
             return
         ctypes.windll.user32.SetForegroundWindow(hwnd)

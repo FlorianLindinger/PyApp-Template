@@ -536,7 +536,7 @@ def main() -> None:
             handle_exit(settings, ExitMode.WATCHDOG_ERROR, app_id, has_terminal, log_path, script, run_dir)
     finally:
         if tray is not None:
-            tray.close()
+            tray.close(activate=False)
         if registered:
             registry.remove()
 

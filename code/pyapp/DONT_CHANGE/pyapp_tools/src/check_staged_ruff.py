@@ -2,7 +2,9 @@
 
 Checks the staged content (what the commit will contain), not the files on disk, so changes that
 are not staged cannot hide or cause a problem. Only Python files in code/pyapp/DONT_CHANGE, with
-its own ruff.toml. Ruff comes from PATH, else uvx (see verify_launcher.py); without either, the
+its own ruff.toml. The hook runs this in a staged checkout, so Ruff configuration and exclusions
+also come from the index. Direct invocation uses working configuration. Ruff comes from PATH,
+else uvx (see verify_launcher.py); without either, the
 commit is not stopped, because a missing tool is not a problem in the code.
 
 Usage: check_staged_ruff.py   (exit code 1: problems found)

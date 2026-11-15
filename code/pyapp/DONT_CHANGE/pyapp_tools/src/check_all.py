@@ -246,4 +246,8 @@ if __name__ == "__main__":
     context = (
         "Push blocked: Pre-push checks could not complete. Review the tool error." if "--pushing" in sys.argv else ""
     )
+    if "--pushing" in sys.argv and not os.environ.get("PYAPP_CHECKING_GIT_SNAPSHOT"):
+        from git_snapshot import push_checks
+
+        raise SystemExit(_ui.run(lambda: push_checks(sys.stdin.read()), context))
     raise SystemExit(_ui.run(main, context))

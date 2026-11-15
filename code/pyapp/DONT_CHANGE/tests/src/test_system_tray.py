@@ -104,6 +104,15 @@ class TrayLogicTests(unittest.TestCase):
         self.assertFalse(controller.added)
         self.assertEqual(shell.Shell_NotifyIconW.call_args[0][0], tray.NIM_DELETE)
 
+    def test_duplicate_restore_keeps_an_already_visible_maximized_window(self):
+        controller, user, _shell, _owner, _stop = self.controller()
+        user.IsWindowVisible.return_value = True
+        user.IsIconic.return_value = False
+        controller.restore()
+        controller.restore()
+        user.ShowWindow.assert_not_called()
+        self.assertFalse(controller.added)
+
     def test_explorer_restart_restores_without_recreating_a_visible_windows_icon(self):
         controller, user, shell, _owner, _stop = self.controller()
         controller.hidden = True
@@ -157,6 +166,9 @@ class NativeTrayTests(unittest.TestCase):
                 "user.ShowWindow.argtypes = [wintypes.HWND, ctypes.c_int]\n"
                 "user.IsWindowVisible.argtypes = [wintypes.HWND]\n"
                 "user.IsIconic.argtypes = [wintypes.HWND]\n"
+                "user.IsZoomed.argtypes = [wintypes.HWND]\n"
+                "user.GetWindowRect.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.RECT)]\n"
+                "user.SetWindowPos.argtypes = [wintypes.HWND, wintypes.HWND, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int, wintypes.UINT]\n"
                 "user.PostMessageW.argtypes = [wintypes.HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM]\n"
                 "hwnd = kernel.GetConsoleWindow()\n"
                 "controller = MinimizeToTray(hwnd, 'PyApp tray test', '', lambda: None)\n"
@@ -165,16 +177,43 @@ class NativeTrayTests(unittest.TestCase):
                 "    while not test() and time.monotonic() < deadline: time.sleep(.02)\n"
                 "    assert test(), 'native window state did not change'\n"
                 "try:\n"
+                "    user.ShowWindow(hwnd, 9)\n"
+                "    user.SetWindowPos(hwnd, None, 80, 90, 640, 360, 0x0014)\n"
+                "    before = wintypes.RECT(); user.GetWindowRect(hwnd, ctypes.byref(before))\n"
+                "    geometry = lambda rect: (rect.left, rect.top, rect.right, rect.bottom)\n"
                 "    controller.start()\n"
-                "    for _ in range(2):\n"
+                "    for maximized in (False, True):\n"
+                "        if maximized: user.ShowWindow(hwnd, 3)\n"
                 "        user.ShowWindow(hwnd, 6)\n"
                 "        wait(lambda: controller.hidden and not user.IsWindowVisible(hwnd))\n"
                 "        user.PostMessageW(controller.hwnd, WM_TRAY, 0, (1 << 16) | 0x405)\n"
                 "        wait(lambda: not controller.hidden and not controller.added and user.IsWindowVisible(hwnd) and not user.IsIconic(hwnd))\n"
+                "        assert bool(user.IsZoomed(hwnd)) == maximized, 'restore changed maximized state'\n"
+                "        user.PostMessageW(controller.hwnd, WM_TRAY, 0, (1 << 16) | 0x405)\n"
+                "        time.sleep(.05)\n"
+                "        assert bool(user.IsZoomed(hwnd)) == maximized, 'duplicate restore changed maximized state'\n"
+                "        if maximized: user.ShowWindow(hwnd, 9)\n"
+                "        after = wintypes.RECT(); user.GetWindowRect(hwnd, ctypes.byref(after))\n"
+                "        assert geometry(before) == geometry(after), 'restore changed normal position/size'\n"
+                "    user.ShowWindow(hwnd, 3)\n"
                 "    user.ShowWindow(hwnd, 6)\n"
-                "    wait(lambda: controller.hidden)\n"
+                "    wait(lambda: controller.hidden and not user.IsWindowVisible(hwnd))\n"
+                # Simulate Shell losing the icon as well as sending its restart message.
+                "    controller._remove_icon()\n"
+                "    user.PostMessageW(controller.hwnd, controller.restart_message, 0, 0)\n"
+                "    wait(lambda: not controller.hidden and user.IsWindowVisible(hwnd) and not user.IsIconic(hwnd))\n"
+                "    assert user.IsZoomed(hwnd) and not controller.added, 'Explorer recovery changed maximized state'\n"
+                "    user.ShowWindow(hwnd, 6)\n"
+                "    wait(lambda: controller.hidden and not user.IsWindowVisible(hwnd))\n"
                 "    controller.close()\n"
                 "    assert user.IsWindowVisible(hwnd), 'cleanup left terminal hidden'\n"
+                "    assert not controller.thread.is_alive() and not controller.added\n"
+                "    controller = MinimizeToTray(hwnd, 'PyApp quiet cleanup test', '', lambda: None)\n"
+                "    controller.start()\n"
+                "    user.ShowWindow(hwnd, 6)\n"
+                "    wait(lambda: controller.hidden and not user.IsWindowVisible(hwnd))\n"
+                "    controller.close(activate=False)\n"
+                "    assert user.IsWindowVisible(hwnd) and user.IsIconic(hwnd), 'quiet cleanup did not return window minimized'\n"
                 "    assert not controller.thread.is_alive() and not controller.added\n"
                 f"    Path({str(result)!r}).write_text('passed', encoding='utf-8')\n"
                 "except BaseException:\n"

@@ -34,8 +34,8 @@ uses it). `src/groups.py` defines the groups; a new test file must be added to o
 | `test_shortcuts.py` | shortcut file names and order, outdated shortcut targets, taskbar identity per folder, removing shortcuts |
 | `test_console_colors.py` | only hexadecimal color arguments can reach the Windows color command; a failure turns the window black; the `wt.exe` command line |
 | `test_terminal_window.py` | close-policy capabilities, dedicated WT windows, native alpha/caption/topmost/Close styles and a real conhost launch |
-| `test_system_tray.py` | repeat minimize notifications, icon-before-hide recovery, Restore/Stop, Explorer restart and native conhost tray/message-loop cleanup |
-| `test_completion_attention.py` | taskbar activity/highlight/flash transitions, notification XML/script safety, custom text/titles/sounds, blocked delivery and defaults/validation |
+| `test_system_tray.py` | repeat notifications, icon-before-hide recovery, Restore/Stop, owner safety, external/duplicate restore, simulated Explorer restart, native conhost geometry/maximized restoration and quiet cleanup |
+| `test_completion_attention.py` | hidden native-window completion/focus, close/recovery/foreground outcome combinations, taskbar activity/highlight/flash, notification safety/text/delivery and defaults |
 | `test_banner.py` | the banner font renders the app name, supports German letters and Latin-1, skips missing characters; the console font it needs |
 | `test_icons.py` | icons always use the bundled overlays; generated icons update silently, a question per icon for placed ones; small sizes in linear light; every `.ico` size |
 | `test_dev_menu.py` | the dev tools menu offers every command exactly once; every prompt can be cancelled; missing-package recovery; `run-tests` finds the app's tests folders (never the launcher's) and runs them with pytest or unittest |
@@ -66,6 +66,7 @@ uses it). `src/groups.py` defines the groups; a new test file must be added to o
 | File | Covers |
 | --- | --- |
 | `test_settings_snapshots.py` | real disposable Git index/commit comparisons, unstaged overrides, multiple push refs and staged-check CLI diagnostics |
+| `test_git_snapshots.py` | isolated submitted code/configuration, checkout attributes, temporary index, source preservation, exact non-HEAD/multiple push tips and fail-closed exports |
 | `test_git.py` | no ignore rule hides a launcher file |
 | `test_git_hooks.py` | Real shell hooks in disposable repositories: failure diagnostics reach stderr and push refs reach the check |
 | `test_git_leaks.py` | `pyapp_tools/check_git_leaks`: what counts as a leak; secrets are never printed in full |

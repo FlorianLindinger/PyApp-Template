@@ -99,7 +99,7 @@ name and icon. A script started from a batch file can leave the taskbar with a b
 Python console and your app, all with default names and icons.
 
 <p align="center">
-  <img src="code/pyapp/DONT_CHANGE/data/docs/taskbar-comparison.png" alt="Taskbar comparison. Before: three entries for a batch window, a terminal and an app with a default icon and name. With PyApp-Template: a single entry named My App with its own icon. After a crash: one entry named Failure, with the terminal showing the error." width="620">
+  <img src="code/pyapp/DONT_CHANGE/data/readme_resources/taskbar-comparison.png" alt="Taskbar comparison. Before: three entries for a batch window, a terminal and an app with a default icon and name. With PyApp-Template: a single entry named My App with its own icon. After a crash: one entry named Failure, with the terminal showing the error." width="620">
 </p>
 
 **No console, no lost errors.** The *(No-Terminal)* shortcut, for GUI apps, shows no console while
@@ -236,13 +236,13 @@ unique filename. Click it in Windows Terminal or the browser terminal to open th
 terminals and redirected output show the plain path.
 
 <p align="center">
-  <img src="code/pyapp/DONT_CHANGE/data/docs/traceback-source.png" alt="Colored ZeroDivisionError report with source context and the failing line marked." width="960">
+  <img src="code/pyapp/DONT_CHANGE/data/readme_resources/traceback-source.png" alt="Colored ZeroDivisionError report with source context and the failing line marked." width="960">
 </p>
 
 Chained exceptions retain the original error and explain how it led to the final exception:
 
 <p align="center">
-  <img src="code/pyapp/DONT_CHANGE/data/docs/traceback-chain.png" alt="Chained ValueError report showing the original conversion error, its direct-cause relationship and the application's explanatory error." width="960">
+  <img src="code/pyapp/DONT_CHANGE/data/readme_resources/traceback-chain.png" alt="Chained ValueError report showing the original conversion error, its direct-cause relationship and the application's explanatory error." width="960">
 </p>
 
 ## The browser terminal
@@ -253,7 +253,7 @@ so `input()`, Ctrl+C, colors, progress bars and everything else behave exactly a
 window.
 
 <p align="center">
-  <img src="code/pyapp/DONT_CHANGE/data/docs/browser-terminal.png" alt="The browser terminal: timestamped output of a data-fitting program with colored OK and warning lines, a finished progress bar and an input prompt. The search bar is open with the term fit, and its five matches are highlighted." width="760">
+  <img src="code/pyapp/DONT_CHANGE/data/readme_resources/browser-terminal.png" alt="The browser terminal: timestamped output of a data-fitting program with colored OK and warning lines, a finished progress bar and an input prompt. The search bar is open with the term fit, and its five matches are highlighted." width="760">
 </p>
 
 - **Reads like a modern terminal:** sharp text, zoom with Ctrl+wheel or a touchpad pinch, clickable links.

@@ -1,8 +1,8 @@
 #!/bin/sh
 # Before a push: the leak check over the commits being pushed, the repository check, then
-# verify_launcher (Ruff and Pyrefly) and the launcher's regression tests. verify_launcher and
-# the tests check files on disk, except template-settings equality, which reads both files
-# from each commit tip Git is pushing. Unstaged local settings do not affect that comparison.
+# verify_launcher (Ruff and Pyrefly) and the launcher's regression tests. check_all exports
+# each submitted commit to an isolated checkout: all checks use its code and configuration.
+# Local working files and the index are untouched.
 # To use it in a clone: git config core.hooksPath code/pyapp/DONT_CHANGE/pyapp_tools/src/git_hooks
 # To push anyway, once: git push --no-verify
 

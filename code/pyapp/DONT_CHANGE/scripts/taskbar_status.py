@@ -75,8 +75,8 @@ def remember_window(hwnd: int) -> None:
     os.environ[WINDOW_ENV] = json.dumps({"hwnd": hwnd, "pid": pid.value})
 
 
-def terminal_window() -> int:
-    """A still-valid remembered terminal, or this process's visible classic console; never a browser."""
+def terminal_window(*, include_hidden: bool = False) -> int:
+    """A still-valid native terminal; completion may update a remembered hidden window's state."""
     user = ctypes.WinDLL("user32", use_last_error=True)
     user.IsWindow.argtypes = [wintypes.HWND]
     user.IsWindowVisible.argtypes = [wintypes.HWND]
@@ -98,7 +98,7 @@ def terminal_window() -> int:
         kernel = ctypes.WinDLL("kernel32", use_last_error=True)
         kernel.GetConsoleWindow.restype = wintypes.HWND
         hwnd = kernel.GetConsoleWindow()
-    if not hwnd or not user.IsWindowVisible(hwnd):
+    if not hwnd or (not user.IsWindowVisible(hwnd) and not (include_hidden and WINDOW_ENV in os.environ)):
         return 0
     name = ctypes.create_unicode_buffer(256)
     user.GetClassNameW(hwnd, name, len(name))
@@ -170,7 +170,7 @@ def finish(s: Union[ModuleType, SimpleNamespace], outcome: str, stays_open: bool
     ):
         return
     try:
-        hwnd = terminal_window()
+        hwnd = terminal_window(include_hidden=True)
         if not hwnd:
             return
     except Exception:
