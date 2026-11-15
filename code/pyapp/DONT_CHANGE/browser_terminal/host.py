@@ -839,6 +839,13 @@ class Session:
         if isinstance(colors, dict):
             self.colors = {key: value for key, value in colors.items() if key in ("background", "foreground")}
             self.broadcast({"t": "colors", "colors": self.colors})
+        if request.get("foreground") is True:
+            self.broadcast({"t": "front"})
+            if self.window:
+                try:
+                    bring_to_front(self.window)
+                except Exception:
+                    report_ignored("browser terminal: foreground request")
         if request.get("input") is True:
             # The program waits for input: the page shows it, and comes to the front if wanted.
             self.broadcast({"t": "input"})

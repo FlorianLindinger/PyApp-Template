@@ -368,6 +368,10 @@
 
   const handleControl = (message) => {
     switch (message.t) {
+      case "front":
+        window.focus();
+        term.focus();
+        break;
       case "hello":
         if (message.info) config.info = message.info;
         showInfo({ started: message.started || 0 });

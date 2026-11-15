@@ -29,6 +29,16 @@ def append(lines: Iterable[str]) -> Callable[[str], str]:
 
 
 class ValidationTests(unittest.TestCase):
+    def test_completion_foreground_settings_default_off_and_require_booleans(self):
+        for outcome in config.OUTCOMES:
+            name = "foreground_after_" + outcome
+            with self.subTest(name=name), support.temporary_settings(lambda text: text) as (_, load):
+                self.assertIs(getattr(load(), name), False)
+            with self.subTest(name=name), support.temporary_settings(append([f'{name} = "yes"'])) as (_, load):
+                with self.assertRaises(SettingsError) as raised:
+                    config.validate(load())
+                self.assertIn(name, str(raised.exception))
+
     def test_packages_accepts_only_strings(self):
         empty_list: List[str] = []
         for value in (["requests", "numpy>=2"], empty_list, ("requests",), None, 42):
@@ -244,14 +254,16 @@ class DefaultsTests(unittest.TestCase):
     def test_missing_settings_get_their_defaults(self):
         def drop(text: str):
             text = re.sub(r"(?m)^start_minimized\b.*\n", "", text)
+            text = re.sub(r"(?m)^foreground_on_first_print\b.*\n", "", text)
             text = re.sub(r"(?m)^terminal_shortcut_name\b.*\n", "", text)
             return text.replace('program_name = "PyApp-Template"', 'program_name = "Other App"')
 
         with support.temporary_settings(drop) as (_, load):
             module = load()
             filled = config.fill_missing_settings(module)
-            self.assertEqual(sorted(filled), ["start_minimized", "terminal_shortcut_name"])
+            self.assertEqual(sorted(filled), ["foreground_on_first_print", "start_minimized", "terminal_shortcut_name"])
             self.assertIs(module.start_minimized, False)
+            self.assertIs(module.foreground_on_first_print, False)
             self.assertEqual(module.terminal_shortcut_name, "Other App")  # f"{program_name}" of the project
             config.validate(module)
 

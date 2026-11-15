@@ -71,6 +71,7 @@ def generate_shortcut(
     The function builds the launcher command, applies the icon, description,
     working directory, window mode, and optional AppUserModelID, then saves the
     shortcut after safely replacing an existing file.
+    Without an explicit wdir, "Start in" is the folder containing the generated link.
 
     This is more complicated than ordinary file creation because ``.lnk`` is a
     Windows COM format, not a text format. Python's standard library has no
@@ -201,7 +202,8 @@ def generate_shortcut(
     if icon_path and (not Path(icon_path).exists()):
         print_warn(f'Icon not found at "{icon_path}"')
         icon_path = None
-    wdir = os.path.normpath(str(Path(wdir).absolute())) if wdir else SHORTCUT_OUTPUT_DIR
+    # Each Desktop/Start Menu/project link starts in its own folder, not a shared project root.
+    wdir = os.path.normpath(str(Path(wdir).absolute())) if wdir else str(Path(output_path).parent)
     description = "" if description is None else os.fspath(description)
     (Path(output_path).parent).mkdir(parents=True, exist_ok=True)
     # Saved under a temporary name first: an existing shortcut is only replaced by a complete one.

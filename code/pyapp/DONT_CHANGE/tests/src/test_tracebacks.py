@@ -30,6 +30,34 @@ def report_for(source: str, extra_lines: int = 2):
 
 
 class ReportTests(unittest.TestCase):
+    def test_variable_snapshot_contains_frame_locals_globals_and_unredacted_values(self):
+        report = report_for(
+            'GLOBAL_VALUE = 42\ndef fail():\n    local_value = [1, 2]\n    password = "example"\n    raise ValueError("broken")\nfail()\n'
+        )
+        frame = report["variables"][-1]["frames"][-1]
+        self.assertEqual(frame["name"], "fail")
+        self.assertEqual(frame["locals"]["local_value"], "[1, 2]")
+        self.assertEqual(frame["locals"]["password"], "'example'")
+        self.assertEqual(frame["globals"]["GLOBAL_VALUE"], "42")
+        exported = _pyapp.variable_dump(report)
+        self.assertIn("LOCALS", exported)
+        self.assertIn("GLOBALS", exported)
+        self.assertIn("password = 'example'", exported)
+        self.assertNotIn("GLOBALS", "\n".join(render(report, colors=False)))
+
+    def test_raising_repr_does_not_replace_the_original_exception(self):
+        report = report_for(
+            'class Bad:\n    def __repr__(self):\n        raise SystemExit(7)\nvalue = Bad()\nraise ValueError("original")\n'
+        )
+        self.assertEqual(report["exception_type"], "ValueError")
+        self.assertIn("unrepresentable", report["variables"][-1]["frames"][-1]["globals"]["value"])
+
+    def test_variable_snapshots_follow_visible_exception_chains(self):
+        report = report_for(
+            'try:\n    raise KeyError("first")\nexcept KeyError as error:\n    raise ValueError("second") from error\n'
+        )
+        self.assertEqual([entry["exception_type"] for entry in report["variables"]], ["KeyError", "ValueError"])
+
     def test_chain_order_and_relations(self):
         report = report_for(
             """
@@ -53,6 +81,7 @@ class ReportTests(unittest.TestCase):
             """
         )
         self.assertEqual(len(report["chain"]), 1)
+        self.assertEqual([entry["exception_type"] for entry in report["variables"]], ["ValueError"])
 
     def test_notes_are_kept(self):
         if sys.version_info < (3, 11):
@@ -68,6 +97,15 @@ class ReportTests(unittest.TestCase):
         text = "\n".join(render(report))
         self.assertIn("ExceptionGroup", text)
         self.assertIn("TypeError", text)
+
+    def test_exception_group_children_keep_their_own_frame_variables(self):
+        if sys.version_info < (3, 11):
+            self.skipTest("exception groups need Python 3.11+")
+        report = report_for(
+            'errors = []\nfor number in (1, 2):\n    try:\n        def fail(value):\n            raise ValueError(value)\n        fail(number)\n    except ValueError as error:\n        errors.append(error)\nraise ExceptionGroup("group", errors)\n'
+        )
+        leaves = [entry for entry in report["variables"] if entry["exception_type"] == "ValueError"]
+        self.assertEqual([entry["frames"][-1]["locals"]["value"] for entry in leaves], ["1", "2"])
 
     def test_success_rules_for_system_exit(self):
         for code, success in ((None, True), (0, True), (False, True), (1, False), (True, False), ("x", False)):

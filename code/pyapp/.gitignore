@@ -1,23 +1,44 @@
-# Git rules for code/pyapp. Paths starting with "/" are relative to this folder.
+# Git rules for code/pyapp. Leading "/" means relative to this folder.
+# Keep source/settings/icons/tools/tests eligible for Git even if a parent ignores
+# their extension or a subfolder. Later rules below exclude local artifacts again.
+# Deeper .gitignore files still apply (DONT_CHANGE/tmp, test temp files, release zips).
+# This cannot help if code/ or code/pyapp/ itself is excluded: unignore that ancestor
+# in the parent .gitignore first. Inclusion does not automatically stage a file.
+!/**/*
 
-# uv project in generated/: commit uv.lock and .python-version; pyproject.toml is
-# generated from developer_settings.py and .venv is the app environment:
-/generated/pyproject.toml
-/generated/.venv/
-/generated/.venv.*/
+# Python bytecode and local package environments, anywhere below this folder.
+__pycache__/
+*.py[codz]
+*$py.class
+.Python
+.venv/
+venv/
+venv.bak/
+.conda/
+.direnv/
+__pypackages__/
+site-packages/
+node_modules/
 
-# uv, Pythons and the uv cache when installed into the project:
-/generated/uv/
-/generated/uv.*/
-/generated/pythons/
-/generated/uv-cache/
+# Local checker/test/editor caches.
+.ruff_cache/
+.pytest_cache/
+.mypy_cache/
+.pyre/
+.pytype/
+.dmypy.json
+dmypy.json
+cython_debug/
+.ipynb_checkpoints/
+.spyderproject
+.spyproject
+.ropeproject
 
-# machine-specific list of generated shortcuts:
-/generated/shortcuts_created_by_setup.json
-
-# secret part of the browser terminal's address, per PC:
-/generated/browser_terminal_key.txt
-
-# The launcher folder is always tracked: this overrides every rule in the root .gitignore.
-# Rules inside DONT_CHANGE/.gitignore still apply;
-!/DONT_CHANGE/**
+# generated/ is local by default, including future runtime files, caches, staging
+# folders and browser keys. Only these portable project files belong in Git.
+# Ignore contents, not generated/ itself, so its file exceptions can take effect.
+/generated/*
+!/generated/README.md
+!/generated/uv.lock
+!/generated/.python-version
+!/generated/auto_generated_icons.json

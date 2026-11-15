@@ -158,7 +158,51 @@ folder is normally created only when a report is written. Check existence before
 Direct Python starts and Start without launcher do not supply this full set; use
 `os.environ.get("USER_SETTINGS_PATH", "")` if the app must also work that way.
 
+Set `foreground_on_first_print = True` in developer settings to restore and request focus for
+the classic console or browser terminal on the app's first nonempty stdout/stderr write.
+It defaults to `False`, works with prints from imported modules, and attempts attention only
+once across both streams. It does not show a window for hidden launches. Native Windows Terminal
+focus is not supported by this option: its pseudoconsole window is deliberately left hidden.
+Windows/browser focus policies may refuse activation. Merely starting or logging silently
+does not trigger it; startup output from the launcher does not count as app output.
+
+Completion has separate `foreground_after_success`, `foreground_after_failure` and
+`foreground_after_keyboard_interrupt` settings, all `False` by default. They restore/request
+focus for the classic console or browser terminal after the report, log-opening and sound
+actions, when the window stays open. They do not override `close_after_*`: for example, use
+`close_after_success = False` with `foreground_after_success = True` to show the finished window.
+Recovery that keeps the window open can also request focus. Windows/browser policies may deny
+focus, and native Windows Terminal focus remains unsupported.
+
+## Exporting traceback variables
+
+At an application traceback's close prompt, type `v` to save its local/global variable snapshot
+and open it as text; Enter still closes the window. The missing-package recovery menu accepts
+`v` too. It works through the classic console and the browser terminal's normal input.
+If a crash log was written, the snapshot is appended there once; otherwise an explicit export
+creates a separate `pyapp-variables-*.txt` file in the system temporary folder. Repeating `v`
+opens the saved file again. Automatically closing windows do not acquire an extra prompt.
+
+Values are captured in the temporary traceback JSON while the Python frames are still available;
+ordinary terminal output and crash logs do not include the variable section unless requested.
+The snapshot lists locals/globals per traceback frame, including visible exception chains,
+exception-group children, and captured worker-thread/shutdown errors. Values are **not redacted**.
+Python representations are bounded (40 container items, 4096 string/custom-representation
+characters, limited nesting), so large arrays/containers may be summarized; this is a readable
+diagnostic snapshot, not a restorable memory dump. Custom `__repr__` code runs while capturing
+and may be expensive; representation errors do not replace the original exception.
+Native crashes without a Python traceback, compilation failures without live app frames, and
+threads absent from the traceback cannot provide their variables.
+
 ## The other shortcuts
+
+With `start_in_shortcut_folder = True`, the app uses the shortcut's containing folder as
+recorded by Setup in its **Start in** property. Each project, Desktop and Start Menu shortcut
+gets its own containing folder, rather than all links starting in the project root.
+Run Setup to update existing shortcuts. With `False`, the app runs from the main script's folder.
+If a `.lnk` is manually moved or copied later, update **Properties → Start in** to its new folder:
+the current batch/conhost launch chain cannot reliably recover the moved link's physical path.
+Direct batch starts, without a shortcut, use the caller's starting folder when this setting is enabled.
 
 | Shortcut | Target | What it does |
 | --- | --- | --- |
@@ -350,7 +394,7 @@ ASCII art (`scripts/banner.py`). The batch/Python bootstrap and the
 | `stop_program.py` | The Stop shortcut. |
 | `setup.py` | Setup: banner, environment, shortcuts (project folder, Start Menu, Desktop), removal of stale ones. |
 | `open_file.py`, `open_folder.py` | Fallbacks of the "open" shortcuts (resolve the target from the settings). |
-| `start_without_launcher.py` | Not run by `entrypoint.py`: started by `code/pyapp/Start without launcher.cmd` when the launcher is broken. Runs the main script directly with the app's `.venv` Python, or the global default Python, after showing the script, Python, packages and their folders. Standard library only and independent of every other launcher file; a protected path. |
+| `start_without_launcher.py` | Not run by `entrypoint.py`: used by `code/pyapp/Start without launcher.cmd` and `Start without launcher --LINUX.sh`. Runs the main script directly with a working app `.venv` Python or system Python, after showing the script, Python, packages and their folders. The Linux entry accepts Windows separators in relative settings paths and detects copied Windows environments. Standard library only and independent of every other launcher file; a protected path. |
 | `gen_icons.py` | Builds the `.ico` files in `code/pyapp/icons` from `icon.png` and the bundled overlays; asks per icon before replacing an `.ico` it did not make (`generated/auto_generated_icons.json`). |
 
 ### `runtime/` – the running app

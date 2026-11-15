@@ -242,6 +242,22 @@ class PageButtonsTest(unittest.TestCase):
         session.connect(page)
         self.assertEqual(page.send_json.call_args_list[0].args[0]["info"], expected)
 
+    def test_explicit_foreground_request_does_not_depend_on_input_preferences(self):
+        with tempfile.TemporaryDirectory() as folder:
+            request_file = Path(folder, "ui.jsonl")
+            with mock.patch.dict(os.environ, {ui.ENV_VAR: str(request_file)}):
+                ui.request(foreground=True)
+            self.assertEqual(json.loads(request_file.read_text(encoding="utf-8")), {"foreground": True})
+        session = self.session()
+        session.window = 123
+        session.front_on_input = False
+        with mock.patch.object(session, "broadcast") as broadcast, mock.patch.object(
+            browser_terminal, "bring_to_front"
+        ) as front:
+            session._apply_ui_request({"foreground": True})
+        broadcast.assert_called_once_with({"t": "front"})
+        front.assert_called_once_with(123)
+
     def test_invalid_info_updates_do_not_replace_existing_fields(self):
         session = self.session(info=[["Project", "tool"]])
         invalid_updates: List[object] = [["not a mapping"], {"Project": None}, {1: "not a label"}]

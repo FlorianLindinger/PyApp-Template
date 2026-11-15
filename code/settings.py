@@ -4,6 +4,8 @@
 
 # PLACE YOUR SETTINGS HERE
 
+example_bool = True
+
 # ========================================
 
 # Open this file in an editor when run directly (e.g. double-clicked in Explorer).

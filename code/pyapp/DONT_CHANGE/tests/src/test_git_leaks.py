@@ -195,6 +195,17 @@ class PushTests(unittest.TestCase):
 class CommitTests(unittest.TestCase):
     """git_hooks/pre-commit: the staged changes, before they are in any commit."""
 
+    def test_secret_takes_priority_over_personal_data_and_push_requires_commit_repairs(self):
+        personal = tool.Finding(tool.PERSONAL, "Home folder path", "User", "app.py:12", "app.py")
+        secret = tool.line_findings(f"key = {AWS_KEY}", "app.py", "app.py:100")[0]
+        output = io.StringIO()
+        with mock.patch("sys.stdout", output):
+            tool.hook_summary("Push", [personal, secret])
+        first = output.getvalue().splitlines()[0]
+        self.assertTrue(first.startswith("Push blocked: Possible secret in commits being pushed"))
+        self.assertIn("Fix the affected commits", first)
+        self.assertNotIn(AWS_KEY, first)
+
     def test_popup_starts_with_the_reason_value_and_exact_location(self):
         output = io.StringIO()
         with mock.patch("sys.stdout", output):

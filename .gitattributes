@@ -3,5 +3,7 @@
 # Force git to use CRLF for batch files to not break them:
 *.bat text eol=crlf
 *.cmd text eol=crlf
+# Linux entry points must retain LF even when checked out on Windows.
+*.sh text eol=lf
 # Keep Windows shortcuts byte-for-byte intact.
 *.lnk binary

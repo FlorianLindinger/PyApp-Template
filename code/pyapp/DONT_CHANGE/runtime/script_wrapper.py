@@ -8,6 +8,7 @@ match statements, no parenthesized context managers.
 from __future__ import annotations
 
 import codecs
+import contextlib
 import io
 import os
 import re
@@ -51,6 +52,8 @@ class _BinarySplitter:
         self.decoder = codecs.getincrementaldecoder(owner.encoding or "utf-8")("replace")
 
     def write(self, data: Union[bytes, bytearray]) -> int:
+        if data and self.owner.on_output is not None:
+            self.owner.on_output()
         _take_native_output()
         with self.owner._lock:
             target = getattr(self.owner.print_stream, "buffer", None)
@@ -96,6 +99,7 @@ class PipeSplitter:
         self.buffer = _BinarySplitter(self)
         self._at_line_start = True
         self._lock = threading.RLock()
+        self.on_output: Optional[Callable[[], None]] = None
 
     def _write_console(self, text: str) -> None:
         """A hidden/pythonw launch can have no original console stream."""
@@ -112,6 +116,8 @@ class PipeSplitter:
             data = str(data)
         if data == "":
             return 0
+        if self.on_output is not None:
+            self.on_output()
         _take_native_output()
         with self._lock:
             for part in data.splitlines(True) or [data]:
@@ -138,6 +144,8 @@ class PipeSplitter:
 
     def write_input_prompt(self, prompt: object) -> None:
         prompt = "" if prompt is None else str(prompt)
+        if prompt and self.on_output is not None:
+            self.on_output()
         _take_native_output()
         with self._lock:
             self._write_console(_format_prepend(self.input_timestamp_format) + prompt)
@@ -148,6 +156,8 @@ class PipeSplitter:
 
     def write_native(self, data: bytes, log_text: str) -> None:
         """Output written below Python (see NativeOutput): unchanged to the console, as text to the log."""
+        if data and self.on_output is not None:
+            self.on_output()
         with self._lock:
             target = getattr(self.print_stream, "buffer", None)
             if target is not None:
@@ -488,6 +498,46 @@ def capture_background_errors(
     return pending_error
 
 
+def request_foreground(browser_ui: str) -> None:
+    """Best-effort terminal attention, without importing the launcher into the app interpreter."""
+    if browser_ui:
+        with Path(browser_ui).open("a", encoding="utf-8") as stream:
+            stream.write('{"foreground": true}\n')
+        return
+    import ctypes
+    from ctypes import wintypes
+
+    kernel = ctypes.WinDLL("kernel32", use_last_error=True)
+    user = ctypes.WinDLL("user32", use_last_error=True)
+    kernel.GetConsoleWindow.restype = wintypes.HWND
+    user.ShowWindow.argtypes = [wintypes.HWND, ctypes.c_int]
+    user.SetForegroundWindow.argtypes = [wintypes.HWND]
+    user.IsWindowVisible.argtypes = [wintypes.HWND]
+    hwnd = kernel.GetConsoleWindow()
+    # A pseudoconsole's hidden message window is not the Windows Terminal window: never show it.
+    if hwnd and user.IsWindowVisible(hwnd):
+        user.ShowWindow(hwnd, 9)  # SW_RESTORE also restores a minimized console.
+        user.SetForegroundWindow(hwnd)
+
+
+def first_output_callback(browser_ui: str) -> Callable[[], None]:
+    """One shared attempt for stdout/stderr, even when different threads write concurrently."""
+    lock = threading.Lock()
+    done = False
+
+    def foreground_once() -> None:
+        nonlocal done
+        with lock:
+            if done:
+                return
+            done = True
+        # Attention is cosmetic: it must never prevent printing or recursively print an error.
+        with contextlib.suppress(Exception):
+            request_foreground(browser_ui)
+
+    return foreground_once
+
+
 # ------------------------------------------------------------ main
 
 
@@ -524,7 +574,15 @@ def main() -> None:
                 stream.reconfigure(encoding="utf-8", errors="backslashreplace")
         except (ValueError, OSError):
             pass
-    if log_path or print_prepend or log_print_prepend or input_prepend or log_input_prepend:
+    foreground_on_first_print = bool(config.get("foreground_on_first_print"))
+    if (
+        log_path
+        or print_prepend
+        or log_print_prepend
+        or input_prepend
+        or log_input_prepend
+        or foreground_on_first_print
+    ):
         setup_log_prints(
             log_path,
             print_prepend,
@@ -555,6 +613,11 @@ def main() -> None:
     if ready_path:
         with Path(ready_path).open("w", encoding="utf-8") as stream:
             stream.write("ready")
+    if foreground_on_first_print:
+        on_output = first_output_callback(browser_ui)
+        for stream in (sys.stdout, sys.stderr):
+            if isinstance(stream, PipeSplitter):
+                stream.on_output = on_output
     try:
         runpy.run_path(script_path, run_name="__main__")
         background_error = pending_background_error()

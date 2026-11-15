@@ -71,6 +71,169 @@ class CrashLogTests(unittest.TestCase):
         startfile.assert_not_called()
 
 
+class VariableExportTests(unittest.TestCase):
+    def report(self):
+        return {
+            "plain": "ValueError: broken\n",
+            "variables": [
+                {
+                    "exception_type": "ValueError",
+                    "frames": [
+                        {
+                            "filename": "main.py",
+                            "lineno": 12,
+                            "name": "fail",
+                            "locals": {"value": "7"},
+                            "globals": {"global_value": "42"},
+                        }
+                    ],
+                }
+            ],
+        }
+
+    def test_enter_closes_without_exporting_values(self):
+        with mock.patch.object(process_exit, "ask", return_value=""), mock.patch.object(
+            process_exit, "save_and_open_variables"
+        ) as export:
+            process_exit.wait_for_report(self.report())
+        export.assert_not_called()
+
+    def test_v_appends_to_crash_log_once_and_opens_the_file(self):
+        with tempfile.TemporaryDirectory() as folder:
+            log = Path(folder, "crash.txt")
+            log.write_text("Original crash report", encoding="utf-8")
+            report = self.report()
+            with mock.patch.object(process_exit, "ask", side_effect=["v", "v", ""]), mock.patch.object(
+                process_exit.os, "startfile"
+            ) as open_file, mock.patch("builtins.print"):
+                process_exit.wait_for_report(report, str(log))
+            content = log.read_text(encoding="utf-8")
+            self.assertTrue(content.startswith("Original crash report"))
+            self.assertEqual(content.count("Traceback variable snapshot"), 1)
+            self.assertIn("global_value = 42", content)
+            self.assertEqual(open_file.call_count, 2)
+
+    def test_export_without_crash_logging_uses_a_separate_system_temp_file(self):
+        with tempfile.TemporaryDirectory() as folder, mock.patch.object(
+            process_exit.tempfile, "gettempdir", return_value=folder
+        ), mock.patch.object(process_exit.os, "startfile"), mock.patch("builtins.print"):
+            report = self.report()
+            process_exit.save_and_open_variables(report)
+            saved_path = report["variables_saved_path"]
+            if not isinstance(saved_path, str):
+                self.fail("the exported snapshot path must be text")
+            exported = Path(saved_path)
+            self.assertEqual(exported.parent, Path(folder))
+            self.assertIn("value = 7", exported.read_text(encoding="utf-8"))
+
+    def test_open_failure_does_not_lose_the_saved_snapshot(self):
+        with tempfile.TemporaryDirectory() as folder, mock.patch.object(
+            process_exit.os, "startfile", side_effect=OSError("no editor")
+        ), mock.patch.object(process_exit, "print_error") as error, mock.patch("builtins.print"):
+            report = self.report()
+            log = Path(folder, "crash.txt")
+            process_exit.save_and_open_variables(report, str(log))
+            self.assertTrue(log.is_file())
+            self.assertIn("could not be opened", error.call_args[0][0])
+
+    def test_report_without_python_frames_keeps_the_old_prompt(self):
+        with mock.patch.object(process_exit, "wait_for_enter") as wait, mock.patch.object(process_exit, "ask") as ask:
+            process_exit.wait_for_report({"variables": []})
+        wait.assert_called_once()
+        ask.assert_not_called()
+
+    def test_missing_module_recovery_menu_can_export_before_quitting(self):
+        report = self.report()
+        with mock.patch.object(process_exit, "local_module_exists", return_value=False), mock.patch.object(
+            process_exit, "ask", side_effect=["v", ""]
+        ), mock.patch.object(process_exit, "save_and_open_variables") as export, mock.patch(
+            "pyapp.DONT_CHANGE.scripts.env.venv.install_problem", return_value=None
+        ), mock.patch(
+            "pyapp.DONT_CHANGE.scripts.import_finder.distribution_for_import", return_value="example"
+        ), mock.patch("builtins.print"):
+            process_exit.handle_missing_module("example", "", False, report, "crash.txt")
+        export.assert_called_once_with(report, "crash.txt")
+
+    def test_write_failure_returns_to_the_prompt_without_hiding_the_error(self):
+        with tempfile.TemporaryDirectory() as folder:
+            blocker = Path(folder, "file")
+            blocker.write_text("not a folder", encoding="utf-8")
+            with mock.patch.object(process_exit, "print_error") as error, mock.patch.object(
+                process_exit.os, "startfile"
+            ) as open_file:
+                process_exit.save_and_open_variables(self.report(), str(blocker / "variables.txt"))
+            self.assertIn("Could not save", error.call_args[0][0])
+            open_file.assert_not_called()
+
+
+class CompletionForegroundTests(unittest.TestCase):
+    def complete(
+        self,
+        outcome: str,
+        enabled: bool,
+        close: bool,
+        browser: bool = False,
+        keep_open: bool = False,
+        fail: bool = False,
+    ):
+        s = types.SimpleNamespace(program_name="Example", open_crash_log_after_failure=False)
+        for name in ("success", "failure", "keyboard_interrupt"):
+            setattr(s, "close_after_" + name, close)
+            setattr(s, "foreground_after_" + name, enabled if name == outcome else False)
+            setattr(s, "open_log_file_after_" + name, False)
+            setattr(s, "play_sound_after_" + name, False)
+        with mock.patch.multiple(
+            process_exit,
+            settings=mock.Mock(return_value=s),
+            in_browser_terminal=mock.Mock(return_value=browser),
+            set_terminal_title=mock.DEFAULT,
+            set_terminal_colors=mock.DEFAULT,
+            set_terminal_icon=mock.DEFAULT,
+            browser_terminal_ui=mock.DEFAULT,
+            unminimize_terminal=mock.DEFAULT,
+            foreground_terminal=mock.DEFAULT,
+            print_report=mock.DEFAULT,
+            write_crash_log=mock.Mock(return_value=None),
+            wait_for_enter=mock.DEFAULT,
+            note_ignored=mock.DEFAULT,
+        ) as mocks:
+            if fail:
+                mocks["foreground_terminal"].side_effect = OSError("focus denied")
+            process_exit.complete(outcome, None, keep_open=keep_open)
+        return mocks
+
+    def test_each_outcome_has_an_independent_opt_in(self):
+        for outcome in ("success", "failure", "keyboard_interrupt"):
+            for enabled in (False, True):
+                with self.subTest(outcome=outcome, enabled=enabled):
+                    mocks = self.complete(outcome, enabled, False)
+                    self.assertEqual(mocks["unminimize_terminal"].call_count, int(enabled))
+                    self.assertEqual(mocks["foreground_terminal"].call_count, int(enabled))
+                    mocks["browser_terminal_ui"].assert_not_called()
+                    mocks["print_report"].assert_called_once()
+
+    def test_closing_window_does_not_flash_into_the_foreground(self):
+        mocks = self.complete("success", True, True)
+        mocks["foreground_terminal"].assert_not_called()
+        mocks["wait_for_enter"].assert_not_called()
+
+    def test_recovery_kept_open_can_request_attention(self):
+        mocks = self.complete("failure", True, True, keep_open=True)
+        mocks["foreground_terminal"].assert_called_once()
+        mocks["wait_for_enter"].assert_not_called()
+
+    def test_browser_uses_its_own_foreground_request(self):
+        mocks = self.complete("failure", True, False, browser=True)
+        mocks["browser_terminal_ui"].assert_called_once_with(foreground=True)
+        mocks["foreground_terminal"].assert_not_called()
+
+    def test_focus_failure_does_not_prevent_reporting_or_waiting(self):
+        mocks = self.complete("failure", True, False, fail=True)
+        mocks["note_ignored"].assert_called_once_with("foreground after failure")
+        mocks["print_report"].assert_called_once()
+        mocks["wait_for_enter"].assert_called_once()
+
+
 class HiddenCompletionTests(unittest.TestCase):
     """After a successful run without a terminal, the completion handler runs in a hidden console."""
 

@@ -94,36 +94,88 @@ def with_links(output: str) -> str:
     return "\n".join(lines)
 
 
+def test_failure_reason(output: str, code: int) -> str:
+    """Translate common failed contracts into repairs; retain test names for unknown failures."""
+    mismatch = re.search(r"^AssertionError: (Settings mismatch: .+)$", output, re.MULTILINE)
+    if mismatch:
+        return mismatch.group(1) + " Review both settings files and commit the correction."
+    names = list(dict.fromkeys(re.findall(r"^(?:FAIL|ERROR): (\w+)", output, re.MULTILINE)))
+    known = {
+        "test_batch_and_settings_files_use_crlf": "CRLF line endings",
+        "test_the_file_tables_name_existing_files": "README file tables",
+        "test_every_test_file_is_in_exactly_one_group": "test-group registration",
+    }
+    if len(names) > 1:
+        labels = [known.get(name, (name[5:] if name.startswith("test_") else name).replace("_", " ")) for name in names]
+        shown = "; ".join(labels[:3]) + (f"; +{len(names) - 3} more" if len(names) > 3 else "")
+        return f"{len(names)} launcher checks failed: {shown}. Fix the failures listed in the details."
+    if names == ["test_batch_and_settings_files_use_crlf"]:
+        file = re.search(r"([^\r\n:]+) must use CRLF line endings", output)
+        target = file.group(1).strip() if file else "Batch/settings files"
+        return f"{target} needs Windows CRLF line endings. Save with CRLF, then commit the correction."
+    if names == ["test_the_file_tables_name_existing_files"]:
+        missing = re.findall(r"^'(test_\w+\.py)'", output, re.MULTILINE)
+        if missing:
+            return "tests/README.md is missing file-table entries for " + ", ".join(missing[:3]) + ". Add the entries."
+        return "README file tables are missing or outdated. Update the listed file references."
+    if names == ["test_every_test_file_is_in_exactly_one_group"]:
+        return "Test files are missing from groups.py or listed twice. Register each test file in exactly one group."
+    if names:
+        name = names[0][5:] if names[0].startswith("test_") else names[0]
+        return "Launcher test failed: " + name.replace("_", " ") + ". Fix the failure shown in the details."
+    return f"Launcher tests could not complete (exit code {code}). Check the test runner error in the details."
+
+
 def failure_reason(step: Step, code: int, output: str) -> str:
     """A short cause for the popup; keep full diagnostics in the expanded output."""
     if step.label == "Tests":
-        mismatch = re.search(r"^AssertionError: (Settings mismatch: .+)$", output, re.MULTILINE)
-        if mismatch:
-            return mismatch.group(1)
-        test = re.search(r"^(?:FAIL|ERROR): (\w+)", output, re.MULTILINE)
-        if test:
-            name = test.group(1)
-            name = name[5:] if name.startswith("test_") else name
-            return "Launcher test failed: " + name.replace("_", " ") + "."
-        return f"Launcher tests could not complete (exit code {code})."
+        return test_failure_reason(output, code)
     if step.label.startswith("Verify launcher"):
         checks = re.findall(r"^\s*(Ruff lint|Ruff format|Pyrefly)\s+FAILED\s*$", output, re.MULTILINE)
         detail = ": " + ", ".join(dict.fromkeys(checks)) if checks else " (Ruff or Pyrefly)"
-        return "Launcher code checks failed" + detail + "."
+        return (
+            "Launcher code checks failed" + detail + ". Run verify_launcher.bat --fix; fix any remaining diagnostics."
+        )
     if step.label == "Repository check":
+        repairs = {
+            "Tracked but ignored": "Files matched by .gitignore are still tracked. Remove them from Git tracking.",
+            "Exception without effect": "A .gitignore exception does not work. Fix the reported ignore rules.",
+            "Mixed line endings": "Files mix LF and CRLF line endings. Normalize the reported files.",
+            "Case-only difference": "File names differ only by letter case. Rename them to work on Windows.",
+            "Generated file tracked": "Generated files are tracked. Remove generated files from Git tracking.",
+            "Nested Git repository": "A nested Git repository was found. Review the reported folder.",
+            "Large file": "Tracked files exceed the size limit. Review the large files listed in the details.",
+        }
+        for category, repair in repairs.items():
+            if re.search(re.escape(category) + r" \(\d+\)", output):
+                return repair
+        if any(
+            label in output
+            for label in ("Reserved Windows name", "Character Windows forbids", "Ends with a dot or space", "Long path")
+        ):
+            return "File paths are incompatible with Windows. Rename or shorten the reported paths."
         return "Repository file/path checks failed. Fix the reported repository issues."
-    return f"{step.label} failed (exit code {code})."
+    return f"{step.label} failed (exit code {code}). Fix the error shown in the details."
 
 
 def run_step(step: Step, refs: str, *, hook: bool = False) -> int:
     """Stream manual checks; buffer hook checks so a later failure gets the first output line."""
-    completed = subprocess.run(  # noqa: S603
-        step.command,
-        input=refs.encode("utf-8") if step.reads_refs else None,
-        stdout=subprocess.PIPE if hook else None,
-        stderr=subprocess.STDOUT if hook else None,
-        check=False,
-    )
+    try:
+        completed = subprocess.run(  # noqa: S603
+            step.command,
+            input=refs.encode("utf-8") if step.reads_refs else None,
+            stdout=subprocess.PIPE if hook else None,
+            stderr=subprocess.STDOUT if hook else None,
+            check=False,
+        )
+    except OSError as error:
+        if not hook:
+            raise
+        _ui.info(
+            f'Push blocked: Cannot start {step.label}. Check Python/tool availability. Click "Show Command Output" for details.'
+        )
+        _ui.info(str(error))
+        return 1
     if hook and completed.returncode and not (step.can_skip and completed.returncode == SKIPPED):
         # Normalize captured Windows line endings before print() translates them again.
         output = "\n".join(completed.stdout.decode("utf-8", "replace").splitlines()).strip()
@@ -184,4 +236,7 @@ def main(argv: Optional[List[str]] = None) -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(_ui.run(main))
+    context = (
+        "Push blocked: Pre-push checks could not complete. Review the tool error." if "--pushing" in sys.argv else ""
+    )
+    raise SystemExit(_ui.run(main, context))

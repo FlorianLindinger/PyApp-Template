@@ -22,6 +22,29 @@ from pyapp.DONT_CHANGE.scripts.dev_tools import housekeeping
 
 
 class ShortcutTests(unittest.TestCase):
+    @unittest.skipUnless(os.name == "nt", "Windows shell links")
+    def test_shortcut_default_start_folder_is_its_own_output_folder(self):
+        with tempfile.TemporaryDirectory() as folder:
+            output = Path(folder, "shortcut location")
+            shortcut = shortcuts.generate_shortcut(
+                "Working folder probe", None, str(Path(folder, "target.cmd")), output_dir=str(output)
+            )
+            self.assertIn(str(output).encode("utf-16le"), Path(shortcut).read_bytes())
+
+    @unittest.skipUnless(os.name == "nt", "Windows shell links")
+    def test_explicit_shortcut_start_folder_is_preserved(self):
+        with tempfile.TemporaryDirectory() as folder:
+            output = Path(folder, "shortcut location")
+            override = Path(folder, "explicit start folder")
+            shortcut = shortcuts.generate_shortcut(
+                "Working folder probe",
+                None,
+                str(Path(folder, "target.cmd")),
+                wdir=str(override),
+                output_dir=str(output),
+            )
+            self.assertIn(str(override).encode("utf-16le"), Path(shortcut).read_bytes())
+
     def test_taskbar_identity_is_per_project_folder(self):
         first = shortcuts.project_app_id("PyApp-Template", "D:/A")
         self.assertEqual(first, shortcuts.project_app_id("PyApp-Template", "D:/A"))

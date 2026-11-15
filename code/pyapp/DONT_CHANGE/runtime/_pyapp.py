@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 import linecache
 import os
+import reprlib
 import sys
 import traceback
 from pathlib import Path
@@ -145,12 +146,87 @@ def _chain(
     return entries
 
 
+def capture_variables(error: BaseException) -> List[Dict[str, Any]]:
+    """Snapshot traceback-frame scopes while they are alive; retain no frame/object references."""
+    formatter = reprlib.Repr()
+    formatter.maxstring = formatter.maxother = 4096
+    formatter.maxlist = formatter.maxtuple = formatter.maxdict = formatter.maxset = 40
+    snapshots: List[Dict[str, Any]] = []
+    seen: Set[int] = set()
+
+    def values(scope: Dict[str, Any]) -> Dict[str, str]:
+        result = {}
+        # repr can execute application code; freeze the names before representing values.
+        for name, value in list(scope.items()):
+            try:
+                result[name] = formatter.repr(value)
+            except BaseException:
+                # A broken __repr__ must not replace the original exception, even for SystemExit.
+                result[name] = f"<unrepresentable {type(value).__name__}>"
+        return result
+
+    def visit(current: BaseException) -> None:
+        if id(current) in seen:
+            return
+        seen.add(id(current))
+        if current.__cause__ is not None:
+            visit(current.__cause__)
+        elif current.__context__ is not None and not current.__suppress_context__:
+            visit(current.__context__)
+        frames = []
+        tb = strip_launcher_frames(current.__traceback__)
+        while tb is not None:
+            frame = tb.tb_frame
+            frames.append(
+                {
+                    "filename": frame.f_code.co_filename,
+                    "lineno": tb.tb_lineno,
+                    "name": frame.f_code.co_name,
+                    "locals": values(frame.f_locals),
+                    "globals": values(frame.f_globals),
+                }
+            )
+            tb = tb.tb_next
+        if frames:
+            snapshots.append({"exception_type": type(current).__name__, "frames": frames})
+        children = getattr(current, "exceptions", ())
+        if isinstance(children, (tuple, list)):
+            for child in children:
+                if isinstance(child, BaseException):
+                    visit(child)
+
+    visit(error)
+    return snapshots
+
+
+def variable_dump(report: Dict[str, Any]) -> str:
+    """Readable export, separate from the ordinary traceback so values stay out of console output."""
+    lines = [
+        "Traceback variable snapshot (values are NOT redacted)",
+        "Locals/globals of captured traceback frames, not every live thread or a restorable memory dump.",
+        "Large representations are shortened (up to 40 container items and 4096 string characters).",
+        "Custom representations may summarize values or fail; builtins and imported modules are not expanded fully.",
+        "",
+        report.get("plain", ""),
+    ]
+    for exception in report.get("variables", []):
+        lines += ["", "Exception: " + exception["exception_type"]]
+        for frame in exception["frames"]:
+            lines += ["", f"{frame['filename']}:{frame['lineno']} in {frame['name']}"]
+            for scope in ("locals", "globals"):
+                lines.append(scope.upper())
+                for name, value in sorted(frame[scope].items()):
+                    lines.append(f"  {name} = " + str(value).replace("\n", "\n    "))
+    return "\n".join(lines) + "\n"
+
+
 def build_report(
     error: BaseException, script_path: str, app_root: Optional[str] = None, context_lines: Tuple[int, int] = (3, 3)
 ) -> Dict[str, Any]:
     """Serializable report of an exception as if main.py had been run directly.
 
     context_lines: (lines before, lines after) the failing line shown for the app's own files.
+    Variables are readable, bounded representations without redaction, captured before frames disappear.
     """
     tb = strip_launcher_frames(error.__traceback__)
     te = traceback.TracebackException(type(error), error, tb, capture_locals=False)
@@ -159,6 +235,11 @@ def build_report(
         code = error.code
         exit_code = code if code is None or isinstance(code, (bool, int, float, str)) else repr(code)
     chain = _chain(te, app_root, context_lines)
+    variables: List[Dict[str, Any]]
+    try:
+        variables = capture_variables(error)
+    except BaseException:
+        variables = []  # Variable inspection must never prevent the original traceback from being saved.
     return {
         "script_path": script_path,
         "python_version": sys.version.split()[0],
@@ -169,6 +250,7 @@ def build_report(
         "plain": "".join(te.format()),
         "chain": chain,
         "has_group": any(entry["group"] for entry in chain),
+        "variables": variables,
     }
 
 

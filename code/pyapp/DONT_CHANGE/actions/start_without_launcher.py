@@ -1,7 +1,7 @@
 """Fallback start: run the app's main script without the launcher, for when the launcher is broken.
 
-Started by code/pyapp/"Start without launcher.cmd", which picks the Python: the app's environment
-(generated/.venv) if its Python still starts, otherwise the global default Python. This file is the
+Started by code/pyapp/"Start without launcher.cmd" or "Start without launcher --LINUX.sh".
+They choose the app's environment (generated/.venv) if its Python starts, otherwise a system Python. This file is the
 only one of DONT_CHANGE that runs: it imports nothing else from the launcher, and
 developer_settings.py is only read, never executed, so a broken launcher or a mistake in the
 settings cannot stop this start.
@@ -45,15 +45,20 @@ DEFAULTS: Dict[str, object] = {
     "packages": "",
     "requirements_path": "",
 }
-# Set by "Start without launcher.cmd": which Python it chose, and the state of the app's environment.
+# Set by the fallback start scripts: chosen Python and state of the app's environment.
 SOURCES = {
     "venv": "the app's environment",
     "py": "global default Python (py launcher)",
     "path": "global Python on PATH",
+    "python3": "system Python (python3 on PATH)",
+    "python": "system Python (python on PATH)",
 }
 VENV_STATES = {
-    "missing": "the app's environment does not exist yet (Setup creates it)",
+    "missing": "the app's environment does not exist yet (Setup creates it)"
+    if os.name == "nt"
+    else "the app's Linux environment does not exist yet; using system Python",
     "broken": "the app's environment exists, but its Python does not start (moved or removed base Python?)",
+    "windows": "the project's Windows virtual environment cannot run on Linux; using system Python instead",
 }
 
 USE_COLOR = sys.stdout.isatty()
@@ -137,6 +142,13 @@ def text_setting(settings: Dict[str, object], name: str) -> str:
     return value if isinstance(value, str) else str(DEFAULTS[name])
 
 
+def configured_path(value: str) -> Path:
+    """Accept the template's Windows separators on Linux while preserving native Windows paths."""
+    if os.name != "nt":
+        value = value.replace("\\", "/")
+    return (PYAPP_DIR / value).resolve()
+
+
 def enable_color_sequences() -> None:
     """Let the classic Windows console interpret color sequences (Windows Terminal always does)."""
     if os.name != "nt":
@@ -159,19 +171,23 @@ def main() -> int:
         enable_color_sequences()
     settings, settings_problem = read_settings()
     program = text_setting(settings, "program_name")
-    main_script = (PYAPP_DIR / text_setting(settings, "main_script_path")).resolve()
+    main_script = configured_path(text_setting(settings, "main_script_path"))
     arguments = [str(a) for a in settings["args_for_main_py"]] if isinstance(settings["args_for_main_py"], list) else []
-    arguments += sys.argv[1:]  # what was passed to "Start without launcher.cmd"
+    arguments += sys.argv[1:]  # what was passed to either fallback start script
     environment = settings["environment_for_main_py"]
     extra_env = {str(k): str(v) for k, v in environment.items()} if isinstance(environment, dict) else {}
 
     title = f" {program}  ·  started without the launcher "
     print()
-    print(style(title, "1;30;43"))
+    print(style(title, "1;36"))
     print(style(" " + "─" * (len(title) - 1), "33"))
     warn("The launcher (pyapp\\DONT_CHANGE) is bypassed. This start has no setup, no package")
     print("    installation or sync, no log or crash log, no single-instance check and no STOP shortcut.")
-    print("    Use it to keep working or to find out what is broken; Setup repairs the launcher.")
+    print(
+        "    Use it to keep working or to find out what is broken; Setup repairs the launcher."
+        if os.name == "nt"
+        else "    Linux fallback only: use a Linux Python/environment with the packages your app needs."
+    )
 
     heading("App")
     row("Main script", link(main_script), "" if main_script.is_file() else style("not found", "1;31"))
@@ -208,7 +224,7 @@ def main() -> int:
     requirements_file = text_setting(settings, "requirements_path")
     if requirements_file:
         try:
-            names += requirement_names((PYAPP_DIR / requirements_file).read_text(encoding="utf-8"))
+            names += requirement_names(configured_path(requirements_file).read_text(encoding="utf-8"))
         except (OSError, ValueError) as error:
             warn(f"requirements_path {requirements_file!r} could not be read: {error}")
     missing = []
@@ -223,7 +239,11 @@ def main() -> int:
     if missing:
         warn("Missing packages make the app fail on import. Install them into this Python with")
         print(f'    "{sys.executable}" -m pip install {" ".join(missing)}')
-        print("    or repair the launcher (Setup) to get the app's own environment back.")
+        print(
+            "    or repair the launcher (Setup) to get the app's own environment back."
+            if os.name == "nt"
+            else "    or create a Linux virtual environment at generated/.venv with the app's packages."
+        )
 
     if not main_script.is_file():
         print()
@@ -235,7 +255,7 @@ def main() -> int:
     env.update(extra_env)
     # The variables the launcher gives the app, as far as they make sense without it.
     env.update(PROGRAM_NAME=program, PROGRAM_HAS_TERMINAL="1", WDIR_IS_SCRIPT_DIR="1", LOG_PATH="")
-    if ICON_PATH.is_file():
+    if os.name == "nt" and ICON_PATH.is_file():
         env["ICON_PATH"] = str(ICON_PATH)
     command = [sys.executable, "-X", "utf8", str(main_script), *arguments]
     heading("Run")
@@ -266,7 +286,7 @@ if __name__ == "__main__":
         exit_code = main()
     finally:
         # Double-clicked, the window would close before anything could be read.
-        if sys.stdin.isatty():
+        if os.name == "nt" and sys.stdin.isatty():
             with contextlib.suppress(EOFError, KeyboardInterrupt):
                 input(style("\n Press Enter to close this window.", "90"))
     sys.exit(exit_code)

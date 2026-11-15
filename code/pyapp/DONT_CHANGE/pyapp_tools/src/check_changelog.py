@@ -82,4 +82,9 @@ def main(argv: Optional[List[str]] = None) -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(_ui.run(main))
+    context = (
+        "Push blocked: Changelog check could not complete. Check Git/repository access."
+        if "--pushing" in sys.argv
+        else ""
+    )
+    raise SystemExit(_ui.run(main, context))

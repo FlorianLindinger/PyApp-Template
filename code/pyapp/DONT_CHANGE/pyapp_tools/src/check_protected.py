@@ -36,7 +36,28 @@ def first_problem(output: str) -> str:
     """The first failure's message (else its test's name), for the one line Git clients show."""
     message = re.search(r"^\w*(?:Error|Exception): (.+)$", output, re.MULTILINE)
     if message:
-        return message.group(1).split(". ")[0][:200]  # the first sentence: the rest is in the details
+        first = message.group(1).split(". ")[0]
+        if first.startswith("Developer Tools commands missing from PROTECTED_DEV_TOOL_COMMANDS: "):
+            return first.replace(
+                "Developer Tools commands missing from PROTECTED_DEV_TOOL_COMMANDS: ",
+                "Unregistered Developer Tools commands: ",
+                1,
+            )
+        if re.search(r"not found in \[|Lists differ:|Items in the .* set", first):
+            test = re.search(r"^(?:FAIL|ERROR): (\w+)", output, re.MULTILINE)
+            name = test.group(1) if test else ""
+            descriptions = {
+                "test_protected_setting_names_still_exist": "Protected developer settings are missing from fallback defaults",
+                "test_protected_dev_tool_commands_still_exist": "Protected Developer Tools commands are missing",
+                "test_scripts_outside_use_only_protected_commands": "Project scripts use unregistered launcher commands",
+                "test_scripts_outside_use_only_protected_paths": "Project scripts reference unprotected launcher paths",
+                "test_the_entry_file_and_its_commands_exist": "run.bat is missing protected commands",
+                "test_protected_project_files_are_still_where_the_launcher_looks": "Protected project files no longer match launcher paths",
+            }
+            return descriptions.get(
+                name, name.replace("test_", "", 1).replace("_", " ") or "protected files/settings do not match"
+            )
+        return first[:200]  # the first sentence: the rest is in the details
     test = re.search(r"^(?:FAIL|ERROR): (\w+)", output, re.MULTILINE)
     return test.group(1).replace("test_", "", 1).replace("_", " ") if test else "the contract test failed"
 
@@ -59,7 +80,7 @@ def main() -> int:
     output = "\n".join(completed.stdout.decode("utf-8", "replace").splitlines()).strip()
     _ui.info(
         f"Commit blocked: Launcher compatibility check failed: {first_problem(output)}. "
-        'Click "Show Command Output" for details.'
+        'Update backend_settings.py or restore the reported files/settings. Click "Show Command Output" for details.'
     )
     _ui.heading(f"Output of {TEST_FILE}")
     _ui.info(with_links(output))
@@ -75,4 +96,6 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(_ui.run(main))
+    raise SystemExit(
+        _ui.run(main, "Commit blocked: Compatibility check could not complete. Check Python/Git availability.")
+    )

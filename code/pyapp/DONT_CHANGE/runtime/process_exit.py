@@ -10,6 +10,8 @@ import os
 import shutil
 import subprocess
 import sys
+import tempfile
+import uuid
 from pathlib import Path
 from typing import Any, Dict, List, NoReturn, Optional, Tuple
 
@@ -38,12 +40,14 @@ try:
     from pyapp.DONT_CHANGE.runtime._pyapp import (
         ExitMode,
         exit_code_is_success,
+        variable_dump,
     )
     from pyapp.DONT_CHANGE.scripts.config import main_script_path, settings
     from pyapp.DONT_CHANGE.scripts.console_tools import (
         ask,
         browser_terminal_ui,
         enable_ansi,
+        foreground_terminal,
         in_browser_terminal,
         print_choices,
         print_error,
@@ -54,6 +58,7 @@ try:
         set_terminal_colors,
         set_terminal_icon,
         set_terminal_title,
+        unminimize_terminal,
         wait_for_enter,
     )
     from pyapp.DONT_CHANGE.scripts.diagnostics import note_ignored
@@ -202,7 +207,59 @@ def local_module_exists(name: str) -> bool:
     return any((Path(root) / (name + ".py")).is_file() or (Path(root) / name).is_dir() for root in roots)
 
 
-def handle_missing_module(missing: str, app_id: str, new_terminal_was_created: bool) -> None:
+def save_and_open_variables(report: Dict[str, Any], crash_log: Optional[str] = None) -> None:
+    """Persist values only on request, preferably in the crash log, and open the resulting text file."""
+    if not report.get("variables"):
+        print_info("No Python traceback variables are available for this error.")
+        return
+    try:
+        saved = report.get("variables_saved_path")
+        # Without crash logging, use system temp rather than the launcher's short-lived run folder.
+        destination = Path(
+            saved or crash_log or str(Path(tempfile.gettempdir()) / f"pyapp-variables-{uuid.uuid4().hex}.txt")
+        )
+        if not saved or not destination.is_file():
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            with destination.open("a" if crash_log else "w", encoding="utf-8", errors="backslashreplace") as stream:
+                stream.write("\n\n" + variable_dump(report))
+            report["variables_saved_path"] = str(destination)
+        print_info("Variables saved: " + destination.resolve().as_uri())
+    except OSError as error:
+        print_error(f"Could not save the variable snapshot: {error}")
+        return
+    try:
+        os.startfile(str(destination))  # noqa: S606 - explicitly requested local diagnostic text file
+    except OSError as error:
+        print_error(f"The snapshot was saved, but could not be opened: {error}")
+
+
+def wait_for_report(report: Optional[Dict[str, Any]], crash_log: Optional[str] = None) -> None:
+    """Keep the normal Enter-to-close behavior, adding an optional variable export for tracebacks."""
+    if not report or not report.get("variables"):
+        wait_for_enter()
+        return
+    while True:
+        try:
+            answer = (
+                ask("Enter = close, v = save all traceback locals/globals and open (values are not redacted):")
+                .strip()
+                .lower()
+            )
+        except (EOFError, KeyboardInterrupt):
+            return
+        if not answer or answer in ("q", "n"):
+            return
+        if answer == "v":
+            save_and_open_variables(report, crash_log)
+
+
+def handle_missing_module(
+    missing: str,
+    app_id: str,
+    new_terminal_was_created: bool,
+    report: Optional[Dict[str, Any]] = None,
+    crash_log: Optional[str] = None,
+) -> None:
     """Offer to install the distribution behind a ModuleNotFoundError, then restart."""
     from pyapp.DONT_CHANGE.scripts.env import venv
     from pyapp.DONT_CHANGE.scripts.errors import SetupError
@@ -213,7 +270,7 @@ def handle_missing_module(missing: str, app_id: str, new_terminal_was_created: b
         print_warn(
             f'"{top}" is part of your project, not a package to install. Check the file/folder name and the import.'
         )
-        wait_for_enter()
+        wait_for_report(report, crash_log)
         return
     distribution = distribution_for_import(top)
     if distribution != top:
@@ -257,7 +314,11 @@ def handle_missing_module(missing: str, app_id: str, new_terminal_was_created: b
         print_warn(headline)
         print_choices(label for _, label in options)
         # Enter: the last option, quit.
-        answer = ask(f"What now? [1-{len(options)}, Enter = quit]").strip() or str(len(options))
+        variables_hint = ", v = save/open variables" if report and report.get("variables") else ""
+        answer = ask(f"What now? [1-{len(options)}, Enter = quit{variables_hint}]").strip() or str(len(options))
+        if answer.lower() == "v" and report and report.get("variables"):
+            save_and_open_variables(report, crash_log)
+            continue
         if not answer.isdecimal() or not 1 <= int(answer) <= len(options):
             continue
         action = options[int(answer) - 1][0]
@@ -312,7 +373,7 @@ def complete(
     report: Optional[Dict[str, Any]] = None,
     message: Optional[str] = None,
     keep_open: bool = False,
-) -> None:
+) -> Optional[str]:
     """Run the configured actions for success/failure/crash/keyboard_interrupt."""
     s = settings()
     close = getattr(s, "close_after_" + outcome)
@@ -341,6 +402,7 @@ def complete(
     # The report first: it is what this window is for, and writing the crash log can fail
     # (missing drive, full disk, a date code that makes an invalid file name).
     print_report(report)
+    crash_log = None
     if outcome != "success":
         try:
             crash_log = write_crash_log(report, message, log_path)
@@ -355,8 +417,19 @@ def complete(
                 print_error(f"Failed to open crash log: {error}")
     if OUTCOMES[outcome]["sound"] and getattr(s, "play_sound_after_" + outcome):
         play_sound(OUTCOMES[outcome]["sound"], wait=not keep_open)
+    if stays_open and getattr(s, "foreground_after_" + outcome, False):
+        try:
+            if in_browser_terminal():
+                browser_terminal_ui(foreground=True)
+            else:
+                unminimize_terminal()
+                foreground_terminal()
+        except Exception:
+            # Attention is cosmetic; reporting and recovery must still run if Windows denies it.
+            note_ignored("foreground after " + outcome)
     if stays_open and not keep_open:
-        wait_for_enter()
+        wait_for_report(report, crash_log)
+    return crash_log
 
 
 def main() -> None:
@@ -434,14 +507,14 @@ def main() -> None:
             )
     elif kind == "ModuleNotFoundError" and report.get("missing_module"):
         missing = report["missing_module"]
-        complete(
+        crash_log = complete(
             "failure",
             log_path,
             report,
             f'"{script_name}" failed: {error_summary(report)}',
             keep_open=True,
         )
-        handle_missing_module(missing, app_id, new_terminal_was_created)
+        handle_missing_module(missing, app_id, new_terminal_was_created, report, crash_log)
     elif kind == "KeyboardInterrupt":
         complete(
             "keyboard_interrupt",

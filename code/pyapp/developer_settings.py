@@ -87,6 +87,12 @@ close_after_success = True
 close_after_failure = False
 close_after_keyboard_interrupt = False
 
+# Restore and bring the classic console/browser terminal forward when it stays open:
+# These do not override close_after_*; native Windows Terminal focus is unsupported.
+foreground_after_success = False
+foreground_after_failure = False
+foreground_after_keyboard_interrupt = False
+
 # Open the normal log file:
 open_log_file_after_success = False
 open_log_file_after_failure = False
@@ -132,8 +138,9 @@ args_for_main_py = []
 # PYTHON* variables have no effect on main.py itself, because it runs with -E.
 environment_for_main_py = {}
 
-# Working folder of the program. False: the folder of the main script. True: the folder of the starting shortcut.
-start_in_shortcut_folder = False
+# Working folder. False: main script folder. True: shortcut folder (its "Start in" field, set by Setup).
+# If you manually move a .lnk later, update its "Start in" folder in Properties too.
+start_in_shortcut_folder = True
 
 # Stop shortcut and instance_policy "replace": seconds a running instance gets to close by itself
 # (its windows receive a normal close request, a console app gets Ctrl+C) before it is terminated.
@@ -203,6 +210,9 @@ open_code_shortcut_name = f"{program_name} (Edit-Code)"
 # --- Startup ---
 # Start with the window minimized:
 start_minimized = False
+# Restore the classic console/browser terminal on the app's first print/error output (once).
+# Hidden starts stay hidden; native Windows Terminal focus is unsupported. Windows may restrict focus.
+foreground_on_first_print = False
 
 # --- uv ---
 # uv_prefer and uv_install_if_missing: see "Where uv and Python come from" above.

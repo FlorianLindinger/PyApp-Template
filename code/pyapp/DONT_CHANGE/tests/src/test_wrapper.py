@@ -21,6 +21,72 @@ WRAPPER = DONT_CHANGE / "runtime" / "script_wrapper.py"
 
 
 class WrapperTests(unittest.TestCase):
+    def test_native_focus_restores_only_a_visible_console_window(self):
+        import ctypes
+
+        with mock.patch.object(sys, "path", [str(WRAPPER.parent), *sys.path]):
+            wrapper = runpy.run_path(str(WRAPPER), run_name="native_focus_test")
+        for visible in (False, True):
+            kernel, user = mock.Mock(), mock.Mock()
+            kernel.GetConsoleWindow.return_value = 123
+            user.IsWindowVisible.return_value = visible
+            with self.subTest(visible=visible), mock.patch.object(ctypes, "WinDLL", side_effect=[kernel, user]):
+                wrapper["request_foreground"]("")
+            if visible:
+                user.ShowWindow.assert_called_once_with(123, 9)
+                user.SetForegroundWindow.assert_called_once_with(123)
+            else:
+                user.ShowWindow.assert_not_called()
+                user.SetForegroundWindow.assert_not_called()
+
+    def test_first_output_attention_is_shared_by_text_binary_and_error_streams(self):
+        with mock.patch.object(sys, "path", [str(WRAPPER.parent), *sys.path]):
+            wrapper = runpy.run_path(str(WRAPPER), run_name="first_output_test")
+        request = mock.Mock()
+        callback_factory = wrapper["first_output_callback"]
+        with mock.patch.dict(callback_factory.__globals__, request_foreground=request):
+            callback = callback_factory("browser.jsonl")
+            out = wrapper["PipeSplitter"](io.StringIO())
+            err = wrapper["PipeSplitter"](io.StringIO())
+            out.on_output = err.on_output = callback
+            out.write("")
+            err.buffer.write(b"")
+            request.assert_not_called()
+            err.buffer.write(b"first")
+            out.write("second")
+            err.write("third")
+        request.assert_called_once_with("browser.jsonl")
+
+    def test_first_output_focus_failure_does_not_break_printing(self):
+        with mock.patch.object(sys, "path", [str(WRAPPER.parent), *sys.path]):
+            wrapper = runpy.run_path(str(WRAPPER), run_name="focus_failure_test")
+        request = mock.Mock(side_effect=OSError("focus denied"))
+        callback_factory = wrapper["first_output_callback"]
+        with mock.patch.dict(callback_factory.__globals__, request_foreground=request):
+            target = io.StringIO()
+            stream = wrapper["PipeSplitter"](target)
+            stream.on_output = callback_factory("")
+            stream.write("one")
+            stream.write("two")
+        self.assertEqual(target.getvalue(), "onetwo")
+        request.assert_called_once()
+
+    def test_first_print_setting_requests_browser_focus_only_once_and_defaults_off(self):
+        for enabled in (False, True):
+            with self.subTest(enabled=enabled):
+                request_file = Path(self.temporary_folder()) / "ui.jsonl"
+                code, _, _ = self.run_app(
+                    'import helper\nprint("main")\n',
+                    extra_files={"helper.py": 'import sys\nprint("imported", file=sys.stderr)\n'},
+                    browser_ui=str(request_file),
+                    foreground_on_first_print=enabled,
+                )
+                self.assertEqual(code, 0)
+                self.assertEqual(
+                    request_file.read_text(encoding="utf-8") if request_file.exists() else "",
+                    '{"foreground": true}\n' if enabled else "",
+                )
+
     def test_text_and_binary_logging_without_a_console(self):
         with mock.patch.object(sys, "path", [str(WRAPPER.parent), *sys.path]):
             wrapper = runpy.run_path(str(WRAPPER), run_name="wrapper_no_console_test")
@@ -120,6 +186,10 @@ class WrapperTests(unittest.TestCase):
         self.assertTrue(frames[0]["filename"].endswith("main.py"), "launcher frames were not stripped")
         self.assertTrue(all(frame["app"] for frame in frames))
         self.assertTrue(frames[-1]["context"])
+        variable_frames = report["variables"][-1]["frames"]
+        self.assertTrue(all(frame["filename"].endswith("main.py") for frame in variable_frames))
+        self.assertEqual(variable_frames[-1]["name"], "f")
+        self.assertIn("f", variable_frames[-1]["globals"])
 
     def test_system_exit_codes(self):
         for source, expected in (
@@ -155,6 +225,7 @@ class WrapperTests(unittest.TestCase):
         self.assertEqual(code, 0)
         background = json.loads((run / "traceback.json.background").read_text(encoding="utf-8"))
         self.assertEqual(background["exception_type"], "RuntimeError")
+        self.assertTrue(background["variables"])
 
     def run_logged(self, source: str):
         """Run with a log and native output capture; return (exit code, console, log text, raw path)."""
@@ -200,6 +271,7 @@ class WrapperTests(unittest.TestCase):
         self.assertIn("remaining cleanup ran", output)
         background = json.loads((run / "traceback.json.background").read_text(encoding="utf-8"))
         self.assertEqual(background["exception_type"], "RuntimeError")
+        self.assertTrue(background["variables"])
 
     def test_atexit_system_exit_preserves_success_and_records_failure(self):
         for status in (0, 1):

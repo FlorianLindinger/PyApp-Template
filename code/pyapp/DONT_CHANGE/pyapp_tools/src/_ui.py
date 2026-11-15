@@ -37,7 +37,7 @@ _console_prepared = False
 _progress_shown = False
 
 
-def run(main: Callable[[], Optional[int]]) -> Optional[int]:
+def run(main: Callable[[], Optional[int]], failure_context: str = "") -> Optional[int]:
     """Run a tool: problems it expects become a short message, programming errors keep their traceback."""
     try:
         return main()
@@ -45,6 +45,8 @@ def run(main: Callable[[], Optional[int]]) -> Optional[int]:
         warn("Stopped with Ctrl+C.")
         return 130
     except (OSError, RuntimeError) as problem:  # includes timeouts and missing files
+        if failure_context:
+            info(f'{failure_context} Click "Show Command Output" for details.')
         error(problem)
         return 1
 

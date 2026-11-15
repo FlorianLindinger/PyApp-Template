@@ -20,6 +20,7 @@ GROUPS: Dict[str, Tuple[str, ...]] = {
     "app": (
         "test_entrypoint.py",
         "test_wrapper.py",
+        "test_app_environment.py",
         "test_tracebacks.py",
         "test_output_logs.py",
         "test_logs.py",

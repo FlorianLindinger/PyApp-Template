@@ -31,7 +31,9 @@ from pyapp.DONT_CHANGE.scripts.dev_tools.packages import (
     cmd_add,
     cmd_export,
     cmd_find_imports,
+    cmd_install_requirements,
     cmd_remove,
+    cmd_reset_imports,
     cmd_sync,
     cmd_terminal,
     cmd_upgrade,
@@ -50,6 +52,8 @@ COMMANDS = {
     "upgrade": cmd_upgrade,
     "sync": cmd_sync,
     "find-imports": cmd_find_imports,
+    "reset-imports": cmd_reset_imports,
+    "install-requirements": cmd_install_requirements,
     "terminal": cmd_terminal,
     "change-python": cmd_change_python,
     "update-python": cmd_update_python,
@@ -65,7 +69,21 @@ COMMANDS = {
 
 # Every command, in the order and groups of the menu.
 MENU_GROUPS = (
-    ("Packages", ("list-packages", "add", "remove", "upgrade", "sync", "find-imports", "terminal", "export")),
+    (
+        "Packages",
+        (
+            "list-packages",
+            "add",
+            "remove",
+            "upgrade",
+            "sync",
+            "find-imports",
+            "reset-imports",
+            "install-requirements",
+            "terminal",
+            "export",
+        ),
+    ),
     ("Python", ("change-python", "update-python")),
     ("Project", ("run-tests", "status", "clean", "remove-shortcuts", "make-self-contained", "test")),
 )
@@ -93,7 +111,7 @@ def cmd_menu(_arguments: List[str]) -> None:
         (
             title,
             [
-                (name, name.ljust(17) + styled((COMMANDS[name].__doc__ or "").strip().splitlines()[0], ANSI_DIM))
+                (name, name.ljust(22) + styled((COMMANDS[name].__doc__ or "").strip().splitlines()[0], ANSI_DIM))
                 for name in group
             ],
         )

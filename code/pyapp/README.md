@@ -15,8 +15,50 @@ environment it runs in, its icons and tools. Your own code lives one folder up, 
 | [tests/](tests/test_example.py) | The app's own tests (`test_*.py`) | add tests | commit |
 | [generated/](generated/README.md) | What the launcher creates: the locked packages, the Python version, the environment | leave alone | partly |
 | [Start without launcher.cmd](Start%20without%20launcher.cmd) | Starts the app when the launcher itself is broken | use if needed | commit |
+| [Start without launcher --LINUX.sh](Start%20without%20launcher%20--LINUX.sh) | Direct Linux start using a Linux virtual environment or system Python | use on Linux | commit |
 | [DONT_CHANGE/](DONT_CHANGE/README.md) | The launcher; replaced as a whole to update it | don't edit | commit |
 | `.gitignore` | Keeps the environment, caches and per-PC files out of Git | rarely | commit |
+
+## Git protection
+
+This folder's `.gitignore` starts with `!/**/*`, keeping source, settings, tools, icons and
+tests eligible for Git even when a parent file ignores their extensions or subfolder names.
+Later rules exclude Python bytecode, virtual environments and tool caches again. More deeply
+nested ignore files still control launcher temporary files, test temporary files and release zips.
+
+`generated/` is ignored by default. Its four portable files are explicitly included:
+`README.md`, `uv.lock`, `.python-version` and `auto_generated_icons.json`. New local runtime
+files and browser keys therefore remain ignored without needing another blacklist entry.
+
+If an ancestor rule ignores `code/` or `code/pyapp/` itself, Git never reaches this file.
+Re-include those directories in the root `.gitignore`, after the conflicting rule:
+
+```gitignore
+!/code/
+!/code/pyapp/
+```
+
+These rules make untracked files eligible for `git add`; they do not automatically stage,
+commit or push them. Ignore rules do not remove files that are already tracked.
+Use `pyapp_tools/check_repository.bat --why PATH` inside `DONT_CHANGE` to explain a rule.
+
+## Direct start on Linux
+
+From `code/pyapp`, run:
+
+```sh
+sh "Start without launcher --LINUX.sh"
+```
+
+You can also pass its full path from another working folder. Arguments after the filename are
+passed unchanged to the app. It prefers `generated/.venv/bin/python`, then a working `python3`
+or `python` on PATH (Python 3.8+). Windows virtual environments cannot be reused on Linux;
+create a Linux environment or install the app's dependencies in the selected Linux Python.
+The script reads literal settings for the main file, arguments, environment and package list
+without executing `developer_settings.py`, then runs the app from the main script's folder.
+Windows backslashes in configured relative file paths are accepted. This direct start does
+not install packages or provide the Windows launcher's shortcuts, logs or crash handling.
+The app itself must support Linux. The Windows `.ico` is not injected into the Linux app environment.
 
 ## developer_settings.py
 

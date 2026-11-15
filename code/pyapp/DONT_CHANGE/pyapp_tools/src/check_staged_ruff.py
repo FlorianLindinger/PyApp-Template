@@ -102,7 +102,12 @@ def main(ruff: Optional[List[str]] = None) -> int:
         # Keep the exact location for lint errors; formatting alone needs only a short count.
         diagnostic = next(problem for problem in problems if not problem.splitlines()[0].endswith(": not formatted"))
         reason = "Ruff: " + diagnostic.splitlines()[0] + "."
-    _ui.info(f'Commit blocked: {reason} Click "Show Command Output" for details.')
+    action = (
+        "Run verify_launcher.bat --fix, review and stage the files."
+        if format_only
+        else "Fix and stage the reported code."
+    )
+    _ui.info(f'Commit blocked: {reason} {action} Click "Show Command Output" for details.')
     _ui.heading("Formatting required" if format_only else "Ruff diagnostics in staged launcher files")
     for problem in problems:
         _ui.info(problem)
@@ -122,4 +127,4 @@ def main(ruff: Optional[List[str]] = None) -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(_ui.run(main))
+    raise SystemExit(_ui.run(main, "Commit blocked: Ruff check could not complete. Check Git/Ruff availability."))

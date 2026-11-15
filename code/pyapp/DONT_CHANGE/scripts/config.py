@@ -59,6 +59,7 @@ BOOLEANS = (
     "start_menu_shortcuts",
     "start_in_shortcut_folder",
     "start_minimized",
+    "foreground_on_first_print",
     "use_classic_terminal",
     "enable_log_for_terminal_start",
     "enable_log_for_no_terminal_start",
@@ -453,7 +454,7 @@ def validate(module: Optional[Union[ModuleType, SimpleNamespace]] = None) -> Non
     for name in SHORTCUT_NAME_SETTINGS:
         need(name, lambda v: isinstance(v, str) and (v == "" or v.strip()), 'use a name or "" to disable')
     for outcome in OUTCOMES:
-        for prefix in ("close_after_", "open_log_file_after_"):
+        for prefix in ("close_after_", "open_log_file_after_", "foreground_after_"):
             need(prefix + outcome, lambda v: isinstance(v, bool), "use True or False")
     for name in (
         "print_prepend",

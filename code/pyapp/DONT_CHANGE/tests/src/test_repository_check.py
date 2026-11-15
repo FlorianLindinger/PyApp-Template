@@ -8,6 +8,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from typing import List, Set
 from unittest import mock
 
 from project_location import DONT_CHANGE
@@ -74,6 +75,89 @@ class GitCheckTests(unittest.TestCase):
         self.write("main.py")
         self.git("add", ".")
         self.assertEqual(tool.all_problems(self.root, 5.0), [])
+
+    def launcher_ignore_fixture(self) -> None:
+        """Use the shipped rules under deliberately broad parent patterns in a disposable repo."""
+        self.new_repository()
+        self.write(
+            ".gitignore",
+            b"*.py\n*.md\n*.cmd\n*.sh\n*.json\n*.lock\n*.ico\n*.png\n*.gitignore\n.gitattributes\n.python-version\ndev_tools/\nDONT_CHANGE/\ngenerated/\nicons/\ntests/\n",
+        )
+        base = DONT_CHANGE.parent
+        for relative in (
+            ".gitignore",
+            "DONT_CHANGE/.gitignore",
+            "DONT_CHANGE/tests/tmp/.gitignore",
+            "DONT_CHANGE/pyapp_tools/zip_releases/.gitignore",
+        ):
+            self.write("code/pyapp/" + relative, (base / relative).read_bytes())
+
+    def ignored_paths(self, names: List[str]) -> Set[str]:
+        for name in names:
+            if not (self.root / name).exists():
+                self.write(name)
+        return set(
+            tool.git(
+                "check-ignore", "--no-index", "--stdin", stdin="\n".join(names) + "\n", root=self.root
+            ).splitlines()
+        )
+
+    def test_launcher_sources_and_portable_generated_files_override_parent_patterns(self):
+        self.launcher_ignore_fixture()
+        files = [
+            "code/pyapp/" + name
+            for name in (
+                "developer_settings.py",
+                ".gitignore",
+                "DONT_CHANGE/.gitattributes",
+                "README.md",
+                "Developer Tools.cmd",
+                "Start without launcher --LINUX.sh",
+                "dev_tools/add_packages.cmd",
+                "DONT_CHANGE/runtime/new_module.py",
+                "icons/icon.ico",
+                "icons/icon.png",
+                "tests/test_example.py",
+                "generated/README.md",
+                "generated/uv.lock",
+                "generated/.python-version",
+                "generated/auto_generated_icons.json",
+            )
+        ]
+        self.assertEqual(self.ignored_paths(files), set())
+
+    def test_launcher_protection_keeps_runtime_artifacts_and_deeper_exclusions_ignored(self):
+        self.launcher_ignore_fixture()
+        files = [
+            "code/pyapp/" + name
+            for name in (
+                "__pycache__/settings.cpython-314.pyc",
+                "DONT_CHANGE/runtime/loose.pyc",
+                ".ruff_cache/check",
+                "tests/.pytest_cache/check",
+                "dev_tools/.mypy_cache/check",
+                ".venv/bin/python",
+                "node_modules/package/index.js",
+                "generated/pyproject.toml",
+                "generated/browser_terminal_key.txt",
+                "generated/shortcuts_created_by_setup.json",
+                "generated/.venv/Scripts/python.exe",
+                "generated/uv-download-staging/uv.exe",
+                "generated/future-local-state.json",
+                "DONT_CHANGE/tmp/runtime.cmd",
+                "DONT_CHANGE/tests/tmp/probe.txt",
+                "DONT_CHANGE/pyapp_tools/zip_releases/release.zip",
+            )
+        ]
+        self.assertEqual(self.ignored_paths(files), set(files))
+
+    def test_launcher_rules_cannot_override_an_excluded_ancestor(self):
+        self.launcher_ignore_fixture()
+        self.write(".gitignore", b"/code/\n")
+        names = ["code/pyapp/developer_settings.py"]
+        self.assertEqual(self.ignored_paths(names), set(names))
+        self.write(".gitignore", b"/code/\n!/code/\n")
+        self.assertEqual(self.ignored_paths(names), set())
 
     def test_tracked_files_that_are_ignored(self):
         self.new_repository()

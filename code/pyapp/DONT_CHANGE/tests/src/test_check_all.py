@@ -41,7 +41,7 @@ class CheckAllTests(unittest.TestCase):
             self.assertEqual(tool.run_step(step, "", hook=True), 1)
         self.assertEqual(
             output.getvalue().splitlines()[0],
-            f'Push blocked: {reason} Click "Show Command Output" for details.',
+            f'Push blocked: {reason} Review both settings files and commit the correction. Click "Show Command Output" for details.',
         )
         self.assertIn(diagnostics, output.getvalue())
 
@@ -118,7 +118,81 @@ class CheckAllTests(unittest.TestCase):
             + reason
             + ". Add these commands to backend_settings.py.\n"
         )
-        self.assertEqual(check_protected.first_problem(diagnostics), reason)
+        self.assertEqual(
+            check_protected.first_problem(diagnostics),
+            "Unregistered Developer Tools commands: install-requirements, reset-imports",
+        )
+
+    def test_file_contract_failures_start_with_the_repair(self):
+        cases = (
+            (
+                "test_batch_and_settings_files_use_crlf",
+                "AssertionError: 5 != 0 : install_requirements.cmd must use CRLF line endings",
+                "install_requirements.cmd needs Windows CRLF line endings. Save with CRLF",
+            ),
+            (
+                "test_the_file_tables_name_existing_files",
+                "AssertionError: tests/README.md file table",
+                "README file tables are missing or outdated. Update",
+            ),
+            (
+                "test_every_test_file_is_in_exactly_one_group",
+                "AssertionError: Lists differ",
+                "Test files are missing from groups.py or listed twice. Register",
+            ),
+        )
+        for name, diagnostic, expected in cases:
+            with self.subTest(name=name):
+                reason = tool.test_failure_reason(f"FAIL: {name}\n{diagnostic}", 1)
+                self.assertTrue(reason.startswith(expected), reason)
+
+    def test_multiple_test_failures_are_summarized_without_assertion_dumps(self):
+        diagnostics = "\n".join(
+            "FAIL: " + name
+            for name in (
+                "test_batch_and_settings_files_use_crlf",
+                "test_the_file_tables_name_existing_files",
+                "test_every_test_file_is_in_exactly_one_group",
+            )
+        )
+        self.assertEqual(
+            tool.test_failure_reason(diagnostics, 1),
+            "3 launcher checks failed: CRLF line endings; README file tables; test-group registration. Fix the failures listed in the details.",
+        )
+
+    def test_repository_failure_names_the_issue_and_repair(self):
+        step = tool.Step("Repository check", [])
+        self.assertEqual(
+            tool.failure_reason(step, 1, "── Tracked but ignored (2) ──\n  cache.pyc"),
+            "Files matched by .gitignore are still tracked. Remove them from Git tracking.",
+        )
+
+    def test_a_check_that_cannot_start_has_a_push_headline(self):
+        output = io.StringIO()
+        with mock.patch.object(tool.subprocess, "run", side_effect=FileNotFoundError("python missing")), mock.patch(
+            "sys.stdout", output
+        ):
+            self.assertEqual(tool.run_step(VERIFY, "", hook=True), 1)
+        self.assertTrue(output.getvalue().startswith("Push blocked: Cannot start Verify launcher"))
+        self.assertIn("python missing", output.getvalue())
+
+    def test_hook_tool_errors_show_context_before_the_raw_exception(self):
+        output = io.StringIO()
+        with mock.patch("sys.stdout", output):
+            result = tool._ui.run(
+                mock.Mock(side_effect=OSError("repository inaccessible")), "Commit blocked: Cannot run the check."
+            )
+        self.assertEqual(result, 1)
+        self.assertTrue(
+            output.getvalue().startswith('Commit blocked: Cannot run the check. Click "Show Command Output"')
+        )
+        self.assertIn("repository inaccessible", output.getvalue())
+
+    def test_compatibility_assertion_lists_are_not_copied_into_the_popup(self):
+        diagnostics = "FAIL: test_protected_setting_names_still_exist\nAssertionError: Lists differ: ['old'] != ['new']"
+        reason = check_protected.first_problem(diagnostics)
+        self.assertEqual(reason, "Protected developer settings are missing from fallback defaults")
+        self.assertNotIn("Lists differ", reason)
 
     def test_changelog_error_says_what_is_missing_and_which_branch_needs_it(self):
         output = io.StringIO()

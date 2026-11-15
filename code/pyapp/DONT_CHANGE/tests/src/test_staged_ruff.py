@@ -49,7 +49,9 @@ class StagedRuffTests(unittest.TestCase):
             self.assertEqual(tool.main(["ruff"]), 1)
         self.assertEqual(
             output.getvalue().splitlines()[0],
-            "Commit blocked: Ruff: " + diagnostic + '. Click "Show Command Output" for details.',
+            "Commit blocked: Ruff: "
+            + diagnostic
+            + '. Fix and stage the reported code. Click "Show Command Output" for details.',
         )
         self.assertIn("Review and stage the corrected files", output.getvalue())
 
@@ -63,11 +65,12 @@ class StagedRuffTests(unittest.TestCase):
         text = output.getvalue()
         self.assertEqual(
             text.splitlines()[0],
-            'Commit blocked: 3 staged Python files need formatting. Click "Show Command Output" for details.',
+            'Commit blocked: 3 staged Python files need formatting. Run verify_launcher.bat --fix, review and stage the files. Click "Show Command Output" for details.',
         )
         for name in names:
             self.assertIn(name + ": not formatted", text)
-        self.assertEqual(text.count("verify_launcher.bat --fix"), 1)
+        # The repair command is available both in the popup and alongside the detailed steps.
+        self.assertEqual(text.count("verify_launcher.bat --fix"), 2)
         self.assertIn("1. Format the files above.", text)
         self.assertIn("2. Review and stage the corrected files.", text)
         self.assertIn("3. Commit again.", text)

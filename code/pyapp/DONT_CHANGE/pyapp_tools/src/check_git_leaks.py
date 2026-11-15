@@ -388,13 +388,18 @@ def check_push(hook_input: str) -> int:
 
 def hook_summary(action: str, findings: List[Finding]) -> None:
     """Lead with an actionable line: Git clients may show only the first output line in a popup."""
-    first = findings[0]
+    first = next((finding for finding in findings if finding.level == SECRET), findings[0])
     more = f" (+{len(findings) - 1} more)" if len(findings) > 1 else ""
     category = "Possible secret" if first.level == SECRET else "Personal data"
     scope = "staged changes" if action == "Commit" else "commits being pushed"
+    repair = (
+        "Fix and stage the reported lines."
+        if action == "Commit"
+        else "Fix the affected commits; editing working files alone is insufficient."
+    )
     _ui.info(
         f"{action} blocked: {category} in {scope}: {first.kind} at {first.where}{more}. "
-        'Click "Show Command Output" for details.'
+        f'{repair} Click "Show Command Output" for details.'
     )
 
 
@@ -481,4 +486,8 @@ def main(argv: Optional[List[str]] = None) -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(_ui.run(main))
+    action = "Commit" if "--committing" in sys.argv else "Push" if "--pushing" in sys.argv else ""
+    context = (
+        f"{action} blocked: Leak check could not complete. Check Git and access to repository files." if action else ""
+    )
+    raise SystemExit(_ui.run(main, context))

@@ -26,6 +26,7 @@ uses it). `src/groups.py` defines the groups; a new test file must be added to o
 | File | Covers |
 | --- | --- |
 | `test_entrypoint.py` | exit codes, prompts (`pause_on_success`), class-based expected problems, the `entrypoint.py <tool>` runner, app modules named like stdlib modules |
+| `test_app_environment.py` | app environment variables, resolved icon/settings/log/project/start paths and completion titles, disabled paths, existing flags and no folder creation |
 | `test_wrapper.py` | `script_wrapper.py` in a real interpreter: arguments, hidden launcher variables, no shadowing of the app's `protocol.py`, reports for exceptions, `SystemExit`, missing modules, `os._exit`, late worker-thread errors, log and print prefixes |
 | `test_tracebacks.py` | exception chains, suppressed context, notes and groups (3.11+), success rules, the explicit exit-code mapping, rendering |
 | `test_output_logs.py` | crash logs contain the app's prints; the raw output file is only kept after failures; the hidden completion handler never waits |
@@ -35,7 +36,7 @@ uses it). `src/groups.py` defines the groups; a new test file must be added to o
 | `test_banner.py` | the banner font renders the app name, supports German letters and Latin-1, skips missing characters; the console font it needs |
 | `test_icons.py` | icons always use the bundled overlays; generated icons update silently, a question per icon for placed ones; small sizes in linear light; every `.ico` size |
 | `test_dev_menu.py` | the dev tools menu offers every command exactly once; every prompt can be cancelled; missing-package recovery; `run-tests` finds the app's tests folders (never the launcher's) and runs them with pytest or unittest |
-| `test_fallback.py` | `actions/start_without_launcher.py` from a copy that has nothing else of the launcher: settings, arguments, environment, exit code, missing packages, unreadable settings |
+| `test_fallback.py` | `actions/start_without_launcher.py` from a copy that has nothing else of the launcher: settings, arguments, environment, exit code, missing packages, unreadable settings; Linux shell LF, native venv/system selection, Windows-venv detection and missing-Python/helper messages (shell execution on POSIX only) |
 | `test_windows.py` | Windows only: registry records with job names, Stop ends the whole job (incl. grandchildren), graceful Stop via Ctrl+C, file lock |
 
 ### `setup`: settings, environment, uv and Python
