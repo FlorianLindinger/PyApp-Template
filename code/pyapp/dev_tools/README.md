@@ -9,13 +9,13 @@ Tools are grouped by task; this folder's root contains only this guide.
 | `project/` | Status, app tests, cleanup, shortcut removal and making the folder self-contained |
 | [compilation/](compilation/README.md) | Build presets/settings, syntax checks, Nuitka builds and output cleanup |
 
-The main **Developer Tools.cmd** remains in `code/pyapp` and offers every command.
+The main **Open Developer Tools Menu.cmd** remains in `code/pyapp` and offers every command.
 Existing projects can continue calling the protected backend commands; the visible `.cmd`
 paths in this template now include their group folder. Older projects' root-level
 `compilation_settings.json` extra arguments are still read when that file exists.
 
 Double-click a tool in its group folder, or run it from a terminal with arguments (e.g. `packages/add_packages.cmd requests "numpy>=2"`; quote requirements with `<`, `>` or `|`, which the command prompt would otherwise treat as redirection).
-[`Developer Tools.cmd`](../Developer%20Tools.cmd) in the parent folder lists all of them. Every tool validates `developer_settings.py` first and
+[`Open Developer Tools Menu.cmd`](../Open%20Developer%20Tools%20Menu.cmd) in the parent folder lists all of them. Every tool validates `developer_settings.py` first and
 prepares the environment if needed. Close running app instances before changing packages
 or Python — Windows locks the files they use.
 
@@ -48,3 +48,5 @@ or Python — Windows locks the files they use.
 - **New Python version:** `python/change_python.cmd 3.13` → option 1 → test → commit `developer_settings.py`, `pyapp/generated/.python-version` and `pyapp/generated/uv.lock`.
 - **Hand over a folder that runs offline on another PC:** `project/make_self_contained.cmd` → accept → copy the whole folder, e.g. as a zip (a Git clone lacks the local uv, Python and packages, which Git ignores) → on the other PC, run `Setup - run first and after moving folder.cmd` once for the shortcuts.
 - **Move the folder on the same PC:** just move it, then run `Setup - run first and after moving folder.cmd` for the shortcuts. The environment adapts by itself; nothing is downloaded.
+
+Linux builds from Windows: [compilation guide](compilation/linux/README.md), `compilation/linux/setup_linux.cmd` and `compilation/linux/compile_linux.cmd`.

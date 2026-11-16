@@ -3,16 +3,20 @@
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
+import os
 import shutil
 import subprocess
+import tempfile
 from pathlib import Path
-from typing import Dict, List, NamedTuple, Optional
+from typing import Dict, Generator, List, NamedTuple, Optional
 
 from pyapp.DONT_CHANGE import backend_settings as paths
 from pyapp.DONT_CHANGE.scripts.config import main_script_path, settings, validate
 from pyapp.DONT_CHANGE.scripts.console_tools import print_heading, print_info, print_success
-from pyapp.DONT_CHANGE.scripts.dev_tools.common import prepare
+from pyapp.DONT_CHANGE.scripts.dev_tools.common import normalized, prepare
+from pyapp.DONT_CHANGE.scripts.env.uv import run_uv
 from pyapp.DONT_CHANGE.scripts.errors import SetupError
 
 FOLDER = Path(paths.BACKEND_DIR) / "dev_tools" / "compilation"
@@ -22,6 +26,74 @@ DEFAULT_PRESETS = Path(paths.DONT_CHANGE_DIR) / "compilation" / "presets.json"
 LEGACY_CONFIG = FOLDER.parent / "compilation_settings.json"
 OUTPUT = Path(paths.GENERATED_DIR) / "compilation"
 MARKER = ".pyapp-compilation"
+BUILD_PACKAGES = ("nuitka", "ordered-set", "zstandard")
+
+
+def installed_packages(python: str) -> Dict[str, str]:
+    """Inspect the managed interpreter without importing third-party packages."""
+    program = (
+        "import json; from importlib.metadata import distributions; "
+        "print(json.dumps({d.metadata['Name']:d.version for d in distributions() if d.metadata['Name']}))"
+    )
+    result = subprocess.run(  # noqa: S603 - fixed metadata query in the managed interpreter
+        [python, "-X", "utf8", "-c", program], capture_output=True, text=True, encoding="utf-8", check=False
+    )
+    if result.returncode:
+        raise SetupError("Cannot inspect installed packages before compilation.\n" + result.stderr.strip())
+    try:
+        values = json.loads(result.stdout)
+    except ValueError as error:
+        raise SetupError("The managed interpreter did not return valid package metadata.") from error
+    if not isinstance(values, dict):
+        raise SetupError("The managed interpreter did not return a package-version mapping.")
+    installed: Dict[str, str] = {}
+    for name, version in values.items():
+        if not isinstance(name, str) or not isinstance(version, str):
+            raise SetupError("Invalid package name/version in managed interpreter metadata.")
+        installed[normalized(name)] = version
+    return installed
+
+
+@contextlib.contextmanager
+def temporary_compiler(python: str) -> Generator[Dict[str, str], None, None]:
+    """Expose build tools for one invocation without installing/uninstalling in the app venv.
+
+    Existing distributions constrain the temporary resolution, keeping overlapping app
+    dependencies at their installed versions. A failed install/build also removes the target.
+    The caller reserves the marked OUTPUT folder before entering this context.
+    """
+    installed = installed_packages(python)
+    env = os.environ.copy()
+    if all(package in installed for package in BUILD_PACKAGES):
+        print_info("Using the existing Nuitka build packages; no temporary installation needed.")
+        yield env
+        return
+    with tempfile.TemporaryDirectory(prefix=".nuitka-build-", dir=OUTPUT) as folder:
+        temporary = Path(folder)
+        target = temporary / "packages"
+        constraints = temporary / "installed.txt"
+        constraints.write_text(
+            "".join(f"{name}=={version}\n" for name, version in sorted(installed.items())), encoding="utf-8"
+        )
+        print_info("Installing temporary Nuitka build packages; the app environment stays unchanged.")
+        try:
+            run_uv(
+                [
+                    "pip",
+                    "install",
+                    "--python",
+                    python,
+                    "--target",
+                    str(target),
+                    "--constraint",
+                    str(constraints),
+                    *BUILD_PACKAGES,
+                ]
+            )
+            env["PYTHONPATH"] = str(target) + (os.pathsep + env["PYTHONPATH"] if env.get("PYTHONPATH") else "")
+            yield env
+        finally:
+            print_info("Removing temporary Nuitka build packages.")
 
 
 class BuildOptions(NamedTuple):
@@ -54,9 +126,12 @@ def _strings(value: object, setting: str) -> List[str]:
     return result
 
 
-def load_options(preset: Optional[str], mode: Optional[str], variant: Optional[str]) -> BuildOptions:
+def load_options(
+    preset: Optional[str], mode: Optional[str], variant: Optional[str], config: Optional[Path] = None
+) -> BuildOptions:
     """Resolve CLI > settings > preset; retain old projects' extra_args without rewriting files."""
-    data = _object(CONFIG) if CONFIG.is_file() else {}
+    source = CONFIG if config is None else config
+    data = _object(source) if source.is_file() else {}
     known = {
         "preset",
         "mode",
@@ -91,7 +166,7 @@ def load_options(preset: Optional[str], mode: Optional[str], variant: Optional[s
     if not isinstance(chosen_variant, str) or chosen_variant not in ("terminal", "no_terminal"):
         raise SetupError("Compilation variant must be terminal or no_terminal.")
     extra = _strings(definition.get("extra_args", []), f"Preset {selected} extra_args")
-    if LEGACY_CONFIG.is_file():
+    if config is None and LEGACY_CONFIG.is_file():
         extra += _strings(_object(LEGACY_CONFIG).get("extra_args", []), "Legacy extra_args")
     jobs = data.get("jobs")
     if jobs is not None:
@@ -238,27 +313,18 @@ def cmd_compile_app(arguments: List[str]) -> None:
     if options.dry_run:
         return
     validate_sources(python, app_sources(Path(paths.PYTHON_SCRIPTS_DIR)))
-    # Optional compiler packages are installed only by the developer, never by this tool.
-    available = subprocess.run(  # noqa: S603
-        [python, "-c", "import nuitka"], capture_output=True, check=False
-    )
-    if available.returncode:
-        raise SetupError(
-            "Nuitka is not installed in the managed environment. In the dev terminal run "
-            "'uv pip install nuitka ordered-set zstandard'; a supported C compiler is also required. "
-            "See code/pyapp/dev_tools/compilation/README.md."
-        )
     if OUTPUT.exists() and not (OUTPUT / MARKER).is_file():
         raise SetupError(f"Refusing to reuse an unowned output folder: {OUTPUT}")
     OUTPUT.mkdir(parents=True, exist_ok=True)
     (OUTPUT / MARKER).write_text("PyApp compilation output\n", encoding="utf-8")
     target = OUTPUT / build.preset / build.variant / build.mode
     target.mkdir(parents=True, exist_ok=True)
-    result = subprocess.run(  # noqa: S603 - configured compiler, no shell
-        command, cwd=paths.PYTHON_SCRIPTS_DIR, check=False
-    )
-    if result.returncode:
-        raise SetupError("Nuitka compilation failed; see the compiler output above.")
+    with temporary_compiler(python) as env:
+        result = subprocess.run(  # noqa: S603 - configured compiler, no shell
+            command, cwd=paths.PYTHON_SCRIPTS_DIR, env=env, check=False
+        )
+        if result.returncode:
+            raise SetupError("Nuitka compilation failed; see the compiler output above.")
     print_success(f"Build completed: {target}. Test the produced application on a clean target machine.")
 
 

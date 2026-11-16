@@ -8,11 +8,13 @@ folder. Compilation is optional developer tooling; normal app starts do not invo
 1. Read the selected preset/settings. Invalid settings stop before environment preparation.
 2. Use the project's managed Python and `main_script_path` from `developer_settings.py`.
 3. Check app source syntax without executing it. The separate `validate_syntax.cmd` stops here.
-4. Run Nuitka: analyze imports, generate native code and invoke a C compiler. Plugins and
+4. Make Nuitka/build helpers available temporarily, then run Nuitka: analyze imports,
+   generate native code and invoke a C compiler. Plugins and
    explicit inclusions help it find dynamically loaded packages and resource files.
 5. Write artifacts and an XML report to
    `code/pyapp/generated/compilation/<preset>/<variant>/<mode>/`.
-   The app is **not launched** automatically; test it on a clean target machine.
+   Remove temporary compiler packages on completion or failure. The app is **not launched**
+   automatically; test it on a clean target machine.
 
 This builds the **app entry script**, not the complete PyApp launcher. Logging, tray controls,
 the browser terminal, recovery, Stop shortcuts and developer settings are not automatically
@@ -94,12 +96,23 @@ older projects' `dev_tools/compilation_settings.json` extra arguments are still 
 
 ## Prerequisites and validation limits
 
-Nuitka is optional and is not installed by these tools. In the developer package terminal,
-use `uv pip install nuitka ordered-set zstandard` if wanted. A supported C compiler is also
-needed; follow Nuitka's platform instructions. Build tools are not automatically declared as
-app runtime dependencies, and exact package sync may remove them.
+The build automatically installs Nuitka, ordered-set and zstandard into a disposable package
+directory under the marked compilation output folder. It uses the managed app Python, with
+installed app package versions constraining dependency resolution. The app's `.venv`, package
+declarations and lock file are not modified. Existing build packages are reused when all three
+are already installed; those packages are never removed by the build tool.
 
-Build on the target OS/architecture; these Windows tools do not cross-compile for Linux/macOS.
+Temporary packages are removed after success, installation/build failure or a handled Ctrl+C.
+uv's download cache and shared compiler caches remain available for later builds. A forced
+process kill can leave temporary files; `clean_compilation.cmd` removes marked project output.
+`--dry-run` and syntax validation do not install compiler packages. The first actual build
+needs access to the package index unless downloads are already cached.
+
+A supported C compiler is still needed; follow Nuitka's platform instructions. This temporary
+package lifecycle does not install or uninstall the system C compiler.
+
+`compile_app.cmd` builds for Windows. `linux/compile_linux.cmd` builds inside WSL Linux from Windows; see the [Linux guide](linux/README.md).
+Build on the target architecture. macOS builds are not provided.
 A dry run or syntax check does not verify an executable, missing imports, runtime behavior or
 packaged resources. Always test the distribution.
 
@@ -107,3 +120,7 @@ References: [Nuitka manual](https://nuitka.net/user-documentation/user-manual.ht
 [standalone before onefile](https://nuitka.net/user-documentation/use-cases.html),
 [resource paths/no-console diagnostics](https://nuitka.net/user-documentation/common-issue-solutions.html),
 [compiler caching](https://nuitka.net/user-documentation/tips.html).
+
+## Linux builds from Windows (WSL)
+
+See the [Linux compilation guide](linux/README.md) for setup, settings and build commands.

@@ -114,6 +114,8 @@ PROTECTED_DEV_TOOL_COMMANDS = [
     "compilation",
     "compilation-presets",
     "compile-app",
+    "setup-linux",
+    "compile-linux",
     "validate-syntax",
     "clean-compilation",
     "menu",

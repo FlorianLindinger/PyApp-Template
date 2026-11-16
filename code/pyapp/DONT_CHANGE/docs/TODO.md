@@ -1,5 +1,13 @@
 # TODO
 
+- less spam on setup i guess. only minimal needed?
+- dev menu is weird. it need a reset to 0 packages?. what does 3?
+
+it should show current packages after: ? Number (Enter = quit): 5
+── Sync packages ──
+and tell what is different now.
+for all it should kind of show the difference.
+
 - Improve git fail clarity.
 - improve Windows notification on tray text
 - are windows notification on x implemented? test them
@@ -105,6 +113,8 @@ uv add typed in code\ won’t find the project; it would have to be run in backe
 -> mention that people have to select?
 
 - Flowcharts?
+
+- mention pypy supported
 
 ## 3. Features
 

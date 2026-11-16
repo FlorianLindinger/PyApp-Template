@@ -32,6 +32,7 @@ from pyapp.DONT_CHANGE.scripts.dev_tools.compilation import (
     cmd_validate_syntax,
 )
 from pyapp.DONT_CHANGE.scripts.dev_tools.housekeeping import cmd_clean, cmd_remove_shortcuts, cmd_status, cmd_test
+from pyapp.DONT_CHANGE.scripts.dev_tools.linux_compilation import cmd_compile_linux, cmd_setup_linux
 from pyapp.DONT_CHANGE.scripts.dev_tools.package_list import cmd_list_packages
 from pyapp.DONT_CHANGE.scripts.dev_tools.packages import (
     cmd_add,
@@ -61,6 +62,8 @@ COMMANDS = {
     "compilation": cmd_compilation_menu,
     "compilation-presets": cmd_compilation_presets,
     "compile-app": cmd_compile_app,
+    "compile-linux": cmd_compile_linux,
+    "setup-linux": cmd_setup_linux,
     "validate-syntax": cmd_validate_syntax,
     "clean-compilation": cmd_clean_compilation,
     "list-packages": cmd_list_packages,
@@ -106,7 +109,19 @@ MENU_GROUPS = (
     ("Project", ("run-tests", "status", "clean", "remove-shortcuts", "make-self-contained", "test")),
 )
 SUBMENU_GROUPS = {
-    "compilation": (("Compilation", ("compilation-presets", "validate-syntax", "compile-app", "clean-compilation")),),
+    "compilation": (
+        (
+            "Compilation",
+            (
+                "compilation-presets",
+                "validate-syntax",
+                "compile-app",
+                "setup-linux",
+                "compile-linux",
+                "clean-compilation",
+            ),
+        ),
+    ),
 }
 # For the commands that do not start with a heading of their own.
 HEADINGS = {

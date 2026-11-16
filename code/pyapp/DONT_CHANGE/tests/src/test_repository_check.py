@@ -111,7 +111,7 @@ class GitCheckTests(unittest.TestCase):
                 ".gitignore",
                 "DONT_CHANGE/.gitattributes",
                 "README.md",
-                "Developer Tools.cmd",
+                "Open Developer Tools Menu.cmd",
                 "Start without launcher --LINUX.sh",
                 "dev_tools/packages/add_packages.cmd",
                 "DONT_CHANGE/runtime/new_module.py",

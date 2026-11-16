@@ -21,7 +21,17 @@ class MenuTests(unittest.TestCase):
         with mock.patch.object(dev_tools, "_run_menu") as show:
             dev_tools.cmd_compilation_menu([])
         commands = [name for _, rows in show.call_args.args[0] for name, _ in rows]
-        self.assertEqual(commands, ["compilation-presets", "validate-syntax", "compile-app", "clean-compilation"])
+        self.assertEqual(
+            commands,
+            [
+                "compilation-presets",
+                "validate-syntax",
+                "compile-app",
+                "setup-linux",
+                "compile-linux",
+                "clean-compilation",
+            ],
+        )
         self.assertIn("compilation", dev_tools.NO_PAUSE)
         root_commands = [name for _, group in dev_tools.MENU_GROUPS for name in group]
         with mock.patch.object(

@@ -9,6 +9,13 @@ The first versioned release; it contains every change below.
 
 ### 2026-11-16
 
+- Rename the developer menu launcher to Open Developer Tools Menu.cmd and update documentation links and repository fixtures.
+
+- Move Linux compilation launchers, settings and guide into dev_tools/compilation/linux; update backend lookup and relative launcher/documentation paths.
+
+- Add WSL Linux compilation/setup developer commands, separate Linux settings, disposable Linux Python/app/Nuitka environments, Linux-native build storage, archived executable permissions and diagnostic reports. Keep Windows environments and launcher services separate.
+
+- Automatically provide Nuitka and its helpers in a disposable build-package directory, constrained to installed app dependency versions. Preserve the managed environment and lock file, reuse already installed build packages, and remove temporary installations on success/failure/Ctrl+C. Keep dry runs and syntax-only checks installation-free.
 - Organize developer launchers into packages, python, project and compilation subfolders; fix relative backend paths and update guides/callers. Remove duplicate root compilation launchers and the empty obsolete settings file/redirect guide. Preserve protected backend commands and legacy configuration reading for existing projects.
 - Group compilation under a developer-tools submenu and dedicated editable folder. Add development, standalone, onefile and GUI presets; structured jobs, buffering, plugin/package/data inclusion settings; CLI overrides; separate preset output directories; and validation before environment preparation. Preserve existing commands and legacy extra arguments, and document compilation stages, recommended choices and launcher/runtime limits.
 

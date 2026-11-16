@@ -13,6 +13,7 @@ import tempfile
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
+from typing import List, Optional
 from unittest import mock
 
 from project_location import DONT_CHANGE
@@ -31,7 +32,91 @@ from pyapp.DONT_CHANGE.scripts import (
     terminal_window,
     windows_focus,
 )
-from pyapp.DONT_CHANGE.scripts.dev_tools import compilation
+from pyapp.DONT_CHANGE.scripts.dev_tools import compilation, linux_compilation, linux_worker
+
+
+class LinuxCompilation(unittest.TestCase):
+    def test_dry_run_does_not_invoke_wsl_or_prepare_windows_environment(self):
+        with mock.patch.object(linux_compilation, "wsl") as wsl, mock.patch.object(compilation, "prepare") as prepare:
+            linux_compilation.cmd_compile_linux(["--dry-run"])
+        wsl.assert_not_called()
+        prepare.assert_not_called()
+
+    def test_windows_flags_and_gui_preset_rejected_before_wsl(self):
+        for build in (
+            compilation.BuildOptions("gui", "standalone", "no_terminal", []),
+            compilation.BuildOptions("standalone", "standalone", "terminal", ["--msvc=latest"]),
+        ):
+            with mock.patch.object(compilation, "load_options", return_value=build), mock.patch.object(
+                linux_compilation, "wsl"
+            ) as wsl, self.assertRaises(linux_compilation.SetupError):
+                linux_compilation.cmd_compile_linux([])
+            wsl.assert_not_called()
+
+    def test_worker_archives_artifact_preserves_report_and_removes_environment(self):
+        import tarfile
+
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            output = root / "result"
+            output.mkdir()
+            job = root / "job.json"
+            job.write_text(
+                json.dumps(
+                    {
+                        "python": "3.14",
+                        "packages": ["example"],
+                        "requirements": "",
+                        "code": str(root),
+                        "output": str(output),
+                        "mode": "standalone",
+                        "script": str(root / "hello.py"),
+                        "extra": [],
+                    }
+                )
+            )
+            commands = []
+
+            def fake_run(arguments: List[str], cwd: Optional[Path] = None) -> None:
+                commands.append(arguments)
+                if "nuitka" in arguments and "-m" in arguments:
+                    build_output = Path(next(a.split("=", 1)[1] for a in arguments if a.startswith("--output-dir=")))
+                    artifact = build_output / "hello.dist"
+                    artifact.mkdir()
+                    (artifact / "hello.bin").write_bytes(b"fixture")
+                    (build_output / "compilation-report.xml").write_text("report")
+
+            with mock.patch.object(linux_worker.sys, "platform", "linux"), mock.patch.object(
+                linux_worker.Path, "home", return_value=root
+            ), mock.patch.object(linux_worker.shutil, "which", return_value=sys.executable), mock.patch.object(
+                linux_worker, "run", side_effect=fake_run
+            ), mock.patch.object(linux_worker.platform, "platform", return_value="Linux-fixture"), mock.patch.object(
+                linux_worker.subprocess, "run", return_value=SimpleNamespace(stdout="example==1\n")
+            ):
+                linux_worker.build(job)
+            with tarfile.open(next(output.glob("*.tar.gz"))) as archive:
+                self.assertIn("hello.dist/hello.bin", archive.getnames())
+            self.assertEqual((output / "compilation-report.xml").read_text(), "report")
+            self.assertEqual(list((root / ".cache/pyapp-compilation").glob("build-*")), [])
+            self.assertTrue(any("--constraint" in command for command in commands))
+            self.assertFalse(any(any(a.startswith("--windows-") for a in command) for command in commands))
+            self.assertEqual((output / "linux-requirements.txt").read_text(), "example==1\n")
+
+            def failing_run(arguments: List[str], cwd: Optional[Path] = None) -> None:
+                fake_run(arguments, cwd)
+                if "nuitka" in arguments and "-m" in arguments:
+                    raise subprocess.CalledProcessError(1, arguments)
+
+            with mock.patch.object(linux_worker.sys, "platform", "linux"), mock.patch.object(
+                linux_worker.Path, "home", return_value=root
+            ), mock.patch.object(linux_worker.shutil, "which", return_value=sys.executable), mock.patch.object(
+                linux_worker, "run", side_effect=failing_run
+            ), mock.patch.object(
+                linux_worker.subprocess, "run", return_value=SimpleNamespace(stdout="example==1\n")
+            ), self.assertRaises(subprocess.CalledProcessError):
+                linux_worker.build(job)
+            self.assertEqual(list((root / ".cache/pyapp-compilation").glob("build-*")), [])
+            self.assertEqual((output / "compilation-report.xml").read_text(), "report")
 
 
 class RuntimeOptions(unittest.TestCase):
@@ -209,6 +294,86 @@ class RuntimeOptions(unittest.TestCase):
 
 
 class CompilationTools(unittest.TestCase):
+    def test_temporary_compiler_removes_only_its_target_on_success_failure_and_interrupt(self):
+        for failure in (None, compilation.SetupError("build failed"), KeyboardInterrupt()):
+            with self.subTest(failure=type(failure).__name__), tempfile.TemporaryDirectory() as folder:
+                root = Path(folder)
+                preserved = root / "keep.txt"
+                preserved.write_text("existing output", encoding="utf-8")
+                targets: List[Path] = []
+                installed = {"example": "1.2", "zstandard": "0.22.0"}
+
+                def install(arguments: List[str], created: List[Path] = targets) -> None:
+                    target = Path(arguments[arguments.index("--target") + 1])
+                    target.mkdir()
+                    (target / "nuitka.py").write_text("temporary compiler", encoding="utf-8")
+                    created.append(target)
+                    constraints = Path(arguments[arguments.index("--constraint") + 1]).read_text(encoding="utf-8")
+                    self.assertIn("example==1.2", constraints)
+                    self.assertIn("zstandard==0.22.0", constraints)
+
+                with mock.patch.object(compilation, "OUTPUT", root), mock.patch.object(
+                    compilation, "installed_packages", return_value=installed
+                ), mock.patch.object(compilation, "run_uv", side_effect=install), mock.patch.dict(
+                    os.environ, {"PYTHONPATH": "existing-imports"}
+                ):
+                    try:
+                        with compilation.temporary_compiler(sys.executable) as env:
+                            self.assertEqual(env["PYTHONPATH"].split(os.pathsep)[0], str(targets[0]))
+                            self.assertTrue(targets[0].is_dir())
+                            self.assertEqual(os.environ["PYTHONPATH"], "existing-imports")
+                            if failure is not None:
+                                raise failure
+                    except (compilation.SetupError, KeyboardInterrupt) as error:
+                        self.assertIs(error, failure)
+                self.assertEqual(installed, {"example": "1.2", "zstandard": "0.22.0"})
+                self.assertFalse(targets[0].exists())
+                self.assertEqual(list(root.iterdir()), [preserved])
+
+    def test_failed_temporary_install_is_cleaned_and_existing_tools_are_reused(self):
+        with tempfile.TemporaryDirectory() as folder, mock.patch.object(
+            compilation, "OUTPUT", Path(folder)
+        ), mock.patch.object(compilation, "installed_packages", return_value={}), mock.patch.object(
+            compilation, "run_uv", side_effect=compilation.SetupError("installation failed")
+        ) as install:
+            with self.assertRaisesRegex(compilation.SetupError, "installation failed"), compilation.temporary_compiler(
+                sys.executable
+            ):
+                self.fail("A failed installation must not start compilation")
+            self.assertEqual(list(Path(folder).iterdir()), [])
+            install.assert_called_once()
+        existing = {"nuitka": "2.8", "ordered-set": "4.1", "zstandard": "0.24"}
+        with mock.patch.object(compilation, "installed_packages", return_value=existing), mock.patch.object(
+            compilation, "run_uv"
+        ) as install:
+            with compilation.temporary_compiler(sys.executable) as env:
+                self.assertEqual(env, dict(os.environ))
+            install.assert_not_called()
+
+    def test_compile_command_uses_temporary_packages_and_cleans_them_after_compiler_failure(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            output = root / "compilation"
+            s = SimpleNamespace(main_script_path=str(root / "main.py"))
+            build = compilation.BuildOptions("standalone", "standalone", "terminal", [])
+            with mock.patch.object(compilation, "OUTPUT", output), mock.patch.object(
+                compilation, "settings", return_value=s
+            ), mock.patch.object(
+                compilation, "prepare", return_value=SimpleNamespace(exe=sys.executable)
+            ), mock.patch.object(compilation, "load_options", return_value=build), mock.patch.object(
+                compilation, "validate_sources"
+            ), mock.patch.object(compilation, "installed_packages", return_value={}), mock.patch.object(
+                compilation, "run_uv"
+            ), mock.patch.object(
+                compilation.subprocess, "run", return_value=subprocess.CompletedProcess([], 1)
+            ) as compiler:
+                with self.assertRaisesRegex(compilation.SetupError, "Nuitka compilation failed"):
+                    compilation.cmd_compile_app([])
+                imports = compiler.call_args.kwargs["env"]["PYTHONPATH"].split(os.pathsep)[0]
+                self.assertIn(".nuitka-build-", imports)
+                self.assertFalse(Path(imports).parent.exists())
+                self.assertTrue((output / compilation.MARKER).is_file())
+
     def test_presets_and_cli_precedence_produce_distinct_expected_builds(self):
         with tempfile.TemporaryDirectory() as folder:
             config_file = Path(folder) / "settings.json"
@@ -302,9 +467,12 @@ class CompilationTools(unittest.TestCase):
     def test_dry_run_does_not_prepare_or_install_an_environment(self):
         with mock.patch.object(compilation, "prepare") as prepare, mock.patch.object(
             compilation, "print_info"
-        ), mock.patch.object(compilation, "print_heading"):
+        ), mock.patch.object(compilation, "print_heading"), mock.patch.object(
+            compilation, "temporary_compiler"
+        ) as compiler:
             compilation.cmd_compile_app(["no_terminal", "--mode", "onefile", "--dry-run"])
             prepare.assert_not_called()
+            compiler.assert_not_called()
 
     def test_app_sources_include_pythonw_and_skip_launcher_and_virtual_environments(self):
         with tempfile.TemporaryDirectory() as folder:
