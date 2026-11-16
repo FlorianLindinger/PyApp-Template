@@ -7,6 +7,10 @@ it should show current packages after: ? Number (Enter = quit): 5
 ── Sync packages ──
 and tell what is different now.
 for all it should kind of show the difference.
+ask what else i am missing
+
+
+
 
 - Improve git fail clarity.
 - improve Windows notification on tray text
