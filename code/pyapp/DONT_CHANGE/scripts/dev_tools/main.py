@@ -6,7 +6,7 @@ live in scripts/dev_tools/.
 
 from __future__ import annotations
 
-from typing import List, Tuple
+from typing import List, Sequence, Tuple
 
 fail_message = "Dev tool failed: {e}"
 pause_on_success = True
@@ -25,7 +25,12 @@ from pyapp.DONT_CHANGE.scripts.console_tools import (
     wait_for_enter,
 )
 from pyapp.DONT_CHANGE.scripts.dev_tools.app_tests import cmd_run_tests
-from pyapp.DONT_CHANGE.scripts.dev_tools.compilation import cmd_clean_compilation, cmd_compile_app, cmd_validate_syntax
+from pyapp.DONT_CHANGE.scripts.dev_tools.compilation import (
+    cmd_clean_compilation,
+    cmd_compilation_presets,
+    cmd_compile_app,
+    cmd_validate_syntax,
+)
 from pyapp.DONT_CHANGE.scripts.dev_tools.housekeeping import cmd_clean, cmd_remove_shortcuts, cmd_status, cmd_test
 from pyapp.DONT_CHANGE.scripts.dev_tools.package_list import cmd_list_packages
 from pyapp.DONT_CHANGE.scripts.dev_tools.packages import (
@@ -44,9 +49,17 @@ from pyapp.DONT_CHANGE.scripts.dev_tools.self_contained import cmd_make_self_con
 from pyapp.DONT_CHANGE.scripts.entrypoint import expected_problem
 
 # Commands that end on their own (a menu, a terminal); no "Press Enter" afterwards.
-NO_PAUSE = {"menu", "terminal"}
+NO_PAUSE = {"menu", "terminal", "compilation"}
+
+
+def cmd_compilation_menu(_arguments: List[str]) -> None:
+    """Open compilation tools: presets, app builds, syntax validation and output cleanup."""
+    _command_menu(SUBMENU_GROUPS["compilation"])
+
 
 COMMANDS = {
+    "compilation": cmd_compilation_menu,
+    "compilation-presets": cmd_compilation_presets,
     "compile-app": cmd_compile_app,
     "validate-syntax": cmd_validate_syntax,
     "clean-compilation": cmd_clean_compilation,
@@ -89,9 +102,12 @@ MENU_GROUPS = (
         ),
     ),
     ("Python", ("change-python", "update-python")),
-    ("Compilation", ("validate-syntax", "compile-app", "clean-compilation")),
+    ("Compilation", ("compilation",)),
     ("Project", ("run-tests", "status", "clean", "remove-shortcuts", "make-self-contained", "test")),
 )
+SUBMENU_GROUPS = {
+    "compilation": (("Compilation", ("compilation-presets", "validate-syntax", "compile-app", "clean-compilation")),),
+}
 # For the commands that do not start with a heading of their own.
 HEADINGS = {
     "add": "Add packages",
@@ -112,6 +128,11 @@ def run_command(name: str, arguments: List[str]) -> None:
 
 def cmd_menu(_arguments: List[str]) -> None:
     """Interactive menu of all commands."""
+    _command_menu(MENU_GROUPS)
+
+
+def _command_menu(definitions: Sequence[Tuple[str, Sequence[str]]]) -> None:
+    """Use the same presentation for the main developer menu and its subgroups."""
     groups = [
         (
             title,
@@ -120,7 +141,7 @@ def cmd_menu(_arguments: List[str]) -> None:
                 for name in group
             ],
         )
-        for title, group in MENU_GROUPS
+        for title, group in definitions
     ]
     _run_menu(groups)
 
@@ -145,7 +166,10 @@ def _run_menu(groups: List[Tuple[str, List[Tuple[str, str]]]]) -> None:
             print_error(f"Please enter a number from 1 to {len(names)}.")
             continue
         try:
-            run_command(names[int(answer) - 1], [])
+            selected = names[int(answer) - 1]
+            run_command(selected, [])
+            if selected in SUBMENU_GROUPS:
+                continue
         except Exception as error:
             problem = expected_problem(error)
             if problem is None:

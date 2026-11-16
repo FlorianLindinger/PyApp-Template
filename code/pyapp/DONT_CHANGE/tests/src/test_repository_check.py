@@ -113,7 +113,7 @@ class GitCheckTests(unittest.TestCase):
                 "README.md",
                 "Developer Tools.cmd",
                 "Start without launcher --LINUX.sh",
-                "dev_tools/add_packages.cmd",
+                "dev_tools/packages/add_packages.cmd",
                 "DONT_CHANGE/runtime/new_module.py",
                 "icons/icon.ico",
                 "icons/icon.png",

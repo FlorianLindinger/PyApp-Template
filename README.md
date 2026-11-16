@@ -174,11 +174,11 @@ pillow==11.*
 
 The block accepts what a `requirements.txt` accepts. Instead of editing it by hand you can:
 
-- run `code/pyapp/dev_tools/add_packages.cmd` to add packages by name,
-- run `find_imports.cmd` to scan your code offline, review what it found and add what is missing,
+- run `code/pyapp/dev_tools/packages/add_packages.cmd` to add packages by name,
+- run `packages/find_imports.cmd` to scan your code offline, review what it found and add what is missing,
 - or just start the app: a missing import offers to add the package and restart.
 
-A package removed from the block stays installed until you run `sync_packages.cmd`.
+A package removed from the block stays installed until you run `packages/sync_packages.cmd`.
 
 ### Python version
 
@@ -304,7 +304,7 @@ run Setup. It installs the locked package versions and a Python matching your re
 - `code/pyapp/generated/.python-version`
 - `code/pyapp/generated/auto_generated_icons.json`
 
-**As a self-contained folder.** Run `code/pyapp/dev_tools/make_self_contained.cmd` and accept the
+**As a self-contained folder.** Run `code/pyapp/dev_tools/project/make_self_contained.cmd` and accept the
 settings it shows. Copy the whole folder to the other PC, for example as a zip (a Git clone is not
 enough: Git ignores the local uv, Python and packages). Run Setup there once to create the shortcuts.
 Nothing is downloaded or installed. The folder now contains Python and third-party packages, so
@@ -437,7 +437,8 @@ Logging turns stdout and stderr into pipes. If your app needs a real console, se
 
 ### Dev tools
 
-Double-click a tool in `code/pyapp/dev_tools`, or use **`code/pyapp/Developer Tools.cmd`** for all of them.
+Double-click a tool in the `packages/`, `python/`, `project/` or `compilation/` subfolder of
+`code/pyapp/dev_tools`, or use **`code/pyapp/Developer Tools.cmd`** for all of them.
 
 | Tool | Purpose |
 | --- | --- |
@@ -472,7 +473,7 @@ To keep uv, Python and its cache inside the project, set `python_source`, `uv_pr
 
 ### Troubleshooting
 
-Start with `code/pyapp/dev_tools/status.cmd`: it shows the current state and any errors the
+Start with `code/pyapp/dev_tools/project/status.cmd`: it shows the current state and any errors the
 launcher ignored on purpose.
 
 | Problem | Solution |
@@ -511,7 +512,7 @@ stays the one place to edit; `uv add` in the package terminal is copied back int
 │   ├── settings.py                 ◀ optional settings for your users
 │   └── pyapp/
 │       ├── developer_settings.py   ◀ app, Python and package settings
-│       ├── dev_tools/              package and Python tools
+│       ├── dev_tools/              packages/, python/, project/ and compilation/ tools
 │       ├── icons/                  icon source images and generated icons
 │       ├── generated/              lock file, .venv, local uv and Python (created by the launcher)
 │       └── DONT_CHANGE/            the launcher

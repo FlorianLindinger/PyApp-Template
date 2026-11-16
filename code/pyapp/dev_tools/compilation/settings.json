@@ -1,0 +1,13 @@
+{
+  "preset": "standalone",
+  "mode": null,
+  "variant": null,
+  "jobs": null,
+  "unbuffered": null,
+  "plugins": [],
+  "include_packages": [],
+  "include_package_data": [],
+  "include_data_files": [],
+  "include_data_dirs": [],
+  "extra_args": []
+}

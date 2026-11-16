@@ -14,7 +14,21 @@ from pyapp.DONT_CHANGE.scripts.dev_tools import main as dev_tools
 class MenuTests(unittest.TestCase):
     def test_every_command_is_in_the_menu_once(self):
         names = [name for _, group in dev_tools.MENU_GROUPS for name in group]
+        names += [name for groups in dev_tools.SUBMENU_GROUPS.values() for _, group in groups for name in group]
         self.assertEqual(sorted(names), sorted(dev_tools.COMMANDS))
+
+    def test_compilation_is_a_submenu_and_returns_without_an_extra_pause(self):
+        with mock.patch.object(dev_tools, "_run_menu") as show:
+            dev_tools.cmd_compilation_menu([])
+        commands = [name for _, rows in show.call_args.args[0] for name, _ in rows]
+        self.assertEqual(commands, ["compilation-presets", "validate-syntax", "compile-app", "clean-compilation"])
+        self.assertIn("compilation", dev_tools.NO_PAUSE)
+        root_commands = [name for _, group in dev_tools.MENU_GROUPS for name in group]
+        with mock.patch.object(
+            dev_tools, "ask", side_effect=[str(root_commands.index("compilation") + 1), "", ""]
+        ), mock.patch.object(dev_tools, "wait_for_enter") as pause, mock.patch("builtins.print"):
+            dev_tools.cmd_menu([])
+        pause.assert_not_called()
 
     def test_headings_belong_to_commands(self):
         self.assertLessEqual(set(dev_tools.HEADINGS), set(dev_tools.COMMANDS))

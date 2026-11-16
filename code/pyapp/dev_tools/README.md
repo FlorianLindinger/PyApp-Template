@@ -1,39 +1,50 @@
 # Dev tools
 
-Compilation tools: `validate_syntax.cmd`, `compile_app.cmd` and `clean_compilation.cmd`.
-See [COMPILATION.md](COMPILATION.md) for variants, compiler prerequisites, developer-owned
-`compilation_settings.json`, generated output and validation limits.
+Tools are grouped by task; this folder's root contains only this guide.
 
-Double-click a tool, or run it from a terminal with arguments (e.g. `add_packages.cmd requests "numpy>=2"`; quote requirements with `<`, `>` or `|`, which the command prompt would otherwise treat as redirection).
+| Folder | Tools |
+| --- | --- |
+| `packages/` | Add/remove/update packages, import discovery, requirements export and the package terminal |
+| `python/` | Change Python version or update its patch release |
+| `project/` | Status, app tests, cleanup, shortcut removal and making the folder self-contained |
+| [compilation/](compilation/README.md) | Build presets/settings, syntax checks, Nuitka builds and output cleanup |
+
+The main **Developer Tools.cmd** remains in `code/pyapp` and offers every command.
+Existing projects can continue calling the protected backend commands; the visible `.cmd`
+paths in this template now include their group folder. Older projects' root-level
+`compilation_settings.json` extra arguments are still read when that file exists.
+
+Double-click a tool in its group folder, or run it from a terminal with arguments (e.g. `packages/add_packages.cmd requests "numpy>=2"`; quote requirements with `<`, `>` or `|`, which the command prompt would otherwise treat as redirection).
 [`Developer Tools.cmd`](../Developer%20Tools.cmd) in the parent folder lists all of them. Every tool validates `developer_settings.py` first and
 prepares the environment if needed. Close running app instances before changing packages
 or Python — Windows locks the files they use.
 
 | Tool | What it does |
 | --- | --- |
-| `list_packages.cmd` | What is installed and why: the main packages (`packages` in `developer_settings.py` and `requirements_path`) with their limit, locked version and how many dependencies each brings in, then every dependency with the packages that need it. Also shows packages that are missing, at another version or installed by hand (`sync_packages.cmd` fixes them). Marks main packages that no file in `code/` imports (maybe left over, or needed as a tool or plugin). Read from `uv.lock` and `.venv` through uv, after the usual preparation, so it is always current; it changes nothing. |
-| `outdated_packages.cmd` | `list_packages --outdated`: also asks PyPI for newer versions (needs internet) and shows for each package what `upgrade_packages.cmd` would install within the limits, and which newer versions the limits hold back. |
-| `add_packages.cmd [names]` | `uv add`: resolves and installs the packages, adds them to `packages` in `developer_settings.py` and updates `pyapp/generated/uv.lock`. Asks for names when none are given. |
-| `remove_packages.cmd [names]` | `uv remove`: lists `packages` and removes the chosen ones. |
-| `install_requirements.cmd [path]` | `uv add -r`: imports and installs packages from a requirements file, recording them in `packages` and `uv.lock`. Asks for the path when omitted; quote paths containing spaces. The input file is unchanged; later edits to it are not automatically imported. For a file that should stay authoritative, use `requirements_path` instead. |
-| `reset_packages_to_imports.cmd` | Scans imports and lets you review packages to keep or add, then previews removals and asks before replacing `packages` and syncing exactly. Keeps existing constraints/extras/markers for retained packages. Stops on parse errors; leaves the `requirements_path` file and its packages untouched. Static analysis misses dynamic imports, plugins and command-line tools: review removals carefully. |
-| `upgrade_packages.cmd [names]` | `uv lock --upgrade` (or `--upgrade-package` for the named ones), then an exact sync. Test the app and commit `uv.lock`. |
-| `sync_packages.cmd` | Makes `pyapp/generated/.venv` match `uv.lock` exactly; removes packages installed by hand. |
-| `find_imports.cmd` | Offline import finder: scans the code folder (not `pyapp/`), drops the standard library and your own modules, maps imports to packages (installed metadata first, then `DONT_CHANGE/data/import_to_package.txt`, else the import name — marked "guess"). Optional imports start unchecked: imports inside `try/except ImportError`, or inside a broad `except`/`except Exception` whose `try` block only imports. Review, then the checked ones are added with `uv add` (and recorded in `packages`). |
-| `package_terminal.cmd` | Command prompt in `code/` with the environment activated and uv on PATH: `uv add`, `uv pip list`, `python ...` (uv commands use the project in `pyapp/generated/`; `uv add`/`uv remove` are copied into `packages` on the next start). `uv pip install NAME` installs without recording (the next exact sync removes it). |
-| `change_python.cmd [version]` | Writes a new `python_version` into the settings and runs the migration menu (re-lock keeping versions / upgrade / empty package list / keep / write back). |
-| `update_python.cmd` | Installs the newest patch release of the project's Python and rebuilds the environment if needed. With `python_version = ""` or a loose request such as `"3.12-3.14"` or `">=3.12"` it also offers a newer minor version inside it. System Pythons are updated with their own installers. |
-| `make_self_contained.cmd` | Makes the folder run on other PCs without internet or installing anything. First explains what it does and shows the settings it will change (`python_source`, `uv_prefer`, `uv_install_if_missing` → local) and asks; then copies uv into `pyapp/generated/uv`, installs the project's Python into `pyapp/generated/pythons`, rebuilds the environment on it and applies those settings. Declining changes nothing. `status.cmd` shows whether the project is self-contained. |
-| `export_requirements.cmd` | Writes `pyapp/requirements.txt` (pinned, without hashes) from `uv.lock` for tools that need that format. |
-| `run_tests.cmd [arguments]` | Runs the app's own tests from `code/pyapp/tests` (and `code/tests`) with the app's environment: with pytest if it is among the packages, else with Python's unittest (`test_*.py` files with `unittest.TestCase` classes). `tests/test_example.py` checks that every Python file of the app compiles and shows how tests look. No tests at all is a note, not a failure. Arguments go to the runner, e.g. `-k name` or `-v`. The launcher's own tests are elsewhere (`DONT_CHANGE/tests`). |
-| `status.cmd` | Settings validity, uv (version, local/global), launcher Python, `.python-version`, `requires-python`, `packages` (and whether `pyproject.toml` matches), environment base/relocatability, lock state, shortcuts, and errors the launcher ignored on purpose (`DONT_CHANGE/tmp/diagnostics.log`). Works without uv. |
-| `clean.cmd` | Deletes logs, crash logs or per-run diagnostics. |
-| `remove_shortcuts.cmd` | Removes every shortcut Setup created (project folder, Start Menu, Desktop). Run Setup to create them again. |
+| [compilation/Compilation Tools.cmd](compilation/Compilation%20Tools.cmd) | Compilation submenu: list presets, validate syntax, build with Nuitka or clean marked output. See the folder's README before distributing a build. |
+| `packages/list_packages.cmd` | What is installed and why: the main packages (`packages` in `developer_settings.py` and `requirements_path`) with their limit, locked version and how many dependencies each brings in, then every dependency with the packages that need it. Also shows packages that are missing, at another version or installed by hand (`packages/sync_packages.cmd` fixes them). Marks main packages that no file in `code/` imports (maybe left over, or needed as a tool or plugin). Read from `uv.lock` and `.venv` through uv, after the usual preparation, so it is always current; it changes nothing. |
+| `packages/outdated_packages.cmd` | `list_packages --outdated`: also asks PyPI for newer versions (needs internet) and shows for each package what `packages/upgrade_packages.cmd` would install within the limits, and which newer versions the limits hold back. |
+| `packages/add_packages.cmd [names]` | `uv add`: resolves and installs the packages, adds them to `packages` in `developer_settings.py` and updates `pyapp/generated/uv.lock`. Asks for names when none are given. |
+| `packages/remove_packages.cmd [names]` | `uv remove`: lists `packages` and removes the chosen ones. |
+| `packages/install_requirements.cmd [path]` | `uv add -r`: imports and installs packages from a requirements file, recording them in `packages` and `uv.lock`. Asks for the path when omitted; quote paths containing spaces. The input file is unchanged; later edits to it are not automatically imported. For a file that should stay authoritative, use `requirements_path` instead. |
+| `packages/reset_packages_to_imports.cmd` | Scans imports and lets you review packages to keep or add, then previews removals and asks before replacing `packages` and syncing exactly. Keeps existing constraints/extras/markers for retained packages. Stops on parse errors; leaves the `requirements_path` file and its packages untouched. Static analysis misses dynamic imports, plugins and command-line tools: review removals carefully. |
+| `packages/upgrade_packages.cmd [names]` | `uv lock --upgrade` (or `--upgrade-package` for the named ones), then an exact sync. Test the app and commit `uv.lock`. |
+| `packages/sync_packages.cmd` | Makes `pyapp/generated/.venv` match `uv.lock` exactly; removes packages installed by hand. |
+| `packages/find_imports.cmd` | Offline import finder: scans the code folder (not `pyapp/`), drops the standard library and your own modules, maps imports to packages (installed metadata first, then `DONT_CHANGE/data/import_to_package.txt`, else the import name — marked "guess"). Optional imports start unchecked: imports inside `try/except ImportError`, or inside a broad `except`/`except Exception` whose `try` block only imports. Review, then the checked ones are added with `uv add` (and recorded in `packages`). |
+| `packages/package_terminal.cmd` | Command prompt in `code/` with the environment activated and uv on PATH: `uv add`, `uv pip list`, `python ...` (uv commands use the project in `pyapp/generated/`; `uv add`/`uv remove` are copied into `packages` on the next start). `uv pip install NAME` installs without recording (the next exact sync removes it). |
+| `python/change_python.cmd [version]` | Writes a new `python_version` into the settings and runs the migration menu (re-lock keeping versions / upgrade / empty package list / keep / write back). |
+| `python/update_python.cmd` | Installs the newest patch release of the project's Python and rebuilds the environment if needed. With `python_version = ""` or a loose request such as `"3.12-3.14"` or `">=3.12"` it also offers a newer minor version inside it. System Pythons are updated with their own installers. |
+| `project/make_self_contained.cmd` | Makes the folder run on other PCs without internet or installing anything. First explains what it does and shows the settings it will change (`python_source`, `uv_prefer`, `uv_install_if_missing` → local) and asks; then copies uv into `pyapp/generated/uv`, installs the project's Python into `pyapp/generated/pythons`, rebuilds the environment on it and applies those settings. Declining changes nothing. `project/status.cmd` shows whether the project is self-contained. |
+| `packages/export_requirements.cmd` | Writes `pyapp/requirements.txt` (pinned, without hashes) from `uv.lock` for tools that need that format. |
+| `project/run_tests.cmd [arguments]` | Runs the app's own tests from `code/pyapp/tests` (and `code/tests`) with the app's environment: with pytest if it is among the packages, else with Python's unittest (`test_*.py` files with `unittest.TestCase` classes). `tests/test_example.py` checks that every Python file of the app compiles and shows how tests look. No tests at all is a note, not a failure. Arguments go to the runner, e.g. `-k name` or `-v`. The launcher's own tests are elsewhere (`DONT_CHANGE/tests`). |
+| `project/status.cmd` | Settings validity, uv (version, local/global), launcher Python, `.python-version`, `requires-python`, `packages` (and whether `pyproject.toml` matches), environment base/relocatability, lock state, shortcuts, and errors the launcher ignored on purpose (`DONT_CHANGE/tmp/diagnostics.log`). Works without uv. |
+| `project/clean.cmd` | Deletes logs, crash logs or per-run diagnostics. |
+| `project/remove_shortcuts.cmd` | Removes every shortcut Setup created (project folder, Start Menu, Desktop). Run Setup to create them again. |
 
 ## Typical workflows
 
-- **New dependency:** add it to `packages` in `developer_settings.py` and start the app, or `add_packages.cmd requests` → test → commit `developer_settings.py` and `pyapp/generated/uv.lock`.
-- **Existing code with imports:** `find_imports.cmd` → review → add.
-- **New Python version:** `change_python.cmd 3.13` → option 1 → test → commit `developer_settings.py`, `pyapp/generated/.python-version` and `pyapp/generated/uv.lock`.
-- **Hand over a folder that runs offline on another PC:** `make_self_contained.cmd` → accept → copy the whole folder, e.g. as a zip (a Git clone lacks the local uv, Python and packages, which Git ignores) → on the other PC, run `Setup - run first and after moving folder.cmd` once for the shortcuts.
+- **New dependency:** add it to `packages` in `developer_settings.py` and start the app, or `packages/add_packages.cmd requests` → test → commit `developer_settings.py` and `pyapp/generated/uv.lock`.
+- **Existing code with imports:** `packages/find_imports.cmd` → review → add.
+- **New Python version:** `python/change_python.cmd 3.13` → option 1 → test → commit `developer_settings.py`, `pyapp/generated/.python-version` and `pyapp/generated/uv.lock`.
+- **Hand over a folder that runs offline on another PC:** `project/make_self_contained.cmd` → accept → copy the whole folder, e.g. as a zip (a Git clone lacks the local uv, Python and packages, which Git ignores) → on the other PC, run `Setup - run first and after moving folder.cmd` once for the shortcuts.
 - **Move the folder on the same PC:** just move it, then run `Setup - run first and after moving folder.cmd` for the shortcuts. The environment adapts by itself; nothing is downloaded.

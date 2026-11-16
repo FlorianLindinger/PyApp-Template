@@ -89,7 +89,8 @@ file gets its default from `DONT_CHANGE/data/dev_settings_default.py`.
 
 ## dev_tools/
 
-One `.cmd` per task; [`Developer Tools.cmd`](Developer%20Tools.cmd) here in `code/pyapp` lists them all. Each checks the settings and brings the
+Tools live in `packages/`, `python/`, `project/` and `compilation/` subfolders, with one `.cmd`
+per task; [`Developer Tools.cmd`](Developer%20Tools.cmd) here in `code/pyapp` lists them all. Each checks the settings and brings the
 environment up to date first. Details: [dev_tools/README.md](dev_tools/README.md).
 
 - Packages: `list_packages` (what is installed and why), `outdated_packages`, `add_packages`,
@@ -110,7 +111,7 @@ icon is shown where: [icons/README.md](icons/README.md).
 ## tests/
 
 The app's own tests: files named `test_*.py` with `unittest.TestCase` classes (or pytest
-functions, once pytest is in `packages`). `dev_tools/run_tests.cmd` runs them with the app's
+functions, once pytest is in `packages`). `dev_tools/project/run_tests.cmd` runs them with the app's
 environment; a `tests` folder in `code/` is found too. `test_example.py` checks that every Python
 file of the app compiles and shows how a test looks.
 

@@ -113,5 +113,6 @@ uv add typed in code\ won’t find the project; it would have to be run in backe
 - Windows notification: warn if notifications are not allowed by Windows and mention where that setting is
 - can I modify what appears when I right click a shortcut?
 - I can modify what appear when I hover over something in Windows taskbar when opened: add buttons?
+- can i compile the whole thing? i guess dont even want
 
 ## 4. Future

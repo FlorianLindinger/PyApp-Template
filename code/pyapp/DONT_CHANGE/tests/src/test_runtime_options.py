@@ -209,6 +209,96 @@ class RuntimeOptions(unittest.TestCase):
 
 
 class CompilationTools(unittest.TestCase):
+    def test_presets_and_cli_precedence_produce_distinct_expected_builds(self):
+        with tempfile.TemporaryDirectory() as folder:
+            config_file = Path(folder) / "settings.json"
+            with mock.patch.object(compilation, "CONFIG", config_file), mock.patch.object(
+                compilation, "LEGACY_CONFIG", Path(folder) / "legacy.json"
+            ):
+                for preset, mode, variant in (
+                    ("development", "standalone", "terminal"),
+                    ("standalone", "standalone", "terminal"),
+                    ("onefile", "onefile", "terminal"),
+                    ("gui", "standalone", "no_terminal"),
+                ):
+                    selected = compilation.load_options(preset, None, None)
+                    self.assertEqual((selected.mode, selected.variant), (mode, variant))
+                    self.assertEqual("--python-flag=unbuffered" in selected.extra_args, preset == "development")
+                    command = compilation.build_command(
+                        "python", Path("main.py"), mode, variant == "terminal", selected.extra_args, preset
+                    )
+                    self.assertIn(f"--output-dir={compilation.OUTPUT / preset / variant / mode}", command)
+                config_file.write_text(
+                    json.dumps({"preset": "gui", "mode": "onefile", "variant": "terminal"}), encoding="utf-8"
+                )
+                selected = compilation.load_options(None, None, None)
+                self.assertEqual((selected.preset, selected.mode, selected.variant), ("gui", "onefile", "terminal"))
+                selected = compilation.load_options("development", "standalone", "no_terminal")
+                self.assertEqual(
+                    (selected.preset, selected.mode, selected.variant), ("development", "standalone", "no_terminal")
+                )
+
+    def test_structured_options_and_legacy_extra_arguments_are_preserved(self):
+        with tempfile.TemporaryDirectory() as folder:
+            config_file, legacy = Path(folder) / "settings.json", Path(folder) / "legacy.json"
+            config_file.write_text(
+                json.dumps(
+                    {
+                        "jobs": 2,
+                        "plugins": ["pyside6"],
+                        "include_packages": ["my_plugins"],
+                        "include_package_data": ["example"],
+                        "include_data_files": ["config.json=config.json"],
+                        "include_data_dirs": ["assets=assets"],
+                        "extra_args": ["--lto=no"],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            legacy.write_text(json.dumps({"extra_args": ["--include-module", "old_plugin"]}), encoding="utf-8")
+            with mock.patch.object(compilation, "CONFIG", config_file), mock.patch.object(
+                compilation, "LEGACY_CONFIG", legacy
+            ):
+                selected = compilation.load_options(None, None, None)
+            for option in (
+                "--jobs=2",
+                "--enable-plugin=pyside6",
+                "--include-package=my_plugins",
+                "--include-package-data=example",
+                "--include-data-files=config.json=config.json",
+                "--include-data-dir=assets=assets",
+                "--include-module",
+                "old_plugin",
+                "--lto=no",
+            ):
+                self.assertIn(option, selected.extra_args)
+
+    def test_invalid_settings_and_reserved_options_fail_before_environment_preparation(self):
+        with tempfile.TemporaryDirectory() as folder:
+            config_file = Path(folder) / "settings.json"
+            invalid = (
+                {"jobs": True},
+                {"jobs": 0},
+                {"plugins": "pyside6"},
+                {"unbuffered": "yes"},
+                {"preset": "unknown"},
+                {"mode": ""},
+                {"variant": False},
+                {"typo": 1},
+                {"include_data_dirs": ["assets"]},
+                {"extra_args": ["--output-dir=elsewhere"]},
+                {"extra_args": ["--mode=onefile"]},
+                {"extra_args": ["--run"]},
+            )
+            with mock.patch.object(compilation, "CONFIG", config_file), mock.patch.object(
+                compilation, "LEGACY_CONFIG", Path(folder) / "none"
+            ), mock.patch.object(compilation, "prepare") as prepare:
+                for value in invalid:
+                    config_file.write_text(json.dumps(value), encoding="utf-8")
+                    with self.subTest(value=value), self.assertRaises(compilation.SetupError):
+                        compilation.cmd_compile_app([])
+                prepare.assert_not_called()
+
     def test_dry_run_does_not_prepare_or_install_an_environment(self):
         with mock.patch.object(compilation, "prepare") as prepare, mock.patch.object(
             compilation, "print_info"

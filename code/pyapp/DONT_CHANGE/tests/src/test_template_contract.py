@@ -56,7 +56,7 @@ def scripts_outside() -> List[Path]:
     """The .cmd files of a project outside DONT_CHANGE (kept when DONT_CHANGE is replaced)."""
     scripts = list(PROJECT_ROOT.glob("*.cmd")) + list((CODE / "pyapp").glob("*.cmd"))
     for folder in ("dev_tools", "icons"):
-        scripts += (CODE / "pyapp" / folder).glob("*.cmd")
+        scripts += (CODE / "pyapp" / folder).rglob("*.cmd")
     return scripts
 
 

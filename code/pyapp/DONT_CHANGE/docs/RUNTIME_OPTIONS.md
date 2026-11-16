@@ -114,5 +114,5 @@ and `FORCE_COLOR=1` logs. `NO_COLOR` or `FORCE_COLOR=0` forces plain text. Test-
 parallel summaries use the same colors; original compiler diagnostics and tracebacks remain
 intact. Git clients without ANSI support receive plain output by default.
 
-See [app compilation tools](../../dev_tools/COMPILATION.md) for Nuitka builds and the managed
+See [app compilation tools](../../dev_tools/compilation/README.md) for Nuitka builds and the managed
 Python syntax-validation command. Compilation does not automatically embed launcher services.

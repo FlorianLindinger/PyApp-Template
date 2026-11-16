@@ -7,6 +7,11 @@ README.md ("Versions"); `LAUNCHER_VERSION` in `backend_settings.py` names the cu
 
 The first versioned release; it contains every change below.
 
+### 2026-11-16
+
+- Organize developer launchers into packages, python, project and compilation subfolders; fix relative backend paths and update guides/callers. Remove duplicate root compilation launchers and the empty obsolete settings file/redirect guide. Preserve protected backend commands and legacy configuration reading for existing projects.
+- Group compilation under a developer-tools submenu and dedicated editable folder. Add development, standalone, onefile and GUI presets; structured jobs, buffering, plugin/package/data inclusion settings; CLI overrides; separate preset output directories; and validation before environment preparation. Preserve existing commands and legacy extra arguments, and document compilation stages, recommended choices and launcher/runtime limits.
+
 ### 2026-11-15
 
 - Stabilize the native tray regression by sending acknowledged conhost caption system commands and observing restored/maximized states before the next transition. Keep delayed tray callbacks and all minimize, placement, notification and cleanup assertions; launcher runtime behavior is unchanged.

@@ -1,5 +1,5 @@
 @echo off
 setlocal EnableExtensions DisableDelayedExpansion
 rem Add packages (asks for names, or pass them: add_packages.cmd requests numpy).
-call "%~dp0..\DONT_CHANGE\B\run.bat" dev add %*
+call "%~dp0..\..\DONT_CHANGE\B\run.bat" dev add %*
 exit /b %ERRORLEVEL%

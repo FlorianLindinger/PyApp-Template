@@ -1,4 +1,4 @@
-"""Example tests of the app. Run them with dev_tools/run_tests.cmd.
+"""Example tests of the app. Run them with dev_tools/project/run_tests.cmd.
 
 Files named test_*.py with unittest.TestCase classes are found automatically (pytest, if added
 with add_packages, runs them too). Import your own modules as main.py does, e.g.

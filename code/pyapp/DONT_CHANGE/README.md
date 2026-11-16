@@ -15,7 +15,7 @@ See [runtime settings](docs/RUNTIME_SETTINGS.md) for working folders, Ctrl+C pol
 interpreter-crash cleanup, Windows sign-in startup and logging/performance notes.
 See [runtime options and host support](docs/RUNTIME_OPTIONS.md) for maximize/power options,
 bounded recovery arguments, batch entry points, browser controls and app/backend communication;
-[app compilation](../dev_tools/COMPILATION.md) covers Nuitka builds and syntax validation.
+[app compilation](../dev_tools/compilation/README.md) covers Nuitka builds and syntax validation.
 
 - [Overview](#overview)
 - [Design rules](#design-rules)
