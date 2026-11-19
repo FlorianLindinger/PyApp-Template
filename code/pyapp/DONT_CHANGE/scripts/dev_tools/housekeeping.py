@@ -276,7 +276,7 @@ def cmd_status(_arguments: List[str]) -> None:
 
 
 def cmd_test(arguments: List[str]) -> None:
-    """Run the launcher's regression tests (DONT_CHANGE/tests); optional groups or file patterns."""
+    """Run the launcher's own regression tests (DONT_CHANGE/tests); optional groups or file patterns."""
     import subprocess
 
     script = paths.TEST_RUNNER_PATH

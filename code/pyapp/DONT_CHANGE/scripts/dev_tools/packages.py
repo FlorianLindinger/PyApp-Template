@@ -1,4 +1,4 @@
-"""Dev tools for packages: add, remove, upgrade, sync, import/reset, terminal, export."""
+"""Dev tools for packages: add, remove, clear, upgrade, sync, import/reset, terminal, export."""
 
 from __future__ import annotations
 
@@ -50,7 +50,7 @@ from pyapp.DONT_CHANGE.scripts.errors import SetupError
 
 
 def cmd_add(arguments: List[str]) -> None:
-    """Add packages (recorded in developer_settings.py and uv.lock) and install them."""
+    """Add packages and install them (recorded in developer_settings.py and uv.lock)."""
     s = settings()
     names = arguments or ask_package_names("Package(s) to add, e.g. requests numpy>=2 (Enter = cancel):")
     if not names:
@@ -65,7 +65,7 @@ def cmd_add(arguments: List[str]) -> None:
 
 
 def cmd_remove(arguments: List[str]) -> None:
-    """Remove declared packages."""
+    """Remove some declared packages: pick them from a list or pass their names."""
     s = settings()
     names = list(arguments)
     if not names:
@@ -195,7 +195,7 @@ def find_imports_and_add(*, reset: bool = False) -> None:
 
 
 def cmd_find_imports(_arguments: List[str]) -> None:
-    """Find the packages the code imports and add the missing ones after review."""
+    """Scan the code's imports and add the missing packages after review."""
     prepare()
     find_imports_and_add()
 
@@ -228,14 +228,38 @@ def reset_packages_to_imports(names: List[str]) -> None:
 
 
 def cmd_reset_imports(_arguments: List[str]) -> None:
-    """Reset packages to reviewed imports, removing unused declarations and preserving kept constraints."""
+    """Replace the package list with what the code imports (after review)."""
     # Scan before preparation so declining cannot change the environment.
     validate(settings())
     find_imports_and_add(reset=True)
 
 
+def cmd_clear_packages(_arguments: List[str]) -> None:
+    """Remove every declared package (back to 0) and sync the environment."""
+    s = settings()
+    validate(s)
+    declared = package_entries(s)
+    if not declared:
+        print_info('"packages" in developer_settings.py is already empty.')
+        return
+    print_heading("Declared packages")
+    print_choices(declared)
+    if requirements_file_entries(s):
+        print_info("The requirements_path file and its packages are kept.")
+    if not confirm(f"Remove all {len(declared)} packages and sync the environment?"):
+        print_info("Nothing was changed.")
+        return
+    refuse_mutation_while_running()
+    set_list_setting("packages", [])
+    # Reloaded settings are used by prepare(); reconciling regenerates pyproject.toml and uv.lock.
+    prepare()
+    sync(paths.VENV_PYTHON_EXE, exact=True)
+    print_success("All packages removed.")
+    print_info(COMMIT_HINT)
+
+
 def cmd_install_requirements(arguments: List[str]) -> None:
-    """Import a requirements.txt with uv add -r, record its packages and install them."""
+    """Add and install the packages from a requirements.txt (uv add -r)."""
     if len(arguments) > 1:
         raise SetupError("Pass one requirements file path, quoted if it contains spaces.")
     name = arguments[0] if arguments else ask("Requirements file path (Enter = cancel):").strip().strip('"')
@@ -254,7 +278,7 @@ def cmd_install_requirements(arguments: List[str]) -> None:
 
 
 def cmd_terminal(_arguments: List[str]) -> None:
-    """Command prompt with the app environment activated and uv on PATH."""
+    """Open a command prompt with the app environment activated and uv on PATH."""
     prepare()
     open_package_terminal()
 

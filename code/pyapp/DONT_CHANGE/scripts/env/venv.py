@@ -34,6 +34,8 @@ from pyapp.DONT_CHANGE.backend_settings import (
 from pyapp.DONT_CHANGE.scripts.banner import show_setup_window
 from pyapp.DONT_CHANGE.scripts.config import describe_python_request, edit_settings, settings, validate
 from pyapp.DONT_CHANGE.scripts.console_tools import (
+    ANSI_DIM,
+    ANSI_GOOD,
     ask,
     print_choices,
     print_error,
@@ -44,6 +46,7 @@ from pyapp.DONT_CHANGE.scripts.console_tools import (
     print_step,
     print_success,
     print_warn,
+    styled,
 )
 from pyapp.DONT_CHANGE.scripts.env.pyproject import (
     clear_dependencies,
@@ -188,18 +191,38 @@ def sync(
     *,
     venv_dir: str = VENV_DIR,
     exact: bool = False,
+    show_changes: bool = True,
     s: Optional[Union[ModuleType, SimpleNamespace]] = None,
 ) -> None:
-    """Install exactly what uv.lock says (offline first, then online)."""
+    """Install exactly what uv.lock says (offline first, then online); prints what was added or removed."""
     arguments = ["sync", "--locked", "--python", python_exe]
     if not exact:
         arguments.append("--inexact")  # keep packages added by hand (uv pip install) until the next exact sync
     project_environment = None if os.path.normcase(venv_dir) == os.path.normcase(VENV_DIR) else venv_dir
-    if uv_succeeds([*arguments, "--offline"], project_environment=project_environment, s=s):
+    code, out, err = run_uv_captured(
+        [*arguments, "--offline"], check=False, project_environment=project_environment, s=s
+    )
+    if code == 0:
+        # The quiet offline attempt would hide what changed; a new environment lists everything, so not then.
+        if show_changes:
+            print_package_changes(out + "\n" + err)
         return
     show_setup_window()
     print_step("Installing packages...")
     run_uv(arguments, project_environment=project_environment, s=s)
+
+
+_PACKAGE_CHANGE = re.compile(r"^ ([+\-~]) (\S+)")
+
+
+def print_package_changes(uv_output: str) -> None:
+    """Print uv's " + name==1.0" / " - name==1.0" lines as one compact list; nothing if nothing changed."""
+    changes = [m.groups() for m in map(_PACKAGE_CHANGE.match, uv_output.splitlines()) if m]
+    if not changes:
+        return
+    marks = {"+": styled("+", ANSI_GOOD), "-": styled("-", ANSI_DIM), "~": styled("~", ANSI_DIM)}
+    for mark, package in changes:
+        print(f"  {marks[mark]} {package}")
 
 
 def best_effort_install(python_exe: str, s: Optional[Union[ModuleType, SimpleNamespace]] = None) -> None:
@@ -225,7 +248,7 @@ def build_venv(
         create_venv(base_python, staging, s)
         staged_python = str(Path(staging) / "Scripts" / "python.exe")
         if locked:
-            sync(staged_python, venv_dir=staging, exact=True, s=s)
+            sync(staged_python, venv_dir=staging, exact=True, show_changes=False, s=s)
         else:
             best_effort_install(staged_python, s)
         swap_in_venv(staging)

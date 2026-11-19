@@ -123,6 +123,7 @@ PROTECTED_DEV_TOOL_COMMANDS = [
     "run-tests",
     "add",
     "remove",
+    "clear-packages",
     "upgrade",
     "sync",
     "find-imports",

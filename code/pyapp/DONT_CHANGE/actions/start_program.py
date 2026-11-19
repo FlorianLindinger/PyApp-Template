@@ -182,6 +182,9 @@ def main() -> int:
             raise RuntimeError("Could not stop the running instance(s): " + "; ".join(errors))
 
     delete_finished_run_folders()
+    from pyapp.DONT_CHANGE.scripts.hidden_caches import hide_cache_folders
+
+    hide_cache_folders()  # e.g. code\__pycache__ from the previous run
     _hint_outdated_shortcuts(s)
     app = ensure_environment(interactive=True)
 

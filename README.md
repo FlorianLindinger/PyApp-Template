@@ -190,9 +190,15 @@ python_version = ""         # newest stable, chosen once and then kept
 python_version = "3.12-3.14" # newest inside the range (either order), chosen once and then kept
 ```
 
-`">=3.12"` and `"3"` work like a range. Anything uv understands works, such as `"pypy@3.11"`; on Windows x64 that means CPython 3.8.2 and
-newer. Changing it later is safe: a menu lets you keep your package versions, upgrade them or undo
-the change, and the new environment replaces the old one only once it works.
+`">=3.12"` and `"3"` work like a range. Anything uv understands works; for CPython on Windows x64
+that means 3.8.2 and newer. Changing it later is safe: a menu lets you keep your package versions,
+upgrade them or undo the change, and the new environment replaces the old one only once it works.
+
+**PyPy** is supported too. Run `code/pyapp/dev_tools/python/change_python.cmd pypy@3.11` (or set
+`python_version = "pypy@3.11"`, or `"pypy"` for the newest), and uv downloads PyPy like any other
+Python. The launcher keeps running on CPython; only your app runs on PyPy, with every shortcut,
+the no-terminal start and tkinter. Not every package has PyPy wheels, so packages with C extensions
+may need to build from source or may not install at all.
 
 ### Icons
 
@@ -228,6 +234,12 @@ icon_path = os.environ.get("ICON_PATH")  # None without the launcher
 
 Taskbar grouping is already set up. To pass your own values, use `args_for_main_py` and
 `environment_for_main_py`.
+
+### Coding agents
+
+[`AGENTS.md`](AGENTS.md) tells AI coding agents (Codex, Claude Code, Cursor, Copilot and others)
+which files to edit, which to leave alone, and how to add packages and run tests with the
+launcher's tools instead of `pip`. Extend it with your own app's conventions.
 
 ### Readable tracebacks
 
@@ -507,6 +519,7 @@ stays the one place to edit; `uv add` in the package terminal is copied back int
 ```text
 .
 ├── Setup - run first and after moving folder.cmd
+├── AGENTS.md                       instructions for AI coding agents
 ├── code/
 │   ├── main.py                     ◀ your app
 │   ├── settings.py                 ◀ optional settings for your users
@@ -527,6 +540,7 @@ None of these is needed to run your app:
 | Delete | What it is |
 | --- | --- |
 | `.github/workflows/pyapp-template-*.yml` | The template's own test workflows; they do nothing in your app. Setup removes them if unchanged. |
+| `AGENTS.md` | Instructions for AI coding agents. Keep it if you use one. |
 | `code/main.py`, `code/settings.py` | The example app and its settings. Point `main_script_path` at your main file; set `user_settings_path = ""` without a settings file. |
 | Single tools in `code/pyapp/dev_tools` | Each `.cmd` is optional; `code/pyapp/Open Developer Tools Menu.cmd` offers every command. |
 | `code/pyapp/icons/*.cmd` | Icon helpers. To regenerate without them: `code\pyapp\DONT_CHANGE\B\run.bat icons`. |

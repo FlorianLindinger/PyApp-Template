@@ -78,8 +78,9 @@ def cmd_change_python(arguments: List[str]) -> None:
 
 
 def cmd_update_python(_arguments: List[str]) -> None:
-    """Newest patch release of the project's Python; with an empty or loose python_version
-    ("3", ">=3.12", "3.12-3.14") also a newer minor version it allows."""
+    """Update to the newest patch release of the project's Python (or newer minor, if allowed).
+
+    With an empty or loose python_version ("3", ">=3.12", "3.12-3.14") also a newer minor version it allows."""
     s = settings()
     prepare(s)
     current = read_python_version_file()

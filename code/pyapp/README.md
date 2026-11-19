@@ -12,7 +12,7 @@ environment it runs in, its icons and tools. Your own code lives one folder up, 
 | [Open Developer Tools Menu.cmd](Open%20Developer%20Tools%20Menu.cmd) | Menu of all developer tools | use | commit |
 | [dev_tools/](dev_tools/README.md) | Double-click tools: packages, Python version, tests, status, cleanup | use | commit |
 | [icons/](icons/README.md) | The app's icons, all made from `icon.png` | replace `icon.png` | commit |
-| [tests/](tests/test_example.py) | The app's own tests (`test_*.py`) | add tests | commit |
+| [tests/](tests/test_example.py) | The app's own tests (`test_*.py`); `run_all_tests.cmd` runs them and the launcher's tests | add tests | commit |
 | [generated/](generated/README.md) | What the launcher creates: the locked packages, the Python version, the environment | leave alone | partly |
 | [Start without launcher.cmd](Start%20without%20launcher.cmd) | Starts the app when the launcher itself is broken | use if needed | commit |
 | [Start without launcher --LINUX.sh](Start%20without%20launcher%20--LINUX.sh) | Direct Linux start with Python chosen in the shell file | use on Linux | commit |

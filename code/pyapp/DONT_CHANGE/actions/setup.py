@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import List
+from typing import Dict, List
 
 from pyapp.DONT_CHANGE.backend_settings import (
     DEV_SETTINGS_PATH,
@@ -59,6 +59,14 @@ def _short(path: str) -> str:
     return path
 
 
+def _short_name(name: str, program_name: str) -> str:
+    """ "App (Logs)" as "Logs" for the compact list; other names unchanged."""
+    rest = name[len(program_name) :].strip() if name.startswith(program_name) else ""
+    if rest.startswith("(") and rest.endswith(")"):
+        return rest[1:-1].strip() or name
+    return name
+
+
 def sync_start_link(s: object, app_id: str) -> str:
     """Register the browser terminal's start link (with its shortcut), remove an outdated one; returns its scheme."""
     from pyapp.DONT_CHANGE.scripts import browser_links
@@ -87,9 +95,9 @@ def main() -> None:
     s = settings()
     validate(s)
     print_banner()
-    print("Setup prepares uv, Python and the app's packages, then creates or updates the shortcuts.")
-    print(styled("Run it again after moving or renaming the project folder or a parent folder.", ANSI_DIM))
-    print(styled(f"Launcher version {LAUNCHER_VERSION}", ANSI_DIM))
+    print(
+        styled(f"Launcher {LAUNCHER_VERSION}. Run Setup again after moving or renaming the project folder.", ANSI_DIM)
+    )
     app_id = project_app_id(s.program_name)
     targets_by_kind = shortcut_targets(s)
     definitions = shortcut_definitions(s, app_id, targets_by_kind)
@@ -143,12 +151,9 @@ def main() -> None:
         folders_by_label.append(("Start Menu", start_menu))
     desktop = special_folder(CSIDL_DESKTOPDIRECTORY) if s.desktop_shortcuts else None
     print_heading("Shortcuts")
-    for label, folder in folders_by_label + ([("Desktop", desktop)] if desktop else []):
-        print(f"  {label:<15} {styled(_short(folder), ANSI_DIM)}")
-    print()
     created: List[str] = []
     previous = read_created_shortcuts()
-    name_width = max(len(d[1]) for d in definitions) if definitions else 0
+    names_by_places: Dict[str, List[str]] = {}  # one line per set of places, not per shortcut
     try:
         for kind, name, icon, launcher, args, shortcut_app_id, description in definitions:
             places = list(folders_by_label)
@@ -167,8 +172,11 @@ def main() -> None:
                         output_dir=folder,
                     )
                 )
-            where = ", ".join(label for label, _ in places)
-            print(f"  {styled('+', ANSI_GOOD)} {name:<{name_width}}  {styled(where, ANSI_DIM)}")
+            names_by_places.setdefault(", ".join(label for label, _ in places), []).append(
+                _short_name(name, s.program_name)
+            )
+        for where, names in names_by_places.items():
+            print(f"  {styled('+', ANSI_GOOD)} {len(names)} in {where}  {styled(', '.join(names), ANSI_DIM)}")
         startup_shortcut = create_windows_startup_shortcut(s, app_id)
         if startup_shortcut:
             created.append(startup_shortcut)
@@ -192,9 +200,12 @@ def main() -> None:
         from pyapp.DONT_CHANGE.scripts.browser_links import page_url
 
         print_heading("Browser terminal")
-        print(f"  bookmark    {page_url(s, app_id)}  {styled('(works while the program runs)', ANSI_DIM)}")
+        print(f"  bookmark    {page_url(s, app_id)}  {styled('(while running)', ANSI_DIM)}")
         if start_link:
-            print(f"  start link  {start_link}://start  {styled('(starts the program in the browser)', ANSI_DIM)}")
+            print(f"  start link  {start_link}://start")
     delete_finished_run_folders()
+    from pyapp.DONT_CHANGE.scripts.hidden_caches import hide_cache_folders
+
+    hide_cache_folders()
     print()
-    print_success(" Setup completed. The shortcuts are ready for this location. ")
+    print_success(" Setup completed. ")

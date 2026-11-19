@@ -36,6 +36,7 @@ from pyapp.DONT_CHANGE.scripts.dev_tools.linux_compilation import cmd_compile_li
 from pyapp.DONT_CHANGE.scripts.dev_tools.package_list import cmd_list_packages
 from pyapp.DONT_CHANGE.scripts.dev_tools.packages import (
     cmd_add,
+    cmd_clear_packages,
     cmd_export,
     cmd_find_imports,
     cmd_install_requirements,
@@ -69,6 +70,7 @@ COMMANDS = {
     "list-packages": cmd_list_packages,
     "add": cmd_add,
     "remove": cmd_remove,
+    "clear-packages": cmd_clear_packages,
     "upgrade": cmd_upgrade,
     "sync": cmd_sync,
     "find-imports": cmd_find_imports,
@@ -95,6 +97,7 @@ MENU_GROUPS = (
             "list-packages",
             "add",
             "remove",
+            "clear-packages",
             "upgrade",
             "sync",
             "find-imports",

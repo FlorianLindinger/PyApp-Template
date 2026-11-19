@@ -600,6 +600,9 @@ def main() -> None:
             )
             mode = ExitMode.APP_EXIT
         keep_raw_output(raw_path, log_path, mode, run_dir)
+        from pyapp.DONT_CHANGE.scripts.hidden_caches import hide_cache_folders
+
+        hide_cache_folders()  # the run may just have created code\__pycache__
         # Remove the registration before recovery can start a new instance.
         registry.remove()
         registered = False
