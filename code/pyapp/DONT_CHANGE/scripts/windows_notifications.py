@@ -104,7 +104,7 @@ def toast_xml(
     log_link, crash_link = _file_link(log_path), _file_link(crash_log_path)
     # open_path (pyapp_api.notify): what a click opens; it can also be a folder.
     open_link = Path(open_path).resolve().as_uri() if open_path and Path(open_path).exists() else None
-    attributes = {}
+    attributes: Dict[str, str] = {}
     if open_link or crash_link or log_link:
         attributes = {"activationType": "protocol", "launch": open_link or crash_link or log_link or ""}
     toast = ET.Element("toast", attributes)

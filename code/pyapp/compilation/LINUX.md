@@ -5,6 +5,8 @@ tray, browser console and its supervision/settings are not embedded or ported to
 The resulting program runs on compatible Linux systems without a separately installed Python.
 Windows-only imports and dependencies in your app still need Linux alternatives or platform guards.
 
+To only see the app run on Linux (no build), use *test-linux* in the developer tools.
+
 1. If Ubuntu is not installed: open an **administrator** Windows terminal and run
    `"Open Developer Tools Menu.cmd" setup-linux --install-wsl` in `code\pyapp`. Restart Windows if requested; start Ubuntu once and finish
    its user/password setup. This uses [Microsoft's WSL installation](https://learn.microsoft.com/en-us/windows/wsl/basic-commands).

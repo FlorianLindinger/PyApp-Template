@@ -173,6 +173,70 @@ def load_icon(icon_path: str) -> int:
     return icon
 
 
+# ------------------------------------------------------------------ system tray
+
+_tray_controller: Any = None
+
+
+def tray_controller(hwnd: int, name: str, icon_path: str) -> Any:
+    """The tray controller for this window (one per app), started on first use.
+
+    It is the launcher's own minimize-to-tray code (scripts/system_tray.py): while it runs, minimizing
+    the window moves it into the tray; clicking the icon restores it; right-click offers Restore and
+    Stop, and Stop asks the window to close as its X would.
+    """
+    global _tray_controller
+    if _tray_controller is None or _tray_controller.target != hwnd:
+        from pyapp.DONT_CHANGE.scripts.system_tray import MinimizeToTray
+
+        def close_window() -> None:
+            import ctypes
+
+            ctypes.windll.user32.PostMessageW(hwnd, 0x0010, 0, 0)  # WM_CLOSE, like the window's X
+
+        controller = MinimizeToTray(hwnd, name, icon_path, close_window)
+        controller.start()
+        _tray_controller = controller
+    return _tray_controller
+
+
+# ------------------------------------------------------------------ settings file
+
+
+def watch_file(path: Path, on_change: Callable[[], None], interval: float = 1.0) -> None:
+    """Call on_change() on a background thread whenever the file's modification time changes."""
+
+    def stamp() -> float:
+        try:
+            return path.stat().st_mtime
+        except OSError:
+            return 0.0
+
+    def watch() -> None:
+        last = stamp()
+        while True:
+            time.sleep(interval)
+            current = stamp()
+            if current != last:
+                last = current
+                try:
+                    on_change()
+                except Exception:
+                    traceback.print_exc()
+
+    threading.Thread(target=watch, name="pyapp-settings-watch", daemon=True).start()
+
+
+def reload_settings_module(path: Path) -> None:
+    """Reload the imported "settings" module if it is this file, so settings.x shows the new values."""
+    import importlib
+
+    module = sys.modules.get("settings")
+    module_file = getattr(module, "__file__", None)
+    if module is not None and module_file and Path(module_file).resolve() == path.resolve():
+        importlib.reload(module)
+
+
 # ------------------------------------------------------------------ restart
 
 SHORTCUT_TARGETS = {"wt": "W.bat", "conhost": "W.bat", "browser": "B.bat", "no_terminal": "N.bat"}

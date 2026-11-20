@@ -118,6 +118,7 @@ the files they use.
 | `change-python [version]` | Sets a new `python_version` and migrates: keep package versions, upgrade them, start with no packages, or undo. |
 | `update-python` | Installs the newest patch release of the project's Python (with a loose `python_version` also a newer minor version) and rebuilds the environment if needed. |
 | `compilation` | Opens the compilation menu; see [compilation/](compilation/README.md). |
+| `test-linux` | Starts the app on Linux inside WSL (Windows' built-in Linux) so you can see it run. Offers to install WSL with Ubuntu (administrator rights, maybe a restart) and Python with tkinter in Linux first. The app's packages are not installed there. |
 | `run-tests [arguments]` | Runs the app's tests in `code/tests`; arguments go to pytest or unittest. |
 | `status` | Settings, uv, Python, environment, lock file, shortcuts and errors the launcher ignored on purpose. Works without uv. |
 | `clean` | Deletes logs, crash logs or per-run diagnostics. |

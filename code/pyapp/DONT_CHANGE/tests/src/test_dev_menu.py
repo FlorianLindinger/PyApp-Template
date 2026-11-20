@@ -28,6 +28,7 @@ class MenuTests(unittest.TestCase):
                 "validate-syntax",
                 "compile-app",
                 "clean-compilation",
+                "test-linux",
                 "setup-linux",
                 "compile-linux",
             ],

@@ -366,6 +366,9 @@ uv_cache = "global"
 use_system_certificates = False
 
 # --- GitHub ---
+# Tell you in Setup and the developer menu when a newer launcher (PyApp-Template release) exists.
+# Asks GitHub at most once a day; never updates anything by itself. Off by default: it contacts GitHub.
+check_for_launcher_updates = False
 # GitHub Actions for this app; Setup creates or removes their files in .github/workflows:
 #   "leaks"    on every push and PR to main: look for secrets and personal data
 github_actions: List[str] = []

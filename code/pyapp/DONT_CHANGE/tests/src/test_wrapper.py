@@ -14,7 +14,7 @@ import textwrap
 import time
 import unittest
 from pathlib import Path
-from typing import Dict, Optional, Sequence
+from typing import Dict, List, Optional, Sequence
 from unittest import mock
 
 from project_location import DONT_CHANGE
@@ -538,9 +538,10 @@ class WrapperTests(unittest.TestCase):
         app.mkdir()
         run.mkdir()
         (app / "main.py").write_text(textwrap.dedent(source), encoding="utf-8")
+        no_arguments: List[str] = []
         settings = {
             "script": str(app / "main.py"),
-            "args": [],
+            "args": no_arguments,
             "traceback": str(run / "traceback.json"),
             "result": str(run / "result.json"),
             "ready": str(run / "ready"),

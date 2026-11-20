@@ -204,6 +204,9 @@ def main() -> None:
         if start_link:
             print(f"  start link  {start_link}://start")
     delete_finished_run_folders()
+    from pyapp.DONT_CHANGE.scripts.update_check import tell_about_update
+
+    tell_about_update(s.check_for_launcher_updates)
     from pyapp.DONT_CHANGE.scripts.hidden_caches import hide_cache_folders
 
     hide_cache_folders()

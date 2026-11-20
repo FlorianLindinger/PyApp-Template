@@ -42,6 +42,7 @@ GROUPS: Dict[str, Tuple[str, ...]] = {
     "setup": (
         "test_settings.py",
         "test_packages.py",
+        "test_update_check.py",
         "test_resolve_runtime.py",
         "test_uv_fallback.py",
         "test_imports.py",

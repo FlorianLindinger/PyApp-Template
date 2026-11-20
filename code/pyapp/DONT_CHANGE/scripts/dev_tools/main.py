@@ -34,7 +34,11 @@ from pyapp.DONT_CHANGE.scripts.dev_tools.compilation import (
     cmd_validate_syntax,
 )
 from pyapp.DONT_CHANGE.scripts.dev_tools.housekeeping import cmd_clean, cmd_remove_shortcuts, cmd_status, cmd_test
-from pyapp.DONT_CHANGE.scripts.dev_tools.linux_compilation import cmd_compile_linux, cmd_setup_linux
+from pyapp.DONT_CHANGE.scripts.dev_tools.linux_compilation import (
+    cmd_compile_linux,
+    cmd_setup_linux,
+    cmd_test_linux,
+)
 from pyapp.DONT_CHANGE.scripts.dev_tools.package_list import cmd_list_packages
 from pyapp.DONT_CHANGE.scripts.dev_tools.packages import (
     cmd_add,
@@ -72,6 +76,7 @@ COMMANDS = {
     "compile-app": cmd_compile_app,
     "compile-linux": cmd_compile_linux,
     "setup-linux": cmd_setup_linux,
+    "test-linux": cmd_test_linux,
     "validate-syntax": cmd_validate_syntax,
     "clean-compilation": cmd_clean_compilation,
     "list-packages": cmd_list_packages,
@@ -121,7 +126,7 @@ MENU_GROUPS = (
 SUBMENU_GROUPS = {
     "compilation": (
         ("Windows build (Nuitka)", ("compilation-presets", "validate-syntax", "compile-app", "clean-compilation")),
-        ("Linux build (in WSL)", ("setup-linux", "compile-linux")),
+        ("Linux (in WSL)", ("test-linux", "setup-linux", "compile-linux")),
     ),
 }
 # Arguments a command gets when it is chosen in the menu (on the command line it gets none).
@@ -254,6 +259,20 @@ def _set_window_title_and_icon(command: str) -> None:
     set_terminal_icon(paths.ICON_PATH)
 
 
+def _tell_about_launcher_update() -> None:
+    """check_for_launcher_updates: mention a newer launcher release when the menu opens (once a day online)."""
+    try:
+        from pyapp.DONT_CHANGE.scripts.config import settings
+        from pyapp.DONT_CHANGE.scripts.update_check import tell_about_update
+
+        tell_about_update(settings().check_for_launcher_updates)
+    except Exception:
+        # A broken settings file is reported by the menu's own tools right after this.
+        from pyapp.DONT_CHANGE.scripts.diagnostics import note_ignored
+
+        note_ignored("launcher update check before the menu")
+
+
 def main() -> None:
     global pause_on_success
     enable_ansi()
@@ -269,6 +288,7 @@ def main() -> None:
     if command in NO_PAUSE:
         pause_on_success = False
     if command == "menu":
+        _tell_about_launcher_update()
         return cmd_menu(sys.argv[2:])
     if command not in COMMANDS:
         raise SystemExit("Unknown command. Use one of: menu, " + ", ".join(COMMANDS))

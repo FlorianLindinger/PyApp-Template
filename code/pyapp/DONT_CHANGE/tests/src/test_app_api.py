@@ -11,7 +11,7 @@ import threading
 import time
 import unittest
 from pathlib import Path
-from typing import List, Tuple
+from typing import Callable, List, Tuple
 from unittest import mock
 
 import support  # noqa: F401 - makes the template importable
@@ -39,7 +39,7 @@ class ContractTests(unittest.TestCase):
 class WithoutLauncherTests(unittest.TestCase):
     """python main.py: every launcher feature does nothing and returns a neutral value."""
 
-    def setUp(self):
+    def setUp(self):  # pyrefly: ignore[missing-override-decorator]
         patcher = mock.patch.object(app_api, "_launched", False)
         patcher.start()
         self.addCleanup(patcher.stop)
@@ -52,6 +52,9 @@ class WithoutLauncherTests(unittest.TestCase):
         self.assertFalse(app_api.highlight("error"))
         self.assertFalse(app_api.flash())
         self.assertFalse(app_api.bring_to_front())
+        self.assertFalse(app_api.minimize_to_tray())
+        self.assertFalse(app_api.set_title("Working"))
+        self.assertFalse(app_api.on_settings_changed(lambda: None))
         self.assertIsNone(app_api.report_error(ValueError("x")))
         self.assertIsNone(app_api.restart())  # returns instead of ending the app
         self.assertFalse(app_api.on_new_start(lambda arguments, folder: None))
@@ -75,13 +78,45 @@ class StopCallbackTests(unittest.TestCase):
             calls.append("failing")
             raise RuntimeError("callback broke")
 
-        with mock.patch.object(app_api, "_stop_callbacks", []), mock.patch("traceback.print_exc"):
+        callbacks: List[object] = []
+        with mock.patch.object(app_api, "_stop_callbacks", callbacks), mock.patch("traceback.print_exc"):
             app_api.on_stop(lambda: calls.append("first"))
             app_api.on_stop(failing)
             app_api.on_stop(lambda: calls.append("last"))
             app_api._run_stop_callbacks()
             app_api._run_stop_callbacks()  # a second trigger (e.g. X after Ctrl+C) runs nothing again
         self.assertEqual(calls, ["first", "failing", "last"])
+
+
+class SettingsWatchTests(unittest.TestCase):
+    def test_saving_the_settings_file_reloads_settings_and_calls_back(self):
+        called = threading.Event()
+
+        def change_at_once(_path: Path, on_change: Callable[[], None]) -> None:
+            on_change()  # instead of waiting for the file to be saved
+
+        with tempfile.TemporaryDirectory() as folder:
+            settings_file = Path(folder, "settings.py")
+            settings_file.write_text("value = 1\n", encoding="utf-8")
+            with mock.patch.object(app_api, "_launched", True), mock.patch.dict(
+                os.environ, {"USER_SETTINGS_PATH": str(settings_file)}
+            ), mock.patch.object(app_api_support, "watch_file", side_effect=change_at_once), mock.patch.object(
+                app_api_support, "reload_settings_module"
+            ) as reload:
+                self.assertTrue(app_api.on_settings_changed(called.set))
+            reload.assert_called_once_with(settings_file)
+        self.assertTrue(called.is_set())
+
+    def test_the_watcher_notices_a_saved_file(self):
+        changed = threading.Event()
+        with tempfile.TemporaryDirectory() as folder:
+            watched = Path(folder, "settings.py")
+            watched.write_text("value = 1\n", encoding="utf-8")
+            app_api_support.watch_file(watched, changed.set, interval=0.05)
+            time.sleep(0.2)
+            watched.write_text("value = 2\n", encoding="utf-8")
+            os.utime(watched, (time.time() + 5, time.time() + 5))  # a clearly newer modification time
+            self.assertTrue(changed.wait(5), "the change was not noticed")
 
 
 class ForwardedStartTests(unittest.TestCase):
@@ -115,9 +150,10 @@ class WrapperTests(unittest.TestCase):
         script.write_text(source, encoding="utf-8")
         run = folder / "run"
         run.mkdir()
+        no_arguments: List[str] = []
         config = {
             "script": str(script),
-            "args": [],
+            "args": no_arguments,
             "traceback": str(run / "traceback.json"),
             "result": str(run / "result.json"),
             "ready": str(run / "ready"),

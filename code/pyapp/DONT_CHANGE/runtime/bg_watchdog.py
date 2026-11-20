@@ -7,6 +7,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import io
 import json
 import os
@@ -19,7 +20,7 @@ import time
 import traceback
 from pathlib import Path
 from types import ModuleType, SimpleNamespace
-from typing import TYPE_CHECKING, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 # Last, so app modules named like standard-library modules (code/random.py, ...) cannot shadow them.
 sys.path.append(str(Path(__file__).resolve().parents[3]))
@@ -180,10 +181,9 @@ def end_note(mode: int, run_dir: Path, native: Optional[int], seconds: float) ->
     if mode == ExitMode.NO_REPORT:
         code = (native or 0) & 0xFFFFFFFF
         return f"Python ended without finishing its report {after}: exit code {code} ({code:#010x}), e.g. a hard crash or a forced end."
-    try:
+    report: Dict[str, Any] = {}
+    with contextlib.suppress(OSError, ValueError):  # no report: described as a launcher problem below
         report = json.loads((run_dir / "traceback.json").read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        report = {}
     kind = report.get("exception_type", "")
     if kind == "KeyboardInterrupt":
         return f"Stopped with Ctrl+C {after}."

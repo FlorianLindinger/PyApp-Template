@@ -16,7 +16,8 @@ move helpers to extra sectiopn ion api?
   Windows' ~5 s, new "closed" outcome with its own setting.
 - review dev settings (too long? move niche settings below an "Advanced" line, see REVIEW.md 1.3)
 - Execution timeout — stop a stalled run after a configurable duration.
-- git update check for final app: check for a template/launcher update (link, changelog), with options: don't check again / skip this version / show changes / install. Suggested: opt-in, info only in Setup and the dev menu, choices stored in tmp (not the settings file), a separate update_launcher dev tool that refuses major versions.
+- update_launcher dev tool: download a release, show the CHANGELOG and new settings, swap DONT_CHANGE with a backup, run the checks; refuse major versions. (The update check itself exists: check_for_launcher_updates.)
+- App update check for the people using an app: the app's own GitHub releases, e.g. app_update_repository = "you/your-app".
 - File associations — open supported file types directly in the application. I guess I should not force VS Code. just start with default app for .py. or is that Python exe?? maybe have setting what it should be and mention.
 - Should I add package list to crash report? ... more
 - clickable links in error reports: path:line to the failing line (per frame), and a link to open the main script (Windows Terminal; not possible in conhost?). open on the specific line with VS Code / Notepad++ / PyCharm; setting for which program.

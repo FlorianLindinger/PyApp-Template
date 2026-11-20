@@ -16,9 +16,14 @@ What is available (details in each function's docstring):
                                             "paused" yellow); None removes it
     flash()                                 flash the taskbar button until the user switches to the app
     bring_to_front()                        show the app's window in front (Windows may only flash it)
+    minimize_to_tray()                      hide the app's window into the tray (click the icon to restore);
+                                            from then on minimizing it does the same
+    set_title(text)                         the console window's title (also the browser terminal's tab)
     message_box(text, title=None, kind="info")  OK dialog ("info", "warning", "error")
     ask_yes_no(question, title=None)        Yes/No dialog; True for Yes
     keep_awake(display=False)               "with" block during which the PC does not sleep
+    on_settings_changed(callback)           run callback() after the user saved code/settings.py
+                                            ("import settings" then already shows the new values)
     report_error(error=None, note="")       crash log for a caught error; the app keeps running
     restart()                               end this run and start the app again the same way
     on_new_start(callback)                  receive the arguments of later starts (instance_policy
@@ -51,7 +56,7 @@ import os
 import sys
 import traceback
 import uuid
-from typing import Any, Callable, Dict, Iterator, List, Optional
+from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple
 
 from pyapp.DONT_CHANGE.scripts import app_api_support as support
 
@@ -63,13 +68,16 @@ __all__ = [
     "keep_awake",
     "launched",
     "message_box",
+    "minimize_to_tray",
     "notify",
     "on_new_start",
+    "on_settings_changed",
     "on_stop",
     "report_error",
     "restart",
     "set_overlay",
     "set_progress",
+    "set_title",
 ]
 
 
@@ -194,6 +202,42 @@ def bring_to_front() -> bool:
         return False
 
 
+def minimize_to_tray() -> bool:
+    """Hide the app's window into the system tray (beside the clock); clicking its icon restores it.
+
+    From then on, minimizing the window also moves it to the tray. Right-click on the icon offers
+    Restore and Stop (Stop closes the window as its X would). Works for the app's own window and the
+    classic console. Without the launcher or a window: False.
+    """
+    hwnd = support.own_window() if _launched else 0
+    if not hwnd:
+        return False
+    try:
+        import ctypes
+
+        from pyapp.DONT_CHANGE import backend_settings as paths
+
+        support.tray_controller(hwnd, support.program_name(), paths.ICON_PATH)
+        ctypes.windll.user32.ShowWindow(hwnd, 6)  # SW_MINIMIZE: the controller then moves it to the tray
+        return True
+    except Exception:
+        return False
+
+
+def set_title(text: str) -> bool:
+    """Set the title of the app's console window, or of the browser terminal's tab.
+
+    For your own GUI window, set its title with the GUI toolkit (Tkinter: root.title(...)). Useful
+    for progress in a console app, e.g. set_title("Processing 3 of 10"). Without the launcher: False.
+    """
+    if not _launched:
+        return False
+    from pyapp.DONT_CHANGE.scripts.console_tools import set_terminal_title
+
+    set_terminal_title(str(text))
+    return True
+
+
 def message_box(text: str, title: Optional[str] = None, *, kind: str = "info") -> None:
     """A Windows message box with an OK button; useful for apps without a terminal or GUI.
 
@@ -244,6 +288,31 @@ def keep_awake(display: bool = False) -> Iterator[None]:
         set_awake(False, False)
 
 
+def on_settings_changed(callback: Callable[[], None]) -> bool:
+    """Run ``callback()`` (on a background thread) after the user saved the app's settings file.
+
+    The file is code/settings.py, or user_settings_path in developer_settings.py. If main.py did
+    "import settings", that module is reloaded first, so ``settings.x`` already has the new value. A
+    file saved with a mistake prints the error and skips the callback. A GUI should hand the work to
+    its own thread (Tkinter: root.after, Qt: a signal). Without the launcher or a settings file: False.
+    """
+    path = os.environ.get("USER_SETTINGS_PATH", "") if _launched else ""
+    if not path:
+        return False
+    from pathlib import Path
+
+    def changed() -> None:
+        try:
+            support.reload_settings_module(Path(path))
+        except Exception:
+            traceback.print_exc()  # e.g. a syntax error while the file is being edited
+            return
+        callback()
+
+    support.watch_file(Path(path), changed)
+    return True
+
+
 def report_error(error: Optional[BaseException] = None, note: str = "") -> Optional[str]:
     """Write a crash log for an error the app caught, and keep running; returns the file's path.
 
@@ -269,7 +338,7 @@ def report_error(error: Optional[BaseException] = None, note: str = "") -> Optio
                 str(_launch.get("script") or sys.argv[0]),
                 str(report_file),
                 _launch.get("app_root"),
-                tuple(_launch.get("context_lines") or (3, 3)),
+                _context_lines(),
             )
             report = json.loads(report_file.read_text(encoding="utf-8"))
         finally:
@@ -316,6 +385,12 @@ def on_new_start(callback: Callable[[List[str], str], None]) -> bool:
 _launched = False
 _launch: Dict[str, Any] = {}
 _stop_callbacks: List[Callable[[], None]] = []
+
+
+def _context_lines() -> Tuple[int, int]:
+    """Source lines shown before and after the failing line in a crash report (from the launcher)."""
+    before, after = [*list(_launch.get("context_lines") or []), 3, 3][:2]
+    return int(before), int(after)
 
 
 def _run_stop_callbacks() -> None:

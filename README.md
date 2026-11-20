@@ -510,6 +510,10 @@ logs, crash reports, the browser terminal, taskbar features and notifications ar
 there, and packages must be installed into that Python yourself. Code that reads the launcher's
 variables with `os.environ.get` and a fallback runs unchanged.
 
+To see your app run on Linux without a second PC, use *test-linux* in the developer tools: it
+starts the app in WSL, Windows' built-in Linux, where its window appears like a Windows one. It
+offers to install WSL and Python with tkinter in Linux first.
+
 ### What it changes on your PC
 
 Everything stays in the project folder, except, with the default settings:
@@ -603,6 +607,11 @@ Keep `LICENSE.md` and `code/pyapp/DONT_CHANGE/LICENSE.md`.
 Replace `code/pyapp/DONT_CHANGE` with the newer version. Your code and settings are outside that
 folder, and new settings use their defaults until you add them. Major versions may need extra
 steps, listed in [`CHANGELOG.md`](code/pyapp/DONT_CHANGE/CHANGELOG.md).
+
+To hear about new versions, set `check_for_launcher_updates = True`. Setup and the developer menu
+then show a newer release with both versions, their dates and a link to the changes. GitHub is
+asked at most once a day, and nothing is updated by itself; *skip this version* and *don't check
+again* are remembered in `code/pyapp/DONT_CHANGE/tmp/update_check.json`.
 
 ## License
 

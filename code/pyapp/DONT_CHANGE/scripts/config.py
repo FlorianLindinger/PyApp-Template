@@ -88,6 +88,7 @@ BOOLEANS = (
     "enable_crash_log",
     "open_crash_log_after_failure",
     "crash_report_copy_button",
+    "check_for_launcher_updates",
     "play_sound_after_success",
     "play_sound_after_failure",
     "log_path_is_relative_to_start_folder_if_relative",

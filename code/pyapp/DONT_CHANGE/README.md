@@ -446,6 +446,7 @@ ASCII art (`scripts/banner.py`). The batch/Python bootstrap and the
 | `settings_defaults.py` | Compare template settings in working files, the staged Git index or pushed commit tips without executing or modifying settings. |
 | `taskbar_status.py` | ITaskbarList3 activity and green/red completion indicators, FlashWindowEx attention, and validated native-terminal handle handoff. |
 | `windows_notifications.py` | Silent Windows toasts through a fixed PowerShell WinRT script, escaped plain-text XML, per-outcome switches/templates and blocked-notification diagnostics. Clicking opens the crash log or log; one tag, so a new toast replaces the last. |
+| `update_check.py` | `check_for_launcher_updates`: asks GitHub at most once a day for a newer launcher release and tells the developer in Setup and the developer menu; choices are stored in `tmp/update_check.json`, never in the settings. |
 | `app_api_support.py` | The machinery behind `app_api.py`: finding the app's window, the taskbar (ITaskbarList3), the restart helper, forwarded starts. Not part of the public contract. |
 | `hidden_caches.py` | Gives `__pycache__`, `.ruff_cache`, `.pytest_cache` and `.mypy_cache` in the project root, `code`, `code/pyapp` and the test folders the hidden attribute; run by Setup, every start and after each run. |
 | `template_workflows.py` | Removes the template's own `.github/workflows/pyapp-template-*.yml` from an app, only when they are unchanged and alone. |

@@ -91,6 +91,78 @@ def cmd_setup_linux(arguments: List[str]) -> None:
     print_info("Linux prerequisites ready. compile-linux installs the requested Linux Python and app packages.")
 
 
+def _wsl_succeeds(distribution: str, arguments: List[str]) -> bool:
+    """True when the Linux command runs and exits with 0; nothing is printed."""
+    executable = shutil.which("wsl.exe")
+    if executable is None:
+        return False
+    try:
+        # Explicit WSL executable and argument list, no Windows shell.
+        result = subprocess.run(  # noqa: S603
+            [executable, "--distribution", distribution, "--exec", *arguments],
+            capture_output=True,
+            check=False,
+            timeout=120,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+    return result.returncode == 0
+
+
+def _ask_yes(question: str) -> bool:
+    from pyapp.DONT_CHANGE.scripts.console_tools import ask
+
+    try:
+        return ask(question + " [y/N]").strip().lower() in ("y", "yes")
+    except (EOFError, KeyboardInterrupt):
+        return False
+
+
+def cmd_test_linux(arguments: List[str]) -> None:
+    """Start the app on Linux in WSL (Windows' built-in Linux) to see it run; offers to set WSL up."""
+    parser = argparse.ArgumentParser(description=cmd_test_linux.__doc__)
+    parser.add_argument("--distribution", default="Ubuntu")
+    options = parser.parse_args(arguments)
+    distribution = options.distribution
+    print_heading("Test the app on Linux (WSL)")
+    # 1. WSL and the Linux distribution.
+    if not _wsl_succeeds(distribution, ["true"]):
+        print_info(
+            f"WSL with {distribution} is not ready on this PC. Installing it needs administrator rights,\n"
+            "may need a restart, and then asks you once for a Linux user name and password."
+        )
+        if not _ask_yes(f"Install WSL with {distribution} now?"):
+            print_info(f'Nothing was changed. Later: run "wsl --install -d {distribution}" as administrator.')
+            return
+        executable = shutil.which("wsl.exe")
+        if executable is None:
+            raise SetupError("WSL is unavailable. Turn on 'Windows Subsystem for Linux' in Windows Features first.")
+        # The user asked for this installation; Windows asks for administrator rights itself.
+        subprocess.run([executable, "--install", "--distribution", distribution], check=False)  # noqa: S603
+        print_info("When the installation has finished (and Windows has restarted, if it asked), run test-linux again.")
+        return
+    # 2. Python with tkinter inside Linux (the example app is a Tkinter window).
+    if not _wsl_succeeds(distribution, ["python3", "-c", "import tkinter"]):
+        print_info("Linux needs Python 3 with tkinter: sudo apt-get install python3 python3-tk")
+        if not _ask_yes("Install them now (asks for your Linux password)?"):
+            print_info("Nothing was changed.")
+            return
+        wsl(distribution, ["sudo", "apt-get", "update"])
+        wsl(distribution, ["sudo", "apt-get", "install", "-y", "python3", "python3-tk"])
+    s = settings()
+    validate(s)
+    if package_entries(s) or requirements_file_path(s):
+        print_info(
+            "Note: the app's packages are not installed in Linux. The fallback start uses Linux's own Python;\n"
+            "install them there yourself (e.g. with pip or apt) if the app needs them."
+        )
+    # 3. The Linux start script, run inside WSL. On Windows 11, Linux windows show up like Windows ones.
+    script = Path(paths.BACKEND_DIR) / "fallback_start" / "Start without launcher --LINUX.sh"
+    print_info("Starting the app in Linux. Close its window (or press Ctrl+C here) to come back.")
+    wsl(distribution, ["sh", linux_path(distribution, script)])
+    print_info("The app ended in Linux.")
+
+
 def cmd_compile_linux(arguments: List[str]) -> None:
     """Build a Linux version of the app in WSL; the result is an archive to copy to Linux."""
     parser = argparse.ArgumentParser(description=cmd_compile_linux.__doc__)

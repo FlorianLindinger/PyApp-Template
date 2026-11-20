@@ -29,6 +29,8 @@ def make_abs(x: str) -> str:
 #          defaults, new optional files outside it may be copied)
 #   MAJOR: something breaks; replace DONT_CHANGE and follow the steps in CHANGELOG.md
 LAUNCHER_VERSION = "0.0.1"
+# Where new launcher versions are published (scripts/update_check.py asks its latest release).
+TEMPLATE_REPOSITORY = "FlorianLindinger/PyApp-Template"
 MINIMUM_PYTHON = (3, 8)                             # oldest Python the launcher code supports
 
 # ------------------------
@@ -116,6 +118,7 @@ PROTECTED_DEV_TOOL_COMMANDS = [
     "compilation-presets",
     "compile-app",
     "setup-linux",
+    "test-linux",
     "compile-linux",
     "validate-syntax",
     "clean-compilation",
@@ -149,9 +152,12 @@ PROTECTED_APP_API_NAMES = [
     "highlight",
     "flash",
     "bring_to_front",
+    "minimize_to_tray",
+    "set_title",
     "message_box",
     "ask_yes_no",
     "keep_awake",
+    "on_settings_changed",
     "report_error",
     "restart",
     "on_new_start",
