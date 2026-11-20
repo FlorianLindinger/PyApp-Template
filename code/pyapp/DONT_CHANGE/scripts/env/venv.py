@@ -177,13 +177,26 @@ def refuse_mutation_while_running() -> None:
 
 
 def ensure_lock(s: Optional[Union[ModuleType, SimpleNamespace]] = None) -> None:
-    """Create or update uv.lock when pyproject.toml changed (offline first)."""
+    """Create or update uv.lock when pyproject.toml changed (online first, the local cache as fallback).
+
+    Resolving offline first would only see versions that happen to be in uv's cache, often from
+    other projects: a newly added package could be locked to an old release, or to one that no
+    longer builds on this Python (e.g. numpy 1.21 on 3.12+). Packages that are already locked keep
+    their versions either way.
+    """
     if Path(UV_LOCK_PATH).is_file() and uv_succeeds(["lock", "--check", "--offline"], s=s):
         return
     print_step("Updating uv.lock for the declared dependencies...")
-    if uv_succeeds(["lock", "--offline"], s=s):
+    if run_uv(["lock"], check=False, s=s) == 0:
         return
-    run_uv(["lock"], s=s)
+    if uv_succeeds(["lock", "--offline"], s=s):
+        print_warn(
+            "The package index could not be reached, so uv.lock was made from packages already downloaded"
+            ' on this PC; they may be older than the newest release. Run the "upgrade" dev tool once'
+            " you are online."
+        )
+        return
+    raise SetupError("uv lock failed (see uv's message above); uv.lock was not changed.")
 
 
 def sync(
@@ -257,6 +270,28 @@ def build_venv(
             shutil.rmtree(staging, ignore_errors=True)
 
 
+def remove_abandoned_venvs(min_age_seconds: float = 3600) -> None:
+    """Delete .venv.staging-*/.venv.previous-* folders that a killed build left behind.
+
+    build_venv removes its folder itself, except when the process is killed (Task Manager, a closed
+    window, power loss). Only folders untouched for an hour are removed, so a build that another
+    tool is running right now keeps its folder.
+    """
+    import time
+
+    parent = Path(VENV_DIR).parent
+    if not parent.is_dir():
+        return
+    name = Path(VENV_DIR).name
+    now = time.time()
+    for folder in [*parent.glob(name + ".staging-*"), *parent.glob(name + ".previous-*")]:
+        try:
+            if folder.is_dir() and now - folder.stat().st_mtime >= min_age_seconds:
+                shutil.rmtree(folder, ignore_errors=True)
+        except OSError:
+            pass  # tidying only
+
+
 def swap_in_venv(staging: str) -> None:
     previous = VENV_DIR + ".previous-" + uuid.uuid4().hex[:8]
     if Path(VENV_DIR).is_dir():
@@ -280,7 +315,10 @@ def ensure_environment(interactive: bool = True) -> AppPython:
     Path(PROJECT_DIR).mkdir(parents=True, exist_ok=True)
     base_python = sys.executable
 
+    # Only one process at a time may change the environment (two starts at once would install
+    # into the same folder). FileLock waits until no other launcher process holds the lock file.
     with FileLock(ENVIRONMENT_LOCK_PATH, timeout=600):
+        remove_abandoned_venvs()
         base_version = tuple(sys.version_info[:3])  # base_python is this interpreter
         file_request = read_python_version_file()
 

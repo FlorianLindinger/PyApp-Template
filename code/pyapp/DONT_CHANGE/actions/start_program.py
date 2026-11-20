@@ -1,3 +1,7 @@
+# Step 3 of a start (steps 1-2: B\W.bat and bootstrap\run.bat; see B\W.bat). This process runs in a
+# small minimized window. It checks the settings, makes sure Python and the packages are ready, then
+# starts runtime/bg_watchdog.py in the right kind of window, waits until it reports "started", and
+# ends. From then on the watchdog owns the run: it starts code/main.py and reports how it ended.
 """Prepare the app environment and hand off one uniquely identified run to the watchdog."""
 
 from __future__ import annotations
@@ -152,8 +156,12 @@ def browser_command(s: Union[ModuleType, SimpleNamespace], run_dir: Path, comman
 
 def main() -> int:
     """Apply the instance policy, prepare the environment, start the watchdog and wait for it."""
+    # --- 1. What to start and how. sys.argv is the list of command-line arguments: [script, app ID, ...].
+    # The app ID is the taskbar identity Setup wrote into the shortcut. os.environ holds the
+    # environment variables; PYAPP_LAUNCH_MODE was set by the B\*.bat file (terminal, no_terminal, ...).
     app_id = sys.argv[1] if len(sys.argv) > 1 else ""
     requested = os.environ.pop("PYAPP_LAUNCH_MODE", "") or (sys.argv[2] if len(sys.argv) > 2 else "terminal")
+    # Load developer_settings.py (s.program_name, s.instance_policy, ...) and check every value.
     s = settings()
     validate(s)
     mode = resolve_mode(s, requested)
@@ -170,17 +178,30 @@ def main() -> int:
     # app's title, icon and taskbar group.
     set_terminal_appearance_once(app_id)
 
+    # --- 2. Is the app running already? Each running copy has a small record file in
+    # DONT_CHANGE\tmp\running. instance_policy decides: start another, focus the old one, refuse,
+    # replace it, or ask.
     # Quick check before any environment work; the watchdog repeats it under the registry lock.
     registry = ProcessRegistry(paths.PROCESS_REGISTRY_DIR)
     records, _ = registry.records()
     decision = decide(s.instance_policy, records, s.program_name)
     if decision == "cancel":
+        # pyapp_api.on_new_start: a running copy that listens gets this start's arguments instead.
+        from pyapp.DONT_CHANGE.scripts.app_api_support import forward_start
+
+        try:
+            arguments = sys.argv[2:] if os.environ.get("PYAPP_BATCH_ARGUMENTS", "") == "1" else []
+            forward_start(arguments, os.environ.get("PYAPP_START_DIR", str(Path.cwd())))
+        except OSError:
+            note_ignored("forward a start to the running instance")
         return 0
     if decision == "replace":
         _, _, errors = registry.stop(s.stop_timeout_seconds, report=print)
         if errors:
             raise RuntimeError("Could not stop the running instance(s): " + "; ".join(errors))
 
+    # --- 3. Housekeeping, then the environment: ensure_environment() creates code/pyapp/generated/.venv
+    # and installs the packages from uv.lock when something changed; usually it only checks and returns.
     delete_finished_run_folders()
     from pyapp.DONT_CHANGE.scripts.hidden_caches import hide_cache_folders
 
@@ -188,6 +209,8 @@ def main() -> int:
     _hint_outdated_shortcuts(s)
     app = ensure_environment(interactive=True)
 
+    # --- 4. A folder for this run (DONT_CHANGE\tmp\runs\<random name>): the processes of this run
+    # exchange files there, such as the startup status and the crash report.
     # Keep run paths short; mkdir reserves the name even with concurrent launches.
     while True:
         run_dir = Path(paths.RUNS_DIR) / uuid.uuid4().hex[:12]
@@ -196,6 +219,7 @@ def main() -> int:
         except FileExistsError:
             continue
         break
+    # Information for the watchdog travels as environment variables, which a started process inherits.
     env = os.environ.copy()
     env["PYAPP_RUN_DIR"] = str(run_dir)
     env["PYAPP_START_DIR"] = env.get("PYAPP_START_DIR", str(Path.cwd()))
@@ -204,6 +228,8 @@ def main() -> int:
     # application arguments; JSON preserves empty strings and quoted spaces across hosts.
     extra = sys.argv[2:] if os.environ.pop("PYAPP_BATCH_ARGUMENTS", "") == "1" else []
     env["PYAPP_EXTRA_ARGS"] = json.dumps(extra)
+    # --- 5. The command that starts the watchdog. -I -S: ignore installed packages (the launcher uses
+    # only Python's standard library); -X faulthandler: print a Python traceback even on a hard crash.
     args = [
         sys.executable,
         "-I",
@@ -216,10 +242,13 @@ def main() -> int:
         app_id or paths.EMPTY_ARG_INDICATOR,
         mode,
     ]
+    # Window options for the new process; 7 means "minimized, without taking the focus".
     startup = subprocess.STARTUPINFO()
     if s.start_minimized and not s.start_maximized:
         startup.dwFlags |= subprocess.STARTF_USESHOWWINDOW
         startup.wShowWindow = 7
+    # Wrap the command for the chosen window: Windows Terminal (wt), the classic console (conhost),
+    # or the browser terminal's host. Without a terminal the command runs as it is, hidden.
     if mode == "wt":
         args = wt_command(s.program_name, s.tab_bar_color, args, dedicated_window=needs_window(s))
     elif mode == "conhost":
@@ -236,6 +265,8 @@ def main() -> int:
             note_ignored("AllowSetForegroundWindow for the browser terminal")
     # The browser terminal's host has no window of its own, like the watchdog without a terminal.
     hidden = mode in ("no_terminal", "browser")
+    # --- 6. Start it, then wait until the watchdog writes startup.json ("started" or an error).
+    # subprocess.Popen starts a program and returns at once, without waiting for it to end.
     with Path(run_dir / "bootstrap.log").open("w", encoding="utf-8") as diagnostics:
         # The configured launcher/interpreter is intentional; program arguments remain separate.
         child = subprocess.Popen(  # noqa: S603

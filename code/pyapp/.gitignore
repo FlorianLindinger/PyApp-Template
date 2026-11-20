@@ -42,3 +42,6 @@ cython_debug/
 !/generated/uv.lock
 !/generated/.python-version
 !/generated/auto_generated_icons.json
+
+# Builds made by the compilation tools (large, and rebuilt from the code at any time).
+/compiled/

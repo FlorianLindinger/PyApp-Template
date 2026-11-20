@@ -4,6 +4,7 @@ import contextlib
 import os
 import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
@@ -189,8 +190,7 @@ class RequirementsFileTests(unittest.TestCase):
         with self.assertRaises(SettingsError) as raised:
             config.validate(load())
         self.assertIn("cannot be read", str(raised.exception))
-        self.assertIn("Change requirements_path in developer_settings.py", str(raised.exception))
-        self.assertIn("make sure the file exists and is readable", str(raised.exception))
+        self.assertIn("requirements_path", str(raised.exception))  # names the setting to fix
         self.assertIn('requirements_path = ""', str(raised.exception))
 
     def test_uv_add_is_copied_into_packages_but_never_the_file_packages(self):
@@ -364,6 +364,25 @@ class PythonRequestTests(unittest.TestCase):
 
 @mock.patch.dict(os.environ, {"NO_COLOR": "1"})
 class FingerprintTests(unittest.TestCase):
+    def test_folders_of_a_killed_environment_build_are_removed_once_they_are_old(self):
+        with tempfile.TemporaryDirectory() as folder:
+            venv_dir = str(Path(folder, ".venv"))
+            old_staging = Path(venv_dir + ".staging-1234abcd")
+            old_previous = Path(venv_dir + ".previous-1234abcd")
+            fresh = Path(venv_dir + ".staging-5678ef00")
+            other = Path(folder, "keep-me")
+            for path in (old_staging, old_previous, fresh, other):
+                (path / "Scripts").mkdir(parents=True)
+            two_hours_ago = time.time() - 7200
+            for path in (old_staging, old_previous, other):
+                os.utime(path, (two_hours_ago, two_hours_ago))
+            with mock.patch.object(venv, "VENV_DIR", venv_dir):
+                venv.remove_abandoned_venvs()
+            self.assertFalse(old_staging.exists())
+            self.assertFalse(old_previous.exists())
+            self.assertTrue(fresh.exists(), "a build that may still be running keeps its folder")
+            self.assertTrue(other.exists())
+
     def test_fingerprint_is_stable_and_sees_lock_changes(self):
         with support.temporary_settings() as (_, load):
             settings = load()

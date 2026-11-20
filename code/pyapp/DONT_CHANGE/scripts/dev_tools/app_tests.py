@@ -20,7 +20,7 @@ from pyapp.DONT_CHANGE.scripts.dev_tools.common import prepare
 from pyapp.DONT_CHANGE.scripts.errors import SetupError
 
 # Where an app keeps its tests, in this order.
-TEST_FOLDERS = (Path(paths.BACKEND_DIR) / "tests", Path(paths.PYTHON_SCRIPTS_DIR) / "tests")
+TEST_FOLDERS = (Path(paths.PYTHON_SCRIPTS_DIR) / "tests",)  # code/tests
 
 
 def test_folders(candidates: Sequence[Path] = TEST_FOLDERS) -> List[Path]:
@@ -53,7 +53,7 @@ def cmd_run_tests(arguments: List[str]) -> None:
     folders = test_folders()
     if not folders:
         print_info(
-            "No tests found. Put files named test_*.py into code/pyapp/tests (or code/tests): plain\n"
+            "No tests found. Put files named test_*.py into code/tests: plain\n"
             "unittest.TestCase classes work as they are, or add pytest with add_packages for its style."
         )
         return
@@ -86,7 +86,7 @@ def cmd_run_tests(arguments: List[str]) -> None:
 NO_TESTS_RAN = 5
 NO_TESTS_HINT = (
     "No tests ran: the tests folder has no test yet. Name test files test_*.py and put\n"
-    "unittest.TestCase classes (or pytest functions) in them; see code/pyapp/tests/test_example.py."
+    "unittest.TestCase classes (or pytest functions) in them; see code/tests/test_example.py."
 )
 
 

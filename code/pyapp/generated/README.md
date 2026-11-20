@@ -1,6 +1,6 @@
 # generated
 
-Files the launcher creates for this app: mostly what uv needs to run it. The launcher creates and maintains this folder, so you normally don't edit anything here. Change packages and the Python version in `../developer_settings.py` or with the tools in `../dev_tools`.
+Files the launcher creates for this app: mostly what uv needs to run it. The launcher creates and maintains this folder, so you normally don't edit anything here. Change packages and the Python version in `../developer_settings.py` or with `../Open Developer Tools Menu.cmd`.
 
 | Item | What it is | Git |
 | --- | --- | --- |

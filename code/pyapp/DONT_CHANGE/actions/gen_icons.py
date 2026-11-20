@@ -19,6 +19,7 @@ from pyapp.DONT_CHANGE.backend_settings import (
     GENERATED_ICONS_RECORD_PATH,
     ICON_DIR,
     ICON_PATH,
+    ICON_PLACEHOLDER_ID,
     LOG_ICON_PATH,
     OPEN_CODE_ICON_PATH,
     SETTINGS_ICON_PATH,
@@ -39,9 +40,8 @@ ICON_PNG_DIR = ICON_DIR  # the project's own icon.png (replace it to change the 
 ICON_FALLBACK_PNG_DIR = DEFAULT_ICON_DIR
 ICON_DELETE_TIMEOUT_SECONDS = 2.0
 ICON_DELETE_RETRY_DELAY_SECONDS = 0.05
-_base = ("icon.png", "512x512:34babea5", "default_icon.png")
-# The ID identifies the shipped placeholder icon.png, not a developer's replacement art.
-# Update it only when changing the shipped placeholder image.
+_base = ("icon.png", ICON_PLACEHOLDER_ID, "default_icon.png")
+# ICON_PLACEHOLDER_ID identifies the shipped placeholder icon.png, not a developer's replacement art.
 ICON_GENERATION_SETTINGS = [
     # output ICO, base PNG, base PNG ID, fallback base PNG, bundled overlay PNG
     (ICON_PATH, *_base, None),

@@ -19,10 +19,10 @@ from __future__ import annotations
 
 import argparse
 import re
-import subprocess
 from pathlib import Path
 from typing import List, Tuple
 
+import _git
 import _ui
 from _paths import PROJECT_ROOT
 
@@ -36,8 +36,8 @@ MINIMUM_GIT = (2, 36)  # first version with includeIf "hasconfig:remote.*.url:"
 def git(*arguments: str) -> Tuple[int, str]:
     """(exit code, output) of a Git command in this repository; the error output if it failed."""
     # Fixed Git commands in this project's repository.
-    completed = subprocess.run(  # noqa: S603
-        ["git", "-C", str(PROJECT_ROOT), *arguments],  # noqa: S607
+    completed = _git.run(
+        ["git", "-C", str(PROJECT_ROOT), *arguments],
         capture_output=True,
         text=True,
         check=False,
@@ -97,8 +97,8 @@ def main() -> int:
     try:
         code, origin = git("remote", "get-url", "origin")
         version = git_version(git("--version")[1])
-    except FileNotFoundError:
-        _ui.error("Git was not found on PATH.")
+    except RuntimeError as problem:  # _git.run: Git is not installed
+        _ui.error(problem)
         return 2
     if code or not origin:
         _ui.error(

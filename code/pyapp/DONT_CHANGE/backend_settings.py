@@ -70,7 +70,7 @@ GENERATED_DIR = BACKEND_DIR + "\\generated"
 # tests/src/test_template_contract.py checks each list against the code.
 
 # Files in DONT_CHANGE that something outside it starts (paths relative to DONT_CHANGE).
-# The fallback start (code/pyapp/"Start without launcher.cmd"): runs the app when the rest of the
+# The fallback start (code/pyapp/fallback_start/"Start without launcher.cmd"): runs the app when the rest of the
 # launcher is broken, so it may only use the standard library, no other launcher file.
 FALLBACK_START_PATH = "actions\\start_without_launcher.py"
 PROTECTED_PATHS = [
@@ -109,7 +109,8 @@ PROTECTED_PROJECT_FILES = [
 ]
 # The commands the .cmd files outside DONT_CHANGE pass to B\run.bat ...
 PROTECTED_RUN_COMMANDS = ["setup", "icons", "icons-help", "dev"]
-# ... and to "run.bat dev" (the files in code/pyapp/dev_tools); "menu" is the dev menu itself.
+# ... and to "run.bat dev" (Open Developer Tools Menu.cmd, Compilation Tools.cmd); "menu" is the
+# dev menu itself.
 PROTECTED_DEV_TOOL_COMMANDS = [
     "compilation",
     "compilation-presets",
@@ -138,6 +139,23 @@ PROTECTED_DEV_TOOL_COMMANDS = [
     "remove-shortcuts",
     "status",
 ]
+# What main.py can use from "import pyapp_api" (DONT_CHANGE/app_api.py): apps call these by name.
+PROTECTED_APP_API_NAMES = [
+    "launched",
+    "notify",
+    "on_stop",
+    "set_progress",
+    "set_overlay",
+    "highlight",
+    "flash",
+    "bring_to_front",
+    "message_box",
+    "ask_yes_no",
+    "keep_awake",
+    "report_error",
+    "restart",
+    "on_new_start",
+]
 # Settings of developer_settings.py: a renamed or removed one silently stops working in existing
 # files (a new setting may be added: older files get its default from data/dev_settings_default.py).
 PROTECTED_SETTING_NAMES = [
@@ -158,11 +176,9 @@ PROTECTED_SETTING_NAMES = [
     "have_running_animation_in_taskbar",
     "windows_notification_on_success",
     "windows_notification_on_failure",
-    "windows_notification_on_keyboard_interrupt",
     "windows_notification_title",
     "windows_notification_message_on_success",
     "windows_notification_message_on_failure",
-    "windows_notification_message_on_keyboard_interrupt",
     "allow_minimize",
     "allow_maximize",
     "terminal_alpha",
@@ -242,6 +258,7 @@ PROTECTED = {
     "PROTECTED_RUN_COMMANDS": PROTECTED_RUN_COMMANDS,
     "PROTECTED_DEV_TOOL_COMMANDS": PROTECTED_DEV_TOOL_COMMANDS,
     "PROTECTED_SETTING_NAMES": PROTECTED_SETTING_NAMES,
+    "PROTECTED_APP_API_NAMES": PROTECTED_APP_API_NAMES,
 }
 PROTECTED_BASELINE_PATH = make_abs("data\\protected_baseline.json")
 
@@ -359,6 +376,10 @@ INSTALL_ENVIRONMENT_WHEN_GENERATING_SHORTCUTS = True
 
 ICON_DIR = BACKEND_DIR + "\\icons"
 ICON_PATH = ICON_DIR + "\\icon.ico"
+ICON_PNG_PATH = ICON_DIR + "\\icon.png"            # the source image, also the notification icon
+# Identifies the shipped placeholder icon.png ("Replace to change base icon"): while it is unchanged,
+# the bundled data/icons/default_icon.png is used instead. Update it only with a new placeholder.
+ICON_PLACEHOLDER_ID = "512x512:34babea5"
 SETTINGS_ICON_PATH = ICON_DIR + "\\settings.ico"
 STOP_ICON_PATH = ICON_DIR + "\\stop.ico"
 LOG_ICON_PATH = ICON_DIR + "\\log.ico"
@@ -400,6 +421,8 @@ EXCLUDED_FOLDERS_FOR_IMPORT_SEARCH = [
     ".hg",
     ".svn",
     "node_modules",
+    # The app's tests: what only they import (pytest, ...) is not a package the app itself needs.
+    "tests",
     # Installed packages, not the app's own code. Virtual environments under any name are
     # recognized by their pyvenv.cfg. Not "build" or "dist": those can be app packages.
     "site-packages",

@@ -13,7 +13,7 @@ import tempfile
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
-from typing import List, Optional
+from typing import Dict, List, Optional
 from unittest import mock
 
 from project_location import DONT_CHANGE
@@ -36,6 +36,23 @@ from pyapp.DONT_CHANGE.scripts.dev_tools import compilation, linux_compilation, 
 
 
 class LinuxCompilation(unittest.TestCase):
+    def test_menu_preset_choice_by_number_enter_or_cancel(self):
+        presets: Dict[str, Dict[str, object]] = {"development": {}, "standalone": {}, "onefile": {}, "gui": {}}
+        for answer, expected in (("4", "gui"), ("", "standalone"), ("q", None), ("onefile", "onefile")):
+            with self.subTest(answer=answer), mock.patch.object(
+                compilation, "_presets", return_value=presets
+            ), mock.patch.object(compilation, "_configured_preset", return_value="standalone"), mock.patch.object(
+                compilation, "ask", return_value=answer
+            ), mock.patch("builtins.print"):
+                self.assertEqual(compilation._ask_preset(), expected)
+
+    def test_cancelled_menu_choice_builds_nothing(self):
+        with mock.patch.object(compilation, "_ask_preset", return_value=None), mock.patch.object(
+            compilation, "load_options"
+        ) as load, mock.patch("builtins.print"):
+            compilation.cmd_compile_app(["--choose"])
+        load.assert_not_called()
+
     def test_dry_run_does_not_invoke_wsl_or_prepare_windows_environment(self):
         with mock.patch.object(linux_compilation, "wsl") as wsl, mock.patch.object(compilation, "prepare") as prepare:
             linux_compilation.cmd_compile_linux(["--dry-run"])
@@ -377,9 +394,7 @@ class CompilationTools(unittest.TestCase):
     def test_presets_and_cli_precedence_produce_distinct_expected_builds(self):
         with tempfile.TemporaryDirectory() as folder:
             config_file = Path(folder) / "settings.json"
-            with mock.patch.object(compilation, "CONFIG", config_file), mock.patch.object(
-                compilation, "LEGACY_CONFIG", Path(folder) / "legacy.json"
-            ):
+            with mock.patch.object(compilation, "CONFIG", config_file):
                 for preset, mode, variant in (
                     ("development", "standalone", "terminal"),
                     ("standalone", "standalone", "terminal"),
@@ -389,10 +404,12 @@ class CompilationTools(unittest.TestCase):
                     selected = compilation.load_options(preset, None, None)
                     self.assertEqual((selected.mode, selected.variant), (mode, variant))
                     self.assertEqual("--python-flag=unbuffered" in selected.extra_args, preset == "development")
+                    target = compilation.output_folder(selected)
+                    self.assertEqual(target, compilation.OUTPUT / "windows" / preset)
                     command = compilation.build_command(
-                        "python", Path("main.py"), mode, variant == "terminal", selected.extra_args, preset
+                        "python", Path("main.py"), mode, variant == "terminal", selected.extra_args, target
                     )
-                    self.assertIn(f"--output-dir={compilation.OUTPUT / preset / variant / mode}", command)
+                    self.assertIn(f"--output-dir={target}", command)
                 config_file.write_text(
                     json.dumps({"preset": "gui", "mode": "onefile", "variant": "terminal"}), encoding="utf-8"
                 )
@@ -403,9 +420,9 @@ class CompilationTools(unittest.TestCase):
                     (selected.preset, selected.mode, selected.variant), ("development", "standalone", "no_terminal")
                 )
 
-    def test_structured_options_and_legacy_extra_arguments_are_preserved(self):
+    def test_structured_options_and_extra_arguments_are_preserved(self):
         with tempfile.TemporaryDirectory() as folder:
-            config_file, legacy = Path(folder) / "settings.json", Path(folder) / "legacy.json"
+            config_file = Path(folder) / "settings.json"
             config_file.write_text(
                 json.dumps(
                     {
@@ -420,10 +437,7 @@ class CompilationTools(unittest.TestCase):
                 ),
                 encoding="utf-8",
             )
-            legacy.write_text(json.dumps({"extra_args": ["--include-module", "old_plugin"]}), encoding="utf-8")
-            with mock.patch.object(compilation, "CONFIG", config_file), mock.patch.object(
-                compilation, "LEGACY_CONFIG", legacy
-            ):
+            with mock.patch.object(compilation, "CONFIG", config_file):
                 selected = compilation.load_options(None, None, None)
             for option in (
                 "--jobs=2",
@@ -432,8 +446,6 @@ class CompilationTools(unittest.TestCase):
                 "--include-package-data=example",
                 "--include-data-files=config.json=config.json",
                 "--include-data-dir=assets=assets",
-                "--include-module",
-                "old_plugin",
                 "--lto=no",
             ):
                 self.assertIn(option, selected.extra_args)
@@ -456,8 +468,8 @@ class CompilationTools(unittest.TestCase):
                 {"extra_args": ["--run"]},
             )
             with mock.patch.object(compilation, "CONFIG", config_file), mock.patch.object(
-                compilation, "LEGACY_CONFIG", Path(folder) / "none"
-            ), mock.patch.object(compilation, "prepare") as prepare:
+                compilation, "prepare"
+            ) as prepare:
                 for value in invalid:
                     config_file.write_text(json.dumps(value), encoding="utf-8")
                     with self.subTest(value=value), self.assertRaises(compilation.SetupError):
@@ -495,6 +507,23 @@ class CompilationTools(unittest.TestCase):
             with self.assertRaises(compilation.SetupError):
                 compilation.validate_sources(sys.executable, [source])
 
+    def test_each_preset_replaces_its_own_build_and_keep_makes_a_dated_copy(self):
+        with tempfile.TemporaryDirectory() as folder:
+            output = Path(folder) / "compiled"
+            with mock.patch.object(compilation, "OUTPUT", output):
+                build = compilation.BuildOptions("gui", "standalone", "no_terminal", [])
+                target = compilation.output_folder(build)
+                self.assertEqual(target, output / "windows" / "gui")
+                compilation.reserve_output(target)
+                (target / "old.exe").write_text("previous build", encoding="utf-8")
+                compilation.reserve_output(target)
+                self.assertEqual(list(target.iterdir()), [], "no file of the previous build may remain")
+                changed = compilation.BuildOptions("gui", "onefile", "terminal", [])
+                self.assertEqual(compilation.output_folder(changed).name, "gui-onefile-terminal")
+                self.assertEqual(compilation.output_folder(build, platform="linux"), output / "linux" / "gui")
+                kept = compilation.output_folder(build, keep=True)
+                self.assertRegex(kept.name, r"^gui-\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}$")
+
     def test_build_variants_and_clean_refuse_unowned_output(self):
         for terminal in (False, True):
             command = compilation.build_command("python.exe", Path("main.py"), "standalone", terminal, ["--jobs=2"])
@@ -502,10 +531,10 @@ class CompilationTools(unittest.TestCase):
             self.assertEqual(command[-1], "main.py")
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)
-            output = root / "compilation"
+            output = root / "compiled"
             output.mkdir()
             with mock.patch.object(compilation, "OUTPUT", output), mock.patch.object(
-                compilation.paths, "GENERATED_DIR", str(root)
+                compilation.paths, "BACKEND_DIR", str(root)
             ):
                 with self.assertRaises(compilation.SetupError):
                     compilation.cmd_clean_compilation([])

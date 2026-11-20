@@ -1,3 +1,18 @@
+# What this file is for, in plain words:
+# - FileLock: lets only one launcher process at a time do something (e.g. install packages).
+# - atomic_json: writes a JSON file so that a reader never sees a half-written one.
+# - ProcessRegistry: one small file per running copy of the app in DONT_CHANGE\tmp\running, so a
+#   second start, the Stop shortcut and "focus the running window" can find the running copies.
+# - Job objects (further down): a Windows feature that groups the app with every process it starts,
+#   so Stop can end all of them at once.
+#
+# Windows API calls through ctypes, for readers new to them:
+#   ctypes.WinDLL("kernel32")   loads a Windows system library so Python can call its functions.
+#   .argtypes / .restype        tell ctypes the C types of a function's arguments and result; without
+#                               them 64-bit handles can be cut off silently.
+#   a "handle"                  a number Windows gives out for an open process, file, mutex, ...;
+#                               it must be closed again with CloseHandle.
+#   ctypes.byref(x)             passes x so the Windows function can write a result into it.
 """Run ownership, cross-process locks, and atomic state for the Windows launcher."""
 
 from __future__ import annotations
@@ -31,6 +46,8 @@ class FileLock:
 
     def __enter__(self: _FileLockT) -> _FileLockT:
         """Acquire or reenter the checkout's file lock, waiting up to the configured timeout."""
+        # msvcrt.locking locks the first byte of the lock file. Windows releases such a lock by itself when
+        # the process ends, even after a crash, so a crashed launcher can never block the others forever.
         import msvcrt
 
         held: Optional[Dict[str, List[Any]]] = getattr(_local_locks, "held", None)
@@ -112,6 +129,9 @@ def process_identity(pid: int) -> Generator[Optional[Dict[str, Any]], None, None
         wintypes.HANDLE,
         ctypes.POINTER(wintypes.DWORD),
     ]
+    # A process ID alone is not a safe identity: Windows reuses the number of an ended process. So a
+    # record stores the process's creation time and program path too, and both must still match.
+    # 0x1000 = PROCESS_QUERY_LIMITED_INFORMATION: enough to read these values, nothing more.
     handle = kernel.OpenProcess(0x1000, False, pid)
     if not handle:
         yield None
@@ -131,6 +151,7 @@ def process_identity(pid: int) -> Generator[Optional[Dict[str, Any]], None, None
             )
             and kernel.QueryFullProcessImageNameW(handle, 0, image, ctypes.byref(size))
             and kernel.GetExitCodeProcess(handle, ctypes.byref(exit_code))
+            # 259 = STILL_ACTIVE: the exit code Windows reports while a process is still running.
             and exit_code.value == 259
         ):
             yield {
@@ -168,12 +189,16 @@ class ProcessRegistry:
         kernel.ReleaseMutex.argtypes = [wintypes.HANDLE]
         kernel.CloseHandle.argtypes = [wintypes.HANDLE]
         identity = os.path.normcase(os.path.realpath(self.directory))
+        # A named mutex is a lock that Windows keeps in memory, shared by every process that opens the same
+        # name; the name comes from this project's folder, so different projects never block each other.
         name = "Global\\PyAppTemplateRegistry-" + hashlib.sha256(identity.encode("utf-8")).hexdigest()
         handle = kernel.CreateMutexW(None, False, name)
         if not handle:
             raise ctypes.WinError(ctypes.get_last_error())
         owned = False
         try:
+            # Wait for the mutex: 0 = got it, 128 = got it from a process that ended without releasing it,
+            # 258 = timeout (another launcher held it the whole time).
             result = kernel.WaitForSingleObject(handle, int(timeout * 1000))
             if result == 258:
                 raise TimeoutError("Another launcher is busy: " + str(self.directory))
@@ -461,9 +486,14 @@ def create_own_job() -> str:
         # PID plus creation time: unique, and never the name of another (earlier) instance's job.
         name = f"Local\\PyAppJob-{identity['pid']}-{identity['created']}"
     kernel = _job_api()
+    # A job object is a Windows container for processes: every process the watchdog starts later, and
+    # every process those start, lands in the same job. Stop then ends the whole job in one call.
     handle = kernel.CreateJobObjectW(None, name)
     if not handle:
         raise ctypes.WinError(ctypes.get_last_error())
+    # BREAKAWAY_OK: a process may still be started outside the job on purpose (restart helpers,
+    # notifications that must outlive the run). No "kill on close": programs the app opened survive
+    # a normal end of the app.
     limits = _JobBasicLimits(LimitFlags=JOB_OBJECT_LIMIT_BREAKAWAY_OK)
     kernel.SetInformationJobObject(
         handle, JOB_OBJECT_BASIC_LIMIT_INFORMATION_CLASS, ctypes.byref(limits), ctypes.sizeof(limits)

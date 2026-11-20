@@ -1,0 +1,59 @@
+{
+  "development": {
+    "description": "For trying out the build: a folder with a console that shows prints at once.",
+    "mode": "standalone",
+    "variant": "terminal",
+    "unbuffered": true,
+    "extra_args": []
+  },
+  "standalone": {
+    "description": "Recommended for sharing: a folder; copy all of it (the .dist folder).",
+    "mode": "standalone",
+    "variant": "terminal",
+    "unbuffered": false,
+    "extra_args": []
+  },
+  "onefile": {
+    "description": "One .exe that unpacks itself on every start (slower start). Try standalone first.",
+    "mode": "onefile",
+    "variant": "terminal",
+    "unbuffered": false,
+    "extra_args": []
+  },
+  "gui": {
+    "description": "Like standalone, without a console window: for GUI apps (show your own errors).",
+    "mode": "standalone",
+    "variant": "no_terminal",
+    "unbuffered": false,
+    "extra_args": []
+  },
+  "onefile-gui": {
+    "description": "One .exe without a console window: the usual way to hand over a GUI app.",
+    "mode": "onefile",
+    "variant": "no_terminal",
+    "unbuffered": false,
+    "extra_args": []
+  },
+  "small": {
+    "description": "A smaller folder: no docstrings or asserts, test and packaging tools left out.",
+    "mode": "standalone",
+    "variant": "terminal",
+    "unbuffered": false,
+    "extra_args": [
+      "--python-flag=no_docstrings",
+      "--python-flag=no_asserts",
+      "--noinclude-pytest-mode=nofollow",
+      "--noinclude-setuptools-mode=nofollow"
+    ]
+  },
+  "release": {
+    "description": "The build you ship: slower to build, smaller and faster, without development checks.",
+    "mode": "standalone",
+    "variant": "terminal",
+    "unbuffered": false,
+    "extra_args": [
+      "--deployment",
+      "--lto=yes"
+    ]
+  }
+}

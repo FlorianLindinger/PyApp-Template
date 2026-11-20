@@ -1,5 +1,6 @@
 """Public app environment: resolved paths and titles, disabled values, and no filesystem side effects."""
 
+import json
 import os
 import tempfile
 import unittest
@@ -56,6 +57,42 @@ class AppEnvironmentTests(unittest.TestCase):
                 **changes,
             }
         )
+
+    def test_the_log_says_how_each_run_ended_and_after_how_long(self):
+        with tempfile.TemporaryDirectory() as folder:
+            run = Path(folder)
+            self.assertEqual(
+                watchdog.end_note(watchdog.ExitMode.SUCCESS, run, None, 3.25),
+                "Ended normally after 3.2 s (exit code 0).",
+            )
+            self.assertIn(
+                "exit code 3221225477 (0xc0000005)", watchdog.end_note(watchdog.ExitMode.NO_REPORT, run, -1073741819, 1)
+            )
+            for report, expected in (
+                ({"exception_type": "KeyboardInterrupt"}, "Stopped with Ctrl+C after 2 min 5 s."),
+                ({"exception_type": "SystemExit", "system_exit_code": 3}, "Ended with sys.exit(3) after 2 min 5 s."),
+                (
+                    {"exception_type": "ValueError", "chain": [{"exception_only": ["ValueError: bad input\n"]}]},
+                    "Ended with an error after 2 min 5 s: ValueError: bad input",
+                ),
+            ):
+                (run / "traceback.json").write_text(json.dumps(report), encoding="utf-8")
+                self.assertEqual(watchdog.end_note(watchdog.ExitMode.APP_EXIT, run, None, 125), expected)
+            (run / watchdog.paths.STOP_REQUEST_FILE_NAME).write_text("stop", encoding="utf-8")
+            self.assertIn("Stopped by the Stop shortcut", watchdog.end_note(watchdog.ExitMode.APP_EXIT, run, None, 1))
+            log = run / "logs" / "run.log"
+            watchdog.log_note(str(log), "Started Example.")
+            self.assertRegex(
+                log.read_text(encoding="utf-8"), r"^---- \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}  Started Example\.\n$"
+            )
+            self.assertEqual(watchdog.duration_text(3700), "1 h 1 min")
+
+    def test_qt_messages_go_to_stderr_unless_the_app_decides_otherwise(self):
+        with mock.patch.object(watchdog, "clean_python_environment", return_value={}):
+            env = watchdog.app_environment(self.settings(), False, "", "app-id")
+            self.assertEqual(env["QT_FORCE_STDERR_LOGGING"], "1")
+            own = self.settings(environment_for_main_py={"QT_FORCE_STDERR_LOGGING": "0"})
+            self.assertEqual(watchdog.app_environment(own, False, "", "app-id")["QT_FORCE_STDERR_LOGGING"], "0")
 
     def test_paths_and_titles_are_resolved_without_creating_folders(self):
         with tempfile.TemporaryDirectory() as folder, mock.patch.dict(os.environ, {"PYAPP_START_DIR": folder}):

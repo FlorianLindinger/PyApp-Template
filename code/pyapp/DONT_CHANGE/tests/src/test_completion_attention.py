@@ -8,10 +8,13 @@ import io
 import json
 import os
 import subprocess
+import tempfile
 import unittest
+from pathlib import Path
 from types import SimpleNamespace
-from typing import Protocol
+from typing import Dict, Protocol
 from unittest import mock
+from urllib.parse import unquote
 from xml.etree import ElementTree as ET
 
 from project_location import CODE
@@ -155,11 +158,31 @@ class TaskbarTests(unittest.TestCase):
             ignored.assert_called_once()
 
 
+def helper(returncode: int, stdout: str = "", slow: bool = False) -> mock.Mock:
+    """A stand-in for the PowerShell helper process."""
+    process = mock.Mock(returncode=returncode)
+    if slow:
+        process.communicate.side_effect = subprocess.TimeoutExpired("powershell", 3)
+    else:
+        process.communicate.return_value = (stdout, "")
+    return process
+
+
 class NotificationTests(unittest.TestCase):
+    def test_a_slow_helper_does_not_hold_up_the_end_of_the_run(self):
+        slow = helper(0, slow=True)
+        with mock.patch.object(notifications.subprocess, "Popen", return_value=slow):
+            self.assertIsNone(notifications.show("title", "message", "app-id"))
+        slow.communicate.assert_called_once_with(timeout=notifications.WAIT_SECONDS)
+        slow.kill.assert_not_called()  # it keeps running and still shows the notification
+
+    def test_old_notifications_expire(self):
+        self.assertIn("$toast.ExpirationTime = [DateTimeOffset]::Now.AddDays(1)", notifications.TOAST_SCRIPT)
+
     @unittest.skipUnless(os.name == "nt", "Windows PowerShell only")
     def test_xml_and_powershell_keep_untrusted_text_as_data(self):
         text = '<tag> & "quotes" \' apostrophe $(Get-Process) ä 日本 {braces}'
-        with mock.patch.object(notifications.subprocess, "run", return_value=SimpleNamespace(returncode=0)) as run:
+        with mock.patch.object(notifications.subprocess, "Popen", return_value=helper(0)) as run:
             self.assertIsNone(notifications.show(text, text, "app-id"))
         args, kwargs = run.call_args
         command = args[0]
@@ -180,11 +203,7 @@ class NotificationTests(unittest.TestCase):
             notifications.complete(settings(), "success", "done", None, None)
             show.assert_not_called()
         with mock.patch.object(
-            notifications.subprocess,
-            "run",
-            return_value=SimpleNamespace(
-                returncode=2, stdout="Windows notification blocked: DisabledForUser", stderr=""
-            ),
+            notifications.subprocess, "Popen", return_value=helper(2, "Windows notification blocked: DisabledForUser")
         ):
             problem = notifications.show("title", "message", "app-id")
             if problem is None:
@@ -213,7 +232,47 @@ class NotificationTests(unittest.TestCase):
             process_exit.sys, "stdout", io.StringIO()
         ):
             process_exit.complete("failure", "run.log", message="bad <input>")
-        show.assert_called_once_with("Result: Example {app}", "bad <input> | failure | run.log | crash.txt", "app-id")
+        show.assert_called_once_with(
+            "Result: Example {app}",
+            "bad <input> | failure | run.log | crash.txt",
+            "app-id",
+            log_path="run.log",
+            crash_log_path="crash.txt",
+        )
+
+    def test_click_and_buttons_open_existing_logs_and_missing_ones_are_left_out(self):
+        with tempfile.TemporaryDirectory() as folder:
+            log = Path(folder, "run log.txt")
+            crash = Path(folder, "crash.txt")
+            image = Path(folder, "icon.png")
+            for file in (log, crash, image):
+                file.write_text("x", encoding="utf-8")
+            # Our own toast_xml() output, never an external document.
+            xml = ET.fromstring(  # noqa: S314
+                notifications.toast_xml("t", "m", log_path=str(log), crash_log_path=str(crash), image_path=str(image))
+            )
+            self.assertEqual(xml.attrib, {"activationType": "protocol", "launch": crash.resolve().as_uri()})
+            self.assertEqual(
+                [(a.attrib["content"], a.attrib["arguments"]) for a in xml.findall("./actions/action")],
+                [("Open crash log", crash.resolve().as_uri()), ("Open log", log.resolve().as_uri())],
+            )
+            self.assertIn("%20", xml.findall("./actions/action")[1].attrib["arguments"])
+            image_node = xml.find("./visual/binding/image")
+            if image_node is None:
+                self.fail("The app image must be shown.")
+            self.assertEqual(image_node.attrib["placement"], "appLogoOverride")
+            only_log = ET.fromstring(  # noqa: S314
+                notifications.toast_xml("t", "m", log_path=str(log), crash_log_path=str(Path(folder, "missing.txt")))
+            )
+            self.assertEqual(only_log.attrib["launch"], log.resolve().as_uri())
+            self.assertEqual([a.attrib["content"] for a in only_log.findall("./actions/action")], ["Open log"])
+            self.assertIsNone(only_log.find("./visual/binding/image"))
+        plain = ET.fromstring(notifications.toast_xml("t", "m"))  # noqa: S314
+        self.assertEqual(plain.attrib, {})
+        self.assertIsNone(plain.find("actions"))
+
+    def test_every_notification_replaces_the_previous_one(self):
+        self.assertIn("$toast.Tag = 'completion'", notifications.TOAST_SCRIPT)
 
     def test_notification_failure_does_not_replace_the_original_report(self):
         with mock.patch.object(notifications, "show", side_effect=OSError("PowerShell denied")), mock.patch.object(
@@ -223,6 +282,68 @@ class NotificationTests(unittest.TestCase):
                 settings(windows_notification_on_failure=True), "failure", "original error", None, None
             )
             self.assertIn("Windows notification failed", warn.call_args[0][0])
+
+
+def crash_report() -> Dict[str, object]:
+    """A small crash report as the wrapper writes it, with a secret in a local variable."""
+    return {
+        "exception_type": "ValueError",
+        "chain": [
+            {
+                "frames": [
+                    {"filename": "C:\\app\\main.py", "lineno": 3, "name": "<module>", "line": "load()", "app": True}
+                ],
+                "exception_only": ["ValueError: bad input"],
+            }
+        ],
+        "variables": [{"frames": [{"name": "load", "locals": {"password": "'hunter2'"}, "globals": {}}]}],
+        "script": "C:\\app\\main.py",
+        "python": "3.14.9",
+        "time": "2026-11-20 10:00:00",
+    }
+
+
+class CrashSharingTests(unittest.TestCase):
+    def test_the_shared_text_has_the_error_but_never_variable_values(self):
+        with mock.patch.object(process_exit, "settings", return_value=settings()):
+            text = process_exit.shareable_report(crash_report())
+        self.assertIn("ValueError: bad input", text)
+        self.assertNotIn("hunter2", text)
+
+    def test_the_issue_form_is_prefilled_and_stays_under_the_address_limit(self):
+        report = crash_report()
+        report["chain"][0]["exception_only"] = ["ValueError: " + "x" * 20000]  # type: ignore[index]
+        with mock.patch.object(process_exit, "settings", return_value=settings()):
+            url = process_exit.issue_form_url("https://github.com/you/app/issues/new", report)
+        self.assertTrue(url.startswith("https://github.com/you/app/issues/new?title=ValueError"))
+        self.assertIn("&body=", url)
+        self.assertLessEqual(len(url), process_exit.ISSUE_URL_LIMIT)
+        self.assertIn("shortened", unquote(url))
+        self.assertNotIn("hunter2", unquote(url))
+
+    def test_only_the_enabled_options_are_offered(self):
+        for copy, issue, expected in (
+            (True, "", ["v", "c"]),
+            (False, "", ["v"]),
+            (True, "https://example.org/new", ["v", "c", "i"]),
+        ):
+            s = settings(crash_report_copy_button=copy, crash_report_issue_url=issue)
+            with self.subTest(copy=copy, issue=issue), mock.patch.object(
+                process_exit, "settings", return_value=s
+            ), mock.patch.object(process_exit, "ask", return_value="") as ask:
+                process_exit.wait_for_report(crash_report())
+            prompt = ask.call_args.args[0]
+            for key in ("v", "c", "i"):
+                self.assertEqual(f"{key} = " in prompt, key in expected, prompt)
+
+    def test_copy_puts_the_report_on_the_clipboard(self):
+        with mock.patch.object(process_exit, "settings", return_value=settings()), mock.patch.object(
+            process_exit, "ask", side_effect=["c", ""]
+        ), mock.patch.object(process_exit, "copy_to_clipboard", return_value=True) as copy, mock.patch(
+            "builtins.print"
+        ):
+            process_exit.wait_for_report(crash_report())
+        self.assertIn("ValueError: bad input", copy.call_args.args[0])
 
 
 class CompletionSettingsTests(unittest.TestCase):

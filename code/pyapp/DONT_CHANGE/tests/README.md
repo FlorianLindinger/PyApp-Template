@@ -60,6 +60,8 @@ remain manual checks in [the release checklist](../docs/RELEASE_CHECKLIST.md).
 | `test_banner.py` | the banner font renders the app name, supports German letters and Latin-1, skips missing characters; the console font it needs |
 | `test_icons.py` | icons always use the bundled overlays; generated icons update silently, a question per icon for placed ones; small sizes in linear light; every `.ico` size |
 | `test_dev_menu.py` | the dev tools menu offers every command exactly once; every prompt can be cancelled; missing-package recovery; `run-tests` finds the app's tests folders (never the launcher's) and runs them with pytest or unittest |
+| `test_app_api.py` | `import pyapp_api`: the public names equal `PROTECTED_APP_API_NAMES`, every launcher feature does nothing without the launcher, `on_stop` callbacks (order, failures, once; after Ctrl+C in a real wrapper run, not after a normal end), forwarded starts reach a live listener and dead listeners are removed, `notify` and `restart` arguments |
+| `test_hidden_caches.py` | Hiding cache folders (only the listed places, already hidden, missing folders, never raising) and the Git failure messages of the template tools (command, Git's text, hints, missing Git) |
 | `test_fallback.py` | `actions/start_without_launcher.py` from a copy that has nothing else of the launcher: settings, arguments, environment, exit code, missing packages, unreadable settings; Linux shell LF, system/configured/versioned Python, relative paths, ignored generated environments and missing-Python/helper messages (shell execution on POSIX only) |
 | `test_windows.py` | Windows only: registry records with job names, Stop ends the whole job (incl. grandchildren), graceful Stop via Ctrl+C, file lock |
 
@@ -84,7 +86,7 @@ folders. They do not register an actual Windows sign-in entry or display a Ctrl+
 
 | File | Covers |
 | --- | --- |
-| `test_browser_terminal.py` | the launcher side: its shortcut, stable address and start link (never another program's), the console check that ignores an inherited variable |
+| `test_browser_terminal.py` | the launcher side: its shortcut, stable address and start link (never another program's), the console check that ignores an inherited variable; also runs the page's JavaScript tests (`browser_terminal/tests/test_web.cjs`) with Node.js when it is installed, as on GitHub's runners |
 | `test_host.py` | in `browser_terminal/tests`, the package itself: a real pseudoconsole, input, Ctrl+C, UTF-8, start at the page's size, icon/color/notify requests, file links, only the page may connect, a copy of the folder runs on its own |
 
 ### `git`: the Git hooks and their checks
@@ -118,4 +120,4 @@ folders. They do not register an actual Windows sign-in entry or display a Ctrl+
 | `test_template_contract.py` | what must stay stable: the repository name in the Actions, what existing projects expect in `DONT_CHANGE` (the `PROTECTED_*` lists of `backend_settings.py` match the code, files outside use nothing else, nothing was taken off since the last release before a MAJOR version; the fallback start uses only the standard library) |
 
 Manual release check (not automated): Setup, start twice, Stop on the example window, the
-open shortcuts, `status.cmd`, `change_python`, `make_self_contained`, a moved and a copied folder.
+open shortcuts, the `status`, `change-python` and `make-self-contained` dev tools, a moved and a copied folder.

@@ -10,12 +10,11 @@ environment it runs in, its icons and tools. Your own code lives one folder up, 
 | --- | --- | --- | --- |
 | [developer_settings.py](developer_settings.py) | All settings of the app: name, Python, packages, shortcuts, logs, windows | edit | commit |
 | [Open Developer Tools Menu.cmd](Open%20Developer%20Tools%20Menu.cmd) | Menu of all developer tools | use | commit |
-| [dev_tools/](dev_tools/README.md) | Double-click tools: packages, Python version, tests, status, cleanup | use | commit |
+| [compilation/](compilation/README.md) | Settings for building an .exe (or a Linux version) of the app; `Compilation Tools.cmd` | edit if you build | commit |
+| `compiled/` | The builds, made by the compilation tools | leave alone | ignored |
 | [icons/](icons/README.md) | The app's icons, all made from `icon.png` | replace `icon.png` | commit |
-| [tests/](tests/test_example.py) | The app's own tests (`test_*.py`); `run_all_tests.cmd` runs them and the launcher's tests | add tests | commit |
 | [generated/](generated/README.md) | What the launcher creates: the locked packages, the Python version, the environment | leave alone | partly |
-| [Start without launcher.cmd](Start%20without%20launcher.cmd) | Starts the app when the launcher itself is broken | use if needed | commit |
-| [Start without launcher --LINUX.sh](Start%20without%20launcher%20--LINUX.sh) | Direct Linux start with Python chosen in the shell file | use on Linux | commit |
+| [fallback_start/](fallback_start/Start%20without%20launcher.cmd) | `Start without launcher.cmd` starts the app when the launcher itself is broken; `Start without launcher --LINUX.sh` starts it on Linux | use if needed | commit |
 | [DONT_CHANGE/](DONT_CHANGE/README.md) | The launcher; replaced as a whole to update it | don't edit | commit |
 | `.gitignore` | Keeps the environment, caches and per-PC files out of Git | rarely | commit |
 
@@ -44,7 +43,7 @@ Use `pyapp_tools/check_repository.bat --why PATH` inside `DONT_CHANGE` to explai
 
 ## Direct start on Linux
 
-From `code/pyapp`, run:
+From `code/pyapp/fallback_start`, run:
 
 ```sh
 sh "Start without launcher --LINUX.sh"
@@ -87,18 +86,54 @@ in a comment above it. Among them:
 A mistake in the file is reported with its line at the next start. A setting missing in an older
 file gets its default from `DONT_CHANGE/data/dev_settings_default.py`.
 
-## dev_tools/
+## Developer tools
 
-Tools live in `packages/`, `python/`, `project/` and `compilation/` subfolders, with one `.cmd`
-per task; [`Open Developer Tools Menu.cmd`](Open%20Developer%20Tools%20Menu.cmd) here in `code/pyapp` lists them all. Each checks the settings and brings the
-environment up to date first. Details: [dev_tools/README.md](dev_tools/README.md).
+Double-click [`Open Developer Tools Menu.cmd`](Open%20Developer%20Tools%20Menu.cmd) for a numbered
+menu of every tool, or give it a command in a terminal opened in `code/pyapp`:
 
-- Packages: `list_packages` (what is installed and why), `outdated_packages`, `add_packages`,
-  `remove_packages`, `upgrade_packages`, `sync_packages`, `find_imports`, `export_requirements`,
-  `package_terminal`.
-- Python: `change_python`, `update_python`.
-- Project: `run_tests`, `status`, `clean`, `remove_shortcuts`, `make_self_contained` (makes the
-  folder run on other PCs without internet).
+```bat
+"Open Developer Tools Menu.cmd" add requests "numpy>=2"
+"Open Developer Tools Menu.cmd" sync
+"Open Developer Tools Menu.cmd" change-python 3.13
+```
+
+Quote requirements with `<`, `>` or `|`, which the command prompt would otherwise treat as
+redirection. Every tool checks `developer_settings.py` first and brings the environment up to
+date if needed. Close running app instances before changing packages or Python: Windows locks
+the files they use.
+
+| Command | What it does |
+| --- | --- |
+| `list-packages [--outdated]` | What is installed and why: the main packages with their limit, locked version and how many dependencies each brings in, then every dependency with the packages that need it. Shows packages that are missing, at another version or installed by hand (`sync` fixes them), and main packages no file in `code/` imports. `--outdated` also asks PyPI for newer versions. Changes nothing. |
+| `add [names]` | `uv add`: installs the packages, adds them to `packages` in `developer_settings.py` and updates `generated/uv.lock`. Asks for names when none are given. |
+| `remove [names]` | Lists `packages` and removes the chosen ones. |
+| `clear-packages` | Lists `packages`, asks, then empties it and syncs (back to 0 packages). The `requirements_path` file is kept. |
+| `upgrade [names]` | Upgrades all (or the named) packages within their limits, then syncs. Test the app and commit `uv.lock`. |
+| `sync` | Makes `generated/.venv` match `uv.lock` exactly and lists what it added or removed. |
+| `find-imports` | Scans the code folder offline for imports, maps them to packages and adds the ones you keep checked. Optional imports start unchecked. |
+| `reset-imports` | Replaces `packages` with what the code imports, after review. Keeps existing version limits. Static analysis misses plugins and dynamic imports: review removals. |
+| `install-requirements [path]` | `uv add -r`: adds the packages of a requirements file to `packages`. For a file that should stay the source of truth, use `requirements_path` instead. |
+| `terminal` | A command prompt with the environment active and uv on PATH. `uv add`/`uv remove` there are copied into `packages` on the next start; `uv pip install` is not recorded. |
+| `export` | Writes `pyapp/requirements.txt` (pinned) from `uv.lock` for tools that need that format. |
+| `change-python [version]` | Sets a new `python_version` and migrates: keep package versions, upgrade them, start with no packages, or undo. |
+| `update-python` | Installs the newest patch release of the project's Python (with a loose `python_version` also a newer minor version) and rebuilds the environment if needed. |
+| `compilation` | Opens the compilation menu; see [compilation/](compilation/README.md). |
+| `run-tests [arguments]` | Runs the app's tests in `code/tests`; arguments go to pytest or unittest. |
+| `status` | Settings, uv, Python, environment, lock file, shortcuts and errors the launcher ignored on purpose. Works without uv. |
+| `clean` | Deletes logs, crash logs or per-run diagnostics. |
+| `remove-shortcuts` | Removes every shortcut Setup created. Run Setup to create them again. |
+| `make-self-contained` | Copies uv and Python into `generated/` and switches the settings to them, so the folder runs on other PCs without internet. Shows what it changes and asks first. |
+| `test` | The launcher's own tests (`DONT_CHANGE/tests`), for template development. |
+
+Typical workflows:
+
+- **New dependency:** add it to `packages` and start the app, or run `add requests` → test →
+  commit `developer_settings.py` and `generated/uv.lock`.
+- **Existing code with imports:** `find-imports` → review → add.
+- **New Python version:** `change-python 3.13` → keep versions → test → commit
+  `developer_settings.py`, `generated/.python-version` and `generated/uv.lock`.
+- **A folder that runs offline on another PC:** `make-self-contained` → copy the whole folder
+  (a Git clone lacks the local uv, Python and packages) → run Setup there once.
 
 ## icons/
 
@@ -108,12 +143,13 @@ each with a small symbol (Settings, STOP, Logs, ...), at every size Windows need
 also be replaced by your own: the generator asks before replacing it. Details, including which
 icon is shown where: [icons/README.md](icons/README.md).
 
-## tests/
+## The app's tests: code/tests
 
-The app's own tests: files named `test_*.py` with `unittest.TestCase` classes (or pytest
-functions, once pytest is in `packages`). `dev_tools/project/run_tests.cmd` runs them with the app's
-environment; a `tests` folder in `code/` is found too. `test_example.py` checks that every Python
-file of the app compiles and shows how a test looks.
+The app's own tests live next to its code, in `code/tests`: files named `test_*.py` with
+`unittest.TestCase` classes (or pytest functions, once pytest is in `packages`).
+`code/tests/run_all_tests.cmd` (or `run-tests` in the developer tools) runs them with the app's
+environment. `test_example.py` checks that every Python file of the app compiles and shows how a
+test looks. What only the tests import (pytest, ...) is not suggested by *find-imports*.
 
 ## generated/
 
@@ -124,9 +160,9 @@ back into `packages`), the environment `.venv/`, and, depending on the settings,
 Python and download cache. Deleting `.venv/` is safe: the next start rebuilds it. Details:
 [generated/README.md](generated/README.md).
 
-## Start without launcher.cmd
+## fallback_start/
 
-If the launcher itself is broken, this still starts the app: with the app's environment
+If the launcher itself is broken, `Start without launcher.cmd` still starts the app: with the app's environment
 (`generated/.venv`), or with the global default Python when that is missing or broken. It first
 shows the main script, Python, the packages (installed or missing) and their folders. There is
 no setup, no package installation, no log, no crash log and no STOP shortcut; run Setup to repair

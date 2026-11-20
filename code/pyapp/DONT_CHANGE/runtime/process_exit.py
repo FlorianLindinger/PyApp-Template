@@ -1,3 +1,8 @@
+# Step 6, the last one (see B/W.bat for the first steps). The watchdog starts this file after the app
+# has ended. It reads how the run ended from the run folder (result.json, traceback.json), then does
+# what developer_settings.py asks for that outcome: print the readable report, write the crash log,
+# change the window's title, color and icon, play a sound, send a Windows notification, and close the
+# window or keep it open. main() decides the outcome; complete() carries out the actions.
 """Apply the configured completion behavior after the application (or the watchdog) ended.
 
 Arguments: exit_mode app_id new_terminal_was_created log_path script_path
@@ -240,24 +245,116 @@ def save_and_open_variables(report: Dict[str, Any], crash_log: Optional[str] = N
         print_error(f"The snapshot was saved, but could not be opened: {error}")
 
 
+def shareable_report(report: Dict[str, Any]) -> str:
+    """The report as plain text for sending to the developer: no variable values, no colors."""
+    s = settings()
+    lines = render({**report, "variables": []}, colors=False, date_format=s.error_date_format)
+    return f"{s.program_name} crashed.\n\n" + "\n".join(lines).strip() + "\n"
+
+
+def copy_to_clipboard(text: str) -> bool:
+    """Put text on the Windows clipboard as Unicode text; False if the clipboard is unavailable.
+
+    The clipboard API directly, not clip.exe: clip.exe keeps an invisible byte-order mark at the
+    start of the pasted text.
+    """
+    if os.name != "nt":
+        return False
+    import ctypes
+    import time
+    from ctypes import wintypes
+
+    user32 = ctypes.WinDLL("user32", use_last_error=True)
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    kernel32.GlobalAlloc.argtypes = [wintypes.UINT, ctypes.c_size_t]
+    kernel32.GlobalAlloc.restype = wintypes.HGLOBAL
+    kernel32.GlobalLock.argtypes = [wintypes.HGLOBAL]
+    kernel32.GlobalLock.restype = ctypes.c_void_p
+    kernel32.GlobalUnlock.argtypes = [wintypes.HGLOBAL]
+    kernel32.GlobalFree.argtypes = [wintypes.HGLOBAL]
+    user32.OpenClipboard.argtypes = [wintypes.HWND]
+    user32.SetClipboardData.argtypes = [wintypes.UINT, wintypes.HANDLE]
+    user32.SetClipboardData.restype = wintypes.HANDLE
+    data = text.replace("\r\n", "\n").replace("\n", "\r\n").encode("utf-16-le") + b"\0\0"
+    for _ in range(20):  # another program may hold the clipboard for a moment
+        if user32.OpenClipboard(None):
+            break
+        time.sleep(0.05)
+    else:
+        return False
+    try:
+        user32.EmptyClipboard()
+        memory = kernel32.GlobalAlloc(0x0002, len(data))  # GMEM_MOVEABLE: Windows owns it once set
+        if not memory:
+            return False
+        pointer = kernel32.GlobalLock(memory)
+        if not pointer:
+            kernel32.GlobalFree(memory)
+            return False
+        ctypes.memmove(pointer, data, len(data))
+        kernel32.GlobalUnlock(memory)
+        if not user32.SetClipboardData(13, memory):  # CF_UNICODETEXT
+            kernel32.GlobalFree(memory)
+            return False
+        return True
+    finally:
+        user32.CloseClipboard()
+
+
+# GitHub (and most issue forms) reject addresses longer than about 8000 characters.
+ISSUE_URL_LIMIT = 7500
+
+
+def issue_form_url(base: str, report: Dict[str, Any]) -> str:
+    """The issue form's address with title and body filled in; a long report is shortened."""
+    from urllib.parse import quote
+
+    title = error_summary(report, limit=120)
+    body = "```text\n" + shareable_report(report) + "```\n"
+    separator = "&" if "?" in base else "?"
+
+    def address(text: str) -> str:
+        return f"{base}{separator}title={quote(title)}&body={quote(text)}"
+
+    while len(address(body)) > ISSUE_URL_LIMIT and len(body) > 200:
+        body = body[: int(len(body) * 0.8)].rstrip() + "\n... (shortened; please attach the crash log)\n```\n"
+    return address(body)
+
+
 def wait_for_report(report: Optional[Dict[str, Any]], crash_log: Optional[str] = None) -> None:
-    """Keep the normal Enter-to-close behavior, adding an optional variable export for tracebacks."""
-    if not report or not report.get("variables"):
+    """Keep Enter-to-close, offering what applies: save variables, copy the report, open an issue form."""
+    s = settings()
+    options = []
+    if report and report.get("variables"):
+        options.append(("v", "save all traceback values and open them (not redacted)"))
+    has_error = bool(report and report.get("chain"))  # something worth sending
+    if has_error and getattr(s, "crash_report_copy_button", True):
+        options.append(("c", "copy the report to send it to the developer"))
+    if has_error and getattr(s, "crash_report_issue_url", ""):
+        options.append(("i", "report it on the issue page (you see the text before sending)"))
+    if not options:
         wait_for_enter()
         return
+    prompt = "Enter = close, " + ", ".join(f"{key} = {text}" for key, text in options) + ":"
     while True:
         try:
-            answer = (
-                ask("Enter = close, v = save all traceback locals/globals and open (values are not redacted):")
-                .strip()
-                .lower()
-            )
+            answer = ask(prompt).strip().lower()
         except (EOFError, KeyboardInterrupt):
             return
         if not answer or answer in ("q", "n"):
             return
-        if answer == "v":
+        if answer == "v" and report and report.get("variables"):
             save_and_open_variables(report, crash_log)
+        elif answer == "c" and report and getattr(s, "crash_report_copy_button", True):
+            if copy_to_clipboard(shareable_report(report)):
+                print_success("The report is on the clipboard: paste it into an email or message.")
+            else:
+                print_error("Could not copy the report; the crash log has the same text.")
+        elif answer == "i" and report and getattr(s, "crash_report_issue_url", ""):
+            import webbrowser
+
+            webbrowser.open(issue_form_url(s.crash_report_issue_url, report))
+            print_info("The issue form opened in the browser. Check the text, then submit it there.")
 
 
 def handle_missing_module(
@@ -382,6 +479,8 @@ def complete(
     keep_open: bool = False,
 ) -> Optional[str]:
     """Run the configured actions for success/failure/crash/keyboard_interrupt."""
+    # outcome is "success", "failure" or "keyboard_interrupt" (Ctrl+C). Each setting exists once per
+    # outcome, e.g. close_after_success; getattr(s, "close_after_" + outcome) reads the matching one.
     s = settings()
     close = getattr(s, "close_after_" + outcome)
     if log_path and getattr(s, "open_log_file_after_" + outcome):

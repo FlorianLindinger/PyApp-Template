@@ -5,6 +5,13 @@ rem ensure_runtime.bat when the cache is missing or stale. Only batch and progra
 rem (curl, tar), because company policies often block PowerShell scripts. No parenthesized blocks with
 rem paths in them: a folder such as "Program Files (x86)" would end the block early.
 rem PYAPP_STAMP comes from ensure_runtime.bat (see there).
+rem Batch notes for readers new to it (see B\W.bat for the basics):
+rem   call :name ...  runs the "subroutine" that starts at the line ":name" until its "exit /b",
+rem                   then continues after the call. %1, %2 (or %~1 without quotes) are its arguments.
+rem   goto name       jumps to ":name" and does not come back.
+rem   2>nul, >nul     hide error messages / normal output. "| " passes output to the next command.
+rem The steps: read three settings, find a uv (or download one), find a Python 3.8+ (or let uv
+rem install one), then run resolve_runtime.py with that Python, which chooses the final ones.
 set "stamp=%PYAPP_STAMP%"
 set "bootstrap=%~dp0"
 set "pyapp=%~dp0..\.."
@@ -15,6 +22,7 @@ set "user_data=%LOCALAPPDATA%"
 if not defined user_data set "user_data=%USERPROFILE%\AppData\Local"
 rem uv prints UTF-8, and the project may be in a folder with non-ASCII characters.
 set "old_codepage="
+rem Remember the current code page number (the part after ":" in chcp's output) to restore it at the end.
 for /f "tokens=2 delims=:." %%C in ('chcp') do set "old_codepage=%%C"
 chcp 65001 >nul
 call :main
@@ -52,6 +60,9 @@ exit /b 1
 rem ---------------------------------------------------------------- settings
 
 rem read_setting NAME VARIABLE: a top-level one-line setting; the last definition counts, as in Python.
+rem How: findstr /b /r finds lines that begin (/b) with the name followed by spaces and ":" or "=";
+rem "for /f" keeps the text after "=" of the last such line. Quotes are removed, and only the first
+rem word is kept, so a trailing "# comment" does not end up in the value.
 :read_setting
 set "%~2="
 set "setting_line="
@@ -67,6 +78,8 @@ exit /b 0
 
 rem ---------------------------------------------------------------- uv
 
+rem Tries the places uv is usually installed, in this order: this project's own copy, PATH, uv's
+rem standard install folders, the copy the launcher downloaded earlier. The first that runs wins.
 :find_uv
 set "boot_uv="
 set "blocked_uv="
@@ -79,6 +92,8 @@ call :try_uv "%USERPROFILE%\.cargo\bin\uv.exe"
 call :try_uv "%user_data%\PyApp-Template\uv\uv.exe"
 exit /b 0
 
+rem try_uv PATH: uses PATH if nothing was found yet, the file exists and "uv --version" runs. A uv that
+rem exists but does not run was blocked by Windows or an antivirus: remembered to explain that later.
 :try_uv
 if defined boot_uv exit /b 0
 if not exist "%~1" exit /b 0
@@ -87,6 +102,9 @@ if errorlevel 1 set "blocked_uv=%~1"
 if not errorlevel 1 set "boot_uv=%~1"
 exit /b 0
 
+rem Downloads uv from its official GitHub releases with curl (built into Windows 10 1803+), checks the
+rem download against the published SHA-256 checksum (a fingerprint of the file) and unpacks it with tar.
+rem PROCESSOR_ARCHITECTURE tells which build fits this PC (normal 64-bit Intel/AMD, ARM, or 32-bit).
 :download_uv
 set "curl=%SystemRoot%\System32\curl.exe"
 set "tar=%SystemRoot%\System32\tar.exe"
@@ -106,6 +124,7 @@ set "boot_tries=0"
 :new_boot_dir
 set /a boot_tries+=1
 if %boot_tries% gtr 20 goto no_boot_dir
+rem %RANDOM% is a random number from 0 to 32767; two of them make a folder name nobody else uses.
 set "boot_dir=%user_data%\PyApp-Template\uv-bootstrap-%RANDOM%%RANDOM%"
 if exist "%boot_dir%" goto new_boot_dir
 mkdir "%boot_dir%" 2>nul
@@ -169,6 +188,8 @@ exit /b 1
 
 rem ---------------------------------------------------------------- a Python to run resolve_runtime.py
 
+rem The UV_* variables below may be set by the user's own uv setup. Clearing or setting them here
+rem makes uv behave the same on every PC; they only affect this batch run, thanks to setlocal.
 :find_python
 set "UV_PYTHON="
 set "UV_PROJECT="
@@ -198,6 +219,7 @@ if /i "%python_source%"=="system" set "UV_PYTHON_DOWNLOADS=never"
 if not exist "%temporary%\" mkdir "%temporary%" 2>nul
 set "found_file=%temporary%\bootstrap_python.txt"
 rem Outside the project: uv would otherwise discover the project's own environment.
+rem pushd changes to a folder and remembers the old one; popd (further down) goes back.
 pushd "%TEMP%" 2>nul
 call :query_python
 if defined boot_python goto python_found
@@ -236,6 +258,7 @@ set "first_character=%request:~0,1%"
 for %%D in (0 1 2 3 4 5 6 7 8 9) do if "%first_character%"=="%%D" set "request="
 exit /b 0
 
+rem Asks uv for an installed Python 3.8 or newer and reads the path it prints from a temporary file.
 :query_python
 set "boot_python="
 "%boot_uv%" python find --no-project ">=3.8" >"%found_file%" 2>nul
@@ -256,6 +279,7 @@ exit /b 1
 
 rem ---------------------------------------------------------------- messages
 
+rem Prints a message framed by empty lines ("echo." prints an empty line).
 :error
 set "message=%~1"
 rem Through delayed expansion: a path with & in it would otherwise end the echo command.

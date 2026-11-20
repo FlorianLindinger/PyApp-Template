@@ -1,0 +1,7 @@
+{
+    // VS Code offers to install these when the folder is opened; nothing is installed without asking.
+    "recommendations": [
+        "ms-python.python",
+        "charliermarsh.ruff"
+    ]
+}

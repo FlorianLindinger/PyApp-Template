@@ -16,6 +16,7 @@ import re
 import subprocess
 from typing import List, Optional, Tuple
 
+import _git
 import _ui
 from _paths import PROJECT_ROOT
 from check_git_leaks import redacted_source
@@ -26,13 +27,13 @@ LAUNCHER_PREFIX = "code/pyapp/DONT_CHANGE/"
 
 def git(*arguments: str) -> bytes:
     # Fixed Git commands in the project folder.
-    completed = subprocess.run(  # noqa: S603
-        ["git", "-C", str(PROJECT_ROOT), *arguments],  # noqa: S607
+    completed = _git.run(
+        ["git", "-C", str(PROJECT_ROOT), *arguments],
         capture_output=True,
         check=False,
     )
     if completed.returncode:
-        raise RuntimeError(completed.stderr.decode("utf-8", "replace").strip() or "git failed")
+        raise RuntimeError(_git.explain(arguments, completed.returncode, completed.stderr))
     return completed.stdout
 
 

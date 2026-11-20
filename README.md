@@ -143,8 +143,9 @@ You normally edit three files:
 | `code/pyapp/developer_settings.py` | Name, Python, packages, logging and behavior. Sorted from important to rarely needed; every setting is explained in it. |
 | `code/settings.py` | Optional settings for the people using your app. Read them with `import settings`; the *(Settings)* shortcut opens this file. |
 
-The example simply reads a line with `input()` and echoes it with `print()`. Ctrl+C stops it;
-end-of-input closes it normally. It does not execute commands.
+The example `main.py` is a small window with one button per launcher feature: a notification,
+a long task with taskbar progress, flashing, a dialog, a handled error, a crash and a restart. It
+uses `import pyapp_api` and also runs with plain `python main.py`.
 `user_settings_path` in `developer_settings.py` selects the file opened by the Settings shortcut;
 its resolved path is available as `USER_SETTINGS_PATH`. It does not change imports or add its
 folder to `sys.path`. The launcher and fallback starts always include the `code` folder on the
@@ -174,31 +175,46 @@ pillow==11.*
 
 The block accepts what a `requirements.txt` accepts. Instead of editing it by hand you can:
 
-- run `code/pyapp/dev_tools/packages/add_packages.cmd` to add packages by name,
-- run `packages/find_imports.cmd` to scan your code offline, review what it found and add what is missing,
+- use *add* in `code/pyapp/Open Developer Tools Menu.cmd` to add packages by name,
+- use *find-imports* there to scan your code offline, review what it found and add what is missing,
 - or just start the app: a missing import offers to add the package and restart.
 
-A package removed from the block stays installed until you run `packages/sync_packages.cmd`.
+A package removed from the block stays installed until you run *sync*, which also lists what changed.
 
 ### Python version
 
 ```python
-python_version = "3.14"     # newest 3.14.x
-python_version = "3.14.6"   # exactly this version
-python_version = "3.14t"    # free-threaded build
-python_version = ""         # newest stable, chosen once and then kept
-python_version = "3.12-3.14" # newest inside the range (either order), chosen once and then kept
+python_version = "3.14"  # newest 3.14.x
+python_version = "3.14.6"  # exactly this version
+python_version = "3.14t"  # free-threaded build
+python_version = ""  # newest stable, chosen once and then kept
+python_version = (
+    "3.12-3.14"  # newest inside the range (either order), chosen once and then kept
+)
 ```
 
 `">=3.12"` and `"3"` work like a range. Anything uv understands works; for CPython on Windows x64
 that means 3.8.2 and newer. Changing it later is safe: a menu lets you keep your package versions,
 upgrade them or undo the change, and the new environment replaces the old one only once it works.
 
-**PyPy** is supported too. Run `code/pyapp/dev_tools/python/change_python.cmd pypy@3.11` (or set
-`python_version = "pypy@3.11"`, or `"pypy"` for the newest), and uv downloads PyPy like any other
-Python. The launcher keeps running on CPython; only your app runs on PyPy, with every shortcut,
-the no-terminal start and tkinter. Not every package has PyPy wheels, so packages with C extensions
-may need to build from source or may not install at all.
+**PyPy** works too (tested on PyPy 3.11: Setup, the environment, the app's tests, tkinter, the
+no-terminal start and crash reports). Run *change-python* with `pypy@3.11` in the developer tools
+(or set `python_version = "pypy@3.11"`, or `"pypy"` for the newest), and uv downloads PyPy like any
+other Python. The launcher itself keeps running on CPython; only your app runs on PyPy.
+Before switching, consider:
+
+- **Packages:** packages with C code need wheels built for PyPy on Windows (`pp311` on PyPI),
+  and many have none. uv then tries to build them, which needs the Visual Studio build tools,
+  or the install fails. Pure-Python packages always work.
+- **Python version:** PyPy trails CPython (currently 3.11 and 3.12), so the newest syntax and
+  standard-library features are missing.
+- **Speed:** PyPy's JIT makes long-running pure-Python code much faster, but starts slower, uses
+  more memory, and code that mostly calls C extensions (numpy, for example) is often slower. GUI
+  apps and apps that mostly wait on files or the network gain little.
+- **Cleanup timing:** objects are freed later than in CPython, so a file that is not closed
+  explicitly stays open for a while and `__del__` runs late. Use `with` for files and other resources.
+
+Changing back is the same *change-python* step with a CPython version.
 
 ### Icons
 
@@ -234,6 +250,9 @@ icon_path = os.environ.get("ICON_PATH")  # None without the launcher
 
 Taskbar grouping is already set up. To pass your own values, use `args_for_main_py` and
 `environment_for_main_py`.
+
+Qt's own messages, including the reason for a `qFatal()` crash, go to stderr and therefore into the
+log; set `QT_FORCE_STDERR_LOGGING` to `"0"` in `environment_for_main_py` to turn that off.
 
 ### Coding agents
 
@@ -316,7 +335,7 @@ run Setup. It installs the locked package versions and a Python matching your re
 - `code/pyapp/generated/.python-version`
 - `code/pyapp/generated/auto_generated_icons.json`
 
-**As a self-contained folder.** Run `code/pyapp/dev_tools/project/make_self_contained.cmd` and accept the
+**As a self-contained folder.** Run *make-self-contained* in the developer tools and accept the
 settings it shows. Copy the whole folder to the other PC, for example as a zip (a Git clone is not
 enough: Git ignores the local uv, Python and packages). Run Setup there once to create the shortcuts.
 Nothing is downloaded or installed. The folder now contains Python and third-party packages, so
@@ -364,7 +383,7 @@ All in `developer_settings.py`. Mistakes are reported with the setting's name wh
 | `have_running_animation_in_taskbar` | Moving indeterminate taskbar progress indicator while the app runs |
 | `title_after_success`, `title_after_failure`, `title_after_keyboard_interrupt` | Completion titles evaluated as f-strings directly in developer settings |
 | `sound_after_success`, `sound_after_failure` | WAV paths used by `play_sound_after_*`; `""` disables, environment variables expand |
-| `windows_notification_on_success`, `windows_notification_on_failure`, `windows_notification_on_keyboard_interrupt` | Windows completion notification switches, including runs that close immediately |
+| `windows_notification_on_success`, `windows_notification_on_failure` | Windows completion notification switches, including runs that close immediately |
 | `windows_notification_title`, `windows_notification_message_on_*` | Use f-strings for the program name; optional runtime fields: `{outcome}`, `{message}`, `{log_path}`, `{crash_log_path}` |
 | `browser_terminal_address` | The browser terminal's address (`""`: automatic and stable) |
 | `print_prepend`, `input_prepend` | Timestamps or other text before each line |
@@ -417,6 +436,8 @@ controls sound. The browser's own notification switches remain independent. Comp
 program-name expressions are evaluated once in developer settings; they are not formatted again.
 Only the four named runtime notification fields are substituted at exit, in one pass; other braces
 and braces inside substituted values remain literal. Text is escaped, never executed as PowerShell.
+Clicking a notification opens the crash log, or the log if there is none; its buttons open each.
+A new notification replaces the previous one of the same app instead of piling up.
 
 <details>
 <summary><b>Where uv, Python and the packages live</b></summary>
@@ -438,35 +459,56 @@ Settings marked `[bootstrap]` are read before any Python exists, so keep them on
 ### Logs and crash reports
 
 - **Log:** a UTF-8 file per run with your prints and inputs (optionally timestamped), including the
-  output of native code and child processes.
+  output of native code and child processes. Lines starting with `----` and the time are notes
+  from the launcher: when the run started, and how it ended (normally with its exit code, with an
+  error, Ctrl+C, Stop, the window closed with X, or a hard crash) and after how long.
 - **`.output.log`:** that raw output next to it, including the last moments before a hard crash;
   written in `code/pyapp/DONT_CHANGE/tmp/runs/<run>` while the app runs, and moved next to the log only when the
   app does not end normally and something was written to it.
 - **Crash log:** the error report, written after every failure and Ctrl+C.
+- **Sending a crash to you:** the crash window offers *c* to copy the report (on by default,
+  `crash_report_copy_button`) and, if you set `crash_report_issue_url` (e.g.
+  `"https://github.com/you/your-app/issues/new"`), *i* to open a pre-filled issue form. Variable values are
+  never included; paths and the error message are, and the user sees the text before sending it.
 
 Logging turns stdout and stderr into pipes. If your app needs a real console, set
 `enable_log_for_terminal_start = False`.
 
 ### Dev tools
 
-Double-click a tool in the `packages/`, `python/`, `project/` or `compilation/` subfolder of
-`code/pyapp/dev_tools`, or use **`code/pyapp/Open Developer Tools Menu.cmd`** for all of them.
+Double-click **`code/pyapp/Open Developer Tools Menu.cmd`** for a numbered menu of every tool, or
+give it a command in a terminal, e.g. `"Open Developer Tools Menu.cmd" add requests`.
 
-| Tool | Purpose |
+| Command | Purpose |
 | --- | --- |
-| `add_packages` / `remove_packages` | Add or remove packages and record the change |
-| `upgrade_packages` | Upgrade all or named packages within their limits |
-| `sync_packages` | Make the environment match `uv.lock` exactly |
-| `find_imports` | Find the packages your code imports and add the missing ones |
-| `package_terminal` | A command prompt with the environment active and uv on PATH |
-| `change_python` / `update_python` | Switch the Python version, or update to the newest patch |
-| `make_self_contained` | Put uv, Python and packages into this folder for offline use |
-| `export_requirements` | Write a pinned `requirements.txt` from `uv.lock` |
-| `status` | The state of uv, Python, the environment, the lock file and the shortcuts |
-| `clean` | Delete logs, crash logs or per-run diagnostics |
-| `remove_shortcuts` | Remove every shortcut and the start link Setup created |
+| `add` / `remove` / `clear-packages` | Add or remove packages and record the change; or remove all |
+| `upgrade` | Upgrade all or named packages within their limits |
+| `sync` | Make the environment match `uv.lock` exactly, listing what changed |
+| `list-packages` | What is installed and why; `--outdated` shows newer versions |
+| `find-imports` / `reset-imports` | Add the packages your code imports, or reduce the list to them |
+| `terminal` | A command prompt with the environment active and uv on PATH |
+| `change-python` / `update-python` | Switch the Python version, or update to the newest patch |
+| `make-self-contained` | Put uv, Python and packages into this folder for offline use |
+| `export` | Write a pinned `requirements.txt` from `uv.lock` |
+| `compilation` | Build an `.exe` (or a Linux version); settings in `code/pyapp/compilation` |
+| `run-tests` / `status` / `clean` / `remove-shortcuts` | Tests, state, cleanup and shortcut removal |
 
-See the [dev tools guide](code/pyapp/dev_tools/README.md) for typical workflows.
+The [code/pyapp guide](code/pyapp/README.md#developer-tools) describes every command and typical workflows.
+
+### GitHub Actions
+
+`github_actions` in `developer_settings.py` lists ready-made workflows for your app; Setup adds
+their files to `.github/workflows` and removes the ones you take out of the list. `"leaks"` checks
+every push and pull request to `main` for secrets and personal data such as home-folder paths and
+email addresses.
+
+### Linux
+
+The launcher is Windows only. On Linux, `code/pyapp/fallback_start/Start without launcher --LINUX.sh` starts the
+app directly with a Python you choose at the top of that file; it installs nothing. Shortcuts,
+logs, crash reports, the browser terminal, taskbar features and notifications are not available
+there, and packages must be installed into that Python yourself. Code that reads the launcher's
+variables with `os.environ.get` and a fallback runs unchanged.
 
 ### What it changes on your PC
 
@@ -485,7 +527,7 @@ To keep uv, Python and its cache inside the project, set `python_source`, `uv_pr
 
 ### Troubleshooting
 
-Start with `code/pyapp/dev_tools/project/status.cmd`: it shows the current state and any errors the
+Start with *status* in `code/pyapp/Open Developer Tools Menu.cmd`: it shows the current state and any errors the
 launcher ignored on purpose.
 
 | Problem | Solution |
@@ -523,10 +565,15 @@ stays the one place to edit; `uv add` in the package terminal is copied back int
 ├── code/
 │   ├── main.py                     ◀ your app
 │   ├── settings.py                 ◀ optional settings for your users
+│   ├── tests/                      ◀ your app's tests (run_all_tests.cmd)
+│   ├── pyapp_api.py                makes "import pyapp_api" work without the launcher
 │   └── pyapp/
 │       ├── developer_settings.py   ◀ app, Python and package settings
-│       ├── dev_tools/              packages/, python/, project/ and compilation/ tools
+│       ├── Open Developer Tools Menu.cmd  every developer tool
+│       ├── compilation/            settings for building an .exe (optional)
+│       ├── compiled/               the builds (ignored by Git)
 │       ├── icons/                  icon source images and generated icons
+│       ├── fallback_start/         start the app without the launcher (Windows, Linux)
 │       ├── generated/              lock file, .venv, local uv and Python (created by the launcher)
 │       └── DONT_CHANGE/            the launcher
 ├── logs/
@@ -541,8 +588,9 @@ None of these is needed to run your app:
 | --- | --- |
 | `.github/workflows/pyapp-template-*.yml` | The template's own test workflows; they do nothing in your app. Setup removes them if unchanged. |
 | `AGENTS.md` | Instructions for AI coding agents. Keep it if you use one. |
+| `code/pyapp_api.py` | Only needed if your code uses `import pyapp_api` and also runs without the launcher. |
 | `code/main.py`, `code/settings.py` | The example app and its settings. Point `main_script_path` at your main file; set `user_settings_path = ""` without a settings file. |
-| Single tools in `code/pyapp/dev_tools` | Each `.cmd` is optional; `code/pyapp/Open Developer Tools Menu.cmd` offers every command. |
+| `code/pyapp/compilation` | Only needed to build an `.exe`. The compilation tools then use the shipped presets. |
 | `code/pyapp/icons/*.cmd` | Icon helpers. To regenerate without them: `code\pyapp\DONT_CHANGE\B\run.bat icons`. |
 | `code/pyapp/DONT_CHANGE/tests`, `.../browser_terminal/tests` | The launcher's and the browser terminal's own tests. |
 | `code/pyapp/DONT_CHANGE/pyapp_tools` | Tools for maintaining the template (release, tests on all Pythons, leak check, Git hooks). Delete `tests` with it; keep it if `github_actions` contains `"leaks"`. |

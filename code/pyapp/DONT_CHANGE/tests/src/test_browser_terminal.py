@@ -26,6 +26,26 @@ if os.name == "nt":
 PYTHON = getattr(sys, "_base_executable", sys.executable)
 
 
+class WebPageTests(unittest.TestCase):
+    @unittest.skipUnless(shutil.which("node"), "Node.js is not installed (GitHub's runners have it)")
+    def test_the_browser_page_passes_its_javascript_tests(self):
+        """browser_terminal/tests/test_web.cjs: the page's own logic, run with Node's test runner."""
+        import subprocess
+
+        tests = DONT_CHANGE / "browser_terminal" / "tests" / "test_web.cjs"
+        # Node from PATH with the repository's own test file; no shell.
+        completed = subprocess.run(  # noqa: S603
+            [str(shutil.which("node")), "--test", str(tests)],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=120,
+            check=False,
+        )
+        self.assertEqual(completed.returncode, 0, completed.stdout[-3000:] + completed.stderr[-2000:])
+
+
 class LaunchModeTest(unittest.TestCase):
     @unittest.skipUnless(os.name == "nt", "Windows browser launcher")
     def test_developer_wrapping_default_reaches_the_browser_config(self):

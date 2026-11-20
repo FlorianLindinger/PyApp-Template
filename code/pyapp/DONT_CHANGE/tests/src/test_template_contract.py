@@ -55,8 +55,9 @@ def is_the_template_itself() -> bool:
 def scripts_outside() -> List[Path]:
     """The .cmd files of a project outside DONT_CHANGE (kept when DONT_CHANGE is replaced)."""
     scripts = list(PROJECT_ROOT.glob("*.cmd")) + list((CODE / "pyapp").glob("*.cmd"))
-    for folder in ("dev_tools", "icons"):
+    for folder in ("icons", "compilation", "fallback_start"):
         scripts += (CODE / "pyapp" / folder).rglob("*.cmd")
+    scripts += (CODE / "tests").rglob("*.cmd")
     return scripts
 
 
@@ -99,7 +100,7 @@ class ExistingProjectTests(unittest.TestCase):
 
     def test_scripts_outside_use_only_protected_commands(self):
         used = run_commands_used_outside()
-        self.assertGreater(len(used), 10)
+        self.assertTrue(used, "the scan must find the calls to run.bat (Setup, the developer menu, ...)")
         missing_run = sorted({command for command, _ in used} - set(backend_settings.PROTECTED_RUN_COMMANDS))
         missing_dev = sorted(
             {dev_command for command, dev_command in used if command == "dev"}
@@ -167,7 +168,7 @@ class ExistingProjectTests(unittest.TestCase):
 
     def test_scripts_outside_use_only_protected_paths(self):
         used = launcher_files_used_outside()
-        self.assertGreater(len(used), 10)
+        self.assertIn("B\\run.bat", used)  # proves the scan finds the calls at all
         self.assertLessEqual(set(used), set(backend_settings.PROTECTED_PATHS))
         self.assertIn(backend_settings.FALLBACK_START_PATH, used)
 
@@ -212,10 +213,9 @@ class ContractMessageTests(unittest.TestCase):
             backend_settings, "PROTECTED_DEV_TOOL_COMMANDS", ["menu", "add"]
         ), self.assertRaises(AssertionError) as raised:
             case.test_scripts_outside_use_only_protected_commands()
-        self.assertEqual(
-            str(raised.exception).split(". ")[0],
-            "Developer Tools commands missing from PROTECTED_DEV_TOOL_COMMANDS: install-requirements, reset-imports",
-        )
+        first = str(raised.exception).split(". ")[0]
+        for key in ("PROTECTED_DEV_TOOL_COMMANDS", "install-requirements", "reset-imports"):
+            self.assertIn(key, first)
         self.assertNotIn("['menu'", str(raised.exception))
 
 

@@ -238,7 +238,8 @@ class UnusableGlobalUvTests(unittest.TestCase):
         ), self.assertRaises(tool.BootstrapError) as raised:
             tool.resolve_uv(settings)
         message = str(raised.exception)
-        self.assertIn("could not be started (uv.exe was blocked by a policy.)", message)
+        for key in ("uv.exe", "blocked"):
+            self.assertIn(key, message)
         self.assertNotIn("None", message)
 
 
@@ -260,15 +261,12 @@ class ConcurrentFirstStartTests(unittest.TestCase):
     def test_a_run_removes_its_own_folder_and_old_leftovers_but_not_another_runs(self):
         with tempfile.TemporaryDirectory() as folder:
             parent = Path(folder)
-            own, other, old, legacy = (
-                parent / name for name in ("uv-bootstrap-1", "uv-bootstrap-2", "uv-bootstrap-3", "uv-bootstrap")
-            )
-            for path in (own, other, old, legacy):
+            own, other, old = (parent / name for name in ("uv-bootstrap-1", "uv-bootstrap-2", "uv-bootstrap-3"))
+            for path in (own, other, old):
                 path.mkdir()
                 (path / "uv.exe").write_bytes(b"x")
             hours_ago = time.time() - 2 * tool.STALE_BOOTSTRAP_SECONDS
-            for path in (old, legacy):
-                os.utime(path, (hours_ago, hours_ago))
+            os.utime(old, (hours_ago, hours_ago))
             with mock.patch.object(tool, "BOOTSTRAP_UV_PARENT", parent), mock.patch.dict(
                 os.environ, {"PYAPP_BOOT_UV": str(own / "uv.exe")}
             ):

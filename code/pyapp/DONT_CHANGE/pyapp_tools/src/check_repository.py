@@ -18,10 +18,10 @@ from __future__ import annotations
 import argparse
 import contextlib
 import os
-import subprocess
 from pathlib import Path
 from typing import Dict, Iterable, List, NamedTuple, Optional, Tuple
 
+import _git
 import _ui
 from _paths import PROJECT_ROOT
 
@@ -44,8 +44,8 @@ class Problem(NamedTuple):
 def git(*arguments: str, stdin: Optional[str] = None, root: Path = PROJECT_ROOT) -> str:
     """Output of a git command; "" when it fails. Bytes in and out, so Windows adds no CR."""
     # Fixed Git commands in the project folder.
-    completed = subprocess.run(  # noqa: S603
-        ["git", "-C", str(root), "-c", "core.quotepath=off", *arguments],  # noqa: S607
+    completed = _git.run(
+        ["git", "-C", str(root), "-c", "core.quotepath=off", *arguments],
         input=None if stdin is None else stdin.encode("utf-8"),
         capture_output=True,
         check=False,

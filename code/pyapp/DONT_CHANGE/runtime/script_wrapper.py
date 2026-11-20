@@ -1,3 +1,7 @@
+# Step 5 of a start (see B/W.bat for the first steps). The watchdog (runtime/bg_watchdog.py) starts
+# this file with the APP's Python, the one with your packages. It prepares the output and logging,
+# then runs code/main.py as if it had been started directly, and finally writes how it ended:
+# result.json (the exit code) and, after an error, traceback.json (the crash report).
 """Run main.py with isolated arguments, mirrored logging and serialized exit reports.
 
 Runs inside the application's interpreter, so it must work on every Python the
@@ -19,7 +23,7 @@ import threading
 from datetime import datetime
 from pathlib import Path
 from types import FrameType
-from typing import Any, Callable, List, Optional, TextIO, Tuple, TypeVar, Union
+from typing import Any, Callable, Dict, List, Optional, TextIO, Tuple, TypeVar, Union
 
 # The protocol module lives next to this file; import it before sys.path[0]
 # is switched to the application's folder. It stays in sys.modules as "_pyapp",
@@ -336,7 +340,8 @@ def setup_log_prints(
         if folder:
             Path(folder).mkdir(parents=True, exist_ok=True)
         # The application-wide log stream is closed by _finish_logging after all exit callbacks.
-        log_file = Path(log_path).open("w", encoding="utf-8", buffering=1)  # noqa: SIM115
+        # Appending: the watchdog has already written its "Started ..." note (each run has its own log).
+        log_file = Path(log_path).open("a", encoding="utf-8", buffering=1)  # noqa: SIM115
     # Registered before the application's callbacks, so it runs after them.
     atexit.register(_finish_logging)
     common = {
@@ -615,11 +620,59 @@ def install_keyboard_interrupt_policy(action: str, program_name: str, stop_reque
     signal.signal(signal.SIGINT, handle)
 
 
+def register_app_api(config: Dict[str, Any], script_path: str, app_root: str, context_lines: Tuple[int, int]) -> None:
+    """Make "import pyapp_api" give main.py the launcher's helpers (DONT_CHANGE/app_api.py).
+
+    Registered in sys.modules under that name, so it works from any folder and needs no file in
+    the app. Missing (e.g. a test copy without the launcher): main.py simply cannot import it.
+    """
+    try:
+        from pyapp.DONT_CHANGE import app_api
+    except Exception:
+        return
+    app_api._launched = True
+    app_api._launch.update(
+        launch_mode=config.get("launch_mode", ""),
+        app_id=config.get("shortcut_app_id", ""),
+        script=script_path,
+        app_root=app_root,
+        context_lines=list(context_lines),
+    )
+    sys.modules.setdefault("pyapp_api", app_api)
+    if os.name == "nt":
+        try:
+            import ctypes
+
+            def on_close(event: int) -> int:
+                # 2 = CTRL_CLOSE_EVENT (the window's X): Windows ends this process a few seconds
+                # after this returns, so the callbacks run here, in the handler's own thread.
+                if event == 2:
+                    run_stop_callbacks()
+                return 0
+
+            global _close_handler
+            _close_handler = ctypes.WINFUNCTYPE(ctypes.c_int, ctypes.c_uint)(on_close)
+            ctypes.windll.kernel32.SetConsoleCtrlHandler(_close_handler, True)
+        except Exception:  # noqa: S110 - nothing to report to the app; on_stop then covers Stop and Ctrl+C
+            pass
+
+
+_close_handler: Optional[object] = None  # kept referenced: ctypes would free a collected callback
+
+
+def run_stop_callbacks() -> None:
+    """Run the callbacks main.py registered with pyapp_api.on_stop (after a requested stop)."""
+    app_api = sys.modules.get("pyapp_api")
+    if app_api is not None and hasattr(app_api, "_run_stop_callbacks"):
+        app_api._run_stop_callbacks()
+
+
 def main() -> None:
     """Load the launch configuration, prepare logging and argv, then run main.py as __main__."""
     global report_path, result_path
     import json
 
+    # --- 1. Read wrapper.json, which the watchdog wrote into the run folder.
     if len(sys.argv) != 3 or sys.argv[1] != "--config":
         raise SystemExit("script_wrapper.py is started by the launcher with --config <file>.")
     with Path(sys.argv[2]).open(encoding="utf-8") as stream:
@@ -639,6 +692,8 @@ def main() -> None:
         if key.startswith("PYAPP_"):
             os.environ.pop(key, None)
 
+    # --- 2. Make main.py see the world as if it had been started directly: its own path and
+    # arguments in sys.argv, the launcher's private variables removed, output prepared for the log.
     sys.argv = [script_path, *list(config.get("args", []))]
     # With logging, stdout/stderr are pipes that would use the legacy ANSI code page and fail on
     # characters like "\u65e5"; the watchdog reads them as UTF-8.
@@ -687,12 +742,14 @@ def main() -> None:
     if input_prepend or log_input_prepend or browser_ui or hasattr(sys.stdout, "complete_input_line"):
         install_input_prefix(input_prepend, browser_ui)
 
+    # --- 3. Import paths: main.py's own folder first, then the code folder (for "import settings").
     # Keep script-local imports first; code-root modules remain importable from nested entry scripts.
     sys.path[0] = str(Path(os.path.normpath(str(Path(script_path).absolute()))).parent)
     code_folder = os.path.normpath(str(Path(app_root).absolute()))
     if os.path.normcase(code_folder) != os.path.normcase(sys.path[0]):
         sys.path.insert(1, code_folder)
 
+    register_app_api(config, script_path, app_root, context_lines)
     pending_background_error = capture_background_errors(
         script_path, report_path + ".background", app_root, context_lines
     )
@@ -710,16 +767,23 @@ def main() -> None:
             config.get("program_name", Path(script_path).stem),
             config.get("stop_request", ""),
         )
+        # --- 4. Run main.py. runpy runs a file as the main program, so its
+        # 'if __name__ == "__main__":' block runs too. This line returns when main.py has finished.
         runpy.run_path(script_path, run_name="__main__")
+        if config.get("stop_request") and Path(config["stop_request"]).is_file():
+            run_stop_callbacks()  # a GUI closed its window because Stop asked it to
         background_error = pending_background_error()
         if background_error is not None:
             raise background_error
         save_result(protocol.WrapperExit.SUCCESS)
+    # --- 5. main.py raised an error (or called sys.exit): save the crash report for process_exit.py.
     except BaseException as error:  # includes SystemExit (also successful ones) and KeyboardInterrupt
         if isinstance(error, SystemExit) and protocol.exit_code_is_success(error.code):
             background_error = pending_background_error()
             if background_error is not None:
                 error = background_error
+        if isinstance(error, KeyboardInterrupt):
+            run_stop_callbacks()  # pyapp_api.on_stop: Ctrl+C or the Stop shortcut ended the app
         protocol.save_report(error, script_path, report_path, app_root, context_lines)
         save_result(protocol.WrapperExit.APP_FAILED)
         sys.exit(protocol.WrapperExit.APP_FAILED)

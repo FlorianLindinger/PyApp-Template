@@ -28,6 +28,7 @@ import zipfile
 from pathlib import Path
 from typing import List, Optional, Tuple
 
+import _git
 import _ui
 from _paths import DONT_CHANGE_DIR, PROJECT_ROOT
 
@@ -114,13 +115,13 @@ def write_text(path: Path, text: str, crlf: bool) -> None:
 
 def git(*arguments: str) -> str:
     # Fixed Git commands in the project folder.
-    completed = subprocess.run(  # noqa: S603
-        ["git", "-C", str(PROJECT_ROOT), "-c", "core.quotepath=off", *arguments],  # noqa: S607
+    completed = _git.run(
+        ["git", "-C", str(PROJECT_ROOT), "-c", "core.quotepath=off", *arguments],
         capture_output=True,
         check=False,
     )
     if completed.returncode:
-        raise RuntimeError(completed.stderr.decode("utf-8", "replace").strip() or "git failed")
+        raise RuntimeError(_git.explain(arguments, completed.returncode, completed.stderr))
     return completed.stdout.decode("utf-8", "replace")
 
 

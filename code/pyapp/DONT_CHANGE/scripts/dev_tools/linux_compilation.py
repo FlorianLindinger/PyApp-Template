@@ -41,7 +41,7 @@ def wsl(distribution: str, arguments: List[str], capture: bool = False) -> str:
         raise SetupError("WSL is required. Install it with: wsl --install -d Ubuntu") from error
     if result.returncode:
         raise SetupError(
-            "Linux command failed. Run setup_linux.cmd first; WSL installation may require a restart.\n"
+            "Linux command failed. Run setup-linux first; WSL installation may require a restart.\n"
             + (result.stderr.strip() if capture else "See Linux output above.")
         )
     return result.stdout.strip() if capture else ""
@@ -52,7 +52,7 @@ def linux_path(distribution: str, path: Path) -> str:
 
 
 def cmd_setup_linux(arguments: List[str]) -> None:
-    """Install the Ubuntu Linux build prerequisites (sudo may request your Linux password)."""
+    """Install what a Linux build needs in WSL Ubuntu, once (may ask for your Linux password)."""
     parser = argparse.ArgumentParser(description=cmd_setup_linux.__doc__)
     parser.add_argument("--distribution", default="Ubuntu")
     parser.add_argument(
@@ -69,9 +69,7 @@ def cmd_setup_linux(arguments: List[str]) -> None:
         )
         if result.returncode:
             raise SetupError("WSL installation failed. Use an administrator terminal and see the Windows output above.")
-        print_info(
-            "Restart Windows if requested, finish Ubuntu's first-run user setup, then run setup_linux.cmd again."
-        )
+        print_info("Restart Windows if requested, finish Ubuntu's first-run user setup, then run setup-linux again.")
         return
     print_info("Installing Ubuntu packages: build-essential, patchelf, python3, curl, ca-certificates, git.")
     wsl(options.distribution, ["sudo", "apt-get", "update"])
@@ -90,20 +88,18 @@ def cmd_setup_linux(arguments: List[str]) -> None:
             "git",
         ],
     )
-    print_info("Linux prerequisites ready. compile_linux.cmd installs the requested Linux Python and app packages.")
+    print_info("Linux prerequisites ready. compile-linux installs the requested Linux Python and app packages.")
 
 
 def cmd_compile_linux(arguments: List[str]) -> None:
-    """Build a Linux app in WSL; return a portable archive, without changing the Windows environment."""
+    """Build a Linux version of the app in WSL; the result is an archive to copy to Linux."""
     parser = argparse.ArgumentParser(description=cmd_compile_linux.__doc__)
     parser.add_argument("--distribution", default="Ubuntu")
     parser.add_argument("--preset")
     parser.add_argument("--mode", choices=("standalone", "onefile"))
     parser.add_argument("--dry-run", action="store_true")
     options = parser.parse_args(arguments)
-    build = compilation.load_options(
-        options.preset, options.mode, None, compilation.FOLDER / "linux" / "linux_settings.json"
-    )
+    build = compilation.load_options(options.preset, options.mode, None, compilation.LINUX_CONFIG)
     if build.variant != "terminal":
         raise SetupError("Linux builds use terminal mode. Launch GUI apps from your Linux desktop as appropriate.")
     if any(arg.startswith(("--windows-", "--msvc", "--mingw")) for arg in build.extra_args):
@@ -112,17 +108,13 @@ def cmd_compile_linux(arguments: List[str]) -> None:
     validate(app)
     print_heading("Compile Linux app")
     print_info(f"WSL: {options.distribution}; Python: {app.python_version}; preset: {build.preset}; mode: {build.mode}")
-    print_info("Linux settings: " + str(compilation.FOLDER / "linux" / "linux_settings.json"))
+    print_info("Linux settings: " + str(compilation.LINUX_CONFIG))
     if options.dry_run:
         print_info("Nuitka options: " + subprocess.list2cmdline(build.extra_args))
         return
     root = compilation.OUTPUT
-    if root.exists() and not (root / compilation.MARKER).is_file():
-        raise SetupError(f"Refusing to reuse an unowned output folder: {root}")
-    root.mkdir(parents=True, exist_ok=True)
-    (root / compilation.MARKER).write_text("PyApp compilation output\n", encoding="utf-8")
-    target = root / "linux" / build.preset / build.mode
-    target.mkdir(parents=True, exist_ok=True)
+    target = compilation.output_folder(build, platform="linux")
+    compilation.reserve_output(target)
     distribution = options.distribution
     extra = []
     for argument in build.extra_args:

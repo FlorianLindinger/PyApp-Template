@@ -13,10 +13,18 @@ rem resolution, so an edit of the same length within a minute is only seen throu
 rem Not a hash: the one tool batch has for that, certutil, is distrusted by antivirus programs,
 rem and this runs on every launch. "for /f" reads the file without starting another program.
 
+rem ---- Build the "stamp": a text that changes whenever something changes that could need
+rem ---- another uv or Python. Batch notes, for readers new to it:
+rem   for %%F in ("file") do ...   runs the command once with %%F = that file. %%~tF is the file's
+rem                                last-change time and %%~zF its size in bytes.
 for %%F in ("%~dp0..\..\developer_settings.py") do set "PYAPP_STAMP_1=%%~tF#%%~zF"
+rem Empty the eight variables PYAPP_S_1 ... PYAPP_S_8 (set "NAME=" deletes a variable).
 for %%N in (1 2 3 4 5 6 7 8) do set "PYAPP_S_%%N="
 rem Validation keeps these settings unindented one-line literals; "name: type = value" also works.
 rem Like Python, the last assignment counts. A trailing comment is part of the value: harmless.
+rem Read developer_settings.py line by line. "for /f" splits each line at ":", "=" and spaces
+rem (delims); %%A gets the first word (the setting's name), %%B the rest (its value). Lines that
+rem start with # (comments) are skipped (eol=#). usebackq allows the quoted file name.
 for /f "usebackq eol=# tokens=1,* delims=:= " %%A in ("%~dp0..\..\developer_settings.py") do (
     if "%%A"=="python_version" set "PYAPP_S_1=%%B"
     if "%%A"=="python_source" set "PYAPP_S_2=%%B"
@@ -28,8 +36,10 @@ for /f "usebackq eol=# tokens=1,* delims=:= " %%A in ("%~dp0..\..\developer_sett
     if "%%A"=="use_system_certificates" set "PYAPP_S_8=%%B"
 )
 set "PYAPP_STAMP_2=none"
+rem "set /p NAME=<file" reads the first line of a file into a variable.
 if exist "%~dp0..\..\generated\.python-version" set /p PYAPP_STAMP_2=<"%~dp0..\..\generated\.python-version"
 rem The stamp is compared and passed on in quotes, so it must not contain any.
+rem %NAME:"=% is the value with every " replaced by nothing, i.e. removed.
 if defined PYAPP_S_1 set "PYAPP_S_1=%PYAPP_S_1:"=%"
 if defined PYAPP_S_2 set "PYAPP_S_2=%PYAPP_S_2:"=%"
 if defined PYAPP_S_3 set "PYAPP_S_3=%PYAPP_S_3:"=%"
@@ -45,6 +55,10 @@ set "PYAPP_STAMP_1="
 set "PYAPP_STAMP_2="
 set "PYAPP_CACHED_STAMP="
 
+rem ---- Fast path: tmp\runtime.cmd is written by the last successful run. It sets PYAPP_UV,
+rem ---- PYAPP_PYTHON and PYAPP_CACHED_STAMP. Reuse it only if the stamp is the same and both
+rem ---- programs still exist; any "goto resolve" below means: find them again (slow path).
+rem "call :load_cache" runs the lines from ":load_cache" down to its "exit /b", then comes back.
 if exist "%~dp0..\tmp\runtime.cmd" call :load_cache
 if not defined PYAPP_CACHED_STAMP goto resolve
 if not "%PYAPP_CACHED_STAMP%"=="%PYAPP_STAMP%" goto resolve
@@ -52,6 +66,7 @@ if not exist "%PYAPP_PYTHON%" goto resolve
 if not exist "%PYAPP_UV%" goto resolve
 exit /b 0
 
+rem ---- Slow path: something changed or this is the first start.
 :resolve
 rem The stamp goes over as PYAPP_STAMP, not as an argument: "call" would expand a "%" or "^" in it again.
 call "%~dp0resolve_runtime.bat"
@@ -64,6 +79,8 @@ if not defined PYAPP_PYTHON (
 )
 exit /b 0
 
+rem ---- Load tmp\runtime.cmd. A "code page" is how the console turns bytes into letters;
+rem ---- chcp shows or changes it. 65001 is UTF-8, needed for paths with non-ASCII letters.
 :load_cache
 rem The cache is UTF-8 and is read with code page 65001, unless its first line says it is
 rem plain ASCII (the usual case): then the three chcp calls are skipped.

@@ -35,6 +35,8 @@ GROUPS: Dict[str, Tuple[str, ...]] = {
         "test_dev_menu.py",
         "test_windows.py",
         "test_fallback.py",
+        "test_hidden_caches.py",
+        "test_app_api.py",
     ),
     # developer_settings.py, the environment, uv and Python, and what Setup changes in the project.
     "setup": (

@@ -12,7 +12,7 @@ pinned Python and the locked packages, runs the app and writes logs and crash re
 | `code/main.py` and other modules in `code/` | The app. `main_script_path` in `developer_settings.py` names the main file. |
 | `code/settings.py` | Optional settings for the people using the app, read with `import settings`. |
 | `code/pyapp/developer_settings.py` | The app's name, Python version, packages and behavior. Each setting is documented in the file. |
-| `code/pyapp/tests/` or `code/tests/` | The app's tests (`test_*.py`, pytest or unittest). |
+| `code/tests/` | The app's tests (`test_*.py`, pytest or unittest). |
 | `code/pyapp/icons/icon.png` | The source image for every icon. |
 
 Do not edit these:
@@ -35,13 +35,13 @@ input as "cancel", so pass the arguments it needs.
 | Show packages and anything that differs from `uv.lock` | `code\pyapp\DONT_CHANGE\B\run.bat dev list-packages` |
 | Make the environment match `uv.lock` | `code\pyapp\DONT_CHANGE\B\run.bat dev sync` |
 | Run the app's tests (arguments go to pytest/unittest) | `code\pyapp\DONT_CHANGE\B\run.bat dev run-tests -v` |
-| Run the app's and the launcher's tests | `code\pyapp\tests\run_all_tests.cmd` (waits for a key at the end) |
+| Run the app's tests and keep the window open | `code\tests\run_all_tests.cmd` (waits for a key at the end) |
 | Show uv, Python, environment and shortcut state | `code\pyapp\DONT_CHANGE\B\run.bat dev status` |
 | Regenerate the icons from `icon.png` | `code\pyapp\DONT_CHANGE\B\run.bat icons` |
 | Recreate the shortcuts (after moving the folder or changing shortcut settings or icons) | `code\pyapp\DONT_CHANGE\B\run.bat setup` |
 
-`code\pyapp\Open Developer Tools Menu.cmd` lists every tool, and [code/pyapp/dev_tools/README.md](code/pyapp/dev_tools/README.md)
-describes them. The app's Python is `code\pyapp\generated\.venv\Scripts\python.exe`.
+`code\pyapp\Open Developer Tools Menu.cmd` lists every tool and runs one when given its name;
+[code/pyapp/README.md](code/pyapp/README.md#developer-tools) describes them. The app's Python is `code\pyapp\generated\.venv\Scripts\python.exe`.
 
 ## Rules
 
@@ -50,6 +50,9 @@ describes them. The app's Python is `code\pyapp\generated\.venv\Scripts\python.e
   into the environment: such a package is not recorded, and the next exact sync removes it.
 - **Python version:** change `python_version` only when asked. Switching needs a migration that
   `dev change-python` runs, and it asks questions.
+- **Launcher helpers:** prefer `import pyapp_api` (notifications, `on_stop` for saving on Stop or
+  close, taskbar progress, dialogs, `keep_awake`, `report_error`, `restart`) over writing your own;
+  every function is safe without the launcher. See the README section on `pyapp_api`.
 - **Values from the launcher:** read them with a fallback, e.g.
   `os.environ.get("PROGRAM_NAME", "My App")` or `os.environ.get("ICON_PATH")`, so the app also
   runs with plain `python main.py`. The README section "Talking to the launcher" lists every variable.

@@ -11,6 +11,7 @@ import subprocess
 import sys
 import tempfile
 import textwrap
+import time
 import unittest
 from pathlib import Path
 from typing import Dict, Optional, Sequence
@@ -442,6 +443,134 @@ class WrapperTests(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertIn("P| hello", output)
         self.assertIn("L| hello", log.read_text(encoding="utf-8"))
+
+    # --- Scenarios app authors commonly hit (multiprocessing, crash kinds, live log) ---
+
+    def test_multiprocessing_pool_and_process_work_and_worker_errors_are_reported(self):
+        # spawn (the only start method on Windows) re-imports main.py in each child as __mp_main__.
+        source = """
+            import multiprocessing as mp
+
+            def square(x):
+                return x * x
+
+            def fail(_):
+                raise ValueError("worker broke")
+
+            def child(queue):
+                print("child output")
+                queue.put("from child")
+
+            if __name__ == "__main__":
+                mp.set_start_method("spawn", force=True)
+                with mp.Pool(2) as pool:
+                    print("squares", pool.map(square, range(5)))
+                queue = mp.Queue()
+                process = mp.Process(target=child, args=(queue,))
+                process.start()
+                print("queue", queue.get(timeout=30))
+                process.join(30)
+                print("child exit", process.exitcode)
+                with mp.Pool(1) as pool:
+                    pool.map(fail, [1])
+        """
+        log = Path(self.temporary_folder()) / "log.txt"
+        code, output, run = self.run_app(source, log_path=str(log), native_output=str(log) + ".output.log")
+        self.assertEqual(code, 1, output)
+        for text in ("squares [0, 1, 4, 9, 16]", "queue from child", "child exit 0"):
+            self.assertIn(text, output)
+        self.assertIn("child output", output)
+        report = self.report(run)
+        self.assertEqual(report["exception_type"], "ValueError")
+        self.assertIn("worker broke", report["message"] if "message" in report else json.dumps(report))
+        self.assertIn("squares [0, 1, 4, 9, 16]", log.read_text(encoding="utf-8"))
+
+    def test_crash_kinds_are_reported_as_what_they_are(self):
+        for name, source, expected_code, report_type in (
+            ("recursion", "def f():\n    f()\nf()\n", 1, "RecursionError"),
+            ("memory", "x = bytearray(1 << 62)\n", 1, "MemoryError"),
+            ("keyboard interrupt", "raise KeyboardInterrupt\n", 1, "KeyboardInterrupt"),
+            # ctypes turns a bad read into OSError; a real access violation needs native code.
+            ("ctypes bad read", "import ctypes\nctypes.string_at(0)\n", 1, "OSError"),
+        ):
+            with self.subTest(name):
+                code, output, run = self.run_app(source)
+                self.assertEqual(code, expected_code, output)
+                self.assertEqual(self.report(run)["exception_type"], report_type)
+        # A failing worker thread makes the run a failure, even when main.py itself finished.
+        thread = "import threading\nt = threading.Thread(target=lambda: 1 / 0)\nt.start()\nt.join()\n"
+        _, _, run = self.run_app(thread)
+        background = json.loads((run / "traceback.json.background").read_text(encoding="utf-8"))
+        self.assertEqual(background["exception_type"], "ZeroDivisionError")
+        # Hard crashes end the interpreter before it can write its completion report.
+        for name, source, expected_codes in (
+            ("access violation", "import faulthandler\nfaulthandler._read_null()\n", (0xC0000005,)),
+            # Windows 10+ ends abort() with a fail-fast (0xC0000409); older C runtimes return 3.
+            ("abort", "import os\nos.abort()\n", (3, 0xC0000409)),
+        ):
+            with self.subTest(name):
+                code, output, run = self.run_app(source)
+                self.assertIn(code & 0xFFFFFFFF, expected_codes, output)
+                self.assertFalse((run / "result.json").exists(), "a hard crash cannot finish its report")
+
+    def test_access_violation_leaves_a_python_traceback_in_the_log(self):
+        code, _, log, _ = self.run_logged(
+            "import faulthandler\n\ndef crash():\n    faulthandler._read_null()\n\ncrash()\n"
+        )
+        self.assertEqual(code & 0xFFFFFFFF, 0xC0000005)
+        self.assertIn("Windows fatal exception: access violation", log)
+        self.assertIn("line 4 in crash", log)
+
+    def test_log_is_written_while_the_app_runs(self):
+        folder = Path(self.temporary_folder())
+        log = folder / "log.txt"
+        go_on = folder / "go_on"
+        source = f"""
+            import time
+            from pathlib import Path
+            print("before the pause")
+            while not Path({str(go_on)!r}).exists():
+                time.sleep(0.05)
+            print("after the pause")
+        """
+        app = folder / "app"
+        run = folder / "run"
+        app.mkdir()
+        run.mkdir()
+        (app / "main.py").write_text(textwrap.dedent(source), encoding="utf-8")
+        settings = {
+            "script": str(app / "main.py"),
+            "args": [],
+            "traceback": str(run / "traceback.json"),
+            "result": str(run / "result.json"),
+            "ready": str(run / "ready"),
+            "app_root": str(app),
+            "log_path": str(log),
+        }
+        (run / "wrapper.json").write_text(json.dumps(settings), encoding="utf-8")
+        # Test subprocesses execute fixed fixture/helper code using the local interpreter.
+        process = subprocess.Popen(  # noqa: S603
+            [sys.executable, "-E", "-s", str(WRAPPER), "--config", str(run / "wrapper.json")],
+            cwd=str(app),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+        )
+        try:
+            for _ in range(200):
+                if log.exists() and "before the pause" in log.read_text(encoding="utf-8", errors="replace"):
+                    break
+                time.sleep(0.05)
+            else:
+                self.fail("The log did not show the first print while the app was still running.")
+            self.assertIsNone(process.poll(), "the app should still be waiting")
+            self.assertNotIn("after the pause", log.read_text(encoding="utf-8"))
+            go_on.write_text("", encoding="utf-8")
+            process.communicate(timeout=30)
+        finally:
+            if process.poll() is None:
+                process.kill()
+                process.communicate()
+        self.assertIn("after the pause", log.read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":

@@ -43,7 +43,7 @@ SHARED_UV_DIR = USER_DATA_DIR / "PyApp-Template" / "uv"
 SHARED_UV_EXE = SHARED_UV_DIR / "uv.exe"
 # resolve_runtime.bat downloads uv into a folder of its own, uv-bootstrap-<random>, so that two
 # first starts at the same time (two projects, or one started twice) never share one; each run
-# removes its own folder when done. (Older launchers used one folder, uv-bootstrap.)
+# removes its own folder when done.
 BOOTSTRAP_UV_PARENT = USER_DATA_DIR / "PyApp-Template"
 BOOTSTRAP_UV_PREFIX = "uv-bootstrap"
 # Held while the uv shared by all projects of this user (SHARED_UV_DIR, or the global one in
@@ -316,7 +316,7 @@ def remove_bootstrap_folders() -> None:
     if own is not None:
         shutil.rmtree(own, ignore_errors=True)
     try:
-        leftovers = list(BOOTSTRAP_UV_PARENT.glob(BOOTSTRAP_UV_PREFIX + "*"))
+        leftovers = list(BOOTSTRAP_UV_PARENT.glob(BOOTSTRAP_UV_PREFIX + "-*"))
     except OSError:
         return
     for folder in leftovers:

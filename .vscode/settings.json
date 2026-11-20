@@ -1,0 +1,49 @@
+{
+    // PyApp-Template defaults for VS Code. They apply only to this folder, and anything you set
+    // yourself (an interpreter you pick, your user settings) still wins. Change them freely.
+    // The app's Python environment, created by Setup. Until Setup has run, the file does not
+    // exist and VS Code asks for an interpreter; after Setup, reload the window once.
+    "python.defaultInterpreterPath": "${workspaceFolder}/code/pyapp/generated/.venv/Scripts/python.exe",
+    // New terminals in VS Code use that environment.
+    "python.terminal.activateEnvironment": true,
+    // The launcher puts "code" on the import path, so "import settings" works from any script.
+    "python.analysis.extraPaths": [
+        "code"
+    ],
+    // Not your code: the environment, the builds and the launcher's own tests.
+    "python.analysis.exclude": [
+        "**/code/pyapp/generated",
+        "**/code/pyapp/compiled",
+        "**/code/pyapp/DONT_CHANGE/tests",
+        "**/__pycache__"
+    ],
+    // The launcher hides these folders in Explorer, but VS Code ignores the hidden attribute.
+    "files.exclude": {
+        "**/__pycache__": true,
+        "**/.ruff_cache": true,
+        "**/.pytest_cache": true,
+        "**/.mypy_cache": true
+    },
+    // Large folders that are rebuilt by the launcher or the compilation tools.
+    "search.exclude": {
+        "**/code/pyapp/generated": true,
+        "**/code/pyapp/compiled": true
+    },
+    "files.watcherExclude": {
+        "**/code/pyapp/generated/**": true,
+        "**/code/pyapp/compiled/**": true
+    },
+    // Batch files must keep Windows line endings (CRLF), or cmd.exe can misread them.
+    "[bat]": {
+        "files.eol": "\r\n"
+    },
+    // Two trailing spaces are a line break in Markdown: keep them there.
+    "[markdown]": {
+        "files.trimTrailingWhitespace": false
+    },
+    "files.trimTrailingWhitespace": true,
+    "files.insertFinalNewline": true,
+    "cSpell.words": [
+        "pyapp"
+    ]
+}

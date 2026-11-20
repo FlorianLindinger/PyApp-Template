@@ -5,6 +5,17 @@ is a plain module with a main() function; the optional module variables `fail_me
 with {e}) and `pause_on_success` (keep the window open after success) customize the policy.
 """
 
+# Where this file sits: a shortcut runs a file in B\ (e.g. B\W.bat), which runs bootstrap\run.bat,
+# which runs THIS file with the launcher's Python. This file then runs the actual tool, for example
+# actions/start_program.py (start the app) or actions/setup.py (Setup).
+#
+# Python notes for readers new to it:
+#   import x            makes another module (file) usable as x; "from x import y" takes one name.
+#   def name(...):      defines a function; the indented lines below belong to it.
+#   """text"""          right under a def: the function's description (docstring).
+#   try: ... except E:  run the code; if error E happens inside, continue in the except part.
+#   f"...{value}..."    a text with values filled in.
+#   if __name__ == "__main__":  true only when this file is run directly, not when imported.
 from __future__ import annotations
 
 import os
@@ -46,11 +57,25 @@ def acknowledge(message: str) -> None:
             input(message)
 
 
+def acknowledge_failure() -> None:
+    """Wait after a failure, unless bootstrap/run.bat does that itself once this process has ended.
+
+    run.bat waits after any failure (also when Python cannot even start this file), so asking here
+    as well would make the user press a key twice.
+    """
+    if os.environ.get("PYAPP_BATCH_PAUSES_ON_FAILURE") == "1":
+        return
+    acknowledge("Press Enter to close this window.")
+
+
+# The heart of this file. "-> int" means the function returns a whole number: the exit code
+# (0 = success). Errors are sorted into four kinds below, from expected to unexpected.
 def run_file(path: Union[str, Path], arguments: Sequence[str] = ()) -> int:
     """Load the tool, run its main() under the shared failure policy, with at most one prompt."""
     namespace = {}
     sys.argv = [str(path), *arguments]
     try:
+        # Load the tool file like an imported module, then call the main() function defined in it.
         namespace = runpy.run_path(str(path), run_name="_pyapp_entry")
         main = namespace["main"]
         result = main()
@@ -60,14 +85,25 @@ def run_file(path: Union[str, Path], arguments: Sequence[str] = ()) -> int:
         namespace = getattr(main, "__globals__", namespace)
         # A tool sets pause_on_success = True to keep its window open after success.
         pause_on_success = namespace.get("pause_on_success", False)
-        if pause_on_success:
+        if code != 0:
+            _show_console()  # a minimized start window must not wait unseen
+            acknowledge_failure()
+        elif pause_on_success:
             acknowledge("Press Enter to close this window.")
         return code
+    # 1. The tool called sys.exit(code): use its code.
     except SystemExit as error:
-        return normalize_exit_code(error.code)
+        code = normalize_exit_code(error.code)
+        if code != 0:
+            _show_console()
+            acknowledge_failure()
+        return code
+    # 2. The user pressed Ctrl+C: 130 is the usual exit code for that.
     except KeyboardInterrupt:
         print("\nStopped with Ctrl+C.", file=sys.stderr)
         return 130
+    # 3. and 4. Any other error: a known problem (bad setting, failed download) gets a short message;
+    # anything else is a bug and gets the full traceback, so it can be reported and fixed.
     except Exception as error:
         if isinstance(error, LaunchCancelled):
             print("Launch cancelled.")
@@ -78,14 +114,14 @@ def run_file(path: Union[str, Path], arguments: Sequence[str] = ()) -> int:
             _show_console()
             print(file=sys.stderr)
             _print_error(problem)
-            acknowledge("Press Enter to close this window.")
+            acknowledge_failure()
             return 1
         _show_console()
         description = namespace.get("fail_message", "Tool failed: {e}")
         print(file=sys.stderr)
         _print_error(description.format(e=error))
         traceback.print_exc()
-        acknowledge("Press Enter to close this window.")
+        acknowledge_failure()
         return 1
 
 

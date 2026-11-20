@@ -1,6 +1,6 @@
 """Fallback start: run the app's main script without the launcher, for when the launcher is broken.
 
-Started by code/pyapp/"Start without launcher.cmd" or "Start without launcher --LINUX.sh".
+Started by "Start without launcher.cmd" or "Start without launcher --LINUX.sh" in code/pyapp/fallback_start.
 The Windows script tries the app's environment before system Python; the Linux script uses its
 python_command setting or system Python on PATH. This file is the
 only one of DONT_CHANGE that runs: it imports nothing else from the launcher, and
@@ -298,12 +298,15 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    # "Start without launcher.cmd" waits after a failure itself (also when this file cannot even
+    # start); then only a success waits here. Removed first, so the app does not inherit it.
+    batch_pauses_on_failure = os.environ.pop("PYAPP_BATCH_PAUSES_ON_FAILURE", "") == "1"
     exit_code = 1
     try:
         exit_code = main()
     finally:
         # Double-clicked, the window would close before anything could be read.
-        if os.name == "nt" and sys.stdin.isatty():
+        if os.name == "nt" and sys.stdin.isatty() and not (exit_code != 0 and batch_pauses_on_failure):
             with contextlib.suppress(EOFError, KeyboardInterrupt):
                 input(style("\n Press Enter to close this window.", "90"))
     sys.exit(exit_code)

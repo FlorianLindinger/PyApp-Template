@@ -30,11 +30,13 @@ class RunFileTests(unittest.TestCase):
         path.write_text(textwrap.dedent(source), encoding="utf-8")
         return path
 
-    def run_tool(self, source: str, arguments: Sequence[str] = ()):
+    def run_tool(self, source: str, arguments: Sequence[str] = (), batch_pauses: bool = False):
         prompts: List[str] = []
+        # The test runner itself is started through run.bat, which sets this variable.
+        environment = {"PYAPP_BATCH_PAUSES_ON_FAILURE": "1" if batch_pauses else ""}
         with mock.patch.object(entrypoint, "acknowledge", prompts.append), mock.patch.object(
             entrypoint, "_show_console"
-        ):
+        ), mock.patch.dict(os.environ, environment):
             code = entrypoint.run_file(self.tool(source), arguments)
         return code, prompts
 
@@ -59,6 +61,23 @@ class RunFileTests(unittest.TestCase):
         source = "pause_on_success = True\ndef main():\n    global pause_on_success\n    pause_on_success = False\n"
         self.assertEqual(self.run_tool(source)[1], [], "main() turning the pause off must be respected")
         self.assertEqual(len(self.run_tool("def main():\n    raise ValueError('x')\n")[1]), 1, "failures always wait")
+
+    def test_after_a_failure_only_run_bat_waits_when_it_says_so(self):
+        # run.bat waits after every failure itself (also when Python cannot start the entrypoint):
+        # the entrypoint must not ask a second time, but a success with pause_on_success still asks.
+        for source in (
+            "def main():\n    raise ValueError('x')\n",
+            "from pyapp.DONT_CHANGE.scripts.errors import SetupError\ndef main():\n    raise SetupError('x')\n",
+            "import sys\ndef main():\n    sys.exit(3)\n",
+            "pause_on_success = True\ndef main():\n    return 2\n",
+        ):
+            with self.subTest(source=source):
+                self.assertEqual(self.run_tool(source, batch_pauses=True)[1], [])
+                self.assertEqual(len(self.run_tool(source)[1]), 1, "without run.bat the entrypoint waits itself")
+        self.assertEqual(
+            self.run_tool("pause_on_success = True\ndef main():\n    pass\n", batch_pauses=True)[1],
+            ["Press Enter to close this window."],
+        )
 
     def test_expected_problems_are_recognised_by_class(self):
         self.assertEqual(entrypoint.expected_problem(SetupError("fix this")), "fix this")

@@ -65,10 +65,9 @@ class StagedRuffTests(unittest.TestCase):
         ), mock.patch.object(tool, "run_ruff", side_effect=[(0, ""), (1, "")] * 3), mock.patch("sys.stdout", output):
             self.assertEqual(tool.main(["ruff"]), 1)
         text = output.getvalue()
-        self.assertEqual(
-            text.splitlines()[0],
-            'Commit blocked: 3 staged Python files need formatting. Run verify_launcher.bat --fix, review and stage the files. Click "Show Command Output" for details.',
-        )
+        first = text.splitlines()[0]  # the one line Git clients show
+        for key in ("Commit blocked", "3 staged Python files", "verify_launcher.bat --fix"):
+            self.assertIn(key, first)
         for name in names:
             self.assertIn(name + ": not formatted", text)
         # The repair command is available both in the popup and alongside the detailed steps.

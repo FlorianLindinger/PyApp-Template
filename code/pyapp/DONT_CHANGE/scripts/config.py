@@ -73,7 +73,6 @@ BOOLEANS = (
     "have_running_animation_in_taskbar",
     "windows_notification_on_success",
     "windows_notification_on_failure",
-    "windows_notification_on_keyboard_interrupt",
     "hide_minimize_button",
     "hide_maximize_button",
     "always_on_top",
@@ -88,6 +87,7 @@ BOOLEANS = (
     "enable_log_for_no_terminal_start",
     "enable_crash_log",
     "open_crash_log_after_failure",
+    "crash_report_copy_button",
     "play_sound_after_success",
     "play_sound_after_failure",
     "log_path_is_relative_to_start_folder_if_relative",
@@ -250,10 +250,6 @@ def fill_missing_settings(module: Union[ModuleType, SimpleNamespace]) -> List[st
     """
     if hasattr(module, "MISSING_SETTINGS_FILLED_IN"):
         return module.MISSING_SETTINGS_FILLED_IN
-    # The renamed setting wins; older project files can keep their previous spelling.
-    values = vars(module)
-    if "start_in_shortcut_position" not in values and "start_in_shortcut_position" in values:
-        values["start_in_shortcut_position"] = values["start_in_shortcut_position"]
     filled = []
     try:
         expressions = default_setting_expressions()
@@ -507,8 +503,14 @@ def validate(module: Optional[Union[ModuleType, SimpleNamespace]] = None) -> Non
             lambda v: isinstance(v, str),
             "use text; evaluate program_name with an f-string in developer_settings.py",
         )
-        notification = "windows_notification_message_on_" + outcome
-        need(notification, lambda v: isinstance(v, str), "use text with optional runtime notification fields")
+        if outcome != "keyboard_interrupt":  # Ctrl+C happens in front of the window: no notification
+            notification = "windows_notification_message_on_" + outcome
+            need(notification, lambda v: isinstance(v, str), "use text with optional runtime notification fields")
+    need(
+        "crash_report_issue_url",
+        lambda v: isinstance(v, str) and (v == "" or v.startswith("https://")),
+        'use an https:// address of an issue form, or "" for none',
+    )
     need(
         "windows_notification_title",
         lambda v: isinstance(v, str),

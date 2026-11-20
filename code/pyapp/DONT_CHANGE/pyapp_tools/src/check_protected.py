@@ -15,6 +15,7 @@ import subprocess
 import sys
 from typing import List
 
+import _git
 import _ui
 from _paths import DONT_CHANGE_DIR, PROJECT_ROOT
 from check_all import with_links
@@ -25,8 +26,8 @@ RUNNER = DONT_CHANGE_DIR / "tests" / "src" / "run_regressions.py"
 
 def staged_paths() -> List[str]:
     # A fixed Git command in the project folder.
-    completed = subprocess.run(  # noqa: S603
-        ["git", "-C", str(PROJECT_ROOT), "diff", "--cached", "--name-only", "-z"],  # noqa: S607
+    completed = _git.run(
+        ["git", "-C", str(PROJECT_ROOT), "diff", "--cached", "--name-only", "-z"],
         capture_output=True,
         check=False,
     )

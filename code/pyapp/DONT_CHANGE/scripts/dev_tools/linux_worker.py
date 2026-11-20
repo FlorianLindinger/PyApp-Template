@@ -22,10 +22,10 @@ def build(job_path: Path) -> None:
     """Use Linux-native scratch storage; remove the build environment on every handled exit."""
     job = json.loads(job_path.read_text(encoding="utf-8"))
     if sys.platform != "linux":
-        raise RuntimeError("This worker must run inside Linux, through compile_linux.cmd.")
+        raise RuntimeError("This worker must run inside Linux, through the compile-linux dev tool.")
     missing = [tool for tool in ("gcc", "patchelf", "curl") if shutil.which(tool) is None]
     if missing:
-        raise RuntimeError("Missing " + ", ".join(missing) + "; run setup_linux.cmd first.")
+        raise RuntimeError("Missing " + ", ".join(missing) + "; run the setup-linux dev tool first.")
     # User-owned cache, never touch the distro's system Python or Windows virtual environment.
     cache = Path.home() / ".cache" / "pyapp-compilation"
     cache.mkdir(parents=True, exist_ok=True)

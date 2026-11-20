@@ -23,6 +23,7 @@ import sys
 from pathlib import Path
 from typing import Dict, Iterable, List, NamedTuple, Optional, Set, Tuple, Union
 
+import _git
 import _ui
 from _paths import PROJECT_ROOT
 
@@ -170,9 +171,9 @@ def git(*arguments: str) -> str:
     """Run Git in the project; paths stay readable (no octal escapes for non-ASCII names)."""
     command = ["git", "-C", str(PROJECT_ROOT), "-c", "core.quotepath=off", *arguments]
     # Fixed Git commands; their output is only read.
-    completed = subprocess.run(command, capture_output=True, check=False)  # noqa: S603
+    completed = _git.run(command, capture_output=True, check=False)
     if completed.returncode:
-        raise RuntimeError(completed.stderr.decode("utf-8", "replace").strip() or "git failed")
+        raise RuntimeError(_git.explain(arguments, completed.returncode, completed.stderr))
     return completed.stdout.decode("utf-8", "replace")
 
 

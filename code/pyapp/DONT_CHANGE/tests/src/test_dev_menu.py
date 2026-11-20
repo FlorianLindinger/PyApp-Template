@@ -27,9 +27,9 @@ class MenuTests(unittest.TestCase):
                 "compilation-presets",
                 "validate-syntax",
                 "compile-app",
+                "clean-compilation",
                 "setup-linux",
                 "compile-linux",
-                "clean-compilation",
             ],
         )
         self.assertIn("compilation", dev_tools.NO_PAUSE)
@@ -39,6 +39,22 @@ class MenuTests(unittest.TestCase):
         ), mock.patch.object(dev_tools, "wait_for_enter") as pause, mock.patch("builtins.print"):
             dev_tools.cmd_menu([])
         pause.assert_not_called()
+
+    def test_zero_opens_the_developer_settings_and_returns_to_the_menu(self):
+        with mock.patch.object(dev_tools, "ask", side_effect=["0", ""]), mock.patch(
+            "pyapp.DONT_CHANGE.scripts.console_tools.open_in_editor"
+        ) as editor, mock.patch.object(dev_tools, "run_command") as run, mock.patch("builtins.print"):
+            dev_tools.cmd_menu([])
+        editor.assert_called_once()
+        self.assertTrue(editor.call_args.args[0].endswith("developer_settings.py"))
+        run.assert_not_called()
+
+    def test_zero_in_the_compilation_menu_opens_its_settings_folder(self):
+        with mock.patch.object(dev_tools, "ask", side_effect=["0", ""]), mock.patch(
+            "os.startfile", create=True
+        ) as explorer, mock.patch.object(Path, "is_dir", return_value=True), mock.patch("builtins.print"):
+            dev_tools.cmd_compilation_menu([])
+        explorer.assert_called_once()
 
     def test_headings_belong_to_commands(self):
         self.assertLessEqual(set(dev_tools.HEADINGS), set(dev_tools.COMMANDS))
@@ -234,6 +250,45 @@ class PackageImportTests(unittest.TestCase):
             "packages", ['requests[socks]>=2; python_version >= "3.8"', "numpy"]
         )
         mocks["sync"].assert_called_once_with(packages.paths.VENV_PYTHON_EXE, exact=True)
+
+    def test_clear_packages_empties_the_list_only_after_confirmation(self):
+        from pyapp.DONT_CHANGE.scripts.dev_tools import packages
+
+        for answer in (True, False):
+            with self.subTest(confirmed=answer), mock.patch.multiple(
+                packages,
+                settings=mock.DEFAULT,
+                validate=mock.DEFAULT,
+                package_entries=mock.Mock(return_value=["requests", "numpy>=2"]),
+                requirements_file_entries=mock.Mock(return_value=[]),
+                confirm=mock.Mock(return_value=answer),
+                refuse_mutation_while_running=mock.DEFAULT,
+                set_list_setting=mock.DEFAULT,
+                prepare=mock.DEFAULT,
+                sync=mock.DEFAULT,
+            ) as mocks, mock.patch("builtins.print"):
+                packages.cmd_clear_packages([])
+            if answer:
+                mocks["set_list_setting"].assert_called_once_with("packages", [])
+                mocks["sync"].assert_called_once_with(packages.paths.VENV_PYTHON_EXE, exact=True)
+            else:
+                for name in ("set_list_setting", "prepare", "sync"):
+                    mocks[name].assert_not_called()
+
+    def test_clear_packages_with_nothing_declared_does_not_ask(self):
+        from pyapp.DONT_CHANGE.scripts.dev_tools import packages
+
+        with mock.patch.multiple(
+            packages,
+            settings=mock.DEFAULT,
+            validate=mock.DEFAULT,
+            package_entries=mock.Mock(return_value=[]),
+            confirm=mock.DEFAULT,
+            prepare=mock.DEFAULT,
+        ) as mocks, mock.patch("builtins.print"):
+            packages.cmd_clear_packages([])
+        mocks["confirm"].assert_not_called()
+        mocks["prepare"].assert_not_called()
 
     def test_declining_reset_changes_nothing(self):
         from pyapp.DONT_CHANGE.scripts.dev_tools import packages

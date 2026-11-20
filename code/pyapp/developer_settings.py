@@ -25,12 +25,12 @@ program_name = "PyApp-Template"
 
 # --- Python and packages ---
 # [bootstrap] Python version requested from uv:
-#   ""        newest stable Python, chosen once and then kept (see dev tool update_python)
+#   ""        newest stable Python, chosen once and then kept (see dev tool "update-python")
 #   "3.14"    any 3.14.x (uv picks the newest patch)
 #   "3.14.6"  exactly that patch
 #   "3.14t"   free-threaded build; any other uv request string such as "pypy@3.11" also works
 #   "3.12-3.14", ">=3.12" or "3"   any version inside, a range in either order ("3.12-3.14.2" stops at 3.14.2);
-#             like "", the Python chosen on the first start is kept while it is inside (see dev tool update_python)
+#             like "", the Python chosen on the first start is kept while it is inside (see dev tool "update-python")
 # Supported: every version uv can provide (Windows x64 currently 3.8.2 and newer).
 # The launcher itself needs Python 3.8 or newer. Changing this later offers a migration menu.
 python_version = "3.14"
@@ -39,8 +39,8 @@ python_version = "3.14"
 # version limits such as numpy>=2 or pillow==11.*; # comments and --hash options are fine.
 # Only strings are accepted; use "" for no packages.
 # The launcher installs exactly these, with the versions recorded in pyapp/generated/uv.lock (commit that file).
-# A package removed here stays installed until you run the dev tool sync_packages.
-# The dev tools add_packages, remove_packages and find_imports edit this for you.
+# A package removed here stays installed until you run the dev tool "sync".
+# The dev tools "add", "remove" and "find-imports" edit this for you.
 packages = """
 
 # Copy-paste needed packages here
@@ -213,6 +213,13 @@ open_log_file_after_keyboard_interrupt = False
 # Open the crash log (Ctrl+C does not count):
 open_crash_log_after_failure = False
 
+# Let the people using the app send you a crash: the crash window offers to copy the report
+# (c), and to open a pre-filled issue form in the browser (i) when the address is set, e.g.
+# "https://github.com/you/your-app/issues/new". Variable values are never included; paths and the
+# error message are, so the user sees the text before sending it. "" for no issue form.
+crash_report_copy_button = True
+crash_report_issue_url = ""
+
 # Play the default Windows sound:
 play_sound_after_success = False
 play_sound_after_failure = True
@@ -243,16 +250,15 @@ flash_on_failure = False
 # Independent of close_after_* and the browser's own switches.
 # Requires Windows PowerShell and an enabled Start Menu start shortcut (run Setup after changing shortcuts).
 # Windows notification settings / Do not disturb can suppress the banner. No extra notification sound.
+# Clicking it opens the crash log (or the log); buttons open each. A new one replaces the previous one.
 windows_notification_on_success = False
 windows_notification_on_failure = False
-windows_notification_on_keyboard_interrupt = False
 # Use f-strings here for program_name. Only details known at exit are substituted later:
 # {outcome}, {message}, {log_path}, {crash_log_path}. Other braces stay literal.
 # The title and message are plain text; quotes, &, < and non-ASCII characters are safe.
 windows_notification_title = f"{program_name}"
 windows_notification_message_on_success = f"{program_name} finished successfully."
 windows_notification_message_on_failure = "{message}"
-windows_notification_message_on_keyboard_interrupt = f"{program_name} was interrupted."
 
 # --- Settings file and shortcut locations ---
 # File that the Settings shortcut opens, for the people using the app (any file type; "" to disable).
@@ -320,7 +326,7 @@ open_crash_log_folder_shortcut_name = f"{program_name} (Crash-Logs)"
 open_code_shortcut_name = f"{program_name} (Edit-Code)"
 
 # --- Where uv and Python come from ---
-# The dev tool make_self_contained sets these three to "local" and puts uv, Python and all packages into
+# The dev tool "make-self-contained" sets these three to "local" and puts uv, Python and all packages into
 # code/pyapp/generated: the folder then runs on other PCs without internet or installing anything.
 # More uv settings: see "uv" further down.
 # [bootstrap] Where the app's Python comes from:

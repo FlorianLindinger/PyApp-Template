@@ -1,4 +1,4 @@
-"""Example tests of the app. Run them with dev_tools/project/run_tests.cmd.
+"""Example tests of the app. Run them with run_all_tests.cmd in this folder.
 
 Files named test_*.py with unittest.TestCase classes are found automatically (pytest, if added
 with add_packages, runs them too). Import your own modules as main.py does, e.g.
@@ -9,7 +9,7 @@ import py_compile
 import unittest
 from pathlib import Path
 
-CODE = Path(__file__).resolve().parents[2]  # the code folder
+CODE = Path(__file__).resolve().parents[1]  # the code folder
 
 
 class ExampleTests(unittest.TestCase):

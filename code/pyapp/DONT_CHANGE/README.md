@@ -15,7 +15,7 @@ See [runtime settings](docs/RUNTIME_SETTINGS.md) for working folders, Ctrl+C pol
 interpreter-crash cleanup, Windows sign-in startup and logging/performance notes.
 See [runtime options and host support](docs/RUNTIME_OPTIONS.md) for maximize/power options,
 bounded recovery arguments, batch entry points, browser controls and app/backend communication;
-[app compilation](../dev_tools/compilation/README.md) covers Nuitka builds and syntax validation.
+[app compilation](../compilation/README.md) covers Nuitka builds and syntax validation.
 
 - [Overview](#overview)
 - [Design rules](#design-rules)
@@ -234,8 +234,9 @@ no longer match them.
 
 `Setup - run first and after moving folder.cmd` (project root) runs `actions\setup.py`: banner,
 environment, then every enabled shortcut (project folder, Start Menu, Desktop), and removes the
-shortcuts it created earlier that are no longer wanted. The `.cmd` files in
-`code\pyapp\dev_tools` run `scripts\dev_tools\main.py <command>` ([dev tools](../dev_tools/README.md)),
+shortcuts it created earlier that are no longer wanted. `code\pyapp\Open Developer Tools Menu.cmd`
+and `code\pyapp\compilation\Compilation Tools.cmd` run `scripts\dev_tools\main.py <command>`
+([developer tools](../README.md#developer-tools)),
 and `code\pyapp\icons\*.cmd` run `actions\gen_icons.py`.
 
 ## The Python environment
@@ -376,6 +377,7 @@ ASCII art (`scripts/banner.py`). The batch/Python bootstrap and the
 | `docs/RUNTIME_SETTINGS.md` | Working folder, Ctrl+C policy, crash cleanup, Windows Startup, logging and startup review. |
 | `docs/TODO.md` | Open items and ideas. |
 | `LICENSE.md` | License of this folder (MIT), which also covers the bundled banner font. |
+| `app_api.py` | What main.py gets with `import pyapp_api`: notifications, `on_stop`, taskbar progress and badge, dialogs, `keep_awake`, `report_error`, `restart`, forwarded starts. Standard library only, Python 3.8+, no-ops without the launcher; the names are `PROTECTED_APP_API_NAMES`. The wrapper registers it as `pyapp_api`. |
 | `backend_settings.py` | Every internal path and constant (`LAUNCHER_VERSION`, folders, icon paths, file names, defaults). Imported by almost everything; changes nothing on import. |
 | `ruff.toml`, `pyrefly.toml` | Lint and type-check settings for this folder only (Python 3.8, Windows, 120 columns). |
 | `.gitignore` | Keeps `tmp/`, caches and `__pycache__` out of Git. |
@@ -411,7 +413,7 @@ ASCII art (`scripts/banner.py`). The batch/Python bootstrap and the
 | `stop_program.py` | The Stop shortcut. |
 | `setup.py` | Setup: banner, environment, shortcuts (project folder, Start Menu, Desktop), removal of stale ones. |
 | `open_file.py`, `open_folder.py` | Fallbacks of the "open" shortcuts (resolve the target from the settings). |
-| `start_without_launcher.py` | Not run by `entrypoint.py`: used by `code/pyapp/Start without launcher.cmd` and `Start without launcher --LINUX.sh`. Runs the main script directly after showing the script, Python, packages and their folders. Windows tries the app `.venv` before system Python; Linux uses `python_command` in the shell file or system Python on PATH, without inspecting the generated environment. The Linux entry accepts Windows separators in relative settings paths. Standard library only and independent of every other launcher file; a protected path. |
+| `start_without_launcher.py` | Not run by `entrypoint.py`: used by `Start without launcher.cmd` and `Start without launcher --LINUX.sh` in `code/pyapp/fallback_start`. Runs the main script directly after showing the script, Python, packages and their folders. Windows tries the app `.venv` before system Python; Linux uses `python_command` in the shell file or system Python on PATH, without inspecting the generated environment. The Linux entry accepts Windows separators in relative settings paths. Standard library only and independent of every other launcher file; a protected path. |
 | `gen_icons.py` | Builds the `.ico` files in `code/pyapp/icons` from `icon.png` and the bundled overlays; asks per icon before replacing an `.ico` it did not make (`generated/auto_generated_icons.json`). |
 
 ### `runtime/` – the running app
@@ -443,7 +445,9 @@ ASCII art (`scripts/banner.py`). The batch/Python bootstrap and the
 | `system_tray.py` | Native terminal minimize-to-tray, Shell notifications on every minimize, Restore/Stop menu, Explorer recovery and icon cleanup. |
 | `settings_defaults.py` | Compare template settings in working files, the staged Git index or pushed commit tips without executing or modifying settings. |
 | `taskbar_status.py` | ITaskbarList3 activity and green/red completion indicators, FlashWindowEx attention, and validated native-terminal handle handoff. |
-| `windows_notifications.py` | Silent Windows toasts through a fixed PowerShell WinRT script, escaped plain-text XML, per-outcome switches/templates and blocked-notification diagnostics. |
+| `windows_notifications.py` | Silent Windows toasts through a fixed PowerShell WinRT script, escaped plain-text XML, per-outcome switches/templates and blocked-notification diagnostics. Clicking opens the crash log or log; one tag, so a new toast replaces the last. |
+| `app_api_support.py` | The machinery behind `app_api.py`: finding the app's window, the taskbar (ITaskbarList3), the restart helper, forwarded starts. Not part of the public contract. |
+| `hidden_caches.py` | Gives `__pycache__`, `.ruff_cache`, `.pytest_cache` and `.mypy_cache` in the project root, `code`, `code/pyapp` and the test folders the hidden attribute; run by Setup, every start and after each run. |
 | `template_workflows.py` | Removes the template's own `.github/workflows/pyapp-template-*.yml` from an app, only when they are unchanged and alone. |
 | `shortcuts.py` | Creates `.lnk` files (via COM), their targets and taskbar identity, the record of created shortcuts, removal of stale ones. |
 | `batch_shortcuts.py` | Optional matching `.cmd` entry points with app arguments; preserves unrelated files. |

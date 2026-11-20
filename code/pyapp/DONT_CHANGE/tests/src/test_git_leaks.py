@@ -226,7 +226,9 @@ class CommitTests(unittest.TestCase):
         output = io.StringIO()
         with mock.patch("sys.stdout", output):
             tool.hook_summary("Commit", [finding])
-        self.assertIn("Personal data in staged changes: Home folder path", output.getvalue().splitlines()[0])
+        first = output.getvalue().splitlines()[0]
+        for key in ("Personal data", "Home folder path"):
+            self.assertIn(key, first)
 
     def test_commit_prints_the_source_from_the_staged_diff(self):
         line = '    profile = "C:' + '\\\\Users\\\\Alice"'

@@ -10,10 +10,10 @@ changed although launcher files were.
 from __future__ import annotations
 
 import argparse
-import subprocess
 import sys
 from typing import List, Optional
 
+import _git
 import _ui
 from _paths import PROJECT_ROOT
 
@@ -26,8 +26,8 @@ NO_COMMIT = "0" * 40
 
 def git(*arguments: str) -> str:
     # Fixed, read-only Git commands in the project folder.
-    completed = subprocess.run(  # noqa: S603
-        ["git", "-C", str(PROJECT_ROOT), "-c", "core.quotepath=off", *arguments],  # noqa: S607
+    completed = _git.run(
+        ["git", "-C", str(PROJECT_ROOT), "-c", "core.quotepath=off", *arguments],
         capture_output=True,
         check=False,
     )

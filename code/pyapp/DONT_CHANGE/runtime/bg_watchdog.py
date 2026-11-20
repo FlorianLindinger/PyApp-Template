@@ -1,3 +1,8 @@
+# Step 4 of a start (see B/W.bat for steps 1-3). actions/start_program.py started this process in
+# the chosen window. It stays alive for the whole run: it registers the run (so Stop can find it),
+# starts code/main.py through runtime/script_wrapper.py with the app's Python, copies the app's output
+# into the log, waits until the app ends, and then starts runtime/process_exit.py, which shows the
+# result (report, crash log, sounds, notification). Read main() at the bottom first.
 """Own one application run: instance policy, logging, the app process and completion handling."""
 
 from __future__ import annotations
@@ -125,7 +130,96 @@ def app_environment(
         CLOSE_AFTER_FAILURE="1" if settings.close_after_failure else "0",
         CLOSE_AFTER_SUCCESS="1" if settings.close_after_success else "0",
     )
+    # Without a real console, Qt (PySide6/PyQt) sends its messages, including the reason for a
+    # qFatal() crash, to the debugger output instead of stderr, so they never reach the log.
+    env.setdefault("QT_FORCE_STDERR_LOGGING", "1")
     return env
+
+
+LAUNCH_MODE_NAMES = {
+    "wt": "Windows Terminal",
+    "conhost": "the classic console",
+    "browser": "the browser terminal",
+    "no_terminal": "no terminal",
+}
+
+
+def log_note(log_path: str, text: str) -> None:
+    """Append one marked line about the run to the log, e.g. how it ended; never raises.
+
+    The lines start with "----" and the time, so they stand out from the app's own prints.
+    """
+    if not log_path:
+        return
+    try:
+        Path(log_path).parent.mkdir(parents=True, exist_ok=True)
+        with Path(log_path).open("a", encoding="utf-8") as stream:
+            stream.write(f"---- {time.strftime('%Y-%m-%d %H:%M:%S')}  {text}\n")
+    except OSError:
+        note_ignored("write a run note into the log")
+
+
+def duration_text(seconds: float) -> str:
+    """3.2 s, 2 min 10 s, 1 h 5 min."""
+    if seconds < 60:
+        return f"{seconds:.1f} s"
+    minutes, seconds = divmod(int(seconds), 60)
+    if minutes < 60:
+        return f"{minutes} min {seconds} s"
+    hours, minutes = divmod(minutes, 60)
+    return f"{hours} h {minutes} min"
+
+
+def end_note(mode: int, run_dir: Path, native: Optional[int], seconds: float) -> str:
+    """How the run ended, in words, for the log: normal end, exit code, error, Ctrl+C, Stop, crash."""
+    after = f"after {duration_text(seconds)}"
+    if (run_dir / paths.STOP_REQUEST_FILE_NAME).exists():
+        return f"Stopped by the Stop shortcut (or a replacing start) {after}."
+    if mode == ExitMode.SUCCESS:
+        return f"Ended normally {after} (exit code 0)."
+    if mode == ExitMode.NO_REPORT:
+        code = (native or 0) & 0xFFFFFFFF
+        return f"Python ended without finishing its report {after}: exit code {code} ({code:#010x}), e.g. a hard crash or a forced end."
+    try:
+        report = json.loads((run_dir / "traceback.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        report = {}
+    kind = report.get("exception_type", "")
+    if kind == "KeyboardInterrupt":
+        return f"Stopped with Ctrl+C {after}."
+    if kind == "SystemExit":
+        return f"Ended with sys.exit({report.get('system_exit_code')!r}) {after}."
+    if kind:
+        chain = report.get("chain") or [{}]
+        lines = [line for line in (chain[-1].get("exception_only") or []) if line.strip()]
+        return f"Ended with an error {after}: " + (lines[-1].strip() if lines else kind)
+    return f"Ended with a problem in the launcher {after}; see the crash log."
+
+
+def note_window_close(log_path: str, launch_mode: str, run_dir: Path, started: float) -> Optional[object]:
+    """Write "Window closed with X" into the log when the user closes the terminal window.
+
+    Closing a console window sends CTRL_CLOSE_EVENT to every process in it, this watchdog
+    included, and Windows ends them all a few seconds later: nothing after that can run, so the
+    note is written right in the handler. Returns the handler, which must stay referenced for the
+    whole run (ctypes would free it otherwise).
+    """
+    if os.name != "nt" or launch_mode == "no_terminal" or not log_path:
+        return None
+    import ctypes
+
+    def handle(event: int) -> int:
+        # 2 = CTRL_CLOSE_EVENT. Stop ends a run on purpose (it writes the stop request first).
+        if event == 2 and not (run_dir / paths.STOP_REQUEST_FILE_NAME).exists():
+            log_note(
+                log_path, f"Window closed with X after {duration_text(time.monotonic() - started)}; the app was ended."
+            )
+        return 0  # not handled: the next handler (Python's own) and Windows' default still run
+
+    handler = ctypes.WINFUNCTYPE(ctypes.c_int, ctypes.c_uint)(handle)
+    if not ctypes.windll.kernel32.SetConsoleCtrlHandler(handler, True):
+        return None
+    return handler
 
 
 def end_started_app(child: Optional[BinaryProcess]) -> None:
@@ -364,6 +458,8 @@ def register_with_policy(
 
 def main() -> None:
     """Own registration, launch, logging and completion handling for one application run."""
+    # --- 1. What start_program.py passed on: the app ID (taskbar identity), the window kind, and
+    # the run folder in DONT_CHANGE\tmp\runs where the processes of this run exchange small files.
     app_id, launch_mode = sys.argv[1:3]
     os.environ.pop("CRASH_RECOVERY_NOTICE", None)
     if app_id == paths.EMPTY_ARG_INDICATOR:
@@ -396,7 +492,10 @@ def main() -> None:
     power_requested = False
     from pyapp.DONT_CHANGE.scripts.power import set_awake
 
+    # Everything below runs inside "try": whatever goes wrong, the "except" part at the end still
+    # writes a report and ends the app, so nothing keeps running unnoticed.
     try:
+        # --- 2. Prepare the window: title, colors, icon, taskbar group.
         if launch_mode not in ("wt", "conhost", "browser", "no_terminal"):
             raise ValueError("Unknown launch mode: " + launch_mode)
         from pyapp.DONT_CHANGE.scripts.terminal_window import configure, validate_close_mode
@@ -416,6 +515,8 @@ def main() -> None:
                 from pyapp.DONT_CHANGE.scripts.taskbar_status import start
 
                 start(settings)
+        # --- 3. Register this run in DONT_CHANGE\tmp\running (instance_policy decides what happens
+        # when another copy runs already). From here on, Stop can find and end it.
         if not register_with_policy(settings, registry, run_dir):
             return
         registered = True
@@ -447,9 +548,17 @@ def main() -> None:
                 )
             except (OSError, KeyError):
                 note_ignored("browser terminal: report working folder and current log")
+        started = time.monotonic()
+        log_note(log_path, f"Started {settings.program_name} in {LAUNCH_MODE_NAMES.get(launch_mode, launch_mode)}.")
+        # Kept in a variable for the whole run: a freed handler would crash the process.
+        _close_handler = note_window_close(log_path, launch_mode, run_dir, started)
+        # --- 4. Everything the wrapper needs, written as wrapper.json into the run folder.
         config = {
             "script": script,
             "args": [*settings.args_for_main_py, *extra_args],
+            # For pyapp_api.restart(): how this run was started (the shortcut's app ID and window kind).
+            "launch_mode": launch_mode,
+            "shortcut_app_id": app_id,
             "app_id": window_app_id,
             "app_root": paths.PYTHON_SCRIPTS_DIR,
             "traceback_lines_before": paths.traceback_lines_before,
@@ -483,6 +592,8 @@ def main() -> None:
             set_awake(settings.prevent_sleep, settings.keep_display_awake)
             power_requested = True
         # Run the launcher helper or configured app interpreter with a controlled argument list.
+        # --- 5. Start the app: the app's Python runs script_wrapper.py, which runs main.py. With a
+        # log, the app's output comes back here through a pipe and is copied to the window and the log.
         child = subprocess.Popen(  # noqa: S603
             [
                 app_python["exe"],
@@ -524,6 +635,8 @@ def main() -> None:
 
             pump = threading.Thread(target=copy_output, daemon=True)
             pump.start()
+        # --- 6. Wait until the wrapper has started main.py (it creates the file "ready"), then tell
+        # the waiting start_program.py "started" through startup.json, so its small window closes.
         deadline = time.monotonic() + paths.WRAPPER_READY_TIMEOUT_SECONDS
         while not (run_dir / "ready").exists():
             if child.poll() is not None:
@@ -569,6 +682,7 @@ def main() -> None:
                 from pyapp.DONT_CHANGE.scripts.console_tools import print_warn
 
                 print_warn("Minimize to system tray is unavailable; the terminal stays accessible on the taskbar.")
+        # --- 7. The app runs. child.wait() returns when it has ended, with its exit code.
         try:
             code = child.wait()
         finally:
@@ -582,6 +696,8 @@ def main() -> None:
         if pump:
             pump.join(timeout=5)
         save_early_output(raw_path, bytes(early_output))
+        # --- 8. How did it end? The wrapper writes result.json when main.py returned or raised an
+        # error. Without it, Python itself crashed or was killed ("no report").
         native = None
         try:
             result = json.loads((run_dir / "result.json").read_text(encoding="utf-8"))
@@ -599,6 +715,7 @@ def main() -> None:
                 json.loads(background.read_text(encoding="utf-8")),
             )
             mode = ExitMode.APP_EXIT
+        log_note(log_path, end_note(mode, run_dir, native, time.monotonic() - started))
         keep_raw_output(raw_path, log_path, mode, run_dir)
         from pyapp.DONT_CHANGE.scripts.hidden_caches import hide_cache_folders
 
@@ -626,6 +743,8 @@ def main() -> None:
         )
         if recovery_notice:
             os.environ["PYAPP_CRASH_RECOVERY_NOTICE"] = recovery_notice
+        # --- 9. Show the result: process_exit.py prints the report, writes the crash log, plays the
+        # sound, sends the notification and closes or keeps the window, as the settings say.
         handle_exit(settings, mode, app_id, has_terminal, log_path, script, run_dir, native)
     except Exception as error:
         try:

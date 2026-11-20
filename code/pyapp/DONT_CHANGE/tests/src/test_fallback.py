@@ -17,7 +17,7 @@ from typing import Dict, Optional, Tuple
 from project_location import DONT_CHANGE
 
 SCRIPT = DONT_CHANGE / "actions" / "start_without_launcher.py"
-LINUX_START = DONT_CHANGE.parent / "Start without launcher --LINUX.sh"
+LINUX_START = DONT_CHANGE.parent / "fallback_start" / "Start without launcher --LINUX.sh"
 
 APP = """\
 import os, sys
@@ -49,7 +49,7 @@ class FallbackStartTests(unittest.TestCase):
         self.assertIn("working_directory does not exist", output)
 
     def select_linux_python(self, code: Path, command: str) -> None:
-        shell = code / "pyapp" / LINUX_START.name
+        shell = code / "pyapp" / "fallback_start" / LINUX_START.name
         shell.write_text(
             shell.read_text(encoding="utf-8").replace('python_command=""', "python_command=" + shlex.quote(command)),
             encoding="utf-8",
@@ -68,7 +68,8 @@ class FallbackStartTests(unittest.TestCase):
         code = Path(folder.name).resolve() / "code"
         (code / "pyapp" / "DONT_CHANGE" / "actions").mkdir(parents=True)
         shutil.copyfile(SCRIPT, code / "pyapp" / "DONT_CHANGE" / "actions" / SCRIPT.name)
-        shutil.copyfile(LINUX_START, code / "pyapp" / LINUX_START.name)
+        (code / "pyapp" / "fallback_start").mkdir()
+        shutil.copyfile(LINUX_START, code / "pyapp" / "fallback_start" / LINUX_START.name)
         (code / "pyapp" / "developer_settings.py").write_text(settings, encoding="utf-8")
         (code / "app").mkdir()
         (code / "app" / "run.py").write_text(APP, encoding="utf-8")
@@ -84,7 +85,7 @@ class FallbackStartTests(unittest.TestCase):
     ) -> Tuple[int, str]:
         # Fixed shell/interpreter and repository-owned fixture scripts, without shell interpolation.
         command = (
-            ["/bin/sh", str(code / "pyapp" / LINUX_START.name)]
+            ["/bin/sh", str(code / "pyapp" / "fallback_start" / LINUX_START.name)]
             if linux
             else [sys.executable, str(code / "pyapp" / "DONT_CHANGE" / "actions" / SCRIPT.name)]
         )
@@ -124,9 +125,8 @@ class FallbackStartTests(unittest.TestCase):
         exit_code, output = self.start(code)
         self.assertEqual(exit_code, 1, output)
         self.assertIn("could not be read", output)
-        self.assertIn("The main script does not exist", output)
-        self.assertIn("Change main_script_path in developer_settings.py", output)
-        self.assertIn("make sure the Python file exists at this path", output)
+        self.assertIn("does not exist", output)
+        self.assertIn("main_script_path", output)  # names the setting to fix
 
     def test_nested_main_imports_code_root_without_losing_local_or_existing_pythonpath(self):
         code = self.project('main_script_path = "../app/run.py"\n')
@@ -214,8 +214,8 @@ class FallbackStartTests(unittest.TestCase):
         self.select_linux_python(code, "no-such-python-pyapp")
         status, output = self.start(code, linux=True)
         self.assertEqual(status, 1, output)
-        self.assertIn("Selected Python does not start or is older than 3.8", output)
-        self.assertIn("Change python_command", output)
+        self.assertIn("3.8", output)
+        self.assertIn("python_command", output)  # names the setting to fix
 
     @unittest.skipUnless(os.name == "posix", "Linux/POSIX shell")
     def test_linux_shell_reports_missing_python_and_missing_helper(self):

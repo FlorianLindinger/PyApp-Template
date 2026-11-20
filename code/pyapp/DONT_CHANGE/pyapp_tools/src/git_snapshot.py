@@ -15,6 +15,7 @@ import tempfile
 from pathlib import Path
 from typing import Dict, Generator, List, Optional
 
+import _git
 from _paths import PROJECT_ROOT
 
 LAUNCHER = Path("code/pyapp/DONT_CHANGE")
@@ -48,8 +49,8 @@ def git(
     if source_index and "GIT_INDEX_FILE" in os.environ:
         # Partial/path-only commits may give the hook a temporary index rather than .git/index.
         env["GIT_INDEX_FILE"] = str(Path(os.environ["GIT_INDEX_FILE"]).absolute())
-    completed = subprocess.run(  # noqa: S603
-        ["git", "-C", str(root), *arguments],  # noqa: S607
+    completed = _git.run(
+        ["git", "-C", str(root), *arguments],
         env=env,
         input=data,
         capture_output=True,
@@ -59,7 +60,7 @@ def git(
     if completed.returncode:
         if optional:
             return b""
-        raise RuntimeError(completed.stderr.decode("utf-8", "replace").strip() or "Git snapshot command failed")
+        raise RuntimeError(_git.explain(arguments, completed.returncode, completed.stderr))
     return completed.stdout
 
 

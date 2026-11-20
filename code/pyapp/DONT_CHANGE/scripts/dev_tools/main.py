@@ -6,7 +6,8 @@ live in scripts/dev_tools/.
 
 from __future__ import annotations
 
-from typing import List, Sequence, Tuple
+from pathlib import Path
+from typing import List, Optional, Sequence, Tuple
 
 fail_message = "Dev tool failed: {e}"
 pause_on_success = True
@@ -16,6 +17,7 @@ import sys
 from pyapp.DONT_CHANGE.scripts.banner import print_banner
 from pyapp.DONT_CHANGE.scripts.console_tools import (
     ANSI_DIM,
+    ANSI_HEADING,
     ask,
     enable_ansi,
     print_choices,
@@ -55,8 +57,13 @@ NO_PAUSE = {"menu", "terminal", "compilation"}
 
 
 def cmd_compilation_menu(_arguments: List[str]) -> None:
-    """Open compilation tools: presets, app builds, syntax validation and output cleanup."""
-    _command_menu(SUBMENU_GROUPS["compilation"])
+    """Build a standalone .exe (or a Linux version) of the app: presets, build, clean up."""
+    from pyapp.DONT_CHANGE.scripts.dev_tools.compilation import FOLDER
+
+    _command_menu(
+        SUBMENU_GROUPS["compilation"],
+        zero=("compilation/", "Open the folder with the build settings (settings.json, presets.json)", FOLDER),
+    )
 
 
 COMMANDS = {
@@ -113,19 +120,12 @@ MENU_GROUPS = (
 )
 SUBMENU_GROUPS = {
     "compilation": (
-        (
-            "Compilation",
-            (
-                "compilation-presets",
-                "validate-syntax",
-                "compile-app",
-                "setup-linux",
-                "compile-linux",
-                "clean-compilation",
-            ),
-        ),
+        ("Windows build (Nuitka)", ("compilation-presets", "validate-syntax", "compile-app", "clean-compilation")),
+        ("Linux build (in WSL)", ("setup-linux", "compile-linux")),
     ),
 }
+# Arguments a command gets when it is chosen in the menu (on the command line it gets none).
+MENU_ARGUMENTS = {"compile-app": ["--choose"]}
 # For the commands that do not start with a heading of their own.
 HEADINGS = {
     "add": "Add packages",
@@ -146,10 +146,23 @@ def run_command(name: str, arguments: List[str]) -> None:
 
 def cmd_menu(_arguments: List[str]) -> None:
     """Interactive menu of all commands."""
-    _command_menu(MENU_GROUPS)
+    from pyapp.DONT_CHANGE import backend_settings as paths
+
+    _command_menu(
+        MENU_GROUPS,
+        zero=(
+            "developer_settings.py",
+            "Open the app's settings: name, Python, packages, logs, windows, shortcuts",
+            Path(paths.DEV_SETTINGS_PATH),
+        ),
+    )
 
 
-def _command_menu(definitions: Sequence[Tuple[str, Sequence[str]]]) -> None:
+# (label, description, file or folder): entry 0 of a menu, opened in the editor or Explorer.
+ZeroEntry = Tuple[str, str, Path]
+
+
+def _command_menu(definitions: Sequence[Tuple[str, Sequence[str]]], zero: Optional[ZeroEntry] = None) -> None:
     """Use the same presentation for the main developer menu and its subgroups."""
     groups = [
         (
@@ -161,13 +174,33 @@ def _command_menu(definitions: Sequence[Tuple[str, Sequence[str]]]) -> None:
         )
         for title, group in definitions
     ]
-    _run_menu(groups)
+    _run_menu(groups, zero)
 
 
-def _run_menu(groups: List[Tuple[str, List[Tuple[str, str]]]]) -> None:
-    """Numbered menu of (title, [(command, line)]) groups; runs the chosen command until Enter."""
+def _open_zero_entry(entry: ZeroEntry) -> None:
+    """Open entry 0: a file in VS Code (else Notepad), a folder in Explorer."""
+    import os
+
+    from pyapp.DONT_CHANGE.scripts.console_tools import open_in_editor, print_info
+
+    path = entry[2]
+    if path.is_dir():
+        os.startfile(str(path))  # noqa: S606 - a folder of this project, opened in Explorer
+    else:
+        open_in_editor(str(path))
+    print_info(f"Opened {path}")
+
+
+def _run_menu(groups: List[Tuple[str, List[Tuple[str, str]]]], zero: Optional[ZeroEntry] = None) -> None:
+    """Numbered menu of (title, [(command, line)]) groups; runs the chosen command until Enter.
+
+    ``zero``, if given, is shown first as entry 0 and opens a settings file or folder.
+    """
     names = [name for _, group in groups for name, _ in group]
     while True:
+        if zero is not None:
+            print_heading("Settings")
+            print(f"  {styled(' 0', ANSI_HEADING)}  {zero[0].ljust(22)}{styled(zero[1], ANSI_DIM)}")
         number = 1
         for title, group in groups:
             print_heading(title)
@@ -180,12 +213,19 @@ def _run_menu(groups: List[Tuple[str, List[Tuple[str, str]]]]) -> None:
             return
         if not answer:
             return
+        if zero is not None and answer == "0":
+            try:
+                _open_zero_entry(zero)
+            except OSError as error:
+                print_error(f"Could not open {zero[2]}: {error}")
+            continue
+        lowest = 0 if zero is not None else 1
         if not (answer.isdecimal() and 1 <= int(answer) <= len(names)):
-            print_error(f"Please enter a number from 1 to {len(names)}.")
+            print_error(f"Please enter a number from {lowest} to {len(names)}.")
             continue
         try:
             selected = names[int(answer) - 1]
-            run_command(selected, [])
+            run_command(selected, list(MENU_ARGUMENTS.get(selected, [])))
             if selected in SUBMENU_GROUPS:
                 continue
         except Exception as error:
@@ -198,6 +238,22 @@ def _run_menu(groups: List[Tuple[str, List[Tuple[str, str]]]]) -> None:
         wait_for_enter("Press Enter to return to the menu.")
 
 
+def _set_window_title_and_icon(command: str) -> None:
+    """Give the window the app's icon and a title that says what it is, e.g. "My App - Developer Tools"."""
+    from pyapp.DONT_CHANGE import backend_settings as paths
+    from pyapp.DONT_CHANGE.scripts.console_tools import set_terminal_icon, set_terminal_title
+
+    try:
+        from pyapp.DONT_CHANGE.scripts.config import settings
+
+        name = settings().program_name
+    except Exception:
+        name = "PyApp"  # a broken settings file is reported by the tool itself, right after this
+    purpose = {"menu": "Developer Tools", "compilation": "Compilation Tools"}.get(command, command)
+    set_terminal_title(f"{name} - {purpose}")
+    set_terminal_icon(paths.ICON_PATH)
+
+
 def main() -> None:
     global pause_on_success
     enable_ansi()
@@ -205,6 +261,11 @@ def main() -> None:
     if sys.argv[1:2] == ["dev"]:  # DONT_CHANGE\\B\\run.bat passes its own first word on
         del sys.argv[1]
     command = sys.argv[1] if len(sys.argv) > 1 else "menu"
+    if command == "menu" and len(sys.argv) > 2:
+        # "Open Developer Tools Menu.cmd add requests": run that command instead of showing the menu.
+        del sys.argv[1]
+        command = sys.argv[1]
+    _set_window_title_and_icon(command)
     if command in NO_PAUSE:
         pause_on_success = False
     if command == "menu":

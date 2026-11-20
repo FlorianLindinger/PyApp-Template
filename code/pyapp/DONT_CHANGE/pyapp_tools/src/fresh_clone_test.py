@@ -29,6 +29,7 @@ import time
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Tuple
 
+import _git
 import _ui
 from _paths import PROJECT_ROOT
 
@@ -85,13 +86,13 @@ def batch_command(batch_file: Path, *arguments: str) -> str:
 
 def git(*arguments: str) -> str:
     # Fixed Git commands in the project folder.
-    completed = subprocess.run(  # noqa: S603
-        ["git", "-C", str(PROJECT_ROOT), *arguments],  # noqa: S607
+    completed = _git.run(
+        ["git", "-C", str(PROJECT_ROOT), *arguments],
         capture_output=True,
         check=False,
     )
     if completed.returncode:
-        raise RuntimeError(completed.stderr.decode("utf-8", "replace").strip() or "git failed")
+        raise RuntimeError(_git.explain(arguments, completed.returncode, completed.stderr))
     return completed.stdout.decode("utf-8", "replace")
 
 
@@ -292,8 +293,8 @@ def run_checks(clone: Path, marker: Path, log: Path, timeout: float, moved: Path
     if not check("Log without a terminal", "probe print" in log_text and "probe native" in log_text):
         return results
     _ui.step("Running a dev tool ...")
-    status_tool = clone / "code" / "pyapp" / "dev_tools" / "status.cmd"
-    if not check("Dev tool (status)", run_quietly(batch_command(status_tool), env, clone, log, 120)):
+    menu = clone / "code" / "pyapp" / "Open Developer Tools Menu.cmd"
+    if not check("Dev tool (status)", run_quietly(batch_command(menu, "status"), env, clone, log, 120)):
         return results
 
     def run_app(mode: str, folder: Path, start_env: Dict[str, str]) -> bool:

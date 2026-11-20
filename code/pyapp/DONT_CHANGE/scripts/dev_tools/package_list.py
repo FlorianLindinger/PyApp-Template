@@ -312,7 +312,7 @@ def cmd_list_packages(arguments: List[str]) -> None:
             else "Every package is at its newest version."
         )
     elif not extras_problem:
-        print_info("list_packages.cmd --outdated (or outdated_packages.cmd) also shows newer versions.")
+        print_info("list-packages --outdated also shows newer versions.")
     if installed is None:
         print_warn("The installed packages could not be read; only uv.lock is shown.")
     elif problems:

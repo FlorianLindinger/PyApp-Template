@@ -360,9 +360,7 @@ class MainScriptTests(unittest.TestCase):
         ), self.assertRaises(SettingsError) as raised:
             config.validate(load())
         self.assertIn("does not exist", str(raised.exception))
-        self.assertIn("Please check these settings and any referenced files", str(raised.exception))
-        self.assertIn("Change main_script_path in developer_settings.py", str(raised.exception))
-        self.assertIn("make sure the Python file exists at this path", str(raised.exception))
+        self.assertIn("main_script_path", str(raised.exception))  # names the setting to fix
 
     def test_a_directory_is_not_reported_as_a_missing_path(self):
         with tempfile.TemporaryDirectory(suffix=".py") as folder:

@@ -9,22 +9,36 @@ import os
 import shutil
 import subprocess
 import tempfile
+import time
 from pathlib import Path
 from typing import Dict, Generator, List, NamedTuple, Optional
 
 from pyapp.DONT_CHANGE import backend_settings as paths
 from pyapp.DONT_CHANGE.scripts.config import main_script_path, settings, validate
-from pyapp.DONT_CHANGE.scripts.console_tools import print_heading, print_info, print_success
+from pyapp.DONT_CHANGE.scripts.console_tools import (
+    ANSI_BOLD,
+    ANSI_DIM,
+    ANSI_GOOD,
+    ask,
+    print_fields,
+    print_heading,
+    print_info,
+    print_success,
+    styled,
+)
 from pyapp.DONT_CHANGE.scripts.dev_tools.common import normalized, prepare
 from pyapp.DONT_CHANGE.scripts.env.uv import run_uv
 from pyapp.DONT_CHANGE.scripts.errors import SetupError
 
-FOLDER = Path(paths.BACKEND_DIR) / "dev_tools" / "compilation"
+# The editable settings: code/pyapp/compilation.
+FOLDER = Path(paths.BACKEND_DIR) / "compilation"
 CONFIG = FOLDER / "settings.json"
 PRESETS = FOLDER / "presets.json"
-DEFAULT_PRESETS = Path(paths.DONT_CHANGE_DIR) / "compilation" / "presets.json"
-LEGACY_CONFIG = FOLDER.parent / "compilation_settings.json"
-OUTPUT = Path(paths.GENERATED_DIR) / "compilation"
+LINUX_CONFIG = FOLDER / "linux_settings.json"
+# The shipped presets, used when the project's presets.json is missing.
+DEFAULT_PRESETS = Path(paths.DATA_DIR) / "compilation_presets.json"
+# The builds: code/pyapp/compiled/windows/<preset> and .../linux/<preset> (ignored by Git).
+OUTPUT = Path(paths.BACKEND_DIR) / "compiled"
 MARKER = ".pyapp-compilation"
 BUILD_PACKAGES = ("nuitka", "ordered-set", "zstandard")
 
@@ -129,7 +143,7 @@ def _strings(value: object, setting: str) -> List[str]:
 def load_options(
     preset: Optional[str], mode: Optional[str], variant: Optional[str], config: Optional[Path] = None
 ) -> BuildOptions:
-    """Resolve CLI > settings > preset; retain old projects' extra_args without rewriting files."""
+    """Resolve command line > settings.json > preset into the build options."""
     source = CONFIG if config is None else config
     data = _object(source) if source.is_file() else {}
     known = {
@@ -166,8 +180,6 @@ def load_options(
     if not isinstance(chosen_variant, str) or chosen_variant not in ("terminal", "no_terminal"):
         raise SetupError("Compilation variant must be terminal or no_terminal.")
     extra = _strings(definition.get("extra_args", []), f"Preset {selected} extra_args")
-    if config is None and LEGACY_CONFIG.is_file():
-        extra += _strings(_object(LEGACY_CONFIG).get("extra_args", []), "Legacy extra_args")
     jobs = data.get("jobs")
     if jobs is not None:
         if isinstance(jobs, bool) or not isinstance(jobs, int) or jobs < 1:
@@ -214,14 +226,46 @@ def load_options(
     return BuildOptions(selected, chosen_mode, chosen_variant, extra)
 
 
-def cmd_compilation_presets(_arguments: List[str]) -> None:
-    """List the editable compilation presets and their intended use."""
-    print_heading("Compilation presets")
+def _presets() -> Dict[str, Dict[str, object]]:
+    """The presets (the project's presets.json, else the bundled one); an invalid entry becomes {}."""
     source = PRESETS if PRESETS.is_file() else DEFAULT_PRESETS
-    for name, value in _object(source).items():
-        description = value.get("description", "") if isinstance(value, dict) else "invalid preset"
-        print_info(f"{name}: {description}")
-    print_info(f"Settings: {CONFIG}\nPresets: {source}")
+    return {name: value if isinstance(value, dict) else {} for name, value in _object(source).items()}
+
+
+def _configured_preset() -> str:
+    """The preset settings.json chooses (compile-app uses it without --preset)."""
+    try:
+        return str(_object(CONFIG).get("preset") or "standalone") if CONFIG.is_file() else "standalone"
+    except SetupError:
+        return "standalone"
+
+
+def _console_text(variant: object) -> str:
+    return "no console (GUI)" if variant == "no_terminal" else "console"
+
+
+def _print_preset_table(presets: Dict[str, Dict[str, object]], current: str, numbered: bool = False) -> None:
+    """One aligned line per preset: name, build type, console, use; the configured one is marked."""
+    width = max((len(name) for name in presets), default=0)
+    for number, (name, value) in enumerate(presets.items(), start=1):
+        marker = styled("*", ANSI_GOOD) if name == current else " "
+        build = "single .exe" if value.get("mode") == "onefile" else "folder"
+        kind = f"{build}, {_console_text(value.get('variant'))}"
+        prefix = f"{number:>3}  " if numbered else "  "
+        print(
+            f"{prefix}{marker} {styled(name.ljust(width), ANSI_BOLD)}  {kind:<28}  {styled(value.get('description', ''), ANSI_DIM)}"
+        )
+
+
+def cmd_compilation_presets(_arguments: List[str]) -> None:
+    """Show the build presets (folder, single file, GUI) and which one is used."""
+    print_heading("Compilation presets")
+    current = _configured_preset()
+    _print_preset_table(_presets(), current)
+    print()
+    print_info('* = used by compile-app ("preset" in settings.json). Other choices: compile-app --preset NAME.')
+    source = PRESETS if PRESETS.is_file() else DEFAULT_PRESETS
+    print_fields([("Settings", CONFIG), ("Presets", source), ("Output", OUTPUT)])
 
 
 def app_sources(code: Path) -> List[Path]:
@@ -263,18 +307,45 @@ def validate_sources(python: str, sources: List[Path]) -> None:
 
 
 def cmd_validate_syntax(_arguments: List[str]) -> None:
-    """Compile app source syntax with its managed Python, without executing the app."""
+    """Check every Python file of the app for syntax errors, without running it."""
     print_heading("Validate app syntax")
     app = prepare()
     validate_sources(app.exe, app_sources(Path(paths.PYTHON_SCRIPTS_DIR)))
 
 
+def output_folder(build: BuildOptions, platform: str = "windows", keep: bool = False) -> Path:
+    """compiled/<platform>/<preset>; a changed mode or console is added to the name, so it never
+    overwrites the preset's normal build. keep=True adds the date and time: a copy that stays."""
+    definition = _presets().get(build.preset, {})
+    name = build.preset
+    if definition.get("mode", build.mode) != build.mode:
+        name += "-" + build.mode
+    if platform == "windows" and definition.get("variant", build.variant) != build.variant:
+        name += "-" + build.variant
+    if keep:
+        name += "-" + time.strftime("%Y-%m-%d_%H-%M-%S")
+    return OUTPUT / platform / name
+
+
+def reserve_output(target: Path) -> None:
+    """Mark OUTPUT as ours and empty the target folder, so no file of an older build remains."""
+    if OUTPUT.exists() and not (OUTPUT / MARKER).is_file():
+        raise SetupError(f"Refusing to reuse an unowned output folder: {OUTPUT}")
+    OUTPUT.mkdir(parents=True, exist_ok=True)
+    (OUTPUT / MARKER).write_text("PyApp compilation output\n", encoding="utf-8")
+    if target.exists():
+        if OUTPUT.resolve() not in target.resolve().parents:
+            raise SetupError(f"Refusing to empty a folder outside the compilation output: {target}")
+        shutil.rmtree(target)
+    target.mkdir(parents=True)
+
+
 def build_command(
-    python: str, script: Path, mode: str, terminal: bool, extra: List[str], preset: str = ""
+    python: str, script: Path, mode: str, terminal: bool, extra: List[str], output: Optional[Path] = None
 ) -> List[str]:
     """Build the configured application directly; launcher supervision is not bundled."""
-    variant = "terminal" if terminal else "no_terminal"
-    output = (OUTPUT / preset if preset else OUTPUT) / variant / mode
+    if output is None:
+        output = OUTPUT / "windows" / "build"
     return [
         python,
         "-m",
@@ -289,14 +360,37 @@ def build_command(
     ]
 
 
+def _ask_preset() -> Optional[str]:
+    """From the menu: choose a preset by number; Enter keeps the configured one, q cancels."""
+    presets = _presets()
+    current = _configured_preset()
+    print_heading("Choose a build preset")
+    _print_preset_table(presets, current, numbered=True)
+    print()
+    answer = ask(f"Number (Enter = {current}, q = cancel):").strip().lower()
+    if answer in ("q", "n", "no", "cancel"):
+        return None
+    names = list(presets)
+    if answer.isdecimal() and 1 <= int(answer) <= len(names):
+        return names[int(answer) - 1]
+    return answer or current
+
+
 def cmd_compile_app(arguments: List[str]) -> None:
-    """Build the app using an editable preset; --dry-run previews the effective command."""
+    """Build an .exe of the app with Nuitka, using a preset; --dry-run only shows the command."""
     parser = argparse.ArgumentParser(description=cmd_compile_app.__doc__)
     parser.add_argument("variant", nargs="?", choices=("terminal", "no_terminal"), default=None)
     parser.add_argument("--mode", choices=("standalone", "onefile"), default=None)
     parser.add_argument("--preset", help="preset in compilation/presets.json; overrides settings.json")
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--keep", action="store_true", help="build into a new dated folder instead of replacing")
+    parser.add_argument("--choose", action="store_true", help="ask for the preset (the dev menu passes this)")
     options = parser.parse_args(arguments)
+    if options.choose and not options.preset:
+        options.preset = _ask_preset()
+        if options.preset is None:
+            print_info("Nothing was built.")
+            return
     build = load_options(options.preset, options.mode, options.variant)
     s = settings()
     if options.dry_run:
@@ -304,40 +398,50 @@ def cmd_compile_app(arguments: List[str]) -> None:
         python = paths.VENV_PYTHON_EXE
     else:
         python = prepare(s).exe
+    target = output_folder(build, keep=options.keep)
     command = build_command(
-        python, Path(main_script_path(s)), build.mode, build.variant == "terminal", build.extra_args, build.preset
+        python, Path(main_script_path(s)), build.mode, build.variant == "terminal", build.extra_args, target
     )
     print_heading("Compile app")
-    print_info(f"Preset: {build.preset}; mode: {build.mode}; console: {build.variant}")
-    print_info(subprocess.list2cmdline(command))
+    print_fields(
+        [
+            ("Preset", build.preset),
+            ("Build", "one folder (copy all of it)" if build.mode == "standalone" else "a single .exe file"),
+            ("Console", _console_text(build.variant)),
+            ("Main script", main_script_path(s)),
+            ("Output", target),
+            ("Replaces", "nothing (dated copy)" if options.keep else "the previous build of this preset"),
+        ]
+    )
+    print(styled("  " + subprocess.list2cmdline(command), ANSI_DIM))
+    print()
     if options.dry_run:
         return
     validate_sources(python, app_sources(Path(paths.PYTHON_SCRIPTS_DIR)))
-    if OUTPUT.exists() and not (OUTPUT / MARKER).is_file():
-        raise SetupError(f"Refusing to reuse an unowned output folder: {OUTPUT}")
-    OUTPUT.mkdir(parents=True, exist_ok=True)
-    (OUTPUT / MARKER).write_text("PyApp compilation output\n", encoding="utf-8")
-    target = OUTPUT / build.preset / build.variant / build.mode
-    target.mkdir(parents=True, exist_ok=True)
+    reserve_output(target)
     with temporary_compiler(python) as env:
         result = subprocess.run(  # noqa: S603 - configured compiler, no shell
             command, cwd=paths.PYTHON_SCRIPTS_DIR, env=env, check=False
         )
         if result.returncode:
             raise SetupError("Nuitka compilation failed; see the compiler output above.")
-    print_success(f"Build completed: {target}. Test the produced application on a clean target machine.")
+    print_success("Build completed.")
+    executables = sorted(target.rglob("*.exe"))
+    print_fields([("Folder", target), *(("Program", path) for path in executables[:3])])
+    print_info("Test it on a PC without Python before sharing it.")
 
 
 def cmd_clean_compilation(_arguments: List[str]) -> None:
-    """Remove only the compilation tool's marked generated output; preserve compiler caches."""
+    """Delete every build (code/pyapp/compiled); compiler caches are kept."""
     target = OUTPUT.resolve()
-    parent = Path(paths.GENERATED_DIR).resolve()
-    if target.parent != parent or target.name != "compilation" or OUTPUT.is_symlink():
-        raise SetupError("Compilation output resolves outside the owned generated folder.")
+    parent = Path(paths.BACKEND_DIR).resolve()
+    if target.parent != parent or target.name != "compiled" or OUTPUT.is_symlink():
+        raise SetupError("Compilation output resolves outside code/pyapp/compiled.")
     if not target.exists():
         print_info("No compilation output to remove.")
         return
     if not (target / MARKER).is_file():
         raise SetupError(f"Refusing to delete unowned output: {target}")
+    size = sum(path.stat().st_size for path in target.rglob("*") if path.is_file())
     shutil.rmtree(target)
-    print_success("Removed compilation output.")
+    print_success(f"Removed the compilation output ({size / 1_000_000:.0f} MB): {target}")
