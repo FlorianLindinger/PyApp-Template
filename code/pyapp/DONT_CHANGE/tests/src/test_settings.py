@@ -35,6 +35,8 @@ class ValidationTests(unittest.TestCase):
             ("after_interpreter_crash_script", None),
             ("keyboard_interrupt_action", "block"),
             ("start_on_windows_start", 1),
+            ("show_splash_screen_for_no_terminal_start", "yes"),
+            ("splash_screen_messages", "Loading"),
             ("windows_startup_launch_mode", "gui"),
         ):
             with self.subTest(name=name), support.temporary_settings(append([f"{name} = {value!r}"])) as (

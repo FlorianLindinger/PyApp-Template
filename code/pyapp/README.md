@@ -86,6 +86,15 @@ in a comment above it. Among them:
 A mistake in the file is reported with its line at the next start. A setting missing in an older
 file gets its default from `DONT_CHANGE/data/dev_settings_default.py`.
 
+`show_splash_screen_for_no_terminal_start = True` shows a branded, animated startup card with the app's name and
+`icons/icon.png` while its environment is prepared, only for no-terminal starts. Set it to `False` to disable it.
+`splash_screen_messages` lists lines for under the name; each start shows the next one.
+It closes when the launcher starts `main.py`; no-terminal starts keep it visible for at
+least 0.5 seconds in parallel, without delaying the app. It does not wait for the app's GUI to load.
+Minimized starts skip it, and it needs no extra packages. See
+[startup splash details](DONT_CHANGE/docs/RUNTIME_SETTINGS.md#startup-splash) for bootstrap
+and Tkinter availability limits.
+
 ## Developer tools
 
 Double-click [`Open Developer Tools Menu.cmd`](Open%20Developer%20Tools%20Menu.cmd) for a numbered

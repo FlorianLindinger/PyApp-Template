@@ -131,6 +131,16 @@ use_classic_terminal = True
 browser_terminal_address = ""
 
 # --- Startup ---
+# Only for no-terminal starts: show a branded, animated splash during environment preparation and startup.
+# No extra packages; skipped for minimized starts. Closes at app handoff, not GUI readiness.
+# No-terminal starts show it for at least 0.5 s, in parallel with the app (no startup delay).
+# Begins after the bootstrap has found Python; unavailable Tk is silently skipped.
+show_splash_screen_for_no_terminal_start = True
+# A line under the app name; each start shows the next one (in this order, repeating; remembered per PC
+# in pyapp/generated). Too long lines are shortened with "...". Use [] for none.
+splash_screen_messages = [
+    "Built with PyApp-Template launcher",
+]
 # Start automatically when this Windows user signs in. Run Setup to apply or remove the Startup shortcut.
 start_on_windows_start = False
 # Which launcher to use at sign-in: "no_terminal", "terminal" (configured conhost/WT), or "browser".

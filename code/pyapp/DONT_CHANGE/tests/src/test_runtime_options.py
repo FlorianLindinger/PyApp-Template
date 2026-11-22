@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import ctypes
 import io
 import json
@@ -29,6 +30,7 @@ from pyapp.DONT_CHANGE.scripts import (
     console_tools,
     power,
     runtime_state,
+    splash,
     terminal_window,
     windows_focus,
 )
@@ -541,6 +543,114 @@ class CompilationTools(unittest.TestCase):
                 (output / compilation.MARKER).write_text("owned", encoding="utf-8")
                 compilation.cmd_clean_compilation([])
                 self.assertFalse(output.exists())
+
+
+class StartupSplash(unittest.TestCase):
+    def test_environment_failure_closes_the_splash_in_the_real_startup_flow(self):
+        from pyapp.DONT_CHANGE.actions import start_program
+
+        settings = config.settings()
+        with contextlib.ExitStack() as stack:
+            stack.enter_context(mock.patch.object(start_program, "settings", return_value=settings))
+            stack.enter_context(mock.patch.object(start_program, "resolve_mode", return_value="no_terminal"))
+            stack.enter_context(mock.patch.object(start_program, "set_terminal_appearance_once"))
+            stack.enter_context(mock.patch.object(start_program, "decide", return_value="allow"))
+            registry = stack.enter_context(mock.patch.object(start_program, "ProcessRegistry"))
+            stack.enter_context(mock.patch.object(start_program, "delete_finished_run_folders"))
+            stack.enter_context(mock.patch.object(start_program, "_hint_outdated_shortcuts"))
+            stack.enter_context(mock.patch("pyapp.DONT_CHANGE.scripts.hidden_caches.hide_cache_folders"))
+            spawn = stack.enter_context(mock.patch.object(splash.subprocess, "Popen"))
+            thread = stack.enter_context(mock.patch.object(splash.threading, "Thread"))
+
+            def fail_environment(**kwargs: object) -> None:
+                spawn.assert_called_once()
+                spawn.return_value.stdin.close.assert_not_called()
+                raise RuntimeError("environment failed")
+
+            stack.enter_context(mock.patch.object(start_program, "ensure_environment", side_effect=fail_environment))
+            registry.return_value.records.return_value = ((), ())
+            with self.assertRaisesRegex(RuntimeError, "environment failed"):
+                start_program.main()
+            spawn.return_value.stdin.close.assert_called_once()
+            thread.call_args.kwargs["target"]()
+            spawn.return_value.wait.assert_called_once_with(timeout=5)
+
+    def settings(self, **changes: object) -> SimpleNamespace:
+        values: Dict[str, object] = {
+            "show_splash_screen_for_no_terminal_start": True,
+            "start_minimized": False,
+            "start_maximized": False,
+            "program_name": "Test App",
+        }
+        values.update(changes)
+        return SimpleNamespace(**values)
+
+    def test_disabled_and_minimized_launches_do_not_spawn(self):
+        for changes in ({"show_splash_screen_for_no_terminal_start": False}, {"start_minimized": True}):
+            with mock.patch.object(splash.subprocess, "Popen") as spawn:
+                with splash.startup_splash(self.settings(**changes), "no_terminal"):
+                    pass
+                spawn.assert_not_called()
+
+    def test_terminal_and_browser_modes_do_not_spawn(self):
+        for mode in ("conhost", "wt", "browser", "terminal", ""):
+            with self.subTest(mode=mode), mock.patch.object(splash.subprocess, "Popen") as spawn:
+                with splash.startup_splash(self.settings(), mode):
+                    pass
+                spawn.assert_not_called()
+
+    def test_no_terminal_minimum_is_passed_to_helper_and_reaped_in_parallel(self):
+        with mock.patch.object(splash.subprocess, "Popen") as spawn, mock.patch.object(
+            splash.threading, "Thread"
+        ) as thread:
+            with splash.startup_splash(self.settings(), "no_terminal"):
+                self.assertEqual(spawn.call_args.args[0][-1], "0.5")
+            spawn.return_value.stdin.close.assert_called_once()
+            spawn.return_value.wait.assert_not_called()
+            thread.return_value.start.assert_called_once()
+            self.assertTrue(thread.call_args.kwargs["daemon"])
+            thread.call_args.kwargs["target"]()
+            spawn.return_value.wait.assert_called_once_with(timeout=5)
+
+    def test_success_and_failure_close_pipe_and_reap_helper(self):
+        for fail in (False, True):
+            with mock.patch.object(splash.subprocess, "Popen") as spawn, mock.patch.object(
+                splash.threading, "Thread"
+            ) as thread:
+                child = spawn.return_value
+                try:
+                    with splash.startup_splash(
+                        self.settings(start_minimized=True, start_maximized=True), "no_terminal"
+                    ):
+                        child.stdin.close.assert_not_called()
+                        if fail:
+                            raise RuntimeError("environment failed")
+                except RuntimeError:
+                    self.assertTrue(fail)
+                child.stdin.close.assert_called_once()
+                thread.call_args.kwargs["target"]()
+                child.wait.assert_called_once_with(timeout=5)
+                self.assertIn("Test App", spawn.call_args.args[0])
+
+    def test_spawn_failure_does_not_prevent_startup(self):
+        with mock.patch.object(splash.subprocess, "Popen", side_effect=OSError("unavailable")), mock.patch(
+            "pyapp.DONT_CHANGE.scripts.diagnostics.note_ignored"
+        ) as note:
+            with splash.startup_splash(self.settings(), "no_terminal"):
+                pass
+            note.assert_called_once()
+
+    def test_stalled_helper_is_killed_and_reaped(self):
+        with mock.patch.object(splash.subprocess, "Popen") as spawn, mock.patch.object(
+            splash.threading, "Thread"
+        ) as thread:
+            child = spawn.return_value
+            child.wait.side_effect = [subprocess.TimeoutExpired("splash", 1), 0]
+            with splash.startup_splash(self.settings(), "no_terminal"):
+                pass
+            thread.call_args.kwargs["target"]()
+            child.kill.assert_called_once()
+            self.assertEqual(child.wait.call_count, 2)
 
 
 if __name__ == "__main__":

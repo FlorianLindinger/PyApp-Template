@@ -57,6 +57,7 @@ SHORTCUT_KINDS = (
 # GitHub Actions an app can choose in github_actions; one data/workflows/<name>.yml each.
 APP_WORKFLOWS = ("leaks",)
 BOOLEANS = (
+    "show_splash_screen_for_no_terminal_start",
     "start_maximized",
     "prevent_sleep",
     "keep_display_awake",
@@ -425,6 +426,11 @@ def validate(module: Optional[Union[ModuleType, SimpleNamespace]] = None) -> Non
         "github_actions",
         lambda v: isinstance(v, (list, tuple)) and all(name in APP_WORKFLOWS for name in v),
         "use a list of " + ", ".join(repr(name) for name in APP_WORKFLOWS),
+    )
+    need(
+        "splash_screen_messages",
+        lambda v: isinstance(v, (list, tuple)) and all(isinstance(m, str) for m in v),
+        'use a list of strings, such as ["Warming up ...", "Almost there ..."], or [] for none',
     )
     need(
         "args_for_main_py",

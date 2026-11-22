@@ -232,6 +232,8 @@ PROTECTED_SETTING_NAMES = [
     "start_in_shortcut_position",
     "start_menu_shortcuts",
     "start_minimized",
+    "show_splash_screen_for_no_terminal_start",
+    "splash_screen_messages",
     "working_directory",
     "keyboard_interrupt_action",
     "after_interpreter_crash_script",
@@ -352,6 +354,8 @@ BROWSER_WINDOW_FILE_NAME = "browser-window.json"
 # The secret part of the browser terminal's stable address, per PC (scripts/browser_links.py).
 # UPDATE code/pyapp/.gitignore when moving it: it must not be committed.
 BROWSER_KEY_PATH = GENERATED_DIR + "\\browser_terminal_key.txt"
+# Which splash_screen_messages line the next start shows (per PC; generated/ is not committed).
+SPLASH_MESSAGE_INDEX_PATH = GENERATED_DIR + "\\splash_message_index.txt"
 
 # ------------------------
 # shortcuts (their targets are in PROTECTED_PATHS)
@@ -386,6 +390,8 @@ ICON_PNG_PATH = ICON_DIR + "\\icon.png"            # the source image, also the 
 # Identifies the shipped placeholder icon.png ("Replace to change base icon"): while it is unchanged,
 # the bundled data/icons/default_icon.png is used instead. Update it only with a new placeholder.
 ICON_PLACEHOLDER_ID = "512x512:34babea5"
+# SHA-256 of the shipped placeholder file's bytes: a quick check that needs no PNG decoding (splash screen).
+ICON_PLACEHOLDER_SHA256 = "a16f76de2551655c8c7ebabeb329f7f821cef2910c7470c2cf890b6513162cfc"
 SETTINGS_ICON_PATH = ICON_DIR + "\\settings.ico"
 STOP_ICON_PATH = ICON_DIR + "\\stop.ico"
 LOG_ICON_PATH = ICON_DIR + "\\log.ico"

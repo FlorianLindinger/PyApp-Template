@@ -61,9 +61,10 @@ def main():
 
         threading.Thread(target=work, daemon=True).start()  # keeps the window responsive
 
-    def flash_later():
-        show("Switch to another window: the taskbar button flashes in 3 seconds.")
-        root.after(3000, pyapp_api.flash)
+    def minimize_and_flash():
+        show("Minimized: the taskbar button flashes until you return to the app.")
+        root.iconify()
+        root.after(500, pyapp_api.flash)  # let Windows finish minimizing before flashing
 
     def ask():
         answer = pyapp_api.ask_yes_no("Do you like this example?")
@@ -92,7 +93,7 @@ def main():
     for text, command in (
         ("Send a notification", notify),
         ("Long task with taskbar progress", long_task),
-        ("Flash the taskbar button", flash_later),
+        ("Minimize and flash", minimize_and_flash),
         ("Ask a question", ask),
         ("Handle an error (crash log, keeps running)", handled_error),
         ("Crash (see the crash report)", crash),

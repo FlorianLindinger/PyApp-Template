@@ -1,5 +1,34 @@
 # Runtime settings and implementation notes
 
+## Startup splash
+
+`show_splash_screen_for_no_terminal_start = True` displays a rounded dark card with a soft, turning neon glow,
+a large app icon, the name in a color gradient, fading status messages and an animated
+loading bar, only in `no_terminal` mode. Set it to `False` to disable it. It covers environment
+preparation and closes when the watchdog acknowledges that it has started `main.py`.
+This is a launcher handoff, not a guarantee that an application's GUI has finished loading.
+No-terminal starts keep the splash visible for at least 0.5 seconds, even if handoff
+finishes sooner. This timer runs in the splash process; the app and launcher handoff
+continue immediately in parallel. Terminal and browser-terminal starts never show a splash.
+
+The splash starts after bootstrap has found the launcher's Python, so it cannot cover
+the first installation of uv/Python. It uses that Python's Tkinter in a separate process,
+without extra packages; if Tk is unavailable, startup continues without a splash.
+Tkinter draws the card. On Windows the glow is a separate click-through window with
+per-pixel transparency (ctypes, user32/GDI+), so it fades smoothly into any desktop; each
+frame recolors precomputed per-pixel bytes with `bytes.translate`, which costs a few
+milliseconds. If that window cannot be created, the card shows without glow.
+`splash_screen_messages` lists lines for under the name: each start shows the next one, in
+order and repeating (the position is kept per PC in `generated/splash_message_index.txt`; the
+preview shows the next start's line without moving on). Long app names first get a smaller
+font, then two lines, then an ellipsis.
+No Pillow, NumPy or Qt packages are needed. The shipped
+placeholder icon selects the bundled default, just like notifications.
+Minimized starts suppress it unless `start_maximized` takes precedence. Setup, developer
+tools, the direct fallback start and starts that focus an existing instance do not show it.
+It closes on startup errors as well as success, and its pipe lifetime also handles an
+abrupt launcher exit.
+
 ## Working folder
 
 `working_directory = ""` preserves `start_in_shortcut_position`. A nonempty value takes

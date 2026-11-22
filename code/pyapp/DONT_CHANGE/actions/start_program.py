@@ -31,6 +31,7 @@ from pyapp.DONT_CHANGE.scripts.launcher_ui import (
     set_terminal_appearance_once,
 )
 from pyapp.DONT_CHANGE.scripts.runtime_state import ProcessRegistry
+from pyapp.DONT_CHANGE.scripts.splash import startup_splash
 
 
 def resolve_mode(s: Union[ModuleType, SimpleNamespace], requested: str) -> str:
@@ -200,98 +201,99 @@ def main() -> int:
         if errors:
             raise RuntimeError("Could not stop the running instance(s): " + "; ".join(errors))
 
-    # --- 3. Housekeeping, then the environment: ensure_environment() creates code/pyapp/generated/.venv
-    # and installs the packages from uv.lock when something changed; usually it only checks and returns.
-    delete_finished_run_folders()
-    from pyapp.DONT_CHANGE.scripts.hidden_caches import hide_cache_folders
+    with startup_splash(s, mode):
+        # --- 3. Housekeeping, then the environment: ensure_environment() creates code/pyapp/generated/.venv
+        # and installs the packages from uv.lock when something changed; usually it only checks and returns.
+        delete_finished_run_folders()
+        from pyapp.DONT_CHANGE.scripts.hidden_caches import hide_cache_folders
 
-    hide_cache_folders()  # e.g. code\__pycache__ from the previous run
-    _hint_outdated_shortcuts(s)
-    app = ensure_environment(interactive=True)
+        hide_cache_folders()  # e.g. code\__pycache__ from the previous run
+        _hint_outdated_shortcuts(s)
+        app = ensure_environment(interactive=True)
 
-    # --- 4. A folder for this run (DONT_CHANGE\tmp\runs\<random name>): the processes of this run
-    # exchange files there, such as the startup status and the crash report.
-    # Keep run paths short; mkdir reserves the name even with concurrent launches.
-    while True:
-        run_dir = Path(paths.RUNS_DIR) / uuid.uuid4().hex[:12]
-        try:
-            run_dir.mkdir(parents=True)
-        except FileExistsError:
-            continue
-        break
-    # Information for the watchdog travels as environment variables, which a started process inherits.
-    env = os.environ.copy()
-    env["PYAPP_RUN_DIR"] = str(run_dir)
-    env["PYAPP_START_DIR"] = env.get("PYAPP_START_DIR", str(Path.cwd()))
-    env["PYAPP_APP_PYTHON"] = json.dumps({"exe": app.exe, "flags": list(app.flags)})
-    # Shortcut argument 1 is the app ID. Batch launchers use the same protocol and append
-    # application arguments; JSON preserves empty strings and quoted spaces across hosts.
-    extra = sys.argv[2:] if os.environ.pop("PYAPP_BATCH_ARGUMENTS", "") == "1" else []
-    env["PYAPP_EXTRA_ARGS"] = json.dumps(extra)
-    # --- 5. The command that starts the watchdog. -I -S: ignore installed packages (the launcher uses
-    # only Python's standard library); -X faulthandler: print a Python traceback even on a hard crash.
-    args = [
-        sys.executable,
-        "-I",
-        "-S",
-        "-X",
-        "utf8",
-        "-X",
-        "faulthandler",
-        paths.WATCHDOG_PATH,
-        app_id or paths.EMPTY_ARG_INDICATOR,
-        mode,
-    ]
-    # Window options for the new process; 7 means "minimized, without taking the focus".
-    startup = subprocess.STARTUPINFO()
-    if s.start_minimized and not s.start_maximized:
-        startup.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-        startup.wShowWindow = 7
-    # Wrap the command for the chosen window: Windows Terminal (wt), the classic console (conhost),
-    # or the browser terminal's host. Without a terminal the command runs as it is, hidden.
-    if mode == "wt":
-        args = wt_command(s.program_name, s.tab_bar_color, args, dedicated_window=needs_window(s))
-    elif mode == "conhost":
-        args = [paths.CONHOST_EXE, *args]
-    elif mode == "browser":
-        args = browser_command(s, run_dir, args)
-        # Windows lets the process started by the click bring windows to the front; the browser
-        # opens later from the hidden host, so this process passes that right on (ASFW_ANY).
-        try:
-            import ctypes
-
-            ctypes.windll.user32.AllowSetForegroundWindow(-1)
-        except Exception:
-            note_ignored("AllowSetForegroundWindow for the browser terminal")
-    # The browser terminal's host has no window of its own, like the watchdog without a terminal.
-    hidden = mode in ("no_terminal", "browser")
-    # --- 6. Start it, then wait until the watchdog writes startup.json ("started" or an error).
-    # subprocess.Popen starts a program and returns at once, without waiting for it to end.
-    with Path(run_dir / "bootstrap.log").open("w", encoding="utf-8") as diagnostics:
-        # The configured launcher/interpreter is intentional; program arguments remain separate.
-        child = subprocess.Popen(  # noqa: S603
-            args,
-            env=env,
-            startupinfo=startup,
-            creationflags=subprocess.CREATE_NO_WINDOW if hidden else subprocess.CREATE_NEW_CONSOLE,
-            stdout=diagnostics if hidden else None,
-            stderr=diagnostics if hidden else None,
-        )
-        deadline = time.monotonic() + paths.STARTUP_ACKNOWLEDGEMENT_TIMEOUT_SECONDS
-        while time.monotonic() < deadline:
-            # Before reading the status: a watchdog that cancels the launch writes "cancelled" and
-            # exits at once, which must not look like an exit before startup.
-            # wt.exe may exit after handing its command to an existing terminal window.
-            exited = mode != "wt" and child.poll() is not None
+        # --- 4. A folder for this run (DONT_CHANGE\tmp\runs\<random name>): the processes of this run
+        # exchange files there, such as the startup status and the crash report.
+        # Keep run paths short; mkdir reserves the name even with concurrent launches.
+        while True:
+            run_dir = Path(paths.RUNS_DIR) / uuid.uuid4().hex[:12]
             try:
-                status = json.loads((run_dir / "startup.json").read_text(encoding="utf-8"))
-            except (OSError, ValueError):  # not written yet, or being replaced right now
-                status = None
-            if status:
-                if status["status"] in {"started", "cancelled"}:
-                    return 0
-                raise RuntimeError(status.get("message", "Watchdog startup failed"))
-            if exited:
-                raise RuntimeError("The watchdog exited before startup. See " + str(run_dir / "bootstrap.log"))
-            time.sleep(0.05)
-    raise TimeoutError("No startup acknowledgement. See " + str(run_dir))
+                run_dir.mkdir(parents=True)
+            except FileExistsError:
+                continue
+            break
+        # Information for the watchdog travels as environment variables, which a started process inherits.
+        env = os.environ.copy()
+        env["PYAPP_RUN_DIR"] = str(run_dir)
+        env["PYAPP_START_DIR"] = env.get("PYAPP_START_DIR", str(Path.cwd()))
+        env["PYAPP_APP_PYTHON"] = json.dumps({"exe": app.exe, "flags": list(app.flags)})
+        # Shortcut argument 1 is the app ID. Batch launchers use the same protocol and append
+        # application arguments; JSON preserves empty strings and quoted spaces across hosts.
+        extra = sys.argv[2:] if os.environ.pop("PYAPP_BATCH_ARGUMENTS", "") == "1" else []
+        env["PYAPP_EXTRA_ARGS"] = json.dumps(extra)
+        # --- 5. The command that starts the watchdog. -I -S: ignore installed packages (the launcher uses
+        # only Python's standard library); -X faulthandler: print a Python traceback even on a hard crash.
+        args = [
+            sys.executable,
+            "-I",
+            "-S",
+            "-X",
+            "utf8",
+            "-X",
+            "faulthandler",
+            paths.WATCHDOG_PATH,
+            app_id or paths.EMPTY_ARG_INDICATOR,
+            mode,
+        ]
+        # Window options for the new process; 7 means "minimized, without taking the focus".
+        startup = subprocess.STARTUPINFO()
+        if s.start_minimized and not s.start_maximized:
+            startup.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+            startup.wShowWindow = 7
+        # Wrap the command for the chosen window: Windows Terminal (wt), the classic console (conhost),
+        # or the browser terminal's host. Without a terminal the command runs as it is, hidden.
+        if mode == "wt":
+            args = wt_command(s.program_name, s.tab_bar_color, args, dedicated_window=needs_window(s))
+        elif mode == "conhost":
+            args = [paths.CONHOST_EXE, *args]
+        elif mode == "browser":
+            args = browser_command(s, run_dir, args)
+            # Windows lets the process started by the click bring windows to the front; the browser
+            # opens later from the hidden host, so this process passes that right on (ASFW_ANY).
+            try:
+                import ctypes
+
+                ctypes.windll.user32.AllowSetForegroundWindow(-1)
+            except Exception:
+                note_ignored("AllowSetForegroundWindow for the browser terminal")
+        # The browser terminal's host has no window of its own, like the watchdog without a terminal.
+        hidden = mode in ("no_terminal", "browser")
+        # --- 6. Start it, then wait until the watchdog writes startup.json ("started" or an error).
+        # subprocess.Popen starts a program and returns at once, without waiting for it to end.
+        with Path(run_dir / "bootstrap.log").open("w", encoding="utf-8") as diagnostics:
+            # The configured launcher/interpreter is intentional; program arguments remain separate.
+            child = subprocess.Popen(  # noqa: S603
+                args,
+                env=env,
+                startupinfo=startup,
+                creationflags=subprocess.CREATE_NO_WINDOW if hidden else subprocess.CREATE_NEW_CONSOLE,
+                stdout=diagnostics if hidden else None,
+                stderr=diagnostics if hidden else None,
+            )
+            deadline = time.monotonic() + paths.STARTUP_ACKNOWLEDGEMENT_TIMEOUT_SECONDS
+            while time.monotonic() < deadline:
+                # Before reading the status: a watchdog that cancels the launch writes "cancelled" and
+                # exits at once, which must not look like an exit before startup.
+                # wt.exe may exit after handing its command to an existing terminal window.
+                exited = mode != "wt" and child.poll() is not None
+                try:
+                    status = json.loads((run_dir / "startup.json").read_text(encoding="utf-8"))
+                except (OSError, ValueError):  # not written yet, or being replaced right now
+                    status = None
+                if status:
+                    if status["status"] in {"started", "cancelled"}:
+                        return 0
+                    raise RuntimeError(status.get("message", "Watchdog startup failed"))
+                if exited:
+                    raise RuntimeError("The watchdog exited before startup. See " + str(run_dir / "bootstrap.log"))
+                time.sleep(0.05)
+        raise TimeoutError("No startup acknowledgement. See " + str(run_dir))
