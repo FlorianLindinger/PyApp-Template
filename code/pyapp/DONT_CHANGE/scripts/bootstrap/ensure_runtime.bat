@@ -54,16 +54,18 @@ for %%N in (1 2 3 4 5 6 7 8) do set "PYAPP_S_%%N="
 set "PYAPP_STAMP_1="
 set "PYAPP_STAMP_2="
 set "PYAPP_CACHED_STAMP="
+set "PYAPP_APP_PYTHON="
 
 rem ---- Fast path: tmp\runtime.cmd is written by the last successful run. It sets PYAPP_UV,
-rem ---- PYAPP_PYTHON and PYAPP_CACHED_STAMP. Reuse it only if the stamp is the same and both
-rem ---- programs still exist; any "goto resolve" below means: find them again (slow path).
+rem ---- PYAPP_PYTHON, PYAPP_APP_PYTHON (the project's Python, if not the same) and
+rem ---- PYAPP_CACHED_STAMP. Reuse it only if the stamp is the same and the programs still exist; any "goto resolve" below means: find them again (slow path).
 rem "call :load_cache" runs the lines from ":load_cache" down to its "exit /b", then comes back.
 if exist "%~dp0..\..\tmp\runtime.cmd" call :load_cache
 if not defined PYAPP_CACHED_STAMP goto resolve
 if not "%PYAPP_CACHED_STAMP%"=="%PYAPP_STAMP%" goto resolve
 if not exist "%PYAPP_PYTHON%" goto resolve
 if not exist "%PYAPP_UV%" goto resolve
+if defined PYAPP_APP_PYTHON if not exist "%PYAPP_APP_PYTHON%" goto resolve
 exit /b 0
 
 rem ---- Slow path: something changed or this is the first start.

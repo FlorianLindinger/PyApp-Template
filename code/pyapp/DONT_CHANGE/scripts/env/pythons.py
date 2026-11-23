@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import contextlib
 import json
+import os
 import re
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
 from types import ModuleType, SimpleNamespace
@@ -18,6 +20,19 @@ from pyapp.DONT_CHANGE.scripts.console_tools import print_step
 from pyapp.DONT_CHANGE.scripts.env.uv import install_newer_uv, run_uv, run_uv_captured
 from pyapp.DONT_CHANGE.scripts.errors import SetupError
 from pyapp.DONT_CHANGE.scripts.standalone.python_request import allows, recorded_request, uv_request
+
+
+def app_base_python() -> str:
+    """The Python the app's environment is built on: the launcher's own, unless the project uses
+    PyPy or another implementation; then the bootstrap passes it in PYAPP_APP_PYTHON."""
+    other = os.environ.get("PYAPP_APP_PYTHON", "")
+    return other if other and Path(other).is_file() else sys.executable
+
+
+def app_base_version() -> Tuple[int, ...]:
+    """(major, minor, micro) of app_base_python()."""
+    exe = app_base_python()
+    return tuple(sys.version_info[:3]) if exe == sys.executable else interpreter_version(exe)
 
 
 def interpreter_version(exe: str) -> Tuple[int, ...]:

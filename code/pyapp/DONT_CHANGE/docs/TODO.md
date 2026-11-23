@@ -1,9 +1,5 @@
 # TODO
 
-make paths in shrotcut  shorter
-
-do i actually support pypy with my backend?
-ho
 think abouti waht primpt option i want for crash: ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 Crash log: <project folder>\crash logs\crash_log_<date>_<id>.txt
 ? Enter = close, v = save all traceback values and open them (not redacted), c = copy the report to send it to the developer:

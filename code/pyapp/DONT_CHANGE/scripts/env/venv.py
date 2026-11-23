@@ -57,6 +57,8 @@ from pyapp.DONT_CHANGE.scripts.env.pyproject import (
     version_satisfies_requires,
 )
 from pyapp.DONT_CHANGE.scripts.env.pythons import (
+    app_base_python,
+    app_base_version,
     find_or_install_python,
     interpreter_version,
     invalidate_runtime_cache,
@@ -313,13 +315,13 @@ def ensure_environment(interactive: bool = True) -> AppPython:
     s = settings()
     validate(s)
     Path(PROJECT_DIR).mkdir(parents=True, exist_ok=True)
-    base_python = sys.executable
+    base_python = app_base_python()  # the launcher's Python, unless the project uses PyPy
 
     # Only one process at a time may change the environment (two starts at once would install
     # into the same folder). FileLock waits until no other launcher process holds the lock file.
     with FileLock(ENVIRONMENT_LOCK_PATH, timeout=600):
         remove_abandoned_venvs()
-        base_version = tuple(sys.version_info[:3])  # base_python is this interpreter
+        base_version = app_base_version()
         file_request = read_python_version_file()
 
         if file_request is None:
@@ -385,16 +387,18 @@ def environment_fingerprint(s: Union[ModuleType, SimpleNamespace]) -> str:
     import hashlib
 
     parts = [
-        "v2",
+        "v3",
         PROJECT_DIR,
         sys.executable,
         ".".join(map(str, sys.version_info)),
+        app_base_python(),
         os.environ.get("PYAPP_UV", ""),
         s.python_source,
         s.uv_cache,
     ]
     for path in (
         sys.executable,
+        app_base_python(),
         PYPROJECT_PATH,
         UV_LOCK_PATH,
         PYTHON_VERSION_FILE,
@@ -566,7 +570,7 @@ def install_problem(name: str, s: Optional[Union[ModuleType, SimpleNamespace]] =
     if "not found in the package registry" in err:
         return f'there is no package "{name}" on PyPI.'
     if _NO_BUILD_HERE.search(err):
-        version = ".".join(str(part) for part in sys.version_info[:2])
+        version = ".".join(str(part) for part in app_base_version()[:2])
         machine = {"AMD64": "64-bit", "ARM64": "ARM64", "x86": "32-bit"}.get(platform.machine(), platform.machine())
         return f"it does not exist for Python {version} on Windows ({machine})."
     return None

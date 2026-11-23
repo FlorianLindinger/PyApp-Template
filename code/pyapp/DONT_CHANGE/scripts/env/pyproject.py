@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import json
 import re
-import sys
 from pathlib import Path
 from types import ModuleType, SimpleNamespace
 from typing import Iterator, List, Match, Optional, Sequence, Tuple, Union
@@ -126,7 +125,10 @@ def reconcile_pyproject(
                 "developer_settings.py wins." + (" Not taken over: " + ", ".join(ignored) if ignored else "")
             )
         requires = requires or current_requires_python(text)
-    requires = requires or requires_python_for(sys.version_info[:2])
+    if not requires:
+        from pyapp.DONT_CHANGE.scripts.env.pythons import app_base_version
+
+        requires = requires_python_for(app_base_version()[:2])
     new_text = render_pyproject(wanted, requires)
     if not Path(PYPROJECT_PATH).is_file() or read_pyproject() != new_text:
         _warn_about_dropped_sources(read_pyproject() if Path(PYPROJECT_PATH).is_file() else "")

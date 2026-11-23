@@ -200,7 +200,10 @@ upgrade them or undo the change, and the new environment replaces the old one on
 **PyPy** works too (tested on PyPy 3.11: Setup, the environment, the app's tests, tkinter, the
 no-terminal start and crash reports). Run *change-python* with `pypy@3.11` in the developer tools
 (or set `python_version = "pypy@3.11"`, or `"pypy"` for the newest), and uv downloads PyPy like any
-other Python. The launcher itself keeps running on CPython; only your app runs on PyPy.
+other Python. The launcher itself keeps running on CPython; only your app runs on PyPy. For that,
+the first start also finds or installs a CPython of the same minor version (where `python_source`
+says; with `"system"`, any installed CPython 3.8+). It needs no environment of its own, so the
+project still has one `.venv`.
 Before switching, consider:
 
 - **Packages:** packages with C code need wheels built for PyPy on Windows (`pp311` on PyPI),

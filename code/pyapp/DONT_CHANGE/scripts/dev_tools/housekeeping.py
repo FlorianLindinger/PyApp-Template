@@ -31,7 +31,12 @@ from pyapp.DONT_CHANGE.scripts.console_tools import (
 from pyapp.DONT_CHANGE.scripts.dev_tools.common import confirm
 from pyapp.DONT_CHANGE.scripts.diagnostics import diagnostics_summary, note_ignored
 from pyapp.DONT_CHANGE.scripts.env.pyproject import current_requires_python, declared_dependencies
-from pyapp.DONT_CHANGE.scripts.env.pythons import read_python_version_file, version_text
+from pyapp.DONT_CHANGE.scripts.env.pythons import (
+    app_base_python,
+    app_base_version,
+    read_python_version_file,
+    version_text,
+)
 from pyapp.DONT_CHANGE.scripts.env.uv import uv_exe, uv_succeeds, uv_version
 from pyapp.DONT_CHANGE.scripts.env.venv import read_venv_config, venv_home_valid, venv_version
 from pyapp.DONT_CHANGE.scripts.errors import SettingsError, SetupError
@@ -227,6 +232,11 @@ def cmd_status(_arguments: List[str]) -> None:
         "uv and Python": [
             ("uv", uv_state, uv is not None),
             ("Launcher Python", f"{version_text(sys.version_info[:3])} at {sys.executable}"),
+            *(
+                [("Project Python", f"{version_text(app_base_version())} at {app_base_python()}")]
+                if app_base_python() != sys.executable
+                else []
+            ),
             ("python_version", describe_python_request(s.python_version)),
             ("python_source", s.python_source),
             (".python-version", read_python_version_file() or "(missing)"),

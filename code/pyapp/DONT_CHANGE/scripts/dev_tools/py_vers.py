@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import sys
 import tempfile
 from pathlib import Path
 from typing import List, Optional
@@ -19,6 +18,7 @@ from pyapp.DONT_CHANGE.scripts.console_tools import (
 )
 from pyapp.DONT_CHANGE.scripts.dev_tools.common import confirm, prepare
 from pyapp.DONT_CHANGE.scripts.env.pythons import (
+    app_base_python,
     available_summary,
     find_python,
     interpreter_version,
@@ -109,4 +109,4 @@ def cmd_update_python(_arguments: List[str]) -> None:
         refuse_mutation_while_running()
         build_venv(newest_exe, locked=True, s=s)
     invalidate_runtime_cache()
-    print_success(f"Python {version_text(interpreter_version(newest_exe or sys.executable))} is ready.")
+    print_success(f"Python {version_text(interpreter_version(newest_exe or app_base_python()))} is ready.")

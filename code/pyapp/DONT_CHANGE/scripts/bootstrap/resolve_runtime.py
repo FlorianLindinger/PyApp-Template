@@ -693,7 +693,7 @@ def project_python_request(settings: Settings) -> str:
 
 
 def resolve_python(settings: Settings, uv: Path) -> Tuple[str, Path]:
-    """(the launcher's Python, the uv to use from now on)."""
+    """(the project's Python, the uv to use from now on): the Python the app's environment is built on."""
     source = setting(settings, "python_source", "uv_user")
     assert_choice("python_source", source, ("local", "uv_user", "system"))
     set_uv_environment(settings, source)
@@ -735,15 +735,62 @@ def resolve_python(settings: Settings, uv: Path) -> Tuple[str, Path]:
                 raise BootstrapError(f"Python {request} was installed but uv cannot find it.")
     finally:
         os.chdir(previous_folder)
-    code, lines = run_captured(python, ["-I", "-S", "-c", "import sys; print('%d.%d.%d' % sys.version_info[:3])"])
+    version, _implementation = python_identity(python)
+    if version[:2] < MINIMUM_PYTHON:
+        raise BootstrapError(
+            f"Python {'.'.join(map(str, version))} at '{python}' is older than 3.8, which the launcher needs. "
+            "Choose python_version 3.8 or newer in developer_settings.py."
+        )
+    return python, uv
+
+
+def python_identity(python: str) -> Tuple[Tuple[int, ...], str]:
+    """(version, implementation such as "cpython" or "pypy") of an interpreter, without site or user code."""
+    probe = "import sys; print('%d.%d.%d' % sys.version_info[:3]); print(sys.implementation.name)"
+    code, lines = run_captured(python, ["-I", "-S", "-c", probe])
     version = version_tuple(lines[0]) if code == 0 and lines else None
     if version is None:
         raise BootstrapError(_start_problems[-1] if _start_problems else f"The Python at '{python}' does not start.")
-    if version[:2] < MINIMUM_PYTHON:
-        raise BootstrapError(
-            f"Python {lines[0]} at '{python}' is older than 3.8, which the launcher needs. Choose python_version 3.8 or newer in developer_settings.py."
-        )
-    return python, uv
+    return version, (lines[1].strip() if len(lines) > 1 else "cpython")
+
+
+def resolve_launcher_python(settings: Settings, uv: Path, app_python: str) -> str:
+    """The Python that runs the launcher: the project's own Python if it is CPython.
+
+    The launcher uses ctypes, COM and console APIs that only CPython is tested with. For a project
+    on PyPy (or another implementation) it gets a CPython of the same minor version, found or
+    installed where python_source says, like the project's Python; any installed CPython 3.8+ also
+    works. Only the app runs on PyPy. The launcher needs no environment of its own (-I -S).
+    """
+    version, implementation = python_identity(app_python)
+    if implementation == "cpython":
+        return app_python
+    minor = f"{version[0]}.{version[1]}"
+    previous_folder = Path.cwd()
+    os.chdir(tempfile.gettempdir())  # outside the project, as in resolve_python
+    try:
+        for request in (f"cpython@{minor}", "cpython"):
+            found = find_python(uv, request)
+            if found and python_identity(found)[0][:2] >= MINIMUM_PYTHON:
+                return found
+        if setting(settings, "python_source", "uv_user") == "system":
+            raise BootstrapError(
+                f"The project uses {implementation} {minor}; the launcher itself runs on CPython 3.8 or newer, but "
+                'python_source is "system" and no CPython is installed on this PC. Install one (for example from '
+                "python.org), or choose another python_source in developer_settings.py."
+            )
+        step(f"The project uses {implementation}; installing CPython {minor} for the launcher with uv...")
+        if run_live(uv, ["python", "install", f"cpython@{minor}"]):
+            raise BootstrapError(
+                f"uv could not install CPython {minor}, which runs the launcher of a {implementation} project. "
+                "On a company network, a firewall may block the download from github.com."
+            )
+        found = find_python(uv, f"cpython@{minor}")
+        if not found:
+            raise BootstrapError(f"CPython {minor} was installed but uv cannot find it.")
+        return found
+    finally:
+        os.chdir(previous_folder)
 
 
 # ---------------------------------------------------------------- project folder
@@ -756,14 +803,20 @@ def create_generated_folder() -> None:
         raise BootstrapError(f"Could not create {GENERATED_DIR}. ({error})") from error
 
 
-def cache_text(uv: object, python: str, stamp: str) -> str:
-    """ensure_runtime.bat skips its code page switch for caches whose first line is "rem ascii"."""
-    ascii_only = all(" " <= character <= "~" for character in f"{uv}{python}{stamp}")
+def cache_text(uv: object, python: str, stamp: str, app_python: str = "") -> str:
+    """ensure_runtime.bat skips its code page switch for caches whose first line is "rem ascii".
+
+    PYAPP_PYTHON runs the launcher; PYAPP_APP_PYTHON is the project's Python, which the app's
+    environment is built on (the same file unless the project uses PyPy or another implementation).
+    """
+    app_python = app_python or python
+    ascii_only = all(" " <= character <= "~" for character in f"{uv}{python}{app_python}{stamp}")
     lines = [
         "rem ascii" if ascii_only else "rem utf-8",
         "rem Generated by resolve_runtime.py. Delete this file to force a new uv/Python lookup.",
         'set "PYAPP_UV=' + str(uv).replace("%", "%%") + '"',
         'set "PYAPP_PYTHON=' + python.replace("%", "%%") + '"',
+        'set "PYAPP_APP_PYTHON=' + app_python.replace("%", "%%") + '"',
         'set "PYAPP_CACHED_STAMP=' + stamp.replace("%", "%%") + '"',
     ]
     return "\r\n".join(lines) + "\r\n"
@@ -800,8 +853,9 @@ def resolve(stamp: str) -> None:
     settings = read_settings(SETTINGS_PATH.read_text(encoding="utf-8"))
     create_generated_folder()
     uv = select_newest_uv(settings, resolve_uv(settings))
-    python, uv = resolve_python(settings, uv)
-    CACHE_PATH.write_bytes(cache_text(uv, python, stamp).encode("utf-8"))
+    app_python, uv = resolve_python(settings, uv)
+    python = resolve_launcher_python(settings, uv, app_python)
+    CACHE_PATH.write_bytes(cache_text(uv, python, stamp, app_python).encode("utf-8"))
 
 
 def main(argv: Optional[List[str]] = None) -> int:

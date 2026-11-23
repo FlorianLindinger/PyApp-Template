@@ -15,7 +15,7 @@ import unittest
 import zipfile
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Dict, List, Tuple
+from typing import ClassVar, Dict, List, Optional, Tuple
 from unittest import mock
 
 from project_location import DONT_CHANGE
@@ -73,6 +73,62 @@ class VersionTests(unittest.TestCase):
         self.assertEqual(tool.exact_version("==0.11.32"), "0.11.32")
         self.assertIsNone(tool.exact_version(">=0.11.32"))
         self.assertIsNone(tool.exact_version(""))
+
+
+class LauncherPythonTests(unittest.TestCase):
+    """The launcher always runs on CPython; a PyPy project gets a CPython of the same minor version."""
+
+    VERSIONS: ClassVar[Dict[str, Tuple[Tuple[int, ...], str]]] = {
+        "app.exe": ((3, 14, 2), "cpython"),
+        "pypy.exe": ((3, 11, 13), "pypy"),
+        "cpython311.exe": ((3, 11, 9), "cpython"),
+    }
+
+    def identity(self, python: str) -> Tuple[Tuple[int, ...], str]:
+        return self.VERSIONS[python]
+
+    def test_a_cpython_project_runs_the_launcher_itself(self):
+        with mock.patch.object(tool, "python_identity", side_effect=self.identity), mock.patch.object(
+            tool, "find_python"
+        ) as find:
+            self.assertEqual(tool.resolve_launcher_python({}, Path("uv.exe"), "app.exe"), "app.exe")
+        find.assert_not_called()
+
+    def test_a_pypy_project_gets_an_installed_cpython_of_the_same_minor(self):
+        def find(_uv: object, request: str) -> Optional[str]:
+            return "cpython311.exe" if request == "cpython@3.11" else None
+
+        with mock.patch.object(tool, "python_identity", side_effect=self.identity), mock.patch.object(
+            tool, "find_python", side_effect=find
+        ), mock.patch.object(tool, "run_live") as install:
+            self.assertEqual(tool.resolve_launcher_python({}, Path("uv.exe"), "pypy.exe"), "cpython311.exe")
+        install.assert_not_called()
+
+    def test_without_a_cpython_one_is_installed_unless_the_source_is_system(self):
+        installed: List[List[str]] = []
+
+        def find(_uv: object, _request: str) -> Optional[str]:
+            return "cpython311.exe" if installed else None
+
+        def install(_uv: object, arguments: List[str]) -> int:
+            installed.append(arguments)
+            return 0
+
+        with mock.patch.object(tool, "python_identity", side_effect=self.identity), mock.patch.object(
+            tool, "find_python", side_effect=find
+        ), mock.patch.object(tool, "run_live", side_effect=install), mock.patch.object(tool, "step"):
+            self.assertEqual(tool.resolve_launcher_python({}, Path("uv.exe"), "pypy.exe"), "cpython311.exe")
+            self.assertEqual(installed, [["python", "install", "cpython@3.11"]])
+            installed.clear()
+            with self.assertRaisesRegex(tool.BootstrapError, "no CPython is installed"):
+                tool.resolve_launcher_python({"python_source": "system"}, Path("uv.exe"), "pypy.exe")
+            self.assertEqual(installed, [])
+
+    def test_the_cache_names_both_pythons(self):
+        text = tool.cache_text("uv.exe", "cpython.exe", "stamp", "pypy.exe")
+        self.assertIn('set "PYAPP_PYTHON=cpython.exe"', text)
+        self.assertIn('set "PYAPP_APP_PYTHON=pypy.exe"', text)
+        self.assertIn('set "PYAPP_APP_PYTHON=same.exe"', tool.cache_text("uv.exe", "same.exe", "stamp"))
 
 
 class FetchUvTests(unittest.TestCase):
