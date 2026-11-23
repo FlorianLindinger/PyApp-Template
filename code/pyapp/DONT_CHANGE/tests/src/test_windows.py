@@ -17,6 +17,7 @@ from project_location import CODE
 
 if os.name == "nt":
     from pyapp.DONT_CHANGE.scripts import runtime_state
+    from pyapp.DONT_CHANGE.scripts.standalone import file_tools
 
 CREATE_NEW_CONSOLE = 0x00000010
 
@@ -28,7 +29,8 @@ import ctypes, os, subprocess, sys, time
 ctypes.windll.kernel32.SetConsoleCtrlHandler(None, False)  # some shells pass on "ignore Ctrl+C"
 sys.path.insert(0, {code!r})
 from pyapp.DONT_CHANGE.scripts import runtime_state
-runtime_state.create_own_job()
+from pyapp.DONT_CHANGE.scripts.standalone import processes
+processes.create_own_job()
 registry = runtime_state.ProcessRegistry({registry!r})
 grandchild = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(120)"])
 registry.register(grandchild.pid)
@@ -65,7 +67,7 @@ class StructureTests(unittest.TestCase):
     def test_propvariant_has_the_windows_size(self):
         import ctypes
 
-        from pyapp.DONT_CHANGE.scripts.com_tools import PROPVARIANT
+        from pyapp.DONT_CHANGE.scripts.standalone.com_tools import PROPVARIANT
 
         self.assertEqual(ctypes.sizeof(PROPVARIANT), 24 if ctypes.sizeof(ctypes.c_void_p) == 8 else 16)
 
@@ -81,7 +83,7 @@ class ProcessTreeTests(unittest.TestCase):
     """A reused parent PID must not make an unrelated process a child (audit F16)."""
 
     def tree(self, *roots: Any) -> Any:
-        from pyapp.DONT_CHANGE.scripts.windows_focus import descendants
+        from pyapp.DONT_CHANGE.scripts.standalone.processes import descendants
 
         return descendants(roots, TREE_PARENTS, TREE_CREATED.get)
 
@@ -98,7 +100,7 @@ class ProcessTreeTests(unittest.TestCase):
         self.assertEqual(self.tree(None, 0, 200), {200})
 
     def test_the_real_tree_of_this_process_contains_a_new_child(self):
-        from pyapp.DONT_CHANGE.scripts.windows_focus import process_tree
+        from pyapp.DONT_CHANGE.scripts.standalone.processes import process_tree
 
         child = subprocess.Popen([PYTHON, "-c", "import time; time.sleep(30)"])  # noqa: S603
         try:
@@ -221,7 +223,7 @@ class WindowsProcessTests(unittest.TestCase):
                     f"""
                     import os, sys, time
                     sys.path.insert(0, {str(CODE)!r})
-                    from pyapp.DONT_CHANGE.scripts.runtime_state import FileLock
+                    from pyapp.DONT_CHANGE.scripts.standalone.file_tools import FileLock
                     with FileLock({str(path)!r}):
                         open({str(path) + ".held"!r}, "w").close()
                         # Held until the test is done with it (at most 30 s), not for a fixed time.
@@ -235,11 +237,11 @@ class WindowsProcessTests(unittest.TestCase):
         )
         self.addCleanup(holder.kill)
         self.assertTrue(wait_for(lambda: Path(str(path) + ".held").exists()))
-        with self.assertRaises(TimeoutError), runtime_state.FileLock(path, timeout=0.3):
+        with self.assertRaises(TimeoutError), file_tools.FileLock(path, timeout=0.3):
             pass
         Path(str(path) + ".release").touch()
         holder.wait(timeout=30)
-        with runtime_state.FileLock(path, timeout=5), runtime_state.FileLock(path, timeout=0.1):
+        with file_tools.FileLock(path, timeout=5), file_tools.FileLock(path, timeout=0.1):
             pass  # reentrant within one thread
 
 

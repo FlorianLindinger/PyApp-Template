@@ -15,9 +15,9 @@ from pyapp.DONT_CHANGE.backend_settings import MINIMUM_PYTHON, PYTHON_VERSION_FI
 from pyapp.DONT_CHANGE.scripts.banner import show_setup_window
 from pyapp.DONT_CHANGE.scripts.config import settings
 from pyapp.DONT_CHANGE.scripts.console_tools import print_step
-from pyapp.DONT_CHANGE.scripts.env.python_request import allows, recorded_request, uv_request
 from pyapp.DONT_CHANGE.scripts.env.uv import install_newer_uv, run_uv, run_uv_captured
 from pyapp.DONT_CHANGE.scripts.errors import SetupError
+from pyapp.DONT_CHANGE.scripts.standalone.python_request import allows, recorded_request, uv_request
 
 
 def interpreter_version(exe: str) -> Tuple[int, ...]:

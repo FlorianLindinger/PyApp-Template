@@ -1,10 +1,8 @@
 # What this file is for, in plain words:
-# - FileLock: lets only one launcher process at a time do something (e.g. install packages).
-# - atomic_json: writes a JSON file so that a reader never sees a half-written one.
 # - ProcessRegistry: one small file per running copy of the app in DONT_CHANGE\tmp\running, so a
 #   second start, the Stop shortcut and "focus the running window" can find the running copies.
-# - Job objects (further down): a Windows feature that groups the app with every process it starts,
-#   so Stop can end all of them at once.
+# - It uses the standalone helpers: FileLock and atomic_json (standalone/file_tools.py), process
+#   identities and job objects (standalone/processes.py; Stop ends a whole job at once).
 #
 # Windows API calls through ctypes, for readers new to them:
 #   ctypes.WinDLL("kernel32")   loads a Windows system library so Python can call its functions.
@@ -23,82 +21,24 @@ import hashlib
 import json
 import math
 import os
-import threading
 import time
 import uuid
 from pathlib import Path
-from typing import Any, Callable, Dict, Generator, List, Optional, Set, Tuple, TypeVar, Union
+from typing import Any, Callable, Dict, Generator, List, Optional, Tuple, Union
 
-_local_locks = threading.local()
-
-
-# The type of FileLock or a subclass, for __enter__ (typing.Self needs Python 3.11).
-_FileLockT = TypeVar("_FileLockT", bound="FileLock")
-
-
-class FileLock:
-    """A reentrant, process-shared lock; Windows releases it after a crash."""
-
-    def __init__(self, path: Union[str, Path], timeout: float = 120) -> None:
-        """Store the normalized lock path and acquisition timeout."""
-        self.path = str(Path(path).resolve())
-        self.timeout = timeout
-
-    def __enter__(self: _FileLockT) -> _FileLockT:
-        """Acquire or reenter the checkout's file lock, waiting up to the configured timeout."""
-        # msvcrt.locking locks the first byte of the lock file. Windows releases such a lock by itself when
-        # the process ends, even after a crash, so a crashed launcher can never block the others forever.
-        import msvcrt
-
-        held: Optional[Dict[str, List[Any]]] = getattr(_local_locks, "held", None)
-        if held is None:
-            held = {}
-            _local_locks.held = held
-        if self.path in held:
-            held[self.path][1] += 1
-            return self
-        Path(self.path).parent.mkdir(parents=True, exist_ok=True)
-        stream = Path(self.path).open("a+b")
-        if stream.seek(0, 2) == 0:
-            stream.write(b"\0")
-            stream.flush()
-        deadline = time.monotonic() + self.timeout
-        while True:
-            try:
-                stream.seek(0)
-                msvcrt.locking(stream.fileno(), msvcrt.LK_NBLCK, 1)
-                held[self.path] = [stream, 1]
-                return self
-            except OSError:
-                if time.monotonic() >= deadline:
-                    stream.close()
-                    raise TimeoutError("Another launcher is busy: " + self.path) from None
-                time.sleep(0.05)
-
-    def __exit__(self, *exc: object) -> None:
-        """Release one acquisition and close the file lock when the final nested context exits."""
-        import msvcrt
-
-        stream, count = _local_locks.held[self.path]
-        if count > 1:
-            _local_locks.held[self.path][1] -= 1
-        else:
-            stream.seek(0)
-            msvcrt.locking(stream.fileno(), msvcrt.LK_UNLCK, 1)
-            stream.close()
-            del _local_locks.held[self.path]
-
-
-def atomic_json(path: Union[str, Path], payload: object) -> None:
-    """Write JSON through a unique sibling file and atomically replace the destination."""
-    path = Path(path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    temp = path.with_name(path.name + "." + uuid.uuid4().hex + ".tmp")
-    try:
-        temp.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
-        Path(temp).replace(path)
-    finally:
-        temp.unlink(missing_ok=True)
+from pyapp.DONT_CHANGE.scripts.standalone.file_tools import atomic_json
+from pyapp.DONT_CHANGE.scripts.standalone.processes import (
+    close_job,
+    job_process_ids,
+    matches_identity,
+    open_job,
+    own_job_name,
+    process_identity,
+    process_tree,
+    terminate_job,
+    terminate_job_handle,
+    terminate_tree,
+)
 
 
 def clean_python_environment() -> Dict[str, str]:
@@ -107,62 +47,6 @@ def clean_python_environment() -> Dict[str, str]:
     env = {k: v for k, v in os.environ.items() if not k.upper().startswith(blocked)}
     env["PYTHONNOUSERSITE"] = "1"
     return env
-
-
-@contextlib.contextmanager
-def process_identity(pid: int) -> Generator[Optional[Dict[str, Any]], None, None]:
-    """Keep the process handle open while its creation time and image are checked."""
-    from ctypes import wintypes
-
-    kernel = ctypes.WinDLL("kernel32", use_last_error=True)
-    kernel.OpenProcess.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]
-    kernel.OpenProcess.restype = wintypes.HANDLE
-    kernel.CloseHandle.argtypes = [wintypes.HANDLE]
-    kernel.GetProcessTimes.argtypes = [wintypes.HANDLE] + [ctypes.POINTER(wintypes.FILETIME)] * 4
-    kernel.QueryFullProcessImageNameW.argtypes = [
-        wintypes.HANDLE,
-        wintypes.DWORD,
-        wintypes.LPWSTR,
-        ctypes.POINTER(wintypes.DWORD),
-    ]
-    kernel.GetExitCodeProcess.argtypes = [
-        wintypes.HANDLE,
-        ctypes.POINTER(wintypes.DWORD),
-    ]
-    # A process ID alone is not a safe identity: Windows reuses the number of an ended process. So a
-    # record stores the process's creation time and program path too, and both must still match.
-    # 0x1000 = PROCESS_QUERY_LIMITED_INFORMATION: enough to read these values, nothing more.
-    handle = kernel.OpenProcess(0x1000, False, pid)
-    if not handle:
-        yield None
-        return
-    try:
-        creation, end, system, user = (wintypes.FILETIME() for _ in range(4))
-        size = wintypes.DWORD(32768)
-        image = ctypes.create_unicode_buffer(size.value)
-        exit_code = wintypes.DWORD()
-        if (
-            kernel.GetProcessTimes(
-                handle,
-                ctypes.byref(creation),
-                ctypes.byref(end),
-                ctypes.byref(system),
-                ctypes.byref(user),
-            )
-            and kernel.QueryFullProcessImageNameW(handle, 0, image, ctypes.byref(size))
-            and kernel.GetExitCodeProcess(handle, ctypes.byref(exit_code))
-            # 259 = STILL_ACTIVE: the exit code Windows reports while a process is still running.
-            and exit_code.value == 259
-        ):
-            yield {
-                "pid": pid,
-                "created": (creation.dwHighDateTime << 32) | creation.dwLowDateTime,
-                "image": os.path.normcase(image.value),
-            }
-        else:
-            yield None
-    finally:
-        kernel.CloseHandle(handle)
 
 
 class ProcessRegistry:
@@ -223,7 +107,7 @@ class ProcessRegistry:
             # The run folder lets Stop leave a "stop requested" note for this watchdog.
             identity["run_dir"] = os.environ.get("PYAPP_RUN_DIR", "")
             # The job object holding this watchdog and everything it starts (see create_own_job).
-            identity["job"] = _own_job_name
+            identity["job"] = own_job_name()
             try:
                 identity["console_hwnd"] = int(ctypes.windll.kernel32.GetConsoleWindow() or 0)
             except Exception:
@@ -388,7 +272,7 @@ def request_close(record: Dict[str, Any]) -> None:
 
     from pyapp.DONT_CHANGE.backend_settings import CTRL_C_HELPER_PATH
     from pyapp.DONT_CHANGE.scripts.diagnostics import note_ignored
-    from pyapp.DONT_CHANGE.scripts.windows_focus import app_windows, process_tree
+    from pyapp.DONT_CHANGE.scripts.windows_focus import app_windows
 
     _write_stop_request(record)
     child = record.get("child") if isinstance(record.get("child"), dict) else None
@@ -421,187 +305,6 @@ def request_close(record: Dict[str, Any]) -> None:
         note_ignored("request_close")
 
 
-# ---------------------------------------------------------------- job objects
-#
-# The watchdog puts itself into a named job object before it starts the app. Every process the
-# app starts then belongs to that job too (Windows assigns children to their parent's job), so
-# Stop ends exactly this instance's processes with one TerminateJobObject call: no process
-# snapshot, no reused process IDs. The job does not kill on close, so programs the app opens
-# (e.g. a browser) survive a normal end of the app; only Stop ends them. An app can start a
-# process outside the job with CREATE_BREAKAWAY_FROM_JOB (the job allows breakaway).
-
-_own_job_handle = None  # kept open for the life of the watchdog: closing it deletes the job's name
-_own_job_name = ""
-
-JOB_OBJECT_QUERY = 0x0004
-JOB_OBJECT_TERMINATE = 0x0008
-JOB_OBJECT_LIMIT_BREAKAWAY_OK = 0x00000800
-JOB_OBJECT_BASIC_LIMIT_INFORMATION_CLASS = 2
-JOB_OBJECT_BASIC_PROCESS_ID_LIST_CLASS = 3
-
-
-def _job_api() -> ctypes.WinDLL:
-    from ctypes import wintypes
-
-    kernel = ctypes.WinDLL("kernel32", use_last_error=True)
-    kernel.CreateJobObjectW.argtypes = [ctypes.c_void_p, wintypes.LPCWSTR]
-    kernel.CreateJobObjectW.restype = wintypes.HANDLE
-    kernel.OpenJobObjectW.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.LPCWSTR]
-    kernel.OpenJobObjectW.restype = wintypes.HANDLE
-    kernel.SetInformationJobObject.argtypes = [wintypes.HANDLE, ctypes.c_int, ctypes.c_void_p, wintypes.DWORD]
-    kernel.QueryInformationJobObject.argtypes = [
-        wintypes.HANDLE,
-        ctypes.c_int,
-        ctypes.c_void_p,
-        wintypes.DWORD,
-        ctypes.POINTER(wintypes.DWORD),
-    ]
-    kernel.AssignProcessToJobObject.argtypes = [wintypes.HANDLE, wintypes.HANDLE]
-    kernel.GetCurrentProcess.restype = wintypes.HANDLE
-    kernel.TerminateJobObject.argtypes = [wintypes.HANDLE, wintypes.UINT]
-    kernel.CloseHandle.argtypes = [wintypes.HANDLE]
-    return kernel
-
-
-class _JobBasicLimits(ctypes.Structure):
-    _fields_ = (
-        ("PerProcessUserTimeLimit", ctypes.c_int64),
-        ("PerJobUserTimeLimit", ctypes.c_int64),
-        ("LimitFlags", ctypes.c_uint32),
-        ("MinimumWorkingSetSize", ctypes.c_size_t),
-        ("MaximumWorkingSetSize", ctypes.c_size_t),
-        ("ActiveProcessLimit", ctypes.c_uint32),
-        ("Affinity", ctypes.c_size_t),
-        ("PriorityClass", ctypes.c_uint32),
-        ("SchedulingClass", ctypes.c_uint32),
-    )
-
-
-def create_own_job() -> str:
-    """Put this process (the watchdog) into a new named job object; returns its name ("" on failure)."""
-    global _own_job_handle, _own_job_name
-    with process_identity(os.getpid()) as identity:
-        if identity is None:
-            return ""
-        # PID plus creation time: unique, and never the name of another (earlier) instance's job.
-        name = f"Local\\PyAppJob-{identity['pid']}-{identity['created']}"
-    kernel = _job_api()
-    # A job object is a Windows container for processes: every process the watchdog starts later, and
-    # every process those start, lands in the same job. Stop then ends the whole job in one call.
-    handle = kernel.CreateJobObjectW(None, name)
-    if not handle:
-        raise ctypes.WinError(ctypes.get_last_error())
-    # BREAKAWAY_OK: a process may still be started outside the job on purpose (restart helpers,
-    # notifications that must outlive the run). No "kill on close": programs the app opened survive
-    # a normal end of the app.
-    limits = _JobBasicLimits(LimitFlags=JOB_OBJECT_LIMIT_BREAKAWAY_OK)
-    kernel.SetInformationJobObject(
-        handle, JOB_OBJECT_BASIC_LIMIT_INFORMATION_CLASS, ctypes.byref(limits), ctypes.sizeof(limits)
-    )
-    if not kernel.AssignProcessToJobObject(handle, kernel.GetCurrentProcess()):
-        error = ctypes.WinError(ctypes.get_last_error())
-        kernel.CloseHandle(handle)
-        raise error
-    _own_job_handle, _own_job_name = handle, name
-    return name
-
-
-def terminate_job(name: Optional[str]) -> bool:
-    """End every process of the named job; False if there is no such job (anymore)."""
-    if not name:
-        return False
-    kernel = _job_api()
-    handle = kernel.OpenJobObjectW(JOB_OBJECT_TERMINATE, False, name)
-    if not handle:
-        return False
-    try:
-        if not kernel.TerminateJobObject(handle, 1):
-            raise ctypes.WinError(ctypes.get_last_error())
-        return True
-    finally:
-        kernel.CloseHandle(handle)
-
-
-def open_job(name: Optional[str]) -> int:
-    """A handle that can end the named job, or 0 if there is no such job; close it with close_job()."""
-    if not name:
-        return 0
-    return _job_api().OpenJobObjectW(JOB_OBJECT_TERMINATE, False, name) or 0
-
-
-def terminate_job_handle(handle: int) -> None:
-    """End every process still in a job opened with open_job() (nothing to do for an empty job)."""
-    kernel = _job_api()
-    if not kernel.TerminateJobObject(handle, 1):
-        raise ctypes.WinError(ctypes.get_last_error())
-
-
-def close_job(handle: int) -> None:
-    _job_api().CloseHandle(handle)
-
-
-def job_process_ids(name: Optional[str]) -> Set[int]:
-    """IDs of the processes currently in the named job (empty if it does not exist)."""
-    if not name:
-        return set()
-    kernel = _job_api()
-    handle = kernel.OpenJobObjectW(JOB_OBJECT_QUERY, False, name)
-    if not handle:
-        return set()
-    try:
-        capacity = 4096
-
-        class _ProcessIdList(ctypes.Structure):
-            _fields_ = (
-                ("NumberOfAssignedProcesses", ctypes.c_uint32),
-                ("NumberOfProcessIdsInList", ctypes.c_uint32),
-                ("ProcessIdList", ctypes.c_size_t * capacity),
-            )
-
-        listing = _ProcessIdList()
-        if not kernel.QueryInformationJobObject(
-            handle, JOB_OBJECT_BASIC_PROCESS_ID_LIST_CLASS, ctypes.byref(listing), ctypes.sizeof(listing), None
-        ):
-            return set()
-        return {int(listing.ProcessIdList[i]) for i in range(listing.NumberOfProcessIdsInList)}
-    finally:
-        kernel.CloseHandle(handle)
-
-
-def terminate_tree(root_pid: int) -> None:
-    """Fallback without a job: force-terminate a process and its descendants via the Win32 API.
-
-    Deliberately avoids taskkill/WMI, which fail on PCs with a broken WMI service.
-    """
-    from pyapp.DONT_CHANGE.scripts.windows_focus import process_tree
-
-    kernel = ctypes.WinDLL("kernel32", use_last_error=True)
-    kernel.OpenProcess.restype = ctypes.c_void_p
-    kernel.TerminateProcess.argtypes = [ctypes.c_void_p, ctypes.c_uint]
-    kernel.CloseHandle.argtypes = [ctypes.c_void_p]
-    pids = process_tree([root_pid])
-    failures = []
-    # Root first, so the watchdog cannot react to its children ending.
-    for pid in [root_pid, *sorted(pids - {root_pid})]:
-        handle = kernel.OpenProcess(0x0001, False, pid)  # PROCESS_TERMINATE
-        if not handle:
-            if pid == root_pid:
-                failures.append(f"PID {pid}: cannot open process (error {ctypes.get_last_error()})")
-            continue
-        try:
-            if not kernel.TerminateProcess(handle, 1) and pid == root_pid:
-                failures.append(f"PID {pid}: terminate failed (error {ctypes.get_last_error()})")
-        finally:
-            kernel.CloseHandle(handle)
-    if failures:
-        raise RuntimeError("; ".join(failures))
-
-
-def matches_identity(record: Dict[str, Any], current: Optional[Dict[str, Any]]) -> bool:
-    """Compare PID, creation time and executable path to reject stale or reused process IDs."""
-    return current is not None and all(record.get(key) == current.get(key) for key in ("pid", "created", "image"))
-
-
 def unique_log_path(path: Optional[str], run_id: Optional[str] = None) -> str:
     """Append a compact 12-character run suffix, preserving an empty disabled path."""
     if not path:
@@ -610,30 +313,3 @@ def unique_log_path(path: Optional[str], run_id: Optional[str] = None) -> str:
     # Keep 48 random bits while avoiding a full UUID in Windows log paths.
     suffix = (run_id or uuid.uuid4().hex)[:12]
     return str(p.with_name(p.stem + "_" + suffix + p.suffix))
-
-
-def exit_code_looks_like_interpreter_crash(exit_code: object) -> bool:
-    """Whether a process exit code is a common Windows crash code (NTSTATUS, signed or unsigned)."""
-    if isinstance(exit_code, bool) or not isinstance(exit_code, int):
-        return False
-
-    # NTSTATUS values can arrive as signed or unsigned integers.
-    windows_crash_codes = {
-        0xC0000005,  # access violation
-        0xC00000FD,  # stack overflow
-        0xC000001D,  # illegal instruction
-        0xC0000096,  # privileged instruction
-        0xC0000409,  # stack buffer overrun
-        0xC0000374,  # heap corruption
-        0xC0000094,  # integer division by zero
-        0xC000008E,  # floating-point division by zero
-        0xC0000090,  # invalid floating-point operation
-        0xC0000091,  # floating-point overflow
-        0xC0000095,  # integer overflow
-        0xC0000006,  # in-page error (e.g. failed DLL paging)
-        0xC0000135,  # DLL not found
-        0xC0000142,  # DLL failed to initialize
-        0xE06D7363,  # unhandled C++ exception
-    }
-    # Not every code >= 0xC0000000: sys.exit(-1) arrives as 0xFFFFFFFF and is an ordinary exit.
-    return (exit_code & 0xFFFFFFFF) in windows_crash_codes

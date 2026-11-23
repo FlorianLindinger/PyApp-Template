@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import ctypes
 from ctypes import wintypes
-from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Set
 
-TH32CS_SNAPPROCESS = 0x00000002
+from pyapp.DONT_CHANGE.scripts.standalone.processes import process_tree
+
 SW_RESTORE = 9
 GW_OWNER = 4
 GWL_EXSTYLE = -20
@@ -14,103 +15,6 @@ WS_EX_TOOLWINDOW = 0x00000080
 VK_MENU = 0x12
 KEYEVENTF_KEYUP = 0x0002
 ASFW_ANY = -1
-
-
-class _ProcessEntry(ctypes.Structure):
-    _fields_ = [
-        ("dwSize", wintypes.DWORD),
-        ("cntUsage", wintypes.DWORD),
-        ("th32ProcessID", wintypes.DWORD),
-        ("th32DefaultHeapID", ctypes.c_void_p),
-        ("th32ModuleID", wintypes.DWORD),
-        ("cntThreads", wintypes.DWORD),
-        ("th32ParentProcessID", wintypes.DWORD),
-        ("pcPriClassBase", ctypes.c_long),
-        ("dwFlags", wintypes.DWORD),
-        ("szExeFile", ctypes.c_wchar * 260),
-    ]
-
-
-def _creation_time(pid: int) -> Optional[int]:
-    """The process's creation time (FILETIME ticks), or None if it ended or cannot be queried."""
-    kernel = ctypes.WinDLL("kernel32", use_last_error=True)
-    kernel.OpenProcess.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]
-    kernel.OpenProcess.restype = wintypes.HANDLE
-    kernel.GetProcessTimes.argtypes = [wintypes.HANDLE] + [ctypes.POINTER(wintypes.FILETIME)] * 4
-    kernel.CloseHandle.argtypes = [wintypes.HANDLE]
-    handle = kernel.OpenProcess(0x1000, False, pid)  # PROCESS_QUERY_LIMITED_INFORMATION
-    if not handle:
-        return None
-    try:
-        creation, end, system, user = (wintypes.FILETIME() for _ in range(4))
-        if not kernel.GetProcessTimes(
-            handle, ctypes.byref(creation), ctypes.byref(end), ctypes.byref(system), ctypes.byref(user)
-        ):
-            return None
-        return (creation.dwHighDateTime << 32) | creation.dwLowDateTime
-    finally:
-        kernel.CloseHandle(handle)
-
-
-def descendants(
-    root_pids: Iterable[Optional[int]],
-    parents: Iterable[Tuple[int, int]],
-    created: Callable[[int], Optional[int]],
-) -> Set[int]:
-    """The roots and every process whose parent chain leads to one of them.
-
-    parents holds (pid, parent pid) pairs. Windows keeps a process's parent PID after the parent
-    ends, and PIDs are reused: a process whose long-gone parent had a PID that a root has now
-    would look like the root's child. So a child counts only if it was created no earlier than
-    its parent. A child whose creation time cannot be read is left out: leaving a process
-    running is far less harmful than ending or focusing an unrelated program.
-    """
-    children: Dict[int, List[int]] = {}
-    for pid, parent in parents:
-        if pid != parent:  # the System Idle Process is its own parent
-            children.setdefault(parent, []).append(pid)
-    times: Dict[int, Optional[int]] = {}
-
-    def time_of(pid: int) -> Optional[int]:
-        if pid not in times:
-            times[pid] = created(pid)
-        return times[pid]
-
-    result: Set[int] = set()
-    pending = [pid for pid in root_pids if pid]
-    while pending:
-        pid = pending.pop()
-        if pid in result:
-            continue
-        result.add(pid)
-        parent_time = time_of(pid) if children.get(pid) else None
-        if parent_time is None:
-            continue
-        for child in children[pid]:
-            child_time = time_of(child)
-            if child_time is not None and child_time >= parent_time:
-                pending.append(child)
-    return result
-
-
-def process_tree(root_pids: Iterable[Optional[int]]) -> Set[int]:
-    """The given processes and all their descendants (see descendants for the PID-reuse check)."""
-    kernel = ctypes.WinDLL("kernel32", use_last_error=True)
-    kernel.CreateToolhelp32Snapshot.restype = wintypes.HANDLE
-    kernel.Process32FirstW.argtypes = [wintypes.HANDLE, ctypes.POINTER(_ProcessEntry)]
-    kernel.Process32NextW.argtypes = [wintypes.HANDLE, ctypes.POINTER(_ProcessEntry)]
-    snapshot = kernel.CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0)
-    parents = []
-    try:
-        entry = _ProcessEntry()
-        entry.dwSize = ctypes.sizeof(_ProcessEntry)
-        ok = kernel.Process32FirstW(snapshot, ctypes.byref(entry))
-        while ok:
-            parents.append((entry.th32ProcessID, entry.th32ParentProcessID))
-            ok = kernel.Process32NextW(snapshot, ctypes.byref(entry))
-    finally:
-        kernel.CloseHandle(snapshot)
-    return descendants(root_pids, parents, _creation_time)
 
 
 def app_windows(pids: Set[int]) -> List[int]:

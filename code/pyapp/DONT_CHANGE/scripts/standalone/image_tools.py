@@ -1,10 +1,18 @@
-"""PNG and ICO generation through Windows WPF."""
+"""PNG checks and multi-size ICO generation through Windows' own WPF (no Pillow).
+
+Standalone: copy this file anywhere. Standard library only; Windows only (it runs PowerShell).
+"""
 
 from __future__ import annotations
 
 import os
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Tuple  # typing: annotations stay evaluable on Python 3.8
+
+# Windows PowerShell 5.1, which ships with Windows and can load WPF. Change it to use another.
+POWERSHELL_EXE = os.path.join(  # noqa: PTH118 - a plain string path, as subprocess gets it
+    os.environ.get("SYSTEMROOT", r"C:\Windows"), "System32", "WindowsPowerShell", "v1.0", "powershell.exe"
+)
 
 # Small icon sizes get a finishing step, {size: sharpening amount}: Windows renders them at
 # SUPERSAMPLE times the size, then the last step is averaged in linear light (thin light lines
@@ -21,10 +29,7 @@ def _run_wpf_powershell(script: str, **extra_env: str) -> str:
     the PowerShell source. Raises ``RuntimeError`` when PowerShell reports an
     error. This helper is Windows-only by design.
     """
-    import os
     import subprocess
-
-    from pyapp.DONT_CHANGE.backend_settings import POWERSHELL_EXE
 
     environment = os.environ.copy()
     environment.update(extra_env)

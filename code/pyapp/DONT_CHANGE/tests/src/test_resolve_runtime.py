@@ -25,7 +25,8 @@ with mock.patch.object(sys, "path", [str(DONT_CHANGE / "bootstrap"), *sys.path])
 
 # isort: split
 
-from pyapp.DONT_CHANGE.scripts.env import python_request, uv
+from pyapp.DONT_CHANGE.scripts.env import uv
+from pyapp.DONT_CHANGE.scripts.standalone import python_request
 
 
 class SettingsTests(unittest.TestCase):

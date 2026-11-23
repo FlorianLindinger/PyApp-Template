@@ -55,6 +55,12 @@ ignore = [
     "ANN401", # any-type
     # typing.Self needs Python 3.11 (or the typing_extensions package); a bound TypeVar works on 3.8.
     "PYI019", # custom-type-var-for-self
+    # Annotations must resolve at run time (typing.get_type_hints, tests/src/test_python38.py), so
+    # imports used only in annotations stay real imports. Listed so that editor setups which add the
+    # TC rules from a shared configuration do not ask for type-checking blocks either.
+    "TC001", # typing-only-first-party-import
+    "TC002", # typing-only-third-party-import
+    "TC003", # typing-only-standard-library-import
 ]
 
 [lint.per-file-ignores]

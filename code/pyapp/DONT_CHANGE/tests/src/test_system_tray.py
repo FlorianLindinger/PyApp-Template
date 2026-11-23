@@ -18,7 +18,7 @@ from project_location import CODE
 
 from pyapp.DONT_CHANGE.runtime import bg_watchdog
 from pyapp.DONT_CHANGE.scripts import config, terminal_window
-from pyapp.DONT_CHANGE.scripts import system_tray as tray
+from pyapp.DONT_CHANGE.scripts.standalone import system_tray as tray
 
 
 @unittest.skipUnless(os.name == "nt", "Windows notification area only")
@@ -93,8 +93,9 @@ class TrayLogicTests(unittest.TestCase):
     def test_rejected_notification_restores_instead_of_silently_hiding(self):
         controller, user, shell, _owner, _stop = self.controller()
         shell.Shell_NotifyIconW.return_value = False
-        with mock.patch.object(tray, "note_ignored"):
-            controller.minimize()
+        controller.on_error = mock.Mock()
+        controller.minimize()
+        controller.on_error.assert_any_call("send minimize-to-tray notification")
         self.assertFalse(controller.hidden)
         self.assertEqual(
             user.ShowWindow.call_args_list, [mock.call(123, tray.SW_HIDE), mock.call(123, tray.SW_RESTORE)]
@@ -164,7 +165,7 @@ class NativeTrayTests(unittest.TestCase):
                 "import ctypes, sys, time, traceback\n"
                 "from ctypes import wintypes\nfrom pathlib import Path\n"
                 f"sys.path.insert(0, {str(CODE)!r})\n"
-                "from pyapp.DONT_CHANGE.scripts.system_tray import MinimizeToTray, WM_TRAY, SW_RESTORE, NIF_INFO, NIF_REALTIME, NIIF_USER\n"
+                "from pyapp.DONT_CHANGE.scripts.standalone.system_tray import MinimizeToTray, WM_TRAY, SW_RESTORE, NIF_INFO, NIF_REALTIME, NIIF_USER\n"
                 "user = ctypes.WinDLL('user32', use_last_error=True)\n"
                 "kernel = ctypes.WinDLL('kernel32', use_last_error=True)\n"
                 "kernel.GetConsoleWindow.restype = wintypes.HWND\n"

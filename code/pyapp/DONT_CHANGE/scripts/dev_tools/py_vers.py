@@ -18,7 +18,6 @@ from pyapp.DONT_CHANGE.scripts.console_tools import (
     print_success,
 )
 from pyapp.DONT_CHANGE.scripts.dev_tools.common import confirm, prepare
-from pyapp.DONT_CHANGE.scripts.env.python_request import loose_clauses, uv_request
 from pyapp.DONT_CHANGE.scripts.env.pythons import (
     available_summary,
     find_python,
@@ -38,6 +37,7 @@ from pyapp.DONT_CHANGE.scripts.env.venv import (
     switch_python,
 )
 from pyapp.DONT_CHANGE.scripts.errors import SettingsError
+from pyapp.DONT_CHANGE.scripts.standalone.python_request import loose_clauses, uv_request
 
 CANCEL_WORDS = ("q", "quit", "n", "no", "cancel")
 

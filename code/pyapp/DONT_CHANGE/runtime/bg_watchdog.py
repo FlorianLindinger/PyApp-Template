@@ -40,7 +40,6 @@ from pyapp.DONT_CHANGE.scripts.console_tools import (
     set_terminal_title,
 )
 from pyapp.DONT_CHANGE.scripts.diagnostics import note_ignored
-from pyapp.DONT_CHANGE.scripts.file_tools import make_abs_path_relative_to_file
 from pyapp.DONT_CHANGE.scripts.instance_policy import decide
 from pyapp.DONT_CHANGE.scripts.launcher_ui import (
     OUTPUT_LOG_SUFFIX,
@@ -48,19 +47,17 @@ from pyapp.DONT_CHANGE.scripts.launcher_ui import (
     get_log_path,
     set_settings_colors,
 )
-from pyapp.DONT_CHANGE.scripts.runtime_state import (
-    ProcessRegistry,
-    atomic_json,
-    clean_python_environment,
+from pyapp.DONT_CHANGE.scripts.runtime_state import ProcessRegistry, clean_python_environment, unique_log_path
+from pyapp.DONT_CHANGE.scripts.standalone.file_tools import atomic_json, make_abs_path_relative_to_file
+from pyapp.DONT_CHANGE.scripts.standalone.processes import (
     create_own_job,
     exit_code_looks_like_interpreter_crash,
     terminate_tree,
-    unique_log_path,
 )
 
 # Popen became subscriptable in 3.9; runtime inspection (typing.get_type_hints) on 3.8 uses the class.
 if TYPE_CHECKING:
-    from pyapp.DONT_CHANGE.scripts.system_tray import MinimizeToTray
+    from pyapp.DONT_CHANGE.scripts.standalone.system_tray import MinimizeToTray
 
     BinaryProcess = subprocess.Popen[bytes]
 else:
@@ -490,7 +487,7 @@ def main() -> None:
     child: Optional[BinaryProcess] = None
     tray: Optional[MinimizeToTray] = None
     power_requested = False
-    from pyapp.DONT_CHANGE.scripts.power import set_awake
+    from pyapp.DONT_CHANGE.scripts.standalone.power import set_awake
 
     # Everything below runs inside "try": whatever goes wrong, the "except" part at the end still
     # writes a report and ends the app, so nothing keeps running unnoticed.
@@ -658,7 +655,7 @@ def main() -> None:
             except Exception:
                 note_ignored("set_terminal_icon")
         if settings.replace_minimize_with_minimize_to_system_tray and launch_mode in ("conhost", "wt"):
-            from pyapp.DONT_CHANGE.scripts.system_tray import MinimizeToTray
+            from pyapp.DONT_CHANGE.scripts.standalone.system_tray import MinimizeToTray
             from pyapp.DONT_CHANGE.scripts.taskbar_status import terminal_window
 
             stopping = threading.Event()
@@ -674,7 +671,7 @@ def main() -> None:
                 hwnd = terminal_window()
                 if not hwnd:
                     raise RuntimeError("No native terminal window was available for the system tray.")
-                tray = MinimizeToTray(hwnd, settings.program_name, paths.ICON_PATH, stop_run)
+                tray = MinimizeToTray(hwnd, settings.program_name, paths.ICON_PATH, stop_run, note_ignored)
                 tray.start()
             except Exception:
                 # Minimize remains ordinary if the shell cannot provide a recovery icon.

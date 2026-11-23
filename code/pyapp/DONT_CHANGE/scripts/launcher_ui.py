@@ -28,7 +28,7 @@ from pyapp.DONT_CHANGE.scripts.console_tools import (
     set_terminal_colors as _set_terminal_colors,
 )
 from pyapp.DONT_CHANGE.scripts.diagnostics import note_ignored
-from pyapp.DONT_CHANGE.scripts.file_tools import (
+from pyapp.DONT_CHANGE.scripts.standalone.file_tools import (
     remove_tree_inside,
 )
 

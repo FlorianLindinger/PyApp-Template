@@ -3,6 +3,10 @@
 The terminal belongs to conhost/WT, so its window procedure cannot be subclassed from Python.
 A small message loop observes only its minimized state. The tray icon must exist before hiding
 the terminal, and cleanup restores hidden windows so a failed controller cannot strand them.
+
+Standalone: copy this file anywhere, together with com_tools.py (needs com_tools.py next to it,
+in one package folder). Standard library only (ctypes); Windows only. Problems that are only
+worth recording go to the on_error callback (by default nowhere).
 """
 
 from __future__ import annotations
@@ -13,8 +17,7 @@ import uuid
 from ctypes import wintypes
 from typing import Callable, Optional
 
-from pyapp.DONT_CHANGE.scripts.com_tools import GUID
-from pyapp.DONT_CHANGE.scripts.diagnostics import note_ignored
+from .com_tools import GUID
 
 METHOD = getattr(ctypes, "WINFUNCTYPE", ctypes.CFUNCTYPE)
 WNDPROC = METHOD(ctypes.c_ssize_t, wintypes.HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM)
@@ -83,8 +86,17 @@ class WNDCLASS(ctypes.Structure):
 class MinimizeToTray:
     """One tray controller, owned by the watchdog for the entire run including completion prompts."""
 
-    def __init__(self, target: int, name: str, icon_path: str, on_stop: Callable[[], None]) -> None:
+    def __init__(
+        self,
+        target: int,
+        name: str,
+        icon_path: str,
+        on_stop: Callable[[], None],
+        on_error: Callable[[str], None] = lambda _what: None,
+    ) -> None:
+        """on_error(what) is called inside an except block, so it can log the current exception."""
         self.target = target
+        self.on_error = on_error
         self.name = name
         self.icon_path = icon_path
         self.on_stop = on_stop
@@ -218,7 +230,7 @@ class MinimizeToTray:
         data.dwInfoFlags = NIIF_USER | NIIF_LARGE_ICON | NIIF_NOSOUND
         if not self.shell.Shell_NotifyIconW(NIM_MODIFY, ctypes.byref(data)):
             self.restore()
-            note_ignored("send minimize-to-tray notification")
+            self.on_error("send minimize-to-tray notification")
 
     def restore(self) -> None:
         """Show the terminal and remove its tray entry; the next minimize recreates it."""
@@ -236,7 +248,7 @@ class MinimizeToTray:
                 self.added = False
             else:
                 # Keep tracking it so the timer/cleanup can retry a failed Shell deletion.
-                note_ignored("remove restored window's system tray icon")
+                self.on_error("remove restored window's system tray icon")
 
     def _tick(self) -> None:
         if self.closing.is_set() or not self._valid():
@@ -295,7 +307,7 @@ class MinimizeToTray:
                 self.user.PostQuitMessage(0)
                 return 0
         except Exception:
-            note_ignored("system tray event")
+            self.on_error("system tray event")
             self.restore()
         return self.user.DefWindowProcW(hwnd, message, wparam, lparam)
 
@@ -343,7 +355,7 @@ class MinimizeToTray:
                 self.user.DispatchMessageW(ctypes.byref(message))
         except Exception as error:
             self.error = error
-            note_ignored("system tray controller")
+            self.on_error("system tray controller")
         finally:
             if self.hidden:
                 if self.activate_on_close:

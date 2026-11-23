@@ -28,7 +28,6 @@ from pyapp.DONT_CHANGE.scripts.console_tools import (
     styled,
 )
 from pyapp.DONT_CHANGE.scripts.diagnostics import note_ignored
-from pyapp.DONT_CHANGE.scripts.file_tools import make_abs_path_relative_to_file, sanitize_filename
 from pyapp.DONT_CHANGE.scripts.launcher_ui import delete_finished_run_folders
 from pyapp.DONT_CHANGE.scripts.shortcuts import (
     CSIDL_DESKTOPDIRECTORY,
@@ -46,6 +45,7 @@ from pyapp.DONT_CHANGE.scripts.shortcuts import (
     special_folder,
     write_created_shortcuts,
 )
+from pyapp.DONT_CHANGE.scripts.standalone.file_tools import make_abs_path_relative_to_file, sanitize_filename
 from pyapp.DONT_CHANGE.scripts.template_workflows import remove_template_workflows
 
 pause_on_success = True

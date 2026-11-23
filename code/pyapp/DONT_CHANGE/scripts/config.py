@@ -19,8 +19,8 @@ from pyapp.DONT_CHANGE.backend_settings import (
     DEV_SETTINGS_PATH,
     PYTHON_SCRIPTS_DIR,
 )
-from pyapp.DONT_CHANGE.scripts.env.python_request import range_ends
 from pyapp.DONT_CHANGE.scripts.errors import SettingsError
+from pyapp.DONT_CHANGE.scripts.standalone.python_request import range_ends
 
 # Read by bootstrap/resolve_runtime.py before Python exists; must stay one-line literals.
 BOOTSTRAP_SETTINGS = (

@@ -669,7 +669,7 @@ def find_python(uv: object, request: str) -> Optional[str]:
 
 
 def range_specifier(value: str) -> Optional[str]:
-    """Mirrors range_specifier in scripts/env/python_request.py: ">=3.12,<3.15" for "3.12-3.14"."""
+    """Mirrors range_specifier in scripts/standalone/python_request.py: ">=3.12,<3.15" for "3.12-3.14"."""
     match = re.fullmatch(r"\s*(\d+(?:\.\d+){0,2})\s*-\s*(\d+(?:\.\d+){0,2})\s*", value)
     if not match:
         return None

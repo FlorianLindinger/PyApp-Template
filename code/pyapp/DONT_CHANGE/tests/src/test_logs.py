@@ -19,6 +19,7 @@ from project_location import CODE  # noqa: F401 - makes "pyapp" importable
 
 from pyapp.DONT_CHANGE.scripts import diagnostics, launcher_ui, runtime_state
 from pyapp.DONT_CHANGE.scripts.dev_tools import housekeeping
+from pyapp.DONT_CHANGE.scripts.standalone import processes
 
 
 class LogTests(unittest.TestCase):
@@ -65,7 +66,7 @@ class LogTests(unittest.TestCase):
 class RemoveTreeTests(unittest.TestCase):
     @unittest.skipUnless(os.name == "nt", "junctions are a Windows feature")
     def test_a_junction_to_a_folder_outside_is_removed_without_its_target(self):
-        from pyapp.DONT_CHANGE.scripts.file_tools import remove_tree_inside
+        from pyapp.DONT_CHANGE.scripts.standalone.file_tools import remove_tree_inside
 
         with tempfile.TemporaryDirectory() as folder:
             base, outside = Path(folder, "base"), Path(folder, "outside")
@@ -190,11 +191,11 @@ class CrashCodeTests(unittest.TestCase):
     def test_common_crash_codes_are_recognized(self):
         for code in (0xC0000005, 0xC0000374, 0xC0000094, 0xC0000135, 0xC0000142, 0xE06D7363, -1073740940):
             with self.subTest(code=hex(code & 0xFFFFFFFF)):
-                self.assertTrue(runtime_state.exit_code_looks_like_interpreter_crash(code))
+                self.assertTrue(processes.exit_code_looks_like_interpreter_crash(code))
         # Ctrl+C and sys.exit(-1) (0xFFFFFFFF) are ordinary ends.
         for code in (0xC000013A, -1, 1, 0):
             with self.subTest(code=code):
-                self.assertFalse(runtime_state.exit_code_looks_like_interpreter_crash(code))
+                self.assertFalse(processes.exit_code_looks_like_interpreter_crash(code))
 
 
 class RegistryReadTests(unittest.TestCase):

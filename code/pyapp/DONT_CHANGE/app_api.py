@@ -177,7 +177,7 @@ def flash() -> bool:
     if not hwnd:
         return False
     try:
-        from pyapp.DONT_CHANGE.scripts.taskbar_status import flash as flash_window
+        from pyapp.DONT_CHANGE.scripts.standalone.taskbar import flash as flash_window
 
         flash_window(hwnd)
         return True
@@ -279,7 +279,7 @@ def keep_awake(display: bool = False) -> Iterator[None]:
     if not _launched or os.name != "nt":
         yield
         return
-    from pyapp.DONT_CHANGE.scripts.power import set_awake
+    from pyapp.DONT_CHANGE.scripts.standalone.power import set_awake
 
     set_awake(True, display)
     try:

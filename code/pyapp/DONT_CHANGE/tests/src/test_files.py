@@ -1,6 +1,8 @@
 """Static checks of the shipped batch, settings and config files, the READMEs and the test groups (any OS)."""
 
+import ast
 import re
+import sys
 import unittest
 from typing import Dict, Set
 
@@ -120,6 +122,47 @@ def heading_anchors(text: str):
         seen[slug] = count + 1
         anchors.add(slug if count == 0 else f"{slug}-{count}")  # GitHub numbers repeated headings
     return anchors
+
+
+class StandaloneTests(unittest.TestCase):
+    def test_standalone_modules_need_nothing_but_the_standard_library_and_each_other(self):
+        # scripts/standalone promises: copy a file (plus the siblings it names) anywhere and it works.
+        # So no launcher imports and no packages; siblings only by relative import, named in the
+        # docstring; and a file that runs as a script imports no siblings (relative imports need a package).
+        folder = DONT_CHANGE / "scripts" / "standalone"
+        files = sorted(folder.glob("*.py"))
+        siblings = {path.stem for path in files}
+        self.assertGreater(len(files), 1)
+        stdlib = getattr(sys, "stdlib_module_names", None)  # Python 3.10+
+        for path in files:
+            text = path.read_text(encoding="utf-8")
+            tree = ast.parse(text)
+            docstring = ast.get_docstring(tree) or ""
+            runs_as_script = 'if __name__ == "__main__":' in text
+            with self.subTest(path.name):
+                self.assertIn("Standalone:", docstring, "the docstring states the promise")
+                for node in ast.walk(tree):
+                    where = f"{path.name}:{getattr(node, 'lineno', 0)}"
+                    if isinstance(node, ast.ImportFrom) and node.level:
+                        self.assertEqual(node.level, 1, f"{where}: only siblings in this folder")
+                        self.assertFalse(runs_as_script, f"{where}: a file run as a script cannot import siblings")
+                        used = [node.module] if node.module else [alias.name for alias in node.names]
+                        for name in used:
+                            self.assertIn(name, siblings, f"{where}: no sibling {name}.py")
+                            self.assertIn(f"{name}.py", docstring, f"{where}: name {name}.py in the docstring")
+                        continue
+                    if isinstance(node, ast.ImportFrom):
+                        names = [node.module or ""]
+                    elif isinstance(node, ast.Import):
+                        names = [alias.name for alias in node.names]
+                    else:
+                        continue
+                    for name in names:
+                        top = name.split(".")[0]
+                        self.assertNotEqual(top, "pyapp", f"{where}: imports the launcher")
+                        self.assertNotIn(top, siblings, f"{where}: import siblings relatively (from . import {top})")
+                        if stdlib is not None:
+                            self.assertIn(top, stdlib, f"{where}: {name} is not standard library")
 
 
 class ReadmeLinkTests(unittest.TestCase):

@@ -85,7 +85,7 @@ def with_taskbar(action: Callable[[Any, Any, int], None]) -> bool:
         import ctypes
         from ctypes import wintypes
 
-        from pyapp.DONT_CHANGE.scripts import com_tools as com
+        from pyapp.DONT_CHANGE.scripts.standalone import com_tools as com
 
         class Taskbar(ctypes.Structure):
             pass
@@ -187,14 +187,15 @@ def tray_controller(hwnd: int, name: str, icon_path: str) -> Any:
     """
     global _tray_controller
     if _tray_controller is None or _tray_controller.target != hwnd:
-        from pyapp.DONT_CHANGE.scripts.system_tray import MinimizeToTray
+        from pyapp.DONT_CHANGE.scripts.diagnostics import note_ignored
+        from pyapp.DONT_CHANGE.scripts.standalone.system_tray import MinimizeToTray
 
         def close_window() -> None:
             import ctypes
 
             ctypes.windll.user32.PostMessageW(hwnd, 0x0010, 0, 0)  # WM_CLOSE, like the window's X
 
-        controller = MinimizeToTray(hwnd, name, icon_path, close_window)
+        controller = MinimizeToTray(hwnd, name, icon_path, close_window, note_ignored)
         controller.start()
         _tray_controller = controller
     return _tray_controller

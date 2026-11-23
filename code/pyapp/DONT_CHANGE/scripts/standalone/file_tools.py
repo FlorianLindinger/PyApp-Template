@@ -1,9 +1,88 @@
-"""Filesystem helpers and path utilities."""
+"""Filesystem helpers: a cross-process file lock, atomic JSON writes, safe folder removal, paths.
+
+Standalone: copy this file anywhere. Standard library only; FileLock is Windows only (msvcrt).
+"""
 
 from __future__ import annotations
 
+import json
 import os
+import threading
+import time
+import uuid
 from pathlib import Path
+from typing import Any, Dict, List, Optional, TypeVar, Union
+
+_local_locks = threading.local()
+
+
+# The type of FileLock or a subclass, for __enter__ (typing.Self needs Python 3.11).
+_FileLockT = TypeVar("_FileLockT", bound="FileLock")
+
+
+class FileLock:
+    """A reentrant, process-shared lock; Windows releases it after a crash."""
+
+    def __init__(self, path: Union[str, Path], timeout: float = 120) -> None:
+        """Store the normalized lock path and acquisition timeout."""
+        self.path = str(Path(path).resolve())
+        self.timeout = timeout
+
+    def __enter__(self: _FileLockT) -> _FileLockT:
+        """Acquire or reenter the checkout's file lock, waiting up to the configured timeout."""
+        # msvcrt.locking locks the first byte of the lock file. Windows releases such a lock by itself when
+        # the process ends, even after a crash, so a crashed launcher can never block the others forever.
+        import msvcrt
+
+        held: Optional[Dict[str, List[Any]]] = getattr(_local_locks, "held", None)
+        if held is None:
+            held = {}
+            _local_locks.held = held
+        if self.path in held:
+            held[self.path][1] += 1
+            return self
+        Path(self.path).parent.mkdir(parents=True, exist_ok=True)
+        stream = Path(self.path).open("a+b")
+        if stream.seek(0, 2) == 0:
+            stream.write(b"\0")
+            stream.flush()
+        deadline = time.monotonic() + self.timeout
+        while True:
+            try:
+                stream.seek(0)
+                msvcrt.locking(stream.fileno(), msvcrt.LK_NBLCK, 1)
+                held[self.path] = [stream, 1]
+                return self
+            except OSError:
+                if time.monotonic() >= deadline:
+                    stream.close()
+                    raise TimeoutError("Another launcher is busy: " + self.path) from None
+                time.sleep(0.05)
+
+    def __exit__(self, *exc: object) -> None:
+        """Release one acquisition and close the file lock when the final nested context exits."""
+        import msvcrt
+
+        stream, count = _local_locks.held[self.path]
+        if count > 1:
+            _local_locks.held[self.path][1] -= 1
+        else:
+            stream.seek(0)
+            msvcrt.locking(stream.fileno(), msvcrt.LK_UNLCK, 1)
+            stream.close()
+            del _local_locks.held[self.path]
+
+
+def atomic_json(path: Union[str, Path], payload: object) -> None:
+    """Write JSON through a unique sibling file and atomically replace the destination."""
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temp = path.with_name(path.name + "." + uuid.uuid4().hex + ".tmp")
+    try:
+        temp.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+        Path(temp).replace(path)
+    finally:
+        temp.unlink(missing_ok=True)
 
 
 def remove_tree_inside(path: str, base: str) -> None:

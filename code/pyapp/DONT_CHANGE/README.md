@@ -249,7 +249,7 @@ and `code\pyapp\icons\*.cmd` run `actions\gen_icons.py`.
   `""` and loose requests (`"3"`, `">=3.12"`, a range `"3.12-3.14"`) record the resolved `X.Y`
   (`X.Y.Z` when the request allows only some patches of it) and count as unchanged while that
   version is inside them, so a newer Python release never leaves `uv.lock` unused
-  (`scripts/env/python_request.py`; uv has no range syntax, so ranges become `>=3.12,<3.15`).
+  (`scripts/standalone/python_request.py`; uv has no range syntax, so ranges become `>=3.12,<3.15`).
 - `packages` is the dependency list. `pyapp/generated/pyproject.toml` is **generated** from it
   (`scripts/env/pyproject.py`) with `requires-python = "==X.Y.*"` and `required-environments` for
   64-bit Windows, so uv never locks a release without a Windows build (PyQt5's `pyqt5-qt5` 5.15.19). Its header records the list
@@ -311,7 +311,7 @@ move, so a copied folder works offline on another PC.
   (fallback: the process tree, via Toolhelp and `TerminateProcess`; no `taskkill`/WMI).
 - **Taskbar identity.** Each project copy has its own AppUserModelID: program name plus a hash of
   program name and project folder (`scripts/shortcuts.py: project_app_id`). Setup stores it in
-  the shortcuts (`scripts/com_tools.py`); the launcher sets it on its consoles and the app's
+  the shortcuts (`scripts/standalone/com_tools.py`); the launcher sets it on its consoles and the app's
   process. The no-terminal shortcut uses the same ID plus `W`, and so does the completion window
   of a no-terminal launch, so each window groups with the shortcut that started it.
 - `scripts/windows_focus.py` brings a running instance to the front (`instance_policy = "focus"`).
@@ -428,6 +428,11 @@ ASCII art (`scripts/banner.py`). The batch/Python bootstrap and the
 
 ### `scripts/` – shared code
 
+Files in [`scripts/standalone/`](scripts/standalone/README.md) work without the launcher: standard library only, no launcher
+imports, other files of that folder only by relative import and named in the docstring (a test
+enforces it), so they can be copied into other projects. Their launcher wiring lives in
+the module that uses them.
+
 | File | Purpose |
 | --- | --- |
 | `entrypoint.py` | Runs every tool with one error, exit-code and "Press Enter" policy (`fail_message`, `pause_on_success`). |
@@ -438,25 +443,32 @@ ASCII art (`scripts/banner.py`). The batch/Python bootstrap and the
 | `launcher_ui.py` | Launcher-level appearance (settings colors), tracebacks of tools, log paths, Stop of running instances. |
 | `banner.py` | Reads the banner font and prints the ASCII-art program name. |
 | `traceback_render.py` | Turns traceback reports into colored or plain text. |
-| `runtime_state.py` | File lock, atomic JSON, process identities, the instance registry, job objects, process-tree termination, unique log names, interpreter-crash exit codes. |
+| `runtime_state.py` | The instance registry (one record per running copy), stop requests and graceful close, the app's clean environment, unique log names. |
 | `instance_policy.py` | What to do when the app is already running (message boxes). |
 | `windows_focus.py` | Finds and activates the windows of a running instance. |
 | `terminal_window.py` | Native terminal alpha, caption buttons, always-on-top and supported close policies; identifies a dedicated WT window by a temporary random title. |
-| `system_tray.py` | Native terminal minimize-to-tray, Shell notifications on every minimize, Restore/Stop menu, Explorer recovery and icon cleanup. |
 | `settings_defaults.py` | Compare template settings in working files, the staged Git index or pushed commit tips without executing or modifying settings. |
-| `taskbar_status.py` | ITaskbarList3 activity and green/red completion indicators, FlashWindowEx attention, and validated native-terminal handle handoff. |
+| `taskbar_status.py` | When the native terminal shows taskbar activity, green/red completion and attention flashing (from the settings), and the validated window-handle handoff. |
 | `windows_notifications.py` | Silent Windows toasts through a fixed PowerShell WinRT script, escaped plain-text XML, per-outcome switches/templates and blocked-notification diagnostics. Clicking opens the crash log or log; one tag, so a new toast replaces the last. |
 | `update_check.py` | `check_for_launcher_updates`: asks GitHub at most once a day for a newer launcher release and tells the developer in Setup and the developer menu; choices are stored in `tmp/update_check.json`, never in the settings. |
 | `app_api_support.py` | The machinery behind `app_api.py`: finding the app's window, the taskbar (ITaskbarList3), the restart helper, forwarded starts. Not part of the public contract. |
 | `hidden_caches.py` | Gives `__pycache__`, `.ruff_cache`, `.pytest_cache` and `.mypy_cache` in the project root, `code`, `code/pyapp` and the test folders the hidden attribute; run by Setup, every start and after each run. |
 | `template_workflows.py` | Removes the template's own `.github/workflows/pyapp-template-*.yml` from an app, only when they are unchanged and alone. |
-| `shortcuts.py` | Creates `.lnk` files (via COM), their targets and taskbar identity, the record of created shortcuts, removal of stale ones. |
+| `shortcuts.py` | The launcher's shortcuts: which ones, their targets, icons and taskbar identity, the record of created shortcuts, removal of stale ones. |
 | `batch_shortcuts.py` | Optional matching `.cmd` entry points with app arguments; preserves unrelated files. |
-| `power.py` | Per-thread system/display idle-timer requests, released at app completion. |
-| `com_tools.py` | Minimal COM helpers with `ctypes` (GUIDs, property store, AppUserModelID). |
-| `file_tools.py` | Safe folder removal (refuses paths outside the expected parent, junction-aware), path helpers, file-name sanitizing. |
-| `image_tools.py` | PNG checks and ICO generation through Windows' own WPF (no Pillow). |
-| `import_finder.py` | Offline import finder: scans the code folder with `ast`, drops the standard library and the app's own modules, maps imports to PyPI names (installed metadata, then `data/import_to_package.txt`, else a guess); imports guarded by `try/except ImportError` are optional. |
+| `splash.py` | The launcher's side of the startup splash: when to show it, the icon (decided from the file's bytes, without decoding) and this start's line of `splash_screen_messages`; starts `standalone/splash.py` as its own process. |
+| `import_finder.py` | `standalone/find_imports.py` with the launcher's defaults: the app's code folder (not `pyapp/`), the project environment, `data/import_to_package.txt`. |
+| `standalone/com_tools.py` | Minimal COM helpers with `ctypes` (GUIDs, property store, AppUserModelID). |
+| `standalone/file_tools.py` | Cross-process `FileLock` (released by Windows after a crash), atomic JSON writes, safe folder removal (junction-aware), path helpers, file-name sanitizing. |
+| `standalone/find_imports.py` | Offline import finder: scans a folder with `ast`, drops the standard library and local modules, maps imports to PyPI names (installed metadata, then a mapping, else a guess); imports guarded by `try/except ImportError` are optional. |
+| `standalone/image_tools.py` | PNG checks and multi-size ICO generation through Windows' own WPF (no Pillow). |
+| `standalone/processes.py` | Process identities safe against reused PIDs, process trees, job objects (Stop ends a whole job), tree termination without a job, interpreter-crash exit codes. |
+| `standalone/power.py` | Per-thread system/display idle-timer requests, released at app completion. |
+| `standalone/python_request.py` | `python_version` ranges and loose requests: what uv gets, what `.python-version` records, when the setting still matches it. |
+| `standalone/shortcut_files.py` | Writes `.lnk` files via COM: target, arguments, icon, "Start in", window mode, AppUserModelID. |
+| `standalone/splash.py` | The splash window: card, gradient title, loading bar and a turning glow in a per-pixel-alpha layered window (Tk and ctypes). |
+| `standalone/system_tray.py` | Minimize-to-tray for any window: tray icon, a notification on every minimize, Restore/Stop menu, Explorer recovery and icon cleanup. |
+| `standalone/taskbar.py` | ITaskbarList3 progress states (running animation, full green/red, clear) and FlashWindowEx attention for any window. |
 | `dev_tools/main.py` | Entry point of all dev tools: the command table, the menu, `NO_PAUSE`. |
 | `dev_tools/compilation.py` | Managed-Python app syntax validation, explicit Nuitka build variants, owned-output cleanup. |
 | `dev_tools/common.py` | Shared helpers of the dev tools (`confirm`, `prepare`, requirement names). |
@@ -466,7 +478,6 @@ ASCII art (`scripts/banner.py`). The batch/Python bootstrap and the
 | `dev_tools/housekeeping.py` | clean, remove_shortcuts, status, test. |
 | `env/uv.py` | Which uv to use, its environment variables, running it. |
 | `env/pythons.py` | Finding and installing Pythons with uv; `pyapp/generated/.python-version`. |
-| `env/python_request.py` | `python_version` ranges and loose requests: what uv gets, what `.python-version` records, when the setting still matches it. |
 | `env/pyproject.py` | The generated `pyproject.toml`: render, parse, reconcile with `packages`. |
 | `env/venv.py` | `ensure_environment()`, the fast-path stamp, building/re-linking `.venv`, lock and sync, Python switches, package actions, the package terminal. |
 

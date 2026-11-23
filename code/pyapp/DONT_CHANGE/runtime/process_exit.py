@@ -73,10 +73,8 @@ try:
         get_log_path,
         print_traceback,
     )
-    from pyapp.DONT_CHANGE.scripts.runtime_state import (
-        exit_code_looks_like_interpreter_crash,
-        unique_log_path,
-    )
+    from pyapp.DONT_CHANGE.scripts.runtime_state import unique_log_path
+    from pyapp.DONT_CHANGE.scripts.standalone.processes import exit_code_looks_like_interpreter_crash
     from pyapp.DONT_CHANGE.scripts.traceback_render import render, rule_line
 except Exception as import_error:
     _fail_while_loading(import_error)
@@ -526,7 +524,7 @@ def complete(
     if outcome in ("success", "failure") and getattr(s, "play_sound_after_" + outcome):
         wav = getattr(s, "sound_after_" + outcome)
         if wav:
-            from pyapp.DONT_CHANGE.scripts.file_tools import make_abs_path_relative_to_file
+            from pyapp.DONT_CHANGE.scripts.standalone.file_tools import make_abs_path_relative_to_file
 
             play_sound(
                 make_abs_path_relative_to_file(os.path.expandvars(wav), paths.DEV_SETTINGS_PATH), wait=not keep_open

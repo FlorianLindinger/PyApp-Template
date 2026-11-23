@@ -297,7 +297,7 @@ def set_terminal_app_id(app_id: str) -> None:
         import ctypes
         from ctypes import wintypes
 
-        from pyapp.DONT_CHANGE.scripts import com_tools as com
+        from pyapp.DONT_CHANGE.scripts.standalone import com_tools as com
 
         hwnd = int(ctypes.windll.kernel32.GetConsoleWindow() or 0)
         if not hwnd:

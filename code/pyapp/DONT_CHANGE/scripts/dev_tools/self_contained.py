@@ -26,7 +26,6 @@ from pyapp.DONT_CHANGE.scripts.console_tools import (
 )
 from pyapp.DONT_CHANGE.scripts.dev_tools.common import confirm, prepare
 from pyapp.DONT_CHANGE.scripts.env.pyproject import set_requires_python
-from pyapp.DONT_CHANGE.scripts.env.python_request import recorded_request
 from pyapp.DONT_CHANGE.scripts.env.pythons import (
     find_python,
     install_python,
@@ -45,6 +44,7 @@ from pyapp.DONT_CHANGE.scripts.env.venv import (
     sync,
 )
 from pyapp.DONT_CHANGE.scripts.errors import SetupError
+from pyapp.DONT_CHANGE.scripts.standalone.python_request import recorded_request
 
 
 def _settings_copy(s: Union[ModuleType, SimpleNamespace], **overrides: object) -> SimpleNamespace:

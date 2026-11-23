@@ -2,6 +2,8 @@
 
 Shared by scripts/shortcuts.py (the ID stored in a .lnk) and console_tools.py (the ID
 of the console window), so pinned shortcuts and their windows group together in the taskbar.
+
+Standalone: copy this file anywhere. Standard library only (ctypes); Windows only.
 """
 
 from __future__ import annotations

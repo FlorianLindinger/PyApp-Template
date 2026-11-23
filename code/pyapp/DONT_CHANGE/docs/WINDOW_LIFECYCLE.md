@@ -1,6 +1,6 @@
 # Window lifecycle rules
 
-These rules coordinate `terminal_window`, `system_tray`, `taskbar_status`, `console_tools`,
+These rules coordinate `terminal_window`, `standalone/system_tray`, `taskbar_status`, `console_tools`,
 `process_exit` and `bg_watchdog`. They describe existing settings and the order in which they apply.
 
 ## Ownership and host capabilities

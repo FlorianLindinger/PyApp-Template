@@ -56,7 +56,6 @@ from pyapp.DONT_CHANGE.scripts.env.pyproject import (
     set_requires_python,
     version_satisfies_requires,
 )
-from pyapp.DONT_CHANGE.scripts.env.python_request import recorded_request, request_matches
 from pyapp.DONT_CHANGE.scripts.env.pythons import (
     find_or_install_python,
     interpreter_version,
@@ -67,7 +66,8 @@ from pyapp.DONT_CHANGE.scripts.env.pythons import (
 )
 from pyapp.DONT_CHANGE.scripts.env.uv import run_uv, run_uv_captured, uv_environment, uv_exe, uv_succeeds
 from pyapp.DONT_CHANGE.scripts.errors import LaunchCancelled, SetupError
-from pyapp.DONT_CHANGE.scripts.runtime_state import FileLock
+from pyapp.DONT_CHANGE.scripts.standalone.file_tools import FileLock
+from pyapp.DONT_CHANGE.scripts.standalone.python_request import recorded_request, request_matches
 
 
 class AppPython(NamedTuple):

@@ -1,4 +1,7 @@
-"""Keep automatic Windows idle timers awake only while the managed application runs."""
+"""Keep automatic Windows idle timers awake only while the managed application runs.
+
+Standalone: copy this file anywhere. Standard library only (ctypes); does nothing outside Windows.
+"""
 
 from __future__ import annotations
 

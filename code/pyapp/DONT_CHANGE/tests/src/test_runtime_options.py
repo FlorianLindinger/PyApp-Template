@@ -28,13 +28,12 @@ from pyapp.DONT_CHANGE.scripts import (
     batch_shortcuts,
     config,
     console_tools,
-    power,
-    runtime_state,
     splash,
     terminal_window,
     windows_focus,
 )
 from pyapp.DONT_CHANGE.scripts.dev_tools import compilation, linux_compilation, linux_worker
+from pyapp.DONT_CHANGE.scripts.standalone import power, processes
 
 
 class LinuxCompilation(unittest.TestCase):
@@ -212,10 +211,10 @@ class RuntimeOptions(unittest.TestCase):
 
     def test_crash_statuses_accept_signed_and_unsigned_but_not_ordinary_exits(self):
         for code in (0xC0000374, 0xC0000135, 0xC0000094, 0xC000008E, 0xC0000090, 0xC0000091, 0xC0000095):
-            self.assertTrue(runtime_state.exit_code_looks_like_interpreter_crash(code))
-            self.assertTrue(runtime_state.exit_code_looks_like_interpreter_crash(code - 2**32))
+            self.assertTrue(processes.exit_code_looks_like_interpreter_crash(code))
+            self.assertTrue(processes.exit_code_looks_like_interpreter_crash(code - 2**32))
         for code in (True, None, 0, 1, -1, 0xC000013A):
-            self.assertFalse(runtime_state.exit_code_looks_like_interpreter_crash(code))
+            self.assertFalse(processes.exit_code_looks_like_interpreter_crash(code))
 
     def test_recovery_arguments_and_inherited_recursion_guard(self):
         with tempfile.TemporaryDirectory() as folder:

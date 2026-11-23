@@ -66,7 +66,7 @@ WAIT_SECONDS = 3
 def notification_image() -> Optional[str]:
     """The app's icon.png; while it is still the shipped placeholder, the bundled default icon."""
     try:
-        from pyapp.DONT_CHANGE.scripts.image_tools import get_png_image_id
+        from pyapp.DONT_CHANGE.scripts.standalone.image_tools import get_png_image_id
 
         if Path(paths.ICON_PNG_PATH).is_file() and get_png_image_id(paths.ICON_PNG_PATH) != paths.ICON_PLACEHOLDER_ID:
             return paths.ICON_PNG_PATH

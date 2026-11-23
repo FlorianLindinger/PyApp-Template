@@ -86,8 +86,8 @@ def _owned_logs(folder: Optional[str], configured: Optional[str]) -> List[Path]:
 
 def cmd_clean(_arguments: List[str]) -> None:
     """Delete logs or run diagnostics."""
-    from pyapp.DONT_CHANGE.scripts.file_tools import remove_tree_inside
     from pyapp.DONT_CHANGE.scripts.launcher_ui import get_log_folder_path
+    from pyapp.DONT_CHANGE.scripts.standalone.file_tools import remove_tree_inside
 
     s = settings()
     log_folder = get_log_folder_path(s.log_path, s.log_path_is_relative_to_start_folder_if_relative)

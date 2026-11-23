@@ -16,8 +16,9 @@ import support  # first: makes the template importable
 # isort: split
 
 from pyapp.DONT_CHANGE.scripts import config
-from pyapp.DONT_CHANGE.scripts.env import pyproject, python_request, venv
+from pyapp.DONT_CHANGE.scripts.env import pyproject, venv
 from pyapp.DONT_CHANGE.scripts.errors import SettingsError, SetupError
+from pyapp.DONT_CHANGE.scripts.standalone import python_request
 
 
 @mock.patch.dict(os.environ, {"NO_COLOR": "1"})

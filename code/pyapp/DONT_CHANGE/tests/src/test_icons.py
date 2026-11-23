@@ -94,7 +94,7 @@ class SmallSizeFinishingTests(unittest.TestCase):
     """Small sizes: averaged in linear light, sharpened, written as PNG without an image library."""
 
     def test_averaging_happens_in_linear_light(self):
-        from pyapp.DONT_CHANGE.scripts import image_tools
+        from pyapp.DONT_CHANGE.scripts.standalone import image_tools
 
         # One output pixel from 2 x 2 source pixels: two white, two black (premultiplied BGRA, opaque).
         white, black = bytes([255, 255, 255, 255]), bytes([0, 0, 0, 255])
@@ -105,14 +105,14 @@ class SmallSizeFinishingTests(unittest.TestCase):
         self.assertEqual(blue, red)
 
     def test_transparent_pixels_do_not_darken_the_average(self):
-        from pyapp.DONT_CHANGE.scripts import image_tools
+        from pyapp.DONT_CHANGE.scripts.standalone import image_tools
 
         white, clear = bytes([255, 255, 255, 255]), bytes([0, 0, 0, 0])
         ((red, _, _, alpha),) = image_tools._shrink_in_linear_light(white + clear + clear + clear, 1, 2)
         self.assertEqual((round(red, 6), alpha), (1.0, 0.25))
 
     def test_sharpening_keeps_values_in_range_and_skips_large_sizes(self):
-        from pyapp.DONT_CHANGE.scripts import image_tools
+        from pyapp.DONT_CHANGE.scripts.standalone import image_tools
 
         pixels = [(1.0, 1.0, 1.0, 1.0) if index % 2 else (0.0, 0.0, 0.0, 1.0) for index in range(16)]
         sharpened = image_tools._sharpen(pixels, 4, 0.6)
@@ -122,7 +122,7 @@ class SmallSizeFinishingTests(unittest.TestCase):
     def test_the_png_is_valid(self):
         import zlib
 
-        from pyapp.DONT_CHANGE.scripts import image_tools
+        from pyapp.DONT_CHANGE.scripts.standalone import image_tools
 
         png = image_tools._png_rgba(2, [(1.0, 0.0, 0.0, 1.0)] * 4)
         self.assertTrue(png.startswith(bytes([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A])))
@@ -134,7 +134,7 @@ class SmallSizeFinishingTests(unittest.TestCase):
 class IcoSizeTests(unittest.TestCase):
     def test_every_ico_has_all_sizes_including_24_px(self):
         """24 px is what Windows shows at 125 % display scaling; without it, 32 px is shrunk."""
-        from pyapp.DONT_CHANGE.scripts.image_tools import generate_ico_from_png
+        from pyapp.DONT_CHANGE.scripts.standalone.image_tools import generate_ico_from_png
 
         with tempfile.TemporaryDirectory() as folder:
             output = Path(folder) / "icon.ico"

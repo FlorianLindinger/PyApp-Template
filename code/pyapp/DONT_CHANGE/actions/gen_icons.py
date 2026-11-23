@@ -30,7 +30,7 @@ from pyapp.DONT_CHANGE.backend_settings import (
 from pyapp.DONT_CHANGE.scripts.config import settings as load_settings
 from pyapp.DONT_CHANGE.scripts.config import validate
 from pyapp.DONT_CHANGE.scripts.console_tools import ANSI_DIM, ANSI_GOOD, ask, styled
-from pyapp.DONT_CHANGE.scripts.image_tools import (
+from pyapp.DONT_CHANGE.scripts.standalone.image_tools import (
     generate_ico_from_png,
     get_png_image_id,
 )
