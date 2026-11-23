@@ -1,10 +1,9 @@
-"""scripts/shortcuts.py: shortcut names, order, targets, taskbar identity, and removing them."""
+"""scripts/desktop/shortcuts.py: shortcut names, order, targets, taskbar identity, and removing them."""
 
 from __future__ import annotations
 
 import contextlib
 import io
-import json
 import os
 import tempfile
 import unittest
@@ -17,7 +16,7 @@ from project_location import CODE  # noqa: F401 - makes "pyapp" importable
 
 # isort: split
 
-from pyapp.DONT_CHANGE.scripts import shortcuts
+from pyapp.DONT_CHANGE.scripts.desktop import shortcuts
 from pyapp.DONT_CHANGE.scripts.dev_tools import housekeeping
 
 
@@ -119,8 +118,7 @@ class ShortcutTests(unittest.TestCase):
             "open_code_shortcut_name",
         )
         s = SimpleNamespace(program_name="App", user_settings_path="settings.py", **{n: n for n in names})
-        targets = {"logs": "", "crash_logs": "", "open_code": "", "settings": ""}
-        kinds = [d[0] for d in shortcuts.shortcut_definitions(s, "app", targets)]
+        kinds = [d[0] for d in shortcuts.shortcut_definitions(s, "app")]
         expected = [
             "terminal",
             "no_terminal",
@@ -134,20 +132,8 @@ class ShortcutTests(unittest.TestCase):
         self.assertEqual(kinds, expected)
         # Without a settings file there is no settings shortcut, whatever its name.
         s.user_settings_path = ""
-        kinds = [d[0] for d in shortcuts.shortcut_definitions(s, "app", targets)]
+        kinds = [d[0] for d in shortcuts.shortcut_definitions(s, "app")]
         self.assertEqual(kinds, [k for k in expected if k != "settings"])
-
-    def test_outdated_targets_are_detected(self):
-        with tempfile.TemporaryDirectory() as folder:
-            record = str(Path(folder) / "created.json")
-            Path(record).write_text(
-                json.dumps({"version": 2, "shortcuts": [], "targets": {"logs": "D:/old"}}), encoding="utf-8"
-            )
-            targets = {"logs": "D:/new", "open_code": "D:/m.py"}
-            with mock.patch.object(shortcuts, "CREATED_SHORTCUTS_LIST_PATH", record), mock.patch.object(
-                shortcuts, "shortcut_targets", return_value=targets
-            ):
-                self.assertEqual(shortcuts.outdated_shortcut_targets(mock.Mock()), ["logs"])
 
 
 class RemoveShortcutsTests(unittest.TestCase):

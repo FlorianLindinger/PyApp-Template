@@ -1,10 +1,9 @@
 # TODO
 
-make the shortcut genraterotr and the icon generatero into generic file.
-how can i keep generic ones spearate? is it worth it? what else should i make generic?
+make paths in shrotcut  shorter
 
-is generic a good name?
-
+do i actually support pypy with my backend?
+ho
 think abouti waht primpt option i want for crash: ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 Crash log: <project folder>\crash logs\crash_log_<date>_<id>.txt
 ? Enter = close, v = save all traceback values and open them (not redacted), c = copy the report to send it to the developer:

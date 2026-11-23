@@ -1,7 +1,7 @@
 """What existing projects rely on, before each commit (git_hooks/pre-commit).
 
 Runs tests/src/test_template_contract.py (well under a second) when the staged changes touch
-code/pyapp: the lists in backend_settings (PROTECTED_*) must still match the code, and nothing
+code/pyapp: the lists in pyapp_settings (PROTECTED_*) must still match the code, and nothing
 may be taken off them before a new MAJOR version. The hook runs this in an isolated staged
 checkout; direct invocation checks the working files.
 
@@ -82,13 +82,13 @@ def main() -> int:
     output = "\n".join(completed.stdout.decode("utf-8", "replace").splitlines()).strip()
     _ui.info(
         f"Commit blocked: Launcher compatibility check failed: {first_problem(output)}. "
-        'Update backend_settings.py or restore the reported files/settings. Click "Show Command Output" for details.'
+        'Update pyapp_settings.py or restore the reported files/settings. Click "Show Command Output" for details.'
     )
     _ui.heading(f"Output of {TEST_FILE}")
     _ui.info(with_links(output))
     _ui.heading("How to fix")
     _ui.info(
-        "1. Check the protected files/settings named above (backend_settings.py: PROTECTED_*).\n"
+        "1. Check the protected files/settings named above (pyapp_settings.py: PROTECTED_*).\n"
         "2. Register new commands in the corresponding protected list; restore accidental removals.\n"
         "   Removing a protected entry requires a new MAJOR version and migration steps in CHANGELOG.md.\n"
         "3. Review and stage the corrections, then commit again.\n"

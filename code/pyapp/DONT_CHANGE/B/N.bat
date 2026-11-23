@@ -7,7 +7,7 @@ rem Remember the folder the user started from, unless a calling file already did
 if not defined PYAPP_START_DIR set "PYAPP_START_DIR=%CD%"
 rem "no_terminal": run the app without a console window.
 set "PYAPP_LAUNCH_MODE=no_terminal"
-rem The launcher's Python file that does the start; bootstrap\run.bat runs it.
-set "PYAPP_ENTRY_SCRIPT=%~dp0..\actions\start_program.py"
-call "%~dp0..\bootstrap\run.bat" %*
+rem The launcher's Python file that does the start; scripts\bootstrap\run.bat runs it.
+set "PYAPP_ENTRY_SCRIPT=%~dp0..\scripts\actions\start_program.py"
+call "%~dp0..\scripts\bootstrap\run.bat" %*
 exit /b %ERRORLEVEL%

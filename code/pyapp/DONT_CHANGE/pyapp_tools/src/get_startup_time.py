@@ -64,7 +64,7 @@ def app_id_for(copy_root: Path) -> str:
     """The argument the copy's shortcuts would pass (its per-copy taskbar identity)."""
     sys.path.insert(0, str(CODE_DIR))
     from pyapp.DONT_CHANGE.scripts.config import settings
-    from pyapp.DONT_CHANGE.scripts.shortcuts import project_app_id
+    from pyapp.DONT_CHANGE.scripts.desktop.shortcuts import project_app_id
 
     return project_app_id(settings().program_name, str(copy_root))
 

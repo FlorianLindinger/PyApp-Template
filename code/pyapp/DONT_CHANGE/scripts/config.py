@@ -13,7 +13,7 @@ from pathlib import Path
 from types import ModuleType, SimpleNamespace
 from typing import Any, Callable, Dict, Iterable, List, Mapping, Optional, Union
 
-from pyapp.DONT_CHANGE.backend_settings import (
+from pyapp.DONT_CHANGE.pyapp_settings import (
     BACKEND_DIR,
     DEFAULT_SETTINGS_PATH,
     DEV_SETTINGS_PATH,
@@ -22,7 +22,7 @@ from pyapp.DONT_CHANGE.backend_settings import (
 from pyapp.DONT_CHANGE.scripts.errors import SettingsError
 from pyapp.DONT_CHANGE.scripts.standalone.python_request import range_ends
 
-# Read by bootstrap/resolve_runtime.py before Python exists; must stay one-line literals.
+# Read by scripts/bootstrap/resolve_runtime.py before Python exists; must stay one-line literals.
 BOOTSTRAP_SETTINGS = (
     "python_version",
     "python_source",
@@ -362,7 +362,7 @@ def _note_defaults_once(module: Union[ModuleType, SimpleNamespace]) -> None:
     )
 
 
-# Must match the clause pattern of version_satisfies() in bootstrap/resolve_runtime.py, which runs
+# Must match the clause pattern of version_satisfies() in scripts/bootstrap/resolve_runtime.py, which runs
 # before this validation and cannot import the launcher.
 UV_VERSION_CLAUSE = r"\s*(>=|<=|==|!=|~=|>|<)?\s*[0-9]+(\.[0-9]+)*\s*"
 
@@ -412,7 +412,7 @@ def validate(module: Optional[Union[ModuleType, SimpleNamespace]] = None) -> Non
         "uv_version",
         lambda v: (
             isinstance(v, str)
-            # Each clause as bootstrap/resolve_runtime.py version_satisfies() reads it (empty clauses are skipped there).
+            # Each clause as scripts/bootstrap/resolve_runtime.py version_satisfies() reads it (empty clauses are skipped there).
             and all(re.fullmatch(UV_VERSION_CLAUSE, clause) for clause in v.split(",") if clause.strip())
         ),
         'use "" or a version like "0.11.32" or ">=0.9,<1"',
@@ -781,7 +781,7 @@ def describe_python_request(value: str) -> str:
 
 def display_path(path: str) -> str:
     """Shorten a path below the repository root for messages."""
-    from pyapp.DONT_CHANGE.backend_settings import SHORTCUT_OUTPUT_DIR
+    from pyapp.DONT_CHANGE.pyapp_settings import SHORTCUT_OUTPUT_DIR
 
     try:
         relative = os.path.relpath(path, SHORTCUT_OUTPUT_DIR)

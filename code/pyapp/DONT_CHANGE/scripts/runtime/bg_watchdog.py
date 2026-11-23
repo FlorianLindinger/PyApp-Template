@@ -1,7 +1,7 @@
-# Step 4 of a start (see B/W.bat for steps 1-3). actions/start_program.py started this process in
+# Step 4 of a start (see B/W.bat for steps 1-3). scripts/actions/start_program.py started this process in
 # the chosen window. It stays alive for the whole run: it registers the run (so Stop can find it),
-# starts code/main.py through runtime/script_wrapper.py with the app's Python, copies the app's output
-# into the log, waits until the app ends, and then starts runtime/process_exit.py, which shows the
+# starts code/main.py through scripts/runtime/script_wrapper.py with the app's Python, copies the app's output
+# into the log, waits until the app ends, and then starts scripts/runtime/process_exit.py, which shows the
 # result (report, crash log, sounds, notification). Read main() at the bottom first.
 """Own one application run: instance policy, logging, the app process and completion handling."""
 
@@ -23,14 +23,8 @@ from types import ModuleType, SimpleNamespace
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 # Last, so app modules named like standard-library modules (code/random.py, ...) cannot shadow them.
-sys.path.append(str(Path(__file__).resolve().parents[3]))
-from pyapp.DONT_CHANGE import backend_settings as paths
-from pyapp.DONT_CHANGE.runtime._pyapp import (
-    EXIT_MODE_FOR_WRAPPER_EXIT,
-    ExitMode,
-    exit_code_is_success,
-    save_report,
-)
+sys.path.append(str(Path(__file__).resolve().parents[4]))
+from pyapp.DONT_CHANGE import pyapp_settings as paths
 from pyapp.DONT_CHANGE.scripts.config import main_script_path
 from pyapp.DONT_CHANGE.scripts.config import settings as load_settings
 from pyapp.DONT_CHANGE.scripts.console_tools import (
@@ -46,6 +40,12 @@ from pyapp.DONT_CHANGE.scripts.launcher_ui import (
     get_log_folder_path,
     get_log_path,
     set_settings_colors,
+)
+from pyapp.DONT_CHANGE.scripts.runtime._pyapp import (
+    EXIT_MODE_FOR_WRAPPER_EXIT,
+    ExitMode,
+    exit_code_is_success,
+    save_report,
 )
 from pyapp.DONT_CHANGE.scripts.runtime_state import ProcessRegistry, clean_python_environment, unique_log_path
 from pyapp.DONT_CHANGE.scripts.standalone.file_tools import atomic_json, make_abs_path_relative_to_file
@@ -495,7 +495,7 @@ def main() -> None:
         # --- 2. Prepare the window: title, colors, icon, taskbar group.
         if launch_mode not in ("wt", "conhost", "browser", "no_terminal"):
             raise ValueError("Unknown launch mode: " + launch_mode)
-        from pyapp.DONT_CHANGE.scripts.terminal_window import configure, validate_close_mode
+        from pyapp.DONT_CHANGE.scripts.desktop.terminal_window import configure, validate_close_mode
 
         validate_close_mode(settings, launch_mode)
         configure(settings, launch_mode)
@@ -509,7 +509,7 @@ def main() -> None:
             set_terminal_title(settings.program_name)
             set_terminal_app_id(app_id)
             if launch_mode in ("wt", "conhost"):
-                from pyapp.DONT_CHANGE.scripts.taskbar_status import start
+                from pyapp.DONT_CHANGE.scripts.desktop.taskbar_status import start
 
                 start(settings)
         # --- 3. Register this run in DONT_CHANGE\tmp\running (instance_policy decides what happens
@@ -655,8 +655,8 @@ def main() -> None:
             except Exception:
                 note_ignored("set_terminal_icon")
         if settings.replace_minimize_with_minimize_to_system_tray and launch_mode in ("conhost", "wt"):
+            from pyapp.DONT_CHANGE.scripts.desktop.taskbar_status import terminal_window
             from pyapp.DONT_CHANGE.scripts.standalone.system_tray import MinimizeToTray
-            from pyapp.DONT_CHANGE.scripts.taskbar_status import terminal_window
 
             stopping = threading.Event()
 
@@ -723,8 +723,8 @@ def main() -> None:
         exit_handled = True
         if launch_mode == "conhost" and settings.confirm_on_close == "block":
             try:
-                from pyapp.DONT_CHANGE.scripts.taskbar_status import terminal_window
-                from pyapp.DONT_CHANGE.scripts.terminal_window import enable_close
+                from pyapp.DONT_CHANGE.scripts.desktop.taskbar_status import terminal_window
+                from pyapp.DONT_CHANGE.scripts.desktop.terminal_window import enable_close
 
                 hwnd = terminal_window(include_hidden=True)
                 if hwnd:

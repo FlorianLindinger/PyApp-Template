@@ -1,4 +1,4 @@
-"""Render traceback reports (runtime/_pyapp.py) as plain or ANSI-colored text.
+"""Render traceback reports (scripts/runtime/_pyapp.py) as plain or ANSI-colored text.
 
 Frames of your own code get source lines around the failing line (traceback_lines_before /
 traceback_lines_after); library frames are one line each, like CPython's. In color, every line

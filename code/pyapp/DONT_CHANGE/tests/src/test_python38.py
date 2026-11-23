@@ -48,19 +48,19 @@ class AnnotationTests(unittest.TestCase):
         # plus the settings and the standalone tools whose annotations are inspected too.
         launcher = sorted(
             "pyapp.DONT_CHANGE." + ".".join(path.relative_to(DONT_CHANGE).with_suffix("").parts)
-            for folder in ("scripts", "runtime", "actions")
+            for folder in ("scripts",)
             for path in (DONT_CHANGE / folder).rglob("*.py")
             if path.name != "__init__.py" and "__pycache__" not in path.parts
         )
         modules = (
             "pyapp.developer_settings",
-            "pyapp.DONT_CHANGE.backend_settings",
+            "pyapp.DONT_CHANGE.pyapp_settings",
             *launcher,
             "pyapp.DONT_CHANGE.pyapp_tools.src.make_import_map",
             "pyapp.DONT_CHANGE.pyapp_tools.src.get_startup_time",
         )
         # Standalone tools and the wrapper also import helpers from their own folders.
-        paths = [str(DONT_CHANGE / "pyapp_tools" / "src"), str(DONT_CHANGE / "runtime"), *sys.path]
+        paths = [str(DONT_CHANGE / "pyapp_tools" / "src"), str(DONT_CHANGE / "scripts" / "runtime"), *sys.path]
         with mock.patch.object(sys, "path", paths):
             for name in modules:
                 module = importlib.import_module(name)

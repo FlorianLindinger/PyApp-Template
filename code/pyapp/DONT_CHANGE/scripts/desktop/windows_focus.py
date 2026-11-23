@@ -75,7 +75,7 @@ def _browser_terminal_window(record: Dict[str, Any]) -> int:
     import json
     from pathlib import Path
 
-    from pyapp.DONT_CHANGE.backend_settings import BROWSER_WINDOW_FILE_NAME
+    from pyapp.DONT_CHANGE.pyapp_settings import BROWSER_WINDOW_FILE_NAME
 
     run_dir = record.get("run_dir")
     if not run_dir:

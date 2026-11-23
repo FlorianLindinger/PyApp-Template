@@ -8,6 +8,7 @@ import io
 import json
 import os
 import runpy
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -22,17 +23,11 @@ from project_location import DONT_CHANGE
 # isort: split
 
 from pyapp.DONT_CHANGE.pyapp_tools.src import _ui
-from pyapp.DONT_CHANGE.runtime import bg_watchdog
-from pyapp.DONT_CHANGE.runtime._pyapp import ExitMode
-from pyapp.DONT_CHANGE.scripts import (
-    batch_shortcuts,
-    config,
-    console_tools,
-    splash,
-    terminal_window,
-    windows_focus,
-)
+from pyapp.DONT_CHANGE.scripts import config, console_tools
+from pyapp.DONT_CHANGE.scripts.desktop import batch_shortcuts, splash, terminal_window, windows_focus
 from pyapp.DONT_CHANGE.scripts.dev_tools import compilation, linux_compilation, linux_worker
+from pyapp.DONT_CHANGE.scripts.runtime import bg_watchdog
+from pyapp.DONT_CHANGE.scripts.runtime._pyapp import ExitMode
 from pyapp.DONT_CHANGE.scripts.standalone import power, processes
 
 
@@ -183,7 +178,7 @@ class RuntimeOptions(unittest.TestCase):
 
     def test_foreground_recovers_hidden_non_minimized_windows_without_shrinking_maximized_ones(self):
         with mock.patch.dict(os.environ, {"PYAPP_TERMINAL_WINDOW": "fixture"}), mock.patch(
-            "pyapp.DONT_CHANGE.scripts.taskbar_status.terminal_window", return_value=123
+            "pyapp.DONT_CHANGE.scripts.desktop.taskbar_status.terminal_window", return_value=123
         ), mock.patch.object(ctypes, "WinDLL") as dll:
             user = dll.return_value
             user.IsIconic.return_value = False
@@ -203,7 +198,7 @@ class RuntimeOptions(unittest.TestCase):
         self.assertTrue(terminal_window.needs_window(s))
         with mock.patch.object(terminal_window.ctypes, "WinDLL") as dll, mock.patch.object(
             terminal_window, "apply_window_settings"
-        ), mock.patch("pyapp.DONT_CHANGE.scripts.taskbar_status.remember_window") as remember:
+        ), mock.patch("pyapp.DONT_CHANGE.scripts.desktop.taskbar_status.remember_window") as remember:
             dll.return_value.GetConsoleWindow.return_value = 123
             terminal_window.configure(s, "conhost")
             remember.assert_called_once_with(123)
@@ -268,9 +263,10 @@ class RuntimeOptions(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)
             backend = root / "code/pyapp/DONT_CHANGE"
-            (backend / "bootstrap").mkdir(parents=True)
-            (backend / "scripts").mkdir()
-            (backend / "bootstrap/ensure_runtime.bat").write_bytes(
+            (backend / "scripts" / "bootstrap").mkdir(parents=True)
+            (backend / "B").mkdir()
+            shutil.copyfile(DONT_CHANGE / "B" / "A.bat", backend / "B" / "A.bat")  # the real one
+            (backend / "scripts/bootstrap/ensure_runtime.bat").write_bytes(
                 f'@echo off\r\nset "PYAPP_PYTHON={sys.executable}"\r\nexit /b 0\r\n'.encode()
             )
             (backend / "scripts/entrypoint.py").write_text(
@@ -291,8 +287,8 @@ class RuntimeOptions(unittest.TestCase):
             self.assertEqual(json.loads(result.stdout), ["app.123", "", "a b", "A&B", "100%", "x(y)"])
 
     def test_browser_live_prefixes_affect_future_console_output_but_preserve_log_prefixes(self):
-        with mock.patch.object(sys, "path", [str(DONT_CHANGE / "runtime"), *sys.path]):
-            wrapper = runpy.run_path(str(DONT_CHANGE / "runtime/script_wrapper.py"), run_name="prefix_test")
+        with mock.patch.object(sys, "path", [str(DONT_CHANGE / "scripts" / "runtime"), *sys.path]):
+            wrapper = runpy.run_path(str(DONT_CHANGE / "scripts/runtime/script_wrapper.py"), run_name="prefix_test")
         with tempfile.TemporaryDirectory() as folder:
             path = Path(folder) / "preferences.json"
             console, log = io.StringIO(), io.StringIO()
@@ -546,7 +542,7 @@ class CompilationTools(unittest.TestCase):
 
 class StartupSplash(unittest.TestCase):
     def test_environment_failure_closes_the_splash_in_the_real_startup_flow(self):
-        from pyapp.DONT_CHANGE.actions import start_program
+        from pyapp.DONT_CHANGE.scripts.actions import start_program
 
         settings = config.settings()
         with contextlib.ExitStack() as stack:
@@ -556,7 +552,6 @@ class StartupSplash(unittest.TestCase):
             stack.enter_context(mock.patch.object(start_program, "decide", return_value="allow"))
             registry = stack.enter_context(mock.patch.object(start_program, "ProcessRegistry"))
             stack.enter_context(mock.patch.object(start_program, "delete_finished_run_folders"))
-            stack.enter_context(mock.patch.object(start_program, "_hint_outdated_shortcuts"))
             stack.enter_context(mock.patch("pyapp.DONT_CHANGE.scripts.hidden_caches.hide_cache_folders"))
             spawn = stack.enter_context(mock.patch.object(splash.subprocess, "Popen"))
             thread = stack.enter_context(mock.patch.object(splash.threading, "Thread"))

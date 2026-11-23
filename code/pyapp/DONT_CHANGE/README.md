@@ -35,14 +35,14 @@ bounded recovery arguments, batch entry points, browser controls and app/backend
 ```text
  shortcut (.lnk)
    └─ B\W.bat / B\N.bat                       tiny batch file, the shortcut's target
-        └─ bootstrap\run.bat
-             ├─ bootstrap\ensure_runtime.bat   finds uv and a Python (cached in tmp\runtime.cmd)
-             │    └─ bootstrap\resolve_runtime.py   only when the cache is stale: installs uv/Python
-             └─ python -I -S scripts\entrypoint.py actions\start_program.py
+        └─ scripts\bootstrap\run.bat
+             ├─ scripts\bootstrap\ensure_runtime.bat   finds uv and a Python (cached in tmp\runtime.cmd)
+             │    └─ scripts\bootstrap\resolve_runtime.py   only when the cache is stale: installs uv/Python
+             └─ python -I -S scripts\entrypoint.py scripts\actions\start_program.py
                   ├─ scripts\env\venv.py: ensure_environment()   pyapp\generated\.venv matches uv.lock
-                  └─ runtime\bg_watchdog.py   (new console, or hidden)
-                       ├─ runtime\script_wrapper.py  ──runs──▶ code\main.py   (app's .venv Python)
-                       └─ runtime\process_exit.py    success / failure / crash / Ctrl+C handling
+                  └─ scripts\runtime\bg_watchdog.py   (new console, or hidden)
+                       ├─ scripts\runtime\script_wrapper.py  ──runs──▶ code\main.py   (app's .venv Python)
+                       └─ scripts\runtime\process_exit.py    success / failure / crash / Ctrl+C handling
 ```
 
 Three Pythons can be involved, but usually they are the same installation:
@@ -70,7 +70,7 @@ Three Pythons can be involved, but usually they are the same installation:
   (`scripts/diagnostics.py`) instead of being shown or silently lost.
 - **Nothing outside the project folder is changed** except what the settings ask for: uv's own
   per-user folders, the Start Menu/Desktop shortcuts and the per-user uv/Python install.
-- **Paths are defined once** in `backend_settings.py`. The batch and PowerShell files cannot
+- **Paths are defined once** in `pyapp_settings.py`. The batch and PowerShell files cannot
   import it and repeat a few folder names; change them together (and `code/pyapp/.gitignore`).
 
 ## What happens when you start the app
@@ -79,16 +79,16 @@ Three Pythons can be involved, but usually they are the same installation:
    `conhost.exe "...\DONT_CHANGE\B\W.bat" <app id>` (classic console) and the AppUserModelID
    of this project copy. The `(no Terminal)` shortcut targets `B\N.bat`. Both start minimized.
 2. **`B\W.bat` / `B\N.bat`** set `PYAPP_LAUNCH_MODE` (`terminal` / `no_terminal`) and
-   `PYAPP_ENTRY_SCRIPT=actions\start_program.py`, then call `bootstrap\run.bat`.
-3. **`bootstrap\run.bat`** calls `ensure_runtime.bat` and then runs
+   `PYAPP_ENTRY_SCRIPT=scripts\actions\start_program.py`, then call `scripts\bootstrap\run.bat`.
+3. **`scripts\bootstrap\run.bat`** calls `ensure_runtime.bat` and then runs
    `"%PYAPP_PYTHON%" -I -S -X utf8 scripts\entrypoint.py "%PYAPP_ENTRY_SCRIPT%" %*`.
-4. **`bootstrap\ensure_runtime.bat`** creates `tmp\` if needed and loads `tmp\runtime.cmd`
+4. **`scripts\bootstrap\ensure_runtime.bat`** creates `tmp\` if needed and loads `tmp\runtime.cmd`
    (the paths of uv and the launcher Python) when its stamp still matches: this folder's path
    (a copied project never uses the original's uv/Python), the time and size of
    `developer_settings.py` and the time/size of `pyapp\generated\.python-version`, and both executables
    exist. Otherwise it runs `resolve_runtime.py`. The cache is UTF-8 and read with code page
    65001 unless its first line is `rem ascii`, so non-ASCII project paths work.
-5. **`bootstrap\resolve_runtime.py`** (only when the cache is stale) reads the `[bootstrap]`
+5. **`scripts\bootstrap\resolve_runtime.py`** (only when the cache is stale) reads the `[bootstrap]`
    settings from `developer_settings.py` with a line parser (one-line literals; the last
    definition wins, like Python), finds or installs uv (`uv_prefer`, `uv_install_if_missing`,
    `uv_version`; a local uv is downloaded from GitHub and checked against its SHA-256), finds
@@ -96,17 +96,17 @@ Three Pythons can be involved, but usually they are the same installation:
    checks the 3.8 minimum and writes the cache. It holds `tmp\bootstrap.lock` so two starts
    do not install at the same time.
 6. **`scripts\entrypoint.py`** puts the `code` folder on `sys.path` and runs
-   `actions\start_program.py`'s `main()`.
-7. **`actions\start_program.py`** validates the settings, resolves the launch mode (`conhost`,
+   `scripts\actions\start_program.py`'s `main()`.
+7. **`scripts\actions\start_program.py`** validates the settings, resolves the launch mode (`conhost`,
    `wt`, `browser` or `no_terminal`; Windows Terminal falls back to the classic console when missing),
    gives its own minimized window the app's title, icon and taskbar group, applies
    `instance_policy` (allow / focus the running one / ask / replace / block, see
-   `scripts\instance_policy.py`), deletes old run folders when no instance is running, warns about outdated "open" shortcuts and
+   `scripts\instance_policy.py`), deletes old run folders when no instance is running and
    calls `ensure_environment()` (see [The Python environment](#the-python-environment)).
    It then reserves a run folder `tmp\runs\<id>\` and starts the watchdog in a new console
    (`conhost.exe` or `wt.exe`), in the browser terminal (below) or hidden, and waits until the watchdog writes
    `startup.json` ("started", "cancelled" or an error). Then this window closes.
-   From the browser terminal shortcut (`B\B.bat`, mode `browser`), **`runtime\browser_terminal_host.py`**
+   From the browser terminal shortcut (`B\B.bat`, mode `browser`), **`scripts\runtime\browser_terminal_host.py`**
    runs hidden: it starts the self-contained **`browser_terminal`** package (see its README; it can
    be copied into other projects) with the launcher's diagnostics log. The
    package starts the watchdog in a Windows pseudoconsole (ConPTY), serves its page (xterm.js,
@@ -120,7 +120,7 @@ Three Pythons can be involved, but usually they are the same installation:
    Window icon and `color` changes cannot pass through a pseudoconsole: `console_tools` appends
    them to `browser-ui.jsonl` instead. Closing the page ends the program after a 5-second grace
    period (a reload reconnects), like closing a console window.
-8. **`runtime\bg_watchdog.py`** puts itself into a Windows job object (so Stop can end
+8. **`scripts\runtime\bg_watchdog.py`** puts itself into a Windows job object (so Stop can end
    every process the app starts, see [Process control](#process-control-and-stop)), registers
    the run in `tmp\running\` under the instance policy, sets the console's title, icon, colors
    and taskbar identity, opens the log file, and starts the app Python with
@@ -131,14 +131,14 @@ Three Pythons can be involved, but usually they are the same installation:
    `<log>.output.log`, otherwise it is deleted. It waits for the app to end,
    unregisters, and calls `process_exit.py` with the outcome. In no-terminal mode a completion
    window only appears when something needs to be shown.
-9. **`runtime\script_wrapper.py`** runs inside the app Python. It removes the launcher's
+9. **`scripts\runtime\script_wrapper.py`** runs inside the app Python. It removes the launcher's
    variables from the environment, sets `sys.argv` (`args_for_main_py`) and `sys.path[0]` exactly
    like `python main.py`, adds the `code` folder immediately after the main script's folder
    when they differ, sets up the log and the print/input prefixes, writes `ready`, and runs
    `main.py` with `runpy`. It records the outcome in `result.json` and, for exceptions
    (including `SystemExit` with an error code and errors in worker threads or Tkinter callbacks),
-   a traceback report in `traceback.json` (format in `runtime\_pyapp.py`).
-10. **`runtime\process_exit.py`** reads the report and applies the settings for the outcome:
+   a traceback report in `traceback.json` (format in `scripts\runtime\_pyapp.py`).
+10. **`scripts\runtime\process_exit.py`** reads the report and applies the settings for the outcome:
     title, window colors, icon, sound, crash log, opening the log or `main.py`, keeping the
     window open. For a missing package it offers to install it and restart.
 
@@ -213,31 +213,28 @@ it there; the launcher does not determine the `.lnk` file's physical location. W
 the app switches to the main script's folder. Direct batch starts keep the caller's starting
 folder when enabled. Import paths are independent of this setting.
 Run Setup to clear **Start in** on existing generated shortcuts. Explicit `wdir` overrides
-passed to the shortcut generator are still honored. The old `start_in_shortcut_position` name
-is accepted for older projects; `start_in_shortcut_position` takes precedence.
+passed to the shortcut generator are still honored.
 
 | Shortcut | Target | What it does |
 | --- | --- | --- |
-| `Stop <name>` | `B\Q.bat` → `actions\stop_program.py` | Stops every running instance of this project copy (see below) and closes after a short countdown. |
-| `<name> - Settings` | `B\S.bat <file>` | Opens the user settings file (`user_settings_path`). |
-| `<name> - Edit Code` | `B\M.bat <file>` | Opens the file set in `main_script_path`. |
-| `<name> - Logs` / `- Crash Logs` | `B\L.bat` / `B\C.bat <folder>` | Opens the log / crash-log folder. |
-| `<name> (Browser)` | `B\B.bat` → `actions\start_program.py`, mode `browser` | The app with its console in a browser tab (see `browser_terminal`). |
+| `Stop <name>` | `B\Q.bat` → `scripts\actions\stop_program.py` | Stops every running instance of this project copy (see below) and closes after a short countdown. |
+| `<name> - Settings` | `B\S.bat` → `scripts\actions\open_file.py` | Opens the user settings file (`user_settings_path`). |
+| `<name> - Edit Code` | `B\M.bat` → `scripts\actions\open_file.py` | Opens the file set in `main_script_path`. |
+| `<name> - Logs` / `- Crash Logs` | `B\L.bat` / `B\C.bat` → `scripts\actions\open_folder.py` | Opens the log / crash-log folder. |
+| `<name> (Browser)` | `B\B.bat` → `scripts\actions\start_program.py`, mode `browser` | The app with its console in a browser tab (see `browser_terminal`). |
 
-Setup passes each "open" shortcut its resolved target. `bootstrap\open_file.bat` /
-`open_folder.bat` then open it **without starting Python** (VS Code via its `Code.exe`, else
-Notepad; Explorer for folders), so these shortcuts are instant. Only when no target was passed
-(a log path relative to the start folder, or with date codes in its folder part) or the file is
-missing do they fall back to `actions\open_file.py` / `actions\open_folder.py`. Setup records
-the targets in `pyapp\generated\shortcuts_created_by_setup.json`; each start warns when the settings
-no longer match them.
+The "open" shortcuts carry no path: on every click their `B\*.bat` runs
+`scripts\actions\open_file.py` / `open_folder.py`, which read the current settings
+(`main_script_path`, `user_settings_path`, `log_path`, `crash_log_path`) and open the file in VS Code
+(else Notepad) or the folder in Explorer. So they follow a changed setting without Setup, and their
+command line stays short. Resolving costs about 0.2 s per click compared with a stored path.
 
-`Setup - run first and after moving folder.cmd` (project root) runs `actions\setup.py`: banner,
+`Setup - run first and after moving folder.cmd` (project root) runs `scripts\actions\setup.py`: banner,
 environment, then every enabled shortcut (project folder, Start Menu, Desktop), and removes the
 shortcuts it created earlier that are no longer wanted. `code\pyapp\Open Developer Tools Menu.cmd`
 and `code\pyapp\compilation\Compilation Tools.cmd` run `scripts\dev_tools\main.py <command>`
 ([developer tools](../README.md#developer-tools)),
-and `code\pyapp\icons\*.cmd` run `actions\gen_icons.py`.
+and `code\pyapp\icons\*.cmd` run `scripts\actions\gen_icons.py`.
 
 ## The Python environment
 
@@ -303,18 +300,18 @@ move, so a copied folder works offline on another PC.
   name. A project-specific named Windows mutex serializes changes; it is never held while waiting.
 - **Job objects.** The watchdog creates a Windows job and puts itself in it before starting the
   app, so every process the app starts (also grandchildren) belongs to the job.
-- **Stop** (`actions/stop_program.py`, and `instance_policy = "replace"`) first asks each
+- **Stop** (`scripts/actions/stop_program.py`, and `instance_policy = "replace"`) first asks each
   instance to close: `WM_CLOSE` to the app's windows, or Ctrl+C to its console
-  (`runtime/send_ctrl_c.py`, a small detached helper, because a process can only send Ctrl+C to
+  (`scripts/runtime/send_ctrl_c.py`, a small detached helper, because a process can only send Ctrl+C to
   a console it is attached to). It writes `stop-requested` into the run folder, so the watchdog
   ends without sounds, menus or prompts. After `stop_timeout_seconds` the job is terminated
   (fallback: the process tree, via Toolhelp and `TerminateProcess`; no `taskkill`/WMI).
 - **Taskbar identity.** Each project copy has its own AppUserModelID: program name plus a hash of
-  program name and project folder (`scripts/shortcuts.py: project_app_id`). Setup stores it in
+  program name and project folder (`scripts/desktop/shortcuts.py: project_app_id`). Setup stores it in
   the shortcuts (`scripts/standalone/com_tools.py`); the launcher sets it on its consoles and the app's
   process. The no-terminal shortcut uses the same ID plus `W`, and so does the completion window
   of a no-terminal launch, so each window groups with the shortcut that started it.
-- `scripts/windows_focus.py` brings a running instance to the front (`instance_policy = "focus"`).
+- `scripts/desktop/windows_focus.py` brings a running instance to the front (`instance_policy = "focus"`).
 
 ## Errors, tracebacks and completion
 
@@ -331,12 +328,12 @@ move, so a copied folder works offline on another PC.
   order and `unregister()` behavior. Callbacks registered before that setup, or through a saved
   reference to the original registration function, are outside the older-version workaround.
 - **Exit codes** between the wrapper and the watchdog (`WrapperExit`) and between the watchdog
-  and `process_exit.py` (`ExitMode`) are defined in `runtime/_pyapp.py`, with deliberately
+  and `process_exit.py` (`ExitMode`) are defined in `scripts/runtime/_pyapp.py`, with deliberately
   different numbers and an explicit mapping (`EXIT_MODE_FOR_WRAPPER_EXIT`).
 - **Traceback reports.** The wrapper removes its own and `runpy`'s frames, so a report looks
   like `python main.py`. It stores CPython's formatting (used for exception groups) and a
   structured chain (cause/context, notes) with `traceback_lines_before` / `_after` source lines
-  for the app's own files. These counts are configured in `backend_settings.py`.
+  for the app's own files. These counts are configured in `pyapp_settings.py`.
   `scripts/traceback_render.py` renders it: full paths as
   `path:line in function`, a `>` at the failing line, then the error and the script, time and
   Python details; in color on black so it stays readable on any window color, plain in crash
@@ -378,7 +375,7 @@ ASCII art (`scripts/banner.py`). The batch/Python bootstrap and the
 | `docs/TODO.md` | Open items and ideas. |
 | `LICENSE.md` | License of this folder (MIT), which also covers the bundled banner font. |
 | `app_api.py` | What main.py gets with `import pyapp_api`: notifications, `on_stop`, taskbar progress and badge, dialogs, `keep_awake`, `report_error`, `restart`, forwarded starts. Standard library only, Python 3.8+, no-ops without the launcher; the names are `PROTECTED_APP_API_NAMES`. The wrapper registers it as `pyapp_api`. |
-| `backend_settings.py` | Every internal path and constant (`LAUNCHER_VERSION`, folders, icon paths, file names, defaults). Imported by almost everything; changes nothing on import. |
+| `pyapp_settings.py` | Every internal path and constant (`LAUNCHER_VERSION`, folders, icon paths, file names, defaults). Imported by almost everything; changes nothing on import. |
 | `ruff.toml`, `pyrefly.toml` | Lint and type-check settings for this folder only (Python 3.8, Windows, 120 columns). |
 | `.gitignore` | Keeps `tmp/`, caches and `__pycache__` out of Git. |
 | `tmp/` | Created at runtime, never committed: `runtime.cmd` (bootstrap cache), `environment.ok`/`.lock`, `bootstrap.lock`, `running/` (registry), `runs/<id>/` (per-run files: `wrapper.json`, `ready`, `startup.json`, `result.json`, `traceback.json`, `bootstrap.log`, `stop-requested`; deleted by a launch, Stop or Setup when no instance is running and the folder is at least 5 minutes old), `diagnostics.log`. Safe to delete while the app is not running. |
@@ -390,12 +387,13 @@ ASCII art (`scripts/banner.py`). The batch/Python bootstrap and the
 | `W.bat` | the main shortcut | `start_program.py` with a terminal |
 | `N.bat` | `(no Terminal)` shortcut | `start_program.py` without a terminal |
 | `Q.bat` | `Stop` shortcut | `stop_program.py` |
-| `S.bat`, `M.bat` | Settings / Edit Code | `open_file.bat <file>`, else `open_file.py` |
-| `L.bat`, `C.bat` | Logs / Crash Logs | `open_folder.bat <folder>`, else `open_folder.py` |
-| `B.bat` | Browser terminal | `actions/start_program.py` (mode `browser`) |
-| `run.bat` | every script outside `DONT_CHANGE` (Setup, dev tools, icons) | `run.bat setup`, `icons`, `icons-help` or `dev <command>`: the matching tool. It and the other paths in `PROTECTED_PATHS` (`backend_settings.py`) keep their place; everything else in this folder can move between versions. |
+| `S.bat`, `M.bat` | Settings / Edit Code | `open_file.py` (the file from the current settings) |
+| `L.bat`, `C.bat` | Logs / Crash Logs | `open_folder.py` (the folder from the current settings) |
+| `B.bat` | Browser terminal | `scripts/actions/start_program.py` (mode `browser`) |
+| `A.bat` | the `.cmd` files in `batch_shortcuts\` (`generate_batch_shortcuts_for_args_launch`) | Called without arguments: finds the launcher Python and sets the paths those files hand the user's arguments to, so they name no other launcher file. |
+| `run.bat` | every script outside `DONT_CHANGE` (Setup, dev tools, icons) | `run.bat setup`, `icons`, `icons-help` or `dev <command>`: the matching tool. It and the other paths in `PROTECTED_PATHS` (`pyapp_settings.py`) keep their place; everything else in this folder can move between versions. |
 
-### `bootstrap/` – before any Python is known
+### `scripts/bootstrap/` – before any Python is known
 
 | File | Purpose |
 | --- | --- |
@@ -403,9 +401,8 @@ ASCII art (`scripts/banner.py`). The batch/Python bootstrap and the
 | `ensure_runtime.bat` | Creates `tmp\`, loads the cached uv/Python paths or calls `resolve_runtime.py`; sets `PYAPP_UV` and `PYAPP_PYTHON`. |
 | `resolve_runtime.bat` | Gets any working uv and Python with tools built into Windows (`curl`, `tar`), then runs `resolve_runtime.py`. No PowerShell script, so policies that block those don't matter. |
 | `resolve_runtime.py` | Reads the `[bootstrap]` settings, finds/installs uv and the project's Python, writes `tmp\runtime.cmd`. |
-| `open_file.bat`, `open_folder.bat` | Open a file (VS Code, else Notepad) or folder without Python. |
 
-### `actions/` – entry tools (each has a `main()`, run by `entrypoint.py`)
+### `scripts/actions/` – entry tools (each has a `main()`, run by `entrypoint.py`)
 
 | File | Purpose |
 | --- | --- |
@@ -416,7 +413,7 @@ ASCII art (`scripts/banner.py`). The batch/Python bootstrap and the
 | `start_without_launcher.py` | Not run by `entrypoint.py`: used by `Start without launcher.cmd` and `Start without launcher --LINUX.sh` in `code/pyapp/fallback_start`. Runs the main script directly after showing the script, Python, packages and their folders. Windows tries the app `.venv` before system Python; Linux uses `python_command` in the shell file or system Python on PATH, without inspecting the generated environment. The Linux entry accepts Windows separators in relative settings paths. Standard library only and independent of every other launcher file; a protected path. |
 | `gen_icons.py` | Builds the `.ico` files in `code/pyapp/icons` from `icon.png` and the bundled overlays; asks per icon before replacing an `.ico` it did not make (`generated/auto_generated_icons.json`). |
 
-### `runtime/` – the running app
+### `scripts/runtime/` – the running app
 
 | File | Purpose |
 | --- | --- |
@@ -427,6 +424,10 @@ ASCII art (`scripts/banner.py`). The batch/Python bootstrap and the
 | `send_ctrl_c.py` | Helper that attaches to another console and sends Ctrl+C (graceful Stop of console apps). |
 
 ### `scripts/` – shared code
+
+`scripts/desktop/` holds the Windows desktop integration (console window, taskbar, focus,
+notifications, splash, shortcuts), `scripts/github/` what talks to or about GitHub (app workflows,
+removing the template's own, the update check).
 
 Files in [`scripts/standalone/`](scripts/standalone/README.md) work without the launcher: standard library only, no launcher
 imports, other files of that folder only by relative import and named in the docstring (a test
@@ -445,19 +446,20 @@ the module that uses them.
 | `traceback_render.py` | Turns traceback reports into colored or plain text. |
 | `runtime_state.py` | The instance registry (one record per running copy), stop requests and graceful close, the app's clean environment, unique log names. |
 | `instance_policy.py` | What to do when the app is already running (message boxes). |
-| `windows_focus.py` | Finds and activates the windows of a running instance. |
-| `terminal_window.py` | Native terminal alpha, caption buttons, always-on-top and supported close policies; identifies a dedicated WT window by a temporary random title. |
 | `settings_defaults.py` | Compare template settings in working files, the staged Git index or pushed commit tips without executing or modifying settings. |
-| `taskbar_status.py` | When the native terminal shows taskbar activity, green/red completion and attention flashing (from the settings), and the validated window-handle handoff. |
-| `windows_notifications.py` | Silent Windows toasts through a fixed PowerShell WinRT script, escaped plain-text XML, per-outcome switches/templates and blocked-notification diagnostics. Clicking opens the crash log or log; one tag, so a new toast replaces the last. |
-| `update_check.py` | `check_for_launcher_updates`: asks GitHub at most once a day for a newer launcher release and tells the developer in Setup and the developer menu; choices are stored in `tmp/update_check.json`, never in the settings. |
 | `app_api_support.py` | The machinery behind `app_api.py`: finding the app's window, the taskbar (ITaskbarList3), the restart helper, forwarded starts. Not part of the public contract. |
 | `hidden_caches.py` | Gives `__pycache__`, `.ruff_cache`, `.pytest_cache` and `.mypy_cache` in the project root, `code`, `code/pyapp` and the test folders the hidden attribute; run by Setup, every start and after each run. |
-| `template_workflows.py` | Removes the template's own `.github/workflows/pyapp-template-*.yml` from an app, only when they are unchanged and alone. |
-| `shortcuts.py` | The launcher's shortcuts: which ones, their targets, icons and taskbar identity, the record of created shortcuts, removal of stale ones. |
-| `batch_shortcuts.py` | Optional matching `.cmd` entry points with app arguments; preserves unrelated files. |
-| `splash.py` | The launcher's side of the startup splash: when to show it, the icon (decided from the file's bytes, without decoding) and this start's line of `splash_screen_messages`; starts `standalone/splash.py` as its own process. |
 | `import_finder.py` | `standalone/find_imports.py` with the launcher's defaults: the app's code folder (not `pyapp/`), the project environment, `data/import_to_package.txt`. |
+| `desktop/terminal_window.py` | Native terminal alpha, caption buttons, always-on-top and supported close policies; identifies a dedicated WT window by a temporary random title. |
+| `desktop/taskbar_status.py` | When the native terminal shows taskbar activity, green/red completion and attention flashing (from the settings), and the validated window-handle handoff. |
+| `desktop/windows_focus.py` | Finds and activates the windows of a running instance. |
+| `desktop/windows_notifications.py` | Silent Windows toasts through a fixed PowerShell WinRT script, escaped plain-text XML, per-outcome switches/templates and blocked-notification diagnostics. Clicking opens the crash log or log; one tag, so a new toast replaces the last. |
+| `desktop/shortcuts.py` | The launcher's shortcuts: which ones, their targets, icons and taskbar identity, the record of created shortcuts, removal of stale ones. |
+| `desktop/batch_shortcuts.py` | Optional matching `.cmd` entry points with app arguments; preserves unrelated files. |
+| `desktop/splash.py` | The launcher's side of the startup splash: when to show it, the icon (decided from the file's bytes, without decoding) and this start's line of `splash_screen_messages`; starts `standalone/splash.py` as its own process. |
+| `github/app_workflows.py` | The GitHub Actions an app can switch on (`github_actions` in the settings); Setup copies them from `data/workflows/`. |
+| `github/template_workflows.py` | Removes the template's own `.github/workflows/pyapp-template-*.yml` from an app, only when they are unchanged and alone. |
+| `github/update_check.py` | `check_for_launcher_updates`: asks GitHub at most once a day for a newer launcher release and tells the developer in Setup and the developer menu; choices are stored in `tmp/update_check.json`, never in the settings. |
 | `standalone/com_tools.py` | Minimal COM helpers with `ctypes` (GUIDs, property store, AppUserModelID). |
 | `standalone/file_tools.py` | Cross-process `FileLock` (released by Windows after a crash), atomic JSON writes, safe folder removal (junction-aware), path helpers, file-name sanitizing. |
 | `standalone/find_imports.py` | Offline import finder: scans a folder with `ast`, drops the standard library and local modules, maps imports to PyPI names (installed metadata, then a mapping, else a guess); imports guarded by `try/except ImportError` are optional. |
@@ -488,7 +490,7 @@ the module that uses them.
 | `data/import_to_package.txt` | Import name → PyPI name for about 2,500 packages whose names differ; generated by `pyapp_tools/make_import_map.bat`. Your own pairs can be added at the end. |
 | `pyapp_tools/` | Development tools for the launcher itself, `.bat` files whose code is in `pyapp_tools/src`: checks (`check_all`, `check_git_leaks`, `check_changelog`, `check_protected`, `check_repository`, `verify_launcher`, `test_all_pythons`, `fresh_clone_test`), measurements (`get_startup_time`, `get_longest_paths`), `make_import_map`, `release` and the Git hooks; see `pyapp_tools/README.md`. The launcher never uses them. |
 | `data/dev_settings_default.py` | The settings file this version ships with: defaults for settings a project's `developer_settings.py` lacks (see [Versions](#versions)). Read with `ast`, never imported. |
-| `data/protected_baseline.json` | The `PROTECTED_*` lists of `backend_settings.py` as of the last release, saved by `pyapp_tools/release`. Until the next MAJOR version, `tests/src/test_template_contract.py` (also run before each commit) refuses to take an entry off. Do not edit by hand. |
+| `data/protected_baseline.json` | The `PROTECTED_*` lists of `pyapp_settings.py` as of the last release, saved by `pyapp_tools/release`. Until the next MAJOR version, `tests/src/test_template_contract.py` (also run before each commit) refuses to take an entry off. Do not edit by hand. |
 | `data/fonts/` | Banner font, an original drawing made for this project (see [Licensing](#licensing)). |
 | `data/readme_resources/` | Screenshots and images used by the project README. |
 | `data/icons/` | Bundled default PNGs: the default base image (used when the project's `icon.png` in `code/pyapp/icons` is missing or unchanged) and the overlays. How to change the icons is in `code/pyapp/icons/README.md` (`run.bat icons-help` opens it). |
@@ -496,7 +498,7 @@ the module that uses them.
 
 ## Versions
 
-`LAUNCHER_VERSION` in `backend_settings.py` is the version of this folder. It follows
+`LAUNCHER_VERSION` in `pyapp_settings.py` is the version of this folder. It follows
 Semantic Versioning, and each part also says what an update takes:
 
 | Part | Means | Update by |

@@ -131,7 +131,7 @@ class CheckAllTests(unittest.TestCase):
         diagnostics = (
             "FAIL: test_scripts_outside_use_only_protected_commands\nAssertionError: "
             + reason
-            + ". Add these commands to backend_settings.py.\n"
+            + ". Add these commands to pyapp_settings.py.\n"
         )
         problem = check_protected.first_problem(diagnostics)
         for key in ("Unregistered", "install-requirements", "reset-imports"):

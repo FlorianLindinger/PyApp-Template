@@ -13,8 +13,8 @@ from project_location import DONT_CHANGE
 # isort: split
 
 from pyapp.DONT_CHANGE.scripts import config
-from pyapp.DONT_CHANGE.scripts.app_workflows import sync_app_workflows
 from pyapp.DONT_CHANGE.scripts.errors import SettingsError
+from pyapp.DONT_CHANGE.scripts.github.app_workflows import sync_app_workflows
 
 
 class SyncTests(unittest.TestCase):

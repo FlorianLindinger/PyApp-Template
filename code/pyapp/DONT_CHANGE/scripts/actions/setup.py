@@ -9,14 +9,13 @@ import os
 from pathlib import Path
 from typing import Dict, List
 
-from pyapp.DONT_CHANGE.backend_settings import (
+from pyapp.DONT_CHANGE.pyapp_settings import (
     DEV_SETTINGS_PATH,
     ICON_PATH,
     INSTALL_ENVIRONMENT_WHEN_GENERATING_SHORTCUTS,
     LAUNCHER_VERSION,
     SHORTCUT_OUTPUT_DIR,
 )
-from pyapp.DONT_CHANGE.scripts.app_workflows import sync_app_workflows
 from pyapp.DONT_CHANGE.scripts.banner import print_banner
 from pyapp.DONT_CHANGE.scripts.config import settings, validate
 from pyapp.DONT_CHANGE.scripts.console_tools import (
@@ -27,9 +26,7 @@ from pyapp.DONT_CHANGE.scripts.console_tools import (
     print_warn,
     styled,
 )
-from pyapp.DONT_CHANGE.scripts.diagnostics import note_ignored
-from pyapp.DONT_CHANGE.scripts.launcher_ui import delete_finished_run_folders
-from pyapp.DONT_CHANGE.scripts.shortcuts import (
+from pyapp.DONT_CHANGE.scripts.desktop.shortcuts import (
     CSIDL_DESKTOPDIRECTORY,
     CSIDL_PROGRAMS,
     create_windows_startup_shortcut,
@@ -45,8 +42,11 @@ from pyapp.DONT_CHANGE.scripts.shortcuts import (
     special_folder,
     write_created_shortcuts,
 )
+from pyapp.DONT_CHANGE.scripts.diagnostics import note_ignored
+from pyapp.DONT_CHANGE.scripts.github.app_workflows import sync_app_workflows
+from pyapp.DONT_CHANGE.scripts.github.template_workflows import remove_template_workflows
+from pyapp.DONT_CHANGE.scripts.launcher_ui import delete_finished_run_folders
 from pyapp.DONT_CHANGE.scripts.standalone.file_tools import make_abs_path_relative_to_file, sanitize_filename
-from pyapp.DONT_CHANGE.scripts.template_workflows import remove_template_workflows
 
 pause_on_success = True
 
@@ -100,7 +100,7 @@ def main() -> None:
     )
     app_id = project_app_id(s.program_name)
     targets_by_kind = shortcut_targets(s)
-    definitions = shortcut_definitions(s, app_id, targets_by_kind)
+    definitions = shortcut_definitions(s, app_id)
     filenames = [shortcut_filename(d[1]).casefold() for d in definitions]
     if len(filenames) != len(set(filenames)):
         raise ValueError("Shortcut names collide after Windows filename sanitization; choose distinct names.")
@@ -125,7 +125,7 @@ def main() -> None:
             )
     for kind in ("logs", "crash_logs"):
         if targets_by_kind[kind]:
-            Path(targets_by_kind[kind]).mkdir(parents=True, exist_ok=True)  # the shortcut opens it right away
+            Path(targets_by_kind[kind]).mkdir(parents=True, exist_ok=True)  # so the shortcut can open it right away
 
     removed_template_workflows: List[str] = []
     try:
@@ -184,12 +184,12 @@ def main() -> None:
     except BaseException:
         # Stopped halfway (e.g. a Desktop write blocked by Controlled Folder Access): record every
         # shortcut that exists now, so the next Setup or remove_shortcuts still knows about it.
-        write_created_shortcuts(previous + created, targets_by_kind, read_start_link())
+        write_created_shortcuts(previous + created, read_start_link())
         raise
     removed = remove_shortcuts(previous, keep=created)
     start_link = sync_start_link(s, app_id)
-    write_created_shortcuts(created + leftover_shortcuts(previous, removed + created), targets_by_kind, start_link)
-    from pyapp.DONT_CHANGE.scripts.batch_shortcuts import sync
+    write_created_shortcuts(created + leftover_shortcuts(previous, removed + created), start_link)
+    from pyapp.DONT_CHANGE.scripts.desktop.batch_shortcuts import sync
 
     batches = sync(s, app_id, Path(SHORTCUT_OUTPUT_DIR))
     if batches:
@@ -204,7 +204,7 @@ def main() -> None:
         if start_link:
             print(f"  start link  {start_link}://start")
     delete_finished_run_folders()
-    from pyapp.DONT_CHANGE.scripts.update_check import tell_about_update
+    from pyapp.DONT_CHANGE.scripts.github.update_check import tell_about_update
 
     tell_about_update(s.check_for_launcher_updates)
     from pyapp.DONT_CHANGE.scripts.hidden_caches import hide_cache_folders

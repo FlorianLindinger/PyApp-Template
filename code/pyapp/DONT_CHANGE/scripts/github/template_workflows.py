@@ -20,7 +20,7 @@ import re
 from pathlib import Path
 from typing import Dict, FrozenSet, List
 
-from pyapp.DONT_CHANGE.backend_settings import SHORTCUT_OUTPUT_DIR
+from pyapp.DONT_CHANGE.pyapp_settings import SHORTCUT_OUTPUT_DIR
 
 # SHA-256 of every published version, after replacing CRLF with LF (Git may check out either).
 # Only versions in which every job has "if: endsWith(github.repository, '/PyApp-Template')":

@@ -20,7 +20,7 @@ from types import ModuleType, SimpleNamespace
 from typing import Dict, Optional, Union
 from xml.etree import ElementTree as ET
 
-from pyapp.DONT_CHANGE import backend_settings as paths
+from pyapp.DONT_CHANGE import pyapp_settings as paths
 from pyapp.DONT_CHANGE.scripts.console_tools import print_warn
 from pyapp.DONT_CHANGE.scripts.diagnostics import note_ignored
 

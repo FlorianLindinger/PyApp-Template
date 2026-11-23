@@ -12,7 +12,7 @@ log and crash log, tracebacks reports, single-instance rules, the STOP shortcut 
 Standard library only, and Python 3.8 compatible, because the global Python may be an old one.
 
 Not run by entrypoint.py like the other actions. Keep the file at this path: the .cmd outside
-DONT_CHANGE names it (FALLBACK_START_PATH in backend_settings.PROTECTED_PATHS), so projects that
+DONT_CHANGE names it (FALLBACK_START_PATH in pyapp_settings.PROTECTED_PATHS), so projects that
 update by replacing DONT_CHANGE still find it.
 """
 
@@ -31,7 +31,7 @@ import time
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
-LAUNCHER_DIR = Path(__file__).resolve().parents[1]  # pyapp/DONT_CHANGE
+LAUNCHER_DIR = Path(__file__).resolve().parents[2]  # pyapp/DONT_CHANGE
 PYAPP_DIR = LAUNCHER_DIR.parent
 SETTINGS_PATH = PYAPP_DIR / "developer_settings.py"
 VENV_DIR = PYAPP_DIR / "generated" / ".venv"

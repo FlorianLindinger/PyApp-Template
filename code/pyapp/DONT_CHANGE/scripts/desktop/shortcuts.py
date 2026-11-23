@@ -1,6 +1,6 @@
 """Windows shortcuts: create .lnk files, their targets and taskbar identity, and remove stale ones.
 
-Used by actions/setup.py (Setup), start_program.py (outdated-target hint) and the dev tools.
+Used by scripts/actions/setup.py (Setup), start_program.py (outdated-target hint) and the dev tools.
 """
 
 from __future__ import annotations
@@ -15,7 +15,7 @@ from pathlib import Path
 from types import ModuleType, SimpleNamespace
 from typing import Any, Dict, Iterable, List, Optional, Protocol, Tuple, Union
 
-from pyapp.DONT_CHANGE.backend_settings import (
+from pyapp.DONT_CHANGE.pyapp_settings import (
     BROWSER_APP_ID_SUFFIX,
     CRASH_LOG_ICON_PATH,
     CREATED_SHORTCUTS_LIST_PATH,
@@ -207,9 +207,9 @@ def read_start_link() -> str:
     return link if isinstance(link, str) else ""
 
 
-def write_created_shortcuts(paths: List[str], targets: Optional[Dict[str, str]] = None, start_link: str = "") -> None:
-    """Record the created .lnk files (to remove stale ones later), the targets they open and the start link."""
-    record = {"version": 2, "shortcuts": sorted(set(paths)), "targets": targets or {}, "start_link": start_link}
+def write_created_shortcuts(paths: List[str], start_link: str = "") -> None:
+    """Record the created .lnk files (to remove stale ones later) and the browser terminal's start link."""
+    record = {"version": 2, "shortcuts": sorted(set(paths)), "start_link": start_link}
     with Path(CREATED_SHORTCUTS_LIST_PATH).open("w", encoding="utf-8") as stream:
         json.dump(record, stream, indent=2)
 
@@ -249,10 +249,11 @@ def remove_shortcuts(paths: Iterable[str], keep: Iterable[str] = ()) -> List[str
 
 
 def shortcut_targets(s: Union[ModuleType, SimpleNamespace]) -> Dict[str, str]:
-    """Folder/file each "open" shortcut passes to its B\\*.bat, which then opens it without Python.
+    """The file or folder each "open" shortcut opens with the current settings (for Setup and the browser page).
 
-    "" means the target can only be resolved at click time (a path relative to the start folder
-    or with date codes in the folder part); the B\\*.bat then runs the Python action instead.
+    The shortcuts themselves carry no path: their B\\*.bat resolves it from the settings on every
+    click. "" means the folder can only be resolved at click time (a path relative to the start
+    folder, or with date codes in its folder part) or there is no settings file.
     """
     from pyapp.DONT_CHANGE.scripts.config import main_script_path
     from pyapp.DONT_CHANGE.scripts.launcher_ui import get_log_folder_path
@@ -270,7 +271,7 @@ def shortcut_targets(s: Union[ModuleType, SimpleNamespace]) -> Dict[str, str]:
 
 
 def shortcut_definitions(
-    s: Union[ModuleType, SimpleNamespace], app_id: str, targets: Dict[str, str]
+    s: Union[ModuleType, SimpleNamespace], app_id: str
 ) -> List[Tuple[str, str, str, str, str, Optional[str], str]]:
     """(kind, name, icon, launcher, args, app_id, description) for every enabled shortcut.
 
@@ -305,7 +306,7 @@ def shortcut_definitions(
             settings_name,
             SETTINGS_ICON_PATH,
             LAUNCHER_OPEN_SETTINGS,
-            targets["settings"],
+            "",
             None,
             f"Open the {name} settings file",
         ),
@@ -323,7 +324,7 @@ def shortcut_definitions(
             s.open_log_folder_shortcut_name,
             LOG_ICON_PATH,
             LAUNCHER_OPEN_LOG_DIR,
-            targets["logs"],
+            "",
             None,
             f"Open the {name} log folder",
         ),
@@ -332,7 +333,7 @@ def shortcut_definitions(
             s.open_crash_log_folder_shortcut_name,
             CRASH_LOG_ICON_PATH,
             LAUNCHER_OPEN_CRASH_LOG_DIR,
-            targets["crash_logs"],
+            "",
             None,
             f"Open the {name} crash log folder",
         ),
@@ -341,7 +342,7 @@ def shortcut_definitions(
             s.open_code_shortcut_name,
             OPEN_CODE_ICON_PATH,
             LAUNCHER_OPEN_CODE,
-            targets["open_code"],
+            "",
             None,
             f"Open the {name} main script",
         ),
@@ -350,17 +351,4 @@ def shortcut_definitions(
         (kind, label, icon, launcher, arguments, identity, description)
         for kind, label, icon, launcher, arguments, identity, description in definitions
         if label
-    ]
-
-
-def outdated_shortcut_targets(s: Union[ModuleType, SimpleNamespace]) -> List[str]:
-    """Kinds of "open" shortcuts whose recorded target no longer matches the settings (run Setup)."""
-    recorded = _read_created_shortcuts_file().get("targets")
-    if not isinstance(recorded, dict):
-        return []
-    current = shortcut_targets(s)
-    return [
-        kind
-        for kind, path in recorded.items()
-        if kind in current and os.path.normcase(path) != os.path.normcase(current[kind])
     ]

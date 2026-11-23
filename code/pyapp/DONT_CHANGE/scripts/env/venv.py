@@ -18,7 +18,7 @@ from pathlib import Path
 from types import ModuleType, SimpleNamespace
 from typing import Dict, List, Mapping, NamedTuple, Optional, Tuple, Union
 
-from pyapp.DONT_CHANGE.backend_settings import (
+from pyapp.DONT_CHANGE.pyapp_settings import (
     DEV_SETTINGS_PATH,
     ENVIRONMENT_LOCK_PATH,
     ENVIRONMENT_STAMP_PATH,
@@ -613,6 +613,6 @@ def open_package_terminal(s: Optional[Union[ModuleType, SimpleNamespace]] = None
     )
     print(flush=True)
     # Probe the selected interpreter or intentionally open the package command prompt.
-    from pyapp.DONT_CHANGE.backend_settings import CMD_EXE
+    from pyapp.DONT_CHANGE.pyapp_settings import CMD_EXE
 
     return subprocess.run([CMD_EXE, "/d"], cwd=PYTHON_SCRIPTS_DIR, env=env, check=False).returncode  # noqa: S603

@@ -3,7 +3,7 @@
 # taken out of a commit later (git_hooks/pre-push checks again before publishing), or when the
 # staged launcher files fail Ruff's lint or format check, staged template settings do not match
 # staged fallback defaults, or when what existing projects rely on
-# (backend_settings PROTECTED_*) would break.
+# (pyapp_settings PROTECTED_*) would break.
 # To use it in a clone: git config core.hooksPath code/pyapp/DONT_CHANGE/pyapp_tools/src/git_hooks
 # To commit anyway, once: git commit --no-verify
 

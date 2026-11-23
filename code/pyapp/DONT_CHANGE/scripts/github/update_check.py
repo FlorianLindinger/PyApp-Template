@@ -21,7 +21,7 @@ import time
 from pathlib import Path
 from typing import Any, Callable, Dict, Optional, Tuple
 
-from pyapp.DONT_CHANGE import backend_settings as paths
+from pyapp.DONT_CHANGE import pyapp_settings as paths
 from pyapp.DONT_CHANGE.scripts.diagnostics import note_ignored
 
 STATE_PATH = Path(paths.TEMPORARY_DIR) / "update_check.json"

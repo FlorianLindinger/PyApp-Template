@@ -13,7 +13,7 @@ import time
 from pathlib import Path
 from typing import Dict, Generator, List, NamedTuple, Optional
 
-from pyapp.DONT_CHANGE import backend_settings as paths
+from pyapp.DONT_CHANGE import pyapp_settings as paths
 from pyapp.DONT_CHANGE.scripts.config import main_script_path, settings, validate
 from pyapp.DONT_CHANGE.scripts.console_tools import (
     ANSI_BOLD,

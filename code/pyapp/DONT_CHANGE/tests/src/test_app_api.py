@@ -19,15 +19,15 @@ from project_location import CODE, DONT_CHANGE
 
 # isort: split
 
-from pyapp.DONT_CHANGE import app_api, backend_settings
+from pyapp.DONT_CHANGE import app_api, pyapp_settings
 from pyapp.DONT_CHANGE.scripts import app_api_support
 
-WRAPPER = DONT_CHANGE / "runtime" / "script_wrapper.py"
+WRAPPER = DONT_CHANGE / "scripts" / "runtime" / "script_wrapper.py"
 
 
 class ContractTests(unittest.TestCase):
     def test_the_public_names_are_the_protected_ones_and_callable(self):
-        self.assertEqual(sorted(app_api.__all__), sorted(backend_settings.PROTECTED_APP_API_NAMES))
+        self.assertEqual(sorted(app_api.__all__), sorted(pyapp_settings.PROTECTED_APP_API_NAMES))
         for name in app_api.__all__:
             self.assertTrue(callable(getattr(app_api, name)), name)
 
@@ -203,7 +203,7 @@ class WindowsTests(unittest.TestCase):
     def test_notify_uses_the_apps_id_and_the_click_target(self):
         with mock.patch.object(app_api, "_launched", True), mock.patch.dict(
             os.environ, {"APP_ID": "my-app"}
-        ), mock.patch("pyapp.DONT_CHANGE.scripts.windows_notifications.show", return_value=None) as show:
+        ), mock.patch("pyapp.DONT_CHANGE.scripts.desktop.windows_notifications.show", return_value=None) as show:
             self.assertTrue(app_api.notify("Done", "12 files", open_path="C:\\out"))
         show.assert_called_once_with("Done", "12 files", "my-app", open_path="C:\\out")
 

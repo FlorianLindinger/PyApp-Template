@@ -1,4 +1,4 @@
-"""scripts/template_workflows.py: Setup removes the template's own workflows from an app, and only then."""
+"""scripts/github/template_workflows.py: Setup removes the template's own workflows from an app, and only then."""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ from project_location import PROJECT_ROOT
 
 # isort: split
 
-from pyapp.DONT_CHANGE.scripts import template_workflows as tool
+from pyapp.DONT_CHANGE.scripts.github import template_workflows as tool
 
 WORKFLOWS = PROJECT_ROOT / ".github" / "workflows"
 GUARD = re.compile(r"(?m)^    if: endsWith\(github\.repository, '/PyApp-Template'\)\s*$")
@@ -40,7 +40,7 @@ class ShippedWorkflowTests(unittest.TestCase):
                 self.assertIn(
                     digest,
                     tool.KNOWN_TEMPLATE_WORKFLOWS.get(path.name, frozenset()),
-                    f"add {digest} to KNOWN_TEMPLATE_WORKFLOWS[{path.name!r}] in scripts/template_workflows.py",
+                    f"add {digest} to KNOWN_TEMPLATE_WORKFLOWS[{path.name!r}] in scripts/github/template_workflows.py",
                 )
 
 

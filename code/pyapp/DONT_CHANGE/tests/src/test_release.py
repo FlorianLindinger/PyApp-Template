@@ -69,18 +69,18 @@ class ZipTests(unittest.TestCase):
             root = Path(folder)
             launcher = root / release.LAUNCHER_FOLDER
             launcher.mkdir(parents=True)
-            (launcher / "backend_settings.py").write_text('LAUNCHER_VERSION = "1.2.4"\n', encoding="utf-8")
-            files = [release.LAUNCHER_FOLDER + "backend_settings.py", release.LAUNCHER_FOLDER + "gone.py"]
+            (launcher / "pyapp_settings.py").write_text('LAUNCHER_VERSION = "1.2.4"\n', encoding="utf-8")
+            files = [release.LAUNCHER_FOLDER + "pyapp_settings.py", release.LAUNCHER_FOLDER + "gone.py"]
             with mock.patch.object(release, "PROJECT_ROOT", root):
                 target = release.build_zip("1.2.4", files)
             with zipfile.ZipFile(target) as archive:
-                self.assertEqual(archive.namelist(), ["DONT_CHANGE/backend_settings.py"])
+                self.assertEqual(archive.namelist(), ["DONT_CHANGE/pyapp_settings.py"])
 
 
 class FailedReleaseTests(unittest.TestCase):
     def release_in(self, folder: str, build_zip: mock.Mock) -> Path:
         """release.main(["patch"]) on fake files in folder; returns the protected baseline path."""
-        settings, changelog = Path(folder) / "backend_settings.py", Path(folder) / "CHANGELOG.md"
+        settings, changelog = Path(folder) / "pyapp_settings.py", Path(folder) / "CHANGELOG.md"
         settings.write_bytes(b'LAUNCHER_VERSION = "1.2.3"\r\nPROTECTED = {"PROTECTED_PATHS": ["run.bat"]}\r\n')
         changelog.write_bytes(CHANGELOG.replace("\n", "\r\n").encode("utf-8"))
         baseline = Path(folder) / "protected_baseline.json"
@@ -98,7 +98,7 @@ class FailedReleaseTests(unittest.TestCase):
 
     def test_a_failed_zip_leaves_version_changelog_and_protected_lists_unchanged(self):
         with tempfile.TemporaryDirectory() as folder:
-            files = (Path(folder) / "backend_settings.py", Path(folder) / "CHANGELOG.md")
+            files = (Path(folder) / "pyapp_settings.py", Path(folder) / "CHANGELOG.md")
             with self.assertRaises(OSError):
                 self.release_in(folder, mock.Mock(side_effect=OSError("disk full")))
             self.assertIn(b'"1.2.3"', files[0].read_bytes())
@@ -129,9 +129,9 @@ class FailedReleaseTests(unittest.TestCase):
             root = Path(folder)
             launcher = root / release.LAUNCHER_FOLDER
             launcher.mkdir(parents=True)
-            (launcher / "backend_settings.py").write_text('LAUNCHER_VERSION = "1.2.3"\n', encoding="utf-8")
+            (launcher / "pyapp_settings.py").write_text('LAUNCHER_VERSION = "1.2.3"\n', encoding="utf-8")
             with mock.patch.object(release, "PROJECT_ROOT", root), self.assertRaises(RuntimeError):
-                release.build_zip("1.2.4", [release.LAUNCHER_FOLDER + "backend_settings.py"])
+                release.build_zip("1.2.4", [release.LAUNCHER_FOLDER + "pyapp_settings.py"])
             self.assertEqual(list((root / release.LAUNCHER_FOLDER / release.RELEASES_FOLDER).iterdir()), [])
 
 

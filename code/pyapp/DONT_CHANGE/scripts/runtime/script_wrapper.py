@@ -1,4 +1,4 @@
-# Step 5 of a start (see B/W.bat for the first steps). The watchdog (runtime/bg_watchdog.py) starts
+# Step 5 of a start (see B/W.bat for the first steps). The watchdog (scripts/runtime/bg_watchdog.py) starts
 # this file with the APP's Python, the one with your packages. It prepares the output and logging,
 # then runs code/main.py as if it had been started directly, and finally writes how it ended:
 # result.json (the exit code) and, after an error, traceback.json (the crash report).

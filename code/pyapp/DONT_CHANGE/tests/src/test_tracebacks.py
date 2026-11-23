@@ -1,4 +1,4 @@
-"""Traceback reports (runtime/_pyapp.py) and their rendering (scripts/traceback_render.py)."""
+"""Traceback reports (scripts/runtime/_pyapp.py) and their rendering (scripts/traceback_render.py)."""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ from project_location import CODE  # noqa: F401 - makes "pyapp" importable
 
 # isort: split
 
-from pyapp.DONT_CHANGE.runtime import _pyapp
+from pyapp.DONT_CHANGE.scripts.runtime import _pyapp
 from pyapp.DONT_CHANGE.scripts.traceback_render import render
 
 

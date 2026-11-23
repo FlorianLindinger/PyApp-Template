@@ -1,4 +1,4 @@
-"""bootstrap/resolve_runtime.py: settings, version rules, and messages for company PCs."""
+"""scripts/bootstrap/resolve_runtime.py: settings, version rules, and messages for company PCs."""
 
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ from unittest import mock
 
 from project_location import DONT_CHANGE
 
-with mock.patch.object(sys, "path", [str(DONT_CHANGE / "bootstrap"), *sys.path]):
+with mock.patch.object(sys, "path", [str(DONT_CHANGE / "scripts" / "bootstrap"), *sys.path]):
     import resolve_runtime as tool
 
 # isort: split
@@ -282,7 +282,7 @@ class ConcurrentFirstStartTests(unittest.TestCase):
             holder += "    print('locked', flush=True); time.sleep(3)\n"
             # Test subprocesses execute fixed fixture/helper code using the local interpreter or Git.
             process = subprocess.Popen(  # noqa: S603
-                [sys.executable, "-I", "-c", holder, str(DONT_CHANGE / "bootstrap"), str(lock)],
+                [sys.executable, "-I", "-c", holder, str(DONT_CHANGE / "scripts" / "bootstrap"), str(lock)],
                 stdout=subprocess.PIPE,
                 text=True,
             )
@@ -394,7 +394,7 @@ class UvEnvironmentTests(unittest.TestCase):
             self.assertNotEqual(environment["UV_CACHE_DIR"], USER_CACHE)
 
     def test_the_batch_stage_clears_the_same_behavior_variables(self):
-        text = (DONT_CHANGE / "bootstrap" / "resolve_runtime.bat").read_text(encoding="utf-8")
+        text = (DONT_CHANGE / "scripts" / "bootstrap" / "resolve_runtime.bat").read_text(encoding="utf-8")
         for name in ("UV_OFFLINE", "UV_FROZEN", "UV_LOCKED", "UV_NO_SYNC"):
             self.assertIn(f'set "{name}="', text)
         self.assertIn('if not defined visible set "visible=True"', text)
@@ -472,7 +472,7 @@ FAKE_RESOLVER_PY = """
 import sys
 from pathlib import Path
 
-root = Path(__file__).resolve().parent.parent
+root = Path(__file__).resolve().parents[2]
 with open(root / "resolved.txt", "a") as counter:
     counter.write("x")
 fake = str(root / "fake.exe")
@@ -485,15 +485,15 @@ SETTINGS = '# settings\npython_version = "3.14"\nuv_version: str = ""  # any\npr
 
 @unittest.skipUnless(os.name == "nt", "Windows only")
 class RuntimeCacheTests(unittest.TestCase):
-    """bootstrap/ensure_runtime.bat: when the cached uv and Python can be reused."""
+    """scripts/bootstrap/ensure_runtime.bat: when the cached uv and Python can be reused."""
 
     def project(self) -> Path:
         directory = tempfile.TemporaryDirectory()
         self.addCleanup(directory.cleanup)
         root = Path(directory.name)
-        bootstrap = root / "DONT_CHANGE" / "bootstrap"
+        bootstrap = root / "DONT_CHANGE" / "scripts" / "bootstrap"
         bootstrap.mkdir(parents=True)
-        shutil.copyfile(DONT_CHANGE / "bootstrap" / "ensure_runtime.bat", bootstrap / "ensure_runtime.bat")
+        shutil.copyfile(DONT_CHANGE / "scripts" / "bootstrap" / "ensure_runtime.bat", bootstrap / "ensure_runtime.bat")
         (bootstrap / "resolve_runtime.bat").write_bytes(FAKE_RESOLVER_BAT.encode("ascii"))
         (bootstrap / "fake_resolve.py").write_text(FAKE_RESOLVER_PY, encoding="utf-8")
         (root / "DONT_CHANGE" / "fake.exe").touch()
@@ -506,7 +506,7 @@ class RuntimeCacheTests(unittest.TestCase):
         """Run ensure_runtime.bat; return how often the runtime has been resolved so far."""
         # Fixed test batch file in a temporary folder.
         subprocess.run(  # noqa: S603
-            ["cmd.exe", "/d", "/c", str(root / "DONT_CHANGE" / "bootstrap" / "ensure_runtime.bat")],  # noqa: S607
+            ["cmd.exe", "/d", "/c", str(root / "DONT_CHANGE" / "scripts" / "bootstrap" / "ensure_runtime.bat")],  # noqa: S607
             env={**os.environ, "PYAPP_TEST_PYTHON": sys.executable},
             check=True,
             capture_output=True,

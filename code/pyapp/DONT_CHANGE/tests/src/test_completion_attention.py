@@ -21,10 +21,10 @@ from project_location import CODE
 
 # isort: split
 
-from pyapp.DONT_CHANGE.runtime import process_exit
 from pyapp.DONT_CHANGE.scripts import config, console_tools
-from pyapp.DONT_CHANGE.scripts import taskbar_status as taskbar
-from pyapp.DONT_CHANGE.scripts import windows_notifications as notifications
+from pyapp.DONT_CHANGE.scripts.desktop import taskbar_status as taskbar
+from pyapp.DONT_CHANGE.scripts.desktop import windows_notifications as notifications
+from pyapp.DONT_CHANGE.scripts.runtime import process_exit
 
 
 def settings(**changes: object) -> SimpleNamespace:

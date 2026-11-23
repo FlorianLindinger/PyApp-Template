@@ -10,7 +10,7 @@ import sys
 from pathlib import Path
 
 # Last, so app modules named like standard-library modules (code/random.py, ...) cannot shadow them.
-sys.path.append(str(Path(__file__).resolve().parents[3]))
+sys.path.append(str(Path(__file__).resolve().parents[4]))
 from pyapp.DONT_CHANGE.browser_terminal import host
 from pyapp.DONT_CHANGE.scripts.diagnostics import note_ignored
 

@@ -12,7 +12,7 @@ import ctypes
 import os
 from typing import Iterator
 
-from pyapp.DONT_CHANGE import backend_settings as paths
+from pyapp.DONT_CHANGE import pyapp_settings as paths
 from pyapp.DONT_CHANGE.scripts.diagnostics import note_ignored
 
 CACHE_FOLDER_NAMES = ("__pycache__", ".ruff_cache", ".pytest_cache", ".mypy_cache")

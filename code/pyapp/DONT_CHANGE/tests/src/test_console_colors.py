@@ -7,7 +7,7 @@ from typing import List
 from unittest import mock
 
 import project_location  # noqa: F401 - make this checkout's code importable
-from pyapp.DONT_CHANGE.backend_settings import CMD_EXE
+from pyapp.DONT_CHANGE.pyapp_settings import CMD_EXE
 from pyapp.DONT_CHANGE.scripts.config import fill_missing_settings
 from pyapp.DONT_CHANGE.scripts.console_tools import set_terminal_colors, set_terminal_wrap
 
@@ -56,7 +56,7 @@ class OutcomeColorTests(unittest.TestCase):
     def colors_after(self, outcome: str) -> List[str]:
         from types import SimpleNamespace
 
-        from pyapp.DONT_CHANGE.runtime import process_exit
+        from pyapp.DONT_CHANGE.scripts.runtime import process_exit
 
         s = SimpleNamespace(
             program_name="App",
@@ -90,7 +90,7 @@ class OutcomeColorTests(unittest.TestCase):
     def test_closing_browser_run_still_gets_the_outcome_title_and_icon(self):
         from types import SimpleNamespace
 
-        from pyapp.DONT_CHANGE.runtime import process_exit
+        from pyapp.DONT_CHANGE.scripts.runtime import process_exit
 
         for outcome in ("success", "failure", "keyboard_interrupt"):
             s = SimpleNamespace(
@@ -118,7 +118,7 @@ class OutcomeColorTests(unittest.TestCase):
 
 class WindowsTerminalTests(unittest.TestCase):
     def test_semicolons_do_not_split_the_wt_command_line(self):
-        from pyapp.DONT_CHANGE.actions.start_program import wt_command
+        from pyapp.DONT_CHANGE.scripts.actions.start_program import wt_command
 
         command = wt_command("A; B", "#3B78FF", ["python.exe", "C:\\R;D\\watchdog.py"])
         self.assertEqual(

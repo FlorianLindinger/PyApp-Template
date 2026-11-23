@@ -20,8 +20,8 @@ from project_location import CODE, DONT_CHANGE  # noqa: F401 - puts the code fol
 from pyapp.DONT_CHANGE.scripts import console_tools
 
 if os.name == "nt":
-    from pyapp.DONT_CHANGE.actions import start_program
-    from pyapp.DONT_CHANGE.scripts import shortcuts
+    from pyapp.DONT_CHANGE.scripts.actions import start_program
+    from pyapp.DONT_CHANGE.scripts.desktop import shortcuts
 
 PYTHON = getattr(sys, "_base_executable", sys.executable)
 
@@ -55,7 +55,7 @@ class LaunchModeTest(unittest.TestCase):
         fill_missing_settings(s)
         with tempfile.TemporaryDirectory() as folder, mock.patch(
             "pyapp.DONT_CHANGE.scripts.browser_links.address", return_value=("127.0.0.1", 8765, "fixture")
-        ), mock.patch("pyapp.DONT_CHANGE.scripts.shortcuts.read_start_link", return_value=""):
+        ), mock.patch("pyapp.DONT_CHANGE.scripts.desktop.shortcuts.read_start_link", return_value=""):
             command = start_program.browser_command(s, Path(folder), ["child.exe"])
             config_path = Path(command[command.index("--config") + 1])
             self.assertIs(json.loads(config_path.read_text(encoding="utf-8"))["wrap_output"], False)
@@ -83,8 +83,7 @@ class LaunchModeTest(unittest.TestCase):
                 open_code_shortcut_name="",
                 user_settings_path="",
             )
-            targets = {"logs": "", "crash_logs": "", "open_code": "", "settings": ""}
-            return shortcuts.shortcut_definitions(s, "app", targets)
+            return shortcuts.shortcut_definitions(s, "app")
 
         ((kind, name, icon, launcher, args, app_id, _),) = definitions("App (Browser)")
         self.assertEqual((kind, name, args, app_id), ("browser_terminal", "App (Browser)", "app", "appB"))

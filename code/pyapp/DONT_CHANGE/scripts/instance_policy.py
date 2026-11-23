@@ -40,7 +40,7 @@ def decide(policy: str, records: List[Dict[str, Any]], program_name: str) -> str
         message_box(running, program_name, MB_ICONINFORMATION)
         return "cancel"
     if policy == "focus":
-        from pyapp.DONT_CHANGE.scripts.windows_focus import focus_instance
+        from pyapp.DONT_CHANGE.scripts.desktop.windows_focus import focus_instance
 
         for record in records:
             try:

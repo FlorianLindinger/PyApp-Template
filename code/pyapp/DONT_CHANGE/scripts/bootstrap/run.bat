@@ -23,7 +23,7 @@ rem After a failure this file, not Python, waits for a key: then the window also
 rem Python itself cannot start or the launcher has a bug that stops it before its own error
 rem handling. PYAPP_BATCH_PAUSES_ON_FAILURE tells entrypoint.py not to ask a second time.
 set "PYAPP_BATCH_PAUSES_ON_FAILURE=1"
-"%PYAPP_PYTHON%" -I -S -X utf8 "%~dp0..\scripts\entrypoint.py" "%PYAPP_ENTRY_SCRIPT%" %*
+"%PYAPP_PYTHON%" -I -S -X utf8 "%~dp0..\entrypoint.py" "%PYAPP_ENTRY_SCRIPT%" %*
 set "exit_code=%ERRORLEVEL%"
 if "%exit_code%"=="0" exit /b 0
 goto failed

@@ -6,7 +6,7 @@ rem Remember the folder the user started from, unless a calling file already did
 if not defined PYAPP_START_DIR set "PYAPP_START_DIR=%CD%"
 rem "browser": the console runs in a browser tab; browser_terminal\ is the small local web server for it.
 set "PYAPP_LAUNCH_MODE=browser"
-rem The launcher's Python file that does the start; bootstrap\run.bat runs it.
-set "PYAPP_ENTRY_SCRIPT=%~dp0..\actions\start_program.py"
-call "%~dp0..\bootstrap\run.bat" %*
+rem The launcher's Python file that does the start; scripts\bootstrap\run.bat runs it.
+set "PYAPP_ENTRY_SCRIPT=%~dp0..\scripts\actions\start_program.py"
+call "%~dp0..\scripts\bootstrap\run.bat" %*
 exit /b %ERRORLEVEL%

@@ -151,7 +151,7 @@ def run_command(name: str, arguments: List[str]) -> None:
 
 def cmd_menu(_arguments: List[str]) -> None:
     """Interactive menu of all commands."""
-    from pyapp.DONT_CHANGE import backend_settings as paths
+    from pyapp.DONT_CHANGE import pyapp_settings as paths
 
     _command_menu(
         MENU_GROUPS,
@@ -245,7 +245,7 @@ def _run_menu(groups: List[Tuple[str, List[Tuple[str, str]]]], zero: Optional[Ze
 
 def _set_window_title_and_icon(command: str) -> None:
     """Give the window the app's icon and a title that says what it is, e.g. "My App - Developer Tools"."""
-    from pyapp.DONT_CHANGE import backend_settings as paths
+    from pyapp.DONT_CHANGE import pyapp_settings as paths
     from pyapp.DONT_CHANGE.scripts.console_tools import set_terminal_icon, set_terminal_title
 
     try:
@@ -263,7 +263,7 @@ def _tell_about_launcher_update() -> None:
     """check_for_launcher_updates: mention a newer launcher release when the menu opens (once a day online)."""
     try:
         from pyapp.DONT_CHANGE.scripts.config import settings
-        from pyapp.DONT_CHANGE.scripts.update_check import tell_about_update
+        from pyapp.DONT_CHANGE.scripts.github.update_check import tell_about_update
 
         tell_about_update(settings().check_for_launcher_updates)
     except Exception:

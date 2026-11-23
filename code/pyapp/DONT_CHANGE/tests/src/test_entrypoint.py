@@ -116,7 +116,7 @@ class RunnerProcessTests(unittest.TestCase):
             launcher = code / "pyapp" / "DONT_CHANGE"
             # The entrypoint finds the code folder from its own location, so it must run from a copy.
             shutil.copytree(DONT_CHANGE / "scripts", launcher / "scripts", ignore=shutil.ignore_patterns("__pycache__"))
-            shutil.copyfile(DONT_CHANGE / "backend_settings.py", launcher / "backend_settings.py")
+            shutil.copyfile(DONT_CHANGE / "pyapp_settings.py", launcher / "pyapp_settings.py")
             shadowing = ("random", "signal", "json", "uuid")
             for name in shadowing:
                 (code / f"{name}.py").write_text(

@@ -1,6 +1,6 @@
 @echo off
 rem tmp\ is not in Git (caches, locks, run folders): create it on the first start.
-if not exist "%~dp0..\tmp\" mkdir "%~dp0..\tmp" 2>nul
+if not exist "%~dp0..\..\tmp\" mkdir "%~dp0..\..\tmp" 2>nul
 rem Sets PYAPP_UV (uv.exe) and PYAPP_PYTHON (the Python that runs the launcher) for the caller.
 rem No setlocal on purpose: the variables must reach the calling batch.
 rem Fast path: reuse tmp\runtime.cmd while this project folder, developer_settings.py and
@@ -17,7 +17,7 @@ rem ---- Build the "stamp": a text that changes whenever something changes that 
 rem ---- another uv or Python. Batch notes, for readers new to it:
 rem   for %%F in ("file") do ...   runs the command once with %%F = that file. %%~tF is the file's
 rem                                last-change time and %%~zF its size in bytes.
-for %%F in ("%~dp0..\..\developer_settings.py") do set "PYAPP_STAMP_1=%%~tF#%%~zF"
+for %%F in ("%~dp0..\..\..\developer_settings.py") do set "PYAPP_STAMP_1=%%~tF#%%~zF"
 rem Empty the eight variables PYAPP_S_1 ... PYAPP_S_8 (set "NAME=" deletes a variable).
 for %%N in (1 2 3 4 5 6 7 8) do set "PYAPP_S_%%N="
 rem Validation keeps these settings unindented one-line literals; "name: type = value" also works.
@@ -25,7 +25,7 @@ rem Like Python, the last assignment counts. A trailing comment is part of the v
 rem Read developer_settings.py line by line. "for /f" splits each line at ":", "=" and spaces
 rem (delims); %%A gets the first word (the setting's name), %%B the rest (its value). Lines that
 rem start with # (comments) are skipped (eol=#). usebackq allows the quoted file name.
-for /f "usebackq eol=# tokens=1,* delims=:= " %%A in ("%~dp0..\..\developer_settings.py") do (
+for /f "usebackq eol=# tokens=1,* delims=:= " %%A in ("%~dp0..\..\..\developer_settings.py") do (
     if "%%A"=="python_version" set "PYAPP_S_1=%%B"
     if "%%A"=="python_source" set "PYAPP_S_2=%%B"
     if "%%A"=="uv_prefer" set "PYAPP_S_3=%%B"
@@ -37,7 +37,7 @@ for /f "usebackq eol=# tokens=1,* delims=:= " %%A in ("%~dp0..\..\developer_sett
 )
 set "PYAPP_STAMP_2=none"
 rem "set /p NAME=<file" reads the first line of a file into a variable.
-if exist "%~dp0..\..\generated\.python-version" set /p PYAPP_STAMP_2=<"%~dp0..\..\generated\.python-version"
+if exist "%~dp0..\..\..\generated\.python-version" set /p PYAPP_STAMP_2=<"%~dp0..\..\..\generated\.python-version"
 rem The stamp is compared and passed on in quotes, so it must not contain any.
 rem %NAME:"=% is the value with every " replaced by nothing, i.e. removed.
 if defined PYAPP_S_1 set "PYAPP_S_1=%PYAPP_S_1:"=%"
@@ -59,7 +59,7 @@ rem ---- Fast path: tmp\runtime.cmd is written by the last successful run. It se
 rem ---- PYAPP_PYTHON and PYAPP_CACHED_STAMP. Reuse it only if the stamp is the same and both
 rem ---- programs still exist; any "goto resolve" below means: find them again (slow path).
 rem "call :load_cache" runs the lines from ":load_cache" down to its "exit /b", then comes back.
-if exist "%~dp0..\tmp\runtime.cmd" call :load_cache
+if exist "%~dp0..\..\tmp\runtime.cmd" call :load_cache
 if not defined PYAPP_CACHED_STAMP goto resolve
 if not "%PYAPP_CACHED_STAMP%"=="%PYAPP_STAMP%" goto resolve
 if not exist "%PYAPP_PYTHON%" goto resolve
@@ -85,17 +85,17 @@ rem ---- chcp shows or changes it. 65001 is UTF-8, needed for paths with non-ASC
 rem The cache is UTF-8 and is read with code page 65001, unless its first line says it is
 rem plain ASCII (the usual case): then the three chcp calls are skipped.
 set "PYAPP_CACHE_HEAD="
-set /p PYAPP_CACHE_HEAD=<"%~dp0..\tmp\runtime.cmd"
+set /p PYAPP_CACHE_HEAD=<"%~dp0..\..\tmp\runtime.cmd"
 if "%PYAPP_CACHE_HEAD%"=="rem ascii" (
     set "PYAPP_CACHE_HEAD="
-    call "%~dp0..\tmp\runtime.cmd"
+    call "%~dp0..\..\tmp\runtime.cmd"
     exit /b 0
 )
 set "PYAPP_CACHE_HEAD="
 set "PYAPP_OLD_CP="
 for /f "tokens=2 delims=:." %%C in ('chcp') do set "PYAPP_OLD_CP=%%C"
 chcp 65001 >nul
-call "%~dp0..\tmp\runtime.cmd"
+call "%~dp0..\..\tmp\runtime.cmd"
 if defined PYAPP_OLD_CP chcp %PYAPP_OLD_CP% >nul
 set "PYAPP_OLD_CP="
 exit /b 0

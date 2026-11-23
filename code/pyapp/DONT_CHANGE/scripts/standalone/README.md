@@ -11,7 +11,7 @@ folder it names as needed, into another project and import or run it there.
   relative imports do not work in a file started directly.
 - **Python 3.8 or newer.**
 - **Settings and paths are arguments or module constants**, never read from the template. The
-  launcher passes them in from the module that uses the file (for example `scripts/splash.py`
+  launcher passes them in from the module that uses the file (for example `scripts/desktop/splash.py`
   for `splash.py`).
 
 `tests/src/test_files.py` (`StandaloneTests`) enforces these rules and checks that every file's

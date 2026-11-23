@@ -4,11 +4,11 @@ rem W.bat: what the main shortcut "<program name>" runs. W = with a terminal (co
 rem
 rem What happens when someone double-clicks that shortcut:
 rem   1. This file writes down HOW the app should start (in a terminal) and WHICH launcher
-rem      Python file does the start (actions\start_program.py).
-rem   2. bootstrap\run.bat makes sure uv and a Python exist (bootstrap\ensure_runtime.bat) and
+rem      Python file does the start (scripts\actions\start_program.py).
+rem   2. scripts\bootstrap\run.bat makes sure uv and a Python exist (scripts\bootstrap\ensure_runtime.bat) and
 rem      runs that Python file with it.
 rem   3. start_program.py checks the settings, installs the packages if needed and starts
-rem      runtime\bg_watchdog.py, which runs code\main.py and takes care of the window, the log
+rem      scripts\runtime\bg_watchdog.py, which runs code\main.py and takes care of the window, the log
 rem      and the crash report.
 rem The other files in this folder (N, B, S, Q, L, C, M) work the same way for the other shortcuts.
 rem
@@ -36,9 +36,9 @@ rem Remember the folder the user started from, unless a calling file already did
 if not defined PYAPP_START_DIR set "PYAPP_START_DIR=%CD%"
 rem "terminal": show the app in a console window (Windows Terminal or the classic console).
 set "PYAPP_LAUNCH_MODE=terminal"
-rem The launcher's Python file that does the start; bootstrap\run.bat runs it.
-set "PYAPP_ENTRY_SCRIPT=%~dp0..\actions\start_program.py"
+rem The launcher's Python file that does the start; scripts\bootstrap\run.bat runs it.
+set "PYAPP_ENTRY_SCRIPT=%~dp0..\scripts\actions\start_program.py"
 rem Hand over to the shared bootstrap and pass on the arguments (Setup puts the app's ID there).
-call "%~dp0..\bootstrap\run.bat" %*
+call "%~dp0..\scripts\bootstrap\run.bat" %*
 rem Pass the result on, so whoever started this file can see success or failure.
 exit /b %ERRORLEVEL%

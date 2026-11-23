@@ -1,7 +1,7 @@
 """Open the main script or the user settings file in the editor: open_file.py open_code|settings.
 
-B\\M.bat and B\\S.bat normally open the file Setup passed them without Python; this action
-runs when that file is missing (or the shortcut has no target) and reports why.
+Run by B\\M.bat and B\\S.bat (the Edit-Code and Settings shortcuts) on every click, so the
+shortcuts always follow main_script_path and user_settings_path; a missing file is reported.
 """
 
 from __future__ import annotations
@@ -9,7 +9,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-from pyapp.DONT_CHANGE.backend_settings import DEV_SETTINGS_PATH
+from pyapp.DONT_CHANGE.pyapp_settings import DEV_SETTINGS_PATH
 from pyapp.DONT_CHANGE.scripts.config import main_script_path, settings
 from pyapp.DONT_CHANGE.scripts.console_tools import open_in_editor
 from pyapp.DONT_CHANGE.scripts.errors import SettingsError
@@ -32,7 +32,6 @@ def main() -> None:
         setting_name = "user_settings_path" if kind == "settings" else "main_script_path"
         raise SettingsError(
             f'The file does not exist or is not a file: "{path}".\n'
-            f'Change {setting_name} in "{DEV_SETTINGS_PATH}", or make sure the file exists at this path.\n'
-            "Run Setup again after changing the setting to update the shortcuts."
+            f'Change {setting_name} in "{DEV_SETTINGS_PATH}", or make sure the file exists at this path.'
         )
     open_in_editor(path)

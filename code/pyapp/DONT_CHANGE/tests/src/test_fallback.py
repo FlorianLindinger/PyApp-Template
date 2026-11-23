@@ -1,4 +1,4 @@
-"""actions/start_without_launcher.py: starting the app without the launcher, from a copy of the project."""
+"""scripts/actions/start_without_launcher.py: starting the app without the launcher, from a copy of the project."""
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ from typing import Dict, Optional, Tuple
 
 from project_location import DONT_CHANGE
 
-SCRIPT = DONT_CHANGE / "actions" / "start_without_launcher.py"
+SCRIPT = DONT_CHANGE / "scripts" / "actions" / "start_without_launcher.py"
 LINUX_START = DONT_CHANGE.parent / "fallback_start" / "Start without launcher --LINUX.sh"
 
 APP = """\
@@ -66,8 +66,8 @@ class FallbackStartTests(unittest.TestCase):
         self.addCleanup(folder.cleanup)
         # Resolved: the script shows long paths, while the temporary folder may be given in the short 8.3 form.
         code = Path(folder.name).resolve() / "code"
-        (code / "pyapp" / "DONT_CHANGE" / "actions").mkdir(parents=True)
-        shutil.copyfile(SCRIPT, code / "pyapp" / "DONT_CHANGE" / "actions" / SCRIPT.name)
+        (code / "pyapp" / "DONT_CHANGE" / "scripts" / "actions").mkdir(parents=True)
+        shutil.copyfile(SCRIPT, code / "pyapp" / "DONT_CHANGE" / "scripts" / "actions" / SCRIPT.name)
         (code / "pyapp" / "fallback_start").mkdir()
         shutil.copyfile(LINUX_START, code / "pyapp" / "fallback_start" / LINUX_START.name)
         (code / "pyapp" / "developer_settings.py").write_text(settings, encoding="utf-8")
@@ -87,7 +87,7 @@ class FallbackStartTests(unittest.TestCase):
         command = (
             ["/bin/sh", str(code / "pyapp" / "fallback_start" / LINUX_START.name)]
             if linux
-            else [sys.executable, str(code / "pyapp" / "DONT_CHANGE" / "actions" / SCRIPT.name)]
+            else [sys.executable, str(code / "pyapp" / "DONT_CHANGE" / "scripts" / "actions" / SCRIPT.name)]
         )
         completed = subprocess.run(  # noqa: S603
             [*command, *arguments],
@@ -225,7 +225,7 @@ class FallbackStartTests(unittest.TestCase):
         status, output = self.start(code, linux=True, env={"PATH": str(empty_path)})
         self.assertEqual(status, 1)
         self.assertIn("No working Python 3.8+ found", output)
-        (code / "pyapp" / "DONT_CHANGE" / "actions" / SCRIPT.name).unlink()
+        (code / "pyapp" / "DONT_CHANGE" / "scripts" / "actions" / SCRIPT.name).unlink()
         status, output = self.start(code, linux=True)
         self.assertEqual(status, 1)
         self.assertIn("Fallback helper not found", output)

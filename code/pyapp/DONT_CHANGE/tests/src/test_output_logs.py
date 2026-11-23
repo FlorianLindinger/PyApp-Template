@@ -14,10 +14,10 @@ from typing import Dict, List, Tuple
 from unittest import mock
 
 import project_location  # also makes this checkout's code importable
-from pyapp.DONT_CHANGE import backend_settings as paths
-from pyapp.DONT_CHANGE.runtime import bg_watchdog, process_exit
-from pyapp.DONT_CHANGE.runtime._pyapp import ExitMode
+from pyapp.DONT_CHANGE import pyapp_settings as paths
 from pyapp.DONT_CHANGE.scripts.config import fill_missing_settings
+from pyapp.DONT_CHANGE.scripts.runtime import bg_watchdog, process_exit
+from pyapp.DONT_CHANGE.scripts.runtime._pyapp import ExitMode
 
 SETTINGS = types.SimpleNamespace(
     enable_crash_log=True,
@@ -392,7 +392,7 @@ class HiddenCompletionTests(unittest.TestCase):
                     sys.executable,
                     "-I",
                     "-S",
-                    str(project_location.DONT_CHANGE / "runtime" / "process_exit.py"),
+                    str(project_location.DONT_CHANGE / "scripts" / "runtime" / "process_exit.py"),
                     *("99", "", "true", "", "main.py"),  # an exit mode the handler does not know: it fails
                 ],
                 stdin=subprocess.DEVNULL,

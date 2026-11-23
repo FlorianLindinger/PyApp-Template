@@ -29,7 +29,7 @@ from pathlib import Path
 from typing import ContextManager, Dict, Generator, List, Optional, Tuple
 
 BOOTSTRAP_DIR = Path(__file__).resolve().parent
-DONT_CHANGE_DIR = BOOTSTRAP_DIR.parent
+DONT_CHANGE_DIR = BOOTSTRAP_DIR.parents[1]
 BACKEND_DIR = DONT_CHANGE_DIR.parent
 SETTINGS_PATH = BACKEND_DIR / "developer_settings.py"
 TEMPORARY_DIR = DONT_CHANGE_DIR / "tmp"

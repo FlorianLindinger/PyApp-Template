@@ -6,7 +6,7 @@ version it actually got in pyapp/generated/.python-version, as it does for "" (n
 once), and the setting counts as unchanged as long as that recorded version is inside it.
 
 Only plain CPython version numbers are understood here; any other request ("pypy@3.11", "3.14t") is
-passed to uv unchanged and recorded as it is. bootstrap/resolve_runtime.py repeats range_specifier()
+passed to uv unchanged and recorded as it is. scripts/bootstrap/resolve_runtime.py repeats range_specifier()
 because it cannot import the launcher; tests/src/test_resolve_runtime.py compares the two.
 
 Standalone: copy this file anywhere (standard library only); useful wherever Python version

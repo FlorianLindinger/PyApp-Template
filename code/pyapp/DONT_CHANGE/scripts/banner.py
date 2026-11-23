@@ -11,7 +11,7 @@ import unicodedata
 from pathlib import Path
 from typing import Dict, List, Optional
 
-from pyapp.DONT_CHANGE.backend_settings import BANNER_FONT_PATH
+from pyapp.DONT_CHANGE.pyapp_settings import BANNER_FONT_PATH
 from pyapp.DONT_CHANGE.scripts.config import settings
 
 _shown = False

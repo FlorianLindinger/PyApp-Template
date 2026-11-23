@@ -336,7 +336,7 @@ def unminimize_terminal() -> None:
         import ctypes
 
         if "PYAPP_TERMINAL_WINDOW" in os.environ:
-            from pyapp.DONT_CHANGE.scripts.taskbar_status import terminal_window
+            from pyapp.DONT_CHANGE.scripts.desktop.taskbar_status import terminal_window
 
             hwnd = terminal_window(include_hidden=True)
         else:
@@ -356,7 +356,7 @@ def foreground_terminal() -> None:
         import ctypes
 
         if "PYAPP_TERMINAL_WINDOW" in os.environ:
-            from pyapp.DONT_CHANGE.scripts.taskbar_status import terminal_window
+            from pyapp.DONT_CHANGE.scripts.desktop.taskbar_status import terminal_window
 
             hwnd = terminal_window(include_hidden=True)
         else:
@@ -447,7 +447,7 @@ def set_terminal_colors(colors: Optional[str]) -> None:
             import subprocess
 
             # The color argument is restricted to hex digits before reaching cmd.exe.
-            from pyapp.DONT_CHANGE.backend_settings import CMD_EXE
+            from pyapp.DONT_CHANGE.pyapp_settings import CMD_EXE
 
             subprocess.run([CMD_EXE, "/c", "color", colors], check=False)  # noqa: S603
         except Exception:
@@ -464,8 +464,8 @@ def set_terminal_colors(colors: Optional[str]) -> None:
 def in_browser_terminal() -> bool:
     """True in a console shown by the browser terminal."""
     try:
-        from pyapp.DONT_CHANGE.backend_settings import BROWSER_UI_ENV_VAR
         from pyapp.DONT_CHANGE.browser_terminal import ui
+        from pyapp.DONT_CHANGE.pyapp_settings import BROWSER_UI_ENV_VAR
 
         return ui.inside(BROWSER_UI_ENV_VAR)
     except Exception:
@@ -484,8 +484,8 @@ def browser_terminal_ui(
 ) -> None:
     """Request browser-terminal appearance, a notification, or explicit foreground attention."""
     try:
-        from pyapp.DONT_CHANGE.backend_settings import BROWSER_UI_ENV_VAR
         from pyapp.DONT_CHANGE.browser_terminal import ui
+        from pyapp.DONT_CHANGE.pyapp_settings import BROWSER_UI_ENV_VAR
 
         ui.request(
             BROWSER_UI_ENV_VAR,
@@ -541,7 +541,7 @@ def open_in_editor(path: str) -> None:
     editor = _editor_executable()
     if editor is None:
         # Launching the local editor or Windows color command is intentional.
-        from pyapp.DONT_CHANGE.backend_settings import NOTEPAD_EXE
+        from pyapp.DONT_CHANGE.pyapp_settings import NOTEPAD_EXE
 
         subprocess.Popen([NOTEPAD_EXE, path], env=env)  # noqa: S603
     elif editor.lower().endswith((".cmd", ".bat")):

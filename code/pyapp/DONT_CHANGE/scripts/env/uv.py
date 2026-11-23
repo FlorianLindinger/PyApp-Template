@@ -1,4 +1,4 @@
-"""Running uv for the launcher: which uv, its environment variables (mirrors bootstrap/resolve_runtime.py) and calls."""
+"""Running uv for the launcher: which uv, its environment variables (mirrors scripts/bootstrap/resolve_runtime.py) and calls."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from pathlib import Path
 from types import ModuleType, SimpleNamespace
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Union
 
-from pyapp.DONT_CHANGE.backend_settings import (
+from pyapp.DONT_CHANGE.pyapp_settings import (
     LOCAL_PYTHONS_DIR,
     LOCAL_UV_CACHE_DIR,
     LOCAL_UV_EXE,
@@ -56,7 +56,7 @@ def install_newer_uv() -> bool:
 
 
 # The launcher sets these itself, or they would change what uv does with the project (offline,
-# frozen, no sync, no Python downloads). bootstrap/resolve_runtime.py OWN_UV_VARIABLES must be the
+# frozen, no sync, no Python downloads). scripts/bootstrap/resolve_runtime.py OWN_UV_VARIABLES must be the
 # same list (tests/src/test_resolve_runtime.py compares them). UV_CACHE_DIR is not in it: a user's own
 # cache folder wins over uv_cache = "global"; uv_cache = "local" replaces it.
 _OWN_UV_VARIABLES = (
@@ -83,7 +83,7 @@ def uv_environment(
     project_environment: Optional[str] = None,
     python_command: bool = True,
 ) -> Dict[str, str]:
-    """Environment for uv calls. Mirrors set_uv_environment in bootstrap/resolve_runtime.py.
+    """Environment for uv calls. Mirrors set_uv_environment in scripts/bootstrap/resolve_runtime.py.
 
     The user's other UV_* settings (index URLs, proxies, ...) are kept on purpose.
     """

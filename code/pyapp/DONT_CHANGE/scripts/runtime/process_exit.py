@@ -39,14 +39,9 @@ def _fail_while_loading(error: BaseException) -> NoReturn:
 
 
 # Last, so app modules named like standard-library modules (code/random.py, ...) cannot shadow them.
-sys.path.append(os.path.normpath(str((Path(__file__).parent / ".." / ".." / "..").absolute())))
+sys.path.append(os.path.normpath(str((Path(__file__).parent / ".." / ".." / ".." / "..").absolute())))
 try:
-    from pyapp.DONT_CHANGE import backend_settings as paths
-    from pyapp.DONT_CHANGE.runtime._pyapp import (
-        ExitMode,
-        exit_code_is_success,
-        variable_dump,
-    )
+    from pyapp.DONT_CHANGE import pyapp_settings as paths
     from pyapp.DONT_CHANGE.scripts.config import main_script_path, settings
     from pyapp.DONT_CHANGE.scripts.console_tools import (
         ANSI_BOLD,
@@ -72,6 +67,11 @@ try:
     from pyapp.DONT_CHANGE.scripts.launcher_ui import (
         get_log_path,
         print_traceback,
+    )
+    from pyapp.DONT_CHANGE.scripts.runtime._pyapp import (
+        ExitMode,
+        exit_code_is_success,
+        variable_dump,
     )
     from pyapp.DONT_CHANGE.scripts.runtime_state import unique_log_path
     from pyapp.DONT_CHANGE.scripts.standalone.processes import exit_code_looks_like_interpreter_crash
@@ -529,7 +529,7 @@ def complete(
             play_sound(
                 make_abs_path_relative_to_file(os.path.expandvars(wav), paths.DEV_SETTINGS_PATH), wait=not keep_open
             )
-    from pyapp.DONT_CHANGE.scripts import taskbar_status, windows_notifications
+    from pyapp.DONT_CHANGE.scripts.desktop import taskbar_status, windows_notifications
 
     windows_notifications.complete(s, outcome, message, log_path, crash_log)
     if stays_open and outcome in ("success", "failure") and getattr(s, "foreground_after_" + outcome, False):

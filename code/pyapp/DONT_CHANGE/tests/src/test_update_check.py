@@ -1,4 +1,4 @@
-"""scripts/update_check.py: telling the developer about a newer launcher, at most once a day."""
+"""scripts/github/update_check.py: telling the developer about a newer launcher, at most once a day."""
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ from project_location import DONT_CHANGE  # noqa: F401 - puts the code folder on
 
 # isort: split
 
-from pyapp.DONT_CHANGE.scripts import update_check
+from pyapp.DONT_CHANGE.scripts.github import update_check
 
 DAY = update_check.CHECK_INTERVAL_SECONDS
 NEWER = {"version": "99.0.0", "date": "2026-12-01", "url": "https://example.org/release"}

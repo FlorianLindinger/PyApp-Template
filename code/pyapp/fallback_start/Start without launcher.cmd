@@ -2,7 +2,7 @@
 setlocal EnableExtensions DisableDelayedExpansion
 rem Fallback start: runs the app's main script WITHOUT the launcher (pyapp\DONT_CHANGE), for when the
 rem launcher is broken. Uses the app's environment (generated\.venv) if its Python still starts, otherwise
-rem the global default Python. DONT_CHANGE\actions\start_without_launcher.py shows what it uses and runs
+rem the global default Python. DONT_CHANGE\scripts\actions\start_without_launcher.py shows what it uses and runs
 rem the app; it is the only launcher file this uses.
 rem Arguments are passed on to the main script.
 rem How it chooses Python: 1. the app's environment, if its python.exe still starts;
@@ -10,7 +10,7 @@ rem 2. the "py" launcher's default Python; 3. "python" on PATH. Batch basics: se
 rem "&&" below runs the next part only if the command before it succeeded.
 title Start without launcher
 set "PYAPP_FALLBACK_PYTHON="
-set "fallback_script=%~dp0..\DONT_CHANGE\actions\start_without_launcher.py"
+set "fallback_script=%~dp0..\DONT_CHANGE\scripts\actions\start_without_launcher.py"
 if not exist "%fallback_script%" goto :missing_script
 set "venv_python=%~dp0..\generated\.venv\Scripts\python.exe"
 set "PYAPP_FALLBACK_VENV=missing"

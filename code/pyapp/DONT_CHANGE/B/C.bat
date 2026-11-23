@@ -1,14 +1,11 @@
 @echo off
 setlocal EnableExtensions DisableDelayedExpansion
 rem C.bat: what the "(Crash-Logs)" shortcut runs: opens the crash log folder in Explorer.
-rem See W.bat for the batch basics. %1 is the first argument: Setup puts the folder there.
-rem Setup passes the crash log folder: open it without Python. Otherwise (a path relative to
-rem the start folder, or with date codes) the Python action resolves it.
-rem "&&" runs the next command only if the one before succeeded (exit code 0). So: if the
-rem fast path could open the folder, stop here; otherwise continue below and let Python explain why not.
-call "%~dp0..\bootstrap\open_folder.bat" %1 && exit /b 0
+rem See W.bat for the batch basics. The Python action reads crash_log_path from the settings on
+rem every click, so the shortcut follows the setting without running Setup again. (Shortcuts made
+rem by earlier versions pass the folder as %1; it is ignored.)
 if not defined PYAPP_START_DIR set "PYAPP_START_DIR=%CD%"
 cd /d "%~dp0"
-set "PYAPP_ENTRY_SCRIPT=%~dp0..\actions\open_folder.py"
-call "%~dp0..\bootstrap\run.bat" crash_logs
+set "PYAPP_ENTRY_SCRIPT=%~dp0..\scripts\actions\open_folder.py"
+call "%~dp0..\scripts\bootstrap\run.bat" crash_logs
 exit /b %ERRORLEVEL%

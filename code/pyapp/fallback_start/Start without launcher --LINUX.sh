@@ -13,7 +13,7 @@ case $0 in
     *) fallback_dir=. ;;
 esac
 fallback_dir=$(CDPATH= cd -- "$fallback_dir" && pwd -P) || exit 1
-fallback_script=$fallback_dir/../DONT_CHANGE/actions/start_without_launcher.py
+fallback_script=$fallback_dir/../DONT_CHANGE/scripts/actions/start_without_launcher.py
 if [ ! -f "$fallback_script" ]; then
     printf '%s\n' "ERROR: Fallback helper not found: $fallback_script" \
         'Restore code/pyapp/DONT_CHANGE from Git or a release.' >&2

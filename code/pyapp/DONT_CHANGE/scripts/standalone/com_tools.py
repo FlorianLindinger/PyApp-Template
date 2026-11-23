@@ -1,6 +1,6 @@
 """Minimal Windows COM helpers (ctypes, no pywin32): GUIDs, HRESULTs and the AppUserModelID.
 
-Shared by scripts/shortcuts.py (the ID stored in a .lnk) and console_tools.py (the ID
+Shared by scripts/desktop/shortcuts.py (the ID stored in a .lnk) and console_tools.py (the ID
 of the console window), so pinned shortcuts and their windows group together in the taskbar.
 
 Standalone: copy this file anywhere. Standard library only (ctypes); Windows only.

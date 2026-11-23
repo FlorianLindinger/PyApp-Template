@@ -6,7 +6,7 @@
     release.bat patch --quick       only the tests on this Python (not test_all_pythons, fresh_clone_test)
 
 Before anything changes, it runs the launcher tests, test_all_pythons (Python 3.8 and the newest)
-and fresh_clone_test. With the new version it also saves backend_settings' PROTECTED_* lists in
+and fresh_clone_test. With the new version it also saves pyapp_settings' PROTECTED_* lists in
 data/protected_baseline.json: until the next MAJOR version, the tests refuse to take an entry off.
 The notes come from the "## unreleased" section of CHANGELOG.md, which becomes "## <version> - <date>";
 a new empty section is added above it. The zip holds the files of DONT_CHANGE that Git tracks, in a
@@ -32,7 +32,7 @@ import _git
 import _ui
 from _paths import DONT_CHANGE_DIR, PROJECT_ROOT
 
-SETTINGS_PATH = DONT_CHANGE_DIR / "backend_settings.py"
+SETTINGS_PATH = DONT_CHANGE_DIR / "pyapp_settings.py"
 CHANGELOG_PATH = DONT_CHANGE_DIR / "CHANGELOG.md"
 BASELINE_PATH = DONT_CHANGE_DIR / "data" / "protected_baseline.json"
 RUNNER = DONT_CHANGE_DIR / "tests" / "src" / "run_regressions.py"
@@ -68,7 +68,7 @@ def next_version(current: str, request: str) -> str:
 def current_version(settings_text: str) -> str:
     match = VERSION_LINE.search(settings_text)
     if not match:
-        raise RuntimeError("LAUNCHER_VERSION was not found in backend_settings.py.")
+        raise RuntimeError("LAUNCHER_VERSION was not found in pyapp_settings.py.")
     return match.group(1)
 
 
@@ -148,7 +148,7 @@ def build_zip(version: str, files: List[str]) -> Path:
             damaged = archive.testzip()
             if damaged:
                 raise RuntimeError(f"The zip is damaged at {damaged}.")
-            settings = archive.read("DONT_CHANGE/backend_settings.py").decode("utf-8")
+            settings = archive.read("DONT_CHANGE/pyapp_settings.py").decode("utf-8")
         if current_version(settings) != version:
             raise RuntimeError("The zip does not contain the new version.")
         temporary.replace(target)
@@ -158,12 +158,12 @@ def build_zip(version: str, files: List[str]) -> Path:
 
 
 def protected_baseline(version: str) -> str:
-    """The PROTECTED_* lists of backend_settings.py as JSON, recorded for the release `version`.
+    """The PROTECTED_* lists of pyapp_settings.py as JSON, recorded for the release `version`.
 
     tests/src/test_template_contract.py refuses to take an entry off a list before the next MAJOR
     version, so this snapshot is what existing projects of this release may rely on.
     """
-    lists = runpy.run_path(str(SETTINGS_PATH), run_name="backend_settings_for_release")["PROTECTED"]
+    lists = runpy.run_path(str(SETTINGS_PATH), run_name="pyapp_settings_for_release")["PROTECTED"]
     data = {
         "launcher_version": version,
         "note": "Written by pyapp_tools/release: what was protected at that release. Do not edit by hand.",

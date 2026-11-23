@@ -13,7 +13,7 @@ import subprocess
 from pathlib import Path
 from typing import List, Sequence
 
-from pyapp.DONT_CHANGE import backend_settings as paths
+from pyapp.DONT_CHANGE import pyapp_settings as paths
 from pyapp.DONT_CHANGE.scripts.config import display_path, settings
 from pyapp.DONT_CHANGE.scripts.console_tools import print_fields, print_heading, print_info, print_success
 from pyapp.DONT_CHANGE.scripts.dev_tools.common import prepare

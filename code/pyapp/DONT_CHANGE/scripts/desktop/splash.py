@@ -16,7 +16,7 @@ from pathlib import Path
 from types import ModuleType, SimpleNamespace
 from typing import Generator, List, Union
 
-SPLASH_SCRIPT = Path(__file__).resolve().parent / "standalone" / "splash.py"
+SPLASH_SCRIPT = Path(__file__).resolve().parents[1] / "standalone" / "splash.py"
 
 
 def _message_for_this_start(settings: Union[ModuleType, SimpleNamespace], advance: bool) -> str:
@@ -25,7 +25,7 @@ def _message_for_this_start(settings: Union[ModuleType, SimpleNamespace], advanc
     messages = [m for m in getattr(settings, "splash_screen_messages", ()) if isinstance(m, str) and m.strip()]
     if not messages:
         return ""
-    from pyapp.DONT_CHANGE.backend_settings import SPLASH_MESSAGE_INDEX_PATH
+    from pyapp.DONT_CHANGE.pyapp_settings import SPLASH_MESSAGE_INDEX_PATH
 
     state = Path(SPLASH_MESSAGE_INDEX_PATH)
     try:
@@ -45,7 +45,7 @@ def _icon_path() -> str:
     where the two can differ.)"""
     import hashlib
 
-    from pyapp.DONT_CHANGE.backend_settings import DEFAULT_ICON_DIR, ICON_PLACEHOLDER_SHA256, ICON_PNG_PATH
+    from pyapp.DONT_CHANGE.pyapp_settings import DEFAULT_ICON_DIR, ICON_PLACEHOLDER_SHA256, ICON_PNG_PATH
 
     default = str(Path(DEFAULT_ICON_DIR) / "default_icon.png")
     try:

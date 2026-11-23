@@ -1,13 +1,13 @@
 """Runs every launcher tool with one error, exit-code and acknowledgement policy.
 
-bootstrap/run.bat starts `python -I -S -X utf8 entrypoint.py <tool.py> [arguments]`. The tool
+scripts/bootstrap/run.bat starts `python -I -S -X utf8 entrypoint.py <tool.py> [arguments]`. The tool
 is a plain module with a main() function; the optional module variables `fail_message` (text
 with {e}) and `pause_on_success` (keep the window open after success) customize the policy.
 """
 
-# Where this file sits: a shortcut runs a file in B\ (e.g. B\W.bat), which runs bootstrap\run.bat,
+# Where this file sits: a shortcut runs a file in B\ (e.g. B\W.bat), which runs scripts\bootstrap\run.bat,
 # which runs THIS file with the launcher's Python. This file then runs the actual tool, for example
-# actions/start_program.py (start the app) or actions/setup.py (Setup).
+# scripts/actions/start_program.py (start the app) or scripts/actions/setup.py (Setup).
 #
 # Python notes for readers new to it:
 #   import x            makes another module (file) usable as x; "from x import y" takes one name.
@@ -58,7 +58,7 @@ def acknowledge(message: str) -> None:
 
 
 def acknowledge_failure() -> None:
-    """Wait after a failure, unless bootstrap/run.bat does that itself once this process has ended.
+    """Wait after a failure, unless scripts/bootstrap/run.bat does that itself once this process has ended.
 
     run.bat waits after any failure (also when Python cannot even start this file), so asking here
     as well would make the user press a key twice.

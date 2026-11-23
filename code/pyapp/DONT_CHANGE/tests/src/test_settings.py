@@ -150,7 +150,7 @@ class ValidationTests(unittest.TestCase):
                 self.assertEqual(getattr(module, name), "", name)
 
     def test_empty_user_settings_path_reports_that_the_feature_is_disabled(self):
-        from pyapp.DONT_CHANGE.actions import open_file
+        from pyapp.DONT_CHANGE.scripts.actions import open_file
 
         with support.temporary_settings(append(['user_settings_path = ""'])) as (_, load), mock.patch.object(
             open_file, "settings", load
@@ -317,7 +317,7 @@ class DefaultsTests(unittest.TestCase):
             self.assertIn("\r\n", path.read_bytes().decode("utf-8")[-20:])
 
     def test_bootstrap_defaults_match_the_defaults_file(self):
-        script = (DONT_CHANGE / "bootstrap" / "resolve_runtime.py").read_text(encoding="utf-8")
+        script = (DONT_CHANGE / "scripts" / "bootstrap" / "resolve_runtime.py").read_text(encoding="utf-8")
         found = re.findall(r'setting\(settings, "(\w+)", ("[^"]*"|True|False)\)', script)
         self.assertGreaterEqual(len(found), 8)
         expressions = config.default_setting_expressions(str(self.DEFAULTS))
@@ -371,7 +371,7 @@ class MainScriptTests(unittest.TestCase):
         self.assertIn("or is not a file", problem or "")
 
     def test_missing_shortcut_target_names_the_setting_and_both_remedies(self):
-        from pyapp.DONT_CHANGE.actions import open_file
+        from pyapp.DONT_CHANGE.scripts.actions import open_file
 
         for kind, setting_name in (("settings", "user_settings_path"), ("open_code", "main_script_path")):
             with self.subTest(kind=kind), support.temporary_settings(
@@ -384,7 +384,6 @@ class MainScriptTests(unittest.TestCase):
                 open_file.main()
             self.assertIn(f"Change {setting_name}", str(raised.exception))
             self.assertIn("make sure the file exists at this path", str(raised.exception))
-            self.assertIn("Run Setup again", str(raised.exception))
 
 
 class EditingTests(unittest.TestCase):

@@ -3,7 +3,7 @@
   "note": "Written by pyapp_tools/release: what was protected at that release. Do not edit by hand.",
   "PROTECTED_PATHS": [
     "B\\run.bat",
-    "actions\\start_without_launcher.py",
+    "scripts\\actions\\start_without_launcher.py",
     "B\\W.bat",
     "B\\N.bat",
     "B\\B.bat",

@@ -26,7 +26,7 @@ the new icons. Commit the `.ico` files together with `../generated/auto_generate
 Every icon but `icon.ico` is your picture with a small symbol on top (a gear, a stop sign, a
 check mark, ...), so the shortcuts can be told apart. The symbols are part of the launcher
 (`../DONT_CHANGE/data/icons`) and cannot be replaced by a PNG of yours. Their size and position
-are in `SUB_ICONS` in `../DONT_CHANGE/backend_settings.py`, for example
+are in `SUB_ICONS` in `../DONT_CHANGE/pyapp_settings.py`, for example
 `"settings": (0.35, "bottom right")`: the share of the icon's area the symbol covers (more than 0,
 at most 1) and its position (`"bottom right"`, `"top"`, `"center"`, `"center left"`, ...).
 `None` instead of the pair makes that icon without a symbol.

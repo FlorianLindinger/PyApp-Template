@@ -14,7 +14,7 @@ from pathlib import Path
 from types import ModuleType, SimpleNamespace
 from typing import List, Union
 
-from pyapp.DONT_CHANGE import backend_settings as paths
+from pyapp.DONT_CHANGE import pyapp_settings as paths
 from pyapp.DONT_CHANGE.scripts.config import display_path, edit_settings, settings
 from pyapp.DONT_CHANGE.scripts.console_tools import (
     print_fields,

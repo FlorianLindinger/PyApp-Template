@@ -15,7 +15,7 @@ from pathlib import Path
 from types import ModuleType, SimpleNamespace
 from typing import Iterator, List, Match, Optional, Sequence, Tuple, Union
 
-from pyapp.DONT_CHANGE.backend_settings import PYPROJECT_PATH
+from pyapp.DONT_CHANGE.pyapp_settings import PYPROJECT_PATH
 from pyapp.DONT_CHANGE.scripts.config import settings
 from pyapp.DONT_CHANGE.scripts.console_tools import print_info, print_warn
 

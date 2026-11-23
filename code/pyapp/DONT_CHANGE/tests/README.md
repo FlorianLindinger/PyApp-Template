@@ -63,7 +63,7 @@ remain manual checks in [the release checklist](../docs/RELEASE_CHECKLIST.md).
 | `test_app_api.py` | `import pyapp_api`: the public names equal `PROTECTED_APP_API_NAMES`, every launcher feature does nothing without the launcher, `on_stop` callbacks (order, failures, once; after Ctrl+C in a real wrapper run, not after a normal end), forwarded starts reach a live listener and dead listeners are removed, `notify` and `restart` arguments |
 | `test_update_check.py` | The launcher update check: off means no request, GitHub asked at most once a day (also when offline), only newer versions shown, "skip this version" and "don't check again" remembered in `tmp` |
 | `test_hidden_caches.py` | Hiding cache folders (only the listed places, already hidden, missing folders, never raising) and the Git failure messages of the template tools (command, Git's text, hints, missing Git) |
-| `test_fallback.py` | `actions/start_without_launcher.py` from a copy that has nothing else of the launcher: settings, arguments, environment, exit code, missing packages, unreadable settings; Linux shell LF, system/configured/versioned Python, relative paths, ignored generated environments and missing-Python/helper messages (shell execution on POSIX only) |
+| `test_fallback.py` | `scripts/actions/start_without_launcher.py` from a copy that has nothing else of the launcher: settings, arguments, environment, exit code, missing packages, unreadable settings; Linux shell LF, system/configured/versioned Python, relative paths, ignored generated environments and missing-Python/helper messages (shell execution on POSIX only) |
 | `test_windows.py` | Windows only: registry records with job names, Stop ends the whole job (incl. grandchildren), graceful Stop via Ctrl+C, file lock |
 
 Runtime-setting regressions also cover absolute/relative working folders and missing-directory
@@ -77,7 +77,7 @@ folders. They do not register an actual Windows sign-in entry or display a Ctrl+
 | --- | --- |
 | `test_settings.py` | validation of every setting, friendly errors for mistakes in `developer_settings.py`, `[bootstrap]` rules, the defaults file matching the template's `developer_settings.py`, editing settings (quotes, comments, CRLF, last definition) |
 | `test_packages.py` | generated `pyproject.toml` round trip (markers, quotes, comments), copying `uv add` back, settings win on conflict, `requires-python`, `requirements_path`, nothing changes while the app runs, the launch fast-path fingerprint |
-| `test_resolve_runtime.py` | `bootstrap/resolve_runtime.py`: settings, `uv_version` rules, messages for company PCs, the uv download folder, the runtime cache |
+| `test_resolve_runtime.py` | `scripts/bootstrap/resolve_runtime.py`: settings, `uv_version` rules, messages for company PCs, the uv download folder, the runtime cache |
 | `test_uv_fallback.py` | installing a Python retries once with a newer uv, and reports the error when none is available |
 | `test_imports.py` | stdlib/local/launcher exclusions, nested `pyapp` folders, optional-import guards, unparsable files, installed metadata, the mapping file |
 | `test_app_workflows.py` | `github_actions`: Setup creates, updates and removes only its own workflow files |
@@ -118,7 +118,7 @@ folders. They do not register an actual Windows sign-in entry or display a Ctrl+
 | --- | --- |
 | `test_files.py` | CRLF batch and settings files, every referenced script exists, every tool has `main()`, the README file tables, links in every README (files and headings), every test file in a group with its launcher |
 | `test_python38.py` | Python 3.8 compatibility of the launcher: lint targets, syntax and library calls, annotations that runtime type inspection can evaluate |
-| `test_template_contract.py` | what must stay stable: the repository name in the Actions, what existing projects expect in `DONT_CHANGE` (the `PROTECTED_*` lists of `backend_settings.py` match the code, files outside use nothing else, nothing was taken off since the last release before a MAJOR version; the fallback start uses only the standard library) |
+| `test_template_contract.py` | what must stay stable: the repository name in the Actions, what existing projects expect in `DONT_CHANGE` (the `PROTECTED_*` lists of `pyapp_settings.py` match the code, files outside use nothing else, nothing was taken off since the last release before a MAJOR version; the fallback start uses only the standard library) |
 
 Manual release check (not automated): Setup, start twice, Stop on the example window, the
 open shortcuts, the `status`, `change-python` and `make-self-contained` dev tools, a moved and a copied folder.

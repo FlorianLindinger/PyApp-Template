@@ -11,7 +11,7 @@ from pathlib import Path
 from types import ModuleType, SimpleNamespace
 from typing import Dict, List, Optional, Tuple, Union
 
-from pyapp.DONT_CHANGE.backend_settings import MINIMUM_PYTHON, PYTHON_VERSION_FILE, RUNTIME_CACHE_PATH
+from pyapp.DONT_CHANGE.pyapp_settings import MINIMUM_PYTHON, PYTHON_VERSION_FILE, RUNTIME_CACHE_PATH
 from pyapp.DONT_CHANGE.scripts.banner import show_setup_window
 from pyapp.DONT_CHANGE.scripts.config import settings
 from pyapp.DONT_CHANGE.scripts.console_tools import print_step

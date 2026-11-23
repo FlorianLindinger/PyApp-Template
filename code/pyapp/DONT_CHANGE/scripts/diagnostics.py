@@ -14,7 +14,7 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-from pyapp.DONT_CHANGE.backend_settings import DIAGNOSTICS_LOG_PATH
+from pyapp.DONT_CHANGE.pyapp_settings import DIAGNOSTICS_LOG_PATH
 
 _MAX_BYTES = 1_000_000  # then the log is renamed to diagnostics.log.old and started again
 

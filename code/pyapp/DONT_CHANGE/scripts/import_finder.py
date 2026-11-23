@@ -10,7 +10,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Dict, Iterator, List, Optional, Set, Tuple
 
-from pyapp.DONT_CHANGE.backend_settings import (
+from pyapp.DONT_CHANGE.pyapp_settings import (
     BACKEND_DIR,
     EXCLUDED_FOLDERS_FOR_IMPORT_SEARCH,
     IMPORT_MAPPING_PATH,

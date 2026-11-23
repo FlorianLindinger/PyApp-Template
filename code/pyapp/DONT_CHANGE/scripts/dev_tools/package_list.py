@@ -13,7 +13,7 @@ import json
 import re
 from typing import Dict, FrozenSet, List, NamedTuple, Optional, Sequence, Set, Tuple
 
-from pyapp.DONT_CHANGE import backend_settings as paths
+from pyapp.DONT_CHANGE import pyapp_settings as paths
 from pyapp.DONT_CHANGE.scripts.config import (
     display_path,
     package_entries,

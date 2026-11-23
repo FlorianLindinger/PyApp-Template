@@ -6,7 +6,7 @@ import os
 from pathlib import Path
 from typing import List
 
-from pyapp.DONT_CHANGE import backend_settings as paths
+from pyapp.DONT_CHANGE import pyapp_settings as paths
 from pyapp.DONT_CHANGE.scripts.config import (
     all_packages,
     display_path,

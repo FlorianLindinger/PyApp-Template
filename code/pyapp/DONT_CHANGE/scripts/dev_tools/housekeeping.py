@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 from typing import Dict, List, Optional, Pattern, Tuple, Union
 
-from pyapp.DONT_CHANGE import backend_settings as paths
+from pyapp.DONT_CHANGE import pyapp_settings as paths
 from pyapp.DONT_CHANGE.scripts.config import (
     all_packages,
     describe_python_request,
@@ -143,7 +143,7 @@ def cmd_clean(_arguments: List[str]) -> None:
 def cmd_remove_shortcuts(_arguments: List[str]) -> None:
     """Remove every shortcut Setup created (project folder, Start Menu, Desktop)."""
     from pyapp.DONT_CHANGE.scripts.browser_links import unregister_start_link
-    from pyapp.DONT_CHANGE.scripts.shortcuts import (
+    from pyapp.DONT_CHANGE.scripts.desktop.shortcuts import (
         leftover_shortcuts,
         read_created_shortcuts,
         read_start_link,
@@ -189,7 +189,7 @@ def cmd_status(_arguments: List[str]) -> None:
         up_to_date = uv_succeeds(["lock", "--check", "--offline"])
         lock_state = ("up to date", True) if up_to_date else ("needs an update (next start or sync)", False)
     try:
-        from pyapp.DONT_CHANGE.scripts.shortcuts import read_created_shortcuts
+        from pyapp.DONT_CHANGE.scripts.desktop.shortcuts import read_created_shortcuts
 
         shortcut_count = f"{len(read_created_shortcuts())} created by Setup"
     except Exception:

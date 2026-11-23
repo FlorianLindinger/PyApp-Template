@@ -1,6 +1,6 @@
-# Step 3 of a start (steps 1-2: B\W.bat and bootstrap\run.bat; see B\W.bat). This process runs in a
+# Step 3 of a start (steps 1-2: B\W.bat and scripts\bootstrap\run.bat; see B\W.bat). This process runs in a
 # small minimized window. It checks the settings, makes sure Python and the packages are ready, then
-# starts runtime/bg_watchdog.py in the right kind of window, waits until it reports "started", and
+# starts scripts/runtime/bg_watchdog.py in the right kind of window, waits until it reports "started", and
 # ends. From then on the watchdog owns the run: it starts code/main.py and reports how it ended.
 """Prepare the app environment and hand off one uniquely identified run to the watchdog."""
 
@@ -20,9 +20,10 @@ import time
 import uuid
 from pathlib import Path
 
-from pyapp.DONT_CHANGE import backend_settings as paths
+from pyapp.DONT_CHANGE import pyapp_settings as paths
 from pyapp.DONT_CHANGE.scripts.config import settings, terminal_color_code, validate
-from pyapp.DONT_CHANGE.scripts.console_tools import print_info, print_warn
+from pyapp.DONT_CHANGE.scripts.console_tools import print_warn
+from pyapp.DONT_CHANGE.scripts.desktop.splash import startup_splash
 from pyapp.DONT_CHANGE.scripts.diagnostics import note_ignored
 from pyapp.DONT_CHANGE.scripts.env.venv import ensure_environment
 from pyapp.DONT_CHANGE.scripts.instance_policy import decide
@@ -31,7 +32,6 @@ from pyapp.DONT_CHANGE.scripts.launcher_ui import (
     set_terminal_appearance_once,
 )
 from pyapp.DONT_CHANGE.scripts.runtime_state import ProcessRegistry
-from pyapp.DONT_CHANGE.scripts.splash import startup_splash
 
 
 def resolve_mode(s: Union[ModuleType, SimpleNamespace], requested: str) -> str:
@@ -45,22 +45,6 @@ def resolve_mode(s: Union[ModuleType, SimpleNamespace], requested: str) -> str:
         print_warn("Windows Terminal (wt.exe) is not installed; using the classic terminal instead.")
         mode = "conhost"
     return mode
-
-
-def _hint_outdated_shortcuts(s: Union[ModuleType, SimpleNamespace]) -> None:
-    """The "open" shortcuts store their target; tell the user when the settings changed it."""
-    try:
-        from pyapp.DONT_CHANGE.scripts.shortcuts import outdated_shortcut_targets
-
-        outdated = outdated_shortcut_targets(s)
-        if outdated:
-            print_info(
-                "These shortcuts still open the previous location: "
-                + ", ".join(outdated)
-                + ". Run 'Setup - run first and after moving folder.cmd' to update them."
-            )
-    except Exception:
-        note_ignored("outdated shortcut check")
 
 
 def wt_command(title: str, tab_color: Optional[str], command: List[str], dedicated_window: bool = False) -> List[str]:
@@ -95,8 +79,8 @@ def browser_command(s: Union[ModuleType, SimpleNamespace], run_dir: Path, comman
     """
     from pyapp.DONT_CHANGE.browser_terminal.ui import colors_from_code
     from pyapp.DONT_CHANGE.scripts import browser_links
+    from pyapp.DONT_CHANGE.scripts.desktop.shortcuts import project_app_id, read_start_link, shortcut_targets
     from pyapp.DONT_CHANGE.scripts.launcher_ui import get_log_folder_path
-    from pyapp.DONT_CHANGE.scripts.shortcuts import project_app_id, read_start_link, shortcut_targets
 
     colors = colors_from_code(terminal_color_code(s.terminal_bg_color, s.terminal_text_color))
     # The same address on every start (and the one Setup shows), so it can be bookmarked.
@@ -166,7 +150,7 @@ def main() -> int:
     s = settings()
     validate(s)
     mode = resolve_mode(s, requested)
-    from pyapp.DONT_CHANGE.scripts.terminal_window import needs_window, validate_close_mode
+    from pyapp.DONT_CHANGE.scripts.desktop.terminal_window import needs_window, validate_close_mode
 
     validate_close_mode(s, mode)
     if mode == "wt" and (
@@ -208,7 +192,6 @@ def main() -> int:
         from pyapp.DONT_CHANGE.scripts.hidden_caches import hide_cache_folders
 
         hide_cache_folders()  # e.g. code\__pycache__ from the previous run
-        _hint_outdated_shortcuts(s)
         app = ensure_environment(interactive=True)
 
         # --- 4. A folder for this run (DONT_CHANGE\tmp\runs\<random name>): the processes of this run

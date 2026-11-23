@@ -12,7 +12,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
-from pyapp.DONT_CHANGE.backend_settings import (
+from pyapp.DONT_CHANGE.pyapp_settings import (
     CRASH_LOG_ICON_PATH,
     DEFAULT_ICON_DIR,
     FAILURE_ICON_PATH,

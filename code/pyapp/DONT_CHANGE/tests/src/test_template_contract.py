@@ -1,6 +1,6 @@
 """What must stay stable: the repository name in the Actions, what existing projects expect in DONT_CHANGE.
 
-What is protected is listed in backend_settings (PROTECTED_PATHS, PROTECTED_PROJECT_FILES,
+What is protected is listed in pyapp_settings (PROTECTED_PATHS, PROTECTED_PROJECT_FILES,
 PROTECTED_RUN_COMMANDS, PROTECTED_DEV_TOOL_COMMANDS, PROTECTED_SETTING_NAMES).
 """
 
@@ -20,11 +20,11 @@ from project_location import CODE, DONT_CHANGE, PROJECT_ROOT
 
 # isort: split
 
-from pyapp.DONT_CHANGE import backend_settings
+from pyapp.DONT_CHANGE import pyapp_settings
 from pyapp.DONT_CHANGE.scripts import config
 from pyapp.DONT_CHANGE.scripts.dev_tools import main as dev_tools
 
-# What existing projects rely on is listed in backend_settings (PROTECTED_*); these tests check
+# What existing projects rely on is listed in pyapp_settings (PROTECTED_*); these tests check
 # that the code still provides all of it, and that files outside DONT_CHANGE use nothing else.
 ENTRY_FILE = "B/run.bat"
 WORKFLOW_FOLDER = PROJECT_ROOT / ".github" / "workflows"
@@ -94,46 +94,46 @@ class RepositoryNameTests(unittest.TestCase):
 class ExistingProjectTests(unittest.TestCase):
     def test_the_entry_file_and_its_commands_exist(self):
         text = (DONT_CHANGE / ENTRY_FILE).read_text(encoding="utf-8")
-        for command in backend_settings.PROTECTED_RUN_COMMANDS:
+        for command in pyapp_settings.PROTECTED_RUN_COMMANDS:
             with self.subTest(command=command):
                 self.assertIn(f'"%~1"=="{command}"', text)
 
     def test_scripts_outside_use_only_protected_commands(self):
         used = run_commands_used_outside()
         self.assertTrue(used, "the scan must find the calls to run.bat (Setup, the developer menu, ...)")
-        missing_run = sorted({command for command, _ in used} - set(backend_settings.PROTECTED_RUN_COMMANDS))
+        missing_run = sorted({command for command, _ in used} - set(pyapp_settings.PROTECTED_RUN_COMMANDS))
         missing_dev = sorted(
             {dev_command for command, dev_command in used if command == "dev"}
-            - set(backend_settings.PROTECTED_DEV_TOOL_COMMANDS)
+            - set(pyapp_settings.PROTECTED_DEV_TOOL_COMMANDS)
         )
         if missing_run:
             self.fail(
                 "Launcher commands missing from PROTECTED_RUN_COMMANDS: "
                 + ", ".join(missing_run)
-                + ". Add these commands to backend_settings.py so existing project scripts remain supported."
+                + ". Add these commands to pyapp_settings.py so existing project scripts remain supported."
             )
         if missing_dev:
             self.fail(
                 "Developer Tools commands missing from PROTECTED_DEV_TOOL_COMMANDS: "
                 + ", ".join(missing_dev)
-                + ". Add these commands to backend_settings.py so existing project scripts remain supported."
+                + ". Add these commands to pyapp_settings.py so existing project scripts remain supported."
             )
 
     def test_protected_dev_tool_commands_still_exist(self):
         # "menu" is not in COMMANDS: main() shows the menu itself (also without a command).
         known = {*dev_tools.COMMANDS, "menu"}
-        self.assertLessEqual(set(backend_settings.PROTECTED_DEV_TOOL_COMMANDS), known)
+        self.assertLessEqual(set(pyapp_settings.PROTECTED_DEV_TOOL_COMMANDS), known)
 
     def test_protected_project_files_are_still_where_the_launcher_looks(self):
-        from pyapp.DONT_CHANGE.actions import gen_icons
+        from pyapp.DONT_CHANGE.scripts.actions import gen_icons
 
-        # Every path the launcher uses: the constants of backend_settings, and the base image the
+        # Every path the launcher uses: the constants of pyapp_settings, and the base image the
         # icon generator reads by name.
-        used = {os.path.normcase(value) for value in vars(backend_settings).values() if isinstance(value, str)}
+        used = {os.path.normcase(value) for value in vars(pyapp_settings).values() if isinstance(value, str)}
         used |= {os.path.normcase(str(Path(gen_icons.ICON_PNG_DIR) / gen_icons.ICON_GENERATION_SETTINGS[0][1]))}
-        for relative in backend_settings.PROTECTED_PROJECT_FILES:
+        for relative in pyapp_settings.PROTECTED_PROJECT_FILES:
             with self.subTest(path=relative):
-                path = os.path.normcase(str(Path(backend_settings.BACKEND_DIR) / relative))
+                path = os.path.normcase(str(Path(pyapp_settings.BACKEND_DIR) / relative))
                 self.assertIn(path, used, f"no launcher path points at code/pyapp/{relative} any more")
 
     def test_nothing_protected_was_removed_since_the_last_release(self):
@@ -141,16 +141,16 @@ class ExistingProjectTests(unittest.TestCase):
         import json
 
         try:
-            baseline = json.loads(Path(backend_settings.PROTECTED_BASELINE_PATH).read_text(encoding="utf-8"))
+            baseline = json.loads(Path(pyapp_settings.PROTECTED_BASELINE_PATH).read_text(encoding="utf-8"))
         except FileNotFoundError:
             self.skipTest("no release has saved the protected lists yet")
         released_major = int(str(baseline["launcher_version"]).split(".")[0])
-        current_major = int(backend_settings.LAUNCHER_VERSION.split(".")[0])
+        current_major = int(pyapp_settings.LAUNCHER_VERSION.split(".")[0])
         if current_major > released_major:
             self.skipTest("a new MAJOR version may remove protected entries (describe the steps in CHANGELOG.md)")
         removed = {
             name: sorted(set(baseline.get(name, [])) - set(entries))
-            for name, entries in backend_settings.PROTECTED.items()
+            for name, entries in pyapp_settings.PROTECTED.items()
             if set(baseline.get(name, [])) - set(entries)
         }
         if removed:
@@ -163,17 +163,17 @@ class ExistingProjectTests(unittest.TestCase):
             )
 
     def test_protected_setting_names_still_exist(self):
-        defaults = config.default_setting_expressions(backend_settings.DEFAULT_SETTINGS_PATH)
-        self.assertEqual(sorted(set(backend_settings.PROTECTED_SETTING_NAMES) - set(defaults)), [])
+        defaults = config.default_setting_expressions(pyapp_settings.DEFAULT_SETTINGS_PATH)
+        self.assertEqual(sorted(set(pyapp_settings.PROTECTED_SETTING_NAMES) - set(defaults)), [])
 
     def test_scripts_outside_use_only_protected_paths(self):
         used = launcher_files_used_outside()
         self.assertIn("B\\run.bat", used)  # proves the scan finds the calls at all
-        self.assertLessEqual(set(used), set(backend_settings.PROTECTED_PATHS))
-        self.assertIn(backend_settings.FALLBACK_START_PATH, used)
+        self.assertLessEqual(set(used), set(pyapp_settings.PROTECTED_PATHS))
+        self.assertIn(pyapp_settings.FALLBACK_START_PATH, used)
 
     def test_every_protected_path_exists(self):
-        for relative in backend_settings.PROTECTED_PATHS:
+        for relative in pyapp_settings.PROTECTED_PATHS:
             with self.subTest(path=relative):
                 self.assertTrue((DONT_CHANGE / relative.replace("\\", "/")).is_file())
 
@@ -181,17 +181,17 @@ class ExistingProjectTests(unittest.TestCase):
         # Existing shortcuts keep pointing at their target until Setup runs again.
         targets = [
             value
-            for name, value in vars(backend_settings).items()
+            for name, value in vars(pyapp_settings).items()
             if name.startswith("LAUNCHER_") and str(value).endswith(".bat")  # not LAUNCHER_VERSION
         ]
         self.assertGreaterEqual(len(targets), 8)
         for target in targets:
             with self.subTest(target=target):
-                relative = str(Path(target).relative_to(backend_settings.DONT_CHANGE_DIR))
-                self.assertIn(relative, backend_settings.PROTECTED_PATHS)
+                relative = str(Path(target).relative_to(pyapp_settings.DONT_CHANGE_DIR))
+                self.assertIn(relative, pyapp_settings.PROTECTED_PATHS)
 
     def test_the_fallback_start_needs_nothing_else_from_the_launcher(self):
-        path = DONT_CHANGE / backend_settings.FALLBACK_START_PATH.replace("\\", "/")
+        path = DONT_CHANGE / pyapp_settings.FALLBACK_START_PATH.replace("\\", "/")
         imported = set()
         for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
             if isinstance(node, ast.Import):
@@ -210,7 +210,7 @@ class ContractMessageTests(unittest.TestCase):
         case = ExistingProjectTests("test_scripts_outside_use_only_protected_commands")
         used = [("dev", "install-requirements"), ("dev", "reset-imports")] * 6
         with mock.patch(__name__ + ".run_commands_used_outside", return_value=used), mock.patch.object(
-            backend_settings, "PROTECTED_DEV_TOOL_COMMANDS", ["menu", "add"]
+            pyapp_settings, "PROTECTED_DEV_TOOL_COMMANDS", ["menu", "add"]
         ), self.assertRaises(AssertionError) as raised:
             case.test_scripts_outside_use_only_protected_commands()
         first = str(raised.exception).split(". ")[0]

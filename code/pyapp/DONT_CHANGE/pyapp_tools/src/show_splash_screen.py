@@ -26,7 +26,7 @@ def main() -> None:
 
     sys.path.append(str(CODE_DIR))
     from pyapp.DONT_CHANGE.scripts.config import settings
-    from pyapp.DONT_CHANGE.scripts.splash import helper_command
+    from pyapp.DONT_CHANGE.scripts.desktop.splash import helper_command
 
     s = settings()
     print(f"Showing the splash: {s.program_name}. Click it or press Escape to close.", flush=True)

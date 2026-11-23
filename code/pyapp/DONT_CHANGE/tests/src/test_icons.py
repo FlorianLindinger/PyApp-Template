@@ -1,4 +1,4 @@
-"""actions/gen_icons.py: bundled overlays; generated icons update silently, others only after a question."""
+"""scripts/actions/gen_icons.py: bundled overlays; generated icons update silently, others only after a question."""
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ from project_location import DONT_CHANGE
 
 # isort: split
 
-from pyapp.DONT_CHANGE.actions import gen_icons
+from pyapp.DONT_CHANGE.scripts.actions import gen_icons
 
 
 class GenIconsTests(unittest.TestCase):

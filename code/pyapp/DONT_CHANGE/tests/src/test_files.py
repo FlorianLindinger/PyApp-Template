@@ -37,7 +37,10 @@ class LauncherFileTests(unittest.TestCase):
     def test_the_file_tables_name_existing_files(self):
         """The READMEs describe every file; a rename must not leave them pointing at nothing."""
         # The tables name files relative to the folder their section is about.
-        bases = [DONT_CHANGE / folder for folder in ("", "scripts", "runtime", "actions", "bootstrap", "B", "data")]
+        bases = [
+            DONT_CHANGE / folder
+            for folder in ("", "scripts", "scripts/actions", "scripts/runtime", "scripts/bootstrap", "B", "data")
+        ]
         missing = []
         for line in (DONT_CHANGE / "README.md").read_text(encoding="utf-8").splitlines():
             first_cell = line.split("|")[1] if line.startswith("| `") else ""
@@ -57,33 +60,38 @@ class LauncherFileTests(unittest.TestCase):
         self.assertEqual(listed, {path.name for path in all_test_files()}, "tests/README.md file table")
 
     def test_runner_and_every_tool_have_a_main(self):
-        self.assertIn("scripts\\entrypoint.py", (DONT_CHANGE / "bootstrap" / "run.bat").read_text(encoding="utf-8"))
-        for tool in [*list((DONT_CHANGE / "actions").glob("*.py")), DONT_CHANGE / "scripts" / "dev_tools" / "main.py"]:
+        self.assertIn(
+            "..\\entrypoint.py", (DONT_CHANGE / "scripts" / "bootstrap" / "run.bat").read_text(encoding="utf-8")
+        )
+        for tool in [
+            *list((DONT_CHANGE / "scripts" / "actions").glob("*.py")),
+            DONT_CHANGE / "scripts" / "dev_tools" / "main.py",
+        ]:
             self.assertRegex(tool.read_text(encoding="utf-8"), r"\ndef main\(", tool.name)
 
     def test_bootstrap_and_launcher_agree_on_the_environment_folder(self):
-        settings = (DONT_CHANGE / "backend_settings.py").read_text(encoding="utf-8")
+        settings = (DONT_CHANGE / "pyapp_settings.py").read_text(encoding="utf-8")
         self.assertIn('GENERATED_DIR = BACKEND_DIR + "\\\\generated"', settings)
-        script = (DONT_CHANGE / "bootstrap" / "resolve_runtime.py").read_text(encoding="utf-8")
+        script = (DONT_CHANGE / "scripts" / "bootstrap" / "resolve_runtime.py").read_text(encoding="utf-8")
         self.assertIn('GENERATED_DIR = BACKEND_DIR / "generated"', script)
-        batch = (DONT_CHANGE / "bootstrap" / "ensure_runtime.bat").read_text(encoding="utf-8")
+        batch = (DONT_CHANGE / "scripts" / "bootstrap" / "ensure_runtime.bat").read_text(encoding="utf-8")
         self.assertIn("..\\..\\generated\\.python-version", batch)
 
     def test_the_runtime_cache_stamp_names_every_bootstrap_setting(self):
         from pyapp.DONT_CHANGE.scripts.config import BOOTSTRAP_SETTINGS
 
-        batch = (DONT_CHANGE / "bootstrap" / "ensure_runtime.bat").read_text(encoding="utf-8")
+        batch = (DONT_CHANGE / "scripts" / "bootstrap" / "ensure_runtime.bat").read_text(encoding="utf-8")
         self.assertEqual(sorted(re.findall(r'if "%%A"=="(\w+)"', batch)), sorted(BOOTSTRAP_SETTINGS))
 
     def test_the_bootstrap_avoids_what_antivirus_programs_distrust(self):
         for name in ("resolve_runtime.py", "ensure_runtime.bat", "run.bat"):
-            text = (DONT_CHANGE / "bootstrap" / name).read_text(encoding="utf-8").lower()
+            text = (DONT_CHANGE / "scripts" / "bootstrap" / name).read_text(encoding="utf-8").lower()
             for pattern in ("| iex", "invoke-expression", "certutil.exe -", "dllimport"):
                 self.assertNotIn(pattern, text, f"{name} uses {pattern}")
 
     def test_the_setup_runs_no_powershell_script(self):
         for name in ("resolve_runtime.bat", "ensure_runtime.bat", "run.bat"):
-            text = (DONT_CHANGE / "bootstrap" / name).read_text(encoding="utf-8").lower()
+            text = (DONT_CHANGE / "scripts" / "bootstrap" / name).read_text(encoding="utf-8").lower()
             self.assertNotIn("executionpolicy", text, name)
             self.assertNotIn(".ps1", text, name)
 
@@ -93,9 +101,9 @@ class LauncherFileTests(unittest.TestCase):
         self.assertEqual(APP_PYTHON_FLAGS[APP_PYTHON_FLAGS.index("-X") + 1], "utf8")
 
     def test_changelog_names_the_launcher_version(self):
-        settings_text = (DONT_CHANGE / "backend_settings.py").read_text(encoding="utf-8")
+        settings_text = (DONT_CHANGE / "pyapp_settings.py").read_text(encoding="utf-8")
         version = re.search(r'^LAUNCHER_VERSION = "(\d+\.\d+\.\d+)"', settings_text, re.MULTILINE)
-        self.assertIsNotNone(version, "LAUNCHER_VERSION missing in backend_settings.py")
+        self.assertIsNotNone(version, "LAUNCHER_VERSION missing in pyapp_settings.py")
         changelog = (DONT_CHANGE / "CHANGELOG.md").read_text(encoding="utf-8")
         newest = re.search(r"^## (\d+\.\d+\.\d+)", changelog, re.MULTILINE)
         self.assertIsNotNone(newest, "CHANGELOG.md has no version heading")

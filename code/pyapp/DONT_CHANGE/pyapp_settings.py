@@ -29,7 +29,7 @@ def make_abs(x: str) -> str:
 #          defaults, new optional files outside it may be copied)
 #   MAJOR: something breaks; replace DONT_CHANGE and follow the steps in CHANGELOG.md
 LAUNCHER_VERSION = "0.0.1"
-# Where new launcher versions are published (scripts/update_check.py asks its latest release).
+# Where new launcher versions are published (scripts/github/update_check.py asks its latest release).
 TEMPLATE_REPOSITORY = "FlorianLindinger/PyApp-Template"
 MINIMUM_PYTHON = (3, 8)                             # oldest Python the launcher code supports
 
@@ -57,10 +57,10 @@ PYTHON_SCRIPTS_DIR = make_abs("..\\..")              # the "code" folder: main.p
 SHORTCUT_OUTPUT_DIR = make_abs("..\\..\\..")         # repository root
 TEMPORARY_DIR = DONT_CHANGE_DIR + "\\tmp"
 SCRIPTS_DIR = DONT_CHANGE_DIR + "\\scripts"
-APP_ACTIONS_DIR = DONT_CHANGE_DIR + "\\actions"
+APP_ACTIONS_DIR = SCRIPTS_DIR + "\\actions"
 ENTRY_BATCHES_DIR = DONT_CHANGE_DIR + "\\B"          # short shortcut targets
 DATA_DIR = DONT_CHANGE_DIR + "\\data"
-# Everything the launcher creates and maintains. UPDATE bootstrap/*.bat and code/pyapp/.gitignore too.
+# Everything the launcher creates and maintains. UPDATE scripts/bootstrap/*.bat and code/pyapp/.gitignore too.
 GENERATED_DIR = BACKEND_DIR + "\\generated"
 
 # ------------------------
@@ -74,7 +74,7 @@ GENERATED_DIR = BACKEND_DIR + "\\generated"
 # Files in DONT_CHANGE that something outside it starts (paths relative to DONT_CHANGE).
 # The fallback start (code/pyapp/fallback_start/"Start without launcher.cmd"): runs the app when the rest of the
 # launcher is broken, so it may only use the standard library, no other launcher file.
-FALLBACK_START_PATH = "actions\\start_without_launcher.py"
+FALLBACK_START_PATH = "scripts\\actions\\start_without_launcher.py"
 PROTECTED_PATHS = [
     "B\\run.bat",               # every .cmd outside DONT_CHANGE: run.bat setup|icons|icons-help|dev <command>
     FALLBACK_START_PATH,
@@ -87,6 +87,8 @@ PROTECTED_PATHS = [
     "B\\L.bat",
     "B\\C.bat",
     "B\\M.bat",
+    # The .cmd entry points Setup writes into batch_shortcuts\ (outside DONT_CHANGE) call it.
+    "B\\A.bat",
 ]
 # Files and folders in code/pyapp that existing projects already have (paths relative to code/pyapp).
 # A version that looked for one elsewhere would not find it, without any error:
@@ -229,7 +231,6 @@ PROTECTED_SETTING_NAMES = [
     "python_source",
     "python_version",
     "start_in_shortcut_position",
-    "start_in_shortcut_position",
     "start_menu_shortcuts",
     "start_minimized",
     "show_splash_screen_for_no_terminal_start",
@@ -293,7 +294,7 @@ POWERSHELL_EXE = WINDOWS_DIR + "\\System32\\WindowsPowerShell\\v1.0\\powershell.
 
 LOCAL_UV_DIR = GENERATED_DIR + "\\uv"                 # uv.exe when installed locally
 LOCAL_UV_EXE = LOCAL_UV_DIR + "\\uv.exe"
-# Per-user uv, not on PATH: fetched when the usual uv is too old for a Python. UPDATE bootstrap/resolve_runtime.* too.
+# Per-user uv, not on PATH: fetched when the usual uv is too old for a Python. UPDATE scripts/bootstrap/resolve_runtime.* too.
 SHARED_UV_EXE = (os.environ.get("LOCALAPPDATA") or str(Path("~\\AppData\\Local").expanduser())) + "\\PyApp-Template\\uv\\uv.exe"
 LOCAL_PYTHONS_DIR = GENERATED_DIR + "\\pythons"       # uv-managed Pythons when python_source = "local"
 LOCAL_UV_CACHE_DIR = GENERATED_DIR + "\\uv-cache"     # only used when uv_cache = "local"
@@ -309,7 +310,7 @@ VENV_PYTHON_EXE = VENV_DIR + "\\Scripts\\python.exe"
 # ------------------------
 # temporary state (DONT_CHANGE/tmp, ignored by Git)
 
-RUNTIME_CACHE_PATH = TEMPORARY_DIR + "\\runtime.cmd"   # written by bootstrap/resolve_runtime.py
+RUNTIME_CACHE_PATH = TEMPORARY_DIR + "\\runtime.cmd"   # written by scripts/bootstrap/resolve_runtime.py
 ENVIRONMENT_LOCK_PATH = TEMPORARY_DIR + "\\environment.lock"
 # Written after a successful environment check; while it matches, launches skip the uv checks.
 ENVIRONMENT_STAMP_PATH = TEMPORARY_DIR + "\\environment.ok"
@@ -322,7 +323,7 @@ RUNS_DIR = TEMPORARY_DIR + "\\runs"
 # Written into a run's folder by Stop/"replace"; the watchdog then ends without completion actions.
 STOP_REQUEST_FILE_NAME = "stop-requested"
 # Output that bypasses Python's streams, while the app runs; kept next to the log only as
-# evidence after a failure (runtime/bg_watchdog.py keep_raw_output).
+# evidence after a failure (scripts/runtime/bg_watchdog.py keep_raw_output).
 RAW_OUTPUT_FILE_NAME = "output.log"
 
 # ------------------------
@@ -333,11 +334,11 @@ EMPTY_ARG_INDICATOR = "__EMPTY__"
 
 ENTRYPOINT_PATH = SCRIPTS_DIR + "\\entrypoint.py"        # runs every tool: entrypoint.py <tool.py> [args]
 START_PROGRAM_PATH = APP_ACTIONS_DIR + "\\start_program.py"
-RESOLVE_RUNTIME_PATH = DONT_CHANGE_DIR + "\\bootstrap\\resolve_runtime.py"
-WATCHDOG_PATH = DONT_CHANGE_DIR + "\\runtime\\bg_watchdog.py"
-PROCESS_EXIT_PATH = DONT_CHANGE_DIR + "\\runtime\\process_exit.py"
-SCRIPT_WRAPPER_PATH = DONT_CHANGE_DIR + "\\runtime\\script_wrapper.py"
-CTRL_C_HELPER_PATH = DONT_CHANGE_DIR + "\\runtime\\send_ctrl_c.py"
+RESOLVE_RUNTIME_PATH = SCRIPTS_DIR + "\\bootstrap\\resolve_runtime.py"
+WATCHDOG_PATH = DONT_CHANGE_DIR + "\\scripts\\runtime\\bg_watchdog.py"
+PROCESS_EXIT_PATH = DONT_CHANGE_DIR + "\\scripts\\runtime\\process_exit.py"
+SCRIPT_WRAPPER_PATH = DONT_CHANGE_DIR + "\\scripts\\runtime\\script_wrapper.py"
+CTRL_C_HELPER_PATH = DONT_CHANGE_DIR + "\\scripts\\runtime\\send_ctrl_c.py"
 TEST_RUNNER_PATH = DONT_CHANGE_DIR + "\\tests\\src\\run_regressions.py"  # the dev tool "test"
 
 # ------------------------
@@ -346,7 +347,7 @@ TEST_RUNNER_PATH = DONT_CHANGE_DIR + "\\tests\\src\\run_regressions.py"  # the d
 # files it shares with the run (in the run's folder): its settings, icon/color requests, its window
 # handle. The variable names the request file for console_tools.
 
-BROWSER_TERMINAL_PATH = DONT_CHANGE_DIR + "\\runtime\\browser_terminal_host.py"
+BROWSER_TERMINAL_PATH = DONT_CHANGE_DIR + "\\scripts\\runtime\\browser_terminal_host.py"
 BROWSER_UI_ENV_VAR = "PYAPP_BROWSER_TERMINAL_UI"
 BROWSER_CONFIG_FILE_NAME = "browser-terminal.json"
 BROWSER_UI_FILE_NAME = "browser-ui.jsonl"
@@ -382,7 +383,7 @@ BROWSER_APP_ID_SUFFIX = "B"
 INSTALL_ENVIRONMENT_WHEN_GENERATING_SHORTCUTS = True
 
 # ------------------------
-# icons (generated from icon.png and the bundled overlays by actions/gen_icons.py)
+# icons (generated from icon.png and the bundled overlays by scripts/actions/gen_icons.py)
 
 ICON_DIR = BACKEND_DIR + "\\icons"
 ICON_PATH = ICON_DIR + "\\icon.ico"

@@ -17,8 +17,8 @@ from project_location import CODE
 
 # isort: split
 
-from pyapp.DONT_CHANGE.actions.start_program import wt_command
-from pyapp.DONT_CHANGE.scripts import terminal_window as window
+from pyapp.DONT_CHANGE.scripts.actions.start_program import wt_command
+from pyapp.DONT_CHANGE.scripts.desktop import terminal_window as window
 from pyapp.DONT_CHANGE.scripts.errors import SettingsError
 
 
@@ -73,11 +73,11 @@ class NativeWindow(unittest.TestCase):
             script = (
                 "import sys; from pathlib import Path; from types import SimpleNamespace; "
                 f"sys.path.insert(0, {str(CODE)!r}); "
-                "from pyapp.DONT_CHANGE.scripts.terminal_window import configure; "
+                "from pyapp.DONT_CHANGE.scripts.desktop.terminal_window import configure; "
                 "s = SimpleNamespace(terminal_alpha=0.8, always_on_top=True, "
                 "hide_minimize_button=True, hide_maximize_button=True, allow_minimize=False, allow_maximize=False, confirm_on_close='block'); "
                 "configure(s, 'conhost'); "
-                "from pyapp.DONT_CHANGE.scripts.taskbar_status import terminal_window, set_progress, flash; "
+                "from pyapp.DONT_CHANGE.scripts.desktop.taskbar_status import terminal_window, set_progress, flash; "
                 "hwnd = terminal_window(include_hidden=True); assert hwnd; "
                 "[set_progress(hwnd, state) for state in (1, 2, 4, 0)]; flash(hwnd); "
                 "import ctypes; from ctypes import wintypes; "

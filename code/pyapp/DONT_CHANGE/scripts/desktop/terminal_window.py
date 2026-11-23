@@ -200,7 +200,7 @@ def configure(s: Union[ModuleType, SimpleNamespace], mode: str) -> None:
     if not hwnd:
         raise RuntimeError("The native terminal has no window to configure.")
     apply_window_settings(hwnd, s, classic=mode == "conhost")
-    from pyapp.DONT_CHANGE.scripts.taskbar_status import remember_window
+    from pyapp.DONT_CHANGE.scripts.desktop.taskbar_status import remember_window
 
     remember_window(hwnd)
     if getattr(s, "start_maximized", False):

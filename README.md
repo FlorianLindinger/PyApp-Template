@@ -549,12 +549,12 @@ launcher ignored on purpose.
 ```text
 shortcut
  └─ B\W.bat, N.bat or B.bat             console, no console, or browser
-     └─ bootstrap\ensure_runtime.bat     uses the cached uv and Python paths while still valid
+     └─ scripts\bootstrap\ensure_runtime.bat     uses the cached uv and Python paths while still valid
          └─ resolve_runtime.bat and .py  only when needed: finds or installs uv and Python
-     └─ actions\start_program.py         checks settings and instance policy, syncs .venv with uv.lock
-         └─ runtime\bg_watchdog.py       owns the run: window, log, process group
-             ├─ runtime\script_wrapper.py  ──▶  code\main.py
-             └─ runtime\process_exit.py        report, crash log, sounds, recovery menu
+     └─ scripts\actions\start_program.py checks settings and instance policy, syncs .venv with uv.lock
+         └─ scripts\runtime\bg_watchdog.py       owns the run: window, log, process group
+             ├─ scripts\runtime\script_wrapper.py  ──▶  code\main.py
+             └─ scripts\runtime\process_exit.py        report, crash log, sounds, recovery menu
 ```
 
 The launcher is readable Python and batch, uses only the standard library and runs on Python 3.8+,

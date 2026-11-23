@@ -9,7 +9,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Iterable, List, Tuple
 
-from pyapp.DONT_CHANGE.backend_settings import APP_WORKFLOW_SOURCE_DIR, APP_WORKFLOW_TARGET_DIR
+from pyapp.DONT_CHANGE.pyapp_settings import APP_WORKFLOW_SOURCE_DIR, APP_WORKFLOW_TARGET_DIR
 
 FILE_PREFIX = "pyapp-app-"
 

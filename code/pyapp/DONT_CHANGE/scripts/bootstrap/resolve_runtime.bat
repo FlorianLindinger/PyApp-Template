@@ -14,10 +14,10 @@ rem The steps: read three settings, find a uv (or download one), find a Python 3
 rem install one), then run resolve_runtime.py with that Python, which chooses the final ones.
 set "stamp=%PYAPP_STAMP%"
 set "bootstrap=%~dp0"
-set "pyapp=%~dp0..\.."
+set "pyapp=%~dp0..\..\.."
 set "settings=%pyapp%\developer_settings.py"
 set "generated=%pyapp%\generated"
-set "temporary=%~dp0..\tmp"
+set "temporary=%~dp0..\..\tmp"
 set "user_data=%LOCALAPPDATA%"
 if not defined user_data set "user_data=%USERPROFILE%\AppData\Local"
 rem uv prints UTF-8, and the project may be in a folder with non-ASCII characters.

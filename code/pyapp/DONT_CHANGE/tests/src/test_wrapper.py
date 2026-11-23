@@ -1,4 +1,4 @@
-"""runtime/script_wrapper.py: runs main.py like `python main.py` and reports how it ended."""
+"""scripts/runtime/script_wrapper.py: runs main.py like `python main.py` and reports how it ended."""
 
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ from unittest import mock
 
 from project_location import DONT_CHANGE
 
-WRAPPER = DONT_CHANGE / "runtime" / "script_wrapper.py"
+WRAPPER = DONT_CHANGE / "scripts" / "runtime" / "script_wrapper.py"
 
 
 class WrapperTests(unittest.TestCase):

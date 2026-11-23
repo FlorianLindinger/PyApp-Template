@@ -40,11 +40,11 @@ Example:
             pyapp_api.set_progress(done / 100)  # progress on the taskbar button
     pyapp_api.set_progress(None)
 
-The names in ``__all__`` are a stable contract (PROTECTED_APP_API_NAMES in backend_settings.py):
+The names in ``__all__`` are a stable contract (PROTECTED_APP_API_NAMES in pyapp_settings.py):
 they are never removed or renamed within a major version. The machinery behind them is in
 scripts/app_api_support.py.
 
-How it gets there: runtime/script_wrapper.py registers this module as ``pyapp_api`` before it
+How it gets there: scripts/runtime/script_wrapper.py registers this module as ``pyapp_api`` before it
 runs main.py, and code/pyapp_api.py forwards to it when main.py runs without the launcher.
 """
 
@@ -96,7 +96,7 @@ def notify(title: str, message: str = "", *, open_path: Optional[str] = None) ->
     if not _launched or os.name != "nt":
         return False
     try:
-        from pyapp.DONT_CHANGE.scripts import windows_notifications
+        from pyapp.DONT_CHANGE.scripts.desktop import windows_notifications
 
         app_id = os.environ.get("APP_ID", "")
         return windows_notifications.show(title, message, app_id, open_path=open_path) is None
@@ -195,7 +195,7 @@ def bring_to_front() -> bool:
     if not hwnd:
         return False
     try:
-        from pyapp.DONT_CHANGE.scripts.windows_focus import focus_window
+        from pyapp.DONT_CHANGE.scripts.desktop.windows_focus import focus_window
 
         return bool(focus_window(hwnd))
     except Exception:
@@ -215,7 +215,7 @@ def minimize_to_tray() -> bool:
     try:
         import ctypes
 
-        from pyapp.DONT_CHANGE import backend_settings as paths
+        from pyapp.DONT_CHANGE import pyapp_settings as paths
 
         support.tray_controller(hwnd, support.program_name(), paths.ICON_PATH)
         ctypes.windll.user32.ShowWindow(hwnd, 6)  # SW_MINIMIZE: the controller then moves it to the tray
@@ -327,8 +327,8 @@ def report_error(error: Optional[BaseException] = None, note: str = "") -> Optio
         if error is None:
             raise ValueError("report_error() needs an error, or must be called in an except block")
     try:
-        from pyapp.DONT_CHANGE.runtime import _pyapp as protocol
-        from pyapp.DONT_CHANGE.runtime import process_exit
+        from pyapp.DONT_CHANGE.scripts.runtime import _pyapp as protocol
+        from pyapp.DONT_CHANGE.scripts.runtime import process_exit
 
         report_file = support.FORWARD_DIR.parent / f"handled-{uuid.uuid4().hex[:12]}.json"
         report_file.parent.mkdir(parents=True, exist_ok=True)
@@ -381,7 +381,7 @@ def on_new_start(callback: Callable[[List[str], str], None]) -> bool:
 
 # ------------------------------------------------------------------ internal (used by the launcher)
 
-# Set by runtime/script_wrapper.py before main.py runs; stays False/empty for ``python main.py``.
+# Set by scripts/runtime/script_wrapper.py before main.py runs; stays False/empty for ``python main.py``.
 _launched = False
 _launch: Dict[str, Any] = {}
 _stop_callbacks: List[Callable[[], None]] = []

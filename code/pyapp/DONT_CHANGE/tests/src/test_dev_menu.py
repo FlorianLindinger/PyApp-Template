@@ -101,8 +101,8 @@ class CancelTests(unittest.TestCase):
         mocks["edit_settings"].assert_not_called()
 
     def test_enter_quits_the_missing_package_menu(self):
-        from pyapp.DONT_CHANGE.runtime import process_exit
         from pyapp.DONT_CHANGE.scripts.env import venv
+        from pyapp.DONT_CHANGE.scripts.runtime import process_exit
 
         with mock.patch.multiple(
             process_exit,
@@ -118,8 +118,8 @@ class CancelTests(unittest.TestCase):
 
     def test_digits_int_cannot_read_are_asked_again(self):
         """ "²".isdigit() is True, but int("²") fails: the menu must ask again, not crash."""
-        from pyapp.DONT_CHANGE.runtime import process_exit
         from pyapp.DONT_CHANGE.scripts.env import venv
+        from pyapp.DONT_CHANGE.scripts.runtime import process_exit
 
         with mock.patch.multiple(
             process_exit,
@@ -132,8 +132,8 @@ class CancelTests(unittest.TestCase):
 
     def menu(self, problem: Optional[str], answers: List[str], add_error: Optional[Exception] = None) -> Dict[str, Any]:
         """Run the missing-package menu for PySide2; returns the mocks of what it printed and did."""
-        from pyapp.DONT_CHANGE.runtime import process_exit
         from pyapp.DONT_CHANGE.scripts.env import venv
+        from pyapp.DONT_CHANGE.scripts.runtime import process_exit
 
         with mock.patch.multiple(
             process_exit,

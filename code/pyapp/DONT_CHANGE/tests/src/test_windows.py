@@ -188,7 +188,7 @@ class WindowsProcessTests(unittest.TestCase):
         self.assertEqual(self.registry.records()[0], [])
 
     def test_a_watchdog_error_ends_the_app_it_started(self):
-        from pyapp.DONT_CHANGE.runtime import bg_watchdog
+        from pyapp.DONT_CHANGE.scripts.runtime import bg_watchdog
 
         ready = self.folder / "grandchild"
         app_source = (

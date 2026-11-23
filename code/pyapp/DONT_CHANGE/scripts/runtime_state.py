@@ -253,7 +253,7 @@ def _still_running(record: Dict[str, Any]) -> bool:
 
 def _write_stop_request(record: Dict[str, Any]) -> None:
     """Tell the instance's watchdog that its end was requested (no completion actions)."""
-    from pyapp.DONT_CHANGE.backend_settings import STOP_REQUEST_FILE_NAME
+    from pyapp.DONT_CHANGE.pyapp_settings import STOP_REQUEST_FILE_NAME
 
     run_dir = record.get("run_dir")
     if run_dir and Path(run_dir).is_dir():
@@ -270,9 +270,9 @@ def request_close(record: Dict[str, Any]) -> None:
     import subprocess
     import sys
 
-    from pyapp.DONT_CHANGE.backend_settings import CTRL_C_HELPER_PATH
+    from pyapp.DONT_CHANGE.pyapp_settings import CTRL_C_HELPER_PATH
+    from pyapp.DONT_CHANGE.scripts.desktop.windows_focus import app_windows
     from pyapp.DONT_CHANGE.scripts.diagnostics import note_ignored
-    from pyapp.DONT_CHANGE.scripts.windows_focus import app_windows
 
     _write_stop_request(record)
     child = record.get("child") if isinstance(record.get("child"), dict) else None

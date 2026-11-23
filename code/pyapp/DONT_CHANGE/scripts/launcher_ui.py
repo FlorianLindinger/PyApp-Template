@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 from typing import Callable, List, Optional, Tuple
 
-from pyapp.DONT_CHANGE.backend_settings import (
+from pyapp.DONT_CHANGE.pyapp_settings import (
     DEV_SETTINGS_DIR,
     ICON_PATH,
     PROCESS_REGISTRY_DIR,
@@ -35,7 +35,7 @@ from pyapp.DONT_CHANGE.scripts.standalone.file_tools import (
 _TERMINAL_APPEARANCE_WAS_SET = False
 # Raw-output companion of a log file (log_path + this suffix): output that bypasses Python's
 # streams, kept as evidence after a failure; while the app runs it is written to the run folder
-# (backend_settings.RAW_OUTPUT_FILE_NAME) by the app process itself (script_wrapper.NativeOutput).
+# (pyapp_settings.RAW_OUTPUT_FILE_NAME) by the app process itself (script_wrapper.NativeOutput).
 OUTPUT_LOG_SUFFIX = ".output.log"
 # A run that is starting or has just ended is not registered as running but still uses its folder.
 RUN_FOLDER_IN_USE_SECONDS = 300

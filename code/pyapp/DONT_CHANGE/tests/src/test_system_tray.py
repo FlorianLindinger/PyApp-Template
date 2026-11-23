@@ -16,8 +16,9 @@ from project_location import CODE
 
 # isort: split
 
-from pyapp.DONT_CHANGE.runtime import bg_watchdog
-from pyapp.DONT_CHANGE.scripts import config, terminal_window
+from pyapp.DONT_CHANGE.scripts import config
+from pyapp.DONT_CHANGE.scripts.desktop import terminal_window
+from pyapp.DONT_CHANGE.scripts.runtime import bg_watchdog
 from pyapp.DONT_CHANGE.scripts.standalone import system_tray as tray
 
 

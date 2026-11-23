@@ -176,7 +176,7 @@ If the launcher itself is broken, `Start without launcher.cmd` still starts the 
 (`generated/.venv`), or with the global default Python when that is missing or broken. It first
 shows the main script, Python, the packages (installed or missing) and their folders. There is
 no setup, no package installation, no log, no crash log and no STOP shortcut; run Setup to repair
-the launcher. Its code is `DONT_CHANGE/actions/start_without_launcher.py`, which uses nothing
+the launcher. Its code is `DONT_CHANGE/scripts/actions/start_without_launcher.py`, which uses nothing
 else of the launcher.
 
 ## DONT_CHANGE/
@@ -184,6 +184,6 @@ else of the launcher.
 The launcher: the batch files the shortcuts start, the Python code that prepares the environment
 and runs the app, its data and its own tests. To update it, replace the whole folder with the
 one of a newer template version; everything else in your project stays. What it keeps the same
-between versions (file names, commands, settings) is listed in `backend_settings.py`
+between versions (file names, commands, settings) is listed in `pyapp_settings.py`
 (`PROTECTED_*`). How it works: [DONT_CHANGE/README.md](DONT_CHANGE/README.md); changes:
 [DONT_CHANGE/CHANGELOG.md](DONT_CHANGE/CHANGELOG.md).

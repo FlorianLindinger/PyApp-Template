@@ -20,7 +20,7 @@ from pathlib import Path
 from types import ModuleType, SimpleNamespace
 from typing import Optional, Tuple, Union
 
-from pyapp.DONT_CHANGE.backend_settings import (
+from pyapp.DONT_CHANGE.pyapp_settings import (
     BROWSER_KEY_PATH,
     CONHOST_EXE,
     LAUNCHER_BROWSER_TERMINAL,

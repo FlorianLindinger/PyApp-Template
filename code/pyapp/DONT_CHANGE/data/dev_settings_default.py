@@ -85,7 +85,7 @@ instance_policy = "allow"
 
 # --- Starting and stopping ---
 # The Python file the launcher runs. It must be inside the code folder, but not in code/pyapp.
-# Imports start from its folder, like `python main.py`. Run Setup again after changing it (for the Edit Code shortcut).
+# Imports start from its folder, like `python main.py`. The Edit Code shortcut follows it.
 # The code folder is also on the import path, after the main script's folder.
 main_script_path = "..\\main.py"
 
@@ -281,7 +281,7 @@ windows_notification_message_on_failure = "{message}"
 # --- Settings file and shortcut locations ---
 # File that the Settings shortcut opens, for the people using the app (any file type; "" to disable).
 # This does not change Python imports or sys.path. Keep importable Python settings beside your app.
-# Run Setup again after changing it:
+# The shortcut follows a changed path; run Setup only after switching it on or off (""):
 user_settings_path = "..\\settings.py"
 
 # The project folder always gets all enabled shortcuts. Setup removes earlier ones that are no longer wanted.

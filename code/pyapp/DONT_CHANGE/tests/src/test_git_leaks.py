@@ -109,7 +109,7 @@ class ReportTests(unittest.TestCase):
         self.assertNotIn(AWS_KEY, output.getvalue())
 
     def test_staged_and_current_findings_link_to_their_line_but_commits_do_not(self):
-        path = "code/pyapp/DONT_CHANGE/backend_settings.py"  # any file that exists in the checkout
+        path = "code/pyapp/DONT_CHANGE/pyapp_settings.py"  # any file that exists in the checkout
         link = (tool.PROJECT_ROOT / path).resolve().as_uri()
         for where, expected in (
             (f"{path}:12 (staged)", f"{link}#L12"),

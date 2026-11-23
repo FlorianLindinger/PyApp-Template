@@ -9,7 +9,7 @@ from types import SimpleNamespace
 from unittest import mock
 
 import project_location
-from pyapp.DONT_CHANGE.runtime import bg_watchdog as watchdog
+from pyapp.DONT_CHANGE.scripts.runtime import bg_watchdog as watchdog
 
 
 class AppEnvironmentTests(unittest.TestCase):

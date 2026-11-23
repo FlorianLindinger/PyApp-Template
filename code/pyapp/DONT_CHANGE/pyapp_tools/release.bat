@@ -2,7 +2,7 @@
 :: No "run again" here: Enter would bump the version a second time.
 @echo off
 setlocal EnableExtensions DisableDelayedExpansion
-call "%~dp0..\bootstrap\ensure_runtime.bat"
+call "%~dp0..\scripts\bootstrap\ensure_runtime.bat"
 if errorlevel 1 (
     pause
     exit /b 1
